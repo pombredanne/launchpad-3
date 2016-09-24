@@ -4,12 +4,10 @@
 __metaclass__ = type
 
 __all__ = [
-    'BinaryPackageFilePublishing',
     'BinaryPackagePublishingHistory',
     'get_current_source_releases',
     'makePoolPath',
     'PublishingSet',
-    'SourcePackageFilePublishing',
     'SourcePackagePublishingHistory',
     ]
 
@@ -91,10 +89,8 @@ from lp.soyuz.interfaces.distributionjob import (
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     DeletionError,
-    IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory,
     IPublishingSet,
-    ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory,
     name_priority_map,
     OverrideError,
@@ -140,63 +136,6 @@ def get_component(archive, distroseries, component):
 def proxied_urls(files, parent):
     """Run the files passed through `ProxiedLibraryFileAlias`."""
     return [ProxiedLibraryFileAlias(file, parent).http_url for file in files]
-
-
-@implementer(ISourcePackageFilePublishing)
-class SourcePackageFilePublishing(SQLBase):
-    """Source package release files and their publishing status.
-
-    Represents the source portion of the pool.
-    """
-
-    _idType = unicode
-    _defaultOrder = "id"
-
-    sourcepackagepublishing = ForeignKey(
-        dbName='sourcepackagepublishing',
-        foreignKey='SourcePackagePublishingHistory')
-
-    libraryfilealias = ForeignKey(
-        dbName='libraryfilealias', foreignKey='LibraryFileAlias',
-        notNull=True)
-
-    libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
-                                         unique=False, notNull=True)
-
-    componentname = StringCol(dbName='componentname', unique=False,
-                              notNull=True)
-
-    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  notNull=True)
-
-
-@implementer(IBinaryPackageFilePublishing)
-class BinaryPackageFilePublishing(SQLBase):
-    """A binary package file which is published.
-
-    Represents the binary portion of the pool.
-    """
-
-    _idType = unicode
-    _defaultOrder = "id"
-
-    binarypackagepublishing = ForeignKey(
-        dbName='binarypackagepublishing',
-        foreignKey='BinaryPackagePublishingHistory', immutable=True)
-
-    libraryfilealias = ForeignKey(
-        dbName='libraryfilealias', foreignKey='LibraryFileAlias',
-        notNull=True)
-
-    libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
-                                         unique=False, notNull=True,
-                                         immutable=True)
-
-    componentname = StringCol(dbName='componentname', unique=False,
-                              notNull=True, immutable=True)
-
-    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  notNull=True, immutable=True)
 
 
 class ArchivePublisherBase:

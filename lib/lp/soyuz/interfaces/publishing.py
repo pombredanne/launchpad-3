@@ -8,14 +8,11 @@ __metaclass__ = type
 __all__ = [
     'DeletionError',
     'IArchiveSafePublisher',
-    'IBinaryPackageFilePublishing',
     'IBinaryPackagePublishingHistory',
     'IBinaryPackagePublishingHistoryEdit',
     'IBinaryPackagePublishingHistoryPublic',
-    'IFilePublishing',
     'IPublishingEdit',
     'IPublishingSet',
-    'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
     'ISourcePackagePublishingHistoryEdit',
     'ISourcePackagePublishingHistoryPublic',
@@ -204,33 +201,9 @@ class IPublishingEdit(Interface):
         # deleted in tandem.
 
 
-class IFilePublishing(Interface):
-    """Base interface for *FilePublishing classes"""
-
-    componentname = TextLine(
-            title=_('Component name'), required=True, readonly=True,
-            )
-    libraryfilealias = Int(
-            title=_('Binarypackage file alias'), required=True, readonly=True,
-            )
-    libraryfilealiasfilename = TextLine(
-            title=_('File name'), required=True, readonly=True,
-            )
-
 #
 # Source package publishing
 #
-
-
-class ISourcePackageFilePublishing(IFilePublishing):
-    """Source package release files and their publishing status"""
-    sourcepackagename = TextLine(
-            title=_('Binary package name'), required=True, readonly=True,
-            )
-    sourcepackagepublishing = Int(
-            title=_('Sourcepackage publishing record id'), required=True,
-            readonly=True,
-            )
 
 
 class ISourcePackagePublishingHistoryPublic(IPublishingView):
@@ -609,20 +582,6 @@ class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
 #
 # Binary package publishing
 #
-
-
-class IBinaryPackageFilePublishing(IFilePublishing):
-    """Binary package files and their publishing status"""
-    # Note that it is really /source/ package name below, and not a
-    # thinko; at least, that's what Celso tells me the code uses
-    #   -- kiko, 2006-03-22
-    sourcepackagename = TextLine(
-            title=_('Source package name'), required=True, readonly=True,
-            )
-    binarypackagepublishing = Int(
-            title=_('Binary Package publishing record id'), required=True,
-            readonly=True,
-            )
 
 
 class IBinaryPackagePublishingHistoryPublic(IPublishingView):
