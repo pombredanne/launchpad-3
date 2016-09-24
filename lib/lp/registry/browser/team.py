@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -55,7 +55,7 @@ from zope.formlib.textwidgets import IntWidget
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     classImplements,
-    implements,
+    implementer,
     Interface,
     )
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -177,12 +177,12 @@ from lp.services.webapp.interfaces import (
     ILaunchBag,
     IMultiFacetedBreadcrumb,
     )
+from lp.snappy.browser.hassnaps import HasSnapsMenuMixin
 
 
+@implementer(IObjectPrivacy)
 class TeamPrivacyAdapter:
     """Provides `IObjectPrivacy` for `ITeam`."""
-
-    implements(IObjectPrivacy)
 
     def __init__(self, context):
         self.context = context
@@ -234,7 +234,7 @@ class TeamFormMixin:
     * The user has a current commercial subscription.
     """
     field_names = [
-        "name", "visibility", "displayname",
+        "name", "visibility", "display_name",
         "description", "membership_policy",
         "defaultmembershipperiod", "renewal_policy",
         "defaultrenewalperiod", "teamowner",
@@ -377,7 +377,7 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
 class TeamAdministerView(PersonAdministerView):
     """A view to administer teams on behalf of users."""
     label = "Review team"
-    default_field_names = ['name', 'displayname']
+    default_field_names = ['name', 'display_name']
 
 
 def generateTokenAndValidationEmail(email, team):
@@ -1022,13 +1022,13 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         failure=LaunchpadFormView.ajax_failure_handler)
     def create_action(self, action, data):
         name = data.get('name')
-        displayname = data.get('displayname')
+        display_name = data.get('display_name')
         defaultmembershipperiod = data.get('defaultmembershipperiod')
         defaultrenewalperiod = data.get('defaultrenewalperiod')
         membership_policy = data.get('membership_policy')
         teamowner = data.get('teamowner')
         team = getUtility(IPersonSet).newTeam(
-            teamowner, name, displayname, None, membership_policy,
+            teamowner, name, display_name, None, membership_policy,
             defaultmembershipperiod, defaultrenewalperiod)
         visibility = data.get('visibility')
         if visibility:
@@ -1068,7 +1068,7 @@ class SimpleTeamAddView(TeamAddView):
     next_url = None
 
     field_names = [
-        "name", "displayname", "visibility", "membership_policy",
+        "name", "display_name", "visibility", "membership_policy",
         "teamowner"]
 
     # Use a dropdown - Javascript will be used to change this to a choice
@@ -1248,18 +1248,17 @@ class TeamNavigation(PersonNavigation):
             person, self.context)
 
 
+@implementer(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 class TeamBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITeam`."""
-    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
     @property
     def text(self):
         return smartquote('"%s" team') % self.context.displayname
 
 
+@implementer(IBrowserPublisher)
 class TeamMembershipSelfRenewalView(LaunchpadFormView):
-
-    implements(IBrowserPublisher)
 
     # This is needed for our breadcrumbs, as there's no <browser:page>
     # declaration for this view.
@@ -1277,7 +1276,7 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
     page_title = label
 
     def __init__(self, context, request):
-        # Only the member himself or admins of the member (in case it's a
+        # Only the member themselves or admins of the member (in case it's a
         # team) can see the page in which they renew memberships that are
         # about to expire.
         if not check_permission('launchpad.Edit', context.person):
@@ -1354,10 +1353,9 @@ class ITeamMembershipInvitationAcknowledgementForm(Interface):
         title=_("Comment"), required=False, readonly=False)
 
 
+@implementer(IBrowserPublisher)
 class TeamInvitationView(LaunchpadFormView):
     """Where team admins can accept/decline membership invitations."""
-
-    implements(IBrowserPublisher)
 
     # This is needed for our breadcrumbs, as there's no <browser:page>
     # declaration for this view.
@@ -1587,7 +1585,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         if not userIsActiveTeamMember(self.person):
             enabled = False
         if self.person.teamowner == self.user:
-            # The owner cannot leave his team.
+            # The owner cannot leave their team.
             enabled = False
         target = '+leave'
         text = 'Leave the Team'
@@ -1617,7 +1615,8 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         return Link(target, text, icon='team', enabled=enabled)
 
 
-class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
+class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin,
+                       HasSnapsMenuMixin):
 
     usedfor = ITeam
     facet = 'overview'
@@ -1646,6 +1645,7 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
         'ppa',
         'related_software_summary',
         'view_recipes',
+        'view_snaps',
         'subscriptions',
         'structural_subscriptions',
         'upcomingwork',
@@ -1807,8 +1807,8 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
     def user_can_request_to_join(self):
         """Can the logged in user request to join this team?
 
-        The user can request if he's allowed to join this team and if he's
-        not yet an active member of this team.
+        The user can request if they're allowed to join this team and if
+        they're not yet an active member of this team.
         """
         if not self.join_allowed:
             return False
@@ -2068,9 +2068,10 @@ class TeamReassignmentView(ObjectReassignmentView):
             else:
                 relationship = 'an indirect member'
                 full_path = [self.context] + path
-		path_template = '&rArr;'.join(['%s'] * len(full_path))
+                path_template = '&rArr;'.join(['%s'] * len(full_path))
                 path_string = structured(
-                    '(%s)' % path_template, *[team.displayname for team in full_path])
+                    '(%s)' % path_template,
+                    *[team.displayname for team in full_path])
             error = structured(
                 'Circular team memberships are not allowed. '
                 '%(new)s cannot be the new team owner, since %(context)s '
@@ -2091,11 +2092,11 @@ class TeamReassignmentView(ObjectReassignmentView):
     def _afterOwnerChange(self, team, oldOwner, newOwner):
         """Add the new and the old owners as administrators of the team.
 
-        When a user creates a new team, he is added as an administrator of
+        When a user creates a new team, they are added as an administrator of
         that team. To be consistent with this, we must make the new owner an
         administrator of the team. This rule is ignored only if the new owner
-        is an inactive member of the team, as that means he's not interested
-        in being a member. The same applies to the old owner.
+        is an inactive member of the team, as that means they're not
+        interested in being a member. The same applies to the old owner.
         """
         # Both new and old owners won't be added as administrators of the team
         # only if they're inactive members. If they're either active or

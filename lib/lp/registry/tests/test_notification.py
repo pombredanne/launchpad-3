@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test notification classes and functions."""
@@ -28,7 +28,8 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
         recipients_set = NotificationRecipientSet()
         recipients_set.add(user, 'test reason', 'test rationale')
         pop_notifications()
-        send_direct_contact_email('me@eg.dom', recipients_set, subject, body)
+        send_direct_contact_email(
+            'me@eg.dom', recipients_set, user, subject, body)
         notifications = pop_notifications()
         notification = notifications[0]
         self.assertEqual(1, len(notifications))
@@ -37,6 +38,7 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
         self.assertEqual(subject, notification['Subject'])
         self.assertEqual(
             'test rationale', notification['X-Launchpad-Message-Rationale'])
+        self.assertEqual(user.name, notification['X-Launchpad-Message-For'])
         self.assertIs(None, notification['Precedence'])
         self.assertTrue('launchpad' in notification['Message-ID'])
         self.assertEqual(
@@ -61,7 +63,7 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
             authorization.record(old_message)
         self.assertRaises(
             QuotaReachedError, send_direct_contact_email,
-            'me@eg.dom', recipients_set, 'subject', 'body')
+            'me@eg.dom', recipients_set, user, 'subject', 'body')
 
     def test_empty_recipient_set(self):
         # The recipient set can be empty. No messages are sent and the
@@ -75,7 +77,7 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
             authorization.record(old_message)
         pop_notifications()
         send_direct_contact_email(
-            'me@eg.dom', recipients_set, 'subject', 'body')
+            'me@eg.dom', recipients_set, user, 'subject', 'body')
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
         self.assertTrue(authorization.is_allowed)
@@ -87,7 +89,8 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
         recipients_set.add(user, 'test reason', 'test rationale')
         pop_notifications()
         body = 'Can you help me? ' * 8
-        send_direct_contact_email('me@eg.dom', recipients_set, 'subject', body)
+        send_direct_contact_email(
+            'me@eg.dom', recipients_set, user, 'subject', body)
         notifications = pop_notifications()
         body, footer = notifications[0].get_payload().split('-- ')
         self.assertEqual(
@@ -105,7 +108,8 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
         recipients_set = NotificationRecipientSet()
         recipients_set.add(user, 'test reason', 'test rationale')
         pop_notifications()
-        send_direct_contact_email('me@eg.dom', recipients_set, 'test', 'test')
+        send_direct_contact_email(
+            'me@eg.dom', recipients_set, user, 'test', 'test')
         notifications = pop_notifications()
         notification = notifications[0]
         self.assertEqual(

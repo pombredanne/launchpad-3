@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -16,7 +16,7 @@ import time
 from zope.browserresource.file import setCacheControl
 from zope.contenttype import guess_content_type
 from zope.datetime import rfc1123_date
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
@@ -38,11 +38,12 @@ class File:
         self.lmh = rfc1123_date(self.lmt)
 
 
+@implementer(IBrowserPublisher)
 class ExportedFolder:
     """View that gives access to the files in a folder.
 
     The URL to the folder can start with an optional path step like
-    /revNNN/ where NNN is one or more digits.  This path step will
+    /revNNN/ where NNN is one or more hex digits.  This path step will
     be ignored.  It is useful for having a different path for
     all resources being served, to ensure that we don't use cached
     files in browsers.
@@ -51,9 +52,7 @@ class ExportedFolder:
     to True to change this.
     """
 
-    implements(IBrowserPublisher)
-
-    rev_part_re = re.compile('rev\d+$')
+    rev_part_re = re.compile('rev[0-9a-f]+$')
 
     export_subdirectories = False
 
@@ -134,7 +133,6 @@ class ExportedImageFolder(ExportedFolder):
     It supports serving image files without their extension (e.g. "image1.gif"
     can be served as "image1".
     """
-
 
     # The extensions we consider.
     image_extensions = ('.png', '.gif')

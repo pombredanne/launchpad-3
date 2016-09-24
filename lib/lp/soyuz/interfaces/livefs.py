@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Live filesystem interfaces."""
@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CannotDeleteLiveFS',
     'DuplicateLiveFSName',
     'ILiveFS',
     'ILiveFSEditableAttributes',
@@ -28,6 +29,7 @@ from lazr.restful.declarations import (
     error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
+    export_destructor_operation,
     export_factory_operation,
     export_read_operation,
     exported,
@@ -131,6 +133,11 @@ class NoSuchLiveFS(NameLookupFailed):
     _message_prefix = "No such live filesystem with this owner/distroseries"
 
 
+@error_status(httplib.BAD_REQUEST)
+class CannotDeleteLiveFS(Exception):
+    """This live filesystem cannot be deleted."""
+
+
 class ILiveFSView(Interface):
     """`ILiveFS` attributes that require launchpad.View permission."""
 
@@ -155,12 +162,13 @@ class ILiveFSView(Interface):
             required=False),
         metadata_override=Dict(
             title=_("A dict of data about the image."),
-            key_type=TextLine(), required=False))
+            key_type=TextLine(), required=False),
+        version=TextLine(title=_("A version string for this build.")))
     # Really ILiveFSBuild, patched in _schema_circular_imports.py.
     @export_factory_operation(Interface, [])
     @operation_for_version("devel")
     def requestBuild(requester, archive, distro_arch_series, pocket,
-                     unique_key=None, metadata_override=None):
+                     unique_key=None, metadata_override=None, version=None):
         """Request that the live filesystem be built.
 
         :param requester: The person requesting the build.
@@ -172,6 +180,9 @@ class ILiveFSView(Interface):
         :param metadata_override: An optional JSON string with a dict of
             data about the image; this will be merged into the metadata dict
             for the live filesystem.
+        :param version: A version string for this build; if not set, a
+            version string will be generated from the date and time when the
+            build was requested.
         :return: `ILiveFSBuild`.
         """
 
@@ -198,6 +209,15 @@ class ILiveFSView(Interface):
             "order of creation."),
         # Really ILiveFSBuild, patched in _schema_circular_imports.py.
         value_type=Reference(schema=Interface), readonly=True)))
+
+
+class ILiveFSEdit(Interface):
+    """`ILiveFS` methods that require launchpad.Edit permission."""
+
+    @export_destructor_operation()
+    @operation_for_version("devel")
+    def destroySelf():
+        """Delete this live filesystem, provided that it has no builds."""
 
 
 class ILiveFSEditableAttributes(IHasOwner):
@@ -240,7 +260,9 @@ class ILiveFSAdminAttributes(Interface):
             "Only build this live filesystem image on virtual builders.")))
 
 
-class ILiveFS(ILiveFSView, ILiveFSEditableAttributes, ILiveFSAdminAttributes):
+class ILiveFS(
+    ILiveFSView, ILiveFSEdit, ILiveFSEditableAttributes,
+    ILiveFSAdminAttributes):
     """A buildable live filesystem image."""
 
     # XXX cjwatson 2014-05-06 bug=760849: "beta" is a lie to get WADL

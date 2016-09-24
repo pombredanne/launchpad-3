@@ -24,7 +24,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
@@ -65,10 +65,9 @@ from lp.services.webapp.url import urlappend
 from lp.services.webapp.vhosts import allvhosts
 
 
+@implementer(ICanonicalUrlData)
 class FeedsRootUrlData:
     """`ICanonicalUrlData` for Feeds."""
-
-    implements(ICanonicalUrlData)
 
     path = ''
     inside = None

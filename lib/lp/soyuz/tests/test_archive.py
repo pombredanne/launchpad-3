@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -12,8 +12,10 @@ import doctest
 
 from pytz import UTC
 from testtools.matchers import (
+    AllMatch,
     DocTestMatches,
     LessThan,
+    MatchesPredicate,
     MatchesRegex,
     MatchesStructure,
     )
@@ -29,6 +31,7 @@ from lp.buildmaster.enums import (
     BuildQueueStatus,
     BuildStatus,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
@@ -40,8 +43,13 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import sqlvalues
+from lp.services.features import getFeatureFlag
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.propertycache import clear_property_cache
+from lp.services.propertycache import (
+    clear_property_cache,
+    get_property_cache,
+    )
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
@@ -61,27 +69,30 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import (
     ArchiveDependencyError,
     ArchiveDisabled,
+    ArchiveNotPrivate,
     CannotCopy,
+    CannotModifyArchiveProcessor,
     CannotUploadToPocket,
     CannotUploadToPPA,
     CannotUploadToSeries,
+    DuplicateTokenName,
     IArchiveSet,
     InsufficientUploadRights,
     InvalidPocketForPartnerArchive,
     InvalidPocketForPPA,
+    NAMED_AUTH_TOKEN_FEATURE_FLAG,
+    NamedAuthTokenFeatureDisabled,
     NoRightsForArchive,
     NoRightsForComponent,
     NoSuchPPA,
     RedirectedPocket,
     VersionRequiresName,
     )
-from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.model.archive import (
     Archive,
     validate_ppa,
@@ -102,9 +113,10 @@ from lp.testing import (
     login,
     login_person,
     person_logged_in,
+    StormStatementRecorder,
+    RequestTimelineCollector,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -343,6 +355,78 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         removeSecurityProxy(archive).enable()
         self.assertNoBuildQueuesHaveStatus(archive, BuildQueueStatus.SUSPENDED)
         self.assertTrue(archive.enabled)
+
+    def test_enableArchive_virt_sets_virtualized(self):
+        # Enabling an archive that requires virtualized builds changes all
+        # its pending builds to be virtualized.
+        archive = self.factory.makeArchive(virtualized=False)
+        other_archive = self.factory.makeArchive(virtualized=False)
+        pending_builds = [
+            self.factory.makeBinaryPackageBuild(
+                archive=archive, status=BuildStatus.NEEDSBUILD)
+            for _ in range(2)]
+        completed_build = self.factory.makeBinaryPackageBuild(
+            archive=archive, status=BuildStatus.FULLYBUILT)
+        other_build = self.factory.makeBinaryPackageBuild(
+            archive=other_archive, status=BuildStatus.NEEDSBUILD)
+        for build in pending_builds + [completed_build, other_build]:
+            self.assertFalse(build.virtualized)
+            build.queueBuild()
+            self.assertFalse(build.buildqueue_record.virtualized)
+        removeSecurityProxy(archive).disable()
+        removeSecurityProxy(archive).require_virtualized = True
+        removeSecurityProxy(archive).enable()
+        # Pending builds in the just-enabled archive are now virtualized.
+        for build in pending_builds:
+            self.assertTrue(build.virtualized)
+            self.assertTrue(build.buildqueue_record.virtualized)
+        # Completed builds and builds in other archives are untouched.
+        for build in completed_build, other_build:
+            self.assertFalse(build.virtualized)
+            self.assertFalse(build.buildqueue_record.virtualized)
+
+    def test_enableArchive_nonvirt_sets_virtualized(self):
+        # Enabling an archive that does not require virtualized builds
+        # changes its pending builds to be virtualized or not depending on
+        # whether their processor supports non-virtualized builds.
+        distroseries = self.factory.makeDistroSeries()
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, virtualized=False)
+        other_archive = self.factory.makeArchive(
+            distribution=distroseries.distribution, virtualized=False)
+        procs = [self.factory.makeProcessor() for _ in range(2)]
+        dases = [
+            self.factory.makeDistroArchSeries(
+                distroseries=distroseries, processor=procs[i])
+            for i in range(2)]
+        pending_builds = [
+            self.factory.makeBinaryPackageBuild(
+                distroarchseries=dases[i], archive=archive,
+                status=BuildStatus.NEEDSBUILD, processor=procs[i])
+            for i in range(2)]
+        completed_build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=dases[0], archive=archive,
+            status=BuildStatus.FULLYBUILT, processor=procs[0])
+        other_build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=dases[0], archive=other_archive,
+            status=BuildStatus.NEEDSBUILD, processor=procs[0])
+        for build in pending_builds + [completed_build, other_build]:
+            self.assertFalse(build.virtualized)
+            build.queueBuild()
+            self.assertFalse(build.buildqueue_record.virtualized)
+        removeSecurityProxy(archive).disable()
+        procs[0].supports_nonvirtualized = False
+        removeSecurityProxy(archive).enable()
+        # Pending builds in the just-enabled archive are now virtualized iff
+        # their processor does not support non-virtualized builds.
+        self.assertTrue(pending_builds[0].virtualized)
+        self.assertTrue(pending_builds[0].buildqueue_record.virtualized)
+        self.assertFalse(pending_builds[1].virtualized)
+        self.assertFalse(pending_builds[1].buildqueue_record.virtualized)
+        # Completed builds and builds in other archives are untouched.
+        for build in completed_build, other_build:
+            self.assertFalse(build.virtualized)
+            self.assertFalse(build.buildqueue_record.virtualized)
 
     def test_enableArchiveAlreadyEnabled(self):
         # Enabling an already enabled Archive should raise an AssertionError.
@@ -1002,59 +1086,122 @@ class TestUpdatePackageDownloadCount(TestCaseWithFactory):
         self.assertEqual(3, self.archive.getPackageDownloadTotal(self.bpr_2))
 
 
-class TestEnabledRestrictedBuilds(TestCaseWithFactory):
+class TestProcessors(TestCaseWithFactory):
     """Ensure that restricted architectures builds can be allowed and
     disallowed correctly."""
 
-    layer = LaunchpadZopelessLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Setup an archive with relevant publications."""
-        super(TestEnabledRestrictedBuilds, self).setUp()
+        super(TestProcessors, self).setUp(user='foo.bar@canonical.com')
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
         self.archive = self.factory.makeArchive()
-        self.archive_arch_set = getUtility(IArchiveArchSet)
-        self.arm = self.factory.makeProcessor(name='arm', restricted=True)
+        self.default_procs = [
+            getUtility(IProcessorSet).getByName("386"),
+            getUtility(IProcessorSet).getByName("amd64")]
+        self.unrestricted_procs = (
+            self.default_procs + [getUtility(IProcessorSet).getByName("hppa")])
+        self.arm = self.factory.makeProcessor(
+            name='arm', restricted=True, build_by_default=False)
 
-    def test_default(self):
-        """By default, ARM builds are not allowed as ARM is restricted."""
-        self.assertEqual(0,
-            self.archive_arch_set.getByArchive(
-                self.archive, self.arm).count())
-        self.assertContentEqual([], self.archive.enabled_restricted_processors)
+    def test_new_default_processors(self):
+        # ArchiveSet.new creates an ArchiveArch for each Processor with
+        # build_by_default set.
+        self.factory.makeProcessor(name='default', build_by_default=True)
+        self.factory.makeProcessor(name='nondefault', build_by_default=False)
+        archive = getUtility(IArchiveSet).new(
+            owner=self.factory.makePerson(), purpose=ArchivePurpose.PPA,
+            distribution=self.factory.makeDistribution(), name='ppa')
+        self.assertContentEqual(
+            ['386', 'amd64', 'hppa', 'default'],
+            [processor.name for processor in archive.processors])
 
-    def test_get_uses_archivearch(self):
-        """Adding an entry to ArchiveArch for ARM and an archive will
-        enable enabled_restricted_processors for arm for that archive."""
-        self.assertContentEqual([], self.archive.enabled_restricted_processors)
-        self.archive_arch_set.new(self.archive, self.arm)
-        self.assertEqual(
-            [self.arm], list(self.archive.enabled_restricted_processors))
+    def test_new_override_processors(self):
+        # ArchiveSet.new can be given a custom set of processors.
+        archive = getUtility(IArchiveSet).new(
+            owner=self.factory.makePerson(), purpose=ArchivePurpose.PPA,
+            distribution=self.factory.makeDistribution(), name='ppa',
+            processors=[self.arm])
+        self.assertContentEqual(
+            ['arm'], [processor.name for processor in archive.processors])
 
     def test_get_returns_restricted_only(self):
-        """Adding an entry to ArchiveArch for something that is not
-        restricted does not make it show up in enabled_restricted_processors.
+        """Only restricted processors showup in enabled_restricted_processors.
         """
+        self.assertContentEqual(
+            self.unrestricted_procs, self.archive.processors)
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
-        self.archive_arch_set.new(
-            self.archive, getUtility(IProcessorSet).getByName('amd64'))
-        self.assertContentEqual([], self.archive.enabled_restricted_processors)
+        uproc = self.factory.makeProcessor(
+            restricted=False, build_by_default=True)
+        rproc = self.factory.makeProcessor(
+            restricted=True, build_by_default=False)
+        self.archive.setProcessors([uproc, rproc])
+        self.assertContentEqual([uproc, rproc], self.archive.processors)
+        self.assertContentEqual(
+            [rproc], self.archive.enabled_restricted_processors)
 
     def test_set(self):
-        """The property remembers its value correctly and sets ArchiveArch."""
+        """The property remembers its value correctly."""
+        self.archive.setProcessors([self.arm])
+        self.assertContentEqual([self.arm], self.archive.processors)
+        self.archive.setProcessors(self.unrestricted_procs + [self.arm])
+        self.assertContentEqual(
+            self.unrestricted_procs + [self.arm], self.archive.processors)
+        self.archive.setProcessors([])
+        self.assertContentEqual([], self.archive.processors)
+
+    def test_set_non_admin(self):
+        """Non-admins can only enable or disable unrestricted processors."""
+        self.archive.setProcessors(self.default_procs)
+        self.assertContentEqual(self.default_procs, self.archive.processors)
+        with person_logged_in(self.archive.owner) as owner:
+            # Adding arm is forbidden ...
+            self.assertRaises(
+                CannotModifyArchiveProcessor, self.archive.setProcessors,
+                [self.default_procs[0], self.arm],
+                check_permissions=True, user=owner)
+            # ... but removing amd64 is OK.
+            self.archive.setProcessors(
+                [self.default_procs[0]], check_permissions=True, user=owner)
+            self.assertContentEqual(
+                [self.default_procs[0]], self.archive.processors)
+        with admin_logged_in() as admin:
+            self.archive.setProcessors(
+                [self.default_procs[0], self.arm],
+                check_permissions=True, user=admin)
+            self.assertContentEqual(
+                [self.default_procs[0], self.arm], self.archive.processors)
+        with person_logged_in(self.archive.owner) as owner:
+            hppa = getUtility(IProcessorSet).getByName("hppa")
+            self.assertFalse(hppa.restricted)
+            # Adding hppa while removing arm is forbidden ...
+            self.assertRaises(
+                CannotModifyArchiveProcessor, self.archive.setProcessors,
+                [self.default_procs[0], hppa],
+                check_permissions=True, user=owner)
+            # ... but adding hppa while retaining arm is OK.
+            self.archive.setProcessors(
+                [self.default_procs[0], self.arm, hppa],
+                check_permissions=True, user=owner)
+            self.assertContentEqual(
+                [self.default_procs[0], self.arm, hppa],
+                self.archive.processors)
+
+    def test_set_enabled_restricted_processors(self):
+        """The deprecated enabled_restricted_processors property still works.
+
+        It's like processors, but only including those that are restricted.
+        """
         self.archive.enabled_restricted_processors = [self.arm]
-        allowed_restricted_processors = self.archive_arch_set.getByArchive(
-            self.archive, self.arm)
-        self.assertEqual(1, allowed_restricted_processors.count())
-        self.assertEqual(
-            self.arm, allowed_restricted_processors[0].processor)
-        self.assertEqual(
+        self.assertContentEqual(
+            self.unrestricted_procs + [self.arm], self.archive.processors)
+        self.assertContentEqual(
             [self.arm], self.archive.enabled_restricted_processors)
         self.archive.enabled_restricted_processors = []
-        self.assertEqual(
-            0,
-            self.archive_arch_set.getByArchive(self.archive, self.arm).count())
+        self.assertContentEqual(
+            self.unrestricted_procs, self.archive.processors)
         self.assertContentEqual([], self.archive.enabled_restricted_processors)
 
 
@@ -1108,6 +1255,23 @@ class TestBuilddSecret(TestCaseWithFactory):
             self.assertEqual("really secret", self.archive.buildd_secret)
 
 
+class TestNamedAuthTokenFeatureFlag(TestCaseWithFactory):
+    layer = LaunchpadZopelessLayer
+
+    def test_feature_flag_disabled(self):
+        # With feature flag disabled, we will not create new named auth tokens.
+        private_ppa = self.factory.makeArchive(private=True)
+        with FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u""}):
+            self.assertRaises(NamedAuthTokenFeatureDisabled,
+                              private_ppa.newNamedAuthToken, u"tokenname")
+
+    def test_feature_flag_disabled_by_default(self):
+         # Without a feature flag, we will not create new named auth tokens.
+        private_ppa = self.factory.makeArchive(private=True)
+        self.assertRaises(NamedAuthTokenFeatureDisabled,
+            private_ppa.newNamedAuthToken, u"tokenname")
+
+
 class TestArchiveTokens(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
@@ -1117,19 +1281,159 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.private_ppa = self.factory.makeArchive(owner=owner, private=True)
         self.joe = self.factory.makePerson(name='joe')
         self.private_ppa.newSubscription(self.joe, owner)
+        self.useFixture(FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u"on"}))
 
     def test_getAuthToken_with_no_token(self):
-        token = self.private_ppa.getAuthToken(self.joe)
-        self.assertEqual(token, None)
+        self.assertIsNone(self.private_ppa.getAuthToken(self.joe))
 
     def test_getAuthToken_with_token(self):
         token = self.private_ppa.newAuthToken(self.joe)
+        self.assertIsNone(token.name)
         self.assertEqual(self.private_ppa.getAuthToken(self.joe), token)
 
     def test_getArchiveSubscriptionURL(self):
         url = self.joe.getArchiveSubscriptionURL(self.joe, self.private_ppa)
         token = self.private_ppa.getAuthToken(self.joe)
         self.assertEqual(token.archive_url, url)
+
+    def test_newNamedAuthToken_private_archive(self):
+        res = self.private_ppa.newNamedAuthToken(u"tokenname", as_dict=True)
+        token = self.private_ppa.getNamedAuthToken(u"tokenname")
+        self.assertIsNotNone(token)
+        self.assertIsNone(token.person)
+        self.assertEqual("tokenname", token.name)
+        self.assertIsNotNone(token.token)
+        self.assertEqual(self.private_ppa, token.archive)
+        self.assertIn(
+            "://+%s:%s@" % (token.name, token.token), token.archive_url)
+        self.assertDictEqual(
+            {"token": token.token, "archive_url": token.archive_url},
+            res
+            )
+
+    def test_newNamedAuthToken_public_archive(self):
+        public_ppa = self.factory.makeArchive(private=False)
+        self.assertRaises(ArchiveNotPrivate,
+            public_ppa.newNamedAuthToken, u"tokenname")
+
+    def test_newNamedAuthToken_duplicate_name(self):
+        self.private_ppa.newNamedAuthToken(u"tokenname")
+        self.assertRaises(DuplicateTokenName,
+            self.private_ppa.newNamedAuthToken, u"tokenname")
+
+    def test_newNamedAuthToken_with_custom_secret(self):
+        token = self.private_ppa.newNamedAuthToken(u"tokenname", u"secret")
+        self.assertEqual(u"secret", token.token)
+
+    def test_newNamedAuthTokens_private_archive(self):
+        res = self.private_ppa.newNamedAuthTokens(
+            (u"name1", u"name2"), as_dict=True)
+        tokens = self.private_ppa.getNamedAuthTokens()
+        self.assertDictEqual({tok.name: tok.asDict() for tok in tokens}, res)
+
+    def test_newNamedAuthTokens_public_archive(self):
+        public_ppa = self.factory.makeArchive(private=False)
+        self.assertRaises(ArchiveNotPrivate,
+            public_ppa.newNamedAuthTokens, (u"name1", u"name2"))
+
+    def test_newNamedAuthTokens_duplicate_name(self):
+        self.private_ppa.newNamedAuthToken(u"tok1")
+        res = self.private_ppa.newNamedAuthTokens(
+            (u"tok1", u"tok2", u"tok3"), as_dict=True)
+        tokens = self.private_ppa.getNamedAuthTokens()
+        self.assertDictEqual({tok.name: tok.asDict() for tok in tokens}, res)
+
+    def test_newNamedAuthTokens_idempotent(self):
+        names = (u"name1", u"name2", u"name3", u"name4", u"name5")
+        res1 = self.private_ppa.newNamedAuthTokens(names, as_dict=True)
+        res2 = self.private_ppa.newNamedAuthTokens(names, as_dict=True)
+        self.assertEqual(res1, res2)
+
+    def test_newNamedAuthTokens_query_count(self):
+        # Preload feature flag so it is cached.
+        getFeatureFlag(NAMED_AUTH_TOKEN_FEATURE_FLAG)
+        with StormStatementRecorder() as recorder1:
+            self.private_ppa.newNamedAuthTokens((u"tok1"))
+        with StormStatementRecorder() as recorder2:
+            self.private_ppa.newNamedAuthTokens((u"tok1", u"tok2", u"tok3"))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
+    def test_getNamedAuthToken_with_no_token(self):
+        self.assertRaises(
+            NotFoundError, self.private_ppa.getNamedAuthToken, u"tokenname")
+
+    def test_getNamedAuthToken_with_token(self):
+        res = self.private_ppa.newNamedAuthToken(u"tokenname", as_dict=True)
+        self.assertEqual(
+            self.private_ppa.getNamedAuthToken(u"tokenname", as_dict=True),
+            res)
+
+    def test_revokeNamedAuthToken_with_token(self):
+        token = self.private_ppa.newNamedAuthToken(u"tokenname")
+        self.private_ppa.revokeNamedAuthToken(u"tokenname")
+        self.assertIsNotNone(token.date_deactivated)
+
+    def test_revokeNamedAuthToken_with_no_token(self):
+        self.assertRaises(
+            NotFoundError, self.private_ppa.revokeNamedAuthToken, u"tokenname")
+
+    def test_revokeNamedAuthTokens(self):
+        names = (u"name1", u"name2", u"name3", u"name4", u"name5")
+        tokens = self.private_ppa.newNamedAuthTokens(names)
+        self.assertThat(
+            tokens, AllMatch(MatchesPredicate(
+                lambda x: not x.date_deactivated, '%s is not active.')))
+        self.private_ppa.revokeNamedAuthTokens(names)
+        self.assertThat(
+            tokens, AllMatch(MatchesPredicate(
+                lambda x: x.date_deactivated, '%s is active.')))
+
+    def test_revokeNamedAuthTokens_with_previously_revoked_token(self):
+        names = (u"name1", u"name2", u"name3", u"name4", u"name5")
+        self.private_ppa.newNamedAuthTokens(names)
+        token1 = self.private_ppa.getNamedAuthToken(u"name1")
+        token2 = self.private_ppa.getNamedAuthToken(u"name2")
+
+        # Revoke token1.
+        deactivation_time_1 = datetime.now(UTC) - timedelta(seconds=90)
+        token1.date_deactivated = deactivation_time_1
+
+        # Revoke all tokens, including token1.
+        self.private_ppa.revokeNamedAuthTokens(names)
+
+        # Check that token1.date_deactivated has not changed.
+        self.assertEqual(deactivation_time_1, token1.date_deactivated)
+        self.assertLess(token1.date_deactivated, token2.date_deactivated)
+
+    def test_revokeNamedAuthTokens_idempotent(self):
+        names = (u"name1", u"name2", u"name3", u"name4", u"name5")
+        res1 = self.private_ppa.revokeNamedAuthTokens(names)
+        res2 = self.private_ppa.revokeNamedAuthTokens(names)
+        self.assertEqual(res1, res2)
+
+    def test_getNamedAuthToken_with_revoked_token(self):
+        self.private_ppa.newNamedAuthToken(u"tokenname")
+        self.private_ppa.revokeNamedAuthToken(u"tokenname")
+        self.assertRaises(
+            NotFoundError, self.private_ppa.getNamedAuthToken, u"tokenname")
+
+    def test_getNamedAuthTokens(self):
+        res1 = self.private_ppa.newNamedAuthToken(u"tokenname1", as_dict=True)
+        res2 = self.private_ppa.newNamedAuthToken(u"tokenname2", as_dict=True)
+        self.private_ppa.newNamedAuthToken(u"tokenname3")
+        self.private_ppa.revokeNamedAuthToken(u"tokenname3")
+        self.assertContentEqual(
+            [res1, res2],
+            self.private_ppa.getNamedAuthTokens(as_dict=True))
+
+    def test_getNamedAuthTokens_with_names(self):
+        res1 = self.private_ppa.newNamedAuthToken(u"tokenname1", as_dict=True)
+        res2 = self.private_ppa.newNamedAuthToken(u"tokenname2", as_dict=True)
+        self.private_ppa.newNamedAuthToken(u"tokenname3")
+        self.assertContentEqual(
+            [res1, res2],
+            self.private_ppa.getNamedAuthTokens(
+                (u"tokenname1", u"tokenname2"), as_dict=True))
 
 
 class TestGetBinaryPackageRelease(TestCaseWithFactory):
@@ -1352,26 +1656,29 @@ class TestBuildDebugSymbols(TestCaseWithFactory):
         super(TestBuildDebugSymbols, self).setUp()
         self.archive = self.factory.makeArchive()
 
-    def setBuildDebugSymbols(self, archive, build_debug_symbols):
-        """Helper function."""
-        archive.build_debug_symbols = build_debug_symbols
-
     def test_build_debug_symbols_is_public(self):
         # Anyone can see the attribute.
         login(ANONYMOUS)
         self.assertFalse(self.archive.build_debug_symbols)
 
-    def test_owner_cannot_set_build_debug_symbols(self):
-        # The archive owner cannot set it.
-        login_person(self.archive.owner)
+    def test_non_owner_cannot_set_build_debug_symbols(self):
+        # A non-owner cannot set it.
+        login_person(self.factory.makePerson())
         self.assertRaises(
-            Unauthorized, self.setBuildDebugSymbols, self.archive, True)
+            Unauthorized, setattr, self.archive, "build_debug_symbols", True)
 
-    def test_commercial_admin_can_set_build_debug_symbols(self):
-        # A commercial admin can set it.
+    def test_owner_can_set_build_debug_symbols(self):
+        # The archive owner can set it.
+        login_person(self.archive.owner)
+        self.archive.build_debug_symbols = True
+        self.assertTrue(self.archive.build_debug_symbols)
+
+    def test_commercial_admin_cannot_set_build_debug_symbols(self):
+        # A commercial admin cannot set it.
         with celebrity_logged_in('commercial_admin'):
-            self.setBuildDebugSymbols(self.archive, True)
-            self.assertTrue(self.archive.build_debug_symbols)
+            self.assertRaises(
+                Unauthorized, setattr,
+                self.archive, "build_debug_symbols", True)
 
 
 class TestAddArchiveDependencies(TestCaseWithFactory):
@@ -1446,7 +1753,8 @@ class TestArchiveDependencies(TestCaseWithFactory):
             name='dependency', private=True, owner=p3a.owner)
         with person_logged_in(p3a.owner):
             bpph = self.factory.makeBinaryPackagePublishingHistory(
-                archive=dependency, status=PackagePublishingStatus.PUBLISHED)
+                archive=dependency, status=PackagePublishingStatus.PUBLISHED,
+                pocket=PackagePublishingPocket.RELEASE)
             p3a.addArchiveDependency(dependency,
                 PackagePublishingPocket.RELEASE)
             build = self.factory.makeBinaryPackageBuild(archive=p3a,
@@ -1593,16 +1901,43 @@ class TestFindDepCandidates(TestCaseWithFactory):
         self.assertDep('i386', 'foo-main', [main_bins[0]])
         self.assertDep('i386', 'foo-universe', [universe_bins[0]])
 
+    def test_obeys_dependency_components_with_primary_ancestry(self):
+        # When the dependency component is undefined, only packages
+        # published in a component matching the primary archive ancestry
+        # should be found.
+        primary = self.archive.distribution.main_archive
+        self.publisher.getPubSource(
+            sourcename='something-new', version='1', archive=primary,
+            component='main', status=PackagePublishingStatus.PUBLISHED)
+        main_bins = self.publisher.getPubBinaries(
+            binaryname='foo-main', archive=primary, component='main',
+            status=PackagePublishingStatus.PUBLISHED)
+        universe_bins = self.publisher.getPubBinaries(
+            binaryname='foo-universe', archive=primary,
+            component='universe',
+            status=PackagePublishingStatus.PUBLISHED)
+
+        self.archive.addArchiveDependency(
+            primary, PackagePublishingPocket.RELEASE)
+        self.assertDep('i386', 'foo-main', [main_bins[0]])
+        self.assertDep('i386', 'foo-universe', [])
+
+        self.publisher.getPubSource(
+            sourcename='something-new', version='2', archive=primary,
+            component='universe', status=PackagePublishingStatus.PUBLISHED)
+        self.assertDep('i386', 'foo-main', [main_bins[0]])
+        self.assertDep('i386', 'foo-universe', [universe_bins[0]])
+
 
 class TestOverlays(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def _createDep(self, derived_series, parent_series,
+    def _createDep(self, test_publisher, derived_series, parent_series,
                    parent_distro, component_name=None, pocket=None,
                    overlay=True, arch_tag='i386',
                    publish_base_url=u'http://archive.launchpad.dev/'):
-        # Helper to create a parent/child relationshipi.
+        # Helper to create a parent/child relationship.
         if type(parent_distro) == str:
             depdistro = self.factory.makeDistribution(parent_distro,
                 publish_base_url=publish_base_url)
@@ -1615,10 +1950,14 @@ class TestOverlays(TestCaseWithFactory):
                 distroseries=depseries, architecturetag=arch_tag)
         else:
             depseries = parent_series
+        test_publisher.addFakeChroots(depseries)
         if component_name is not None:
             component = getUtility(IComponentSet)[component_name]
         else:
             component = None
+        for name in ('main', 'restricted', 'universe', 'multiverse'):
+            self.factory.makeComponentSelection(
+                depseries, getUtility(IComponentSet)[name])
 
         self.factory.makeDistroSeriesParent(
             derived_series=derived_series, parent_series=depseries,
@@ -1650,14 +1989,15 @@ class TestOverlays(TestCaseWithFactory):
             version='1.1', archive=breezy.main_archive)
         [build] = pub_source.createMissingBuilds()
         series11, depdistro = self._createDep(
-            breezy, 'series11', 'depdistro', 'universe',
+            test_publisher, breezy, 'series11', 'depdistro', 'universe',
             PackagePublishingPocket.SECURITY)
         self._createDep(
-            breezy, 'series21', 'depdistro2', 'multiverse',
+            test_publisher, breezy, 'series21', 'depdistro2', 'multiverse',
             PackagePublishingPocket.UPDATES)
-        self._createDep(breezy, 'series31', 'depdistro3', overlay=False)
         self._createDep(
-            series11, 'series12', 'depdistro4', 'multiverse',
+            test_publisher, breezy, 'series31', 'depdistro3', overlay=False)
+        self._createDep(
+            test_publisher, series11, 'series12', 'depdistro4', 'multiverse',
             PackagePublishingPocket.UPDATES)
         sources_list = get_sources_list_for_building(build,
             build.distro_arch_series, build.source_package_release.name)
@@ -2186,13 +2526,23 @@ class TestGetPublishedSources(TestCaseWithFactory):
             component_name='universe')
         self.assertEqual('universe', filtered.component.name)
 
+    def test_order_by_date(self):
+        archive = self.factory.makeArchive()
+        dates = [self.factory.getUniqueDate() for _ in range(5)]
+        # Make sure the ID ordering and date ordering don't match so that we
+        # can spot a date-ordered result.
+        pubs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                archive=archive, date_uploaded=dates[(i + 1) % 5])
+            for i in range(5)]
+        self.assertEqual(
+            [pubs[i] for i in (3, 2, 1, 0, 4)],
+            list(archive.getPublishedSources(order_by_date=True)))
 
-class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
+
+class TestGetPublishedSourcesWebService(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(GetPublishedSourcesWebServiceTests, self).setUp()
 
     def createTestingPPA(self):
         """Creates and populates a PPA for API performance tests.
@@ -2207,7 +2557,6 @@ class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
         # XXX cprov 2014-04-22: currently the target archive owner cannot
         # 'addSource' to a `PackageUpload` ('launchpad.Edit'). It seems
         # too restrive to me.
-        from zope.security.proxy import removeSecurityProxy
         with person_logged_in(ppa.owner):
             for i in range(5):
                 upload = self.factory.makePackageUpload(
@@ -2229,7 +2578,7 @@ class GetPublishedSourcesWebServiceTests(TestCaseWithFactory):
         webservice = webservice_for_person(
             ppa.owner, permission=OAuthPermission.READ_PRIVATE)
 
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
 
@@ -2813,6 +3162,19 @@ class TestgetAllPublishedBinaries(TestCaseWithFactory):
             publications,
             [first_publication, middle_publication, later_publication])
 
+    def test_order_by_date(self):
+        archive = self.factory.makeArchive()
+        dates = [self.factory.getUniqueDate() for _ in range(5)]
+        # Make sure the ID ordering and date ordering don't match so that we
+        # can spot a date-ordered result.
+        pubs = [
+            self.factory.makeBinaryPackagePublishingHistory(
+                archive=archive, datecreated=dates[(i + 1) % 5])
+            for i in range(5)]
+        self.assertEqual(
+            [pubs[i] for i in (3, 2, 1, 0, 4)],
+            list(archive.getAllPublishedBinaries(order_by_date=True)))
+
 
 class TestRemovingPermissions(TestCaseWithFactory):
 
@@ -3098,6 +3460,15 @@ class TestArchiveReference(TestCaseWithFactory):
                 archive.owner.name, archive.distribution.name, archive.name),
             archive)
 
+    def test_ppa_alias(self):
+        # ppa:OWNER/DISTRO/ARCHIVE is accepted as a convenience to make it
+        # easier to avoid tilde-expansion in shells.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        reference = 'ppa:%s/%s/%s' % (
+            archive.owner.name, archive.distribution.name, archive.name)
+        self.assertEqual(
+            archive, getUtility(IArchiveSet).getByReference(reference))
+
 
 class TestArchiveSetGetByReference(TestCaseWithFactory):
 
@@ -3286,7 +3657,11 @@ class TestSigningKeyPropagation(TestCaseWithFactory):
             owner=person, purpose=ArchivePurpose.PPA, name="ppa")
         self.assertEqual(ppa, person.archive)
         self.factory.makeGPGKey(person)
-        removeSecurityProxy(person.archive).signing_key = person.gpg_keys[0]
+        key = person.gpg_keys[0]
+        removeSecurityProxy(person.archive).signing_key_owner = key.owner
+        removeSecurityProxy(person.archive).signing_key_fingerprint = (
+            key.fingerprint)
+        del get_property_cache(person.archive).signing_key
         ppa_with_key = self.factory.makeArchive(
             owner=person, purpose=ArchivePurpose.PPA)
         self.assertEqual(person.gpg_keys[0], ppa_with_key.signing_key)
@@ -3295,9 +3670,6 @@ class TestSigningKeyPropagation(TestCaseWithFactory):
 class TestCountersAndSummaries(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
-
-    def assertDictEqual(self, one, two):
-        self.assertContentEqual(one.items(), two.items())
 
     def test_cprov_build_counters_in_sampledata(self):
         cprov_archive = getUtility(IPersonSet).getByName("cprov").archive

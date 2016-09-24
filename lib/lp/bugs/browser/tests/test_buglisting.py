@@ -237,6 +237,32 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         view = create_initialized_view(product, '+bugs')
         self.assertThat(view.render(), HTMLContains(search_form_matches))
 
+    def assertSearchTermRedirects(self, term_format_string, must_redirect):
+        """Search for a bug with 'term_format_string', test if we redirect."""
+        bug = self.factory.makeBug()
+        login_person(bug.owner)
+        default_bugtask_url = canonical_url(
+            bug.default_bugtask, rootsite='bugs')
+
+        browser = self.getUserBrowser("http://bugs.launchpad.dev/")
+        input_field = browser.getControl(name='field.searchtext')
+        input_field.value = term_format_string.format(bug.id)
+        browser.getControl(name='search').click()
+
+        if must_redirect:
+            self.assertEqual(default_bugtask_url, browser.url)
+        else:
+            self.assertNotEqual(default_bugtask_url, browser.url)
+
+    def test_redirects_to_bug_from_search_form(self):
+        self.assertSearchTermRedirects("{}", True)
+
+    def test_redirects_to_bug_from_search_form_with_hash(self):
+        self.assertSearchTermRedirects("#{}", True)
+
+    def test_doesnt_redirect_to_bug_from_search_form_with_multiple_terms(self):
+        self.assertSearchTermRedirects("#{} other terms", False)
+
 
 class BugTargetTestCase(TestCaseWithFactory):
     """Test helpers for setting up `IBugTarget` tests."""

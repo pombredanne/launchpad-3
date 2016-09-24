@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for the Launchpad application.
@@ -9,8 +9,6 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 __all__ = [
-    'IAging',
-    'IHasDateCreated',
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
@@ -56,6 +54,7 @@ class ILaunchpadCelebrities(Interface):
     launchpad = Attribute("The Launchpad project.")
     launchpad_developers = Attribute("The Launchpad development team.")
     obsolete_junk = Attribute("The Obsolete Junk project.")
+    ppa_admin = Attribute("The Launchpad PPA Admins team.")
     ppa_key_guard = Attribute("The PPA signing keys owner.")
     ppa_self_admins = Attribute("The Launchpad PPA Self Admins team.")
     registry_experts = Attribute("The Registry Administrators team.")
@@ -66,12 +65,16 @@ class ILaunchpadCelebrities(Interface):
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
+    ubuntu_sso = Attribute("The Ubuntu One login service.")
     ubuntu_techboard = Attribute("The Ubuntu technical board.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
 
     def isCelebrityPerson(name):
         """Return true if there is an IPerson celebrity with the given name.
         """
+
+    def clearCache():
+        """Clear any cached celebrities."""
 
 
 class IServiceUsage(Interface):
@@ -155,17 +158,6 @@ class IHasMugshot(Interface):
     mugshot = Attribute("The 192x192 mugshot.")
 
 
-class IAging(Interface):
-    """Something that gets older as time passes."""
-
-    def currentApproximateAge():
-        """Return a human-readable string of how old this thing is.
-
-        Values returned are things like '2 minutes', '3 hours',
-        '1 month', etc.
-        """
-
-
 class IPrivacy(Interface):
     """Something that can be private."""
 
@@ -174,12 +166,6 @@ class IPrivacy(Interface):
         required=False,
         description=_(
             "Private objects are visible to members or subscribers."))
-
-
-class IHasDateCreated(Interface):
-    """Something created on a certain date."""
-
-    datecreated = Attribute("The date on which I was created.")
 
 
 class IHeadingContext(Interface):

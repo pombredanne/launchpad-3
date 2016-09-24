@@ -102,7 +102,8 @@
       <p tal:condition="python: info_type == 'Public'"
          tal:content="string:
         Everyone can see ${context/displayname}'s public information. You can
-        choose who can see the private bugs, branches and blueprints.">
+        choose who can see the private bugs, Bazaar branches, Git
+        repositories, and blueprints.">
      </p>
      <p tal:condition="python: info_type != 'Public'"
        tal:content="string: This project has no public information.">

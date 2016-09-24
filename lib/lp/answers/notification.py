@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Notifications for the Answers system."""
@@ -7,8 +7,6 @@ __metaclass__ = type
 __all__ = [
     'QuestionNotification',
     ]
-
-import os
 
 from zope.component import getUtility
 
@@ -19,19 +17,10 @@ from lp.answers.enums import (
 from lp.answers.interfaces.questionjob import IQuestionEmailJobSource
 from lp.registry.interfaces.person import IPerson
 from lp.services.config import config
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.publisher import canonical_url
-
-
-def get_email_template(filename):
-    """Returns the email template with the given file name.
-
-    The templates are located in 'emailtemplates'.
-    """
-    base = os.path.dirname(__file__)
-    fullpath = os.path.join(base, 'emailtemplates', filename)
-    return open(fullpath).read()
 
 
 class QuestionNotification:
@@ -146,10 +135,11 @@ class QuestionNotification:
     def unsupported_language_warning(self):
         """Warning about the fact that the question is written in an
         unsupported language."""
-        return get_email_template(
-                'question-unsupported-language-warning.txt') % {
-                'question_language': self.question.language.englishname,
-                'target_name': self.question.target.displayname}
+        template = get_email_template(
+            'question-unsupported-language-warning.txt', app='answers')
+        return template % {
+            'question_language': self.question.language.englishname,
+            'target_name': self.question.target.displayname}
 
 
 class QuestionAddedNotification(QuestionNotification):
@@ -167,7 +157,9 @@ class QuestionAddedNotification(QuestionNotification):
     def getBody(self):
         """See QuestionNotification."""
         question = self.question
-        body = get_email_template('question-added-notification.txt') % {
+        template = get_email_template(
+            'question-added-notification.txt', app='answers')
+        body = template % {
             'target_name': question.target.displayname,
             'question_id': question.id,
             'question_url': canonical_url(question),
@@ -311,7 +303,8 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
 
         replacements['body'] = body
 
-        return get_email_template(self.body_template) % replacements
+        template = get_email_template(self.body_template, app='answers')
+        return template % replacements
 
     # Header template used when a new message is added to the question.
     action_header_template = {
@@ -349,7 +342,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
 
 
 class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
-    """Notification sent to the owner when his question is modified."""
+    """Notification sent to the owner when their question is modified."""
 
     recipient_set = QuestionRecipientSet.ASKER
     # These actions will be done by the owner, so use the second person.
@@ -407,8 +400,9 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
     def getBody(self):
         """See QuestionNotification."""
         question = self.question
-        return get_email_template(
-                'question-unsupported-languages-added.txt') % {
+        template = get_email_template(
+            'question-unsupported-languages-added.txt', app='answers')
+        return template % {
             'target_name': question.target.displayname,
             'question_id': question.id,
             'question_url': canonical_url(question),

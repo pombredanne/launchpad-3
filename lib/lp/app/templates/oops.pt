@@ -6,8 +6,8 @@
 >
   <head
      tal:define="
-       revno modules/lp.app.versioninfo/revno | string:unknown;
-       icingroot string:/+icing/rev${revno}"
+       revision modules/lp.app.versioninfo/revision | string:unknown;
+       icingroot string:/+icing/rev${revision}"
      >
     <title>Oops!</title>
     <link

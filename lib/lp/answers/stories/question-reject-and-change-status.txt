@@ -4,8 +4,8 @@ Answer contacts and administrators can reject a question.
 This should be done when the question isn't an actual pertinent question
 for the product. For example, if the question is a duplicate or spam.
 
-No Privileges Person isn't an answer contact or administrator, so he
-doesn't have access to that feature.
+No Privileges Person isn't an answer contact or administrator, so they
+don't have access to that feature.
 
     >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
     >>> user_browser.getLink('Reject question')
@@ -13,7 +13,7 @@ doesn't have access to that feature.
       ...
     LinkNotFoundError...
 
-Even when trying to access the page directly, he will get an unauthorized
+Even when trying to access the page directly, they will get an unauthorized
 error.
 
     >>> user_browser.open(
@@ -28,7 +28,7 @@ To reject the question, the user clicks on the 'Reject Question' link.
     >>> admin_browser.getLink('Reject question').click()
     >>> admin_browser.getControl('Reject').click()
 
-He needs to enter a message explaining the rejection:
+They need to enter a message explaining the rejection:
 
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print message.renderContents()
@@ -36,7 +36,7 @@ He needs to enter a message explaining the rejection:
     You must provide an explanation message.
 
 At this point the user might decide this is a bad idea, so there is a
-cancel link to take him back to the question:
+cancel link to take them back to the question:
 
     >>> print admin_browser.getLink('Cancel').url
     http://answers.launchpad.dev/firefox/+question/2

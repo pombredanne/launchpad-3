@@ -15,6 +15,7 @@ from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.tests.mock_slaves import make_publisher
 from lp.services.database.interfaces import IStore
@@ -24,7 +25,6 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     admin_logged_in,
     celebrity_logged_in,

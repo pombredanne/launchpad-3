@@ -91,10 +91,10 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             source_pub = distro_series_difference.source_pub
 
         stp.makeSourcePackageSummaryData(source_pub)
-        stp.updateDistroSeriesPackageCache(source_pub.distroseries)
+        stp.updatePackageCache(source_pub.distroseries)
 
-        # updateDistroSeriesPackageCache reconnects the db, so the
-        # objects need to be reloaded.
+        # updatePackageCache reconnects the db, so the objects need to be
+        # reloaded.
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         ds_diff = dsd_source.getByDistroSeriesNameAndParentSeries(
             distro_series, source_package_name_str, parent_series)
@@ -391,7 +391,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
 
         with person_logged_in(self.factory.makePerson()):
             view = create_initialized_view(
-                ds_diff, '+listing-distroseries-extra')#, principal=user)
+                ds_diff, '+listing-distroseries-extra')  #, principal=user)
             soup = BeautifulSoup(view())
         # Both diffs present simple text repr. of proposed diff.
         self.assertEqual(2, self.number_of_request_diff_texts(soup))

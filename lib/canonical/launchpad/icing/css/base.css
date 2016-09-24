@@ -384,7 +384,7 @@ table.listing tr.thead th {
     }
 
 table.listing tr.category {
-    border-bottom: 1px solid #d2d2d2;
+    border-bottom: 1px solid #999;
     }
 
 table.listing tr.category th,
@@ -425,6 +425,11 @@ table.listing tr.thead th {
 table.listing td {
     border: 1px #d2d2d2;
     border-style: dotted none none none;
+    }
+
+table.listing tr.category:first-child td {
+    border-top-style: none;
+    padding-top: 0;
     }
 
 table.listing .section-break td {

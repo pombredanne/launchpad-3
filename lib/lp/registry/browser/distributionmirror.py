@@ -19,7 +19,7 @@ from datetime import datetime
 
 import pytz
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 from zope.lifecycleevent import ObjectCreatedEvent
 
 from lp import _
@@ -193,13 +193,15 @@ class DistributionMirrorDeleteView(LaunchpadFormView):
         return canonical_url(self.context)
 
 
+@implementer(IDistributionMirrorMenuMarker)
 class DistributionMirrorAddView(LaunchpadFormView):
-
-    implements(IDistributionMirrorMenuMarker)
     schema = IDistributionMirror
-    field_names = ["displayname", "description", "whiteboard", "http_base_url",
-                   "ftp_base_url", "rsync_base_url", "speed", "country",
-                   "content", "official_candidate"]
+    field_names = [
+        "display_name", "description", "whiteboard", "http_base_url",
+        "ftp_base_url", "rsync_base_url", "speed", "country", "content",
+        "official_candidate",
+        ]
+
     @property
     def label(self):
         """See `LaunchpadFormView`."""
@@ -219,7 +221,7 @@ class DistributionMirrorAddView(LaunchpadFormView):
     def create_action(self, action, data):
         mirror = self.context.newMirror(
             owner=self.user, speed=data['speed'], country=data['country'],
-            content=data['content'], displayname=data['displayname'],
+            content=data['content'], display_name=data['display_name'],
             description=data['description'],
             whiteboard=data['whiteboard'],
             http_base_url=data['http_base_url'],
@@ -264,9 +266,12 @@ class DistributionMirrorReviewView(LaunchpadEditFormView):
 class DistributionMirrorEditView(LaunchpadEditFormView):
 
     schema = IDistributionMirror
-    field_names = ["name", "displayname", "description", "whiteboard",
-                   "http_base_url", "ftp_base_url", "rsync_base_url", "speed",
-                   "country", "content", "official_candidate"]
+    field_names = [
+        "name", "display_name", "description", "whiteboard",
+        "http_base_url", "ftp_base_url", "rsync_base_url", "speed",
+        "country", "content", "official_candidate",
+        ]
+
     @property
     def label(self):
         """See `LaunchpadFormView`."""

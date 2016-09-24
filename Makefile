@@ -1,8 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON:=$(shell sed -e \
-    '/RELEASE/!d; s/.*=1[234].*/python2.7/; s/.*=.*/python2.6/' /etc/lsb-release)
+PYTHON:=python2.7
 
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
@@ -35,7 +34,7 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
 CONVOY_ROOT?=/srv/launchpad.dev/convoy
 
-BZR_VERSION_INFO = bzr-version-info.py
+VERSION_INFO = version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
 APIDOC_TMPDIR = $(APIDOC_DIR).tmp/
@@ -54,7 +53,7 @@ BUILDOUT_BIN = \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
     bin/harness bin/iharness bin/ipy bin/jsbuild bin/lpjsmin\
     bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
-    bin/run bin/run-testapp bin/sprite-util bin/start_librarian bin/stxdocs \
+    bin/run bin/run-testapp bin/sprite-util bin/start_librarian \
     bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache \
     bin/watch_jsbuild
 
@@ -73,7 +72,7 @@ newsampledata:
 hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
-$(API_INDEX): $(BZR_VERSION_INFO) $(PY)
+$(API_INDEX): $(VERSION_INFO) $(PY)
 	$(RM) -r $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
@@ -176,7 +175,8 @@ $(YUI_DEFAULT_SYMLINK): $(YUI_BUILDS)
 
 $(LP_JS_BUILD): | $(JS_BUILD_DIR)
 	-mkdir $@
-	for jsdir in lib/lp/*/javascript; do \
+	-mkdir $@/services
+	for jsdir in lib/lp/*/javascript lib/lp/services/*/javascript; do \
 		app=$$(echo $$jsdir | sed -e 's,lib/lp/\(.*\)/javascript,\1,'); \
 		cp -a $$jsdir $@/$$app; \
 	done
@@ -237,7 +237,7 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
 
 $(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 
-compile: $(PY) $(BZR_VERSION_INFO)
+compile: $(PY) $(VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
@@ -294,10 +294,10 @@ start_librarian: compile
 stop_librarian:
 	bin/killservice librarian
 
-$(BZR_VERSION_INFO):
-	scripts/update-bzr-version-info.sh
+$(VERSION_INFO):
+	scripts/update-version-info.sh
 
-support_files: $(API_INDEX) $(BZR_VERSION_INFO)
+support_files: $(API_INDEX) $(VERSION_INFO)
 
 # Intended for use on developer machines
 start: inplace stop support_files initscript-start
@@ -392,7 +392,7 @@ lxc-clean: clean_js clean_mailman clean_buildout clean_logs
 	$(RM) -r $(APIDOC_DIR)
 	$(RM) -r $(APIDOC_DIR).tmp
 	$(RM) -r build
-	$(RM) $(BZR_VERSION_INFO)
+	$(RM) $(VERSION_INFO)
 	$(RM) +config-overrides.zcml
 	$(RM) -r /var/tmp/builddmaster \
 			  /var/tmp/bzrsync \
@@ -418,12 +418,6 @@ clean: lxc-clean
 realclean: clean
 	$(RM) TAGS tags
 
-zcmldocs:
-	mkdir -p doc/zcml/namespaces.zope.org
-	bin/stxdocs \
-	    -f sourcecode/zope/src/zope/app/zcmlfiles/meta.zcml \
-	    -o doc/zcml/namespaces.zope.org
-
 potemplates: launchpad.pot
 
 # Generate launchpad.pot by extracting message ids from the source
@@ -442,10 +436,17 @@ copy-certificates:
 copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
+	set -e; \
+	apachever="$$(dpkg-query -W --showformat='$${Version}' apache2)"; \
+	if dpkg --compare-versions "$$apachever" ge 2.4.1-1~; then \
+		base=local-launchpad.conf; \
+	else \
+		base=local-launchpad; \
+	fi; \
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' \
 		-e 's,%LISTEN_ADDRESS%,$(LISTEN_ADDRESS),' \
 		configs/development/local-launchpad-apache > \
-		/etc/apache2/sites-available/local-launchpad
+		/etc/apache2/sites-available/$$base
 	touch $(CODEHOSTING_ROOT)/rewrite.log
 	chown -R $(SUDO_UID):$(SUDO_GID) $(CODEHOSTING_ROOT)
 	if [ ! -d /srv/launchpad.dev ]; then \
@@ -454,10 +455,11 @@ copy-apache-config:
 	fi
 
 enable-apache-launchpad: copy-apache-config copy-certificates
+	[ ! -e /etc/apache2/mods-available/version.load ] || a2enmod version
 	a2ensite local-launchpad
 
 reload-apache: enable-apache-launchpad
-	/etc/init.d/apache2 restart
+	service apache2 restart
 
 TAGS: compile
 	# emacs tags
@@ -487,4 +489,4 @@ pydoctor:
 	launchpad.pot pagetests pull_branches pydoctor realclean	\
 	reload-apache run run-testapp runner scan_branches schema	\
 	sprite_css sprite_image start stop sync_branches TAGS tags	\
-	test_build test_inplace zcmldocs $(LP_JS_BUILD)
+	test_build test_inplace $(LP_JS_BUILD)

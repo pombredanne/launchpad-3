@@ -3,13 +3,18 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n">
 
+ <tal:comment condition="nothing">
+   The bug-summary macro in
+   lib/lp/code/templates/branchmergeproposal-macros.pt has similar code for
+   Git.
+ </tal:comment>
+
  <div class="bug-branch-summary"
       tal:define="bug_branch context;
                   branch bug_branch/branch;
                   bug bug_branch/bug;
                   show_edit bug_branch/required:launchpad.Edit"
-      tal:condition="branch/required:launchpad.View"
-      tal:attributes="id string:bug-branch-${bug_branch/id}">
+      tal:condition="branch/required:launchpad.View">
 
   <tal:branch-ref replace="structure branch/fmt:link"/>
   <tal:branch-status condition="view/show_branch_status">
@@ -20,9 +25,7 @@
   <a title="Remove link"
      class="bugbranch-delete"
      tal:condition="show_edit"
-     tal:attributes="
-       href string:${branch/fmt:url}/+bug/${bug/id}/+delete;
-       id string:bugbranch-${bug_branch/id}-delete;">
+     tal:attributes="href string:${branch/fmt:url}/+bug/${bug/id}/+delete">
     <img src="/@@/remove" alt="Remove"/>
   </a>
   <div tal:repeat="proposal view/merge_proposals" class="reviews">

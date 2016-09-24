@@ -157,6 +157,12 @@ class BuildFarmJobType(DBEnumeratedType):
         Build a live filesystem from an archive.
         """)
 
+    SNAPBUILD = DBItem(6, """
+        Snap package build
+
+        Build a snap package from a recipe.
+        """)
+
 
 class BuildQueueStatus(DBEnumeratedType):
     """Build queue status.

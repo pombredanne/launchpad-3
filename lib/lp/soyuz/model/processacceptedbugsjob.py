@@ -20,8 +20,8 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 from zope.security.management import getSecurityPolicy
 
@@ -209,20 +209,18 @@ def close_bugs_for_sourcepackagerelease(distroseries, source_release,
         job_source.create(distroseries, source_release, bug_ids_to_close)
 
 
+@implementer(IProcessAcceptedBugsJob)
+# Oddly, BaseRunnableJob inherits from BaseRunnableJobSource so this class
+# is both the factory for jobs (the "implementer", above) and the source for
+# runnable jobs (not the constructor of the job source, the class provides
+# the IJobSource interface itself).
+@provider(IProcessAcceptedBugsJobSource)
 class ProcessAcceptedBugsJob(StormBase, BaseRunnableJob):
     """Base class for jobs to close bugs for accepted package uploads."""
 
     __storm_table__ = "ProcessAcceptedBugsJob"
 
     config = config.IProcessAcceptedBugsJobSource
-
-    implements(IProcessAcceptedBugsJob)
-
-    # Oddly, BaseRunnableJob inherits from BaseRunnableJobSource so this class
-    # is both the factory for jobs (the "implements", above) and the source
-    # for runnable jobs (not the constructor of the job source, the class
-    # provides the IJobSource interface itself).
-    classProvides(IProcessAcceptedBugsJobSource)
 
     # The Job table contains core job details.
     job_id = Int("job", primary=True)

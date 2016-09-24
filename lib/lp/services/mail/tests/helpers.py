@@ -14,6 +14,7 @@ from lp.services.mail.signedmessage import signed_message_from_string
 
 testmails_path = os.path.join(os.path.dirname(__file__), 'emails')
 
+
 def read_test_message(filename):
     """Reads a test message and returns it as ISignedMessage.
 

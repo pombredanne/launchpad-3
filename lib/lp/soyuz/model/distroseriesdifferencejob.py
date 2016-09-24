@@ -10,8 +10,8 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.registry.interfaces.distroseriesdifference import (
@@ -151,11 +151,10 @@ def has_package(distroseries, sourcepackagename):
         sourcepackagename, include_pending=True).is_empty()
 
 
+@implementer(IDistroSeriesDifferenceJob)
+@provider(IDistroSeriesDifferenceJobSource)
 class DistroSeriesDifferenceJob(DistributionJobDerived):
     """A `Job` type for creating/updating `DistroSeriesDifference`s."""
-
-    implements(IDistroSeriesDifferenceJob)
-    classProvides(IDistroSeriesDifferenceJobSource)
 
     class_job_type = DistributionJobType.DISTROSERIESDIFFERENCE
 

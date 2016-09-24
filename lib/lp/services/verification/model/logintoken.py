@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,7 +17,7 @@ from sqlobject import (
     )
 from storm.expr import And
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.app.validators.email import valid_email
@@ -53,8 +53,8 @@ from lp.services.webapp import canonical_url
 MAIL_APP = 'services/verification'
 
 
+@implementer(ILoginToken)
 class LoginToken(SQLBase):
-    implements(ILoginToken)
     _table = 'LoginToken'
 
     redirection_url = StringCol(default=None)
@@ -167,8 +167,8 @@ class LoginToken(SQLBase):
         # Encrypt this part's content if requested.
         if key.can_encrypt:
             gpghandler = getUtility(IGPGHandler)
-            token_text = gpghandler.encryptContent(token_text.encode('utf-8'),
-                                                   key.fingerprint)
+            token_text = gpghandler.encryptContent(
+                token_text.encode('utf-8'), key)
             # In this case, we need to include some clear text instructions
             # for people who do not have an MUA that can decrypt the ASCII
             # armored text.
@@ -180,20 +180,6 @@ class LoginToken(SQLBase):
         from_name = 'Launchpad OpenPGP Key Confirmation'
         subject = 'Launchpad: Confirm your OpenPGP Key'
         self._send_email(from_name, subject, text)
-
-    def sendProfileCreatedEmail(self, profile, comment):
-        """See ILoginToken."""
-        template = get_email_template('profile-created.txt', app=MAIL_APP)
-        replacements = {'token_url': canonical_url(self),
-                        'requester': self.requester.displayname,
-                        'comment': comment,
-                        'profile_url': canonical_url(profile)}
-        message = template % replacements
-
-        headers = {'Reply-To': self.requester.preferredemail.email}
-        from_name = "Launchpad"
-        subject = "Launchpad profile"
-        self._send_email(from_name, subject, message, headers=headers)
 
     def sendMergeRequestEmail(self):
         """See ILoginToken."""
@@ -225,20 +211,6 @@ class LoginToken(SQLBase):
                         'admin_email': config.canonical.admin_address,
                         'token_url': canonical_url(self)}
         message = template % replacements
-        self._send_email(from_name, subject, message)
-
-    def sendClaimProfileEmail(self):
-        """See ILoginToken."""
-        template = get_email_template('claim-profile.txt', app=MAIL_APP)
-        from_name = "Launchpad"
-        profile = getUtility(IPersonSet).getByEmail(self.email)
-        replacements = {'profile_name': (
-                            "%s (%s)" % (profile.displayname, profile.name)),
-                        'email': self.email,
-                        'token_url': canonical_url(self)}
-        message = template % replacements
-
-        subject = "Launchpad: Claim Profile"
         self._send_email(from_name, subject, message)
 
     def sendClaimTeamEmail(self):
@@ -275,11 +247,11 @@ class LoginToken(SQLBase):
         return lpkey, new
 
 
+@implementer(ILoginTokenSet)
 class LoginTokenSet:
-    implements(ILoginTokenSet)
 
     def __init__(self):
-        self.title = 'Launchpad e-mail address confirmation'
+        self.title = 'Launchpad email address confirmation'
 
     def get(self, id, default=None):
         """See ILoginTokenSet."""

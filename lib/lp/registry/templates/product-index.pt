@@ -25,6 +25,9 @@
           });
       </script>
     </tal:uses_launchpad_bugtracker>
+
+    <meta name="go-import" tal:condition="view/golang_import_spec"
+          tal:attributes="content view/golang_import_spec" />
   </tal:head-epilogue>
 </head>
 
@@ -81,9 +84,9 @@
             <h2>Project information</h2>
 
             <div class="two-column-list">
-              <dl id="partof" tal:condition="context/project">
+              <dl id="partof" tal:condition="context/projectgroup">
                 <dt>Part of:</dt>
-                <dd><a tal:replace="structure context/project/fmt:link" /></dd>
+                <dd><a tal:replace="structure context/projectgroup/fmt:link" /></dd>
               </dl>
 
               <dl id="owner" tal:condition="context/owner">
@@ -103,34 +106,11 @@
                 <dt>Driver:</dt>
                 <dd tal:content="structure view/driver_widget" />
               </dl>
+            </div>
 
-              <dl id="dev-focus"
-                  tal:define="dev_focus context/development_focus;
-                              trunk dev_focus/branch;
-                              trunk_visible trunk/required:launchpad.View|nothing">
-                <dt>Development focus:</dt>
-                <dd>
-                  <p>
-                  <a tal:attributes="href dev_focus/fmt:url"
-                     tal:content="string:${dev_focus/name} series" />&nbsp;
-                  <a tal:replace="structure overview_menu/edit/fmt:icon" /></p>
-                  <p tal:condition="trunk_visible">
-                    <a tal:replace="structure trunk/fmt:link" />&nbsp;
-                    <a tal:replace="structure dev_focus/menu:overview/set_branch/fmt:icon" />
-                    <br/>
-                    <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
-                  </p>
-                </dd>
-              </dl>
-
-              <dl id="product-languages"
-                tal:condition="view/show_programming_languages">
-                <dt>Programming Languages:</dt>
-                <dd tal:content="structure view/languages_edit_widget" />
-              </dl>
-
+            <div>
               <dl id="licences">
-                <dt>Licences:</dt>
+                <dt>Licence:</dt>
                 <dd>
                   <tal:licenses repeat="license context/licenses">
                     <tal:license replace="license/title">GPL</tal:license><tal:comma
@@ -180,8 +160,10 @@
               metal:use-macro="context/@@+timeline-macros/timeline-iframe" />
 
             <p id="development-focus">
-              <a tal:replace="structure context/development_focus/fmt:link" />
-              is the current focus of development
+              <a tal:attributes="href context/development_focus/fmt:url"
+                tal:content="string:${context/development_focus/name} series" />
+                is the current focus of development.
+              <a tal:replace="structure overview_menu/edit/fmt:icon" />
             </p>
 
             <ul class="horizontal">
@@ -195,6 +177,10 @@
                   tal:condition="link/enabled">
                 <a tal:replace="structure link/fmt:link" />
               </li>
+              <li tal:define="link context/menu:overview/view_snaps"
+                  tal:condition="link/enabled">
+                <a tal:replace="structure link/fmt:link" />
+              </li>
             </ul>
           </div>
         </div>
@@ -202,25 +188,65 @@
 
       <div class="yui-g">
         <div class="yui-u first">
-          <div tal:content="structure context/@@+portlet-listfaqs"
+          <tal:comment replace="nothing">
+            The Code section could show something if the project had
+            programming languages set or settable, but that field on its
+            own is so boring that it's not sufficient to reveal the
+            section.
+          </tal:comment>
+          <div id="code-info" class="portlet"
+               tal:define="trunk view/code_trunk;
+                           trunk_visible trunk/required:launchpad.View|nothing"
+               tal:condition="python: trunk_visible or context.inferred_vcs">
+            <h2>
+              <span class="see-all"><a
+                tal:attributes="href context/fmt:url:code">
+                All code</a></span>
+              Code
+            </h2>
+
+            <div id="code-trunk"
+                tal:condition="trunk_visible">
+              <p tal:condition="trunk_visible">
+                <a tal:replace="structure trunk/fmt:link" />&nbsp;
+                <a tal:replace="structure context/menu:overview/configure_code/fmt:icon" />
+                <br/>
+                <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
+              </p>
+            </div>
+
+            <div class="two-column-list">
+              <dl id="product-vcs" tal:condition="context/inferred_vcs">
+                <dt>Version control system:</dt>
+                <dd tal:content="context/inferred_vcs/title">Git</dd>
+              </dl>
+
+              <dl id="product-languages"
+                tal:condition="view/show_programming_languages">
+                <dt>Programming languages:</dt>
+                <dd tal:content="structure view/languages_edit_widget" />
+              </dl>
+            </div>
+          </div>
+
+          <div tal:content="structure context/@@+portlet-latestquestions"
             tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
 
-          <div tal:content="structure context/@@+portlet-latestbugs"
-            tal:condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD" />
-
-          <div tal:content="structure context/@@+portlet-top-contributors" />
-
+          <div tal:content="structure context/@@+portlet-listfaqs"
+            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
           <div tal:content="structure context/@@+portlet-packages" />
         </div>
 
         <div class="yui-u">
-          <div tal:content="structure context/@@+portlet-latestquestions"
-            tal:condition="context/answers_usage/enumvalue:LAUNCHPAD" />
+          <div tal:content="structure context/@@+portlet-latestbugs"
+            tal:condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-latestspecs"
             tal:condition="context/blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:content="structure context/@@+portlet-coming-sprints" />
+
+          <div tal:content="structure context/@@+portlet-top-contributors" />
         </div>
         <div class="yui-u">
           <div id="structural-subscription-content-box"></div>

@@ -2,14 +2,14 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
 
 __metaclass__ = type
 
-from email import message_from_string
+from operator import itemgetter
 import os
 import shutil
 
@@ -27,7 +27,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
-from lp.services.mail import stub
 from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
@@ -43,6 +42,7 @@ from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 from lp.soyuz.tests.fakepackager import FakePackager
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing.dbuser import switch_dbuser
+from lp.testing.mail_helpers import pop_notifications
 
 
 class TestPPAUploadProcessorBase(TestUploadProcessorBase):
@@ -64,7 +64,6 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
         self.name16_ppa = self.makeArchive(self.name16)
         # Extra setup for breezy and allowing PPA builds on breezy/i386.
         self.setupBreezy()
-        self.breezy['i386'].supports_virtualized = True
         transaction.commit()
 
         # Set up the uploadprocessor with appropriate options and logger
@@ -74,56 +73,43 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
     def makeArchive(self, owner):
         return self.factory.makeArchive(owner=owner, name='ppa')
 
-    def assertEmail(self, contents=None, recipients=None, ppa_header='name16'):
-        """Check email last upload notification attributes.
+    def assertEmails(self, expected):
+        """Check recent email upload notification attributes.
 
-        :param: contents: can be a list of one or more lines, if passed
-            they will be checked against the lines in Subject + Body.
-        :param: recipients: can be a list of recipients lines, it defaults
-            to 'Foo Bar <foo.bar@canonical.com>' (name16 account) and
-            should match the email To: header content.
-        :param: ppa_header: is the content of the 'X-Launchpad-PPA' header,
-            it defaults to 'name16' and should be explicitly set to None for
-            non-PPA or rejection notifications.
+        :param expected: A list of dicts, each of which represents an
+            expected email and may have "contents", "recipient", and
+            "ppa_header" keys.  All the items in expected must match in the
+            correct order, with none left over.  "contents" is a list of
+            lines; assert that each is in Subject + Body.  "recipient" is
+            the To address the email must have, defaulting to
+            "foo.bar@canonical.com" which is the signer on most of the test
+            data uploads.  "ppa_header" is the content of the
+            "X-Launchpad-PPA" header; it defaults to "name16" and should be
+            explicitly set to None for non-PPA or rejection notifications.
         """
-        if not recipients:
-            recipients = [self.name16_recipient]
+        notifications = self.assertEmailQueueLength(
+            len(expected), sort_key=itemgetter('X-Envelope-To'))
 
-        if not contents:
-            contents = []
+        for item, msg in zip(expected, notifications):
+            recipient = item.get("recipient", self.name16_recipient)
+            contents = item.get("contents", [])
+            ppa_header = item.get("ppa_header", "name16")
 
-        queue_size = len(stub.test_emails)
-        messages = "\n".join(m for f, t, m in stub.test_emails)
-        self.assertEqual(
-            queue_size, 1, 'Unexpected number of emails sent: %s\n%s'
-            % (queue_size, messages))
+            # This is now a non-multipart message.
+            self.assertFalse(msg.is_multipart())
+            body = msg.get_payload(decode=True)
 
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        msg = message_from_string(raw_msg)
+            self.assertEqual(recipient, msg['X-Envelope-To'])
 
-        # This is now a MIMEMultipart message.
-        body = msg.get_payload(0)
-        body = body.get_payload(decode=True)
+            subject = "Subject: %s\n" % msg['Subject']
+            body = subject + body
 
-        clean_recipients = [r.strip() for r in to_addrs]
-        for recipient in list(recipients):
-            self.assertTrue(
-                recipient in clean_recipients,
-                "%s not in %s" % (recipient, clean_recipients))
-        self.assertEqual(
-            len(recipients), len(clean_recipients),
-            "Email recipients do not match exactly. Expected %s, got %s" %
-                (recipients, clean_recipients))
+            for content in list(contents):
+                self.assertIn(content, body)
 
-        subject = "Subject: %s\n" % msg['Subject']
-        body = subject + body
-
-        for content in list(contents):
-            self.assertIn(content, body)
-
-        if ppa_header is not None:
-            self.assertIn('X-Launchpad-PPA', msg.keys())
-            self.assertEqual(msg['X-Launchpad-PPA'], ppa_header)
+            if ppa_header is not None:
+                self.assertIn('X-Launchpad-PPA', msg.keys())
+                self.assertEqual(msg['X-Launchpad-PPA'], ppa_header)
 
     def checkFilesRestrictedInLibrarian(self, queue_item, condition):
         """Check the libraryfilealias restricted flag.
@@ -256,7 +242,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # it's the default PPA.
         contents = [
             "Subject: [~name16/ubuntu/ppa/breezy] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents, ppa_header='name16')
+        self.assertEmails([{"contents": contents, "ppa_header": "name16"}])
 
     def testNamedPPAUploadNonDefault(self):
         """Test PPA uploads to a named PPA."""
@@ -274,7 +260,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # Subject and PPA email-header are specific for this named-ppa.
         contents = [
             "Subject: [~name16/ubuntu/testing/breezy] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents, ppa_header='name16-testing')
+        self.assertEmails(
+            [{"contents": contents, "ppa_header": "name16-testing"}])
 
     def testNamedPPAUploadWithSeries(self):
         """Test PPA uploads to a named PPA location and with a distroseries.
@@ -286,7 +273,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # farty and override to use that.
         self.setupBreezy(name="farty")
         # Allow PPA builds.
-        self.breezy['i386'].supports_virtualized = True
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ppa/ubuntu/farty")
         self.processUpload(self.uploadprocessor, upload_dir)
 
@@ -309,8 +295,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
-        # Consume the test email so the assertion futher down does not fail.
-        _from_addr, _to_addrs, _raw_msg = stub.test_emails.pop()
+        # Consume the test email so the assertion further down does not fail.
+        pop_notifications()
 
         # The SourcePackageRelease still has a component of universe:
         pub_foo = self.name16.archive.getPublishedSources(name=u"bar").one()
@@ -329,8 +315,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.build_uploadprocessor, upload_dir, build=build)
 
         # No mails are sent for successful binary uploads.
-        self.assertEqual(len(stub.test_emails), 0,
-                         "Unexpected email generated on binary upload.")
+        self.assertEmailQueueLength(0)
 
         # Publish the binary.
         [queue_item] = self.breezy.getPackageUploads(
@@ -449,7 +434,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         # name16 is Foo Bar, who signed the upload.  The package that was
         # uploaded also contains two other valid (in sampledata) email
         # addresses for maintainer and changed-by which must be ignored.
-        self.assertEmail()
+        self.assertEmails([{}])
 
     def testUploadSendsEmailToPeopleInArchivePermissions(self):
         """PPA uploads result in notifications to ArchivePermission uploaders.
@@ -476,17 +461,17 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~cprov/ppa/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        name12_email = "%s <%s>" % (
-            name12.displayname, name12.preferredemail.email)
-        team_email = "%s <%s>" % (team.displayname, team.preferredemail.email)
-
         # We expect the recipients to be:
-        #  - the package signer (name15),
+        #  - the package signer (name16),
         #  - the team in the extra permissions,
         #  - name12 who is in the extra permissions.
         expected_recipients = (
-            self.name16_recipient, name12_email, team_email)
-        self.assertEmail(ppa_header="cprov", recipients=expected_recipients)
+            self.name16_recipient,
+            team.preferredemail.email,
+            name12.preferredemail.email)
+        self.assertEmails([
+            {"ppa_header": "cprov", "recipient": expected_recipient}
+            for expected_recipient in sorted(expected_recipients)])
 
     def testPPADistroSeriesOverrides(self):
         """It's possible to override target distroseries of PPA uploads.
@@ -767,7 +752,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
 
         # Remove breezy/i386 PPA support.
         self.switchToAdmin()
-        self.breezy['i386'].supports_virtualized = False
+        self.breezy['i386'].processor.supports_virtualized = False
         self.switchToUploader()
 
         # Next version can't be accepted because it can't be built.
@@ -807,17 +792,15 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
                  'previous error.'], rejection_message.splitlines())
 
         contents = [
-            "Subject: [~cprov/ubuntu/ppa] bar_1.0-1_source.changes rejected",
+            "Subject: [~cprov/ubuntu/ppa] bar_1.0-1_source.changes (Rejected)",
             "Could not find person or team named 'boing'",
             "https://help.launchpad.net/Packaging/PPA/Uploading",
             "If you don't understand why your files were rejected please "
                 "send an email",
             ("to %s for help (requires membership)."
              % config.launchpad.users_address),
-            "You are receiving this email because you are the uploader "
-                "of the above",
-            "PPA package."]
-        self.assertEmail(contents, ppa_header=None)
+            "You are receiving this email because you made this upload."]
+        self.assertEmails([{"contents": contents, "ppa_header": None}])
 
 
 class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
@@ -861,9 +844,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Please note: this upload goes to the Ubuntu main archive.
         upload_dir = self.queueUpload("bar_1.0-10")
         self.processUpload(self.uploadprocessor, upload_dir)
-        # Discard the announcement email and check the acceptance message
-        # content.
-        stub.test_emails.pop()
+        pop_notifications()
 
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.queue_root.status,
@@ -1002,11 +983,10 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             u'Files specified in DSC are broken or missing, skipping package '
             u'unpack verification.')
 
-        # Also, the email generated should be sane.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        msg = message_from_string(raw_msg)
-        body = msg.get_payload(0)
-        body = body.get_payload(decode=True)
+        # Also, the email generated should be sane.  Any of the multiple
+        # notifications will do.
+        msg = pop_notifications()[-1]
+        body = msg.get_payload(decode=True)
 
         self.assertTrue(
             "File bar_1.0.orig.tar.gz already exists in unicode PPA name: "
@@ -1027,10 +1007,8 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         # The email generated should be sane.
-        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        msg = message_from_string(raw_msg)
-        body = msg.get_payload(0)
-        body = body.get_payload(decode=True)
+        [msg] = pop_notifications()
+        body = msg.get_payload(decode=True)
 
         self.assertTrue(
             "Rejected:\n"
@@ -1161,7 +1139,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         queue_item.setAccepted()
         queue_item.realiseUpload()
         transaction.commit()
-        stub.test_emails.pop()
+        pop_notifications()
 
         # Now upload a 3.0 (quilt) source with missing orig*.tar.* to a
         # PPA. All of the missing files will be retrieved from the
@@ -1176,7 +1154,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
 
         self.assertEqual(queue_item.status, PackageUploadStatus.DONE)
         self.assertEqual(
-            len(queue_item.sources[0].sourcepackagerelease.files), 5)
+            len(queue_item.sources[0].sourcepackagerelease.files), 7)
 
 
 class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
@@ -1231,12 +1209,13 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         # An email communicating the rejection and the reason why it was
         # rejected is sent to the uploaders.
         contents = [
-            "Subject: [~name16/ubuntu/ppa] bar_1.0-1_source.changes rejected",
+            "Subject: [~name16/ubuntu/ppa] bar_1.0-1_source.changes "
+            "(Rejected)",
             "Rejected:",
             "PPA exceeded its size limit (2048.00 of 2048.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
             "if you need more space."]
-        self.assertEmail(contents)
+        self.assertEmails([{"contents": contents}])
 
     def testPPASizeNoQuota(self):
         self.name16.archive.authorized_size = None
@@ -1244,7 +1223,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
         contents = [
             "Subject: [~name16/ubuntu/ppa/breezy] bar 1.0-1 (Accepted)"]
-        self.assertEmail(contents)
+        self.assertEmails([{"contents": contents}])
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
@@ -1268,7 +1247,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
             "PPA exceeded 95 % of its size limit (2000.00 of 2048.00 MiB). "
             "Ask a question in https://answers.launchpad.net/soyuz/ "
             "if you need more space."]
-        self.assertEmail(contents)
+        self.assertEmails([{"contents": contents}])
 
         # User was warned about quota limits but the source was accepted
         # as informed in the upload notification.

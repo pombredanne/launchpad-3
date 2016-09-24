@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Error logging facilities."""
@@ -18,14 +18,13 @@ from lazr.restful.utils import (
 import oops.createhooks
 import oops_amqp
 from oops_datedir_repo import DateDirRepo
-import oops_datedir_repo.serializer
 import oops_timeline
 import pytz
 from zope.component.interfaces import ObjectEvent
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.exceptions.exceptionformatter import format_exception
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
@@ -39,7 +38,6 @@ from lp.services.webapp.adapter import (
     soft_timeout_expired,
     )
 from lp.services.webapp.interfaces import (
-    IErrorReport,
     IErrorReportEvent,
     IErrorReportRequest,
     IUnloggedException,
@@ -82,43 +80,9 @@ def _is_sensitive(request, name):
     return True
 
 
+@implementer(IErrorReportEvent)
 class ErrorReportEvent(ObjectEvent):
     """A new error report has been created."""
-    implements(IErrorReportEvent)
-
-
-class ErrorReport:
-    implements(IErrorReport)
-
-    def __init__(self, id, type, value, time, tb_text, username,
-                 url, duration, req_vars, timeline, informational=None,
-                 branch_nick=None, revno=None, topic=None, reporter=None):
-        self.id = id
-        self.type = type
-        self.value = value
-        self.time = time
-        self.topic = topic
-        if reporter is not None:
-            self.reporter = reporter
-        self.tb_text = tb_text
-        self.username = username
-        self.url = url
-        self.duration = duration
-        # informational is ignored - will be going from the oops module
-        # soon too.
-        self.req_vars = req_vars
-        self.timeline = timeline
-        self.branch_nick = branch_nick or versioninfo.branch_nick
-        self.revno = revno or versioninfo.revno
-
-    def __repr__(self):
-        return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
-
-    @classmethod
-    def read(cls, fp):
-        # Deprecated: use the oops module directly now, when possible.
-        report = oops_datedir_repo.serializer.read(fp)
-        return cls(**report)
 
 
 def notify_publisher(report):
@@ -289,8 +253,8 @@ def _get_type(report):
     return report.get('type', 'No exception type')
 
 
+@implementer(IErrorReportingUtility)
 class ErrorReportingUtility:
-    implements(IErrorReportingUtility)
 
     _ignored_exceptions = set(['TranslationUnavailable', 'NoReferrerError'])
     _ignored_exceptions_for_offsite_referer = set([
@@ -318,7 +282,9 @@ class ErrorReportingUtility:
         # What do we want in our reports?
         # Constants:
         self._oops_config.template['branch_nick'] = versioninfo.branch_nick
-        self._oops_config.template['revno'] = versioninfo.revno
+        # XXX cjwatson 2016-09-14: This should really be 'revision', but
+        # that requires coordination with python-oops-tools.
+        self._oops_config.template['revno'] = versioninfo.revision
         reporter = config[self._default_config_section].oops_prefix
         if section_name != self._default_config_section:
             reporter = '%s-%s' % (reporter, section_name)
@@ -378,6 +344,9 @@ class ErrorReportingUtility:
         #  - have a missing or offset REFERER header with a type listed in
         #    self._ignored_exceptions_for_offsite_referer
         self._oops_config.filters.append(self._filter_bad_urls_by_referer)
+        #  - look like a deliberate DB outage, to cut down fastdowntime
+        #    noise.
+        self._oops_config.filters.append(self._filter_deliberate_db_outages)
 
     @property
     def oops_prefix(self):
@@ -425,6 +394,17 @@ class ErrorReportingUtility:
                     return True
         return False
 
+    def _filter_deliberate_db_outages(self, report):
+        if _get_type(report) == 'DisconnectionError':
+            message = report.get('value', '')
+            for ok in (
+                    "database does not allow connections",
+                    "pgbouncer database is disabled"):
+                if (message.startswith(ok)
+                        or message.startswith("ERROR:  " + ok)):
+                    return True
+        return False
+
     def _attach_messages(self, report, context):
         """merges self._oops_messages into the report req_vars variable."""
         # XXX AaronBentley 2009-11-26 bug=488950: There should be separate
@@ -469,8 +449,8 @@ class ErrorReportingUtility:
 globalErrorUtility = ErrorReportingUtility()
 
 
+@implementer(IErrorReportRequest)
 class ErrorReportRequest:
-    implements(IErrorReportRequest)
 
     oopsid = None
 

@@ -27,8 +27,8 @@ that exists externally in a variety of version control systems.
 
 The user can see instructions to push a branch.
 
-    >>> instructions = find_tag_by_id(content, 'push-instructions')
-    >>> 'bzr push lp:~' in str(instructions)
+    >>> instructions = find_tag_by_id(content, 'push-instructions-bzr')
+    >>> 'bzr push lp:' in str(instructions)
     True
 
 
@@ -161,8 +161,8 @@ A correct URL is accepted.
     blazer-branch
     >>> series.branch.registrant.name == driver.name
     True
-    
-External imports can not use an Launchpad URL.
+
+External Bazaar imports can not use an Launchpad URL.
 
     >>> form['field.repo_url'] = 'http://bazaar.launchpad.net/firefox/foo'
     >>> form['field.branch_name'] = 'chevette-branch'
@@ -171,9 +171,26 @@ External imports can not use an Launchpad URL.
     >>> transaction.commit()
     >>> for error in view.errors:
     ...     print error
-    You can not create imports for branches that are hosted by Launchpad.
+    You cannot create imports for Bazaar branches that are hosted by
+    Launchpad.
 
-Git branches cannnot use svn.
+Git imports can use a Launchpad URL.
+
+    >>> form['field.repo_url'] = 'https://git.launchpad.net/blazer'
+    >>> form['field.rcs_type'] = 'GIT'
+    >>> form['field.branch_name'] = 'blazer-git-branch'
+    >>> view = create_initialized_view(
+    ...     series, name='+setbranch', principal=driver, form=form)
+    >>> transaction.commit()
+    >>> for error in view.errors:
+    ...     print error
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    Code import created and branch linked to the series.
+    >>> print series.branch.name
+    blazer-git-branch
+
+Git branches cannot use svn.
 
     >>> form = {
     ...     'field.branch_type': 'import-external',

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test publish-ftpmaster cron script."""
@@ -8,10 +8,13 @@ __metaclass__ = type
 import logging
 import os
 from textwrap import dedent
+import time
 
 from apt_pkg import TagFile
 from testtools.matchers import (
     MatchesStructure,
+    Not,
+    PathExists,
     StartsWith,
     )
 from zope.component import getUtility
@@ -24,6 +27,7 @@ from lp.archivepublisher.scripts.publish_ftpmaster import (
     compose_shell_boolean,
     find_run_parts_dir,
     get_working_dists,
+    newer_mtime,
     PublishFTPMaster,
     shell_quote,
     )
@@ -38,6 +42,7 @@ from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
     )
+from lp.services.osutils import write_file
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.utils import file_exists
 from lp.soyuz.enums import (
@@ -94,10 +99,9 @@ def write_marker_file(path, contents):
     :param path: A list of path components.
     :param contents: Text to write into the file.
     """
-    marker = file(os.path.join(*path), "w")
-    marker.write(contents)
-    marker.flush()
-    marker.close()
+    with open(os.path.join(*path), "w") as marker:
+        marker.write(contents)
+        marker.flush()
 
 
 def read_marker_file(path):
@@ -105,7 +109,8 @@ def read_marker_file(path):
 
     :param return: Contents of the marker file.
     """
-    return file(os.path.join(*path)).read()
+    with open(os.path.join(*path)) as marker:
+        return marker.read()
 
 
 def get_a_suite(distroseries):
@@ -208,6 +213,46 @@ class TestPublishFTPMasterHelpers(TestCase):
         self.assertEqual("no", compose_shell_boolean(False))
 
 
+class TestNewerMtime(TestCase):
+
+    def setUp(self):
+        super(TestCase, self).setUp()
+        tempdir = self.useTempDir()
+        self.a = os.path.join(tempdir, "a")
+        self.b = os.path.join(tempdir, "b")
+
+    def test_both_missing(self):
+        self.assertFalse(newer_mtime(self.a, self.b))
+
+    def test_one_missing(self):
+        write_file(self.b, "")
+        self.assertFalse(newer_mtime(self.a, self.b))
+
+    def test_other_missing(self):
+        write_file(self.a, "")
+        self.assertTrue(newer_mtime(self.a, self.b))
+
+    def test_older(self):
+        write_file(self.a, "")
+        os.utime(self.a, (0, 0))
+        write_file(self.b, "")
+        self.assertFalse(newer_mtime(self.a, self.b))
+
+    def test_equal(self):
+        now = time.time()
+        write_file(self.a, "")
+        os.utime(self.a, (now, now))
+        write_file(self.b, "")
+        os.utime(self.b, (now, now))
+        self.assertFalse(newer_mtime(self.a, self.b))
+
+    def test_newer(self):
+        write_file(self.a, "")
+        write_file(self.b, "")
+        os.utime(self.b, (0, 0))
+        self.assertTrue(newer_mtime(self.a, self.b))
+
+
 class TestFindRunPartsDir(TestCaseWithFactory, HelpersMixin):
     layer = ZopelessDatabaseLayer
 
@@ -275,7 +320,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script_file = file(script_path, "w")
         script_file.write(script_code)
         script_file.close()
-        os.chmod(script_path, 0755)
+        os.chmod(script_path, 0o755)
 
     def test_script_runs_successfully(self):
         self.prepareUbuntu()
@@ -796,6 +841,155 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
                 "Did not find expected marker for %s."
                 % archive.purpose.title)
 
+    def test_updateStagedFilesForSuite_installs_changed(self):
+        distro = self.makeDistroWithPublishDirectory()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        archive_config = getPubConfig(distro.main_archive)
+        contents_filename = "Contents-%s" % das.architecturetag
+        backup_suite = os.path.join(
+            archive_config.archiveroot + "-distscopy", "dists",
+            distroseries.name)
+        os.makedirs(backup_suite)
+        write_marker_file(
+            [backup_suite, "%s.gz" % contents_filename], "Old Contents")
+        os.utime(
+            os.path.join(backup_suite, "%s.gz" % contents_filename), (0, 0))
+        staging_suite = os.path.join(
+            archive_config.stagingroot, distroseries.name)
+        os.makedirs(staging_suite)
+        write_marker_file(
+            [staging_suite, "%s.gz" % contents_filename], "Contents")
+        self.assertTrue(script.updateStagedFilesForSuite(
+            archive_config, distroseries.name))
+        self.assertEqual(
+            "Contents",
+            read_marker_file([backup_suite, "%s.gz" % contents_filename]))
+        self.assertThat(
+            os.path.join(staging_suite, "%s.gz" % contents_filename),
+            Not(PathExists()))
+
+    def test_updateStagedFilesForSuite_installs_changed_dep11(self):
+        # updateStagedFilesForSuite installs changed files other than
+        # Contents files, such as DEP-11 metadata.
+        distro = self.makeDistroWithPublishDirectory()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        archive_config = getPubConfig(distro.main_archive)
+        backup_dep11 = os.path.join(
+            archive_config.archiveroot + "-distscopy", "dists",
+            distroseries.name, "main", "dep11")
+        os.makedirs(backup_dep11)
+        write_marker_file([backup_dep11, "a"], "Old A")
+        os.utime(os.path.join(backup_dep11, "a"), (0, 0))
+        staging_dep11 = os.path.join(
+            archive_config.stagingroot, distroseries.name, "main", "dep11")
+        os.makedirs(os.path.join(staging_dep11, "subdir"))
+        write_marker_file([staging_dep11, "a"], "A")
+        write_marker_file([staging_dep11, "subdir", "b"], "B")
+        self.assertTrue(script.updateStagedFilesForSuite(
+            archive_config, distroseries.name))
+        self.assertEqual("A", read_marker_file([backup_dep11, "a"]))
+        self.assertEqual("B", read_marker_file([backup_dep11, "subdir", "b"]))
+        self.assertThat(os.path.join(staging_dep11, "a"), Not(PathExists()))
+        self.assertThat(
+            os.path.join(staging_dep11, "subdir", "b"), Not(PathExists()))
+
+    def test_updateStagedFilesForSuite_twice(self):
+        # If updateStagedFilesForSuite is run twice in a row, it does not
+        # update the files the second time.
+        distro = self.makeDistroWithPublishDirectory()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        archive_config = getPubConfig(distro.main_archive)
+        contents_filename = "Contents-%s" % das.architecturetag
+        backup_suite = os.path.join(
+            archive_config.archiveroot + "-distscopy", "dists",
+            distroseries.name)
+        os.makedirs(backup_suite)
+        staging_suite = os.path.join(
+            archive_config.stagingroot, distroseries.name)
+        os.makedirs(staging_suite)
+        write_marker_file(
+            [staging_suite, "%s.gz" % contents_filename], "Contents")
+        self.assertTrue(script.updateStagedFilesForSuite(
+            archive_config, distroseries.name))
+        self.assertFalse(script.updateStagedFilesForSuite(
+            archive_config, distroseries.name))
+
+    def test_updateStagedFiles_updated_suites(self):
+        # updateStagedFiles returns a list of suites for which it updated
+        # staged files.
+        distro = self.makeDistroWithPublishDirectory()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        archive_config = getPubConfig(distro.main_archive)
+        contents_filename = "Contents-%s" % das.architecturetag
+        backup_suite = os.path.join(
+            archive_config.archiveroot + "-distscopy", "dists",
+            distroseries.name)
+        os.makedirs(backup_suite)
+        staging_suite = os.path.join(
+            archive_config.stagingroot, distroseries.name)
+        os.makedirs(staging_suite)
+        write_marker_file(
+            [staging_suite, "%s.gz" % contents_filename], "Contents")
+        self.assertEqual(
+            [(distro.main_archive, distroseries.name)],
+            script.updateStagedFiles(distro))
+
+    def test_updateStagedFiles_considers_partner_archive(self):
+        # updateStagedFiles considers the partner archive as well as the
+        # primary archive.
+        distro = self.makeDistroWithPublishDirectory()
+        self.factory.makeArchive(
+            distribution=distro, owner=distro.owner,
+            purpose=ArchivePurpose.PARTNER)
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.DEVELOPMENT)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        script.updateStagedFilesForSuite = FakeMethod()
+        script.updateStagedFiles(distro)
+        expected_args = []
+        for purpose in ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER:
+            expected_args.extend([
+                (script.configs[distro][purpose],
+                 distroseries.getSuite(pocket))
+                for pocket in PackagePublishingPocket.items])
+        self.assertEqual(
+            expected_args, script.updateStagedFilesForSuite.extract_args())
+
+    def test_updateStagedFiles_skips_immutable_suites(self):
+        # updateStagedFiles does not update files for immutable suites.
+        distro = self.makeDistroWithPublishDirectory()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.CURRENT)
+        script = self.makeScript(distro)
+        script.setUp()
+        script.setUpDirs()
+        script.updateStagedFilesForSuite = FakeMethod()
+        script.updateStagedFiles(distro)
+        expected_args = [
+            (script.configs[distro][ArchivePurpose.PRIMARY],
+             distroseries.getSuite(pocket))
+            for pocket in PackagePublishingPocket.items
+            if pocket != PackagePublishingPocket.RELEASE]
+        self.assertEqual(
+            expected_args, script.updateStagedFilesForSuite.extract_args())
+
     def test_publish_always_returns_true_for_primary(self):
         script = self.makeScript()
         script.publishDistroUploads = FakeMethod()
@@ -1115,5 +1309,5 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         self.assertEqual([], script.listSuitesNeedingIndexes(series))
         sources = os.path.join(
             getPubConfig(series.main_archive).distsroot,
-            series.name, "main", "source", "Sources")
+            series.name, "main", "source", "Sources.gz")
         self.assertTrue(file_exists(sources))

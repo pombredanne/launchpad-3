@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -16,6 +16,8 @@ __all__ = [
 
 import datetime
 
+from zope.security.proxy import removeSecurityProxy
+
 from lp.bugs.adapters.bugchange import (
     BugDuplicateChange,
     BugTaskAssigneeChange,
@@ -28,9 +30,9 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.bugs.model.bug import get_also_notified_subscribers
 from lp.registry.interfaces.person import IPerson
+from lp.registry.model.person import get_recipients
 from lp.services.config import config
 from lp.services.database.sqlbase import block_implicit_flushes
-from lp.services.mail.helpers import get_contact_email_addresses
 from lp.services.mail.sendmail import (
     format_address,
     sendmail,
@@ -203,11 +205,11 @@ def send_bug_details_to_new_bug_subscribers(
             and not event_creator.selfgenerated_bugnotifications):
         new_subs.discard(event_creator)
 
-    to_addrs = set()
+    to_persons = set()
     for new_sub in new_subs:
-        to_addrs.update(get_contact_email_addresses(new_sub))
+        to_persons.update(get_recipients(new_sub))
 
-    if not to_addrs:
+    if not to_persons:
         return False
 
     from_addr = format_address(
@@ -225,13 +227,14 @@ def send_bug_details_to_new_bug_subscribers(
     recipients = bug.getBugNotificationRecipients()
 
     bug_notification_builder = BugNotificationBuilder(bug, event_creator)
-    for to_addr in sorted(to_addrs):
-        reason, rationale = recipients.getReason(to_addr)
+    for to_person in sorted(to_persons):
+        reason, rationale = recipients.getReason(
+            str(removeSecurityProxy(to_person).preferredemail.email))
         subject, contents = generate_bug_add_email(
             bug, new_recipients=True, subscribed_by=subscribed_by,
             reason=reason, event_creator=event_creator)
         msg = bug_notification_builder.build(
-            from_addr, to_addr, contents, subject, email_date,
+            from_addr, to_person, contents, subject, email_date,
             rationale=rationale, references=references)
         sendmail(msg)
 

@@ -30,7 +30,7 @@ from storm.locals import (
     Reference,
     )
 import transaction
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
@@ -57,10 +57,9 @@ class InvalidTransition(Exception):
             (current_status, requested_status))
 
 
+@implementer(IJob)
 class Job(SQLBase):
     """See `IJob`."""
-
-    implements(IJob)
 
     @property
     def job_id(self):
@@ -103,8 +102,8 @@ class Job(SQLBase):
              JobStatus.FAILED,
              JobStatus.SUSPENDED,
              JobStatus.WAITING),
-        JobStatus.FAILED: (),
-        JobStatus.COMPLETED: (),
+        JobStatus.FAILED: (JobStatus.WAITING,),
+        JobStatus.COMPLETED: (JobStatus.WAITING,),
         JobStatus.SUSPENDED:
             (JobStatus.WAITING,),
         }
@@ -130,7 +129,11 @@ class Job(SQLBase):
     @property
     def is_runnable(self):
         """See `IJob`."""
-        return self.status == JobStatus.WAITING
+        if self.status != JobStatus.WAITING:
+            return False
+        if self.scheduled_start is None:
+            return True
+        return self.scheduled_start <= datetime.datetime.now(UTC)
 
     @classmethod
     def createMultiple(self, store, num_jobs, requester=None):
@@ -200,7 +203,8 @@ class Job(SQLBase):
                 transaction.abort()
             # Commit the transaction to update the DB time.
             transaction.commit()
-        self._set_status(JobStatus.WAITING)
+        if self.status != JobStatus.WAITING:
+            self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
         if add_commit_hook is not None:
             add_commit_hook()
@@ -275,7 +279,7 @@ class UniversalJobSource:
         # This method can be called with two distinct types of Jobs:
         # - Jobs that are backed by a DB table with a foreign key onto Job.
         # - Jobs that have no backing, and are only represented by a row in
-        #   the Job table, but the class name we are given is the abstract 
+        #   the Job table, but the class name we are given is the abstract
         #   job class.
         # If there is no __storm_table__, it is the second type, and we have
         # to look it up via the Job table.

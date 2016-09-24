@@ -5,7 +5,7 @@
 
 from lazr.restful.interfaces._rest import IHTTPResource
 from zope.component import getUtility
-from zope.interface.declarations import implements
+from zope.interface import implementer
 from zope.publisher.interfaces import NotFound
 
 from lp.app.interfaces.services import (
@@ -26,8 +26,8 @@ class IFakeService(IService):
     """Fake service interface."""
 
 
+@implementer(IFakeService, IHTTPResource)
 class FakeService:
-    implements(IFakeService, IHTTPResource)
 
     name = 'fake_service'
 

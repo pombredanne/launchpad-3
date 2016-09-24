@@ -39,8 +39,9 @@ share their name namespace are Product, ProjectGroup and Distribution.
     ...
     NotFoundError: 'fnord'
 
-Inactive products/projects are not available through PillarNameSet unless we
-use the special getByName() method which returns active/inactive pillars..
+Inactive projects/project groups are not available through PillarNameSet
+unless we use the special getByName() method which returns active/inactive
+pillars.
 
     >>> 'gimp' in pillar_set
     True
@@ -139,7 +140,7 @@ aliases, in the same way that it can't be retrieved through its name.
 Setting the aliases of a pillar is an operation that requires launchpad.Admin
 rights on the pillar.
 
-Sample Person has edit rights on firefox, but he'd need admin rights
+Sample Person has edit rights on firefox, but they'd need admin rights
 to be able to set its aliases.
 
     >>> login('test@canonical.com')
@@ -180,51 +181,64 @@ And the same is true for Colin Watson on the Guadalinex distribution.
 
 We can also use PillarNameSet to do a search across some of our pillars.
 Right now this search is done across Products, ProjectGroups and
-Distributions. Products are decorated with ProductWithLicenses to cache the
-licenses that were retrieved in PillarSet.search() to reduce the number of
-queries.
+Distributions.
 
-    >>> for row in pillar_set.search('mozilla', limit=3):
+    >>> for row in pillar_set.search(
+    ...         getUtility(ILaunchBag).user, 'mozilla', limit=3):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
     ProjectGroup: The Mozilla Project (mozilla)
-    ProductWithLicenses: Mozilla Firefox (firefox)
-    ProductWithLicenses: Mozilla Thunderbird (thunderbird)
+    Product: Mozilla Firefox (firefox)
+    Product: Mozilla Thunderbird (thunderbird)
 
-    >>> for row in pillar_set.search('ubuntu', limit=5):
+    >>> from lp.app.enums import InformationType
+    >>> factory.makeProduct(
+    ...     name='ubuntu-sekrit', information_type=InformationType.PROPRIETARY)
+    <Product ...>
+    >>> for row in pillar_set.search(
+    ...         getUtility(ILaunchBag).user, 'ubuntu', limit=6):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
-    Distribution: Ubuntu Linux (ubuntu)
-    Distribution: Ubuntu Test (ubuntutest)
-    ProductWithLicenses: The Evolution Groupware Application (evolution)
-    ProductWithLicenses: Tomcat (tomcat)
-    ProductWithLicenses: The Gnome Panel Applets (applets)
+    Distribution: Ubuntu (ubuntu)
+    Product: Ubuntu-sekrit (ubuntu-sekrit)
+    Distribution: ubuntutest (ubuntutest)
+    Product: Evolution (evolution)
+    Product: Tomcat (tomcat)
+    Product: Gnome Applets (applets)
 
 We can search by any of the pillar's aliases too.
 
-    >>> for row in pillar_set.search('iceweasel', limit=5):
+    >>> for row in pillar_set.search(
+    ...         getUtility(ILaunchBag).user, 'iceweasel', limit=5):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
-    ProductWithLicenses: Mozilla Firefox (firefox)
+    Product: Mozilla Firefox (firefox)
 
-Note that inactive products and projects won't be included in the results.
+Note that inaccessible private or inactive products and projects won't
+be included in the results.
 
     >>> pillar_set['firefox'].active = False
-    >>> for row in pillar_set.search('mozilla', limit=3):
+    >>> pillar_set['applets'].active = False
+    >>> login('test@canonical.com')
+
+    >>> for row in pillar_set.search(
+    ...         getUtility(ILaunchBag).user, 'mozilla', limit=3):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
     ProjectGroup: The Mozilla Project (mozilla)
-    ProductWithLicenses: Mozilla Thunderbird (thunderbird)
+    Product: Mozilla Thunderbird (thunderbird)
 
-    >>> pillar_set['applets'].active = False
-    >>> for row in pillar_set.search('ubuntu', limit=5):
+    >>> for row in pillar_set.search(
+    ...         getUtility(ILaunchBag).user, 'ubuntu', limit=6):
     ...     print ("%s: %s (%s)"
     ...            % (row.__class__.__name__, row.title, row.name))
-    Distribution: Ubuntu Linux (ubuntu)
-    Distribution: Ubuntu Test (ubuntutest)
-    ProductWithLicenses: The Evolution Groupware Application (evolution)
-    ProductWithLicenses: Tomcat (tomcat)
-    Distribution: GuadaLinex: Linux for Andalucia (guadalinex)
+    Distribution: Ubuntu (ubuntu)
+    Distribution: ubuntutest (ubuntutest)
+    Product: Evolution (evolution)
+    Product: Tomcat (tomcat)
+    Distribution: GuadaLinex (guadalinex)
+
+    >>> login('mark@example.com')
 
 
 == PillarName objects ==

@@ -1,9 +1,16 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from testtools.matchers import raises
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.features.testing import FeatureFixture
+from lp.services.gpg.interfaces import (
+    GPG_DATABASE_READONLY_FEATURE_FLAG,
+    GPGReadOnly,
+    )
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.verification.browser.logintoken import (
@@ -18,7 +25,10 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.deprecated import LaunchpadFormHarness
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -29,7 +39,7 @@ class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
     token to be consumed (so it can't be used again) when the user hits
     Cancel.
     """
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -70,6 +80,28 @@ class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
         self.assertEquals(actions['field.actions.cancel'].submitted(), True)
         self.assertEquals(harness.view.errors, [])
         self.assertEquals(harness.view.next_url, self.expected_next_url)
+
+
+class LoginTokenReadOnlyTests(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_continue_action_failed_with_gpg_database_in_ro_mode(self):
+        self.useFixture(FeatureFixture({
+            GPG_DATABASE_READONLY_FEATURE_FLAG: True,
+        }))
+        person = self.factory.makePerson(name='test-user')
+        email = removeSecurityProxy(person).preferredemail.email
+        gpg_key = self.factory.makeGPGKey(person)
+        token = getUtility(ILoginTokenSet).new(
+            person, email, email, LoginTokenType.VALIDATEGPG,
+            fingerprint=gpg_key.fingerprint)
+
+        harness = LaunchpadFormHarness(token, ValidateGPGKeyView)
+        self.assertThat(
+            lambda: harness.submit('continue', {}),
+            raises(GPGReadOnly)
+        )
 
 
 class TestClaimTeamView(TestCaseWithFactory):

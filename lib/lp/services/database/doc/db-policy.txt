@@ -19,7 +19,7 @@ the data for your database class.
     >>> writable_janitor = IMasterStore(Person).find(
     ...     Person, Person.name == 'janitor').one()
 
-    >>> writable_janitor.displayname = 'Jack the Janitor'
+    >>> writable_janitor.display_name = 'Jack the Janitor'
     >>> transaction.commit()
 
 Sometimes though we know we will not make changes and don't care much
@@ -37,7 +37,7 @@ a single master.
     >>> ro_janitor is writable_janitor
     False
 
-    >>> ro_janitor.displayname = 'Janice the Janitor'
+    >>> ro_janitor.display_name = 'Janice the Janitor'
     >>> transaction.commit()
     Traceback (most recent call last):
     ...

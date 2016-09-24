@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface definitions for IHas<code related bits>."""
@@ -56,7 +56,7 @@ class IHasBranches(Interface):
             title=_('Limit the branches to those modified since this date.'),
             required=False))
     @call_with(visible_by_user=REQUEST_USER)
-    @operation_returns_collection_of(Interface) # Really IBranch.
+    @operation_returns_collection_of(Interface)  # Really IBranch.
     @export_read_operation()
     @operation_for_version('beta')
     def getBranches(status=None, visible_by_user=None,
@@ -87,15 +87,17 @@ class IHasMergeProposals(Interface):
         status=List(
             title=_("A list of merge proposal statuses to filter by."),
             value_type=Choice(vocabulary=BranchMergeProposalStatus)))
-    @call_with(visible_by_user=REQUEST_USER)
-    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
+    @call_with(visible_by_user=REQUEST_USER, eager_load=True)
+    @operation_returns_collection_of(Interface)  # Really IBranchMergeProposal.
     @export_read_operation()
     @operation_for_version('beta')
-    def getMergeProposals(status=None, visible_by_user=None):
+    def getMergeProposals(status=None, visible_by_user=None, eager_load=False):
         """Returns all merge proposals of a given status.
 
         :param status: A list of statuses to filter with.
         :param visible_by_user: Normally the user who is asking.
+        :param eager_load: If True, load related objects for the whole
+            collection.
         :returns: A list of `IBranchMergeProposal`.
         """
 
@@ -115,7 +117,7 @@ class IHasRequestedReviews(Interface):
             title=_("A list of merge proposal statuses to filter by."),
             value_type=Choice(vocabulary=BranchMergeProposalStatus)))
     @call_with(visible_by_user=REQUEST_USER)
-    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
+    @operation_returns_collection_of(Interface)  # Really IBranchMergeProposal.
     @export_read_operation()
     @operation_for_version('beta')
     def getRequestedReviews(status=None, visible_by_user=None):
@@ -127,6 +129,21 @@ class IHasRequestedReviews(Interface):
 
         :param status: A list of statuses to filter with.
         :param visible_by_user: Normally the user who is asking.
+        :returns: A list of `IBranchMergeProposal`.
+        """
+
+    def getOwnedAndRequestedReviews(status=None, visible_by_user=None,
+                                    project=None):
+        """Returns merge proposals for branches owned by a person, or where
+        that person was asked to review.
+
+        This does not include merge proposals that were requested from
+        teams that the person is part of. If status is not passed then
+        it will return proposals that are in the "Needs Review" state.
+
+        :param status: A list of statuses to filter with.
+        :param visible_by_user: Normally the user who is asking.
+        :param project: Limit results to branches for this `IProduct`.
         :returns: A list of `IBranchMergeProposal`.
         """
 
@@ -151,7 +168,7 @@ class IHasCodeImports(Interface):
             schema=Interface)
         )
     @call_with(registrant=REQUEST_USER)
-    @export_factory_operation(Interface, []) # Really ICodeImport.
+    @export_factory_operation(Interface, [])  # Really ICodeImport.
     @operation_for_version('beta')
     def newCodeImport(registrant=None, branch_name=None, rcs_type=None,
                       url=None, cvs_root=None, cvs_module=None, owner=None):

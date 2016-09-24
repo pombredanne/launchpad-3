@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone model classes."""
@@ -35,15 +35,9 @@ from storm.expr import (
 from storm.locals import Store
 from storm.zope import IResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
-from lp.blueprints.model.specification import Specification
-from lp.blueprints.model.specificationsearch import (
-    get_specification_active_product_filter,
-    get_specification_privacy_filter,
-    )
-from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.bugs.interfaces.bugtask import (
@@ -93,8 +87,8 @@ def milestone_sort_key(milestone):
     return (date, expand_numbers(milestone.name))
 
 
+@implementer(IHasMilestones)
 class HasMilestonesMixin:
-    implements(IHasMilestones)
 
     _milestone_order = (
         'milestone_sort_key(Milestone.dateexpected, Milestone.name) DESC')
@@ -147,8 +141,8 @@ class InvalidTags(Exception):
         super(InvalidTags, self).__init__(msg)
 
 
+@implementer(IMilestoneData)
 class MilestoneData:
-    implements(IMilestoneData)
 
     @property
     def displayname(self):
@@ -161,11 +155,19 @@ class MilestoneData:
 
     @property
     def all_specifications(self):
+        from lp.blueprints.model.specification import Specification
         return Store.of(self).find(
             Specification, Specification.milestoneID == self.id)
 
     def getSpecifications(self, user):
         """See `IMilestoneData`"""
+        from lp.blueprints.model.specification import Specification
+        from lp.blueprints.model.specificationsearch import (
+            get_specification_active_product_filter,
+            get_specification_privacy_filter,
+            )
+        from lp.blueprints.model.specificationworkitem import (
+            SpecificationWorkItem)
         from lp.registry.model.person import Person
         origin = [Specification]
         product_origin, clauses = get_specification_active_product_filter(
@@ -207,9 +209,9 @@ class MilestoneData:
         return non_conjoined_slaves
 
 
+@implementer(IHasBugs, IMilestone, IBugSummaryDimension)
 class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
                 HasBugsBase):
-    implements(IHasBugs, IMilestone, IBugSummaryDimension)
 
     active = BoolCol(notNull=True, default=True)
 
@@ -381,8 +383,8 @@ class Milestone(SQLBase, MilestoneData, StructuralSubscriptionTargetMixin,
         return self.product.userCanView(user)
 
 
+@implementer(IMilestoneSet)
 class MilestoneSet:
-    implements(IMilestoneSet)
 
     def __iter__(self):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
@@ -425,6 +427,7 @@ class MilestoneSet:
         return Milestone.selectBy(active=True, orderBy='id')
 
 
+@implementer(IProjectGroupMilestone)
 class ProjectMilestone(MilestoneData, HasBugsBase):
     """A virtual milestone implementation for project.
 
@@ -436,8 +439,6 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
     `dateexpected` attribute of a project milestone is set to the minimum of
     the `dateexpected` values of the product milestones.
     """
-
-    implements(IProjectGroupMilestone)
 
     def __init__(self, target, name, dateexpected, active, product):
         self.code_name = None
@@ -469,7 +470,7 @@ class ProjectMilestone(MilestoneData, HasBugsBase):
             where=And(
                 Milestone.name == self.name,
                 Milestone.productID == Product.id,
-                Product.project == self.target,
+                Product.projectgroup == self.target,
                 ProductSet.getProductPrivacyFilter(user)))
 
     @property

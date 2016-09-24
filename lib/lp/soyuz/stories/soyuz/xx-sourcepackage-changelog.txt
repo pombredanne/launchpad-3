@@ -6,7 +6,7 @@ Browse the changelog of a sourcepackage..
     >>> user_browser.open(
     ...     "http://launchpad.dev/ubuntu/hoary/+source/pmount/+changelog")
     >>> print_location(user_browser.contents)
-    Hierarchy: Ubuntu Linux > ...pmount... package > Hoary (5.04) > Change log
+    Hierarchy: Ubuntu > ...pmount... package > Hoary (5.04) > Change log
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/pmount
     * Code - http://code.launchpad.dev/ubuntu/+source/pmount

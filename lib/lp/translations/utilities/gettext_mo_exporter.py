@@ -14,7 +14,7 @@ import os
 import subprocess
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.translations.interfaces.translationexporter import (
     ITranslationExporter,
@@ -49,9 +49,9 @@ class POCompiler:
         return stdout
 
 
+@implementer(ITranslationFormatExporter)
 class GettextMOExporter:
     """Support class to export Gettext .mo files."""
-    implements(ITranslationFormatExporter)
 
     # We use x-gmo for consistency with .po editors such as GTranslator.
     mime_type = 'application/x-gmo'

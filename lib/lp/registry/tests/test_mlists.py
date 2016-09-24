@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test mailing list stuff."""
@@ -24,8 +24,12 @@ from lp.registry.enums import (
     TeamMembershipPolicy,
     )
 from lp.registry.interfaces.mailinglist import IMailingListSet
+from lp.registry.interfaces.persontransferjob import (
+    ITeamJoinNotificationJobSource,
+    )
 from lp.registry.scripts.mlistimport import Importer
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
+from lp.services.job.runner import JobRunner
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     login,
@@ -38,6 +42,8 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LayerProcessController,
     )
+from lp.testing.mail_helpers import pop_notifications
+from lp.testing.pages import permissive_security_policy
 
 
 factory = LaunchpadObjectFactory()
@@ -358,7 +364,7 @@ class TestMailingListImports(BaseMailingListImportTest):
     def test_import_existing_with_nonascii_name(self):
         # Make sure that a person with a non-ascii name, who's already a
         # member of the list, gets a proper log message.
-        self.anne.displayname = u'\u1ea2nn\u1ebf P\u1ec5rs\u1ed1n'
+        self.anne.display_name = u'\u1ea2nn\u1ebf P\u1ec5rs\u1ed1n'
         importer = Importer('aardvarks', self.logger)
         self.anne.join(self.team)
         self.mailing_list.subscribe(self.anne)
@@ -386,7 +392,7 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         # be committed, otherwise the script won't see the changes.
         transaction.commit()
         # Make sure the mailbox is empty.
-        LayerProcessController.smtp_controller.reset()
+        pop_notifications()
 
     def makeProcess(self, *extra_args):
         args = ['scripts/mlist-import.py', '--filename', self.filename]
@@ -396,6 +402,11 @@ class TestMailingListImportScript(BaseMailingListImportTest):
                      cwd=LayerProcessController.appserver_config.root,
                      env=dict(LPCONFIG=BaseLayer.appserver_config_name,
                               PATH=os.environ['PATH']))
+
+    def runMailJobs(self):
+        with permissive_security_policy('person-transfer-job'):
+            JobRunner.fromReady(
+                getUtility(ITeamJoinNotificationJobSource)).runAll()
 
     def test_import(self):
         # Test that a simple invocation of the script works.
@@ -432,9 +443,10 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         process = self.makeProcess()
         stdout, stderr = process.communicate()
         self.assertEqual(process.returncode, 0, stdout)
-        # There should be no messages sitting in the smtp controller, because
-        # all notifications were suppressed.
-        messages = list(LayerProcessController.smtp_controller)
+        self.runMailJobs()
+        # There should be no messages sitting in the queue, because all
+        # notifications were suppressed.
+        messages = pop_notifications()
         self.assertEqual(len(messages), 0)
 
     def test_notifications(self):
@@ -457,14 +469,17 @@ class TestMailingListImportScript(BaseMailingListImportTest):
         process = self.makeProcess('--notifications')
         stdout, stderr = process.communicate()
         self.assertEqual(process.returncode, 0, stdout)
-        # There should be five messages sitting in the smtp controller, one
-        # for each added new member, all sent to the team owner.
-        messages = list(LayerProcessController.smtp_controller)
+        self.runMailJobs()
+        # There should be five messages sitting in the queue, one for each
+        # added new member, all sent to the team owner.
+        messages = pop_notifications()
         self.assertEqual(len(messages), 5)
         # The messages are all being sent to the team owner.
         recipients = set(message['to'] for message in messages)
         self.assertEqual(len(recipients), 1)
-        self.assertEqual(recipients.pop(), 'teamowner.person@example.com')
+        self.assertEqual(
+            recipients.pop(),
+            'Teamowner Person <teamowner.person@example.com>')
         # The Subjects of all the messages indicate who was joined as a member
         # of the team.
         subjects = sorted(message['subject'] for message in messages)

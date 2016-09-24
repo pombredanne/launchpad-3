@@ -1,7 +1,9 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from contextlib import contextmanager
+
+from testtools.matchers import MatchesRegex
 
 from lp.services.config import config
 from lp.testing import TestCase
@@ -15,12 +17,14 @@ def changed_config(changes):
     config.pop('test_changes')
 
 
-class TestCeleryConfiguration(TestCase):
+class TestCeleryWorkerConfiguration(TestCase):
     layer = RabbitMQLayer
+
+    command = ['celery', 'worker']
 
     def check_default_common_parameters(self, config):
         # Tests for default config values that are set for app servers
-        # and for celeryd instances.
+        # and for "celery worker" instances.
 
         # Four queues are defined; the binding key for each queue is
         # just the queue name.
@@ -33,13 +37,10 @@ class TestCeleryConfiguration(TestCase):
         for name in queue_names:
             self.assertEqual(name, queues[name]['binding_key'])
 
-        self.assertEqual('localhost', config['BROKER_HOST'])
-        # BROKER_PORT changes between test runs, so just check that it
-        # is defined.
-        self.assertTrue('BROKER_PORT' in config)
-        self.assertEqual('guest', config['BROKER_USER'])
-        self.assertEqual('guest', config['BROKER_PASSWORD'])
-        self.assertEqual('/', config['BROKER_VHOST'])
+        # The port changes between test runs.
+        self.assertThat(
+            config['BROKER_URL'],
+            MatchesRegex(r'amqp://guest:guest@localhost:\d+//\Z'))
         self.assertFalse(config['CELERY_CREATE_MISSING_QUEUES'])
         self.assertEqual('job', config['CELERY_DEFAULT_EXCHANGE'])
         self.assertEqual('launchpad_job', config['CELERY_DEFAULT_QUEUE'])
@@ -52,7 +53,7 @@ class TestCeleryConfiguration(TestCase):
         config = configure([''])
         self.check_default_common_parameters(config)
 
-    def check_job_specific_celeryd_configuration(self, expected, config):
+    def check_job_specific_celery_worker_configuration(self, expected, config):
         self.check_default_common_parameters(config)
         self.assertEqual(
             expected['concurrency'], config['CELERYD_CONCURRENCY'])
@@ -61,34 +62,34 @@ class TestCeleryConfiguration(TestCase):
         self.assertEqual(
             expected['fallback'], config.get('FALLBACK', None))
 
-    def test_default_celeryd_configuration_fast_lanes(self):
+    def test_default_celery_worker_configuration_fast_lanes(self):
         from lp.services.job.celeryconfig import configure
         expected = {
             'concurrency': 3,
             'fallback': 'launchpad_job_slow',
             'timeout': 300,
             }
-        config = configure(['celeryd', '-Q', 'launchpad_job'])
+        config = configure(self.command + ['-Q', 'launchpad_job'])
         self.check_default_common_parameters(config)
-        self.check_job_specific_celeryd_configuration(expected, config)
-        config = configure(['celeryd', '-Q', 'branch_write_job'])
+        self.check_job_specific_celery_worker_configuration(expected, config)
+        config = configure(self.command + ['-Q', 'branch_write_job'])
         self.check_default_common_parameters(config)
         expected['fallback'] = 'branch_write_job_slow'
-        self.check_job_specific_celeryd_configuration(expected, config)
+        self.check_job_specific_celery_worker_configuration(expected, config)
 
-    def test_default_celeryd_configuration_slow_lanes(self):
+    def test_default_celery_worker_configuration_slow_lanes(self):
         from lp.services.job.celeryconfig import configure
         expected = {
             'concurrency': 1,
             'fallback': None,
             'timeout': 86400,
             }
-        config = configure(['celeryd', '-Q', 'launchpad_job_slow'])
+        config = configure(self.command + ['-Q', 'launchpad_job_slow'])
         self.check_default_common_parameters(config)
-        self.check_job_specific_celeryd_configuration(expected, config)
-        config = configure(['celeryd', '-Q', 'branch_write_job_slow'])
+        self.check_job_specific_celery_worker_configuration(expected, config)
+        config = configure(self.command + ['-Q', 'branch_write_job_slow'])
         self.check_default_common_parameters(config)
-        self.check_job_specific_celeryd_configuration(expected, config)
+        self.check_job_specific_celery_worker_configuration(expected, config)
 
     def test_circular_fallback_lanes(self):
         # Circular fallback lanes are detected.
@@ -110,8 +111,8 @@ class TestCeleryConfiguration(TestCase):
             self.assertRaisesWithContent(
                 ConfigurationError, error, configure, [''])
 
-    def test_missing_queue_parameter_for_celeryd(self):
-        # An exception is raised when celeryd is started without
+    def test_missing_queue_parameter_for_celery_worker(self):
+        # An exception is raised when "celery worker" is started without
         # the parameter -Q.
         # Import late because the RabbitMQ parameters are set during layer
         # setup.
@@ -121,24 +122,25 @@ class TestCeleryConfiguration(TestCase):
             )
         error = 'A queue must be specified.'
         self.assertRaisesWithContent(
-            ConfigurationError, error, configure, ['celeryd'])
+            ConfigurationError, error, configure, self.command)
 
-    def test_two_queues_for_celeryd(self):
-        # An exception is raised when celeryd is started for two queues.
+    def test_two_queues_for_celery_worker(self):
+        # An exception is raised when "celery worker" is started for two
+        # queues.
         # Import late because the RabbitMQ parameters are set during layer
         # setup.
         from lp.services.job.celeryconfig import (
             ConfigurationError,
             configure,
             )
-        error = 'A celeryd instance may serve only one queue.'
+        error = 'A "celery worker" instance may serve only one queue.'
         self.assertRaisesWithContent(
             ConfigurationError, error, configure,
-            ['celeryd', '--queue=launchpad_job,branch_write_job'])
+            self.command + ['--queue=launchpad_job,branch_write_job'])
 
-    def test_unconfigured_queue_for_celeryd(self):
-        # An exception is raised when celeryd is started for a queue that
-        # is not configured.
+    def test_unconfigured_queue_for_celery_worker(self):
+        # An exception is raised when "celery worker" is started for a queue
+        # that is not configured.
         # Import late because the RabbitMQ parameters are set during layer
         # setup.
         from lp.services.job.celeryconfig import (
@@ -147,4 +149,11 @@ class TestCeleryConfiguration(TestCase):
             )
         error = 'Queue foo is not configured in schema-lazr.conf'
         self.assertRaisesWithContent(
-            ConfigurationError, error, configure, ['celeryd', '--queue=foo'])
+            ConfigurationError, error, configure,
+            self.command + ['--queue=foo'])
+
+
+class TestCelerydConfiguration(TestCeleryWorkerConfiguration):
+    """Test behaviour with legacy "celeryd" command name."""
+
+    command = ['celeryd']

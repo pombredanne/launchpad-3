@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,6 +12,7 @@ __all__ = [
 
 import atexit
 import httplib
+import json
 import os
 import shutil
 import socket
@@ -20,11 +21,13 @@ import subprocess
 import sys
 import tempfile
 import urllib
-import urllib2
 
 import gpgme
+from gpgservice_client import GPGClient
 from lazr.restful.utils import get_current_browser_request
-from zope.interface import implements
+import requests
+from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.validators.email import valid_email
 from lp.services.config import config
@@ -37,6 +40,7 @@ from lp.services.gpg.interfaces import (
     GPGKeyTemporarilyNotFoundError,
     GPGUploadFailure,
     GPGVerificationError,
+    IGPGClient,
     IGPGHandler,
     IPymeKey,
     IPymeSignature,
@@ -64,10 +68,9 @@ signing_only_param = """
 """
 
 
+@implementer(IGPGHandler)
 class GPGHandler:
     """See IGPGHandler."""
-
-    implements(IGPGHandler)
 
     def __init__(self):
         """Initialize environment variable."""
@@ -86,15 +89,18 @@ class GPGHandler:
         """
         self.home = tempfile.mkdtemp(prefix='gpg-')
         confpath = os.path.join(self.home, 'gpg.conf')
-        conf = open(confpath, 'w')
         # set needed GPG options, 'auto-key-retrieve' is necessary for
         # automatically retrieve from the keyserver unknown key when
         # verifying signatures and 'no-auto-check-trustdb' avoid wasting
         # time verifying the local keyring consistence.
-        conf.write('keyserver hkp://%s\n'
-                   'keyserver-options auto-key-retrieve\n'
-                   'no-auto-check-trustdb\n' % config.gpghandler.host)
-        conf.close()
+        with open(confpath, 'w') as conf:
+            conf.write('keyserver hkp://%s\n' % config.gpghandler.host)
+            conf.write('keyserver-options auto-key-retrieve\n')
+            conf.write('no-auto-check-trustdb\n')
+            # Prefer a SHA-2 hash where possible, otherwise GPG will fall
+            # back to a hash it can use.
+            conf.write(
+                'personal-digest-preferences SHA512 SHA384 SHA256 SHA224\n')
         # create a local atexit handler to remove the configuration directory
         # on normal termination.
 
@@ -107,15 +113,7 @@ class GPGHandler:
 
     def sanitizeFingerprint(self, fingerprint):
         """See IGPGHandler."""
-        # remove whitespaces, truncate to max of 40 (as per v4 keys) and
-        # convert to upper case
-        fingerprint = fingerprint.replace(' ', '')
-        fingerprint = fingerprint[:40].upper()
-
-        if not valid_fingerprint(fingerprint):
-            return None
-
-        return fingerprint
+        return sanitize_fingerprint(fingerprint)
 
     def resetLocalState(self):
         """See IGPGHandler."""
@@ -324,7 +322,7 @@ class GPGHandler:
 
         return key
 
-    def encryptContent(self, content, fingerprint):
+    def encryptContent(self, content, key):
         """See IGPGHandler."""
         if isinstance(content, unicode):
             raise TypeError('Content cannot be Unicode.')
@@ -337,22 +335,21 @@ class GPGHandler:
         plain = StringIO(content)
         cipher = StringIO()
 
-        # retrive gpgme key object
-        try:
-            key = ctx.get_key(fingerprint.encode('ascii'), 0)
-        except gpgme.GpgmeError:
+        if key.key is None:
             return None
 
         if not key.can_encrypt:
             raise ValueError('key %s can not be used for encryption'
-                             % fingerprint)
+                             % key.fingerprint)
 
         # encrypt content
-        ctx.encrypt([key], gpgme.ENCRYPT_ALWAYS_TRUST, plain, cipher)
+        ctx.encrypt(
+            [removeSecurityProxy(key.key)], gpgme.ENCRYPT_ALWAYS_TRUST,
+            plain, cipher)
 
         return cipher.getvalue()
 
-    def signContent(self, content, key_fingerprint, password='', mode=None):
+    def signContent(self, content, key, password='', mode=None):
         """See IGPGHandler."""
         if not isinstance(content, str):
             raise TypeError('Content should be a string.')
@@ -365,8 +362,7 @@ class GPGHandler:
         context = gpgme.Context()
         context.armor = True
 
-        key = context.get_key(key_fingerprint.encode('ascii'), True)
-        context.signers = [key]
+        context.signers = [removeSecurityProxy(key.key)]
 
         # Set up containers.
         plaintext = StringIO(content)
@@ -454,23 +450,32 @@ class GPGHandler:
 
         conn.close()
 
-    def uploadPublicKey(self, fingerprint):
+    def uploadPublicKey(self, fingerprint, logger=None):
         """See IGPGHandler"""
+        if not config.gpghandler.upload_keys:
+            if logger is not None:
+                logger.info(
+                    "Not submitting key to keyserver "
+                    "(disabled in configuration).")
+            return
+
         pub_key = self.retrieveKey(fingerprint)
         self._submitKey(pub_key.export())
 
     def getURLForKeyInServer(self, fingerprint, action='index', public=False):
         """See IGPGHandler"""
         params = {
-            'search': '0x%s' % fingerprint,
             'op': action,
+            'search': '0x%s' % fingerprint,
+            'fingerprint': 'on',
             }
         if public:
             host = config.gpghandler.public_host
         else:
             host = config.gpghandler.host
-        return 'http://%s:%s/pks/lookup?%s' % (host, config.gpghandler.port,
-                                               urllib.urlencode(params))
+        return 'http://%s:%s/pks/lookup?%s' % (
+            host, config.gpghandler.port,
+            urllib.urlencode(sorted(params.items())))
 
     def _getPubKey(self, fingerprint):
         """See IGPGHandler for further information."""
@@ -486,21 +491,21 @@ class GPGHandler:
         # minutes." The details of the error do not matter for users
         # (and for the code in callsites), but we should be able to see
         # if this problem occurs too often.
-        except urllib2.HTTPError as exc:
+        except requests.HTTPError as exc:
             # Old versions of SKS return a 500 error when queried for a
             # non-existent key. Production was upgraded in 2013/01, but
             # let's leave this here for a while.
             #
             # We can extract the fact that the key is unknown by looking
             # into the response's content.
-            if exc.code in (404, 500) and exc.fp is not None:
-                content = exc.fp.read()
+            if exc.response.status_code in (404, 500):
                 no_key_message = 'No results found: No keys found'
-                if content.find(no_key_message) >= 0:
+                if exc.response.content.find(no_key_message) >= 0:
                     raise GPGKeyDoesNotExistOnServer(fingerprint)
                 errorlog.globalErrorUtility.raising(sys.exc_info(), request)
                 raise GPGKeyTemporarilyNotFoundError(fingerprint)
-        except (TimeoutError, urllib2.URLError) as exc:
+            raise
+        except (TimeoutError, requests.RequestException) as exc:
             errorlog.globalErrorUtility.raising(sys.exc_info(), request)
             raise GPGKeyTemporarilyNotFoundError(fingerprint)
         finally:
@@ -509,12 +514,12 @@ class GPGHandler:
     def _grabPage(self, action, fingerprint):
         """Wrapper to collect KeyServer Pages."""
         url = self.getURLForKeyInServer(fingerprint, action)
-        return urlfetch(url)
+        return urlfetch(url).content
 
 
+@implementer(IPymeSignature)
 class PymeSignature(object):
     """See IPymeSignature."""
-    implements(IPymeSignature)
 
     def __init__(self, fingerprint=None, plain_data=None, timestamp=None):
         """Initialized a signature container."""
@@ -523,9 +528,9 @@ class PymeSignature(object):
         self.timestamp = timestamp
 
 
+@implementer(IPymeKey)
 class PymeKey:
     """See IPymeKey."""
-    implements(IPymeKey)
 
     fingerprint = None
     exists_in_local_keyring = False
@@ -556,6 +561,7 @@ class PymeKey:
 
     def _buildFromGpgmeKey(self, key):
         self.exists_in_local_keyring = True
+        self.key = key
         subkey = key.subkeys[0]
         self.fingerprint = subkey.fpr
         self.revoked = subkey.revoked
@@ -599,9 +605,9 @@ class PymeKey:
         return keydata.getvalue()
 
 
+@implementer(IPymeUserId)
 class PymeUserId:
     """See IPymeUserId"""
-    implements(IPymeUserId)
 
     def __init__(self, uid):
         self.revoked = uid.revoked
@@ -611,3 +617,60 @@ class PymeUserId:
         self.name = uid.name
         self.email = uid.email
         self.comment = uid.comment
+
+
+def sanitize_fingerprint(fingerprint):
+    """Sanitize a GPG fingerprint.
+
+    This is the ultimate implementation of IGPGHandler.sanitizeFingerprint, and
+    is also used by the IGPGClient implementation.
+    """
+    # remove whitespaces, truncate to max of 40 (as per v4 keys) and
+    # convert to upper case
+    fingerprint = fingerprint.replace(' ', '')
+    fingerprint = fingerprint[:40].upper()
+
+    if not valid_fingerprint(fingerprint):
+        return None
+
+    return fingerprint
+
+
+@implementer(IGPGClient)
+class LPGPGClient(GPGClient):
+    """See IGPGClient."""
+
+    def __init__(self):
+        super(LPGPGClient, self).__init__(bypass_proxy=True)
+        self.action = None
+
+    def get_endpoint(self):
+        return config.gpgservice.api_endpoint
+
+    def get_timeout(self):
+        return 30.0
+
+    def on_request_start(self, method, path, data=None,
+                         headers=dict()):
+        assert self.action is None, "Error: Overlapping requests to gpgservice"
+        timeline = get_request_timeline(
+            get_current_browser_request())
+        if data:
+            data_summary = '%d byte body' % len(data)
+        else:
+            data_summary = 'no body'
+        header_whitelist = (
+            'content-type',
+            'x-gpg-fingerprint',
+        )
+        headers = dict(
+            [(k, v) for k, v in headers.items() if k.lower() in header_whitelist]
+        )
+        self.action = timeline.start(
+            "gpgservice-%s" % method.upper(),
+            ' '.join((path, data_summary, json.dumps(headers)))
+        )
+
+    def on_request_end(self):
+        self.action.finish()
+        self.action = None

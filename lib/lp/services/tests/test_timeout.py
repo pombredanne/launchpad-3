@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """timeout.py tests.
@@ -6,7 +6,6 @@
 
 __metaclass__ = type
 
-from cStringIO import StringIO
 from SimpleXMLRPCServer import (
     SimpleXMLRPCRequestHandler,
     SimpleXMLRPCServer,
@@ -14,27 +13,34 @@ from SimpleXMLRPCServer import (
 import socket
 from textwrap import dedent
 import threading
-import time
-import urllib2
 import xmlrpclib
 
-from zope.interface import implements
+from requests.exceptions import (
+    ConnectionError,
+    InvalidSchema,
+    )
+from testtools.matchers import MatchesStructure
 
-from lp.services.log.logger import FakeLogger
 from lp.services.timeout import (
     get_default_timeout_function,
+    reduced_timeout,
     set_default_timeout_function,
     TimeoutError,
     TransportWithTimeout,
     urlfetch,
     with_timeout,
     )
+from lp.services.webapp.adapter import (
+    clear_request_started,
+    set_request_started,
+    )
+from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCase
-from lp.testing.layers import BaseLayer
 
 
 @with_timeout()
-def no_default_timeout(): pass
+def no_default_timeout():
+    pass
 
 
 class EchoOrWaitXMLRPCReqHandler(SimpleXMLRPCRequestHandler):
@@ -54,10 +60,12 @@ class EchoOrWaitXMLRPCReqHandler(SimpleXMLRPCRequestHandler):
 class MySimpleXMLRPCServer(SimpleXMLRPCServer):
     """Create a simple XMLRPC server to listen for requests."""
     allow_reuse_address = True
+
     def serve_2_requests(self):
         for i in range(2):
             self.handle_request()
         self.server_close()
+
     def handle_error(self, request, address):
         pass
 
@@ -69,11 +77,13 @@ class TestTimeout(TestCase):
         finishes before the supplied timeout, it should function normally.
         """
         wait_evt = threading.Event()
+
         @with_timeout(timeout=0.5)
         def wait_100ms():
             """Function that waits for a supplied number of seconds."""
             wait_evt.wait(0.1)
             return "Succeeded."
+
         self.assertEqual("Succeeded.", wait_100ms())
 
     def test_timeout_overrun(self):
@@ -87,11 +97,13 @@ class TestTimeout(TestCase):
         # inform us that it is about to exit.
         wait_evt = threading.Event()
         stopping_evt = threading.Event()
+
         @with_timeout(timeout=0.5)
         def wait_for_event():
             """Function that waits for a supplied number of seconds."""
             wait_evt.wait()
             stopping_evt.set()
+
         self.assertRaises(TimeoutError, wait_for_event)
         wait_evt.set()
         stopping_evt.wait()
@@ -115,6 +127,7 @@ class TestTimeout(TestCase):
         socket.setdefaulttimeout(5)
         sockets = socket.socketpair()
         closed = []
+
         def close_socket():
             closed.append(True)
             sockets[0].shutdown(socket.SHUT_RDWR)
@@ -123,6 +136,7 @@ class TestTimeout(TestCase):
         def block():
             """This will block indefinitely."""
             sockets[0].recv(1024)
+
         self.assertRaises(TimeoutError, block)
         self.assertEqual([True], closed)
 
@@ -152,16 +166,18 @@ class TestTimeout(TestCase):
         method."""
         def do_definition():
             @with_timeout(cleanup='not_a_method', timeout=0.5)
-            def a_function(): pass
+            def a_function():
+                pass
+
         self.assertRaises(TypeError, do_definition)
 
     def test_timeout_uses_default(self):
-        """If the timeout parameter isn't provided, it will default to the value
-        returned by the function installed as "default_timeout_function". A
-        function is used because it's useful for the timeout value to be
-        determined dynamically. For example, if you want to limit the
-        overall processing to 30s and you already did 14s, you want that timeout
-        to be 16s.
+        """If the timeout parameter isn't provided, it will default to the
+        value returned by the function installed as
+        "default_timeout_function". A function is used because it's useful
+        for the timeout value to be determined dynamically. For example, if
+        you want to limit the overall processing to 30s and you already did
+        14s, you want that timeout to be 16s.
 
         By default, there is no default_timeout_function.
         """
@@ -177,23 +193,55 @@ class TestTimeout(TestCase):
             str(e))
 
     def test_set_default_timeout(self):
-        """the set_default_timeout_function() takes a function that should return
-        the number of seconds to wait.
+        """The set_default_timeout_function() takes a function that should
+        return the number of seconds to wait.
         """
         using_default = []
+
         def my_default_timeout():
             using_default.append(True)
             return 1
+
         set_default_timeout_function(my_default_timeout)
         self.addCleanup(set_default_timeout_function, None)
         no_default_timeout()
         self.assertEqual([True], using_default)
 
+    def test_reduced_timeout(self):
+        """reduced_timeout caps the available timeout in various ways."""
+        self.addCleanup(set_default_timeout_function, None)
+        with reduced_timeout(1.0):
+            self.assertIsNone(get_default_timeout_function()())
+        with reduced_timeout(1.0, default=5.0):
+            self.assertEqual(5.0, get_default_timeout_function()())
+        set_default_timeout_function(lambda: 5.0)
+        with reduced_timeout(1.0):
+            self.assertEqual(4.0, get_default_timeout_function()())
+        with reduced_timeout(1.0, default=5.0, webapp_max=2.0):
+            self.assertEqual(4.0, get_default_timeout_function()())
+        with reduced_timeout(1.0, default=5.0, webapp_max=6.0):
+            self.assertEqual(4.0, get_default_timeout_function()())
+        with reduced_timeout(6.0, default=5.0, webapp_max=2.0):
+            self.assertEqual(5.0, get_default_timeout_function()())
+        LaunchpadTestRequest()
+        set_request_started()
+        try:
+            with reduced_timeout(1.0):
+                self.assertEqual(4.0, get_default_timeout_function()())
+            with reduced_timeout(1.0, default=5.0, webapp_max=2.0):
+                self.assertEqual(2.0, get_default_timeout_function()())
+            with reduced_timeout(1.0, default=5.0, webapp_max=6.0):
+                self.assertEqual(4.0, get_default_timeout_function()())
+            with reduced_timeout(6.0, default=5.0, webapp_max=2.0):
+                self.assertEqual(2.0, get_default_timeout_function()())
+        finally:
+            clear_request_started()
+
     def make_test_socket(self):
-        """One common use case for timing out is when making an HTTP request to
-        an external site to fetch content. To this end, the timeout module has
-        a urlfetch() function that retrieve a URL using custom urllib2 handlers
-        that will timeout using the default timeout function and clean-up the
+        """One common use case for timing out is when making an HTTP request
+        to an external site to fetch content. To this end, the timeout
+        module has a urlfetch() function that retrieves a URL in such a way
+        as to timeout using the default timeout function and clean-up the
         socket properly.
         """
         sock = socket.socket()
@@ -206,11 +254,11 @@ class TestTimeout(TestCase):
         http_server_url = 'http://%s:%d/' % sock.getsockname()
         return sock, http_server_url
 
-    def test_urlfetch_raises_urllib2_exceptions(self):
-        """Normal urllib2 exceptions are raised."""
+    def test_urlfetch_raises_requests_exceptions(self):
+        """Normal requests exceptions are raised."""
         sock, http_server_url = self.make_test_socket()
 
-        e = self.assertRaises(urllib2.URLError, urlfetch, http_server_url)
+        e = self.assertRaises(ConnectionError, urlfetch, http_server_url)
         self.assertIn('Connection refused', str(e))
 
     def test_urlfetch_timeout_after_listen(self):
@@ -237,6 +285,7 @@ class TestTimeout(TestCase):
         sock, http_server_url = self.make_test_socket()
         sock.listen(1)
         stop_event = threading.Event()
+
         def slow_reply():
             (client_sock, client_addr) = sock.accept()
             content = 'You are veeeeryyy patient!'
@@ -252,12 +301,15 @@ class TestTimeout(TestCase):
                 if stop_event.wait(0.05):
                     break
             client_sock.close()
+
         slow_thread = threading.Thread(target=slow_reply)
         slow_thread.start()
         saved_threads = set(threading.enumerate())
         self.assertRaises(TimeoutError, urlfetch, http_server_url)
-        # Note that the cleanup also takes care of leaving no worker thread behind.
-        remaining_threads = set(threading.enumerate()).difference(saved_threads)
+        # Note that the cleanup also takes care of leaving no worker thread
+        # behind.
+        remaining_threads = set(threading.enumerate()).difference(
+            saved_threads)
         self.assertEqual(set(), remaining_threads)
         stop_event.set()
         slow_thread.join()
@@ -266,6 +318,7 @@ class TestTimeout(TestCase):
         """When the request succeeds, the result content is returned."""
         sock, http_server_url = self.make_test_socket()
         sock.listen(1)
+
         def success_result():
             (client_sock, client_addr) = sock.accept()
             client_sock.sendall(dedent("""\
@@ -275,17 +328,22 @@ class TestTimeout(TestCase):
 
                 Success."""))
             client_sock.close()
+
         t = threading.Thread(target=success_result)
         t.start()
-        self.assertEqual('Success.', urlfetch(http_server_url))
+        self.assertThat(
+            urlfetch(http_server_url),
+            MatchesStructure.byEquality(status_code=200, content='Success.'))
         t.join()
 
-    def test_urlfetch_only_supports_http_urls(self):
-        """urlfetch() only supports http urls:"""
+    def test_urlfetch_does_not_support_ftp_urls(self):
+        """urlfetch() does not support ftp urls."""
         set_default_timeout_function(lambda: 1)
         self.addCleanup(set_default_timeout_function, None)
-        e = self.assertRaises(AssertionError, urlfetch, 'ftp://localhost')
-        self.assertEqual('only http is supported.', str(e))
+        url = 'ftp://localhost/'
+        e = self.assertRaises(InvalidSchema, urlfetch, url)
+        self.assertEqual(
+            "No connection adapters were found for '%s'" % url, str(e))
 
     def test_xmlrpc_transport(self):
         """ Another use case for timeouts is communicating with external

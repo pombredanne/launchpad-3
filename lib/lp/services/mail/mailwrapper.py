@@ -79,7 +79,7 @@ class MailWrapper:
                     wrapped_lines += self._text_wrapper.wrap(line)
             else:
                 # If the user has gone through the trouble of wrapping
-                # the lines, we shouldn't re-wrap them for him.
+                # the lines, we shouldn't re-wrap them for them.
                 wrapped_lines += (
                     [indentation + lines[0]] +
                     [self.indent + line for line in lines[1:]])

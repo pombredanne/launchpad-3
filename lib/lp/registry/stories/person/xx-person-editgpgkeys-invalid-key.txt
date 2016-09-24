@@ -57,7 +57,7 @@ Attempts to claim an expired OpenPGP key also fail:
     <BLANKLINE>
     The key 046C6D63 cannot be validated because it has expired. Change the
     expiry date (in a terminal,  enter <kbd>gpg --edit-key
-    <var>your@e-mail.address</var></kbd> then enter <kbd>expire</kbd>),
+    <var>your@email.address</var></kbd> then enter <kbd>expire</kbd>),
     and try again.
     <BLANKLINE>
 
@@ -107,11 +107,11 @@ Try to validate the revoked OpenPGP key:
     There is 1 error.
     The key 046C6D63 cannot be validated because it has expired. Change the
     expiry date (in a terminal,  enter <kbd>gpg --edit-key
-    <var>your@e-mail.address</var></kbd> then enter <kbd>expire</kbd>),
+    <var>your@email.address</var></kbd> then enter <kbd>expire</kbd>),
     and try again.
 
 The login tokens are only consumed if they're successfully processed.
-Otherwise they're kept around so the user can try again after fixing his
+Otherwise they're kept around so the user can try again after fixing their
 key.
 
     >>> login(ANONYMOUS)

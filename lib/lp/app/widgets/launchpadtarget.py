@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -19,7 +19,7 @@ from zope.formlib.widget import (
     InputWidget,
     renderElement,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import Choice
 
 from lp.app.errors import (
@@ -34,16 +34,16 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.product import IProduct
+from lp.services.features import getFeatureFlag
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IMultiLineWidgetLayout,
     )
 
 
+@implementer(IAlwaysSubmittedWidget, IMultiLineWidgetLayout, IInputWidget)
 class LaunchpadTargetWidget(BrowserWidget, InputWidget):
     """Widget for selecting a product, distribution or package target."""
-
-    implements(IAlwaysSubmittedWidget, IMultiLineWidgetLayout, IInputWidget)
 
     template = ViewPageTemplateFile('templates/launchpad-target.pt')
     default_option = "package"
@@ -51,13 +51,19 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     def getDistributionVocabulary(self):
         return 'Distribution'
-    
+
     def getProductVocabulary(self):
         return 'Product'
 
     def setUpSubWidgets(self):
         if self._widgets_set_up:
             return
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            # Replace the default field with a field that uses the better
+            # vocabulary.
+            package_vocab = 'DistributionSourcePackage'
+        else:
+            package_vocab = 'BinaryAndSourcePackageName'
         fields = [
             Choice(
                 __name__='product', title=u'Project',
@@ -68,7 +74,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 default=getUtility(ILaunchpadCelebrities).ubuntu),
             Choice(
                 __name__='package', title=u"Package",
-                required=False, vocabulary='BinaryAndSourcePackageName'),
+                required=False, vocabulary=package_vocab),
             ]
         self.distribution_widget = CustomWidgetFactory(
             LaunchpadDropdownWidget)
@@ -138,6 +144,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                         " Launchpad" % entered_name))
                 raise self._error
             if self.package_widget.hasInput():
+                if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+                    self.package_widget.vocabulary.setDistribution(
+                        distribution)
                 try:
                     package_name = self.package_widget.getInputValue()
                     if package_name is None:

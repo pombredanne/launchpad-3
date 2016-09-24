@@ -24,6 +24,7 @@ from lp.buildmaster.interfaces.builder import BuildDaemonError
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildfarmjobbehaviour import (
     BuildFarmJobBehaviourBase,
     )
@@ -36,11 +37,11 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import (
@@ -271,18 +272,17 @@ class TestHandleStatusMixin:
         self.assertEquals(
             1, len(os.listdir(os.path.join(self.upload_root, result))))
 
+    @defer.inlineCallbacks
     def test_handleStatus_OK_normal_file(self):
         # A filemap with plain filenames should not cause a problem.
         # The call to handleStatus will attempt to get the file from
         # the slave resulting in a URL error in this test case.
-        def got_status(ignored):
-            self.assertEqual(BuildStatus.UPLOADING, self.build.status)
-            self.assertResultCount(1, "incoming")
-
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, 'OK',
-            {'filemap': {'myfile.py': 'test_file_hash'}})
-        return d.addCallback(got_status)
+        with dbuser(config.builddmaster.dbuser):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, 'OK',
+                {'filemap': {'myfile.py': 'test_file_hash'}})
+        self.assertEqual(BuildStatus.UPLOADING, self.build.status)
+        self.assertResultCount(1, "incoming")
 
     @defer.inlineCallbacks
     def test_handleStatus_OK_absolute_filepath(self):
@@ -291,9 +291,10 @@ class TestHandleStatusMixin:
         with ExpectedException(
                 BuildDaemonError,
                 "Build returned a file named '/tmp/myfile.py'."):
-            yield self.behaviour.handleStatus(
-                self.build.buildqueue_record, 'OK',
-                {'filemap': {'/tmp/myfile.py': 'test_file_hash'}})
+            with dbuser(config.builddmaster.dbuser):
+                yield self.behaviour.handleStatus(
+                    self.build.buildqueue_record, 'OK',
+                    {'filemap': {'/tmp/myfile.py': 'test_file_hash'}})
 
     @defer.inlineCallbacks
     def test_handleStatus_OK_relative_filepath(self):
@@ -302,42 +303,38 @@ class TestHandleStatusMixin:
         with ExpectedException(
                 BuildDaemonError,
                 "Build returned a file named '../myfile.py'."):
-            yield self.behaviour.handleStatus(
-                self.build.buildqueue_record, 'OK',
-                {'filemap': {'../myfile.py': 'test_file_hash'}})
+            with dbuser(config.builddmaster.dbuser):
+                yield self.behaviour.handleStatus(
+                    self.build.buildqueue_record, 'OK',
+                    {'filemap': {'../myfile.py': 'test_file_hash'}})
 
+    @defer.inlineCallbacks
     def test_handleStatus_OK_sets_build_log(self):
         # The build log is set during handleStatus.
         self.assertEqual(None, self.build.log)
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, 'OK',
-            {'filemap': {'myfile.py': 'test_file_hash'}})
+        with dbuser(config.builddmaster.dbuser):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, 'OK',
+                {'filemap': {'myfile.py': 'test_file_hash'}})
+        self.assertNotEqual(None, self.build.log)
 
-        def got_status(ignored):
-            self.assertNotEqual(None, self.build.log)
-
-        return d.addCallback(got_status)
-
+    @defer.inlineCallbacks
     def _test_handleStatus_notifies(self, status):
         # An email notification is sent for a given build status if
         # notifications are allowed for that status.
-
         expected_notification = (
             status in self.behaviour.ALLOWED_STATUS_NOTIFICATIONS)
 
-        def got_status(ignored):
-            if expected_notification:
-                self.failIf(
-                    len(pop_notifications()) == 0,
-                    "No notifications received")
-            else:
-                self.failIf(
-                    len(pop_notifications()) > 0,
-                    "Notifications received")
+        with dbuser(config.builddmaster.dbuser):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, status, {})
 
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, status, {})
-        return d.addCallback(got_status)
+        if expected_notification:
+            self.assertNotEqual(
+                0, len(pop_notifications()), "Notifications received")
+        else:
+            self.assertEqual(
+                0, len(pop_notifications()), "Notifications received")
 
     def test_handleStatus_DEPFAIL_notifies(self):
         return self._test_handleStatus_notifies("DEPFAIL")
@@ -348,72 +345,71 @@ class TestHandleStatusMixin:
     def test_handleStatus_PACKAGEFAIL_notifies(self):
         return self._test_handleStatus_notifies("PACKAGEFAIL")
 
+    @defer.inlineCallbacks
     def test_handleStatus_ABORTED_cancels_cancelling(self):
-        self.build.updateStatus(BuildStatus.CANCELLING)
-
-        def got_status(ignored):
-            self.assertEqual(
-                0, len(pop_notifications()), "Notifications received")
-            self.assertEqual(BuildStatus.CANCELLED, self.build.status)
-
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, "ABORTED", {})
-        return d.addCallback(got_status)
+        with dbuser(config.builddmaster.dbuser):
+            self.build.updateStatus(BuildStatus.CANCELLING)
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, "ABORTED", {})
+        self.assertEqual(0, len(pop_notifications()), "Notifications received")
+        self.assertEqual(BuildStatus.CANCELLED, self.build.status)
 
     @defer.inlineCallbacks
     def test_handleStatus_ABORTED_illegal_when_building(self):
         self.builder.vm_host = "fake_vm_host"
         self.behaviour = self.interactor.getBuildBehaviour(
             self.build.buildqueue_record, self.builder, self.slave)
-        self.build.updateStatus(BuildStatus.BUILDING)
-
-        with ExpectedException(
-                BuildDaemonError,
-                "Build returned unexpected status: 'ABORTED'"):
-            yield self.behaviour.handleStatus(
-                self.build.buildqueue_record, "ABORTED", {})
+        with dbuser(config.builddmaster.dbuser):
+            self.build.updateStatus(BuildStatus.BUILDING)
+            with ExpectedException(
+                    BuildDaemonError,
+                    "Build returned unexpected status: 'ABORTED'"):
+                yield self.behaviour.handleStatus(
+                    self.build.buildqueue_record, "ABORTED", {})
 
     @defer.inlineCallbacks
     def test_handleStatus_ABORTED_cancelling_sets_build_log(self):
         # If a build is intentionally cancelled, the build log is set.
         self.assertEqual(None, self.build.log)
-        self.build.updateStatus(BuildStatus.CANCELLING)
-        yield self.behaviour.handleStatus(
-            self.build.buildqueue_record, "ABORTED", {})
+        with dbuser(config.builddmaster.dbuser):
+            self.build.updateStatus(BuildStatus.CANCELLING)
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, "ABORTED", {})
         self.assertNotEqual(None, self.build.log)
 
+    @defer.inlineCallbacks
     def test_date_finished_set(self):
         # The date finished is updated during handleStatus_OK.
         self.assertEqual(None, self.build.date_finished)
-        d = self.behaviour.handleStatus(
-            self.build.buildqueue_record, 'OK',
-            {'filemap': {'myfile.py': 'test_file_hash'}})
-
-        def got_status(ignored):
-            self.assertNotEqual(None, self.build.date_finished)
-
-        return d.addCallback(got_status)
+        with dbuser(config.builddmaster.dbuser):
+            yield self.behaviour.handleStatus(
+                self.build.buildqueue_record, 'OK',
+                {'filemap': {'myfile.py': 'test_file_hash'}})
+        self.assertNotEqual(None, self.build.date_finished)
 
     @defer.inlineCallbacks
     def test_givenback_collection(self):
         with ExpectedException(
                 BuildDaemonError,
                 "Build returned unexpected status: 'GIVENBACK'"):
-            yield self.behaviour.handleStatus(
-                self.build.buildqueue_record, "GIVENBACK", {})
+            with dbuser(config.builddmaster.dbuser):
+                yield self.behaviour.handleStatus(
+                    self.build.buildqueue_record, "GIVENBACK", {})
 
     @defer.inlineCallbacks
     def test_builderfail_collection(self):
         with ExpectedException(
                 BuildDaemonError,
                 "Build returned unexpected status: 'BUILDERFAIL'"):
-            yield self.behaviour.handleStatus(
-                self.build.buildqueue_record, "BUILDERFAIL", {})
+            with dbuser(config.builddmaster.dbuser):
+                yield self.behaviour.handleStatus(
+                    self.build.buildqueue_record, "BUILDERFAIL", {})
 
     @defer.inlineCallbacks
     def test_invalid_status_collection(self):
         with ExpectedException(
                 BuildDaemonError,
                 "Build returned unexpected status: 'BORKED'"):
-            yield self.behaviour.handleStatus(
-                self.build.buildqueue_record, "BORKED", {})
+            with dbuser(config.builddmaster.dbuser):
+                yield self.behaviour.handleStatus(
+                    self.build.buildqueue_record, "BORKED", {})

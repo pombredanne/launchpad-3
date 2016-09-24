@@ -53,7 +53,7 @@ them, so they click on the edit link once more.
 
    >>> user_browser.getLink(url='+affectsmetoo').click()
 
-The user changes his selection to 'No' and submits the form.
+The user changes their selection to 'No' and submits the form.
 
    >>> user_browser.getControl(name='field.affects').value = ['NO']
    >>> user_browser.getControl('Change').click()

@@ -26,7 +26,7 @@ from storm.expr import (
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
-    implements,
+    implementer,
     Interface,
     )
 from zope.security.proxy import isinstance as zope_isinstance
@@ -102,9 +102,9 @@ class Override:
             "%s objects are not hashable." % self.__class__.__name__)
 
 
+@implementer(ISourceOverride)
 class SourceOverride(Override):
     """See `ISourceOverride`."""
-    implements(ISourceOverride)
 
     def __eq__(self, other):
         return (
@@ -121,9 +121,9 @@ class SourceOverride(Override):
              self.version, self.new))
 
 
+@implementer(IBinaryOverride)
 class BinaryOverride(Override):
     """See `IBinaryOverride`."""
-    implements(IBinaryOverride)
 
     def __init__(self, component=None, section=None, priority=None,
                  phased_update_percentage=None, version=None, new=None,
@@ -197,9 +197,8 @@ class IOverridePolicy(Interface):
         pass
 
 
+@implementer(IOverridePolicy)
 class BaseOverridePolicy:
-
-    implements(IOverridePolicy)
 
     def __init__(self, archive, distroseries, pocket,
                  phased_update_percentage=None):

@@ -1,13 +1,11 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for error logging & OOPS reporting."""
 
 __metaclass__ = type
 
-import datetime
 import httplib
-import StringIO
 import sys
 from textwrap import dedent
 import traceback
@@ -23,14 +21,13 @@ from timeline.timeline import Timeline
 from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.interface import (
     directlyProvides,
-    implements,
+    implementer,
     )
 from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
 
-from lp.app import versioninfo
 from lp.app.errors import (
     GoneError,
     TranslationUnavailable,
@@ -41,7 +38,6 @@ from lp.services.webapp.errorlog import (
     _filter_session_statement,
     _is_sensitive,
     attach_http_request,
-    ErrorReport,
     ErrorReportingUtility,
     notify_publisher,
     ScriptRequest,
@@ -58,79 +54,6 @@ UTC = pytz.utc
 
 class ArbitraryException(Exception):
     """Used to test handling of exceptions in OOPS reports."""
-
-
-class TestErrorReport(testtools.TestCase):
-
-    def test___init__(self):
-        """Test ErrorReport.__init__()"""
-        entry = ErrorReport('id', 'exc-type', 'exc-value', 'timestamp',
-                            'traceback-text', 'username', 'url', 42,
-                            {'name1': 'value1', 'name2': 'value2',
-                             'name3': 'value3'},
-                            [(1, 5, 'store_a', 'SELECT 1'),
-                             (5, 10, 'store_b', 'SELECT 2')],
-                            topic='pageid',
-                            )
-        self.assertEqual(entry.id, 'id')
-        self.assertEqual(entry.type, 'exc-type')
-        self.assertEqual(entry.value, 'exc-value')
-        self.assertEqual(entry.time, 'timestamp')
-        self.assertEqual(entry.topic, 'pageid')
-        self.assertEqual(entry.branch_nick, versioninfo.branch_nick)
-        self.assertEqual(entry.revno, versioninfo.revno)
-        self.assertEqual(entry.username, 'username')
-        self.assertEqual(entry.url, 'url')
-        self.assertEqual(entry.duration, 42)
-        self.assertEqual({
-            'name1': 'value1',
-            'name2': 'value2',
-            'name3': 'value3',
-            }, entry.req_vars)
-        self.assertEqual(len(entry.timeline), 2)
-        self.assertEqual(entry.timeline[0], (1, 5, 'store_a', 'SELECT 1'))
-        self.assertEqual(entry.timeline[1], (5, 10, 'store_b', 'SELECT 2'))
-
-    def test_read(self):
-        """Test ErrorReport.read()."""
-        # Note: this exists to test the compatibility thunk only.
-        fp = StringIO.StringIO(dedent("""\
-            Oops-Id: OOPS-A0001
-            Exception-Type: NotFound
-            Exception-Value: error message
-            Date: 2005-04-01T00:00:00+00:00
-            Page-Id: IFoo:+foo-template
-            User: Sample User
-            URL: http://localhost:9000/foo
-            Duration: 42
-
-            HTTP_USER_AGENT=Mozilla/5.0
-            HTTP_REFERER=http://localhost:9000/
-            name%3Dfoo=hello%0Aworld
-
-            00001-00005@store_a SELECT 1
-            00005-00010@store_b SELECT 2
-
-            traceback-text"""))
-        entry = ErrorReport.read(fp)
-        self.assertEqual(entry.id, 'OOPS-A0001')
-        self.assertEqual(entry.type, 'NotFound')
-        self.assertEqual(entry.value, 'error message')
-        self.assertEqual(
-                entry.time, datetime.datetime(2005, 4, 1, tzinfo=UTC))
-        self.assertEqual(entry.topic, 'IFoo:+foo-template')
-        self.assertEqual(entry.tb_text, 'traceback-text')
-        self.assertEqual(entry.username, 'Sample User')
-        self.assertEqual(entry.url, 'http://localhost:9000/foo')
-        self.assertEqual(entry.duration, 42)
-        self.assertEqual({
-            'HTTP_USER_AGENT': 'Mozilla/5.0',
-            'HTTP_REFERER': 'http://localhost:9000/',
-            'name=foo': 'hello\nworld'},
-            entry.req_vars)
-        self.assertEqual(len(entry.timeline), 2)
-        self.assertEqual(entry.timeline[0], [1, 5, 'store_a', 'SELECT 1'])
-        self.assertEqual(entry.timeline[1], [5, 10, 'store_b', 'SELECT 2'])
 
 
 class TestErrorReportingUtility(testtools.TestCase):
@@ -611,8 +534,8 @@ class TestSensitiveRequestVariables(testtools.TestCase):
         self.failUnless(_is_sensitive(request, 'oauth_signature'))
 
 
+@implementer(IUnauthenticatedPrincipal)
 class UnauthenticatedPrincipal:
-    implements(IUnauthenticatedPrincipal)
     id = 0
     title = ''
     description = ''

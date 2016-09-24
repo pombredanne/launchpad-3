@@ -3,6 +3,7 @@
 
 __all__ = [
     'BranchJob',
+    'BranchModifiedMailJob',
     'BranchScanJob',
     'BranchJobDerived',
     'BranchJobType',
@@ -32,7 +33,7 @@ from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -52,8 +53,8 @@ from storm.locals import Store
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.code.bzr import (
@@ -67,6 +68,8 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.branchjob import (
     IBranchJob,
+    IBranchModifiedMailJob,
+    IBranchModifiedMailJobSource,
     IBranchScanJob,
     IBranchScanJobSource,
     IBranchUpgradeJob,
@@ -93,6 +96,7 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.codehosting.vfs.branchfs import get_real_branch_path
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.config import config
@@ -117,6 +121,7 @@ from lp.services.job.runner import (
     BaseRunnableJobSource,
     )
 from lp.services.mail.sendmail import format_address_for_person
+from lp.services.utils import text_delta
 from lp.services.webapp import canonical_url
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -184,11 +189,16 @@ class BranchJobType(DBEnumeratedType):
         This job scans a branch for new revisions.
         """)
 
+    BRANCH_MODIFIED_MAIL = DBItem(8, """
+        Branch modified mail
 
+        This job runs against a branch to send emails about modifications.
+        """)
+
+
+@implementer(IBranchJob)
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
-
-    implements(IBranchJob)
 
     _table = 'BranchJob'
 
@@ -229,11 +239,10 @@ class BranchJob(SQLBase):
         return BranchJobDerived.makeSubclass(self)
 
 
+@delegate_to(IBranchJob)
 class BranchJobDerived(BaseRunnableJob):
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(IBranchJob)
 
     def __init__(self, branch_job):
         self.context = branch_job
@@ -247,7 +256,7 @@ class BranchJobDerived(BaseRunnableJob):
             }
 
     # XXX: henninge 2009-02-20 bug=331919: These two standard operators
-    # should be implemented by delegates().
+    # should be implemented by delegate_to().
     def __eq__(self, other):
         # removeSecurityProxy, since 'other' might well be a delegated object
         # and the context attribute is not exposed by design.
@@ -296,12 +305,10 @@ class BranchJobDerived(BaseRunnableJob):
         return [format_address_for_person(self.requester)]
 
 
+@implementer(IBranchScanJob)
+@provider(IBranchScanJobSource)
 class BranchScanJob(BranchJobDerived):
     """A Job that scans a branch for new revisions."""
-
-    implements(IBranchScanJob)
-
-    classProvides(IBranchScanJobSource)
     class_job_type = BranchJobType.SCAN_BRANCH
     memory_limit = 2 * (1024 ** 3)
 
@@ -339,12 +346,10 @@ class BranchScanJob(BranchJobDerived):
                     % self._cached_branch_name)
 
 
+@implementer(IBranchUpgradeJob)
+@provider(IBranchUpgradeJobSource)
 class BranchUpgradeJob(BranchJobDerived):
     """A Job that upgrades branches to the current stable format."""
-
-    implements(IBranchUpgradeJob)
-
-    classProvides(IBranchUpgradeJobSource)
     class_job_type = BranchJobType.UPGRADE_BRANCH
 
     user_error_types = (NotBranchError,)
@@ -421,12 +426,10 @@ class BranchUpgradeJob(BranchJobDerived):
                 shutil.rmtree(upgrade_branch_path)
 
 
+@implementer(IRevisionMailJob)
+@provider(IRevisionMailJobSource)
 class RevisionMailJob(BranchJobDerived):
     """A Job that sends a mail for a scan of a Branch."""
-
-    implements(IRevisionMailJob)
-
-    classProvides(IRevisionMailJobSource)
 
     class_job_type = BranchJobType.REVISION_MAIL
 
@@ -463,17 +466,17 @@ class RevisionMailJob(BranchJobDerived):
     def getMailer(self):
         """Return a BranchMailer for this job."""
         return BranchMailer.forRevision(
-            self.branch, self.revno, self.from_address, self.body,
-            None, self.subject)
+            self.branch, self.from_address, self.body, None, self.subject,
+            revno=self.revno)
 
     def run(self):
         """See `IRevisionMailJob`."""
         self.getMailer().sendAll()
 
 
+@implementer(IRevisionsAddedJob)
 class RevisionsAddedJob(BranchJobDerived):
     """A job for sending emails about added revisions."""
-    implements(IRevisionsAddedJob)
 
     class_job_type = BranchJobType.REVISIONS_ADDED_MAIL
 
@@ -601,8 +604,8 @@ class RevisionsAddedJob(BranchJobDerived):
         else:
             diff_text = None
         return BranchMailer.forRevision(
-            self.branch, revno, self.from_address, message, diff_text,
-            subject)
+            self.branch, self.from_address, message, diff_text, subject,
+            revno=revno)
 
     def getMergedRevisionIDs(self, revision_id, graph):
         """Determine which revisions were merged by this revision.
@@ -727,12 +730,10 @@ class RevisionsAddedJob(BranchJobDerived):
         return outf.getvalue()
 
 
+@implementer(IRosettaUploadJob)
+@provider(IRosettaUploadJobSource)
 class RosettaUploadJob(BranchJobDerived):
     """A Job that uploads translation files to Rosetta."""
-
-    implements(IRosettaUploadJob)
-
-    classProvides(IRosettaUploadJobSource)
 
     class_job_type = BranchJobType.ROSETTA_UPLOAD
 
@@ -964,12 +965,10 @@ class RosettaUploadJob(BranchJobDerived):
         return jobs
 
 
+@implementer(IReclaimBranchSpaceJob)
+@provider(IReclaimBranchSpaceJobSource)
 class ReclaimBranchSpaceJob(BranchJobDerived, BaseRunnableJobSource):
     """Reclaim the disk space used by a branch that's deleted from the DB."""
-
-    implements(IReclaimBranchSpaceJob)
-
-    classProvides(IReclaimBranchSpaceJobSource)
 
     class_job_type = BranchJobType.RECLAIM_BRANCH_SPACE
 
@@ -1002,3 +1001,44 @@ class ReclaimBranchSpaceJob(BranchJobDerived, BaseRunnableJobSource):
         branch_path = get_real_branch_path(self.branch_id)
         if os.path.exists(branch_path):
             shutil.rmtree(branch_path)
+
+
+@implementer(IBranchModifiedMailJob)
+@provider(IBranchModifiedMailJobSource)
+class BranchModifiedMailJob(BranchJobDerived):
+    """A Job that sends email about branch modifications."""
+
+    class_job_type = BranchJobType.BRANCH_MODIFIED_MAIL
+
+    config = config.IBranchModifiedMailJobSource
+
+    @classmethod
+    def create(cls, branch, user, branch_delta):
+        """See `IBranchModifiedMailJobSource`."""
+        metadata = {
+            'user': user.id,
+            'branch_delta': text_delta(
+                branch_delta, branch_delta.delta_values,
+                branch_delta.new_values, branch_delta.interface),
+            }
+        branch_job = BranchJob(branch, cls.class_job_type, metadata)
+        job = cls(branch_job)
+        job.celeryRunOnCommit()
+        return job
+
+    @property
+    def user(self):
+        return getUtility(IPersonSet).get(self.metadata['user'])
+
+    @property
+    def branch_delta(self):
+        return self.metadata['branch_delta']
+
+    def getMailer(self):
+        """Return a `BranchMailer` for this job."""
+        return BranchMailer.forBranchModified(
+            self.branch, self.user, self.branch_delta)
+
+    def run(self):
+        """See `IBranchModifiedMailJob`."""
+        self.getMailer().sendAll()

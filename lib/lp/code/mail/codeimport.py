@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to code imports."""
@@ -65,6 +65,7 @@ def new_import(code_import, event):
     headers = {'X-Launchpad-Branch': code_import.branch.unique_name,
                'X-Launchpad-Message-Rationale':
                    'Operator @%s' % vcs_imports.name,
+               'X-Launchpad-Message-For': vcs_imports.name,
                'X-Launchpad-Notification-Type': 'code-import',
                }
     for address in get_contact_email_addresses(vcs_imports):
@@ -185,6 +186,7 @@ def code_import_updated(code_import, event, new_whiteboard, person):
             else:
                 template_params['rationale'] = rationale
             template_params['unsubscribe'] = ''
+            for_person = vcs_imports
         else:
             if subscription.notification_level in interested_levels:
                 template_params['rationale'] = (
@@ -197,10 +199,12 @@ def code_import_updated(code_import, event, new_whiteboard, person):
                         "%s/+edit-subscription." % canonical_url(branch))
                 else:
                     template_params['unsubscribe'] = ''
+                for_person = subscription.person
             else:
                 # Don't send email to this subscriber.
                 continue
 
         headers['X-Launchpad-Message-Rationale'] = rationale
+        headers['X-Launchpad-Message-For'] = for_person.name
         body = email_template % template_params
         simple_sendmail(from_address, email_address, subject, body, headers)

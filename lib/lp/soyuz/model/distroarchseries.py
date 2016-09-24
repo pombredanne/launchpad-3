@@ -26,8 +26,9 @@ from storm.locals import (
     )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
+from lp.buildmaster.model.processor import Processor
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import DEFAULT
@@ -58,11 +59,10 @@ from lp.soyuz.interfaces.distroarchseries import (
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.processor import Processor
 
 
+@implementer(IDistroArchSeries, IHasBuildRecords)
 class DistroArchSeries(SQLBase):
-    implements(IDistroArchSeries, IHasBuildRecords)
     _table = 'DistroArchSeries'
     _defaultOrder = 'id'
 
@@ -76,7 +76,6 @@ class DistroArchSeries(SQLBase):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
-    supports_virtualized = BoolCol(notNull=False, default=False)
     enabled = BoolCol(notNull=False, default=True)
 
     packages = SQLRelatedJoin('BinaryPackageRelease',
@@ -99,6 +98,10 @@ class DistroArchSeries(SQLBase):
         return '%s %s %s' % (
             self.distroseries.distribution.displayname,
             self.distroseries.displayname, self.architecturetag)
+
+    @property
+    def supports_virtualized(self):
+        return self.processor.supports_virtualized
 
     def updatePackageCount(self):
         """See `IDistroArchSeries`."""
@@ -282,8 +285,8 @@ class DistroArchSeries(SQLBase):
         return self.distroseries.distribution.main_archive
 
 
+@implementer(IPocketChroot)
 class PocketChroot(SQLBase):
-    implements(IPocketChroot)
     _table = "PocketChroot"
 
     distroarchseries = ForeignKey(

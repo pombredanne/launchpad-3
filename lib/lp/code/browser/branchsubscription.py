@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -106,8 +106,6 @@ class _BranchSubscriptionView(LaunchpadFormView):
 
 class BranchSubscriptionAddView(_BranchSubscriptionView):
 
-    subscribing_self = True
-
     page_title = label = "Subscribe to branch"
 
     @action("Subscribe")
@@ -195,12 +193,11 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     # Since we are subscribing other people, the current user
     # is never considered subscribed.
     user_is_subscribed = False
-    subscribing_self = False
 
     page_title = label = "Subscribe to branch"
 
     def validate(self, data):
-        if data.has_key('person'):
+        if 'person' in data:
             person = data['person']
             subscription = self.context.getSubscription(person)
             if subscription is None and not self.context.userCanBeSubscribed(
@@ -279,7 +276,7 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
         url = canonical_url(self.branch)
         # If the subscriber can no longer see the branch, redirect them away.
         service = getUtility(IService, 'sharing')
-        ignored, branches, ignored = service.getVisibleArtifacts(
+        _, branches, _, _ = service.getVisibleArtifacts(
             self.person, branches=[self.branch], ignore_permissions=True)
         if not branches:
             url = canonical_url(self.branch.target)

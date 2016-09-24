@@ -17,9 +17,9 @@ from lp.services.webapp import canonical_url
 from lp.testing import (
     login,
     logout,
+    RequestTimelineCollector,
     TestCaseWithFactory,
     )
-from lp.testing._webservice import QueryCollector
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
@@ -63,7 +63,7 @@ class TestAssignments(TestCaseWithFactory):
         for _ in range(10):
             specs.append(self.factory.makeSpecification(
                 **{targettype: target}))
-        collector = QueryCollector()
+        collector = RequestTimelineCollector()
         collector.register()
         self.addCleanup(collector.unregister)
         url = canonical_url(target) + "/+assignments"

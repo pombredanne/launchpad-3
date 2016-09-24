@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Import version control metadata from a Bazaar branch into the database."""
@@ -34,7 +34,9 @@ from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import Revision
 from lp.codehosting.scanner import events
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.utils import iter_list_chunks
+from lp.services.webhooks.interfaces import IWebhookSet
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
     )
@@ -109,11 +111,13 @@ class BzrSync:
         self.insertBranchRevisions(bzr_branch, revids_to_insert)
         transaction.commit()
         # Synchronize the RevisionCache for this branch.
+        self.logger.info("Updating revision cache.")
         getUtility(IRevisionSet).updateRevisionCacheForBranch(self.db_branch)
         transaction.commit()
 
         # Notify any listeners that the tip of the branch has changed, but
         # before we've actually updated the database branch.
+        self.logger.info("Firing tip change event.")
         initial_scan = (len(db_history) == 0)
         notify(events.TipChanged(self.db_branch, bzr_branch, initial_scan))
 
@@ -124,7 +128,9 @@ class BzrSync:
         # not been updated. Since this has no ill-effect, and can only err on
         # the pessimistic side (tell the user the data has not yet been
         # updated although it has), the race is acceptable.
+        self.logger.info("Updating branch status.")
         self.updateBranchStatus(bzr_history)
+        self.logger.info("Firing scan completion event.")
         notify(
             events.ScanCompleted(
                 self.db_branch, bzr_branch, self.logger, new_ancestry))
@@ -155,6 +161,7 @@ class BzrSync:
         return bzr_branch.repository.get_graph(PPSource)
 
     def getAncestryDelta(self, bzr_branch):
+        self.logger.info("Calculating ancestry delta.")
         bzr_last = bzr_branch.last_revision()
         db_last = self.db_branch.last_scanned_id
         if db_last is None:
@@ -219,6 +226,7 @@ class BzrSync:
                 added_history, last_revno, added_ancestry))
         # We must remove any stray BranchRevisions that happen to already be
         # present.
+        self.logger.info("Finding stray BranchRevisions.")
         existing_branchrevisions = Store.of(self.db_branch).find(
             Revision.revision_id, BranchRevision.branch == self.db_branch,
             BranchRevision.revision_id == Revision.id,
@@ -322,5 +330,18 @@ def schedule_diff_updates(tip_changed):
 
 
 def update_recipes(tip_changed):
-    for recipe in tip_changed.db_branch.recipes:
-        recipe.is_stale = True
+    tip_changed.db_branch.markRecipesStale()
+
+
+def update_snaps(tip_changed):
+    tip_changed.db_branch.markSnapsStale()
+
+
+def trigger_webhooks(tip_changed):
+    old_revid = tip_changed.old_tip_revision_id
+    new_revid = tip_changed.new_tip_revision_id
+    if getFeatureFlag("code.bzr.webhooks.enabled") and old_revid != new_revid:
+        payload = tip_changed.composeWebhookPayload(
+            tip_changed.db_branch, old_revid, new_revid)
+        getUtility(IWebhookSet).trigger(
+            tip_changed.db_branch, "bzr:push:0.1", payload)

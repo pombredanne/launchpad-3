@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for recording changes done to a bug."""
@@ -26,7 +26,6 @@ from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
-from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     api_url,
@@ -44,7 +43,6 @@ class TestBugChanges(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugChanges, self).setUp('foo.bar@canonical.com')
-        self.admin_user = getUtility(ILaunchBag).user
         self.user = self.factory.makePerson(
             displayname='Arthur Dent', selfgenerated_bugnotifications=True)
         self.product = self.factory.makeProduct(
@@ -198,7 +196,7 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_subscribe(self):
         # Subscribing someone to a bug adds an item to the activity log,
-        # but doesn't send an e-mail notification.
+        # but doesn't send an email notification.
         subscriber = self.factory.makePerson(displayname='Mom')
         bug_subscription = self.bug.subscribe(self.user, subscriber)
         notify(ObjectCreatedEvent(bug_subscription, user=subscriber))
@@ -210,11 +208,11 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_unsubscribe(self):
         # Unsubscribing someone from a bug adds an item to the activity
-        # log, but doesn't send an e-mail notification.
+        # log, but doesn't send an email notification.
         subscriber = self.factory.makePerson(displayname='Mom')
         self.bug.subscribe(self.user, subscriber)
         self.saveOldChanges()
-        # Only the user can unsubscribe him or her self.
+        # Only the user can unsubscribe themselves.
         self.bug.unsubscribe(self.user, self.user)
 
         # This checks the activity's attribute and target attributes.
@@ -452,7 +450,7 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_link_branch(self):
         # Linking a branch to a bug adds both to the activity log and
-        # sends an e-mail notification.
+        # sends an email notification.
         branch = self.factory.makeBranch()
         self.bug.linkBranch(branch, self.user)
 
@@ -477,7 +475,7 @@ class TestBugChanges(TestCaseWithFactory):
     def test_link_branch_to_complete_bug(self):
         # Linking a branch to a bug that is "complete" (see
         # IBug.is_complete) adds to the activity log but does *not*
-        # send an e-mail notification.
+        # send an email notification.
         for bug_task in self.bug.bugtasks:
             bug_task.transitionToStatus(
                 BugTaskStatus.FIXRELEASED, user=self.user)
@@ -495,7 +493,7 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_link_private_branch(self):
         # Linking a *private* branch to a bug adds *nothing* to the
-        # activity log and does *not* send an e-mail notification.
+        # activity log and does *not* send an email notification.
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA)
         self.bug.linkBranch(branch, self.user)
@@ -503,7 +501,7 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_unlink_branch(self):
         # Unlinking a branch from a bug adds both to the activity log and
-        # sends an e-mail notification.
+        # sends an email notification.
         branch = self.factory.makeBranch()
         self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()
@@ -530,7 +528,7 @@ class TestBugChanges(TestCaseWithFactory):
     def test_unlink_branch_from_complete_bug(self):
         # Unlinking a branch from a bug that is "complete" (see
         # IBug.is_complete) adds to the activity log but does *not*
-        # send an e-mail notification.
+        # send an email notification.
         for bug_task in self.bug.bugtasks:
             bug_task.transitionToStatus(
                 BugTaskStatus.FIXRELEASED, user=self.user)
@@ -549,12 +547,125 @@ class TestBugChanges(TestCaseWithFactory):
 
     def test_unlink_private_branch(self):
         # Unlinking a *private* branch from a bug adds *nothing* to
-        # the activity log and does *not* send an e-mail notification.
+        # the activity log and does *not* send an email notification.
         branch = self.factory.makeBranch(
             information_type=InformationType.USERDATA)
         self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()
         self.bug.unlinkBranch(branch, self.user)
+        self.assertRecordedChange()
+
+    def test_link_merge_proposal(self):
+        # Linking a merge proposal to a bug adds both to the activity log
+        # and sends an email notification.
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        self.bug.linkMergeProposal(bmp, self.user)
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'linked_merge_proposals')
+        self.assertEqual(activity.target, None)
+
+        added_activity = {
+            'person': self.user,
+            'whatchanged': 'merge proposal linked',
+            'newvalue': canonical_url(bmp),
+            }
+        added_notification = {
+            'text': (
+                "** Merge proposal linked:\n"
+                "   %s" % canonical_url(bmp)),
+            'person': self.user,
+            }
+        self.assertRecordedChange(
+            expected_activity=added_activity,
+            expected_notification=added_notification)
+
+    def test_link_merge_proposal_to_complete_bug(self):
+        # Linking a merge proposal to a bug that is "complete" (see
+        # IBug.is_complete) adds to the activity log but does *not* send an
+        # email notification.
+        for bug_task in self.bug.bugtasks:
+            bug_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, user=self.user)
+        self.assertTrue(self.bug.is_complete)
+        self.saveOldChanges()
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        self.bug.linkMergeProposal(bmp, self.user)
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'merge proposal linked',
+            'newvalue': canonical_url(bmp),
+            }
+        self.assertRecordedChange(
+            expected_activity=expected_activity)
+
+    def test_link_private_merge_proposal(self):
+        # Linking a *private* merge proposal to a bug adds *nothing* to the
+        # activity log and does *not* send an email notification.
+        [git_ref] = self.factory.makeGitRefs(
+            information_type=InformationType.USERDATA)
+        bmp = self.factory.makeBranchMergeProposalForGit(source_ref=git_ref)
+        self.bug.linkMergeProposal(bmp, self.user)
+        self.assertRecordedChange()
+
+    def test_unlink_merge_proposal(self):
+        # Unlinking a merge proposal from a bug adds both to the activity
+        # log and sends an email notification.
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        self.bug.linkMergeProposal(bmp, self.user)
+        self.saveOldChanges()
+        self.bug.unlinkMergeProposal(bmp, self.user)
+
+        # This checks the activity's attribute and target attributes.
+        activity = self.bug.activity[-1]
+        self.assertEqual(activity.attribute, 'linked_merge_proposals')
+        self.assertEqual(activity.target, None)
+
+        added_activity = {
+            'person': self.user,
+            'whatchanged': 'merge proposal unlinked',
+            'oldvalue': canonical_url(bmp),
+            }
+        added_notification = {
+            'text': (
+                "** Merge proposal unlinked:\n"
+                "   %s" % canonical_url(bmp)),
+            'person': self.user,
+            }
+        self.assertRecordedChange(
+            expected_activity=added_activity,
+            expected_notification=added_notification)
+
+    def test_unlink_merge_proposal_from_complete_bug(self):
+        # Unlinking a merge proposal from a bug that is "complete" (see
+        # IBug.is_complete) adds to the activity log but does *not* send an
+        # email notification.
+        for bug_task in self.bug.bugtasks:
+            bug_task.transitionToStatus(
+                BugTaskStatus.FIXRELEASED, user=self.user)
+        self.assertTrue(self.bug.is_complete)
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        self.bug.linkMergeProposal(bmp, self.user)
+        self.saveOldChanges()
+        self.bug.unlinkMergeProposal(bmp, self.user)
+        expected_activity = {
+            'person': self.user,
+            'whatchanged': 'merge proposal unlinked',
+            'oldvalue': canonical_url(bmp),
+            }
+        self.assertRecordedChange(
+            expected_activity=expected_activity)
+
+    def test_unlink_private_merge_proposal(self):
+        # Unlinking a *private* merge proposal from a bug adds *nothing* to
+        # the activity log and does *not* send an email notification.
+        [git_ref] = self.factory.makeGitRefs(
+            information_type=InformationType.USERDATA)
+        bmp = self.factory.makeBranchMergeProposalForGit(source_ref=git_ref)
+        self.bug.linkMergeProposal(bmp, self.user)
+        self.saveOldChanges()
+        self.bug.unlinkMergeProposal(bmp, self.user)
         self.assertRecordedChange()
 
     def test_change_information_type(self):
@@ -1639,7 +1750,7 @@ class TestBugChanges(TestCaseWithFactory):
     def test_convert_to_question_no_comment(self):
         # When a bug task is converted to a question, its status is
         # first set to invalid, which causes the normal notifications for
-        # that to be added to the activity log and sent out as e-mail
+        # that to be added to the activity log and sent out as email
         # notification. After that another item is added to the activity
         # log saying that the bug was converted to a question.
         self.product.official_answers = True

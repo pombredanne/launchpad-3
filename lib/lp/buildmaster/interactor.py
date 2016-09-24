@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -13,9 +13,17 @@ import logging
 from urlparse import urlparse
 
 import transaction
-from twisted.internet import defer
+from twisted.internet import (
+    defer,
+    reactor as default_reactor,
+    )
+from twisted.internet.protocol import Protocol
 from twisted.web import xmlrpc
-from twisted.web.client import downloadPage
+from twisted.web.client import (
+    Agent,
+    HTTPConnectionPool,
+    ResponseDone,
+    )
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
@@ -34,7 +42,6 @@ from lp.buildmaster.interfaces.builder import (
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
-from lp.services import encoding
 from lp.services.config import config
 from lp.services.twistedsupport import cancel_on_timeout
 from lp.services.twistedsupport.processmonitor import ProcessWithTimeout
@@ -44,6 +51,94 @@ from lp.services.webapp import urlappend
 class QuietQueryFactory(xmlrpc._QueryFactory):
     """XMLRPC client factory that doesn't splatter the log with junk."""
     noisy = False
+
+
+class FileWritingProtocol(Protocol):
+    """A protocol that saves data to a file."""
+
+    def __init__(self, finished, file_to_write):
+        self.finished = finished
+        if isinstance(file_to_write, (bytes, unicode)):
+            self.filename = file_to_write
+            self.file = None
+        else:
+            self.filename = None
+            self.file = file_to_write
+
+    def dataReceived(self, data):
+        if self.file is None:
+            self.file = open(self.filename, "wb")
+        try:
+            self.file.write(data)
+        except IOError:
+            try:
+                self.file.close()
+            except IOError:
+                pass
+            self.file = None
+            self.finished.errback()
+
+    def connectionLost(self, reason):
+        try:
+            if self.file is not None:
+                self.file.close()
+        except IOError:
+            self.finished.errback()
+        else:
+            if reason.check(ResponseDone):
+                self.finished.callback(None)
+            else:
+                self.finished.errback(reason)
+
+
+class LimitedHTTPConnectionPool(HTTPConnectionPool):
+    """A connection pool with an upper limit on open connections."""
+
+    # XXX cjwatson 2016-05-25: This actually only limits active connections,
+    # and doesn't count idle but open connections towards the limit; this is
+    # because it's very difficult to do the latter with HTTPConnectionPool's
+    # current design.  Users of this pool must therefore expect some
+    # additional file descriptors to be open for idle connections.
+
+    def __init__(self, reactor, limit, persistent=True):
+        super(LimitedHTTPConnectionPool, self).__init__(
+            reactor, persistent=persistent)
+        self._semaphore = defer.DeferredSemaphore(limit)
+
+    def getConnection(self, key, endpoint):
+        d = self._semaphore.acquire()
+        d.addCallback(
+            lambda _: super(LimitedHTTPConnectionPool, self).getConnection(
+                key, endpoint))
+        return d
+
+    def _putConnection(self, key, connection):
+        super(LimitedHTTPConnectionPool, self)._putConnection(key, connection)
+        # Only release the semaphore in the next main loop iteration; if we
+        # release it here then the next request may start using this
+        # connection's parser before this request has quite finished with
+        # it.
+        self._reactor.callLater(0, self._semaphore.release)
+
+
+_default_pool = None
+
+
+def default_pool(reactor=None):
+    global _default_pool
+    if reactor is None:
+        reactor = default_reactor
+    if _default_pool is None:
+        # Circular import.
+        from lp.buildmaster.manager import SlaveScanner
+        # Short cached connection timeout to avoid potential weirdness with
+        # virtual builders that reboot frequently.
+        _default_pool = LimitedHTTPConnectionPool(
+            reactor, config.builddmaster.download_connections)
+        _default_pool.maxPersistentPerHost = (
+            config.builddmaster.idle_download_connections_per_builder)
+        _default_pool.cachedConnectionTimeout = SlaveScanner.SCAN_INTERVAL
+    return _default_pool
 
 
 class BuilderSlave(object):
@@ -58,7 +153,7 @@ class BuilderSlave(object):
     # many false positives in your test run and will most likely break
     # production.
 
-    def __init__(self, proxy, builder_url, vm_host, timeout, reactor):
+    def __init__(self, proxy, builder_url, vm_host, timeout, reactor, pool):
         """Initialize a BuilderSlave.
 
         :param proxy: An XML-RPC proxy, implementing 'callRemote'. It must
@@ -71,11 +166,16 @@ class BuilderSlave(object):
         self._file_cache_url = urlappend(builder_url, 'filecache')
         self._server = proxy
         self.timeout = timeout
+        if reactor is None:
+            reactor = default_reactor
         self.reactor = reactor
+        if pool is None:
+            pool = default_pool(reactor=reactor)
+        self.pool = pool
 
     @classmethod
     def makeBuilderSlave(cls, builder_url, vm_host, timeout, reactor=None,
-                         proxy=None):
+                         proxy=None, pool=None):
         """Create and return a `BuilderSlave`.
 
         :param builder_url: The URL of the slave buildd machine,
@@ -84,6 +184,7 @@ class BuilderSlave(object):
             here.
         :param reactor: Used by tests to override the Twisted reactor.
         :param proxy: Used By tests to override the xmlrpc.Proxy.
+        :param pool: Used by tests to override the HTTPConnectionPool.
         """
         rpc_url = urlappend(builder_url.encode('utf-8'), 'rpc')
         if proxy is None:
@@ -92,7 +193,7 @@ class BuilderSlave(object):
             server_proxy.queryFactory = QuietQueryFactory
         else:
             server_proxy = proxy
-        return cls(server_proxy, builder_url, vm_host, timeout, reactor)
+        return cls(server_proxy, builder_url, vm_host, timeout, reactor, pool)
 
     def _with_timeout(self, d, timeout=None):
         return cancel_on_timeout(d, timeout or self.timeout, self.reactor)
@@ -127,6 +228,10 @@ class BuilderSlave(object):
                 'ensurepresent', sha1sum, url, username, password),
             self.timeout * 5)
 
+    def getURL(self, sha1):
+        """Get the URL for a file on the builder with a given SHA-1."""
+        return urlappend(self._file_cache_url, sha1).encode('utf8')
+
     def getFile(self, sha_sum, file_to_write):
         """Fetch a file from the builder.
 
@@ -137,11 +242,16 @@ class BuilderSlave(object):
         :return: A Deferred that calls back when the download is done, or
             errback with the error string.
         """
-        file_url = urlappend(self._file_cache_url, sha_sum).encode('utf8')
-        # If desired we can pass a param "timeout" here but let's leave
-        # it at the default value if it becomes obvious we need to
-        # change it.
-        return downloadPage(file_url, file_to_write, followRedirect=0)
+        file_url = self.getURL(sha_sum)
+        d = Agent(self.reactor, pool=self.pool).request("GET", file_url)
+
+        def got_response(response):
+            finished = defer.Deferred()
+            response.deliverBody(FileWritingProtocol(finished, file_to_write))
+            return finished
+
+        d.addCallback(got_response)
+        return d
 
     def getFiles(self, files):
         """Fetch many files from the builder.
@@ -316,6 +426,8 @@ class BuilderInteractor(object):
                     builder_factory[vitals.name].setCleanStatus(
                         BuilderCleanStatus.CLEANING)
                     transaction.commit()
+                    logger = cls._getSlaveScannerLogger()
+                    logger.info("%s is being cleaned.", vitals.name)
                 defer.returnValue(False)
             raise CannotResumeHost(
                 "Invalid vm_reset_protocol: %r" % vitals.vm_reset_protocol)
@@ -426,8 +538,8 @@ class BuilderInteractor(object):
         builder_status = slave_status['builder_status']
         if builder_status == 'BuilderStatus.BUILDING':
             # Build still building, collect the logtail.
-            vitals.build_queue.logtail = encoding.guess(
-                str(slave_status.get('logtail')))
+            vitals.build_queue.logtail = str(
+                slave_status.get('logtail')).decode('UTF-8', errors='replace')
             transaction.commit()
         elif builder_status == 'BuilderStatus.ABORTING':
             # Build is being aborted.

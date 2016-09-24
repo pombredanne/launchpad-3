@@ -19,5 +19,5 @@ def test_suite():
         [],
         layer=BaseLayer)
     suite.addTest(doctest.DocTestSuite(
-        testing, optionflags=NORMALIZE_WHITESPACE|ELLIPSIS))
+        testing, optionflags=NORMALIZE_WHITESPACE | ELLIPSIS))
     return suite

@@ -37,7 +37,7 @@ from zope.event import notify
 from zope.formlib import form
 from zope.formlib.widgets import TextWidget
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.lifecycleevent import ObjectCreatedEvent
@@ -148,11 +148,11 @@ class ProjectSetNavigation(Navigation):
     usedfor = IProjectGroupSet
 
     def traverse(self, name):
-        # Raise a 404 on an invalid project name
-        project = self.context.getByName(name)
-        if project is None:
+        # Raise a 404 on an invalid project group name
+        projectgroup = self.context.getByName(name)
+        if projectgroup is None:
             raise NotFoundError(name)
-        return self.redirectSubTree(canonical_url(project))
+        return self.redirectSubTree(canonical_url(projectgroup))
 
 
 class ProjectSetBreadcrumb(Breadcrumb):
@@ -333,9 +333,8 @@ class ProjectBugsMenu(StructuralSubscriptionMenuMixin,
         return Link('+filebug', text, icon='add')
 
 
+@implementer(IProjectGroupActionMenu)
 class ProjectView(PillarViewMixin, HasAnnouncementsView, FeedsMixin):
-
-    implements(IProjectGroupActionMenu)
 
     @property
     def maintainer_widget(self):
@@ -380,14 +379,14 @@ class ProjectView(PillarViewMixin, HasAnnouncementsView, FeedsMixin):
         return ProjectGroupMilestoneTag(self.context, [])
 
 
+@implementer(IProjectGroupEditMenu)
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
-    implements(IProjectGroupEditMenu)
     label = "Change project group details"
     page_title = label
     schema = IProjectGroup
     field_names = [
-        'displayname', 'title', 'summary', 'description',
+        'display_name', 'summary', 'description',
         'bug_reporting_guidelines', 'bug_reported_acknowledgement',
         'homepageurl', 'bugtracker', 'sourceforgeproject',
         'wikiurl']
@@ -493,20 +492,20 @@ class ProjectGroupAddStepTwo(ProjectAddStepTwo):
         return getUtility(IProductSet).createProduct(
             owner=self.user,
             name=data['name'],
-            title=data['title'],
+            title=data['display_name'],
             summary=data['summary'],
-            displayname=data['displayname'],
+            display_name=data['display_name'],
             licenses=data['licenses'],
             license_info=data['license_info'],
             information_type=data.get('information_type'),
-            project=self.context,
+            projectgroup=self.context,
             )
 
     @property
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Register %s (%s) in Launchpad as a part of %s' % (
-            self.request.form['displayname'], self.request.form['name'],
+            self.request.form['display_name'], self.request.form['name'],
             self.context.displayname)
 
 
@@ -540,10 +539,9 @@ class ProjectSetNavigationMenu(RegistryCollectionActionMenuBase):
         return Link('+all', text, icon='list')
 
 
+@implementer(IRegistryCollectionNavigationMenu)
 class ProjectSetView(LaunchpadView):
     """View for project group index page."""
-
-    implements(IRegistryCollectionNavigationMenu)
 
     page_title = "Project groups registered in Launchpad"
 
@@ -581,8 +579,7 @@ class ProjectAddView(LaunchpadFormView):
     schema = IProjectGroup
     field_names = [
         'name',
-        'displayname',
-        'title',
+        'display_name',
         'summary',
         'description',
         'owner',
@@ -591,26 +588,27 @@ class ProjectAddView(LaunchpadFormView):
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project group with Launchpad')
     page_title = label
-    project = None
+    projectgroup = None
 
     @action(_('Add'), name='add')
     def add_action(self, action, data):
         """Create the new Project from the form details."""
-        self.project = getUtility(IProjectGroupSet).new(
+        self.projectgroup = getUtility(IProjectGroupSet).new(
             name=data['name'].lower().strip(),
-            displayname=data['displayname'],
-            title=data['title'],
+            display_name=data['display_name'],
+            title=data['display_name'],
             homepageurl=data['homepageurl'],
             summary=data['summary'],
             description=data['description'],
             owner=data['owner'],
             )
-        notify(ObjectCreatedEvent(self.project))
+        notify(ObjectCreatedEvent(self.projectgroup))
 
     @property
     def next_url(self):
-        assert self.project is not None, 'No project has been created'
-        return canonical_url(self.project)
+        assert self.projectgroup is not None, (
+            'No project group has been created')
+        return canonical_url(self.projectgroup)
 
 
 class ProjectBrandingView(BrandingChangeView):
@@ -655,7 +653,8 @@ class ProjectAddQuestionView(QuestionAddView):
             data=self.initial_values, ignore_request=False)
 
     def createProductField(self):
-        """Create a Choice field to select one of the project's products."""
+        """Create a Choice field to select one of the project group's
+        products."""
         return form.Fields(
             Choice(
                 __name__='product', vocabulary='ProjectProducts',
@@ -670,8 +669,8 @@ class ProjectAddQuestionView(QuestionAddView):
     @property
     def page_title(self):
         """The current page title."""
-        return _('Ask a question about a project in ${project}',
-                 mapping=dict(project=self.context.displayname))
+        return _('Ask a question about a project in ${projectgroup}',
+                 mapping=dict(projectgroup=self.context.displayname))
 
     @property
     def question_target(self):

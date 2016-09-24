@@ -34,7 +34,7 @@ for a project.
     >>> enable_tracker = find_tag_by_id(
     ...     admin_browser.contents, 'no-malone-edit')
     >>> print extract_text(enable_tracker)
-    Configure bug tracker
+    Configure Bugs
 
 The +bugs page for a project using Launchpad for bug tracking
 shows controls for setting bug supervisor and states that no

@@ -10,7 +10,7 @@ from sqlobject import (
     BoolCol,
     ForeignKey,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.constants import UTC_NOW
@@ -21,8 +21,8 @@ from lp.translations.interfaces.translationrelicensingagreement import (
     )
 
 
+@implementer(ITranslationRelicensingAgreement)
 class TranslationRelicensingAgreement(SQLBase):
-    implements(ITranslationRelicensingAgreement)
 
     _table = 'TranslationRelicensingAgreement'
 

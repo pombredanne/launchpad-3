@@ -49,7 +49,7 @@ from storm.expr import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.name import valid_name
@@ -122,10 +122,9 @@ from lp.soyuz.model.distroarchseries import DistroArchSeries
 UNKNOWN = 'Unknown'
 
 
+@implementer(IHWSubmission)
 class HWSubmission(SQLBase):
     """See `IHWSubmission`."""
-
-    implements(IHWSubmission)
 
     _table = 'HWSubmission'
 
@@ -153,10 +152,9 @@ class HWSubmission(SQLBase):
         return HWSubmissionDeviceSet().getDevices(submission=self)
 
 
+@implementer(IHWSubmissionSet)
 class HWSubmissionSet:
     """See `IHWSubmissionSet`."""
-
-    implements(IHWSubmissionSet)
 
     def createSubmission(self, date_created, format, private, contactable,
                          submission_key, emailaddress, distroarchseries,
@@ -494,7 +492,7 @@ class HWSubmissionSet:
         else:
             user_ids = [row[0] for row in user_ids]
             result = store.find(Person, Person.id.is_in(user_ids))
-        result.order_by(Person.displayname)
+        result.order_by(Person.display_name)
         return result
 
     def hwInfoByBugRelatedUsers(
@@ -554,20 +552,18 @@ class HWSubmissionSet:
              in IStore(HWSubmission).execute(query)]
 
 
+@implementer(IHWSystemFingerprint)
 class HWSystemFingerprint(SQLBase):
     """Identifiers of a computer system."""
-
-    implements(IHWSystemFingerprint)
 
     _table = 'HWSystemFingerprint'
 
     fingerprint = StringCol(notNull=True)
 
 
+@implementer(IHWSystemFingerprintSet)
 class HWSystemFingerprintSet:
     """A set of identifiers of a computer system."""
-
-    implements(IHWSystemFingerprintSet)
 
     def getByName(self, fingerprint):
         """See `IHWSystemFingerprintSet`."""
@@ -578,20 +574,18 @@ class HWSystemFingerprintSet:
         return HWSystemFingerprint(fingerprint=fingerprint)
 
 
+@implementer(IHWVendorName)
 class HWVendorName(SQLBase):
     """See `IHWVendorName`."""
-
-    implements(IHWVendorName)
 
     _table = 'HWVendorName'
 
     name = StringCol(notNull=True)
 
 
+@implementer(IHWVendorNameSet)
 class HWVendorNameSet:
     """See `IHWVendorNameSet`."""
-
-    implements(IHWVendorNameSet)
 
     def create(self, name):
         """See `IHWVendorNameSet`."""
@@ -684,10 +678,9 @@ def isValidProductID(bus, id):
     return validProductID[bus].search(id) is not None
 
 
+@implementer(IHWVendorID)
 class HWVendorID(SQLBase):
     """See `IHWVendorID`."""
-
-    implements(IHWVendorID)
 
     _table = 'HWVendorID'
 
@@ -712,10 +705,9 @@ class HWVendorID(SQLBase):
         SQLBase._create(self, id, **kw)
 
 
+@implementer(IHWVendorIDSet)
 class HWVendorIDSet:
     """See `IHWVendorIDSet`."""
-
-    implements(IHWVendorIDSet)
 
     def create(self, bus, vendor_id, vendor_name):
         """See `IHWVendorIDSet`."""
@@ -741,10 +733,9 @@ class HWVendorIDSet:
             HWVendorID.vendor_id_for_bus)
 
 
+@implementer(IHWDevice)
 class HWDevice(SQLBase):
     """See `IHWDevice.`"""
-
-    implements(IHWDevice)
     _table = 'HWDevice'
 
     # XXX Abel Deuring 2008-05-02: The columns bus_vendor and
@@ -835,10 +826,9 @@ class HWDevice(SQLBase):
             store.remove(existing_record)
 
 
+@implementer(IHWDeviceSet)
 class HWDeviceSet:
     """See `IHWDeviceSet`."""
-
-    implements(IHWDeviceSet)
 
     def create(self, bus, vendor_id, product_id, product_name, variant=None):
         """See `IHWDeviceSet`."""
@@ -901,10 +891,9 @@ class HWDeviceSet:
                 HWDevice.id)
 
 
+@implementer(IHWDeviceNameVariant)
 class HWDeviceNameVariant(SQLBase):
     """See `IHWDeviceNameVariant`."""
-
-    implements(IHWDeviceNameVariant)
     _table = 'HWDeviceNameVariant'
 
     vendor_name = ForeignKey(dbName='vendor_name', foreignKey='HWVendorName',
@@ -914,10 +903,9 @@ class HWDeviceNameVariant(SQLBase):
     submissions = IntCol(notNull=True)
 
 
+@implementer(IHWDeviceNameVariantSet)
 class HWDeviceNameVariantSet:
     """See `IHWDeviceNameVariantSet`."""
-
-    implements(IHWDeviceNameVariantSet)
 
     def create(self, device, vendor_name, product_name):
         """See `IHWDeviceNameVariantSet`."""
@@ -930,10 +918,9 @@ class HWDeviceNameVariantSet:
                                    submissions=0)
 
 
+@implementer(IHWDriver)
 class HWDriver(SQLBase):
     """See `IHWDriver`."""
-
-    implements(IHWDriver)
     _table = 'HWDriver'
 
     # XXX: Abel Deuring 2008-12-10 bug=306265: package_name should
@@ -954,10 +941,9 @@ class HWDriver(SQLBase):
             distroseries=distroseries, architecture=architecture, owner=owner)
 
 
+@implementer(IHWDriverSet)
 class HWDriverSet:
     """See `IHWDriver`."""
-
-    implements(IHWDriverSet)
 
     def create(self, package_name, name, license):
         """See `IHWDriverSet`."""
@@ -1025,38 +1011,34 @@ class HWDriverSet:
         return result
 
 
+@implementer(IHWDriverName)
 class HWDriverName(SQLBase):
     """See `IHWDriverName`."""
-
-    implements(IHWDriverName)
     _table = 'HWDriverNames'
 
     name = StringCol(notNull=True)
 
 
+@implementer(IHWDriverPackageName)
 class HWDriverPackageName(SQLBase):
     """See `IHWDriverPackageName`."""
-
-    implements(IHWDriverPackageName)
     _table = 'HWDriverPackageNames'
 
     package_name = StringCol(notNull=True)
 
 
+@implementer(IHWDeviceDriverLink)
 class HWDeviceDriverLink(SQLBase):
     """See `IHWDeviceDriverLink`."""
-
-    implements(IHWDeviceDriverLink)
     _table = 'HWDeviceDriverLink'
 
     device = ForeignKey(dbName='device', foreignKey='HWDevice', notNull=True)
     driver = ForeignKey(dbName='driver', foreignKey='HWDriver', notNull=False)
 
 
+@implementer(IHWDeviceDriverLinkSet)
 class HWDeviceDriverLinkSet:
     """See `IHWDeviceDriverLinkSet`."""
-
-    implements(IHWDeviceDriverLinkSet)
 
     def create(self, device, driver):
         """See `IHWDeviceDriverLinkSet`."""
@@ -1074,9 +1056,9 @@ class HWDeviceDriverLinkSet:
         return device_driver_link
 
 
+@implementer(IHWDeviceClass)
 class HWDeviceClass(SQLBase):
     """See `IHWDeviceClass`."""
-    implements(IHWDeviceClass)
 
     device = ForeignKey(dbName='device', foreignKey='HWDevice', notNull=True)
     main_class = IntCol(notNull=True)
@@ -1088,9 +1070,9 @@ class HWDeviceClass(SQLBase):
         store.remove(self)
 
 
+@implementer(IHWDeviceClassSet)
 class HWDeviceClassSet:
     """See `IHWDeviceClassSet`."""
-    implements(IHWDeviceClassSet)
 
     def get(self, id):
         """See `IHWDeviceClassSet`."""
@@ -1098,10 +1080,9 @@ class HWDeviceClassSet:
             HWDeviceClass, HWDeviceClass.id == id).one()
 
 
+@implementer(IHWSubmissionDevice)
 class HWSubmissionDevice(SQLBase):
     """See `IHWSubmissionDevice`."""
-
-    implements(IHWSubmissionDevice)
     _table = 'HWSubmissionDevice'
 
     device_driver_link = ForeignKey(dbName='device_driver_link',
@@ -1125,10 +1106,9 @@ class HWSubmissionDevice(SQLBase):
         return self.device_driver_link.driver
 
 
+@implementer(IHWSubmissionDeviceSet)
 class HWSubmissionDeviceSet:
     """See `IHWSubmissionDeviceSet`."""
-
-    implements(IHWSubmissionDeviceSet)
 
     def create(self, device_driver_link, submission, parent, hal_device_id):
         """See `IHWSubmissionDeviceSet`."""
@@ -1168,10 +1148,9 @@ class HWSubmissionDeviceSet:
         return result.get_one()[0]
 
 
+@implementer(IHWSubmissionBug)
 class HWSubmissionBug(SQLBase):
     """See `IHWSubmissionBug`."""
-
-    implements(IHWSubmissionBug)
     _table = 'HWSubmissionBug'
 
     submission = ForeignKey(dbName='submission', foreignKey='HWSubmission',
@@ -1179,10 +1158,9 @@ class HWSubmissionBug(SQLBase):
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
 
 
+@implementer(IHWSubmissionBugSet)
 class HWSubmissionBugSet:
     """See `IHWSubmissionBugSet`."""
-
-    implements(IHWSubmissionBugSet)
 
     def create(self, submission, bug):
         """See `IHWSubmissionBugSet`."""

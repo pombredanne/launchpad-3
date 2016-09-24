@@ -9,7 +9,7 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.services.database.constants import DEFAULT
@@ -22,10 +22,9 @@ from lp.services.worlddata.interfaces.country import (
     )
 
 
+@implementer(ICountry)
 class Country(SQLBase):
     """A country."""
-
-    implements(ICountry)
 
     _table = 'Country'
 
@@ -47,10 +46,9 @@ class Country(SQLBase):
         intermediateTable='SpokenIn')
 
 
+@implementer(ICountrySet)
 class CountrySet:
     """A set of countries"""
-
-    implements(ICountrySet)
 
     def __getitem__(self, iso3166code2):
         country = Country.selectOneBy(iso3166code2=iso3166code2)
@@ -74,10 +72,10 @@ class CountrySet:
         """See `ICountrySet`."""
         return IStore(Country).find(Country).order_by(Country.iso3166code2)
 
+
+@implementer(IContinent)
 class Continent(SQLBase):
     """See IContinent."""
-
-    implements(IContinent)
 
     _table = 'Continent'
     _defaultOrder = ['name', 'id']

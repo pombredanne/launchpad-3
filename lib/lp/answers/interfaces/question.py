@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for a Question."""
@@ -16,6 +16,7 @@ __all__ = [
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
+    export_factory_operation,
     export_write_operation,
     exported,
     operation_for_version,
@@ -107,7 +108,8 @@ class IQuestion(IHasOwner):
     answer = exported(Reference(
         title=_('Answer'), required=False,
         description=_("The IQuestionMessage that contains the answer "
-            "confirmed by the owner as providing a solution to his problem."),
+            "confirmed by the owner as providing a solution to their "
+            "problem."),
         schema=IQuestionMessage),
         readonly=True, as_of="devel")
     datecreated = exported(Datetime(
@@ -310,7 +312,7 @@ class IQuestion(IHasOwner):
 
     can_confirm_answer = Attribute(
         'Whether the question is in a state for the question owner to '
-        'confirm that an answer solved his problem.')
+        'confirm that an answer solved their problem.')
 
     def confirmAnswer(comment, answer=None, datecreated=None):
         """Confirm that a solution to the question was found.
@@ -344,6 +346,11 @@ class IQuestion(IHasOwner):
         the question target owner or part of the administration team.
         """
 
+    @operation_parameters(
+        comment=Text(title=_("An explanation of the rejection")))
+    @call_with(user=REQUEST_USER)
+    @export_factory_operation(IQuestionMessage, [])
+    @operation_for_version("devel")
     def reject(user, comment, datecreated=None):
         """Mark this question as INVALID.
 
@@ -526,7 +533,7 @@ class IQuestionAddMessageForm(Interface):
     message = Text(title=_('Message'), required=False)
 
     subscribe_me = Bool(
-        title=_('E-mail me future discussion about this question'),
+        title=_('Email me future discussion about this question'),
         required=False, default=False)
 
 

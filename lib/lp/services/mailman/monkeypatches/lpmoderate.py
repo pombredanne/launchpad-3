@@ -5,7 +5,7 @@
 """
 
 from email.iterators import typed_subpart_iterator
-from email.Utils import (
+from email.utils import (
     formatdate,
     make_msgid,
     )

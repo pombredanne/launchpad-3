@@ -23,7 +23,9 @@ to make sure verifyObject will work.
     >>> from lp.registry.model.gpgkey import GPGKey
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> fake_signer = GPGKey.selectOneBy(owner=name16)
-    >>> spph.sourcepackagerelease.dscsigningkey = fake_signer
+    >>> spph.sourcepackagerelease.signing_key_owner = fake_signer.owner
+    >>> spph.sourcepackagerelease.signing_key_fingerprint = (
+    ...     fake_signer.fingerprint)
 
 Verify if the object follows its interface contracts:
 
@@ -86,7 +88,9 @@ Other properties are shortcuts to the source package's properties:
 
 The signer can also be None for packages that were synced (e.g. from Debian):
 
-    >>> spph.sourcepackagerelease.dscsigningkey = None
+    >>> from lp.services.propertycache import get_property_cache
+    >>> spph.sourcepackagerelease.signing_key_owner = None
+    >>> spph.sourcepackagerelease.signing_key_fingerprint = None
     >>> print spph.package_signer
     None
 
@@ -212,7 +216,8 @@ Nor will it be included in the unpublished builds:
 By default, only FULLYBUILT builds are included in the returned
 unpublished builds:
 
-    >>> builds[1].updateStatus(BuildStatus.SUPERSEDED)
+    >>> builds[1].updateStatus(
+    ...     BuildStatus.SUPERSEDED, force_invalid_transition=True)
     >>> for _, build, _ in ps.getUnpublishedBuildsForSources([spph]):
     ...     print build.title
 
@@ -226,7 +231,8 @@ But the returned build-states can be set explicitly:
 
 Just switch it back to FULLYBUILT before continuing:
 
-    >>> builds[1].updateStatus(BuildStatus.FULLYBUILT)
+    >>> builds[1].updateStatus(
+    ...     BuildStatus.FULLYBUILT, force_invalid_transition=True)
 
 After publishing the second binary, the status changes to FULLYBUILT as
 per normal:

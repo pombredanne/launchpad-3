@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import os
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.location.interfaces import LocationError
 from zope.traversing.interfaces import IPathAdapter
 
@@ -31,8 +31,8 @@ class ITest(IPrivacy):
     """A mechanism for adaption."""
 
 
+@implementer(ITest)
 class TestObject:
-    implements(ITest)
 
     def __init__(self):
         self.private = False

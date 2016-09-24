@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Infrastructure for handling custom uploads.
@@ -13,21 +13,24 @@ DDTP (Debian Description Translation Project) tarballs.
 
 __metaclass__ = type
 
-__all__ = ['CustomUpload', 'CustomUploadError']
+__all__ = ['CustomUpload']
 
 import os
 import shutil
 import tarfile
 import tempfile
 
+from zope.interface import implementer
+
 from lp.archivepublisher.debversion import (
     Version as make_version,
     VersionError,
     )
-
-
-class CustomUploadError(Exception):
-    """Base class for all errors associated with publishing custom uploads."""
+from lp.services.librarian.utils import copy_and_close
+from lp.soyuz.interfaces.queue import (
+    CustomUploadError,
+    ICustomUploadHandler,
+    )
 
 
 class CustomUploadTarballTarError(CustomUploadError):
@@ -88,11 +91,27 @@ class CustomUploadAlreadyExists(CustomUploadError):
         CustomUploadError.__init__(self, message)
 
 
+@implementer(ICustomUploadHandler)
 class CustomUpload:
     """Base class for custom upload handlers"""
 
     # This should be set as a class property on each subclass.
     custom_type = None
+
+    @classmethod
+    def publish(cls, packageupload, libraryfilealias, logger=None):
+        """See `ICustomUploadHandler`."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            tarfile_path = os.path.join(temp_dir, libraryfilealias.filename)
+            temp_file = open(tarfile_path, "wb")
+            libraryfilealias.open()
+            copy_and_close(libraryfilealias, temp_file)
+            suite = packageupload.distroseries.getSuite(packageupload.pocket)
+            upload = cls(logger=logger)
+            upload.process(packageupload.archive, tarfile_path, suite)
+        finally:
+            shutil.rmtree(temp_dir)
 
     def __init__(self, logger=None):
         self.targetdir = None
@@ -102,11 +121,11 @@ class CustomUpload:
         self.tmpdir = None
         self.logger = logger
 
-    def process(self, pubconf, tarfile_path, distroseries):
+    def process(self, archive, tarfile_path, suite):
         """Process the upload and install it into the archive."""
         self.tarfile_path = tarfile_path
         try:
-            self.setTargetDirectory(pubconf, tarfile_path, distroseries)
+            self.setTargetDirectory(archive, tarfile_path, suite)
             self.checkForConflicts()
             self.extract()
             self.installFiles()
@@ -126,7 +145,7 @@ class CustomUpload:
         """Set instance variables based on decomposing the filename."""
         raise NotImplementedError
 
-    def setTargetDirectory(self, pubconf, tarfile_path, distroseries):
+    def setTargetDirectory(self, archive, tarfile_path, suite):
         """Set self.targetdir based on parameters.
 
         This should also set self.version and self.arch (if applicable) as a
@@ -247,7 +266,7 @@ class CustomUpload:
         """Ensure the parent directory exists."""
         parentdir = os.path.dirname(path)
         if not os.path.isdir(parentdir):
-            os.makedirs(parentdir, 0755)
+            os.makedirs(parentdir, 0o755)
 
     def installFiles(self):
         """Install the files from the custom upload to the archive."""
@@ -267,8 +286,8 @@ class CustomUpload:
                 # Also, ensure that the process has the expected umask.
                 old_mask = os.umask(0)
                 try:
-                    if old_mask != 022:
-                        raise CustomUploadBadUmask(022, old_mask)
+                    if old_mask != 0o022:
+                        raise CustomUploadBadUmask(0o022, old_mask)
                 finally:
                     os.umask(old_mask)
                 if os.path.islink(sourcepath):
@@ -296,7 +315,7 @@ class CustomUpload:
                     os.symlink(os.readlink(sourcepath), destpath)
                 else:
                     shutil.copy(sourcepath, destpath)
-                    os.chmod(destpath, 0644)
+                    os.chmod(destpath, 0o644)
 
                 extracted = True
 

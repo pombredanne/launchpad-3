@@ -117,7 +117,6 @@ def start_mailman(quiet=False, config=None):
     # We need the Mailman bin directory so we can run some of Mailman's
     # command line scripts.
     mailman_path = configure_prefix(config.mailman.build_prefix)
-    mailman_bin = os.path.join(mailman_path, 'bin')
 
     # Monkey-patch the installed Mailman 2.1 tree.
     monkey_patch(mailman_path, config)

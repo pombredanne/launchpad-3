@@ -13,7 +13,7 @@ import os
 import GeoIP as libGeoIP
 from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.geoip.helpers import ipaddress_from_request
@@ -28,9 +28,9 @@ from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 
 
+@implementer(IGeoIP)
 class GeoIP:
     """See `IGeoIP`."""
-    implements(IGeoIP)
 
     @cachedproperty
     def _gi(self):
@@ -68,9 +68,9 @@ class GeoIP:
             return country
 
 
+@implementer(IGeoIPRecord)
 class GeoIPRequest:
     """An adapter for a BrowserRequest into an IGeoIPRecord."""
-    implements(IGeoIPRecord)
 
     def __init__(self, request):
         self.request = request
@@ -106,9 +106,8 @@ class GeoIPRequest:
         return self.geoip_record['time_zone']
 
 
+@implementer(IRequestLocalLanguages)
 class RequestLocalLanguages(object):
-
-    implements(IRequestLocalLanguages)
 
     def __init__(self, request):
         self.request = request
@@ -130,9 +129,8 @@ class RequestLocalLanguages(object):
         return sorted(languages, key=lambda x: x.englishname)
 
 
+@implementer(IRequestPreferredLanguages)
 class RequestPreferredLanguages(object):
-
-    implements(IRequestPreferredLanguages)
 
     def __init__(self, request):
         self.request = request

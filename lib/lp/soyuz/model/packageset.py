@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = ['Packageset', 'PackagesetSet']
 
 import pytz
-from storm.exceptions import IntegrityError
 from storm.expr import SQL
 from storm.locals import (
     DateTime,
@@ -15,7 +14,7 @@ from storm.locals import (
     Unicode,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName,
@@ -42,9 +41,9 @@ def _order_result_set(result_set):
     return result_set.order_by('name')
 
 
+@implementer(IPackageset)
 class Packageset(Storm):
     """See `IPackageset`."""
-    implements(IPackageset)
     __storm_table__ = 'Packageset'
     id = Int(primary=True)
 
@@ -333,13 +332,19 @@ class Packageset(Storm):
             store.remove(self.packagesetgroup)
 
 
+@implementer(IPackagesetSet)
 class PackagesetSet:
     """See `IPackagesetSet`."""
-    implements(IPackagesetSet)
 
     def new(self, name, description, owner, distroseries, related_set=None):
         """See `IPackagesetSet`."""
         store = IMasterStore(Packageset)
+
+        try:
+            self.getByName(distroseries, name)
+            raise DuplicatePackagesetName
+        except NoSuchPackageSet:
+            pass
 
         packagesetgroup = None
         if related_set is not None:
@@ -363,12 +368,9 @@ class PackagesetSet:
 
         store.add(packageset)
 
-        # We need to ensure that the cached statements are flushed so that
-        # the duplicate name constraint gets triggered here.
-        try:
-            store.flush()
-        except IntegrityError:
-            raise DuplicatePackagesetName()
+        # Explicit flush since it's common to use Packageset.id immediately
+        # after creation.
+        store.flush()
 
         return packageset
 

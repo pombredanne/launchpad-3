@@ -36,8 +36,6 @@ __all__ = [
     'IPackageUpload',
     'IPackageset',
     'IPackagesetSet',
-    'IProcessor',
-    'IProcessorSet',
     'ISourcePackagePublishingHistory',
     'IncompatibleArguments',
     'InsufficientUploadRights',
@@ -101,10 +99,6 @@ from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
     NoSuchPackageSet,
-    )
-from lp.soyuz.interfaces.processor import (
-    IProcessor,
-    IProcessorSet,
     )
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,

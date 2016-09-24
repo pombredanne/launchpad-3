@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -40,7 +40,7 @@ from storm.store import Store
 from storm.zope import IResultSet
 from storm.zope.interfaces import ISQLObjectResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
@@ -75,7 +75,6 @@ from lp.services.webapp.errorlog import (
     )
 from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (
-    ArchivePurpose,
     BinaryPackageFormat,
     PackagePublishingPriority,
     PackagePublishingStatus,
@@ -101,7 +100,6 @@ from lp.soyuz.interfaces.publishing import (
     OverrideError,
     PoolFileOverwriteError,
     )
-from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -175,6 +173,7 @@ class FilePublishingBase:
                 self.libraryfilealiasfilename)
 
 
+@implementer(ISourcePackageFilePublishing)
 class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
     """Source package release files and their publishing status.
 
@@ -183,8 +182,6 @@ class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
 
     _idType = unicode
     _defaultOrder = "id"
-
-    implements(ISourcePackageFilePublishing)
 
     distribution = ForeignKey(dbName='distribution',
                               foreignKey="Distribution",
@@ -225,6 +222,7 @@ class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
         return self.sourcepackagepublishing
 
 
+@implementer(IBinaryPackageFilePublishing)
 class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
     """A binary package file which is published.
 
@@ -233,8 +231,6 @@ class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
 
     _idType = unicode
     _defaultOrder = "id"
-
-    implements(IBinaryPackageFilePublishing)
 
     binarypackagepublishing = ForeignKey(
         dbName='binarypackagepublishing',
@@ -330,9 +326,9 @@ class ArchivePublisherBase:
         return self.section.name
 
 
+@implementer(ISourcePackagePublishingHistory)
 class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
-    implements(ISourcePackagePublishingHistory)
 
     sourcepackagename = ForeignKey(
         foreignKey='SourcePackageName', dbName='sourcepackagename')
@@ -383,9 +379,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def package_signer(self):
         """See `ISourcePackagePublishingHistory`."""
-        if self.sourcepackagerelease.dscsigningkey is not None:
-            return self.sourcepackagerelease.dscsigningkey.owner
-        return None
+        return self.sourcepackagerelease.signing_key_owner
 
     @cachedproperty
     def newer_distroseries_version(self):
@@ -647,11 +641,23 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return getUtility(
             IPublishingSet).getBuildStatusSummaryForSourcePublication(self)
 
-    def sourceFileUrls(self):
+    def sourceFileUrls(self, include_meta=False):
         """See `ISourcePackagePublishingHistory`."""
+        sources = Store.of(self).find(
+            (LibraryFileAlias, LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == SourcePackageReleaseFile.libraryfileID,
+            SourcePackageReleaseFile.sourcepackagerelease ==
+                SourcePackageRelease.id,
+            SourcePackageRelease.id == self.sourcepackagereleaseID)
         source_urls = proxied_urls(
-            [file.libraryfile for file in self.sourcepackagerelease.files],
-             self.archive)
+            [source for source, _ in sources], self.archive)
+        if include_meta:
+            meta = [
+                (content.filesize, content.sha256) for _, content in sources]
+            return [
+                dict(url=url, size=size, sha256=sha256)
+                for url, (size, sha256) in zip(source_urls, meta)]
         return source_urls
 
     def binaryFileUrls(self):
@@ -700,10 +706,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             [self], removed_by, removal_comment)
 
 
+@implementer(IBinaryPackagePublishingHistory)
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record."""
-
-    implements(IBinaryPackagePublishingHistory)
 
     binarypackagename = ForeignKey(
         foreignKey='BinaryPackageName', dbName='binarypackagename')
@@ -767,6 +772,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def binary_package_version(self):
         """See `IBinaryPackagePublishingHistory`"""
         return self.binarypackagerelease.version
+
+    @property
+    def build(self):
+        return self.binarypackagerelease.build
 
     @property
     def architecture_specific(self):
@@ -1054,15 +1063,21 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def binaryFileUrls(self, include_meta=False):
         """See `IBinaryPackagePublishingHistory`."""
+        binaries = Store.of(self).find(
+            (LibraryFileAlias, LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            BinaryPackageFile.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.id == self.binarypackagereleaseID)
         binary_urls = proxied_urls(
-            [f.libraryfilealias for f in self.files], self.archive)
+            [binary for binary, _ in binaries], self.archive)
         if include_meta:
-            meta = [(
-                f.libraryfilealias.content.filesize,
-                f.libraryfilealias.content.sha1,
-            ) for f in self.files]
-            return [dict(url=url, size=size, sha1=sha1)
-                for url, (size, sha1) in zip(binary_urls, meta)]
+            meta = [
+                (content.filesize, content.sha1, content.sha256)
+                for _, content in binaries]
+            return [dict(url=url, size=size, sha1=sha1, sha256=sha256)
+                for url, (size, sha1, sha256) in zip(binary_urls, meta)]
         return binary_urls
 
 
@@ -1101,10 +1116,9 @@ def expand_binary_requests(distroseries, binaries):
     return expanded
 
 
+@implementer(IPublishingSet)
 class PublishingSet:
     """Utilities for manipulating publications in batches."""
-
-    implements(IPublishingSet)
 
     def publishBinaries(self, archive, distroseries, pocket, binaries):
         """See `IPublishingSet`."""
@@ -1120,15 +1134,6 @@ class PublishingSet:
             # The binaries are for a disabled DistroArchSeries or for
             # an unsupported architecture.
             return []
-
-        if (archive.purpose == ArchivePurpose.PRIMARY
-            and not archive.build_debug_symbols
-            and any(
-                1 for _, bpr, _ in expanded
-                if bpr.binpackageformat == BinaryPackageFormat.DDEB)):
-            raise QueueInconsistentStateError(
-                "Won't publish ddebs to a primary archive that doesn't want "
-                "them.")
 
         # Find existing publications.
         # We should really be able to just compare BPR.id, but
@@ -1257,9 +1262,11 @@ class PublishingSet:
                              ancestor=None, create_dsd_job=True,
                              creator=None, sponsor=None, packageupload=None):
         """See `IPublishingSet`."""
-        # Avoid circular import.
+        # Circular import.
         from lp.registry.model.distributionsourcepackage import (
-            DistributionSourcePackage)
+            DistributionSourcePackage,
+            )
+
         if distroseries.distribution != archive.distribution:
             raise AssertionError(
                 "Series distribution %s doesn't match archive distribution %s."
@@ -1287,6 +1294,7 @@ class PublishingSet:
                 distroseries, sourcepackagerelease.sourcepackagename, pocket)
         Store.of(sourcepackagerelease).flush()
         del get_property_cache(sourcepackagerelease).published_archives
+
         return pub
 
     def getBuildsForSourceIds(self, source_publication_ids, archive=None,

@@ -12,7 +12,7 @@ __all__ = [
 import logging
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.looptuner import (
@@ -25,9 +25,9 @@ from lp.services.mail.sendmail import simple_sendmail
 from lp.translations.interfaces.pofile import IPOFileSet
 
 
+@implementer(ITunableLoop)
 class Verifier:
     """`ITunableLoop` that recomputes & checks all `POFile`s' statistics."""
-    implements(ITunableLoop)
 
     total_checked = 0
     total_incorrect = 0

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch listing."""
@@ -84,12 +84,6 @@ class TestListingToSortOrder(TestCase):
         Asc(Owner.name),
         Asc(Branch.name),
         ]
-
-    def assertColumnNotReferenced(self, column, order_by_list):
-        """Ensure that column is not referenced in any way in order_by_list.
-        """
-        self.failIf(column in order_by_list or
-                    ('-' + column) in order_by_list)
 
     def assertSortsEqual(self, sort_one, sort_two):
         """Assert that one list of sort specs is equal to another."""
@@ -382,6 +376,18 @@ class TestSimplifiedPersonBranchesView(TestCaseWithFactory):
         else:
             self.assertThat(page, Not(recipes_matcher))
 
+    def test_branch_list_snaps_link(self):
+        # The link to the snap packages is always displayed.
+        snaps_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Snap packages link', 'a', text='Snap packages',
+                attrs={'href': self.base_url + '/+snaps'}))
+        page = self.get_branch_list_page()
+        if IPerson.providedBy(self.default_target):
+            self.assertThat(page, snaps_matcher)
+        else:
+            self.assertThat(page, Not(snaps_matcher))
+
 
 class TestSimplifiedPersonProductBranchesView(
     TestSimplifiedPersonBranchesView):
@@ -404,9 +410,7 @@ class TestSimplifiedPersonProductBranchesView(
         self.makeABranch()
         page = self.get_branch_list_page()
         h1_matcher = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Title', 'h1',
-                text='Branches of Bambam for Barney'))
+            soupmatchers.Tag('Title', 'h1', text='Branches of Bambam'))
         self.assertThat(page, h1_matcher)
 
     def test_branch_list_empty(self):
@@ -417,6 +421,14 @@ class TestSimplifiedPersonProductBranchesView(
                 text='There are no branches of Bambam for Barney '
                      'in Launchpad today.'))
         self.assertThat(page, empty_message_matcher)
+
+    def test_git_link(self):
+        page = self.get_branch_list_page()
+        self.assertNotIn('View Git repositories', page)
+
+        self.factory.makeGitRepository(owner=self.person, target=self.product)
+        page = self.get_branch_list_page()
+        self.assertIn('View Git repositories', page)
 
 
 class TestSourcePackageBranchesView(TestCaseWithFactory):
@@ -455,6 +467,20 @@ class TestSourcePackageBranchesView(TestCaseWithFactory):
                   ),
              ],
             list(view.series_links))
+
+
+class TestDistributionBranchesView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_git_link(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        page = create_initialized_view(dsp.distribution, '+branches')()
+        self.assertNotIn('View Git repositories', page)
+
+        self.factory.makeGitRepository(target=dsp)
+        page = create_initialized_view(dsp.distribution, '+branches')()
+        self.assertIn('View Git repositories', page)
 
 
 class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
@@ -584,6 +610,16 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
             series_branches_last_row.text_content(),
             DocTestMatches("%s ... ago" % branch.displayname))
 
+    def test_git_link(self):
+        page = create_initialized_view(
+            self.distro_source_package, name='+branches', rootsite='code')()
+        self.assertNotIn('View Git repositories', page)
+
+        self.factory.makeGitRepository(target=self.distro_source_package)
+        page = create_initialized_view(
+            self.distro_source_package, name='+branches', rootsite='code')()
+        self.assertIn('View Git repositories', page)
+
 
 class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
     """Make sure that the bzr_identity of the branches are correct."""
@@ -624,27 +660,6 @@ class TestProductSeriesTemplate(TestCaseWithFactory):
             canonical_url(branch.product, rootsite='code'))
         link = browser.getLink(re.compile('^' + series_name + '$'))
         self.assertEqual('launchpad.dev', URI(link.url).host)
-
-
-class TestProductConfigureCodehosting(TestCaseWithFactory):
-
-    layer = LaunchpadFunctionalLayer
-
-    def test_configure_codehosting_hidden(self):
-        # If the user does not have driver permissions, they are not shown
-        # the configure codehosting link.
-        product = self.factory.makeProduct()
-        browser = self.getUserBrowser(
-            canonical_url(product, rootsite='code'))
-        self.assertFalse('Configure code hosting' in browser.contents)
-
-    def test_configure_codehosting_shown(self):
-        # If the user has driver permissions, they are shown the configure
-        # codehosting link.
-        product = self.factory.makeProduct()
-        browser = self.getUserBrowser(
-            canonical_url(product, rootsite='code'), user=product.owner)
-        self.assertTrue('Configure code hosting' in browser.contents)
 
 
 class TestPersonBranchesPage(BrowserTestCase):
@@ -690,7 +705,7 @@ class TestPersonBranchesPage(BrowserTestCase):
     def test_branch_listing_last_modified(self):
         branch = self.factory.makeProductBranch()
         view = create_initialized_view(
-            branch.product, name="+all-branches", rootsite='code')
+            branch.product, name="+branches", rootsite='code')
         self.assertIn('a moment ago', view())
 
     def test_no_branch_message_escaped(self):
@@ -703,6 +718,15 @@ class TestPersonBranchesPage(BrowserTestCase):
         self.assertTrue(badname not in browser.contents)
         self.assertTrue(escapedname in browser.contents)
 
+    def test_git_link(self):
+        person = self.factory.makePerson()
+        page = create_initialized_view(person, '+branches')()
+        self.assertNotIn('View Git repositories', page)
+
+        self.factory.makeGitRepository(owner=person)
+        page = create_initialized_view(person, '+branches')()
+        self.assertIn('View Git repositories', page)
+
 
 class TestProjectGroupBranches(TestCaseWithFactory,
                                AjaxBatchNavigationMixin):
@@ -712,15 +736,15 @@ class TestProjectGroupBranches(TestCaseWithFactory,
 
     def setUp(self):
         super(TestProjectGroupBranches, self).setUp()
-        self.project = self.factory.makeProject()
+        self.projectgroup = self.factory.makeProject()
 
     def test_no_branches_gets_message_not_listing(self):
         # If there are no product branches on the project's products, then
         # the view shows the no code hosting message instead of a listing.
-        self.factory.makeProduct(project=self.project)
+        self.factory.makeProduct(projectgroup=self.projectgroup)
         view = create_initialized_view(
-            self.project, name='+branches', rootsite='code')
-        displayname = self.project.displayname
+            self.projectgroup, name='+branches', rootsite='code')
+        displayname = self.projectgroup.displayname
         expected_text = normalize_whitespace(
             ("Launchpad does not know where any of %s's "
              "projects host their code." % displayname))
@@ -729,36 +753,36 @@ class TestProjectGroupBranches(TestCaseWithFactory,
         self.assertEqual(expected_text, text)
 
     def test_branches_get_listing(self):
-        # If a product has a branch, then the project view has a branch
-        # listing.
-        product = self.factory.makeProduct(project=self.project)
+        # If a product has a branch, then the project group view has a
+        # branch listing.
+        product = self.factory.makeProduct(projectgroup=self.projectgroup)
         self.factory.makeProductBranch(product=product)
         view = create_initialized_view(
-            self.project, name='+branches', rootsite='code')
+            self.projectgroup, name='+branches', rootsite='code')
         table = find_tag_by_id(view(), "branchtable")
         self.assertIsNot(None, table)
 
     def test_search_batch_request(self):
         # A search request with a 'batch_request' query parameter causes the
         # view to just render the next batch of results.
-        product = self.factory.makeProduct(project=self.project)
-        self._test_search_batch_request(product, view_name='+all-branches')
+        product = self.factory.makeProduct(projectgroup=self.projectgroup)
+        self._test_search_batch_request(product, view_name='+branches')
 
     def test_ajax_batch_navigation_feature_flag(self):
         # The Javascript to wire up the ajax batch navigation behaviour is
         # correctly hidden behind a feature flag.
-        product = self.factory.makeProduct(project=self.project)
+        product = self.factory.makeProduct(projectgroup=self.projectgroup)
         for i in range(10):
             self.factory.makeProductBranch(product=product)
         self._test_ajax_batch_navigation_feature_flag(
-            product, view_name='+all-branches')
+            product, view_name='+branches')
 
     def test_non_batch_template(self):
         # The correct template is used for non batch requests.
-        product = self.factory.makeProduct(project=self.project)
+        product = self.factory.makeProduct(projectgroup=self.projectgroup)
         self._test_non_batch_template(product, 'buglisting-default.pt')
 
     def test_batch_template(self):
         # The correct template is used for batch requests.
-        product = self.factory.makeProduct(project=self.project)
+        product = self.factory.makeProduct(projectgroup=self.projectgroup)
         self._test_batch_template(product)

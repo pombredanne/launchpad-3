@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,6 +7,10 @@ from textwrap import dedent
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
@@ -32,6 +36,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.features.testing import FeatureFixture
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
@@ -99,7 +104,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # group has a customized bug filing confirmation message,
         # this message is displayed.
         project_group = self.factory.makeProject()
-        product = self.factory.makeProduct(project=project_group)
+        product = self.factory.makeProduct(projectgroup=project_group)
 
         # Without any customized bug filing confirmation message, the
         # default message is used.
@@ -130,7 +135,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
         # group has a customized bug filing confirmation message,
         # this message is displayed.
         project_group = self.factory.makeProject()
-        product = self.factory.makeProduct(project=project_group)
+        product = self.factory.makeProduct(projectgroup=project_group)
         product_series = self.factory.makeProductSeries(product=product)
 
         # Without any customized bug filing confirmation message, the
@@ -243,7 +248,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
     def test_bug_filing_view_with_dupe_search_enabled(self):
         # When a user files a bug for a product where searching for
-        # duplicate bugs is enabled, he is asked to provide a
+        # duplicate bugs is enabled, they are asked to provide a
         # summary of the bug. This summary is used to find possible
         # existing duplicates f this bug.
         product = self.factory.makeProduct()
@@ -269,7 +274,7 @@ class TestBugTargetFileBugConfirmationMessage(TestCaseWithFactory):
 
     def test_bug_filing_view_with_dupe_search_disabled(self):
         # When a user files a bug for a product where searching for
-        # duplicate bugs is disabled, he can directly enter all
+        # duplicate bugs is disabled, they can directly enter all
         # details of the bug.
         product = self.factory.makeProduct()
         login_person(product.owner)
@@ -787,9 +792,21 @@ class TestFileBugForNonBugSupervisors(TestCaseWithFactory):
             soup.find('input', attrs={'name': 'field.information_type'}))
 
 
-class TestFileBugSourcePackage(TestCaseWithFactory):
+class TestFileBugSourcePackage(WithScenarios, TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    scenarios = [
+        ("bspn_picker", {"features": {}}),
+        ("dsp_picker", {
+            "features": {u"disclosure.dsp_picker.enabled": u"on"},
+            }),
+        ]
+
+    def setUp(self):
+        super(TestFileBugSourcePackage, self).setUp()
+        if self.features:
+            self.useFixture(FeatureFixture(self.features))
 
     def test_filebug_works_on_official_package_branch(self):
         # It should be possible to file a bug against a source package
@@ -825,7 +842,7 @@ class ProjectGroupFileBugGuidedViewTestCase(TestCaseWithFactory):
         project_group = self.factory.makeProject()
         owner = project_group.owner
         product = self.factory.makeProduct(
-            owner=owner, name=product_name, project=project_group)
+            owner=owner, name=product_name, projectgroup=project_group)
         with person_logged_in(owner):
             product.official_malone = True
         form = {
@@ -936,3 +953,6 @@ class TestFileBugRequestCache(TestCaseWithFactory):
         login_person(user)
         view = create_initialized_view(product, '+filebug', principal=user)
         self._assert_cache_values(view, False)
+
+
+load_tests = load_tests_apply_scenarios

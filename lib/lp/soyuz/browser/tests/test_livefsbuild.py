@@ -36,8 +36,6 @@ from lp.testing.pages import (
     extract_text,
     find_main_content,
     find_tags_by_class,
-    setupBrowser,
-    setupBrowserForUser,
     )
 from lp.testing.views import create_initialized_view
 
@@ -230,17 +228,12 @@ class TestLiveFSBuildOperations(BrowserTestCase):
         build.buildqueue_record.logtail = "tail of the log"
         return build
 
-    def makeNonRedirectingBrowser(self, url, user=None):
-        browser = setupBrowserForUser(user) if user else setupBrowser()
-        browser.mech_browser.set_handle_equiv(False)
-        browser.open(url)
-        return browser
-
     def test_builder_index_public(self):
         build = self.makeBuildingLiveFS()
         builder_url = canonical_url(build.builder)
         logout()
-        browser = self.makeNonRedirectingBrowser(builder_url)
+        browser = self.getNonRedirectingBrowser(
+            url=builder_url, user=ANONYMOUS)
         self.assertIn("tail of the log", browser.contents)
 
     def test_builder_index_private(self):
@@ -248,14 +241,13 @@ class TestLiveFSBuildOperations(BrowserTestCase):
         with admin_logged_in():
             build = self.makeBuildingLiveFS(archive=archive)
             builder_url = canonical_url(build.builder)
-        user = self.factory.makePerson()
         logout()
 
         # An unrelated user can't see the logtail of a private build.
-        browser = self.makeNonRedirectingBrowser(builder_url, user=user)
+        browser = self.getNonRedirectingBrowser(url=builder_url)
         self.assertNotIn("tail of the log", browser.contents)
 
         # But someone who can see the archive can.
-        browser = self.makeNonRedirectingBrowser(
-            builder_url, user=archive.owner)
+        browser = self.getNonRedirectingBrowser(
+            url=builder_url, user=archive.owner)
         self.assertIn("tail of the log", browser.contents)

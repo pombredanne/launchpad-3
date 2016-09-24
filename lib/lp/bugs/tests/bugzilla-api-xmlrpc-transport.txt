@@ -44,7 +44,7 @@ method will return the user's user ID in a dict.
 The Bugzilla_logincookie will now have been set for the transport, too.
 
     >>> print bugzilla_transport.cookie_processor.cookiejar
-    <cookielib.CookieJar[<Cookie Bugzilla_login=...>,
+    <...CookieJar[<Cookie Bugzilla_login=...>,
         <Cookie Bugzilla_logincookie=...>]>
 
 Trying to log in with an incorrect username or password will result in

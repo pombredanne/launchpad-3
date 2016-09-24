@@ -48,8 +48,8 @@ Note fingerprint is also unicode.
     >>> fingerprint
     u'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
-    >>> cipher = gpghandler.encryptContent(content.encode('utf-8'),
-    ...                                    fingerprint)
+    >>> key = gpghandler.retrieveKey(fingerprint)
+    >>> cipher = gpghandler.encryptContent(content.encode('utf-8'), key)
     
 cipher constains the encrypted content.
 
@@ -67,15 +67,14 @@ voilá, the same content shows up again.
 Verify if the encrytion process support passing another charset string
 
     >>> content = u'a\xe7ucar'
-    >>> cipher = gpghandler.encryptContent(content.encode('iso-8859-1'),
-    ... fingerprint)
+    >>> cipher = gpghandler.encryptContent(content.encode('iso-8859-1'), key)
     >>> plain = decrypt_content(cipher, 'test')    
     >>> plain.decode('iso-8859-1')
     u'a\xe7ucar'
 
 Let's try to pass unicode and see if it fails
 
-    >>> cipher = gpghandler.encryptContent(content,fingerprint)
+    >>> cipher = gpghandler.encryptContent(content, key)
     Traceback (most recent call last):
     ...
     TypeError: Content cannot be Unicode.
@@ -83,8 +82,7 @@ Let's try to pass unicode and see if it fails
 Decrypt a unicode content:
 
     >>> content = u'a\xe7ucar'
-    >>> cipher = gpghandler.encryptContent(content.encode('iso-8859-1'),
-    ... fingerprint)
+    >>> cipher = gpghandler.encryptContent(content.encode('iso-8859-1'), key)
     >>> cipher = unicode(cipher)
     >>> plain = decrypt_content(cipher, 'test')    
     Traceback (most recent call last):

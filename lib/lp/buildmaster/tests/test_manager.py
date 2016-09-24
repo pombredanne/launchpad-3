@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# NOTE: The first line above must stay first; do not move the copyright
+# notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
+#
 # Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -230,7 +234,8 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         self.assertIs(None, builder.currentjob)
         self._checkJobRescued(slave, builder, job)
 
-    def _checkJobUpdated(self, slave, builder, job):
+    def _checkJobUpdated(self, slave, builder, job,
+                         logtail='This is a build log: 0'):
         """`SlaveScanner.scan` updates legitimate jobs.
 
         Job is kept assigned to the active builder and its 'logtail' is
@@ -242,7 +247,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         self.assertTrue(builder.builderok)
 
         job = getUtility(IBuildQueueSet).get(job.id)
-        self.assertBuildingJob(job, builder, logtail='This is a build log: 0')
+        self.assertBuildingJob(job, builder, logtail=logtail)
 
     def testScanUpdatesBuildingJobs(self):
         # Enable sampledata builder attached to an appropriate testing
@@ -311,6 +316,35 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         scanner = self._getScanner(builder_name=builder.name)
         d = scanner.scan()
         return assert_fails_with(d, xmlrpclib.Fault)
+
+    def test_scan_of_partial_utf8_logtail(self):
+        # The builder returns a fixed number of bytes from the tail of the
+        # log, so the first character can easily end up being invalid UTF-8.
+        class BrokenUTF8Slave(BuildingSlave):
+            @defer.inlineCallbacks
+            def status(self):
+                status = yield super(BrokenUTF8Slave, self).status()
+                status["logtail"] = xmlrpclib.Binary(
+                    u"───".encode("UTF-8")[1:])
+                defer.returnValue(status)
+
+        builder = getUtility(IBuilderSet)[BOB_THE_BUILDER_NAME]
+        login('foo.bar@canonical.com')
+        builder.builderok = True
+        self.patch(
+            BuilderSlave, 'makeBuilderSlave',
+            FakeMethod(BrokenUTF8Slave(build_id='PACKAGEBUILD-8')))
+        transaction.commit()
+        login(ANONYMOUS)
+
+        job = builder.currentjob
+        self.assertBuildingJob(job, builder)
+
+        switch_dbuser(config.builddmaster.dbuser)
+        scanner = self._getScanner()
+        d = defer.maybeDeferred(scanner.scan)
+        d.addCallback(
+            self._checkJobUpdated, builder, job, logtail=u"\uFFFD\uFFFD──")
 
     @defer.inlineCallbacks
     def test_scan_calls_builder_factory_prescanUpdate(self):
@@ -582,9 +616,7 @@ class TestSlaveScannerWithLibrarian(TestCaseWithFactory):
         # Mock out the build behaviour's handleSuccess so it doesn't
         # try to upload things to the librarian or queue.
         def handleSuccess(self, slave_status, logger):
-            build.updateStatus(
-                BuildStatus.UPLOADING, builder, slave_status=slave_status)
-            transaction.commit()
+            return BuildStatus.UPLOADING
         self.patch(
             BinaryPackageBuildBehaviour, 'handleSuccess', handleSuccess)
 
@@ -1107,6 +1139,26 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.assertEqual(self.build.status, BuildStatus.FAILEDTOBUILD)
         self.assertEqual(0, self.builder.failure_count)
 
+    def test_bad_job_does_not_unsucceed(self):
+        # If a FULLYBUILT build somehow ends up back in buildd-manager,
+        # all manner of failures can occur as invariants are violated.
+        # But we can't just fail and later retry the build as normal, as
+        # a FULLYBUILT build has binaries. Instead, failure handling
+        # just destroys the BuildQueue and leaves the status as
+        # FULLYBUILT.
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.build.gotFailure()
+        self.build.gotFailure()
+        self.builder.gotFailure()
+
+        log = self._recover_failure("failnotes")
+        self.assertIn("Failing job", log)
+        self.assertIn("Build is already successful!", log)
+        self.assertIn("Resetting failure count of builder", log)
+        self.assertIs(None, self.builder.currentjob)
+        self.assertEqual(self.build.status, BuildStatus.FULLYBUILT)
+        self.assertEqual(0, self.builder.failure_count)
+
     def test_failure_during_cancellation_cancels(self):
         self.buildqueue.cancel()
         self.assertEqual(BuildStatus.CANCELLING, self.build.status)
@@ -1129,7 +1181,7 @@ class TestFailureAssessments(TestCaseWithFactory):
         self.builder.failure_count = BUILDER_FAILURE_THRESHOLD - 1
         self.assertIsNot(None, self.builder.currentjob)
         log = self._recover_failure("failnotes")
-        self.assertIn("Requeueing job RECIPEBRANCHBUILD-1", log)
+        self.assertIn("Requeueing job %s" % self.build.build_cookie, log)
         self.assertIn("Dirtying builder %s" % self.builder.name, log)
         self.assertIs(None, self.builder.currentjob)
         self.assertEqual(BuilderCleanStatus.DIRTY, self.builder.clean_status)

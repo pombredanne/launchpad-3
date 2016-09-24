@@ -30,7 +30,7 @@ from storm.properties import (
     )
 from storm.references import Reference
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.enums import InformationType
 from lp.bugs.enums import BugNotificationLevel
@@ -56,10 +56,9 @@ class MuteNotAllowed(Exception):
     """Raised when someone tries to mute a filter that can't be muted."""
 
 
+@implementer(IBugSubscriptionFilter)
 class BugSubscriptionFilter(StormBase):
     """A filter to specialize a *structural* subscription."""
-
-    implements(IBugSubscriptionFilter)
 
     __storm_table__ = "BugSubscriptionFilter"
 
@@ -298,10 +297,9 @@ class BugSubscriptionFilter(StormBase):
         existing_mutes.remove()
 
 
+@implementer(IBugSubscriptionFilterMute)
 class BugSubscriptionFilterMute(StormBase):
     """Bug subscription filters a person has decided to block emails from."""
-
-    implements(IBugSubscriptionFilterMute)
 
     __storm_table__ = "BugSubscriptionFilterMute"
 

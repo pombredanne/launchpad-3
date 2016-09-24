@@ -1,0 +1,120 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+<body>
+
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    .subordinate {
+      margin: 0.5em 0 0.5em 4em;
+    }
+  </style>
+</metal:block>
+
+<div metal:fill-slot="main">
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <metal:formbody fill-slot="widgets">
+      <table class="form">
+        <tal:widget define="widget nocall:view/widgets/owner">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+        <tal:widget define="widget nocall:view/widgets/name">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+        <tal:widget define="widget nocall:view/widgets/store_distro_series">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+
+        <tr>
+          <td>
+            <div>
+              <label for="field.vcs">Source:</label>
+              <table>
+                <tr>
+                  <td>
+                    <label tal:replace="structure view/vcs_bzr_radio" />
+                    <table class="subordinate">
+                      <tal:widget define="widget nocall:view/widgets/branch">
+                        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                      </tal:widget>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td>
+                    <label tal:replace="structure view/vcs_git_radio" />
+                    <table class="subordinate">
+                      <tal:widget define="widget nocall:view/widgets/git_ref">
+                        <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                      </tal:widget>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </td>
+        </tr>
+
+        <tal:widget define="widget nocall:view/widgets/auto_build">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+        <tr>
+          <td>
+            <table class="subordinate">
+              <tal:widget define="widget nocall:view/widgets/auto_build_archive">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+              <tal:widget define="widget nocall:view/widgets/auto_build_pocket">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+            </table>
+          </td>
+        </tr>
+
+        <tal:has-sds tal:condition="view/has_snappy_distro_series">
+          <tal:widget define="widget nocall:view/widgets/store_upload">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+          <tr>
+            <td>
+              <table class="subordinate">
+                <tal:widget define="widget nocall:view/widgets/store_name">
+                  <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                </tal:widget>
+                <tal:widget define="widget nocall:view/widgets/store_channels"
+                            condition="widget/context/value_type/vocabulary">
+                  <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                </tal:widget>
+              </table>
+              <p class="formHelp">
+                If you change any settings related to automatically uploading
+                builds of this snap to the store, then the login service will
+                prompt you to authorize this request.
+              </p>
+            </td>
+          </tr>
+        </tal:has-sds>
+
+        <tal:widget define="widget nocall:view/widgets/processors">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
+      </table>
+    </metal:formbody>
+  </div>
+
+  <script type="text/javascript">
+    LPJS.use('lp.snappy.snap.edit', function(Y) {
+      Y.on('domready', function(e) {
+        Y.lp.snappy.snap.edit.setup();
+      }, window);
+    });
+  </script>
+</div>
+
+</body>
+</html>

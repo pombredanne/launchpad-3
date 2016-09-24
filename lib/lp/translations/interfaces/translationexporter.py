@@ -73,7 +73,6 @@ class ITranslationExporter(Interface):
         """
 
 
-
 class ITranslationFormatExporter(Interface):
     """Translation file format exporter."""
 

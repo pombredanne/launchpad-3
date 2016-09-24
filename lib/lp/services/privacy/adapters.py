@@ -21,4 +21,3 @@ class ObjectPrivacy:
             self.is_private = removeSecurityProxy(object).private
         except AttributeError:
             self.is_private = False
-

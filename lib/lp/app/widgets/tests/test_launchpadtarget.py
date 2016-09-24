@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -13,16 +13,18 @@ from zope.formlib.interfaces import (
     WidgetInputError,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.registry.vocabularies import (
+    DistributionSourcePackageVocabulary,
     DistributionVocabulary,
     ProductVocabulary,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.soyuz.model.binaryandsourcepackagename import (
@@ -39,8 +41,8 @@ class IThing(Interface):
     target = Reference(schema=Interface)
 
 
+@implementer(IThing)
 class Thing:
-    implements(IThing)
     target = None
 
 
@@ -60,8 +62,11 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
 
     def setUp(self):
         super(LaunchpadTargetWidgetTestCase, self).setUp()
-        self.distribution, self.package = self.factory.makeDSPCache(
-            distro_name='fnord', package_name='snarf')
+        self.distribution = self.factory.makeDistribution(name='fnord')
+        distroseries = self.factory.makeDistroSeries(
+            distribution=self.distribution)
+        self.package = self.factory.makeDSPCache(
+            distroseries=distroseries, sourcepackagename='snarf')
         self.project = self.factory.makeProduct('pting')
         field = Reference(
             __name__='target', schema=Interface, title=u'target')
@@ -77,7 +82,7 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         # The render template is setup.
         self.assertTrue(
             self.widget.template.filename.endswith('launchpad-target.pt'),
-            'Template was not setup.')
+            'Template was not set up.')
 
     def test_default_option(self):
         # This package field is the default option.
@@ -122,6 +127,15 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         self.assertIs(None, getattr(self.widget, 'distribution_widget', None))
         self.assertIs(None, getattr(self.widget, 'package_widget', None))
         self.assertIs(None, getattr(self.widget, 'product_widget', None))
+
+    def test_setUpSubWidgets_dsp_picker_feature_flag(self):
+        # The DistributionSourcePackageVocabulary is used when the
+        # disclosure.dsp_picker.enabled is true.
+        with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
+            self.widget.setUpSubWidgets()
+        self.assertIsInstance(
+            self.widget.package_widget.context.vocabulary,
+            DistributionSourcePackageVocabulary)
 
     def test_setUpOptions_default_package_checked(self):
         # The radio button options are composed of the setup widgets with
@@ -183,6 +197,14 @@ class LaunchpadTargetWidgetTestCase(TestCaseWithFactory):
         # is selected and the package sub field has official spn.
         self.widget.request = LaunchpadTestRequest(form=self.form)
         self.assertEqual(self.package, self.widget.getInputValue())
+
+    def test_getInputValue_package_dsp_dsp_picker_feature_flag(self):
+        # The field value is the package when the package radio button
+        # is selected and the package sub field has valid input.
+        self.widget.request = LaunchpadTestRequest(form=self.form)
+        with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
+            self.widget.setUpSubWidgets()
+            self.assertEqual(self.package, self.widget.getInputValue())
 
     def test_getInputValue_package_invalid(self):
         # An error is raised when the package is not published in the distro.

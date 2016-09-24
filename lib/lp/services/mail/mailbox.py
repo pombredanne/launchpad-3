@@ -17,11 +17,16 @@ import socket
 import threading
 
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
 from lp.services.mail import stub
+
+# XXX wgrant 2015-09-21: A Python 2.7 security update set the line
+# length limit to 2048 bytes, which real POP3 servers often exceed for
+# various reasons. http://bugs.python.org/issue23906
+poplib._MAXLINE = 10000000
 
 
 class MailBoxError(Exception):
@@ -56,12 +61,12 @@ class IMailBox(Interface):
         """Closes the mailbox."""
 
 
+@implementer(IMailBox)
 class TestMailBox:
     """Mail box used for testing.
 
     It operates on stub.test_emails.
     """
-    implements(IMailBox)
 
     def __init__(self):
         self._lock = threading.Lock()
@@ -98,9 +103,9 @@ class TestMailBox:
         self._lock.release()
 
 
+@implementer(IMailBox)
 class POP3MailBox:
     """Mail box which talks to a POP3 server."""
-    implements(IMailBox)
 
     def __init__(self, host, user, password, ssl=False):
         self._host = host
@@ -150,9 +155,9 @@ class POP3MailBox:
         self._popbox.quit()
 
 
+@implementer(IMailBox)
 class DirectoryMailBox:
     """Mail box which reads files from a directory."""
-    implements(IMailBox)
 
     def __init__(self, directory):
         self.mail_dir = os.path.abspath(directory)

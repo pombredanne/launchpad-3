@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enums for the Registry app."""
@@ -14,6 +14,7 @@ __all__ = [
     'PersonTransferJobType',
     'PersonVisibility',
     'ProductJobType',
+    'VCSType',
     'SharingPermission',
     'SpecificationSharingPolicy',
     'TeamMembershipPolicy',
@@ -56,44 +57,47 @@ class BranchSharingPolicy(DBEnumeratedType):
     PUBLIC = DBItem(1, """
         Public
 
-        Branches are public unless they contain sensitive security
-        information.
+        Bazaar branches and Git repositories are public unless they contain
+        sensitive security information.
         """)
 
     PUBLIC_OR_PROPRIETARY = DBItem(2, """
         Public, can be proprietary
 
-        New branches are public, but can be made proprietary later.
+        New Bazaar branches and Git repositories are public, but can be made
+        proprietary later.
         """)
 
     PROPRIETARY_OR_PUBLIC = DBItem(3, """
         Proprietary, can be public
 
-        New branches are proprietary, but can be made public later. Only
-        people who can see the project's proprietary information can create
-        new branches.
+        New Bazaar branches and Git repositories are proprietary, but can be
+        made public later. Only people who can see the project's proprietary
+        information can create new Bazaar branches or Git repositories.
         """)
 
     PROPRIETARY = DBItem(4, """
         Proprietary
 
-        Branches are always proprietary. Only people who can see the
-        project's proprietary information can create new branches.
+        Bazaar branches and Git repositories are always proprietary. Only
+        people who can see the project's proprietary information can create
+        new Bazaar branches or Git repositories.
         """)
 
     EMBARGOED_OR_PROPRIETARY = DBItem(5, """
         Embargoed, can be proprietary
 
-        New branches are embargoed, but can be made proprietary later. Only
-        people who can see the project's proprietary information can create
-        new branches.
+        New Bazaar branches and Git repositories are embargoed, but can be
+        made proprietary later. Only people who can see the project's
+        proprietary information can create new Bazaar branches or Git
+        repositories.
         """)
 
     FORBIDDEN = DBItem(6, """
         Forbidden
 
-        No new branches may be created, but existing branches may still be
-        updated.
+        No new Bazaar branches or Git repositories may be created, but
+        existing Bazaar branches and Git repositories may still be updated.
         """)
 
 
@@ -350,6 +354,31 @@ class PersonTransferJobType(DBEnumeratedType):
         the user from teams.
         """)
 
+    TEAM_INVITATION_NOTIFICATION = DBItem(3, """
+        Notification of invitation to join team
+
+        Notify team admins that the team has been invited to join another
+        team.
+        """)
+
+    TEAM_JOIN_NOTIFICATION = DBItem(4, """
+        Notification of new member joining team
+
+        Notify that a new member has been added to a team.
+        """)
+
+    EXPIRING_MEMBERSHIP_NOTIFICATION = DBItem(5, """
+        Notification of expiring membership
+
+        Notify a member that their membership of a team is about to expire.
+        """)
+
+    SELF_RENEWAL_NOTIFICATION = DBItem(6, """
+        Notification of self-renewal
+
+        Notify team admins that a member renewed their own membership.
+        """)
+
 
 class ProductJobType(DBEnumeratedType):
     """Values that IProductJob.job_type can take."""
@@ -379,4 +408,20 @@ class ProductJobType(DBEnumeratedType):
 
         A notification stating that the project's commercial subscription
         expired.
+        """)
+
+
+class VCSType(DBEnumeratedType):
+    """Values that IProduct.vcs and IDistribution.vcs can take."""
+
+    BZR = DBItem(0, """
+        Bazaar
+
+        The Bazaar DVCS is used as the default project or distribution VCS.
+        """)
+
+    GIT = DBItem(1, """
+        Git
+
+        The Git DVCS is used as the default project or distribution VCS.
         """)

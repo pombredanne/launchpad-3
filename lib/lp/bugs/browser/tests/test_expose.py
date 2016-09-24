@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for helpers that expose data about a user to on-page JavaScript."""
@@ -15,7 +15,7 @@ from testtools.matchers import (
     Equals,
     KeysEqual,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.traversing.browser import absoluteURL
 
 from lp.bugs.browser.structuralsubscription import (
@@ -45,10 +45,10 @@ from lp.testing.matchers import (
     )
 
 
+@implementer(IWebServiceClientRequest, IJSONRequestCache)
 class FakeRequest:
     """A request that implements some interfaces so adapting returns itself.
     """
-    implements(IWebServiceClientRequest, IJSONRequestCache)
 
     def __init__(self):
         self.objects = {}
@@ -183,6 +183,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
         context = self.factory.makeProduct(owner=self.user)
         self._setup_teams(self.user)
 
+        IStore(Person).flush()
         IStore(Person).invalidate()
         clear_cache()
         with StormStatementRecorder() as recorder:
@@ -201,6 +202,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
             pt.addMember(
                 self.user, pt.teamowner, status=TeamMembershipStatus.ADMIN)
 
+        IStore(Person).flush()
         IStore(Person).invalidate()
         clear_cache()
         del IJSONRequestCache(self.request).objects['administratedTeams']
@@ -224,7 +226,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
                 absoluteURL=fake_absoluteURL)
         statements_for_admininstrated_teams = [
             statement for statement in recorder.statements
-            if statement.startswith("SELECT *")]
+            if 'TeamMembership' in statement]
         self.assertEqual(1, len(statements_for_admininstrated_teams))
 
         # Calling the function a second time does not require an
@@ -235,7 +237,7 @@ class TestExposeAdministeredTeams(TestCaseWithFactory):
                 absoluteURL=fake_absoluteURL)
         statements_for_admininstrated_teams = [
             statement for statement in recorder.statements
-            if statement.startswith("SELECT *")]
+            if 'TeamMembership' in statement]
         self.assertEqual(0, len(statements_for_admininstrated_teams))
 
     def test_teams_owned_but_not_joined_are_not_included(self):
@@ -450,7 +452,7 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
             expose_user_subscriptions_to_js(user, [sub], request)
         statements_for_admininstrated_teams = [
             statement for statement in recorder.statements
-            if statement.startswith("SELECT *")]
+            if 'TeamMembership' in statement]
         self.assertEqual(1, len(statements_for_admininstrated_teams))
 
         # Calling the function a second time does not require an
@@ -460,5 +462,5 @@ class TestIntegrationExposeUserSubscriptionsToJS(TestCaseWithFactory):
                 expose_user_subscriptions_to_js(user, [sub], request)
         statements_for_admininstrated_teams = [
             statement for statement in recorder.statements
-            if statement.startswith("SELECT *")]
+            if 'TeamMembership' in statement]
         self.assertEqual(0, len(statements_for_admininstrated_teams))

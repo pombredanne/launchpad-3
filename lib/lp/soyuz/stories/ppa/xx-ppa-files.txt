@@ -106,6 +106,8 @@ Links to files accessible via +files/ proxy in the PPA page.
 
 Links to files accessible via +files/ proxy in the Build page.
 
+    >>> build_id = build.id
+
     >>> builds_links = [
     ...     ('see the log', build.log),
     ...     ]
@@ -137,7 +139,7 @@ Create a function to check the expected links.
     ...             print '%s: NOT OK (%s != %s)' % (
     ...                 libraryfile.filename, found_url, expected_url)
 
-No Privileges user can access the files related with his PPA and its
+No Privileges user can access the files related with their PPA and its
 builds.
 
     >>> no_priv_browser = setupBrowser(
@@ -174,7 +176,8 @@ builds list is presented.
     >>> no_priv_browser.getControl("Filter").click()
 
     >>> check_urls(no_priv_browser, builds_links,
-    ...     'http://launchpad.dev/~no-priv/+archive/ubuntu/p3a/+build/31')
+    ...     'http://launchpad.dev/~no-priv/+archive/ubuntu/p3a/+build/%d'
+    ...     % build_id)
     buildlog_ubuntutest-breezy-autotest-i386.test-pkg_1.0_FULLYBUILT.txt.gz: OK
 
     >>> no_priv_browser.open(
@@ -202,7 +205,8 @@ Buildlog, upload_log and binary changesfile are served via the Build
     No Privileges Person
 
     >>> check_urls(no_priv_browser, build_links,
-    ...     'http://launchpad.dev/~no-priv/+archive/ubuntu/p3a/+build/31')
+    ...     'http://launchpad.dev/~no-priv/+archive/ubuntu/p3a/+build/%d'
+    ...     % build_id)
     test-bin_1.0_i386.changes:    OK
     buildlog_...txt.gz:           OK
     upload_..._log.txt:           OK

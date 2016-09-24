@@ -144,7 +144,7 @@ project..
     None
 
 Sometimes the distribution won't have any series, though. In that
-case, we won't prompt the user to add a link, since he can't actually
+case, we won't prompt the user to add a link, since they can't actually
 add one.
 
     >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
@@ -307,7 +307,7 @@ alsa-utils bugtask added earlier is now gone:
     Mozilla Firefox
 
 If the URL is valid but there's no bugtracker registered with that URL,
-we ask the user if he wants to register the bugtracker as well.
+we ask the user if they want to register the bugtracker as well.
 
     >>> form['field.product'] = u'aptoncd'
     >>> form['field.bug_url'] = (
@@ -382,7 +382,7 @@ the bug watch's status later.
     'Unknown'
 
 If the same bug watch is added to another bug, the bug watch will be
-added, but a notification is shown to the user informing him that
+added, but a notification is shown to the user informing them that
 another bug links to the same bug.
 
     >>> bug_five = getUtility(IBugSet).get(5)
@@ -464,7 +464,7 @@ present these already-registered products as options to the user.
     ...     'field.actions.continue': '1',
     ...     'field.bug_url': 'http://bugs.foo.org/bugs/show_bug.cgi?id=8',
     ...     'field.name': 'foo-product',
-    ...     'field.displayname': 'The Foo Product',
+    ...     'field.display_name': 'The Foo Product',
     ...     'field.summary': 'The Foo Product'}
     >>> add_task_view = create_view(
     ...     firefox_task, '+affects-new-product', form=form, method='POST')
@@ -477,7 +477,7 @@ nothing to present to the user.
     None
 
 Since the user is just creating the product in Launchpad to link to an
-upstream she probably isn't interested in maintaining the product for
+upstream they probably aren't interested in maintaining the product for
 the long-term.  In recognition of that we set the maintainer to be the
 Registry Admins team while keeping the user as the registrant.
 
@@ -497,7 +497,7 @@ bugs.foo.org, we'll present 'The Foo Product' as a candidate.
 
     >>> flush_database_updates()
     >>> form['field.name'] = 'bar-product'
-    >>> form['field.displayname'] = 'The Bar'
+    >>> form['field.display_name'] = 'The Bar'
     >>> form['field.summary'] = 'The Bar'
     >>> add_task_view = create_view(
     ...     firefox_task, '+affects-new-product', form=form, method='POST')
@@ -519,7 +519,7 @@ we'll present only the ones whose name is similar to what the user entered.
     >>> flush_database_updates()
     >>> dummy = form.pop('create_new')
     >>> form['field.name'] = u'foo'
-    >>> form['field.displayname'] = 'Foo, the return'
+    >>> form['field.display_name'] = 'Foo, the return'
     >>> form['field.summary'] = 'Foo'
     >>> add_task_view = create_view(
     ...     firefox_task, '+affects-new-product', form=form, method='POST')

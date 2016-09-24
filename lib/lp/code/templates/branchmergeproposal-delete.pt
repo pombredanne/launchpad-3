@@ -16,11 +16,13 @@
         <tbody>
           <tr>
             <th>Source branch:</th>
-            <td tal:content="structure context/source_branch/fmt:link">lp:~foo/bar/baz</td>
+            <td id="source-link"
+                tal:content="structure context/merge_source/fmt:link">lp:~foo/bar/baz</td>
           </tr>
           <tr>
             <th>Target branch:</th>
-            <td tal:content="structure context/target_branch/fmt:link">lp:bar</td>
+            <td id="target-link"
+                tal:content="structure context/merge_target/fmt:link">lp:bar</td>
           </tr>
         </tbody>
       </table>

@@ -1,7 +1,7 @@
 GeoIP
 =====
 
-GeoIP allows us to guess the location of a user based on his IP address.
+GeoIP allows us to guess the location of a user based on their IP address.
 Our IGeoIP utility provides a couple methods to get location information
 from a given IP address.
 

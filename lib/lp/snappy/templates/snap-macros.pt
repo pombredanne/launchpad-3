@@ -1,0 +1,28 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<div
+  metal:define-macro="related-snaps"
+  tal:define="context_menu context/menu:context"
+  id="related-snaps">
+
+  <h3>Related snap packages</h3>
+
+  <div id="snap-links" class="actions">
+    <div id="snap-summary">
+      <tal:snaps replace="structure view/snaps_link" />
+    </div>
+  </div>
+
+  <span
+    tal:define="link context_menu/create_snap|nothing"
+    tal:condition="python: link and link.enabled"
+    tal:replace="structure link/render"
+    />
+
+</div>
+
+</tal:root>

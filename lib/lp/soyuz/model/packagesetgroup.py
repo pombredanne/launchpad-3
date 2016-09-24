@@ -14,14 +14,14 @@ from storm.locals import (
     Reference,
     Storm,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.soyuz.interfaces.packagesetgroup import IPackagesetGroup
 
 
+@implementer(IPackagesetGroup)
 class PackagesetGroup(Storm):
     """See `IPackageset`."""
-    implements(IPackagesetGroup)
     __storm_table__ = 'PackagesetGroup'
     id = Int(primary=True)
 
@@ -30,4 +30,3 @@ class PackagesetGroup(Storm):
 
     owner_id = Int(name='owner', allow_none=False)
     owner = Reference(owner_id, 'Person.id')
-

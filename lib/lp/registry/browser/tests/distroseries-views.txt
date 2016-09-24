@@ -63,7 +63,7 @@ The distroseries 'changeslist' field only accept valid email addresses.
     >>> form['field.changeslist'] = ''
     >>> administrate_distroseries(hoary, form)
     1 errors
-    E-mail changes to: changeslist
+    Email changes to: changeslist
     Name: hoary
     Version: 5.04
     Changeslist: hoary-changes@ubuntu.com
@@ -72,7 +72,7 @@ The distroseries 'changeslist' field only accept valid email addresses.
     >>> form['field.changeslist'] = 'bRoKen_AdDreSs'
     >>> administrate_distroseries(hoary, form)
     1 errors
-    E-mail changes to: Invalid email &#x27;bRoKen_AdDreSs&#x27;.
+    Email changes to: Invalid email &#x27;bRoKen_AdDreSs&#x27;.
     Name: hoary
     Version: 5.04
     Changeslist: hoary-changes@ubuntu.com
@@ -154,7 +154,7 @@ Editing distro series
 ---------------------
 
 The distroseries edit view allows the editor to change series. The form
-uses the displayname, title, and description fields.
+uses the display_name, title, and description fields.
 
     >>> driver = factory.makePerson(name='ubuntu-driver')
     >>> hoary.driver = driver
@@ -170,14 +170,14 @@ uses the displayname, title, and description fields.
     http://launchpad.dev/ubuntu/hoary
 
     >>> [field.__name__ for field in view.form_fields]
-    ['displayname', 'title', 'summary', 'description']
+    ['display_name', 'title', 'summary', 'description']
 
 Admins can see the status field for full functionality distributions.
 
     >>> login('admin@canonical.com')
     >>> view = create_initialized_view(hoary, '+edit')
     >>> [field.__name__ for field in view.form_fields]
-    ['displayname', 'title', 'summary', 'description', 'status']
+    ['display_name', 'title', 'summary', 'description', 'status']
 
 Series that belong to derivative distributions also contain the status field.
 
@@ -195,7 +195,7 @@ Series that belong to derivative distributions also contain the status field.
     Edit Melon details
 
     >>> [field.__name__ for field in view.form_fields]
-    ['displayname', 'title', 'summary', 'description', 'status']
+    ['display_name', 'title', 'summary', 'description', 'status']
 
     >>> print view.widgets.get('status')._getFormValue().title
     Active Development
@@ -220,13 +220,13 @@ A distroseries is created using the distroseries view.
     None
 
     >>> view.field_names
-    ['name', 'version', 'displayname', 'summary']
+    ['name', 'version', 'display_name', 'summary']
 
 A distroseries is created whent the required field are submitted.
 
     >>> form = {
     ...     'field.name': 'sane',
-    ...     'field.displayname': 'Sane Name',
+    ...     'field.display_name': 'Sane Name',
     ...     'field.summary': 'A stable series to introduce fnord.',
     ...     'field.version': '2009.06',
     ...     'field.actions.create': 'Create Series',
@@ -266,14 +266,14 @@ Launchpad for package management can create a series.
 
     >>> yo_form = dict(form)
     >>> yo_form['field.name'] = 'island'
-    >>> yo_form['field.displayname'] = 'Island'
+    >>> yo_form['field.display_name'] = 'Island'
     >>> view = create_initialized_view(
     ...     youbuntu, name='+addseries', form=yo_form, principal=yo_driver)
     >>> view.errors
     []
 
     >>> yo_series = youbuntu.getSeries('island')
-    >>> print yo_series.displayname
+    >>> print yo_series.display_name
     Island
 
 But drivers of distributions that use Soyuz officially (eg. Ubuntu)
@@ -307,7 +307,7 @@ doesn't manage its packages in Launchpad.
 
     >>> yo_form = dict(form)
     >>> del yo_form['field.actions.create']
-    >>> yo_form['field.displayname'] = 'Mountain'
+    >>> yo_form['field.display_name'] = 'Mountain'
     >>> yo_form['field.summary'] = 'Mountain summary'
     >>> yo_form['field.actions.change'] = 'Change'
     >>> view = create_initialized_view(
@@ -315,7 +315,7 @@ doesn't manage its packages in Launchpad.
     >>> view.errors
     []
 
-    >>> print yo_series.displayname
+    >>> print yo_series.display_name
     Mountain
 
 Drivers of packages with packages such as Ubuntu cannot edit a series.

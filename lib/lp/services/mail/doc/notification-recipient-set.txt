@@ -177,8 +177,8 @@ But looking at the recipients list, only the team is listed:
     >>> [person.displayname for person in recipients]
     [u'Ubuntu Gnome Team']
 
-So Sample Person is not in the recipients list, even if his email will
-be notified for he's a member of Warty Security Team, itself a member of
+So Sample Person is not in the recipients list, even if their email will
+be notified for they're a member of Warty Security Team, itself a member of
 Ubuntu Gnome Team:
 
     >>> warty_security_team = person_set.getByName('name20')
@@ -200,7 +200,7 @@ Ubuntu Gnome Team:
     >>> 'test@canonical.com' in recipients
     True
 
-His email will have the same rationale than the team:
+Their email will have the same rationale than the team:
 
     >>> recipients.getReason(ubuntu_gnome_team)
     ('Notified because a member of the team', 'Team')

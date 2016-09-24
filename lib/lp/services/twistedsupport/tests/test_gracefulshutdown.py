@@ -34,8 +34,10 @@ class TestConnTrackingFactoryWrapper(TestCase):
         self.assertTrue(ctf.isAvailable())
         ctf.stopFactory()
         self.assertFalse(ctf.isAvailable())
+
         def cb(ignored):
             self.was_fired = True
+
         ctf.allConnectionsGone.addCallback(cb)
         self.assertTrue(self.was_fired)
 
@@ -50,8 +52,10 @@ class TestConnTrackingFactoryWrapper(TestCase):
         ctf.registerProtocol(p)
         ctf.stopFactory()
         self.was_fired = False
+
         def cb(ignored):
             self.was_fired = True
+
         ctf.allConnectionsGone.addCallback(cb)
         self.assertFalse(self.was_fired)
         ctf.unregisterProtocol(p)
@@ -70,8 +74,10 @@ class TestConnTrackingFactoryWrapper(TestCase):
         ctf.registerProtocol(p2)
         ctf.stopFactory()
         self.was_fired = False
+
         def cb(ignored):
             self.was_fired = True
+
         ctf.allConnectionsGone.addCallback(cb)
         self.assertFalse(self.was_fired)
         ctf.unregisterProtocol(p1)
@@ -86,7 +92,7 @@ class TestConnTrackingFactoryWrapper(TestCase):
         ctf = gracefulshutdown.ConnTrackingFactoryWrapper(Factory())
         p = Protocol()
         ctf.registerProtocol(p)
-        ctf.unregisterProtocol(p) # No error raised.
+        ctf.unregisterProtocol(p)  # No error raised.
 
 
 class TestServerAvailableResource(TestCase):
@@ -202,8 +208,10 @@ class TestOrderedMultiService(TestCase):
         service2.setServiceParent(oms)
         oms.startService()
         self.all_stopped = False
+
         def cb_all_stopped(ignored):
             self.all_stopped = True
+
         oms.stopService().addCallback(cb_all_stopped)
         self.assertFalse(self.all_stopped)
         self.assertFalse(service1.stop_called)

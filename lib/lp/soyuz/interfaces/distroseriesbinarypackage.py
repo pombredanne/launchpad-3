@@ -57,4 +57,3 @@ class IDistroSeriesBinaryPackage(Interface):
         title=_("The DistributionSourcePackageRelease that was used to "
                 "generate the most recently published binary package "
                 "release"))
-

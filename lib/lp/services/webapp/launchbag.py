@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -12,7 +12,7 @@ import threading
 
 import pytz
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
@@ -28,7 +28,6 @@ from lp.services.database.sqlbase import block_implicit_flushes
 from lp.services.identity.interfaces.account import IAccount
 from lp.services.webapp.interaction import get_current_principal
 from lp.services.webapp.interfaces import (
-    ILaunchBag,
     ILoggedInEvent,
     IOpenLaunchBag,
     )
@@ -38,14 +37,13 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 _utc_tz = pytz.timezone('UTC')
 
 
+@implementer(IOpenLaunchBag)
 class LaunchBag:
-
-    implements(IOpenLaunchBag)
 
     # Map Interface to attribute name.
     _registry = {
         IPerson: 'person',
-        IProjectGroup: 'project',
+        IProjectGroup: 'projectgroup',
         IProduct: 'product',
         IDistribution: 'distribution',
         IDistroSeries: 'distroseries',
@@ -102,12 +100,12 @@ class LaunchBag:
         return self._store.person
 
     @property
-    def project(self):
+    def projectgroup(self):
         store = self._store
-        if store.project is not None:
-            return store.project
+        if store.projectgroup is not None:
+            return store.projectgroup
         elif store.product is not None:
-            return store.product.project
+            return store.product.projectgroup
         else:
             return None
 
@@ -153,7 +151,7 @@ class LaunchBag:
     @property
     def time_zone(self):
         if getattr(self._store, "time_zone", None) is None:
-            if self.user and self.user.time_zone:
+            if self.user:
                 self._store.time_zone = pytz.timezone(self.user.time_zone)
             else:
                 # fall back to UTC

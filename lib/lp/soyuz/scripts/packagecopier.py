@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Package copying utilities."""
@@ -14,17 +14,13 @@ __all__ = [
     ]
 
 import apt_pkg
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.bulk import load_related
-from lp.soyuz.adapters.notification import notify
 from lp.soyuz.adapters.overrides import SourceOverride
-from lp.soyuz.enums import (
-    BinaryPackageFileType,
-    SourcePackageFormat,
-    )
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.publishing import (
@@ -34,6 +30,7 @@ from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory,
     )
 from lp.soyuz.interfaces.queue import IPackageUploadCustom
+from lp.soyuz.mail.packageupload import PackageUploadMailer
 from lp.soyuz.model.processacceptedbugsjob import (
     close_bugs_for_sourcepublication,
     )
@@ -123,6 +120,7 @@ def has_restricted_files(source):
     return False
 
 
+@delegate_to(ISourcePackagePublishingHistory)
 class CheckedCopy:
     """Representation of a copy that was checked and approved.
 
@@ -130,7 +128,6 @@ class CheckedCopy:
     `getStatusSummaryForBuilds` to return `BuildSetStatus.NEEDSBUILD`
     for source-only copies.
     """
-    delegates(ISourcePackagePublishingHistory)
 
     def __init__(self, context, include_binaries):
         self.context = context
@@ -165,7 +162,7 @@ def check_copy_permissions(person, archive, series, pocket, sources):
         # Bulk-load the data we'll need from each source publication.
         load_related(SourcePackageRelease, sources, ["sourcepackagereleaseID"])
 
-    # If there is a requester, check that he has upload permission into
+    # If there is a requester, check that they have upload permission into
     # the destination (archive, component, pocket). This check is done
     # here rather than in the security adapter because it requires more
     # info than is available in the security adapter.
@@ -451,11 +448,6 @@ class CopyChecker:
                 for binary_file in binary_pub.binarypackagerelease.files:
                     if binary_file.libraryfile.expires is not None:
                         raise CannotCopy('source has expired binaries')
-                    if (self.archive.is_main and
-                        not self.archive.build_debug_symbols and
-                        binary_file.filetype == BinaryPackageFileType.DDEB):
-                        raise CannotCopy(
-                            "Cannot copy DDEBs to a primary archive")
 
         # Check if there is already a source with the same name and version
         # published in the destination archive.
@@ -580,9 +572,11 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             if series is None:
                 series = source.distroseries
             # In zopeless mode this email will be sent immediately.
-            notify(
-                person, source.sourcepackagerelease, [], [], archive,
-                series, pocket, summary_text=error_text, action='rejected')
+            mailer = PackageUploadMailer.forAction(
+                'rejected', person, source.sourcepackagerelease, [], [],
+                archive, series, pocket, summary_text=error_text,
+                logger=logger)
+            mailer.sendAll()
         raise CannotCopy(error_text)
 
     overrides_index = 0
@@ -617,15 +611,16 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             close_bugs_since_version=old_version, creator=creator,
             sponsor=sponsor, packageupload=packageupload,
             phased_update_percentage=phased_update_percentage, logger=logger)
-        if send_email:
-            notify(
-                person, source.sourcepackagerelease, [], [], archive,
-                destination_series, pocket, action='accepted',
+        if send_email and sub_copies:
+            mailer = PackageUploadMailer.forAction(
+                'accepted', person, source.sourcepackagerelease, [], [],
+                archive, destination_series, pocket,
                 announce_from_person=announce_from_person,
-                previous_version=old_version)
+                previous_version=old_version, logger=logger)
+            mailer.sendAll()
         if not archive.private and has_restricted_files(source):
             # Fix copies by unrestricting files with privacy mismatch.
-            # We must do this *after* calling notify (which only
+            # We must do this *after* calling mailer.sendAll (which only
             # actually sends mail on commit), because otherwise the new
             # changelog LFA won't be visible without a commit, which may
             # not be safe here.

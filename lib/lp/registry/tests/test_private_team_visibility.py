@@ -152,8 +152,8 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
         self.assertFalse(pub_team in self.priv_team.activemembers)
         self.assertFalse(pub_owner in self.priv_team.activemembers)
 
-        # The public team's owner can now see the priv-team's bits since his
-        # team has been invited to join.
+        # The public team's owner can now see the priv-team's bits since
+        # their team has been invited to join.
         login_person(pub_owner)
         self.assertEqual('priv-team', self.priv_team.name)
 

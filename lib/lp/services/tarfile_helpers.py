@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers to work with tar files more easily."""
@@ -87,7 +87,7 @@ class LaunchpadWriteTarFile:
             except KeyError:
                 tarinfo = self._make_skeleton_tarinfo(joined_path, now)
                 tarinfo.type = tarfile.DIRTYPE
-                tarinfo.mode = 0755
+                tarinfo.mode = 0o755
                 self.tarfile.addfile(tarinfo)
 
     def add_directory(self, path):
@@ -105,7 +105,7 @@ class LaunchpadWriteTarFile:
         self._ensure_directories(path, now)
 
         tarinfo = self._make_skeleton_tarinfo(path, now)
-        tarinfo.mode = 0644
+        tarinfo.mode = 0o644
         tarinfo.size = len(contents)
         self.tarfile.addfile(tarinfo, StringIO(contents))
 

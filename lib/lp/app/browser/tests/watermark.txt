@@ -28,7 +28,7 @@ object that implements IRootContext.
 
 Products directly implement IRootContext.
 
-    >>> widget = factory.makeProduct(title='Widget')
+    >>> widget = factory.makeProduct(displayname='Widget')
     >>> print get_hierarchy(widget).heading()
     <h...><a...>Widget</a></h...>
 
@@ -40,13 +40,13 @@ A series of the product still show the product watermark.
 
 ProjectGroups also directly implement IRootContext ...
 
-    >>> kde = factory.makeProject(title='KDE')
+    >>> kde = factory.makeProject(displayname='KDE')
     >>> print get_hierarchy(kde).heading()
     <h...><a...>KDE</a></h...>
 
 ... as do distributions ...
 
-    >>> mint = factory.makeDistribution(title='Mint Linux')
+    >>> mint = factory.makeDistribution(displayname='Mint Linux')
     >>> print get_hierarchy(mint).heading()
     <h...><a...>Mint Linux</a></h...>
 
@@ -114,9 +114,10 @@ H2.
 If the view class implements IMajorHeadingView, then this is the index page
 for the context and the heading is rendered in H1.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.app.interfaces.headings import IMajorHeadingView
-    >>> class HeadingView(TrivialView):
-    ...     implements(IMajorHeadingView)
+    >>> @implementer(IMajorHeadingView)
+    ... class HeadingView(TrivialView):
+    ...     pass
     >>> print get_hierarchy(widget, viewcls=HeadingView).heading()
     <h1...><a...>Widget</a></h1>

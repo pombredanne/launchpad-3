@@ -25,7 +25,6 @@ from testtools.content import (
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
     EndsWith,
-    Equals,
     LessThan,
     Not,
     )
@@ -501,7 +500,7 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
         job.start()
         job.fail()
         with person_logged_in(series.distribution.owner):
-            series.distribution.owner.displayname = u"Bob Individual"
+            series.distribution.owner.display_name = u"Bob Individual"
         with anonymous_logged_in():
             view = create_initialized_view(series, '+portlet-derivation')
             html_content = view()
@@ -622,7 +621,7 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
         form = {
             "field.name": u"polished",
             "field.version": u"12.04",
-            "field.displayname": u"Polished Polecat",
+            "field.display_name": u"Polished Polecat",
             "field.summary": u"Even The Register likes it.",
             "field.actions.create": u"Add Series",
             }
@@ -635,7 +634,7 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
     def assertCreated(self, distroseries):
         self.assertEqual(u"polished", distroseries.name)
         self.assertEqual(u"12.04", distroseries.version)
-        self.assertEqual(u"Polished Polecat", distroseries.displayname)
+        self.assertEqual(u"Polished Polecat", distroseries.display_name)
         self.assertEqual(u"Polished Polecat", distroseries.title)
         self.assertEqual(u"Even The Register likes it.", distroseries.summary)
         self.assertEqual(u"", distroseries.description)
@@ -643,7 +642,7 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
 
     def test_plain_submit(self):
         # When creating a new DistroSeries via DistroSeriesAddView, the title
-        # is set to the same as the displayname (title is, in any case,
+        # is set to the same as the display_name (title is, in any case,
         # deprecated), the description is left empty, and previous_series is
         # None (DistroSeriesInitializeView takes care of setting that).
         distroseries = self.createNewDistroseries()
@@ -942,8 +941,10 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
                             sourcename=spr.sourcepackagename.name,
                             distroseries=derived_series))
                 else:
-                    removeSecurityProxy(spr).dscsigningkey = (
-                        self.factory.makeGPGKey(owner=spr.creator))
+                    key = self.factory.makeGPGKey(owner=spr.creator)
+                    removeSecurityProxy(spr).signing_key_owner = key.owner
+                    removeSecurityProxy(spr).signing_key_fingerprint = (
+                        key.fingerprint)
 
         def flush_and_render():
             flush_database_caches()
@@ -1006,8 +1007,7 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
             text_content(u"%.2f" % statement_count_per_row))
         # Query count is ~O(1) (i.e. not dependent of the number of
         # differences displayed).
-        self.assertThat(
-            recorder3, HasQueryCount(Equals(recorder2.count)))
+        self.assertThat(recorder3, HasQueryCount.byEquality(recorder2))
 
     def test_queries_single_parent(self):
         dsp = self.factory.makeDistroSeriesParent()
@@ -1359,8 +1359,11 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # each difference row.
         dsd = self.makePackageUpgrade()
         uploader = self.factory.makePerson()
-        removeSecurityProxy(dsd.source_package_release).dscsigningkey = (
-            self.factory.makeGPGKey(uploader))
+        key = self.factory.makeGPGKey(uploader)
+        naked_spr = removeSecurityProxy(
+            dsd.source_package_release.sourcepackagerelease)
+        naked_spr.signing_key_fingerprint = key.fingerprint
+        naked_spr.signing_key_owner = key.owner
         view = self.makeView(dsd.derived_series)
         root = html.fromstring(view())
         [creator_cell] = root.cssselect(
@@ -1368,7 +1371,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         matches = DocTestMatches(
             "... ago by %s (uploaded by %s)" % (
                 dsd.source_package_release.creator.displayname,
-                dsd.source_package_release.dscsigningkey.owner.displayname))
+                dsd.source_package_release.signing_key_owner.displayname))
         self.assertThat(creator_cell.text_content(), matches)
 
     def test_diff_row_links_to_parent_changelog(self):
@@ -1516,9 +1519,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         flush_database_caches()
         with StormStatementRecorder() as recorder2:
             self.makeView(derived_series).requestUpgrades()
-        self.assertThat(
-            recorder2,
-            HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def makeDSDJob(self, dsd):
         """Create a `DistroSeriesDifferenceJob` to update `dsd`."""
@@ -2016,7 +2017,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
     def test_sync_error_no_perm_component(self):
         # A user without upload rights on the destination component
-        # will get an error when he syncs packages to this component.
+        # will get an error when they sync packages to this component.
         derived_series, parent_series, unused, diff_id = self._setUpDSD(
             'my-src-name')
         person, another_component = self.makePersonWithComponentPermission(
@@ -2437,8 +2438,11 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
         dsd = self.factory.makeDistroSeriesDifference(
             difference_type=missing_type)
         uploader = self.factory.makePerson()
-        naked_spr = removeSecurityProxy(dsd.parent_source_package_release)
-        naked_spr.dscsigningkey = self.factory.makeGPGKey(uploader)
+        key = self.factory.makeGPGKey(uploader)
+        naked_spr = removeSecurityProxy(
+            dsd.parent_source_package_release.sourcepackagerelease)
+        naked_spr.signing_key_fingerprint = key.fingerprint
+        naked_spr.signing_key_owner = key.owner
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
                 dsd.derived_series, '+missingpackages',
@@ -2450,7 +2454,7 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
         matches = DocTestMatches(
             "... ago by %s (uploaded by %s)" % (
                 parent_spr.creator.displayname,
-                parent_spr.dscsigningkey.owner.displayname))
+                parent_spr.signing_key_owner.displayname))
         self.assertThat(creator_cell.text_content(), matches)
 
 

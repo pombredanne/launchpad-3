@@ -69,7 +69,6 @@ An empty project group needs to be set up first...
     >>> admin_browser.open('http://launchpad.dev/projectgroups/+new')
     >>> admin_browser.getControl(name='field.name').value = 'a-test-group'
     >>> admin_browser.getControl('Display Name:').value = 'Test Group'
-    >>> admin_browser.getControl('Title:').value = 'My Test Group'
     >>> admin_browser.getControl(name='field.summary').value = 'Summary'
     >>> admin_browser.getControl('Description:').value = 'Define me'
     >>> admin_browser.getControl('Maintainer:').value = 'cprov'

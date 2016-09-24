@@ -29,7 +29,7 @@ from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 from zope.interface import (
     alsoProvides,
-    implements,
+    implementer,
     )
 from zope.session.interfaces import (
     IClientIdManager,
@@ -103,9 +103,9 @@ def get_connected_store(name, flavor):
         raise DisconnectionError(str(exc))
 
 
+@implementer(IDatabasePolicy)
 class BaseDatabasePolicy:
     """Base class for database policies."""
-    implements(IDatabasePolicy)
 
     # The default flavor to use.
     default_flavor = MASTER_FLAVOR

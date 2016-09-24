@@ -246,12 +246,12 @@ class TestSpecificationSet(BrowserTestCase):
         product = self.factory.makeProduct()
         removeSecurityProxy(product).official_blueprints = True
         self.factory.makeSpecification(product=product)
-        limit = BrowsesWithQueryLimit(37, product.owner, rootsite='blueprints')
+        limit = BrowsesWithQueryLimit(42, product.owner, rootsite='blueprints')
         self.assertThat(product, limit)
         login_celebrity('admin')
         [self.factory.makeSpecification(product=product) for i in range(4)]
         self.assertThat(product, limit)
-        
+
 
 class TestSpecificationInformationType(BrowserTestCase):
 
@@ -450,23 +450,23 @@ class TestNewSpecificationFromSprintView(TestCaseWithFactory,
             sprint, form, sprint.owner)
 
 
-class TestNewSpecificationFromProjectView(TestCaseWithFactory,
-                                          NewSpecificationTests):
+class TestNewSpecificationFromProjectGroupView(TestCaseWithFactory,
+                                               NewSpecificationTests):
 
     layer = DatabaseFunctionalLayer
 
     def createInitializedView(self):
-        project = self.factory.makeProject()
-        return create_initialized_view(project, '+addspec')
+        projectgroup = self.factory.makeProject()
+        return create_initialized_view(projectgroup, '+addspec')
 
     def test_allowed_info_type_validated(self):
         """information_type must be validated against context"""
-        project = self.factory.makeProject()
-        product = self.factory.makeProduct(project=project)
+        projectgroup = self.factory.makeProject()
+        product = self.factory.makeProduct(projectgroup=projectgroup)
         form = self._create_form_data(product.name)
         form['field.information_type'] = 'PROPRIETARY'
         self._assert_information_type_validation_error(
-            project, form, project.owner)
+            projectgroup, form, projectgroup.owner)
 
 
 class TestNewSpecificationFromProductView(TestCaseWithFactory,

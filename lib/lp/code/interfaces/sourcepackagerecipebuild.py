@@ -9,11 +9,17 @@ __all__ = [
     'ISourcePackageRecipeBuildSource',
     ]
 
-from lazr.restful.declarations import export_as_webservice_entry
+from lazr.restful.declarations import (
+    export_as_webservice_entry,
+    export_write_operation,
+    exported,
+    operation_for_version,
+    )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from zope.interface import Interface
 from zope.schema import (
     Bool,
     Int,
@@ -21,9 +27,7 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.buildmaster.interfaces.buildfarmjob import (
-    ISpecificBuildFarmJobSource,
-    )
+from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -35,9 +39,7 @@ from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
-class ISourcePackageRecipeBuild(IPackageBuild):
-    """A build of a source package."""
-    export_as_webservice_entry()
+class ISourcePackageRecipeBuildView(IPackageBuild):
 
     id = Int(title=_("Identifier for this build."))
 
@@ -56,6 +58,16 @@ class ISourcePackageRecipeBuild(IPackageBuild):
     recipe = Object(
         schema=ISourcePackageRecipe, title=_("The recipe being built."))
 
+    can_be_rescored = exported(Bool(
+        title=_("Can be rescored"),
+        required=True, readonly=True,
+        description=_("Whether this build record can be rescored manually.")))
+
+    can_be_cancelled = exported(Bool(
+        title=_("Can be cancelled"),
+        required=True, readonly=True,
+        description=_("Whether this build record can be cancelled.")))
+
     manifest = Object(
         schema=ISourcePackageRecipeData, title=_(
             'A snapshot of the recipe for this build.'))
@@ -67,16 +79,37 @@ class ISourcePackageRecipeBuild(IPackageBuild):
         ISourcePackageRelease, title=_("The produced source package release"),
         readonly=True)
 
-    is_virtualized = Bool(title=_('If True, this build is virtualized.'))
-
     def getFileByName(filename):
         """Return the file under +files with specified name."""
 
-    def cancelBuild():
-        """Cancel the build."""
+
+class ISourcePackageRecipeBuildEdit(Interface):
+
+    @export_write_operation()
+    @operation_for_version("devel")
+    def cancel():
+        """Cancel the build if it is either pending or in progress.
+
+        Check the can_be_cancelled property prior to calling this method to
+        find out if cancelling the build is possible.
+
+        If the build is in progress, it is marked as CANCELLING until the
+        buildd manager terminates the build and marks it CANCELLED.  If the
+        build is not in progress, it is marked CANCELLED immediately and is
+        removed from the build queue.
+
+        If the build is not in a cancellable state, this method is a no-op.
+        """
 
     def destroySelf():
         """Delete the build itself."""
+
+
+class ISourcePackageRecipeBuild(ISourcePackageRecipeBuildView,
+                                ISourcePackageRecipeBuildEdit):
+    """A build of a source package."""
+
+    export_as_webservice_entry()
 
 
 class ISourcePackageRecipeBuildSource(ISpecificBuildFarmJobSource):

@@ -13,7 +13,7 @@ the following features:
 
 To demonstrate, we'll create a sample interface:
 
-  >>> from zope.interface import Interface, implements
+  >>> from zope.interface import Interface, implementer
   >>> from lp.services.fields import URIField
   >>> class IURIFieldTest(Interface):
   ...     field = URIField()
@@ -181,8 +181,8 @@ This widget is registered as an input widget:
   >>> from lp.app.widgets.textwidgets import URIWidget
   >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
-  >>> class URIFieldTest(object):
-  ...     implements(IURIFieldTest)
+  >>> @implementer(IURIFieldTest)
+  ... class URIFieldTest(object):
   ...     field = None
 
   >>> context = URIFieldTest()

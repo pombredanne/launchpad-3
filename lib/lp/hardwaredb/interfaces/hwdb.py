@@ -9,7 +9,6 @@ __all__ = [
     'HWBus',
     'HWSubmissionFormat',
     'HWSubmissionKeyNotUnique',
-    'HWSubmissionMissingFields',
     'HWSubmissionProcessingStatus',
     'IHWDBApplication',
     'IHWDevice',
@@ -91,6 +90,10 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import License
 from lp.services.webapp.interfaces import ILaunchpadApplication
+from lp.services.webservice.apihelpers import (
+    patch_collection_property,
+    patch_reference_property,
+    )
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 
@@ -120,10 +123,6 @@ def validate_email_address(emailaddress):
 
 class HWSubmissionKeyNotUnique(Exception):
     """Prevent two or more submission with identical submission_key."""
-
-
-class HWSubmissionMissingFields(Exception):
-    """Indicate that the HWDB client sent incomplete data."""
 
 
 class HWSubmissionProcessingStatus(DBEnumeratedType):
@@ -917,7 +916,7 @@ class IHWDevice(Interface):
 
 
 # Fix cyclic reference.
-IHWDeviceClass['device'].schema = IHWDevice
+patch_reference_property(IHWDeviceClass, 'device', IHWDevice)
 
 
 class IHWDeviceSet(Interface):
@@ -1087,8 +1086,8 @@ class IHWSubmissionDevice(Interface):
 
 
 # Fix cyclic references.
-IHWSubmissionDevice['parent'].schema = IHWSubmissionDevice
-IHWSubmission['devices'].value_type.schema = IHWSubmissionDevice
+patch_reference_property(IHWSubmissionDevice, 'parent', IHWSubmissionDevice)
+patch_collection_property(IHWSubmission, 'devices', IHWSubmissionDevice)
 
 
 class IHWSubmissionDeviceSet(Interface):

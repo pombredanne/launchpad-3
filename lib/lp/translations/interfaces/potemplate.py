@@ -1,10 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from lazr.enum import (
-    DBEnumeratedType,
-    DBItem,
-    )
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
@@ -19,7 +15,6 @@ from zope.interface import (
     )
 from zope.schema import (
     Bool,
-    Bytes,
     Choice,
     Datetime,
     Int,
@@ -49,48 +44,12 @@ __all__ = [
     'IPOTemplateSet',
     'IPOTemplateSharingSubset',
     'IPOTemplateSubset',
-    'IPOTemplateWithContent',
     'LanguageNotFound',
-    'TranslationPriority',
     ]
 
 
 class LanguageNotFound(NotFoundError):
     """Raised when a a language does not exist in the database."""
-
-
-class TranslationPriority(DBEnumeratedType):
-    """Translation Priority
-
-    Translations in Rosetta can be assigned a priority. This is used in a
-    number of places. The priority stored on the translation itself is set
-    by the upstream project maintainers, and used to identify the
-    translations they care most about. For example, if Apache were nearing a
-    big release milestone they would set the priority on those POTemplates
-    to 'high'. The priority is also used by TranslationEfforts to indicate
-    how important that POTemplate is to the effort. And lastly, an
-    individual translator can set the priority on his personal subscription
-    to a project, to determine where it shows up on his list.  """
-
-    HIGH = DBItem(1, """
-        High
-
-        This translation should be shown on any summary list of translations
-        in the relevant context. For example, 'high' priority projects show
-        up on the home page of a TranslationEffort or Project in Rosetta.
-        """)
-
-    MEDIUM = DBItem(2, """
-        Medium
-
-        A medium priority POTemplate should be shown on longer lists and
-        dropdowns lists of POTemplates in the relevant context.  """)
-
-    LOW = DBItem(3, """
-        Low
-
-        A low priority POTemplate should only show up if a comprehensive
-        search or complete listing is requested by the user.  """)
 
 
 class IPOTemplate(IRosettaStats):
@@ -190,14 +149,6 @@ class IPOTemplate(IRosettaStats):
     sourcepackageversion = TextLine(
         title=_("Source Package Version"),
         required=False)
-
-    binarypackagename = Choice(
-        title=_("Binary Package"),
-        description=_(
-            "The package in which this template's translations are "
-            "installed."),
-        required=False,
-        vocabulary="BinaryPackageName")
 
     languagepack = exported(Bool(
         title=_("Include translations for this template in language packs?"),
@@ -791,15 +742,6 @@ class IPOTemplateSharingSubset(Interface):
             `POTemplate`s in that class, each sorted from most to least
             representative.
         """
-
-
-class IPOTemplateWithContent(IPOTemplate):
-    """Interface for an `IPOTemplate` used to create the new POTemplate form.
-    """
-
-    content = Bytes(
-        title=_("PO Template File to Import"),
-        required=True)
 
 
 class ITranslationTemplatesCollection(Interface):

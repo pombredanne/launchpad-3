@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A module for CodeOfConduct (CoC) related classes.
@@ -19,8 +19,9 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
+from storm.properties import Unicode
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.codeofconduct import (
@@ -43,17 +44,18 @@ from lp.services.gpg.interfaces import (
     GPGVerificationError,
     IGPGHandler,
     )
+from lp.services.mail.helpers import get_email_template
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
 
 
+@implementer(ICodeOfConductConf)
 class CodeOfConductConf:
     """Abstract Component to store the current CoC configuration."""
-
-    implements(ICodeOfConductConf)
 
     ## XXX: cprov 2005-02-17
     ## Integrate this class with LaunchpadCentral configuration
@@ -68,14 +70,13 @@ class CodeOfConductConf:
     datereleased = datetime(2005, 4, 12, tzinfo=pytz.timezone("UTC"))
 
 
+@implementer(ICodeOfConduct)
 class CodeOfConduct:
     """CoC class model.
 
     A set of properties allow us to properly handle the CoC stored
     in the filesystem, so it's not a database class.
     """
-
-    implements(ICodeOfConduct)
 
     def __init__(self, version):
         self.version = version
@@ -123,10 +124,9 @@ class CodeOfConduct:
         return getUtility(ICodeOfConductConf).datereleased
 
 
+@implementer(ICodeOfConductSet)
 class CodeOfConductSet:
     """A set of CodeOfConducts."""
-
-    implements(ICodeOfConductSet)
 
     title = 'Launchpad Codes of Conduct'
 
@@ -171,10 +171,9 @@ class CodeOfConductSet:
         raise AssertionError("No current code of conduct registered")
 
 
+@implementer(ISignedCodeOfConduct)
 class SignedCodeOfConduct(SQLBase):
     """Code of Conduct."""
-
-    implements(ISignedCodeOfConduct)
 
     _table = 'SignedCodeOfConduct'
 
@@ -182,8 +181,7 @@ class SignedCodeOfConduct(SQLBase):
 
     signedcode = StringCol(dbName='signedcode', notNull=False, default=None)
 
-    signingkey = ForeignKey(foreignKey="GPGKey", dbName="signingkey",
-                            notNull=False, default=None)
+    signing_key_fingerprint = Unicode()
 
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
                                  default=UTC_NOW)
@@ -195,6 +193,12 @@ class SignedCodeOfConduct(SQLBase):
                              default=None)
 
     active = BoolCol(dbName='active', notNull=True, default=False)
+
+    @cachedproperty
+    def signingkey(self):
+        if self.signing_key_fingerprint is not None:
+            return getUtility(IGPGKeySet).getByFingerprint(
+                self.signing_key_fingerprint)
 
     @property
     def displayname(self):
@@ -214,8 +218,8 @@ class SignedCodeOfConduct(SQLBase):
     def sendAdvertisementEmail(self, subject, content):
         """See ISignedCodeOfConduct."""
         assert self.owner.preferredemail
-        template = open('lib/lp/registry/emailtemplates/'
-                        'signedcoc-acknowledge.txt').read()
+        template = get_email_template(
+            'signedcoc-acknowledge.txt', app='registry')
         fromaddress = format_address(
             "Launchpad Code Of Conduct System",
             config.canonical.noreply_from_address)
@@ -227,10 +231,9 @@ class SignedCodeOfConduct(SQLBase):
             subject, message)
 
 
+@implementer(ISignedCodeOfConductSet)
 class SignedCodeOfConductSet:
     """A set of CodeOfConducts"""
-
-    implements(ISignedCodeOfConductSet)
 
     title = 'Code of Conduct Administrator Page'
 
@@ -309,8 +312,10 @@ class SignedCodeOfConductSet:
                     'space differences are acceptable).')
 
         # Store the signature
-        signed = SignedCodeOfConduct(owner=user, signingkey=gpg,
-                                     signedcode=signedcode, active=True)
+        signed = SignedCodeOfConduct(
+            owner=user,
+            signing_key_fingerprint=gpg.fingerprint if gpg else None,
+            signedcode=signedcode, active=True)
 
         # Send Advertisement Email
         subject = 'Your Code of Conduct signature has been acknowledged'

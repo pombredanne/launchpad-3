@@ -150,7 +150,7 @@ class ScenarioMixin:
         traits.setFlag(tm, True)
 
         other_template = self.makeOtherPOTemplate()
-        other_pofile = self._makePOFile(potemplate=other_template)
+        self._makePOFile(potemplate=other_template)
         other_tm = self._makeTranslationMessage(potmsgset, pofile)
         traits.other_side_traits.setFlag(other_tm, True)
 

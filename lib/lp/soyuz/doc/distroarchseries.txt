@@ -200,7 +200,7 @@ Let's activate ppa support for hoary/hppa and check if
     >>> from lp.services.database.sqlbase import flush_database_updates
     >>> login('foo.bar@canonical.com')
 
-    >>> hoary['hppa'].supports_virtualized = True
+    >>> hoary['hppa'].processor.supports_virtualized = True
     >>> flush_database_updates()
 
     >>> print_architectures(hoary.virtualized_architectures)

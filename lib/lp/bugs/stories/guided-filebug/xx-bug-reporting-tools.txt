@@ -172,7 +172,7 @@ that will be used to automatically fill in a suggested title.
     >>> user_browser.getControl('Summary', index=0).value
     'Initial bug summary'
 
-The user can of course change the summary if he wants to.
+The user can of course change the summary if they want to.
 
     >>> user_browser.getControl('Summary', index=0).value = 'Another summary'
     >>> user_browser.getControl('Continue').click()
@@ -203,7 +203,7 @@ initialized with that value.
     >>> user_browser.getControl('Tags').value
     'bar foo'
 
-The user can of course change the tags if he wants.
+The user can of course change the tags if they want.
 
     >>> user_browser.getControl('Tags').value = 'bar baz'
     >>> user_browser.getControl('Summary', index=0).value = 'Bug Summary'

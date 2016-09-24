@@ -29,13 +29,13 @@ MAX_SWIFT_OBJECT_SIZE = 5 * 1024 ** 3  # 5GB Swift limit.
 ONE_DAY = 24 * 60 * 60
 
 
-def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
+def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove_func=False):
     '''Copy a range of Librarian files from disk into Swift.
 
     start and end identify the range of LibraryFileContent.id to
     migrate (inclusive).
 
-    If remove is True, files are removed from disk after being copied into
+    If remove_func is set, it is called for every file after being copied into
     Swift.
     '''
     swift_connection = connection_pool.get()
@@ -45,7 +45,7 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
         start_lfc_id = 1
     if end_lfc_id is None:
         # Maximum id capable of being stored on the filesystem - ffffffff
-        end_lfc_id = 4294967295
+        end_lfc_id = 0xffffffff
 
     log.info("Walking disk store {0} from {1} to {2}, inclusive".format(
         fs_root, start_lfc_id, end_lfc_id))
@@ -143,8 +143,15 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove=False):
                     lfc, container, obj_name))
                 _put(log, swift_connection, lfc, container, obj_name, fs_path)
 
-            if remove:
-                os.unlink(fs_path)
+            if remove_func:
+                remove_func(fs_path)
+
+
+def rename(path):
+    # It would be nice to move the file out of the tree entirely, but we
+    # need to keep the backup on the same filesystem as the original
+    # file.
+    os.rename(path, path + '.migrated')
 
 
 def _put(log, swift_connection, lfc_id, container, obj_name, fs_path):
@@ -339,6 +346,9 @@ class ConnectionPool:
         exception has been raised (apart from a 404), don't trust the
         swift_connection and throw it away.
         '''
+        if not isinstance(swift_connection, swiftclient.Connection):
+            raise AssertionError(
+                "%r is not a swiftclient Connection." % swift_connection)
         if swift_connection not in self._pool:
             self._pool.append(swift_connection)
             while len(self._pool) > self.MAX_POOL_SIZE:

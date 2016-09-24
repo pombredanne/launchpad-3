@@ -24,10 +24,6 @@
         <dt>Urgency:</dt>
         <dd><span tal:content="current/urgency/title" /></dd>
       </dl>
-      <dl>
-        <dt>Component:</dt>
-        <dd><span tal:content="current/component/name"/></dd>
-      </dl>
     </tal:currentrelease>
     <tal:norelease tal:condition="not: current">
       <em>No published releases of this package have been uploaded in

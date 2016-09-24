@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystem views."""
@@ -15,10 +15,12 @@ from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
 import pytz
 from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
@@ -33,7 +35,6 @@ from lp.soyuz.interfaces.livefs import (
     LIVEFS_FEATURE_FLAG,
     LiveFSFeatureDisabled,
     )
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     BrowserTestCase,
     login,
@@ -207,12 +208,12 @@ class TestLiveFSAdminView(BrowserTestCase):
     def test_admin_livefs(self):
         # Admins can change require_virtualized.
         login("admin@canonical.com")
-        commercial_admin = self.factory.makePerson(
-            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
+        ppa_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).ppa_admin])
         login_person(self.person)
         livefs = self.factory.makeLiveFS(registrant=self.person)
         self.assertTrue(livefs.require_virtualized)
-        browser = self.getViewBrowser(livefs, user=commercial_admin)
+        browser = self.getViewBrowser(livefs, user=ppa_admin)
         browser.getLink("Administer live filesystem").click()
         browser.getControl("Require virtualized builders").selected = False
         browser.getControl("Update live filesystem").click()
@@ -222,13 +223,13 @@ class TestLiveFSAdminView(BrowserTestCase):
     def test_admin_livefs_sets_date_last_modified(self):
         # Administering a live filesystem sets the date_last_modified property.
         login("admin@canonical.com")
-        commercial_admin = self.factory.makePerson(
-            member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
+        ppa_admin = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).ppa_admin])
         login_person(self.person)
         date_created = datetime(2000, 1, 1, tzinfo=pytz.UTC)
         livefs = self.factory.makeLiveFS(
             registrant=self.person, date_created=date_created)
-        login_person(commercial_admin)
+        login_person(ppa_admin)
         view = LiveFSAdminView(livefs, LaunchpadTestRequest())
         view.initialize()
         view.request_action.success({"require_virtualized": False})
@@ -314,6 +315,56 @@ class TestLiveFSEditView(BrowserTestCase):
             "There is already a live filesystem for Grumpy owned by "
             "Test Person with this name.",
             extract_text(find_tags_by_class(browser.contents, "message")[1]))
+
+
+class TestLiveFSDeleteView(BrowserTestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestLiveFSDeleteView, self).setUp()
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.person = self.factory.makePerson(
+            name="test-person", displayname="Test Person")
+
+    def test_unauthorized(self):
+        # A user without edit access cannot delete a live filesystem.
+        self.useFixture(FakeLogger())
+        livefs = self.factory.makeLiveFS(
+            registrant=self.person, owner=self.person)
+        livefs_url = canonical_url(livefs)
+        other_person = self.factory.makePerson()
+        browser = self.getViewBrowser(livefs, user=other_person)
+        self.assertRaises(
+            LinkNotFoundError, browser.getLink, "Delete live filesystem")
+        self.assertRaises(
+            Unauthorized, self.getUserBrowser, livefs_url + "/+delete",
+            user=other_person)
+
+    def test_delete_livefs_without_builds(self):
+        # A live filesystem without builds can be deleted.
+        self.useFixture(FakeLogger())
+        livefs = self.factory.makeLiveFS(
+            registrant=self.person, owner=self.person)
+        livefs_url = canonical_url(livefs)
+        owner_url = canonical_url(self.person)
+        browser = self.getViewBrowser(livefs, user=self.person)
+        browser.getLink("Delete live filesystem").click()
+        browser.getControl("Delete live filesystem").click()
+        self.assertEqual(owner_url, browser.url)
+        self.assertRaises(NotFound, browser.open, livefs_url)
+
+    def test_delete_livefs_with_builds(self):
+        # A live filesystem without builds cannot be deleted.
+        livefs = self.factory.makeLiveFS(
+            registrant=self.person, owner=self.person)
+        self.factory.makeLiveFSBuild(livefs=livefs)
+        browser = self.getViewBrowser(livefs, user=self.person)
+        browser.getLink("Delete live filesystem").click()
+        self.assertIn(
+            "This live filesystem cannot be deleted", browser.contents)
+        self.assertRaises(
+            LookupError, browser.getControl, "Delete live filesystem")
 
 
 class TestLiveFSView(BrowserTestCase):

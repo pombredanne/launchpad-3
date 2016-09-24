@@ -6,14 +6,8 @@ so that browsers do not have to make as many requests when they first
 view a page. An individual sprite is displayed as a background image
 on an element by setting the background position.
 
-A new image can be added to the combined file with the command::
-
-    make sprite_image
-
-The resulting icon-sprites.png and icon-sprites.positioning files must
-be committed to the repository. Any changes to the CSS template will be
-automatically picked up when Launchpad is restarted. If you don't want
-to restart launchpad.dev, you can run::
+A new image can be added to the combined image file and CSS template with
+the command::
 
     make css_combine
 

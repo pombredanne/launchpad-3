@@ -49,10 +49,12 @@ class PackageBuildMixin(BuildFarmJobMixin):
         return self.archive.private
 
     def updateStatus(self, status, builder=None, slave_status=None,
-                     date_started=None, date_finished=None):
+                     date_started=None, date_finished=None,
+                     force_invalid_transition=False):
         super(PackageBuildMixin, self).updateStatus(
             status, builder=builder, slave_status=slave_status,
-            date_started=date_started, date_finished=date_finished)
+            date_started=date_started, date_finished=date_finished,
+            force_invalid_transition=force_invalid_transition)
 
         if (status == BuildStatus.MANUALDEPWAIT and slave_status is not None
             and slave_status.get('dependencies') is not None):

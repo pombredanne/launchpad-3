@@ -32,7 +32,7 @@
           has no whitespace between the elements as we do not want any
           space between the number and the fullstop.
         </tal:comment>
-        <a tal:attributes="href string:${context/codebrowse_url}/revision/${rev_no/sequence}"
+        <a tal:attributes="href python: context.getCodebrowseUrlForRevision(rev_no.sequence)"
            tal:content="rev_no/sequence"
            tal:condition="context/code_is_browseable">
           1

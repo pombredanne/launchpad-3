@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This script updates the cached source package information in the system.
@@ -39,8 +39,8 @@ class PackageCacheUpdater(LaunchpadCronScript):
     def updateDistributionCache(self, distribution, archive):
         """Update package caches for the given location.
 
-        'archive' can be one of the main archives (PRIMARY, PARTNER or
-        EMBARGOED) or even a PPA.
+        'archive' can be one of the main archives (PRIMARY or PARTNER), a
+        PPA, or None to update caches of official branch links.
 
         This method commits the transaction frequently since it deal with
         a huge amount of data.
@@ -48,8 +48,9 @@ class PackageCacheUpdater(LaunchpadCronScript):
         PPA archives caches are consolidated in a Archive row to optimize
         searches across PPAs.
         """
-        for distroseries in distribution.series:
-            self.updateDistroSeriesCache(distroseries, archive)
+        if archive is not None:
+            for distroseries in distribution.series:
+                self.updateDistroSeriesCache(distroseries, archive)
 
         DistributionSourcePackageCache.removeOld(
             distribution, archive, log=self.logger)
@@ -89,6 +90,10 @@ class PackageCacheUpdater(LaunchpadCronScript):
                 'Updating %s main archives' % distribution.name)
             for archive in distribution.all_distro_archives:
                 self.updateDistributionCache(distribution, archive)
+
+            self.logger.info(
+                'Updating %s official branch links' % distribution.name)
+            self.updateDistributionCache(distribution, None)
 
             self.logger.info(
                 'Updating %s PPAs' % distribution.name)

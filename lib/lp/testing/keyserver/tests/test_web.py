@@ -107,7 +107,7 @@ class TestWebResources(TestCase):
     def test_index_lookup(self):
         # A key index lookup form via GET.
         return self.assertContentMatches(
-            '/pks/lookup?op=index&search=0xDFD20543',
+            '/pks/lookup?fingerprint=on&op=index&search=0xDFD20543',
             '''\
 <html>
 ...
@@ -120,7 +120,7 @@ pub  1024D/DFD20543 2005-04-13 Sample Person (revoked) &lt;sample.revoked@canoni
     def test_content_lookup(self):
         # A key content lookup form via GET.
         return self.assertContentMatches(
-            '/pks/lookup?op=get&'
+            '/pks/lookup?fingerprint=on&op=get&'
             'search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543',
             '''\
 <html>
@@ -138,7 +138,7 @@ mQGiBEJdmOcRBADkNJPTBuCIefBdRAhvWyD9SSVHh8GHQWS7l9sRLEsirQkKz1yB
         # We can also request a key ID instead of a fingerprint, and it will
         # glob for the fingerprint.
         return self.assertContentMatches(
-            '/pks/lookup?op=get&search=0xDFD20543',
+            '/pks/lookup?fingerprint=on&op=get&search=0xDFD20543',
             '''\
 <html>
 ...
@@ -154,7 +154,7 @@ mQGiBEJdmOcRBADkNJPTBuCIefBdRAhvWyD9SSVHh8GHQWS7l9sRLEsirQkKz1yB
     def test_nonexistent_key(self):
         # If we request a nonexistent key, we get a nice error.
         return self.assertRaises404ErrorForKeyNotFound(
-            '/pks/lookup?op=get&search=0xDFD20544')
+            '/pks/lookup?fingerprint=on&op=get&search=0xDFD20544')
 
     def test_add_key(self):
         # A key submit form via POST (see doc/gpghandler.txt for more

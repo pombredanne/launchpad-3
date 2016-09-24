@@ -26,14 +26,11 @@ from lazr.batchnavigator import ListRangeFactory
 from lazr.restful.utils import safe_hasattr
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import (
-    isinstance as zope_isinstance,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -49,11 +46,11 @@ from lp.buildmaster.enums import (
     BuildStatus,
     )
 from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJobDB,
     InconsistentBuildFarmJobError,
     ISpecificBuildFarmJobSource,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
@@ -98,6 +95,7 @@ def get_build_by_id_str(utility, id_str):
         return None
 
 
+@implementer(ICanonicalUrlData)
 class BuildUrl:
     """Dynamic URL declaration for IBinaryPackageBuild.
 
@@ -113,7 +111,6 @@ class BuildUrl:
     Copy archives will be presented under the archives page:
        /ubuntu/+archive/my-special-archive/+build/1234
     """
-    implements(ICanonicalUrlData)
     rootsite = None
 
     def __init__(self, context):
@@ -355,7 +352,7 @@ class BuildRetryView(BuildView):
 
             # Invoke context method to retry the build record.
             self.context.retry()
-            self.request.response.addInfoNotification('Build retried')
+            self.request.response.addInfoNotification('Build has been queued')
 
         self.request.response.redirect(canonical_url(self.context))
 
@@ -439,7 +436,7 @@ def getSpecificJobs(jobs):
     builds = []
     key = attrgetter('job_type.name')
     nonspecific_jobs = sorted(
-        (job for job in jobs if zope_isinstance(job, BuildFarmJob)), key=key)
+        (job for job in jobs if IBuildFarmJobDB.providedBy(job)), key=key)
     job_builds = {}
     for job_type_name, grouped_jobs in groupby(nonspecific_jobs, key=key):
         # Fetch the jobs in batches grouped by their job type.
@@ -463,7 +460,7 @@ def getSpecificJobs(jobs):
     try:
         return [
             job_builds[job.id]
-            if zope_isinstance(job, BuildFarmJob) else job for job in jobs]
+            if IBuildFarmJobDB.providedBy(job) else job for job in jobs]
     except KeyError:
         raise InconsistentBuildFarmJobError(
             "Could not find all the related specific jobs.")

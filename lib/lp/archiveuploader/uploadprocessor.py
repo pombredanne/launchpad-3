@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code for 'processing' 'uploads'. Also see nascentupload.py.
@@ -49,10 +49,8 @@ __metaclass__ = type
 
 import os
 import shutil
-import stat
 import sys
 
-from contrib.glock import GlobalLock
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
@@ -62,6 +60,7 @@ from lp.archiveuploader.nascentupload import (
     EarlyReturnUploadError,
     NascentUpload,
     )
+from lp.archiveuploader.snapupload import SnapUpload
 from lp.archiveuploader.uploadpolicy import (
     BuildDaemonUploadPolicy,
     UploadPolicyError,
@@ -79,6 +78,7 @@ from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )
+from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     NoSuchPPA,
@@ -204,45 +204,14 @@ class UploadProcessor:
     def locateDirectories(self, fsroot):
         """Return a list of upload directories in a given queue.
 
-        This method operates on the queue atomically, i.e. it suppresses
-        changes in the queue directory, like new uploads, by acquiring
-        the shared upload_queue lockfile while the directory are listed.
-
         :param fsroot: path to a 'queue' directory to be inspected.
 
         :return: a list of upload directories found in the queue
             alphabetically sorted.
         """
-        # Protecting listdir by a lock ensures that we only get completely
-        # finished directories listed. See lp.poppy.hooks for the other
-        # locking place.
-        lockfile_path = os.path.join(fsroot, ".lock")
-        fsroot_lock = GlobalLock(lockfile_path)
-        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
-
-        # XXX cprov 20081024 bug=185731: The lockfile permission can only be
-        # changed by its owner. Since we can't predict which process will
-        # create it in production systems we simply ignore errors when trying
-        # to grant the right permission. At least, one of the process will
-        # be able to do so.
-        try:
-            os.chmod(lockfile_path, mode | stat.S_IWGRP)
-        except OSError as err:
-            self.log.debug('Could not fix the lockfile permission: %s' % err)
-
-        try:
-            fsroot_lock.acquire(blocking=True)
-            dir_names = os.listdir(fsroot)
-        finally:
-            # Skip lockfile deletion, see similar code in lp.poppy.hooks.
-            fsroot_lock.release(skip_delete=True)
-
-        sorted_dir_names = sorted(
-            dir_name
-            for dir_name in dir_names
+        return sorted(
+            dir_name for dir_name in os.listdir(fsroot)
             if os.path.isdir(os.path.join(fsroot, dir_name)))
-
-        return sorted_dir_names
 
 
 class UploadHandler:
@@ -301,9 +270,8 @@ class UploadHandler:
         """Process a single changes file.
 
         This is done by obtaining the appropriate upload policy (according
-        to command-line options and the value in the .distro file beside
-        the upload, if present), creating a NascentUpload object and calling
-        its process method.
+        to command-line options), creating a NascentUpload object and
+        calling its process method.
 
         We obtain the context for this processing from the relative path,
         within the upload folder, of this changes file. This influences
@@ -475,9 +443,6 @@ class UploadHandler:
     def removeUpload(self, logger):
         """Remove an upload that has succesfully been processed.
 
-        This includes moving the given upload directory and moving the
-        matching .distro file, if it exists.
-
         :param logger: The logger to use for logging results.
         """
         if self.processor.keep or self.processor.dry_run:
@@ -486,11 +451,6 @@ class UploadHandler:
 
         logger.debug("Removing upload directory %s", self.upload_path)
         shutil.rmtree(self.upload_path)
-
-        distro_filename = self.upload_path + ".distro"
-        if os.path.isfile(distro_filename):
-            logger.debug("Removing distro file %s", distro_filename)
-            os.remove(distro_filename)
 
     def moveProcessedUpload(self, destination, logger):
         """Move or remove the upload depending on the status of the upload.
@@ -506,9 +466,6 @@ class UploadHandler:
     def moveUpload(self, subdir_name, logger):
         """Move the upload to the named subdir of the root, eg 'accepted'.
 
-        This includes moving the given upload directory and moving the
-        matching .distro file, if it exists.
-
         :param subdir_name: Name of the subdirectory to move to.
         :param logger: The logger to use for logging results.
         """
@@ -523,15 +480,6 @@ class UploadHandler:
         logger.debug("Moving upload directory %s to %s" %
             (self.upload_path, target_path))
         shutil.move(self.upload_path, target_path)
-
-        distro_filename = self.upload_path + ".distro"
-        if os.path.isfile(distro_filename):
-            target_path = os.path.join(self.processor.base_fsroot,
-                                       subdir_name,
-                                       os.path.basename(distro_filename))
-            logger.debug("Moving distro file %s to %s" % (distro_filename,
-                                                            target_path))
-            shutil.move(distro_filename, target_path)
 
     @staticmethod
     def orderFilenames(fnames):
@@ -665,6 +613,31 @@ class BuildUploadHandler(UploadHandler):
             self.processor.ztm.abort()
             raise
 
+    def processSnap(self, logger=None):
+        """Process a snap package upload."""
+        assert ISnapBuild.providedBy(self.build)
+        if logger is None:
+            logger = self.processor.log
+        try:
+            logger.info("Processing Snap upload %s" % self.upload_path)
+            SnapUpload(self.upload_path, logger).process(self.build)
+
+            if self.processor.dry_run:
+                logger.info("Dry run, aborting transaction.")
+                self.processor.ztm.abort()
+            else:
+                logger.info(
+                    "Committing the transaction and any mails associated "
+                    "with this upload.")
+                self.processor.ztm.commit()
+            return UploadStatusEnum.ACCEPTED
+        except UploadError as e:
+            logger.error(str(e))
+            return UploadStatusEnum.REJECTED
+        except:
+            self.processor.ztm.abort()
+            raise
+
     def process(self):
         """Process an upload that is the result of a build.
 
@@ -672,10 +645,21 @@ class BuildUploadHandler(UploadHandler):
         Build uploads always contain a single package per leaf.
         """
         logger = BufferLogger()
-        if self.build.status != BuildStatus.UPLOADING:
+        if self.build.status == BuildStatus.BUILDING:
+            # Handoff from buildd-manager isn't complete until the
+            # status is UPLOADING.
+            self.processor.log.info("Build status is BUILDING. Ignoring.")
+            return
+        elif self.build.status != BuildStatus.UPLOADING:
+            # buildd-manager should only have given us a directory
+            # during BUILDING or UPLOADING. Anything else indicates a
+            # bug, so get the upload out of the queue before the status
+            # changes to something that might accidentally let it be
+            # accepted.
             self.processor.log.warn(
-                "Expected build status to be 'UPLOADING', was %s. Ignoring." %
+                "Expected build status to be UPLOADING or BUILDING, was %s.",
                 self.build.status.name)
+            self.moveUpload(UploadStatusEnum.FAILED, logger)
             return
         try:
             # The recipe may have been deleted so we need to flag that here
@@ -684,11 +668,12 @@ class BuildUploadHandler(UploadHandler):
             # because we want the standard cleanup to occur.
             recipe_deleted = (ISourcePackageRecipeBuild.providedBy(self.build)
                 and self.build.recipe is None)
-            is_livefs = ILiveFSBuild.providedBy(self.build)
             if recipe_deleted:
                 result = UploadStatusEnum.FAILED
-            elif is_livefs:
+            elif ILiveFSBuild.providedBy(self.build):
                 result = self.processLiveFS(logger)
+            elif ISnapBuild.providedBy(self.build):
+                result = self.processSnap(logger)
             else:
                 self.processor.log.debug("Build %s found" % self.build.id)
                 [changes_file] = self.locateChangesFiles()
@@ -713,7 +698,7 @@ class BuildUploadHandler(UploadHandler):
             if recipe_deleted:
                 # For a deleted recipe, no need to notify that uploading has
                 # failed - we just log a warning.
-                self.processor.log.warn(
+                self.processor.log.info(
                     "Recipe for build %s was deleted. Ignoring." %
                     self.upload)
             else:

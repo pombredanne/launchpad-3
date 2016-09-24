@@ -84,7 +84,7 @@ A single voucher can be redeemed, but must be associated with a project.
     >>> voucher = vouchers[0]['voucher_id']
     >>> result = server.redeemVoucher(
     ...     voucher, mark_identifier,
-    ...     firefox.id, firefox.displayname)
+    ...     firefox.id, firefox.display_name)
     >>> print result
     True
     >>> vouchers = server.getUnredeemedVouchers(mark_identifier)
@@ -112,7 +112,7 @@ fault.
     >>> voucher = vouchers[0]['voucher_id']
     >>> result = server.redeemVoucher(
     ...     voucher, mark_identifier,
-    ...     firefox.id, firefox.displayname)
+    ...     firefox.id, firefox.display_name)
     Traceback (most recent call last):
       ...
     Fault: <Fault NotFound: 'Something was not found.'>
@@ -156,7 +156,7 @@ If the user has no matching vouchers an empty list is returned.
     0
 
 Similarly the call to get all of a user's vouchers returns the empty
-list when she has none.
+list when they have none.
 
     >>> vouchers = voucher_proxy.getAllVouchers(foobar)
     >>> len(vouchers)
@@ -251,10 +251,10 @@ If a project's name changes we can communicate that to Salesforce.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> naked_firefox = removeSecurityProxy(firefox)
-    >>> print naked_firefox.displayname
+    >>> print naked_firefox.display_name
     Mozilla Firefox
-    >>> naked_firefox.displayname = 'Super Mozilla Firefox'
-    >>> print naked_firefox.displayname
+    >>> naked_firefox.display_name = 'Super Mozilla Firefox'
+    >>> print naked_firefox.display_name
     Super Mozilla Firefox
     >>> result = voucher_proxy.updateProjectName(naked_firefox)
     >>> print result

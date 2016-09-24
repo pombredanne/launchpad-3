@@ -12,7 +12,7 @@ import re
 import xmlrpclib
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.enums import PersonVisibility
@@ -29,6 +29,9 @@ from lp.registry.interfaces.person import (
     )
 from lp.services.config import config
 from lp.services.encoding import escape_nonascii_uniquely
+from lp.services.identity.interfaces.account import (
+    INACTIVE_ACCOUNT_STATUSES,
+    )
 from lp.services.identity.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
@@ -48,10 +51,9 @@ except ImportError:
     BYUSER = 2
 
 
+@implementer(IMailingListAPIView)
 class MailingListAPIView(LaunchpadXMLRPCView):
     """The XMLRPC API that Mailman polls for mailing list actions."""
-
-    implements(IMailingListAPIView)
 
     def getPendingActions(self):
         """See `IMailingListAPIView`."""
@@ -224,8 +226,11 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             # discarded.
             return False
         email_address = getUtility(IEmailAddressSet).getByEmail(address)
-        return (email_address is not None and
-                not email_address.person.is_team and
+        if email_address is None:
+            return False
+        person = email_address.person
+        return (not person.is_team and
+                person.account_status not in INACTIVE_ACCOUNT_STATUSES and
                 email_address.status in (EmailAddressStatus.VALIDATED,
                                          EmailAddressStatus.PREFERRED))
 

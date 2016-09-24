@@ -27,7 +27,7 @@ An unprivileged user can confirm the bug:
     >>> print_highlighted_bugtask(user_browser)
     mozilla-firefox (Ubuntu) ... Confirmed  Medium Unassigned ...
 
-But he cannot change the status to Won't Fix or to Triaged, and so
+But they cannot change the status to Won't Fix or to Triaged, and so
 those statuses are not shown in the UI:
 
     >>> user_browser.open(

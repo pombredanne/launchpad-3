@@ -104,10 +104,6 @@ class TestProductVocabulary(TestCaseWithFactory):
         # Embargoed and proprietary products are only returned if
         # the current user can see them.
         public_product = self.factory.makeProduct('quux-public')
-        embargoed_owner = self.factory.makePerson()
-        embargoed_product = self.factory.makeProduct(
-            name='quux-embargoed', owner=embargoed_owner,
-            information_type=InformationType.EMBARGOED)
         proprietary_owner = self.factory.makePerson()
         proprietary_product = self.factory.makeProduct(
             name='quux-proprietary', owner=proprietary_owner,
@@ -125,17 +121,17 @@ class TestProductVocabulary(TestCaseWithFactory):
             self.assertEqual([public_product], list(result))
 
         # People with grants on a private product can see this product.
-        with person_logged_in(embargoed_owner):
+        with person_logged_in(proprietary_owner):
             getUtility(IService, 'sharing').sharePillarInformation(
-                embargoed_product, user, embargoed_owner,
-                {InformationType.EMBARGOED: SharingPermission.ALL})
+                proprietary_product, user, proprietary_owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
         with person_logged_in(user):
             result = self.vocabulary.search('quux')
-            self.assertEqual([embargoed_product, public_product], list(result))
+            self.assertEqual(
+                [proprietary_product, public_product], list(result))
 
         # Admins can see all products.
         with celebrity_logged_in('admin'):
             result = self.vocabulary.search('quux')
             self.assertEqual(
-                [embargoed_product, proprietary_product, public_product],
-                list(result))
+                [proprietary_product, public_product], list(result))

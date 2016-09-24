@@ -39,4 +39,3 @@ class TestEventListener:
         #      self._active to False in order to make the handler return
         #      without doing anything.
         self._active = False
-

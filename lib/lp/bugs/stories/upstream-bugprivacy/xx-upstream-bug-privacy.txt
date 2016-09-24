@@ -80,16 +80,15 @@ which the no-privs is not an explicit subscriber.
     ...
     NotFound:...
 
-Foo Bar accesses the bug page of a private bug. He is allowed to
-view the page because he is an explicit subscriber on the bug.
+Foo Bar accesses the bug page of a private bug. They are allowed to
+view the page because they are an explicit subscriber on the bug.
 
     >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/firefox/+bug/%s" % bug_id)
     >>> print browser.headers["Status"]
     200 Ok
 
-He now accesses the task page of a task on a private bug; also
-permitted.
+They now access the task page of a task on a private bug; also permitted.
 
     >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)

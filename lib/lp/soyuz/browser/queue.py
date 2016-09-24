@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for package queue."""
@@ -12,7 +12,7 @@ __all__ = [
 
 from operator import attrgetter
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -475,6 +475,7 @@ class PackageUploadNavigation(GetitemNavigation, FileNavigationMixin):
     usedfor = IPackageUpload
 
 
+@delegate_to(IPackageUpload)
 class CompletePackageUpload:
     """A decorated `PackageUpload` including sources, builds and packages.
 
@@ -493,8 +494,6 @@ class CompletePackageUpload:
     contains_source = None
     contains_build = None
     sourcepackagerelease = None
-
-    delegates(IPackageUpload)
 
     def __init__(self, packageupload, build_upload_files,
                  source_upload_files, package_sets):
@@ -575,7 +574,8 @@ class CompletePackageUpload:
             (self.contains_installer, ("Installer", 'ubuntu-icon')),
             (self.contains_upgrader, ("Upgrader", 'ubuntu-icon')),
             (self.contains_ddtp, (ddtp, 'ubuntu-icon')),
-            (self.contains_uefi, ("Signed UEFI boot loader", 'ubuntu-icon')),
+            (self.contains_uefi, ("UEFI Objects for Signing", 'ubuntu-icon')),
+            (self.contains_signing, ("Objects for Signing", 'ubuntu-icon')),
             ]
         return [
             self.composeIcon(*details)

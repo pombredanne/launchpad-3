@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -521,6 +521,36 @@ class TestBug(TestCaseWithFactory):
         self.assertContentEqual(public_branches, linked_branches)
         self.assertNotIn(private_branch, linked_branches)
 
+    def test_getVisibleLinkedMergeProposals_doesnt_rtn_inaccessible_mps(self):
+        # If a Bug has merge proposals linked to it that the current user
+        # cannot access, those merge proposals will not be returned in its
+        # linked_merge_proposals property.
+        bug = self.factory.makeBug()
+        private_owner = self.factory.makePerson()
+        [private_git_ref] = self.factory.makeGitRefs(
+            owner=private_owner, information_type=InformationType.USERDATA)
+        private_bmp = self.factory.makeBranchMergeProposalForGit(
+            source_ref=private_git_ref)
+        with person_logged_in(private_owner):
+            bug.linkMergeProposal(private_bmp, private_bmp.registrant)
+        public_owner = self.factory.makePerson()
+        public_git_refs = [
+            self.factory.makeGitRefs()[0] for i in range(4)]
+        public_bmps = [
+            self.factory.makeBranchMergeProposalForGit(source_ref=git_ref)
+            for git_ref in public_git_refs]
+        with person_logged_in(public_owner):
+            for public_bmp in public_bmps:
+                bug.linkMergeProposal(public_bmp, public_bmp.registrant)
+        with StormStatementRecorder() as recorder:
+            linked_merge_proposals = list(
+                bug.getVisibleLinkedMergeProposals(user=public_owner))
+            # We check that the query count is low, since that's part of the
+            # point of the way that linked_merge_proposals is implemented.
+            self.assertThat(recorder, HasQueryCount(LessThan(7)))
+        self.assertContentEqual(public_bmps, linked_merge_proposals)
+        self.assertNotIn(private_bmp, linked_merge_proposals)
+
     def test_getDirectSubscribers_with_recipients_query_count(self):
         # getDirectSubscribers() uses a constant number of queries when given
         # a recipients argument regardless of the number of subscribers.
@@ -538,8 +568,7 @@ class TestBug(TestCaseWithFactory):
 
         recorder1, recorder2 = record_two_runs(
             get_subscribers, create_subscriber, 3)
-        self.assertThat(
-            recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_getSubscribersFromDuplicates_with_recipients_query_count(self):
         # getSubscribersFromDuplicates() uses a constant number of queries
@@ -562,8 +591,7 @@ class TestBug(TestCaseWithFactory):
 
         recorder1, recorder2 = record_two_runs(
             get_subscribers, create_subscriber, 3)
-        self.assertThat(
-            recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_getAlsoNotifiedSubscribers_with_recipients_query_count(self):
         # getAlsoNotifiedSubscribers() uses a constant number of queries when
@@ -590,8 +618,7 @@ class TestBug(TestCaseWithFactory):
 
         recorder1, recorder2 = record_two_runs(
             get_subscribers, create_stuff, 3)
-        self.assertThat(
-            recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_newMessage_default(self):
         # Adding a bug message notifies that is was created.

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -32,6 +32,11 @@ class LockType(DBEnumeratedType):
     BRANCH_SCAN = DBItem(0, """Branch scan.
 
         Branch scan.
+        """)
+
+    GIT_REF_SCAN = DBItem(1, """Git repository reference scan.
+
+        Git repository reference scan.
         """)
 
 

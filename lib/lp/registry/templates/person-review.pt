@@ -21,7 +21,7 @@
         <div metal:fill-slot="extra_info">
           <tal:review-person tal:condition="view/is_viewing_person">
             <p>
-              Changing a user's name will change his OpenID identifier and
+              Changing a user's name will change their OpenID identifier and
               may cause problems with relying parties. PPA and mailing lists
               will be broken too.
             </p>
@@ -76,6 +76,12 @@
                       <br tal:omit-tag="repeat/email/end" />
                     </span>
                   </tal:emails>
+                </td>
+              </tr>
+              <tr>
+                <th>Status history:</th>
+                <td tal:content="structure context/status_history/fmt:text-to-html">
+                  2015-01-05 cprov Active -&gt; Suspended: Suspended for evil.
                 </td>
               </tr>
             </table>

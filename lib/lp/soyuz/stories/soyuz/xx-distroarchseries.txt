@@ -105,8 +105,6 @@ Accessing the DistroArchSeries administration interface.
     'i386'
     >>> admin_browser.getControl("Official Support").selected
     True
-    >>> admin_browser.getControl("PPA support available").selected
-    True
 
 The page presents a cancellation link that returns the user back to the
 DistroArchSeries page if clicked:
@@ -114,9 +112,9 @@ DistroArchSeries page if clicked:
     >>> print admin_browser.getLink("Cancel").url
     http://launchpad.dev/ubuntu/warty/i386
 
-Removing the PPA support for this DistroArchSeries.
+Removing the official support for this DistroArchSeries.
 
-    >>> admin_browser.getControl("PPA support available").selected = False
+    >>> admin_browser.getControl("Official Support").selected = False
 
 Clicking the "Change" button makes the change and takes the user back to the
 DistroArchSeries page.
@@ -137,8 +135,6 @@ Navigating back to the admin page shows the change was made:
     >>> admin_browser.getControl("Architecture Tag").value
     'i386'
     >>> admin_browser.getControl("Official Support").selected
-    True
-    >>> admin_browser.getControl("PPA support available").selected
     False
 
 We always present a warning in this form indicating that changes may
@@ -160,32 +156,16 @@ current distroseries architecture list.
     ...     print extract_text(find_tag_by_id(
     ...         anon_browser.contents, 'portlet-architectures-list'))
 
-Since we disabled ppa-support for warty/i386, it's now presented as
-'official' only.
-
-    >>> check_arch_list()
-    i386
-    hppa (unofficial)
-
-Re-enabling the PPA support on warty/i386 has immediate effects in the
-way this distroarchseries is presented.
-
-    >>> admin_browser.getControl("PPA support available").selected = True
-    >>> admin_browser.getControl("Change").click()
-
-    >>> check_arch_list()
-    i386
-    hppa (unofficial)
-
-The same effect is observed when we make warty/i386 unofficial.
-
-    >>> admin_browser.getLink("Administer").click()
-    >>> admin_browser.getControl("Official Support").selected = False
-    >>> admin_browser.getControl("Change").click()
-
     >>> check_arch_list()
     hppa (unofficial)
     i386 (unofficial)
+
+    >>> admin_browser.getControl("Official Support").selected = True
+    >>> admin_browser.getControl("Change").click()
+
+    >>> check_arch_list()
+    i386
+    hppa (unofficial)
 
 
 == Creating a new DistroArchSeries ==
@@ -209,7 +189,6 @@ allow duplications.
     >>> admin_browser.getControl("Architecture Tag").value = 'i386'
     >>> admin_browser.getControl("Processor:").value = ['386']
     >>> admin_browser.getControl("Official Support").selected = True
-    >>> admin_browser.getControl("PPA support available").selected = True
 
 XXX cprov 20071213: we should return a proper error page on attempts
 to open an already installed architecture instead of a
@@ -241,7 +220,6 @@ An administrator can open new distinct architecture, for instance,
     >>> admin_browser.getControl("Architecture Tag").value = 'amd64'
     >>> admin_browser.getControl("Processor:").value = ['amd64']
     >>> admin_browser.getControl("Official Support").selected = True
-    >>> admin_browser.getControl("PPA support available").selected = True
     >>> admin_browser.getControl("Continue").click()
 
 When the new architecture has been created, it is displayed to the

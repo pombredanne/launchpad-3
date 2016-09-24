@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -75,29 +75,3 @@ class TestProcessUpload(unittest.TestCase):
 
         # Explicitly mark the database dirty.
         self.layer.force_dirty_database()
-
-    def testTopLevelLockFile(self):
-        """Try a simple process-upload run.
-
-        Expect it to exit earlier due the occupied lockfile
-        """
-        # acquire the process-upload lockfile locally
-        from contrib.glock import GlobalLock
-        locker = GlobalLock('/var/lock/process-upload-insecure.lock')
-        locker.acquire()
-
-        returncode, out, err = self.runProcessUpload(
-            extra_args=['-C', 'insecure'])
-
-        # the process-upload call terminated with ERROR and
-        # proper log message
-        self.assertEqual(1, returncode)
-        self.assert_(
-            'INFO    Creating lockfile: '
-            '/var/lock/process-upload-insecure.lock' in err.splitlines())
-        self.assert_(
-            'INFO    Lockfile /var/lock/process-upload-insecure.lock in use'
-            in err.splitlines())
-
-        # release the locally acquired lockfile
-        locker.release()

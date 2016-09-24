@@ -19,8 +19,8 @@ front page.
     ...     li['title']
     u'I am not able to ... if i click on a mailto:user@domain.com link ...'
 
-He can also see the email address in the tooltip for the question in the
-project's questions. When he views the question, he can see the address
+They can also see the email address in the tooltip for the question in the
+project's questions. When they view the question, they can see the address
 in the question's description.
 
     >>> user_browser.getControl(name='field.search_text').value = 'mailto'
@@ -62,7 +62,7 @@ Related question's portlet.
       mailto:user@domain.com link in a webpage in...'
 
 No Privileges Person creates a question with an email address in the
-description. He can then see the email address in the tooltip in the
+description. They can then see the email address in the tooltip in the
 'Latest questions asked' portlet for Answers front page.
 
     >>> user_browser.getLink('#9 mailto: problem in webpage').click()
@@ -110,8 +110,8 @@ page.
     u'The clicking mailto:<email address hidden> crashes the browser.'
      ...
 
-Nor can he see it in the question listings for the project.
-He cannot see the address reading the question either.
+Nor can they see it in the question listings for the project.
+They cannot see the address reading the question either.
 
     >>> anon_browser.getControl(name='field.search_text').value = 'mailto'
     >>> anon_browser.getControl('Find Answers').click()

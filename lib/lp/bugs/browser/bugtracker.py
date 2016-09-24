@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug tracker views."""
@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BugTrackerAddView',
-    'BugTrackerBreadcrumb',
     'BugTrackerComponentGroupNavigation',
     'BugTrackerEditView',
     'BugTrackerEditComponentView',
@@ -27,7 +26,7 @@ from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.formlib import form
 from zope.formlib.widgets import TextAreaWidget
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary
 
@@ -41,8 +40,8 @@ from lp.app.browser.launchpadform import (
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
+from lp.app.widgets.popup import UbuntuSourcePackageNameWidget
 from lp.app.widgets.textwidgets import DelimitedListWidget
-from lp.bugs.browser.widgets.bugtask import UbuntuSourcePackageNameWidget
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
@@ -550,20 +549,9 @@ class BugTrackerSetBreadcrumb(Breadcrumb):
         return u"Bug trackers"
 
 
-class BugTrackerBreadcrumb(Breadcrumb):
-    """Builds a breadcrumb for an `IBugTracker`."""
-
-    rootsite = None
-
-    @property
-    def text(self):
-        return self.context.title
-
-
+@implementer(IRemoteBug)
 class RemoteBug:
     """Represents a bug in a remote bug tracker."""
-
-    implements(IRemoteBug)
 
     def __init__(self, bugtracker, remotebug, bugs):
         self.bugtracker = bugtracker

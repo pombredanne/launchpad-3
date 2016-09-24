@@ -37,7 +37,7 @@ If there are not any branches, a helpful message is shown.
     ...     return find_tag_by_id(browser.contents, 'branch-summary')
     >>> summary = get_summary(browser)
     >>> print extract_text(summary)
-    Launchpad does not know where The Gnome Panel Applets
+    Launchpad does not know where Gnome Applets
     hosts its code.
     There are no branches for Gnome Applets
     in Launchpad.
@@ -67,7 +67,7 @@ in downloads that may have been added for the product.
 
     >>> browser.open('http://code.launchpad.dev/netapplet')
     >>> print extract_text(get_summary(browser))
-    Launchpad does not know where Network Applet hosts its code...
+    Launchpad does not know where NetApplet hosts its code...
     There are no branches for NetApplet in Launchpad.
     ...
     There are download files available for NetApplet.
@@ -88,10 +88,8 @@ shown.
     >>> browser.open('http://code.launchpad.dev/evolution')
     >>> summary = get_summary(browser)
     >>> print extract_text(get_summary(browser))
-    The Evolution Groupware Application hosts its code
-    externally.
-    You can learn more at the project's
-    web page.
+    Evolution hosts its code externally.
+    You can learn more at the project's web page.
     Launchpad imports the master branch and you can create branches from
     it.
     You can
@@ -216,16 +214,16 @@ hosting configured or if it is not using Launchpad.
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(admin_browser)
     Import a branch
-    Configure code hosting
+    Configure Code
 
-The owner of the project sees the links for the activities he can
+The owner of the project sees the links for the activities they can
 perform, everything except defining branch visibility.
 
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> owner_browser.open('http://code.launchpad.dev/firefox')
     >>> print_links(owner_browser)
     Import a branch
-    Configure code hosting
+    Configure Code
 
 And a regular user can only register and import branches.
 
@@ -254,7 +252,7 @@ shows correct singular and plural forms.
     >>> def get_stats_portlet(browser):
     ...     return find_tag_by_id(
     ...         browser.contents,
-    ...         'portlet-product-codestatistics')
+    ...         'portlet-product-branchstatistics')
     >>> def print_portlet(product):
     ...     browser.open('http://code.launchpad.dev/%s' % product)
     ...     portlet = get_stats_portlet(browser)
@@ -320,7 +318,7 @@ If there are branches, but they do not fit with the appropriate filter
 we are given a different message.
 
     >>> browser.open(
-    ...     'http://code.launchpad.dev/firefox/+all-branches'
+    ...     'http://code.launchpad.dev/firefox/+branches'
     ...     '?field.lifecycle=Mature')
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
     >>> print extract_text(message)

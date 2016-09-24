@@ -42,11 +42,11 @@
                  style="margin-top: 20px">
                 It appears you have already done this.
 
-                <tal:multiple_keys condition="python: gpg_keys.count() > 1">
-                <span tal:replace="gpg_keys/count" /> keys are
+                <tal:multiple_keys condition="python: len(gpg_keys) > 1">
+                <span tal:replace="python: len(gpg_keys)" /> keys are
                 </tal:multiple_keys>
 
-                <tal:single_key condition="python: gpg_keys.count() == 1">
+                <tal:single_key condition="python: len(gpg_keys) == 1">
                 The key <code tal:content="python: gpg_keys[0].keyid" /> is
                 </tal:single_key>
 

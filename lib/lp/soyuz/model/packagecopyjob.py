@@ -10,7 +10,7 @@ __all__ = [
 
 import logging
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.jobrunner.jobrunner import SuspendJobException
 from psycopg2.extensions import TransactionRollbackError
 from storm.locals import (
@@ -23,8 +23,8 @@ from storm.locals import (
 import transaction
 from zope.component import getUtility
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 from zope.security.proxy import removeSecurityProxy
 
@@ -80,11 +80,10 @@ from lp.soyuz.model.archive import Archive
 from lp.soyuz.scripts.packagecopier import do_copy
 
 
+@implementer(IPackageCopyJob)
+@provider(IPackageCopyJobSource)
 class PackageCopyJob(StormBase):
     """Base class for package copying jobs."""
-
-    implements(IPackageCopyJob)
-    classProvides(IPackageCopyJobSource)
 
     __storm_table__ = 'PackageCopyJob'
 
@@ -175,12 +174,11 @@ class PackageCopyJob(StormBase):
         return PackageCopyJobDerived.makeSubclass(self)
 
 
+@delegate_to(IPackageCopyJob)
 class PackageCopyJobDerived(BaseRunnableJob):
     """Abstract class for deriving from PackageCopyJob."""
 
     __metaclass__ = EnumeratedSubclass
-
-    delegates(IPackageCopyJob)
 
     def __init__(self, job):
         self.context = job
@@ -253,6 +251,8 @@ class PackageCopyJobDerived(BaseRunnableJob):
         return self.context.copy_policy
 
 
+@implementer(IPlainPackageCopyJob)
+@provider(IPlainPackageCopyJobSource)
 class PlainPackageCopyJob(PackageCopyJobDerived):
     """Job that copies a package from one archive to another."""
     # This job type serves in different places: it supports copying
@@ -261,10 +261,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     # separate types at some point, but for now we (allenap, bigjools,
     # jtv) chose to keep it as one.
 
-    implements(IPlainPackageCopyJob)
-
     class_job_type = PackageCopyJobType.PLAIN
-    classProvides(IPlainPackageCopyJobSource)
     config = config.IPlainPackageCopyJobSource
     user_error_types = (CannotCopy,)
     # Raised when closing bugs ends up hitting another process and
@@ -660,7 +657,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             send_email=send_email, announce_from_person=self.requester,
             sponsored=self.sponsored, packageupload=pu,
             unembargo=self.unembargo,
-            phased_update_percentage=self.phased_update_percentage)
+            phased_update_percentage=self.phased_update_percentage,
+            logger=self.logger)
 
         # Add a PackageDiff for this new upload if it has ancestry.
         if copied_publications and not ancestry.is_empty():

@@ -21,7 +21,7 @@ from twisted.internet import (
 from twisted.internet.task import LoopingCall
 from twisted.python import log
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -92,14 +92,13 @@ class ITaskConsumer(Interface):
         """
 
 
+@implementer(ITaskSource)
 class PollingTaskSource:
     """A task source that polls to generate tasks.
 
     This is useful for systems where we need to poll a central server in order
     to find new work to do.
     """
-
-    implements(ITaskSource)
 
     def __init__(self, interval, task_producer, clock=None, logger=None):
         """Construct a `PollingTaskSource`.
@@ -170,11 +169,13 @@ class PollingTaskSource:
                 task_consumer.taskStarted(task)
             else:
                 task_consumer.noTasksFound()
+
         def task_failed(reason):
             # If task production fails, we inform the consumer of this, but we
             # don't let any deferred it returns delay subsequent polls.
             self._log_state('task_failed', reason)
             task_consumer.taskProductionFailed(reason)
+
         def poll():
             # If stop() has been called before the lock was acquired, don't
             # actually poll for more work.
@@ -183,6 +184,7 @@ class PollingTaskSource:
                 d = defer.maybeDeferred(self._task_producer)
                 return d.addCallbacks(got_task, task_failed).addBoth(
                     lambda ignored: self._log_state('releasing_poll'))
+
         self._log_state('_poll')
         return self._polling_lock.run(poll).addBoth(
             lambda ignored: self._log_state('released_poll'))
@@ -191,9 +193,11 @@ class PollingTaskSource:
         """See `ITaskSource`."""
         self._log_state('stop')
         self._clear_looping_call('called from stop()')
+
         def _return_still_stopped():
             self._log_state('_return_still_stopped')
             return self._looping_call is None
+
         return self._polling_lock.run(_return_still_stopped)
 
 
@@ -214,14 +218,13 @@ class NotRunningError(Exception):
             self, "%r has not started, cannot run tasks." % (consumer,))
 
 
+@implementer(ITaskConsumer)
 class ParallelLimitedTaskConsumer:
     """A consumer that runs tasks with limited parallelism.
 
     Assumes that the task source generates tasks that are nullary callables
     that might return `Deferred`s.
     """
-
-    implements(ITaskConsumer)
 
     def __init__(self, worker_limit, logger=None):
         if logger is None:
@@ -246,6 +249,7 @@ class ParallelLimitedTaskConsumer:
         def _call_stop(ignored):
             self._log_state('_stop', 'Got lock, stopping source')
             return self._task_source.stop()
+
         def _release_or_stop(still_stopped):
             self._log_state('_stop', 'stop() returned %s' % (still_stopped,))
             if still_stopped and self._worker_count == 0:
@@ -256,6 +260,7 @@ class ParallelLimitedTaskConsumer:
             else:
                 self._logger.debug('Releasing lock')
                 self._stopping_lock.release()
+
         self._log_state('_stop', 'Acquiring lock')
         d = self._stopping_lock.acquire()
         d.addCallback(_call_stop)

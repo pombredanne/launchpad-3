@@ -17,7 +17,7 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.announcement import (
     IAnnouncement,
@@ -36,11 +36,11 @@ from lp.services.database.sqlbase import (
 from lp.services.utils import utc_now
 
 
+@implementer(IAnnouncement)
 class Announcement(SQLBase):
     """A news item. These allow us to generate lists of recent news for
-    projects, products and distributions.
+    project groups, products and distributions.
     """
-    implements(IAnnouncement)
 
     _defaultOrder = ['-date_announced', '-date_created']
 
@@ -53,7 +53,7 @@ class Announcement(SQLBase):
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
     product = ForeignKey(dbName='product', foreignKey='Product')
-    project = ForeignKey(dbName='project', foreignKey='ProjectGroup')
+    projectgroup = ForeignKey(dbName='project', foreignKey='ProjectGroup')
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution')
     title = StringCol(notNull=True)
@@ -76,12 +76,12 @@ class Announcement(SQLBase):
     def target(self):
         if self.product is not None:
             return self.product
-        elif self.project is not None:
-            return self.project
+        elif self.projectgroup is not None:
+            return self.projectgroup
         elif self.distribution is not None:
             return self.distribution
         else:
-            raise AssertionError, 'Announcement has no obvious target'
+            raise AssertionError('Announcement has no obvious target')
 
     @property
     def date_updated(self):
@@ -94,17 +94,17 @@ class Announcement(SQLBase):
         if IProduct.providedBy(target):
             self.product = target
             self.distribution = None
-            self.project = None
+            self.projectgroup = None
         elif IDistribution.providedBy(target):
             self.distribution = target
-            self.project = None
+            self.projectgroup = None
             self.product = None
         elif IProjectGroup.providedBy(target):
-            self.project = target
+            self.projectgroup = target
             self.distribution = None
             self.product = None
         else:
-            raise AssertionError, 'Unknown target'
+            raise AssertionError('Unknown target')
         self.date_last_modified = UTC_NOW
 
     def retract(self):
@@ -161,18 +161,18 @@ class HasAnnouncements:
                 Announcement.active IS TRUE
                 """
         if IProduct.providedBy(self):
-            if self.project is None:
+            if self.projectgroup is None:
                 query += """ AND
                     Announcement.product = %s""" % sqlvalues(self.id)
             else:
                 query += """ AND
                     (Announcement.product = %s OR Announcement.project = %s)
-                    """ % sqlvalues(self.id, self.project)
+                    """ % sqlvalues(self.id, self.projectgroup)
         elif IProjectGroup.providedBy(self):
             query += """ AND
                 (Announcement.project = %s OR Announcement.product IN
                     (SELECT id FROM Product WHERE project = %s))
-                    """ % sqlvalues (self.id, self.id)
+                    """ % sqlvalues(self.id, self.id)
         elif IDistribution.providedBy(self):
             query += (' AND Announcement.distribution = %s'
                 % sqlvalues(self.id))
@@ -181,7 +181,7 @@ class HasAnnouncements:
             # all announcements.
             pass
         else:
-            raise AssertionError, 'Unsupported announcement target'
+            raise AssertionError('Unsupported announcement target')
         return Announcement.select(query, limit=limit)
 
 
@@ -192,38 +192,34 @@ class MakesAnnouncements(HasAnnouncements):
         """See IHasAnnouncements."""
 
         # We establish the appropriate target property.
-        project = product = distribution = None
+        projectgroup = product = distribution = None
         if IProduct.providedBy(self):
             product = self
         elif IProjectGroup.providedBy(self):
-            project = self
+            projectgroup = self
         elif IDistribution.providedBy(self):
             distribution = self
         else:
-            raise AssertionError, 'Unsupported announcement target'
+            raise AssertionError('Unsupported announcement target')
 
         # Create the announcement in the database.
         announcement = Announcement(
-            registrant = user,
-            title = title,
-            summary = summary,
-            url = url,
-            product = product,
-            project = project,
-            distribution = distribution
+            registrant=user,
+            title=title,
+            summary=summary,
+            url=url,
+            product=product,
+            projectgroup=projectgroup,
+            distribution=distribution,
             )
 
         announcement.setPublicationDate(publication_date)
         return announcement
 
 
+@implementer(IAnnouncementSet)
 class AnnouncementSet(HasAnnouncements):
     """The set of all announcements across all pillars."""
 
-    implements(IAnnouncementSet)
-
     displayname = 'Launchpad-hosted'
     title = 'Launchpad'
-
-
-

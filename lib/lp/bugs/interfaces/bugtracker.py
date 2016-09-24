@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug tracker interfaces."""
@@ -186,6 +186,12 @@ class BugTrackerType(DBEnumeratedType):
         Google.
         """)
 
+    GITHUB = DBItem(12, """
+        GitHub Issues
+
+        The issue tracker for projects hosted on GitHub.
+        """)
+
 
 # A list of the BugTrackerTypes that don't need a remote product to be
 # able to return a bug filing URL. We use a whitelist rather than a
@@ -193,6 +199,7 @@ class BugTrackerType(DBEnumeratedType):
 # a remote product is required. This saves us from presenting
 # embarrassingly useless URLs to users.
 SINGLE_PRODUCT_BUGTRACKERTYPES = [
+    BugTrackerType.GITHUB,
     BugTrackerType.GOOGLE_CODE,
     BugTrackerType.MANTIS,
     BugTrackerType.PHPPROJECT,

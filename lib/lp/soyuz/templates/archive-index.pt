@@ -82,13 +82,6 @@
 
       <tal:is-active condition="archive_active">
 
-        <tal:comment replace="nothing">
-          XXX Michael Nelson 2010-02-25 bug=440512: Until we have
-          apt-add-repository backported, we can't simply state one
-          explicit solution here. Until then we just state a general
-          solution with the details in the linked help.
-        </tal:comment>
-
         <p>You can update your system with unsupported packages from
           this untrusted PPA by adding <strong
           tal:content="context/fmt:reference" class="ppa-reference">ppa:cprov/ppa</strong>
@@ -96,6 +89,11 @@
           (<a href="/+help-soyuz/ppa-sources-list.html"
               target="help">Read about installing</a>)
         </p>
+
+        <pre class="command subordinate" tal:condition="not: context/private">
+sudo add-apt-repository <tal:reference tal:replace="context/fmt:reference" />
+sudo apt-get update
+        </pre>
 
         <div class="widget-header">
           Technical details about this PPA

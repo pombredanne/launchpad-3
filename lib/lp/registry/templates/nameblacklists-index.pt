@@ -21,12 +21,12 @@
       </p>
       <ul class="bulleted">
         <li>
-          Organisational blackisted names have an administering team
+          Organisational blacklisted names have an administering team
           that is permitted to use the name for projects and teams.
          </li>
         <li>
-          Application blackisted names cannot have an administering team.
-          No one can to override them.
+          Application blacklisted names cannot have an administering team.
+          No one can override them.
          </li>
       </ul>
       <table id="blacklist" class="listing sortable">

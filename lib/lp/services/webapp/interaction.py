@@ -36,7 +36,7 @@ __metaclass__ = type
 
 from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.publisher.interfaces import IPublicationRequest
 from zope.security.interfaces import IParticipation
 from zope.security.management import (
@@ -168,18 +168,18 @@ def setupInteractionForPerson(person, participation=None):
         return setupInteractionByEmail(naked_email.email, participation)
 
 
+@implementer(IParticipation)
 class Participation:
     """A very simple participation."""
-    implements(IParticipation)
 
     interaction = None
     principal = None
 
 
+@implementer(IInteractionExtras)
 class InteractionExtras:
     """Extra data attached to all interactions.  See `IInteractionExtras`."""
 
-    implements(IInteractionExtras)
     permit_timeout_from_features = False
 
 

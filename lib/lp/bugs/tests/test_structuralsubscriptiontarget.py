@@ -332,7 +332,7 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
         self.assertEqual(target, helper.target)
         self.assertEqual(None, helper.target_parent)
         self.assertEqual(target, helper.pillar)
-        self.assertEqual({"project": target}, helper.target_arguments)
+        self.assertEqual({"projectgroup": target}, helper.target_arguments)
         self.assertEqual(
             u"StructuralSubscription.project = ?",
             compile_storm(helper.join))
@@ -385,13 +385,13 @@ class TestStructuralSubscriptionTargetHelper(TestCaseWithFactory):
             compile_storm(helper.join))
 
     def test_product_in_group(self):
-        project = self.factory.makeProject(owner=self.person)
-        target = self.factory.makeProduct(project=project)
+        projectgroup = self.factory.makeProject(owner=self.person)
+        target = self.factory.makeProduct(projectgroup=projectgroup)
         helper = IStructuralSubscriptionTargetHelper(target)
         self.assertThat(helper, Provides(IStructuralSubscriptionTargetHelper))
         self.assertEqual("project", helper.target_type_display)
         self.assertEqual(target, helper.target)
-        self.assertEqual(project, helper.target_parent)
+        self.assertEqual(projectgroup, helper.target_parent)
         self.assertEqual(target, helper.pillar)
         self.assertEqual({"product": target}, helper.target_arguments)
         self.assertEqual(
@@ -481,13 +481,13 @@ class TestGetAllStructuralSubscriptionsForTarget(TestCaseWithFactory):
         # get_structural_subscriptions_for_target made against the
         # products in that group will return the group-level
         # subscription along with any subscriptions to the product.
-        project = self.factory.makeProject()
-        product = self.factory.makeProduct(project=project)
-        project_sub = project.addBugSubscription(
+        projectgroup = self.factory.makeProject()
+        product = self.factory.makeProduct(projectgroup=projectgroup)
+        projectgroup_sub = projectgroup.addBugSubscription(
             self.subscriber, self.subscriber)
         subscriptions = get_structural_subscriptions_for_target(
             product, self.subscriber)
-        self.assertEqual(set([project_sub]), set(subscriptions))
+        self.assertEqual(set([projectgroup_sub]), set(subscriptions))
 
 
 def distributionSourcePackageSetUp(test):

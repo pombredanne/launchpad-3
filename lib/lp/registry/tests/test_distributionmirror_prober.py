@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """distributionmirror-prober tests."""
@@ -839,11 +839,11 @@ class TestProbeFunctionSemaphores(TestCase):
 
     def test_MirrorCDImageSeries_records_are_deleted_before_probing(self):
         mirror = DistributionMirror.byName('releases-mirror2')
-        self.failUnless(not mirror.cdimage_series.is_empty())
+        self.assertNotEqual(0, len(mirror.cdimage_series))
         # Note that calling this function won't actually probe any mirrors; we
         # need to call reactor.run() to actually start the probing.
         probe_cdimage_mirror(mirror, StringIO(), [], logging)
-        self.failUnless(mirror.cdimage_series.is_empty())
+        self.assertEqual(0, len(mirror.cdimage_series))
 
     def test_archive_mirror_probe_function(self):
         mirror1 = DistributionMirror.byName('archive-mirror')
@@ -930,7 +930,7 @@ class TestLoggingMixin(TestCase):
 
     def _fake_gettime(self):
         # Fake the current time.
-        fake_time = datetime(2004, 10, 20, 12, 00, 00, 000000)
+        fake_time = datetime(2004, 10, 20, 12, 0, 0, 0)
         return fake_time
 
     def test_logMessage_output(self):

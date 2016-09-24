@@ -7,7 +7,12 @@
   <tal:good-attachments repeat="attachment view/comment/display_attachments">
     <div class="boardComment attachment">
       <div class="boardCommentDetails filename"><a tal:content="attachment/filename" tal:attributes="href attachment/getURL"/></div>
-      <div class="boardCommentBody attachmentBody" tal:content="structure attachment/diff_text/fmt:diff"/>
+      <div class="boardCommentBody attachmentBody"
+           tal:condition="not: request/ss|nothing"
+           tal:content="structure attachment/diff_text/fmt:diff"/>
+      <div class="boardCommentBody attachmentBody"
+           tal:condition="request/ss|nothing"
+           tal:content="structure attachment/diff_text/fmt:ssdiff"/>
     </div>
   </tal:good-attachments>
 

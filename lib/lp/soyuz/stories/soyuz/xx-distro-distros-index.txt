@@ -5,9 +5,9 @@ In this page we can see all the Distributions in Launchpad.
   >>> browser.contents
   '...Distributions...'
 
-  >>> browser.getLink("Kubuntu - Free KDE-based Linux").click()
+  >>> browser.getLink("Kubuntu").click()
   >>> browser.url
   'http://localhost/kubuntu'
   >>> browser.contents
-  '...Free KDE-based Linux...'
+  '...Kubuntu...'
  

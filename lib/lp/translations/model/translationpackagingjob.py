@@ -22,8 +22,8 @@ from lazr.lifecycle.interfaces import (
     )
 import transaction
 from zope.interface import (
-    classProvides,
-    implements,
+    implementer,
+    provider,
     )
 
 from lp.services.config import config
@@ -47,10 +47,9 @@ from lp.translations.utilities.translationsplitter import (
     )
 
 
+@provider(ITranslationPackagingJobSource)
 class TranslationPackagingJob(TranslationSharingJobDerived, BaseRunnableJob):
     """Iterate through all Translation job types."""
-
-    classProvides(ITranslationPackagingJobSource)
 
     _translation_packaging_job_types = []
 
@@ -80,10 +79,9 @@ class TranslationPackagingJob(TranslationSharingJobDerived, BaseRunnableJob):
         return super(TranslationPackagingJob, cls).iterReady([clause])
 
 
+@implementer(IRunnableJob)
 class TranslationMergeJob(TranslationPackagingJob):
     """Job for merging translations between a product and sourcepackage."""
-
-    implements(IRunnableJob)
 
     class_job_type = TranslationSharingJobType.PACKAGING_MERGE
 
@@ -107,10 +105,9 @@ class TranslationMergeJob(TranslationPackagingJob):
             self.productseries, self.sourcepackagename, self.distroseries, tm)
 
 
+@implementer(IRunnableJob)
 class TranslationSplitJob(TranslationPackagingJob):
     """Job for splitting translations between a product and sourcepackage."""
-
-    implements(IRunnableJob)
 
     class_job_type = TranslationSharingJobType.PACKAGING_SPLIT
 
@@ -127,10 +124,9 @@ class TranslationSplitJob(TranslationPackagingJob):
         TranslationSplitter(self.productseries, self.sourcepackage).split()
 
 
+@implementer(IRunnableJob)
 class TranslationTemplateChangeJob(TranslationPackagingJob):
     """Job for merging/splitting translations when template is changed."""
-
-    implements(IRunnableJob)
 
     class_job_type = TranslationSharingJobType.TEMPLATE_CHANGE
 

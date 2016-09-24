@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -68,7 +68,15 @@ special = {
         ),
     'branch-merge-proposal-notifications.txt': LayeredDocFileSuite(
         '../doc/branch-merge-proposal-notifications.txt',
-        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer,
+        setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer,
+        ),
+    'branch-notifications.txt': LayeredDocFileSuite(
+        '../doc/branch-notifications.txt',
+        setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer,
+        ),
+    'codereviewcomment.txt': LayeredDocFileSuite(
+        '../doc/codereviewcomment.txt',
+        setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer,
         ),
     }
 

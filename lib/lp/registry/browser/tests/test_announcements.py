@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for +announcement views."""
@@ -36,7 +36,7 @@ class TestAnnouncement(TestCaseWithFactory):
     def test_announcement_info_with_publication_date(self):
         product = self.factory.makeProduct(displayname=u"Foo")
         announcer = self.factory.makePerson(displayname=u"Bar Baz")
-        announced = datetime(2007, 01, 12, tzinfo=utc)
+        announced = datetime(2007, 1, 12, tzinfo=utc)
         announcement = product.announce(
             announcer, "Hello World", publication_date=announced)
         view = create_initialized_view(announcement, "+index")

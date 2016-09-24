@@ -14,7 +14,3 @@
 
 If you want further information about this situation, feel free to
 contact a member of the Launchpad Buildd Administrators team.
-
---
-%(build_title)s
-%(build_url)s

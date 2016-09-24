@@ -162,12 +162,10 @@ We can invoke the cache updater directly on IDistroSeries:
 
     >>> updates = DistributionSourcePackageCache.updateAll(
     ...     ubuntu, archive=ubuntu.main_archive, ztm=transaction,
-    ...     log=FakeLogger())
-    DEBUG ...
-    DEBUG Considering source 'cdrkit'
-    DEBUG Creating new source cache entry.
+    ...     log=FakeLogger(), commit_chunk=3)
+    DEBUG Considering sources alsa-utils, cdrkit, cnews
     ...
-    DEBUG Considering source 'mozilla-firefox'
+    DEBUG Considering sources linux-source-2.6.15, mozilla-firefox, netapplet
     ...
 
     >>> print updates
@@ -246,16 +244,11 @@ We can invoke the cache updater directly on IDistroSeries:
 
     >>> updates = DistroSeriesPackageCache.updateAll(
     ...     warty, archive=ubuntu.main_archive, ztm=transaction,
-    ...     log=FakeLogger())
-    DEBUG Considering binary 'at'
-    DEBUG Considering binary 'cdrkit'
-    DEBUG Creating new binary cache entry.
-    DEBUG Considering binary 'linux-2.6.12'
-    DEBUG Considering binary 'mozilla-firefox'
-    DEBUG Considering binary 'mozilla-firefox-data'
-    DEBUG Creating new binary cache entry.
-    DEBUG Considering binary 'pmount'
-
+    ...     log=FakeLogger(), commit_chunk=3)
+    DEBUG Considering binaries at, cdrkit, linux-2.6.12
+    DEBUG Committing
+    DEBUG Considering binaries mozilla-firefox, mozilla-firefox-data, pmount
+    DEBUG Committing
 
     >>> print updates
     6
@@ -341,14 +334,13 @@ same queries work, pointing to Celso's PPA.
 
     >>> source_updates = DistributionSourcePackageCache.updateAll(
     ...     ubuntu, archive=cprov.archive, ztm=transaction, log=FakeLogger())
-    DEBUG ...
-    DEBUG Considering source 'pmount'
+    DEBUG Considering sources cdrkit, iceweasel, pmount
     ...
 
     >>> binary_updates = DistroSeriesPackageCache.updateAll(
     ...     warty, archive=cprov.archive, ztm=transaction,
     ...     log=FakeLogger())
-    DEBUG Considering binary 'mozilla-firefox'
+    DEBUG Considering binaries mozilla-firefox, pmount
     ...
 
     >>> cprov.archive.updateArchiveCache()
@@ -459,6 +451,56 @@ everything will be back to normal.
     >>> cprov.archive.updateArchiveCache()
 
 
+Official branch caches
+======================
+
+The source package names referred to by official branch links are cached
+with a null archive column.
+
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> from lp.testing.dbuser import lp_dbuser
+
+    >>> with lp_dbuser():
+    ...     branch = factory.makePackageBranch(
+    ...         distroseries=ubuntu.currentseries)
+    >>> ubuntu.searchSourcePackages(branch.sourcepackagename.name).count()
+    0
+    >>> with lp_dbuser():
+    ...     branch.sourcepackage.setBranch(
+    ...         PackagePublishingPocket.RELEASE, branch, branch.owner)
+    >>> ubuntu.searchSourcePackages(branch.sourcepackagename.name).count()
+    1
+
+Updating the cache adds missing entries to the cache.
+
+    >>> branch_cache = DistributionSourcePackageCache.selectOneBy(
+    ...     archive=None, distribution=ubuntu,
+    ...     name=branch.sourcepackagename.name)
+    >>> removeSecurityProxy(branch_cache).destroySelf()
+    >>> ubuntu.searchSourcePackages(branch.sourcepackagename.name).count()
+    0
+    >>> updates = DistributionSourcePackageCache.updateAll(
+    ...     ubuntu, archive=None, ztm=transaction, log=FakeLogger(),
+    ...     commit_chunk=3)
+    DEBUG Considering sources unique-from-factory-...
+    ...
+    >>> print updates
+    1
+    >>> ubuntu.searchSourcePackages(branch.sourcepackagename.name).count()
+    1
+
+After removing the link, the removeOld method will remove the cache entry.
+
+    >>> with lp_dbuser():
+    ...     branch.sourcepackage.setBranch(
+    ...         PackagePublishingPocket.RELEASE, None, branch.owner)
+    >>> DistributionSourcePackageCache.removeOld(
+    ...     ubuntu, archive=None, log=FakeLogger())
+    DEBUG Removing source cache for 'unique-from-factory...' (...)
+    >>> ubuntu.searchSourcePackages(branch.sourcepackagename.name).count()
+    0
+
+
 Package Counters
 ================
 
@@ -491,10 +533,7 @@ We will use `SoyuzTestPublisher` for creating convenient publications.
 
     >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
-    >>> from lp.testing.dbuser import (
-    ...     lp_dbuser,
-    ...     switch_dbuser,
-    ...     )
+    >>> from lp.testing.dbuser import switch_dbuser
 
     >>> test_publisher = SoyuzTestPublisher()
 
@@ -765,5 +804,3 @@ publicly searchable again.
 
     >>> print_search_results(u'cprov')
     PPA for Celso Providelo
-
-

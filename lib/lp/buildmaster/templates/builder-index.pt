@@ -102,7 +102,7 @@
           </tal:cleaning>
           <tal:clean condition="builder/clean_status/enumvalue:CLEAN">
           <span class="sortkey" tal:content="string:1" />
-          <span class="sprite yes green">Idle</span>
+          <span class="sprite yes">Idle</span>
           </tal:clean>
         </tal:idle>
         <tal:manual tal:condition="builder/manual">

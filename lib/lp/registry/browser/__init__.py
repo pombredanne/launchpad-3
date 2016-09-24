@@ -30,7 +30,9 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.blueprints.model.specificationworkitem import SpecificationWorkItem
+from lp.blueprints.interfaces.specificationworkitem import (
+    ISpecificationWorkItemSet,
+    )
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.registry.interfaces.productseries import IProductSeries
@@ -241,9 +243,7 @@ class RegistryDeleteViewMixin:
             else:
                 nb.milestone = None
         removeSecurityProxy(milestone.all_specifications).set(milestoneID=None)
-        Store.of(milestone).find(
-            SpecificationWorkItem, milestone_id=milestone.id).set(
-                milestone_id=None)
+        getUtility(ISpecificationWorkItemSet).unlinkMilestone(milestone)
         self._deleteRelease(milestone.product_release)
         milestone.destroySelf()
 

@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -88,12 +88,6 @@ flag_info = sorted([
      '',
      '',
      ''),
-    ('code.branchmergequeue',
-     'boolean',
-     'Enables merge queue pages and lists them on branch pages.',
-     '',
-     '',
-     ''),
     ('code.incremental_diffs.enabled',
      'boolean',
      'Shows incremental diffs on merge proposals.',
@@ -151,6 +145,13 @@ flag_info = sorted([
     ('visible_render_time',
      'boolean',
      'Shows the server-side page render time in the login widget.',
+     '',
+     '',
+     ''),
+    ('disclosure.dsp_picker.enabled',
+     'boolean',
+     'Enables the use of the new DistributionSourcePackage vocabulary for '
+     'the source and binary package name pickers.',
      '',
      '',
      ''),
@@ -226,6 +227,18 @@ flag_info = sorted([
      'If true, PPAs will create an i18n/Translations-en file',
      'disabled',
      'PPA Separate Long Descriptions',
+     ''),
+    ('code.git.recipes.enabled',
+     'boolean',
+     'If true, allow creation of new Git-based recipes.',
+     'disabled',
+     'Git recipes',
+     'https://help.launchpad.net/Packaging/SourceBuilds'),
+    ('soyuz.named_auth_token.allow_new',
+     'boolean',
+     'If true, allow creation of named authorization tokens for archives.',
+     'disabled',
+     'Named authorization tokens for archives',
      ''),
     ])
 

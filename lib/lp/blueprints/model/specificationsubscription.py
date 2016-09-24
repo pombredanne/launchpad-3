@@ -10,7 +10,7 @@ from sqlobject import (
     ForeignKey,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.blueprints.interfaces.specificationsubscription import (
     ISpecificationSubscription,
@@ -24,10 +24,9 @@ from lp.registry.interfaces.role import IPersonRoles
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(ISpecificationSubscription)
 class SpecificationSubscription(SQLBase):
     """A subscription for person to a spec."""
-
-    implements(ISpecificationSubscription)
 
     _table = 'SpecificationSubscription'
     specification = ForeignKey(dbName='specification',

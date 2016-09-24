@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common views for objects that implement `IPillar`."""
@@ -24,7 +24,7 @@ from lazr.restful.utils import get_current_web_service_request
 import simplejson
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema.vocabulary import (
@@ -33,7 +33,6 @@ from zope.schema.vocabulary import (
     )
 from zope.traversing.browser.absoluteurl import absoluteURL
 
-from lp.app.browser.launchpad import iter_view_registrations
 from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
 from lp.app.browser.tales import MenuAPI
 from lp.app.browser.vocabulary import vocabulary_filters
@@ -61,6 +60,7 @@ from lp.services.propertycache import cachedproperty
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import (
     BatchNavigator,
+    get_batch_properties_for_json_cache,
     StormRangeFactory,
     )
 from lp.services.webapp.breadcrumb import (
@@ -82,9 +82,9 @@ from lp.services.webapp.publisher import (
     )
 
 
+@implementer(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 class PillarBreadcrumb(DisplaynameBreadcrumb):
     """Breadcrumb that uses the displayname or title as appropriate."""
-    implements(IHeadingBreadcrumb, IMultiFacetedBreadcrumb)
 
     @property
     def detail(self):
@@ -155,9 +155,9 @@ class InvolvedMenu(NavigationMenu):
             enabled=service_uses_launchpad(self.pillar.blueprints_usage))
 
 
+@implementer(IInvolved)
 class PillarInvolvementView(LaunchpadView):
     """A view for any `IPillar` implementing the IInvolved interface."""
-    implements(IInvolved)
 
     configuration_links = []
     visible_disabled_link_names = []
@@ -375,36 +375,17 @@ class PillarSharingView(LaunchpadView):
             self.specification_sharing_policies)
         cache.objects['has_edit_permission'] = check_permission(
             "launchpad.Edit", self.context)
-        view_names = set(reg.name for reg in
-                         iter_view_registrations(self.__class__))
-        if len(view_names) != 1:
-            raise AssertionError("Ambiguous view name.")
-        cache.objects['view_name'] = view_names.pop()
         batch_navigator = self.grantees()
         cache.objects['grantee_data'] = (
             self._getSharingService().jsonGranteeData(batch_navigator.batch))
+        cache.objects.update(
+            get_batch_properties_for_json_cache(self, batch_navigator))
 
         grant_counts = (
             self._getSharingService().getAccessPolicyGrantCounts(self.context))
         cache.objects['invisible_information_types'] = [
             count_info[0].title for count_info in grant_counts
             if count_info[1] == 0]
-
-        def _getBatchInfo(batch):
-            if batch is None:
-                return None
-            return {'memo': batch.range_memo,
-                    'start': batch.startNumber() - 1}
-
-        next_batch = batch_navigator.batch.nextBatch()
-        cache.objects['next'] = _getBatchInfo(next_batch)
-        prev_batch = batch_navigator.batch.prevBatch()
-        cache.objects['prev'] = _getBatchInfo(prev_batch)
-        cache.objects['total'] = batch_navigator.batch.total()
-        cache.objects['forwards'] = batch_navigator.batch.range_forwards
-        last_batch = batch_navigator.batch.lastBatch()
-        cache.objects['last_start'] = last_batch.startNumber() - 1
-        cache.objects.update(_getBatchInfo(batch_navigator.batch))
 
 
 class PillarPersonSharingView(LaunchpadView):
@@ -425,6 +406,8 @@ class PillarPersonSharingView(LaunchpadView):
         cache = IJSONRequestCache(self.request)
         request = get_current_web_service_request()
         branch_data = self._build_branch_template_data(self.branches, request)
+        gitrepository_data = self._build_gitrepository_template_data(
+            self.gitrepositories, request)
         bug_data = self._build_bug_template_data(self.bugtasks, request)
         spec_data = self._build_specification_template_data(
             self.specifications, request)
@@ -439,17 +422,20 @@ class PillarPersonSharingView(LaunchpadView):
         cache.objects['pillar'] = pillar_data
         cache.objects['bugs'] = bug_data
         cache.objects['branches'] = branch_data
+        cache.objects['gitrepositories'] = gitrepository_data
         cache.objects['specifications'] = spec_data
 
     def _loadSharedArtifacts(self):
         # As a concrete can by linked via more than one policy, we use sets to
         # filter out dupes.
-        self.bugtasks, self.branches, self.specifications = (
+        (self.bugtasks, self.branches, self.gitrepositories,
+         self.specifications) = (
             self.sharing_service.getSharedArtifacts(
                 self.pillar, self.person, self.user))
         bug_ids = set([bugtask.bug.id for bugtask in self.bugtasks])
         self.shared_bugs_count = len(bug_ids)
         self.shared_branches_count = len(self.branches)
+        self.shared_gitrepositories_count = len(self.gitrepositories)
         self.shared_specifications_count = len(self.specifications)
 
     def _build_specification_template_data(self, specs, request):
@@ -473,6 +459,17 @@ class PillarPersonSharingView(LaunchpadView):
                 branch_id=branch.id,
                 information_type=branch.information_type.title))
         return branch_data
+
+    def _build_gitrepository_template_data(self, repositories, request):
+        repository_data = []
+        for repository in repositories:
+            repository_data.append(dict(
+                self_link=absoluteURL(repository, request),
+                web_link=canonical_url(repository, path_only_if_possible=True),
+                repository_name=repository.unique_name,
+                repository_id=repository.id,
+                information_type=repository.information_type.title))
+        return repository_data
 
     def _build_bug_template_data(self, bugtasks, request):
         bug_data = []

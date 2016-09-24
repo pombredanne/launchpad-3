@@ -30,10 +30,6 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
 
         self.setupBreezy()
 
-        # We need at least one architecture for the PPA upload to be
-        # accepted.
-        self.breezy['i386'].supports_virtualized = True
-
         self.switchToAdmin()
         self.recipe = self.factory.makeSourcePackageRecipe()
         self.build = getUtility(ISourcePackageRecipeBuildSource).new(

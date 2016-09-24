@@ -54,22 +54,31 @@ default:
 # place.
 stagingsetup: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpstag)
 stagingsetup:
-	${STAGING_PGBOUNCER} -c 'kill launchpad_staging'
-	${STAGING_PGBOUNCER} -c 'kill launchpad_staging_slave'
+	# List the dump first to make sure it is usable before destroying
+	# anything.
+	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
+	    > ${DUMPLIST}
+
+	# Deny new connections to the main DBs and kill any leftovers.
+	${STAGING_PGBOUNCER} -c 'DISABLE launchpad_staging'
+	${STAGING_PGBOUNCER} -c 'DISABLE launchpad_staging_slave'
+	${STAGING_PGBOUNCER} -c 'KILL launchpad_staging'
+	${STAGING_PGBOUNCER} -c 'KILL launchpad_staging_slave'
+	${STAGING_PGBOUNCER} -c 'RESUME launchpad_staging'
+	${STAGING_PGBOUNCER} -c 'RESUME launchpad_staging_slave'
 	-${PGMASSACRE} lpmain_staging
 
-	# Quickly clear out the session DB.
-	${STAGING_PGBOUNCER} -c 'kill session_staging'
+	# Quickly clear out the session DB. No need to DISABLE here, as
+	# we bring the DB back quickly.
+	${STAGING_PGBOUNCER} -c 'KILL session_staging'
 	psql -d session_staging -c 'TRUNCATE sessiondata CASCADE;'
-	${STAGING_PGBOUNCER} -c 'resume session_staging'
+	${STAGING_PGBOUNCER} -c 'RESUME session_staging'
 
 	# Create the DB with the desired default tablespace.
 	${CREATEDB} --tablespace ${STAGING_TABLESPACE} lpmain_staging
 	# Restore the database. We need to restore permissions, despite
 	# later running security.py, to pull in permissions granted on
 	# production to users not maintained by security.py.
-	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
-	    > ${DUMPLIST}
 	cat ${STAGING_DUMP} \
 	    | ./walblock.py -n 5000 -d /var/lib/postgresql/9.3/staging/pg_xlog \
 	    | pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
@@ -85,8 +94,8 @@ stagingsetup:
 	@echo Setting feature flags
 	-psql -d lpmain_staging -c "INSERT INTO featureflag (flag, scope, priority, value) VALUES ('profiling.enabled', 'team:launchpad', 0, 'on')"
 	-psql -d lpmain_staging -c "INSERT INTO featureflag (flag, scope, priority, value) VALUES ('librarian.swift.enabled', 'default', 0, 'on')"
-	${STAGING_PGBOUNCER} -c 'resume launchpad_staging'
-	${STAGING_PGBOUNCER} -c 'resume launchpad_staging_slave'
+	${STAGING_PGBOUNCER} -c 'ENABLE launchpad_staging'
+	${STAGING_PGBOUNCER} -c 'ENABLE launchpad_staging_slave'
 
 stagingswitch:
 	echo Nothing to do. Staging already built inplace.

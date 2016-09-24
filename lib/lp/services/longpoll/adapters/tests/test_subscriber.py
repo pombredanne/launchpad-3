@@ -13,7 +13,7 @@ from testtools.matchers import (
     StartsWith,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.longpoll.adapters.subscriber import (
     generate_subscribe_key,
@@ -30,9 +30,8 @@ from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import Contains
 
 
+@implementer(ILongPollEvent)
 class FakeEvent:
-
-    implements(ILongPollEvent)
 
     event_key_indexes = count(1)
 

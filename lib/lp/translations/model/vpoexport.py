@@ -14,7 +14,7 @@ from storm.expr import (
     And,
     Or,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.interfaces import ISlaveStore
 from lp.soyuz.model.component import Component
@@ -27,10 +27,9 @@ from lp.translations.model.pofile import POFile
 from lp.translations.model.potemplate import POTemplate
 
 
+@implementer(IVPOExportSet)
 class VPOExportSet:
     """Retrieve collections of `VPOExport` objects."""
-
-    implements(IVPOExportSet)
 
     def get_distroseries_pofiles(self, series, date=None, component=None,
                                  languagepack=None):
@@ -92,9 +91,9 @@ class VPOExportSet:
             series, date, component, languagepack).count()
 
 
+@implementer(IVPOExport)
 class VPOExport:
     """Present translations in a form suitable for efficient export."""
-    implements(IVPOExport)
 
     potemplate = None
     languagepack = None

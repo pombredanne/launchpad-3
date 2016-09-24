@@ -15,7 +15,7 @@ __metaclass__ = type
 
 __all__ = [
     'patch_choice_parameter_type',
-    'patch_choice_vocabulary',
+    'patch_choice_property',
     'patch_collection_property',
     'patch_collection_return_type',
     'patch_entry_explicit_version',
@@ -119,18 +119,15 @@ def patch_collection_property(exported_class, property_name,
     exported_class[property_name].value_type.schema = collection_type
 
 
-def patch_choice_vocabulary(exported_class, method_name, param_name,
-                            vocabulary):
-    """Set the `Vocabulary` for a `Choice` parameter for a given method.
+def patch_choice_property(exported_class, property_name, choice_type):
+    """Set the `Choice` type of the given property on the given class.
 
     :param exported_class: The class containing the property.
     :param property_name: The name of the property whose type you need
         to patch.
-    :param vocabulary: The `Vocabulary` type.
+    :param choice_type: The new `Choice` type for the property.
     """
-    exported_class[method_name].queryTaggedValue(
-        LAZR_WEBSERVICE_EXPORTED)[
-            'params'][param_name].vocabulary = vocabulary
+    exported_class[property_name].vocabulary = choice_type
 
 
 def patch_entry_explicit_version(interface, version):

@@ -9,7 +9,7 @@ to select:
 
  * One or more source packages from the current PPA;
 
- * A destination PPA amongst the ones he has access to, including the
+ * A destination PPA amongst the ones they have access to, including the
    current one;
 
  * A destination series amongst all ubuntu series;
@@ -112,7 +112,7 @@ for packages. This is certainly not part of the doctest story.
     >>> login('foo.bar@canonical.com')
     >>> from lp.services.librarian.interfaces import ILibraryFileAliasSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.soyuz.interfaces.processor import IProcessorSet
+    >>> from lp.buildmaster.interfaces.processor import IProcessorSet
 
     >>> fake_chroot = getUtility(ILibraryFileAliasSet)[1]
 
@@ -128,8 +128,7 @@ for packages. This is certainly not part of the doctest story.
     >>> cprov = person_set.getByName('cprov')
     >>> grumpy = ubuntu.getSeries('grumpy')
     >>> grumpy_i386 = grumpy.newArch(
-    ...     'i386', getUtility(IProcessorSet).getByName('386'), False, cprov,
-    ...     supports_virtualized=True)
+    ...     'i386', getUtility(IProcessorSet).getByName('386'), False, cprov)
     >>> grumpy.nominatedarchindep = grumpy_i386
     >>> trash = grumpy_i386.addOrUpdateChroot(fake_chroot)
 
@@ -258,6 +257,8 @@ is presented.
     Requested sync of 1 package to PPA for James Blackwell.
     Please allow some time for this to be processed.
     >>> run_copy_jobs()
+    DEBUG Created i386 build of pmount 0.1-1 in ubuntu hoary RELEASE [...]
+    in PPA for James Blackwell (...)
     DEBUG Packages copied to PPA for James Blackwell:
     DEBUG pmount 0.1-1 in hoary
 
@@ -873,6 +874,8 @@ conflicts and cannot be allowed.
     Requested sync of 3 packages to PPA for James Blackwell Sandbox.
     Please allow some time for these to be processed.
     >>> run_copy_jobs()
+    DEBUG Created i386 build of pmount 0.1-1 in ubuntu warty RELEASE [...]
+    in PPA for James Blackwell Sandbox (...)
     DEBUG Packages copied to PPA for James Blackwell Sandbox:
     DEBUG pmount 0.1-1 in warty
     INFO ... raised CannotCopy: pmount 0.1-1 in grumpy

@@ -17,7 +17,7 @@ from storm.locals import (
     SQL,
     Storm,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.distroseriesparent import (
     IDistroSeriesParent,
@@ -31,9 +31,9 @@ from lp.services.database.interfaces import (
     )
 
 
+@implementer(IDistroSeriesParent)
 class DistroSeriesParent(Storm):
     """See `IDistroSeriesParent`."""
-    implements(IDistroSeriesParent)
     __storm_table__ = 'DistroSeriesParent'
 
     id = Int(primary=True)
@@ -59,9 +59,9 @@ class DistroSeriesParent(Storm):
     ordering = Int(allow_none=False, default=1)
 
 
+@implementer(IDistroSeriesParentSet)
 class DistroSeriesParentSet:
     """See `IDistroSeriesParentSet`."""
-    implements(IDistroSeriesParentSet)
     title = "Cross reference of parent and derived distroseries."
 
     def new(self, derived_series, parent_series, initialized,

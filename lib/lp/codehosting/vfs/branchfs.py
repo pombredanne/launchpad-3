@@ -83,7 +83,7 @@ from twisted.python import (
     )
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -227,6 +227,7 @@ class ITransportDispatch(Interface):
         """
 
 
+@implementer(ITransportDispatch)
 class BranchTransportDispatch:
     """Turns BRANCH_TRANSPORT tuples into transports that point to branches.
 
@@ -236,7 +237,6 @@ class BranchTransportDispatch:
 
     This is used directly by our internal services (puller and scanner).
     """
-    implements(ITransportDispatch)
 
     def __init__(self, base_transport):
         self.base_transport = base_transport
@@ -278,6 +278,7 @@ class BranchTransportDispatch:
         return transport, trailing_path
 
 
+@implementer(ITransportDispatch)
 class TransportDispatch:
     """Make transports for hosted branch areas and virtual control dirs.
 
@@ -287,7 +288,6 @@ class TransportDispatch:
 
     This is used for the rich codehosting VFS that we serve publically.
     """
-    implements(ITransportDispatch)
 
     def __init__(self, rw_transport):
         self._rw_dispatch = BranchTransportDispatch(rw_transport)
@@ -304,7 +304,8 @@ class TransportDispatch:
         data['trailing_path'] = trailing_path
         return factory(**data), trailing_path
 
-    def _makeBranchTransport(self, id, writable, trailing_path=''):
+    def _makeBranchTransport(self, id, writable, trailing_path='',
+                             private=False):
         if writable:
             dispatch = self._rw_dispatch
         else:

@@ -49,11 +49,13 @@ Now somebody else comes and makes a really bad suggestion.
 
 But it's only a suggestion, so the translation remains unchanged.
 
+    >>> import re
     >>> print extract_text(find_tag_by_id(user_browser.contents,
     ...                                   'msgset_198_de_translation_0'))
     The great new translation.
-    >>> print extract_text(find_tag_by_id(user_browser.contents,
-    ...                                   'msgset_198_de_suggestion_705_0'))
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents,
+    ...     re.compile(r'^msgset_198_de_suggestion_\d+_0$')))
     The really bad suggestion.
 
 In order to get rid of this, the admin chooses to keep the great new

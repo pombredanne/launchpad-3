@@ -12,7 +12,7 @@ __all__ = [
     'BugSubscriptionListView',
     ]
 
-from lazr.delegates import delegates
+from lazr.delegates import delegate_to
 from lazr.restful.interfaces import (
     IJSONRequestCache,
     IWebServiceClientRequest,
@@ -202,19 +202,14 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def _subscribers_for_current_user(self):
         """Return a dict of the subscribers for the current user."""
         persons_for_user = {}
-        person_count = 0
         bug = self.context.bug
         for person in bug.getSubscribersForPerson(self.user):
             if person.id not in persons_for_user:
                 persons_for_user[person.id] = person
-                person_count += 1
-
-        self._subscriber_count_for_current_user = person_count
         return persons_for_user.values()
 
     def initialize(self):
         """See `LaunchpadFormView`."""
-        self._subscriber_count_for_current_user = 0
         self._redirecting_to_bug_list = False
         super(BugSubscriptionSubscribeSelfView, self).initialize()
 
@@ -525,7 +520,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             plural_suffix = ""
 
         return structured(
-            " and %(num_dupes)d duplicate%(plural_suffix)s "
+            " and %(num_dupes)s duplicate%(plural_suffix)s "
             "(%(dupe_links_string)s)",
             num_dupes=num_dupes, plural_suffix=plural_suffix,
             dupe_links_string=dupe_links_string)
@@ -623,9 +618,9 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
         return self.subscriber_data_js
 
 
+@delegate_to(IBugSubscription, context='subscription')
 class SubscriptionAttrDecorator:
     """A BugSubscription with added attributes for HTML/JS."""
-    delegates(IBugSubscription, 'subscription')
 
     def __init__(self, subscription):
         self.subscription = subscription

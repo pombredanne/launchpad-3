@@ -10,7 +10,7 @@ __all__ = [
     'ProductSeriesLanguageSet',
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage,
@@ -20,9 +20,9 @@ from lp.translations.model.translatedlanguage import TranslatedLanguageMixin
 from lp.translations.utilities.rosettastats import RosettaStats
 
 
+@implementer(IProductSeriesLanguage)
 class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
     """See `IProductSeriesLanguage`."""
-    implements(IProductSeriesLanguage)
 
     def __init__(self, productseries, language, pofile=None):
         assert 'en' != language.code, (
@@ -70,12 +70,12 @@ class ProductSeriesLanguage(RosettaStats, TranslatedLanguageMixin):
         return self._translation_statistics['unreviewed_count']
 
 
+@implementer(IProductSeriesLanguageSet)
 class ProductSeriesLanguageSet:
     """See `IProductSeriesLanguageSet`.
 
     Provides a means to get a ProductSeriesLanguage.
     """
-    implements(IProductSeriesLanguageSet)
 
     def getProductSeriesLanguage(self, productseries, language, pofile=None):
         """See `IProductSeriesLanguageSet`."""

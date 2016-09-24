@@ -21,12 +21,13 @@ from storm.expr import (
     LeftJoin,
     )
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.person import Person
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database import bulk
 from lp.services.database.constants import DEFAULT
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -47,10 +48,9 @@ from lp.translations.interfaces.translationgroup import (
 from lp.translations.model.translator import Translator
 
 
+@implementer(ITranslationGroup)
 class TranslationGroup(SQLBase):
     """A TranslationGroup."""
-
-    implements(ITranslationGroup)
 
     # default to listing alphabetically
     _defaultOrder = 'name'
@@ -132,11 +132,11 @@ class TranslationGroup(SQLBase):
         found = len(projects)
         if found < goal:
             projects.extend(
-                list(self.projects[:goal-found]))
+                list(self.projects[:goal - found]))
             found = len(projects)
         if found < goal:
             projects.extend(
-                list(self.products[:goal-found]))
+                list(self.products[:goal - found]))
         return projects
 
     @property
@@ -180,35 +180,24 @@ class TranslationGroup(SQLBase):
         mapper = lambda row: row[slice(0, 3)]
         return DecoratedResultSet(translator_data, mapper)
 
-    def fetchProjectsForDisplay(self):
+    def fetchProjectsForDisplay(self, user):
         """See `ITranslationGroup`."""
         # Avoid circular imports.
         from lp.registry.model.product import (
+            get_precached_products,
             Product,
-            ProductWithLicenses,
+            ProductSet,
             )
-
-        using = [
+        products = list(IStore(Product).find(
             Product,
-            LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Product.iconID),
-            LeftJoin(
-                LibraryFileContent,
-                LibraryFileContent.id == LibraryFileAlias.contentID),
-            ]
-        columns = (
-            Product,
-            ProductWithLicenses.composeLicensesColumn(),
-            LibraryFileAlias,
-            LibraryFileContent,
-            )
-        product_data = ISlaveStore(Product).using(*using).find(
-            columns,
-            Product.translationgroupID == self.id, Product.active == True)
-        product_data = product_data.order_by(Product.displayname)
-
-        return [
-            ProductWithLicenses(product, tuple(licenses))
-            for product, licenses, icon_alias, icon_content in product_data]
+            Product.translationgroupID == self.id,
+            Product.active == True,
+            ProductSet.getProductPrivacyFilter(user),
+            ).order_by(Product.display_name))
+        get_precached_products(products, need_licences=True)
+        icons = bulk.load_related(LibraryFileAlias, products, ['iconID'])
+        bulk.load_related(LibraryFileContent, icons, ['contentID'])
+        return products
 
     def fetchProjectGroupsForDisplay(self):
         """See `ITranslationGroup`."""
@@ -231,7 +220,7 @@ class TranslationGroup(SQLBase):
         project_data = ISlaveStore(ProjectGroup).using(*using).find(
             tables,
             ProjectGroup.translationgroupID == self.id,
-            ProjectGroup.active == True).order_by(ProjectGroup.displayname)
+            ProjectGroup.active == True).order_by(ProjectGroup.display_name)
 
         return DecoratedResultSet(project_data, operator.itemgetter(0))
 
@@ -255,14 +244,13 @@ class TranslationGroup(SQLBase):
             )
         distro_data = ISlaveStore(Distribution).using(*using).find(
             tables, Distribution.translationgroupID == self.id).order_by(
-            Distribution.displayname)
+            Distribution.display_name)
 
         return DecoratedResultSet(distro_data, operator.itemgetter(0))
 
 
+@implementer(ITranslationGroupSet)
 class TranslationGroupSet:
-
-    implements(ITranslationGroupSet)
 
     title = 'Rosetta Translation Groups'
 

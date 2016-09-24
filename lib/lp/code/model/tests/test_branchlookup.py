@@ -153,7 +153,7 @@ class TestGetByHostingPath(TestCaseWithFactory):
         self.assertEqual((branch, '/foo'), result)
 
 
-class TestGetByPath(TestCaseWithFactory):
+class TestGetByLPPath(TestCaseWithFactory):
     """Test `IBranchLookup.getByLPPath`."""
 
     layer = DatabaseFunctionalLayer
@@ -171,54 +171,51 @@ class TestGetByPath(TestCaseWithFactory):
             self.factory.getUniqueString()
             for i in range(arbitrary_num_segments)])
 
+    def assertMissingPath(self, exctype, path):
+        self.assertRaises(exctype, self.getByPath, path)
+
+    def assertPath(self, expected_branch, expected_suffix, path):
+        branch, suffix = self.getByPath(path)
+        self.assertEqual(expected_branch, branch)
+        self.assertEqual(expected_suffix, suffix)
+
     def test_finds_exact_personal_branch(self):
         branch = self.factory.makePersonalBranch()
-        found_branch, suffix = self.getByPath(branch.unique_name)
-        self.assertEqual(branch, found_branch)
-        self.assertEqual('', suffix)
+        self.assertPath(branch, '', branch.unique_name)
 
     def test_finds_suffixed_personal_branch(self):
         branch = self.factory.makePersonalBranch()
         suffix = self.makeRelativePath()
-        found_branch, found_suffix = self.getByPath(
-            branch.unique_name + '/' + suffix)
-        self.assertEqual(branch, found_branch)
-        self.assertEqual(suffix, found_suffix)
+        self.assertPath(branch, suffix, branch.unique_name + '/' + suffix)
 
     def test_missing_personal_branch(self):
         owner = self.factory.makePerson()
         namespace = get_branch_namespace(owner)
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
+        self.assertMissingPath(NoSuchBranch, branch_name)
 
     def test_missing_suffixed_personal_branch(self):
         owner = self.factory.makePerson()
         namespace = get_branch_namespace(owner)
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
         suffix = self.makeRelativePath()
-        self.assertRaises(
-            NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
+        self.assertMissingPath(NoSuchBranch, branch_name + '/' + suffix)
 
     def test_finds_exact_product_branch(self):
         branch = self.factory.makeProductBranch()
-        found_branch, suffix = self.getByPath(branch.unique_name)
-        self.assertEqual(branch, found_branch)
-        self.assertEqual('', suffix)
+        self.assertPath(branch, '', branch.unique_name)
 
     def test_finds_suffixed_product_branch(self):
         branch = self.factory.makeProductBranch()
         suffix = self.makeRelativePath()
-        found_branch, found_suffix = self.getByPath(
-            branch.unique_name + '/' + suffix)
-        self.assertEqual(branch, found_branch)
-        self.assertEqual(suffix, found_suffix)
+        self.assertPath(branch, suffix, branch.unique_name + '/' + suffix)
 
     def test_missing_product_branch(self):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         namespace = get_branch_namespace(owner, product=product)
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
+        self.assertMissingPath(NoSuchBranch, branch_name)
 
     def test_missing_suffixed_product_branch(self):
         owner = self.factory.makePerson()
@@ -226,14 +223,11 @@ class TestGetByPath(TestCaseWithFactory):
         namespace = get_branch_namespace(owner, product=product)
         suffix = self.makeRelativePath()
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        self.assertRaises(
-            NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
+        self.assertMissingPath(NoSuchBranch, branch_name + '/' + suffix)
 
     def test_finds_exact_package_branch(self):
         branch = self.factory.makePackageBranch()
-        found_branch, suffix = self.getByPath(branch.unique_name)
-        self.assertEqual(branch, found_branch)
-        self.assertEqual('', suffix)
+        self.assertPath(branch, '', branch.unique_name)
 
     def test_missing_package_branch(self):
         owner = self.factory.makePerson()
@@ -243,7 +237,7 @@ class TestGetByPath(TestCaseWithFactory):
             owner, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        self.assertRaises(NoSuchBranch, self.getByPath, branch_name)
+        self.assertMissingPath(NoSuchBranch, branch_name)
 
     def test_missing_suffixed_package_branch(self):
         owner = self.factory.makePerson()
@@ -254,19 +248,30 @@ class TestGetByPath(TestCaseWithFactory):
             sourcepackagename=sourcepackagename)
         suffix = self.makeRelativePath()
         branch_name = namespace.getBranchName(self.factory.getUniqueString())
-        self.assertRaises(
-            NoSuchBranch, self.getByPath, branch_name + '/' + suffix)
+        self.assertMissingPath(NoSuchBranch, branch_name + '/' + suffix)
 
     def test_too_short(self):
         person = self.factory.makePerson()
-        self.assertRaises(
-            InvalidNamespace, self.getByPath, '~%s' % person.name)
+        self.assertMissingPath(InvalidNamespace, '~%s' % person.name)
 
     def test_no_such_product(self):
         person = self.factory.makePerson()
         branch_name = '~%s/%s/%s' % (
             person.name, self.factory.getUniqueString(), 'branch-name')
-        self.assertRaises(NoSuchProduct, self.getByPath, branch_name)
+        self.assertMissingPath(NoSuchProduct, branch_name)
+
+
+class TestGetByPath(TestGetByLPPath):
+    """Test `IBranchLookup.getByPath`."""
+
+    def getByPath(self, path):
+        return self.branch_lookup.getByPath(path)
+
+    def assertMissingPath(self, exctype, path):
+        self.assertIsNone(self.getByPath(path))
+
+    def assertPath(self, expected_branch, expected_suffix, path):
+        self.assertEqual(expected_branch, self.getByPath(path))
 
 
 class TestGetByUrl(TestCaseWithFactory):

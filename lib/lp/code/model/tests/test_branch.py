@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Branches."""
@@ -10,7 +10,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import json
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
@@ -64,7 +63,6 @@ from lp.code.errors import (
     CannotDeleteBranch,
     CannotUpgradeNonHosted,
     InvalidBranchMergeProposal,
-    InvalidMergeQueueConfig,
     UpgradePending,
     )
 from lp.code.interfaces.branch import (
@@ -372,8 +370,13 @@ class TestBranchWriteJobViaCelery(TestCaseWithFactory):
         db_branch, tree = self.create_branch_and_tree()
         branch_path = get_real_branch_path(db_branch.id)
         self.assertThat(branch_path, PathExists())
+        store = Store.of(db_branch)
         with person_logged_in(db_branch.owner):
             db_branch.destroySelf()
+        job = store.find(
+            BranchJob,
+            BranchJob.job_type == BranchJobType.RECLAIM_BRANCH_SPACE).one()
+        job.job.scheduled_start = datetime.now(UTC)
         with block_on_job():
             transaction.commit()
         self.assertThat(branch_path, Not(PathExists()))
@@ -694,6 +697,20 @@ class TestBranch(TestCaseWithFactory):
             [product.development_focus],
             list(branch.associatedProductSeries()))
 
+    def test_getMergeProposals(self):
+        target_branch = self.factory.makeProductBranch()
+        bmp = self.factory.makeBranchMergeProposal(target_branch=target_branch)
+        self.factory.makeBranchMergeProposal()
+        self.assertEqual([bmp], list(target_branch.getMergeProposals()))
+
+    def test_getDependentMergeProposals(self):
+        prerequisite_branch = self.factory.makeProductBranch()
+        bmp = self.factory.makeBranchMergeProposal(
+            prerequisite_branch=prerequisite_branch)
+        self.factory.makeBranchMergeProposal()
+        self.assertEqual(
+            [bmp], list(prerequisite_branch.getDependentMergeProposals()))
+
 
 class TestBranchUpgrade(TestCaseWithFactory):
     """Test the upgrade functionalities of branches."""
@@ -906,17 +923,113 @@ class TestBranchUpgrade(TestCaseWithFactory):
         self.assertFalse(branch.upgrade_pending)
 
 
-class TestBranchLinksAndIdentites(TestCaseWithFactory):
-    """Test IBranch.branchLinks and IBranch.branchIdentities."""
+class TestBzrIdentityMixin(TestCaseWithFactory):
+    """Test the defaults and identities provided by BzrIdentityMixin."""
 
     layer = DatabaseFunctionalLayer
 
-    def test_default_identities(self):
+    def assertBzrIdentity(self, branch, identity_path):
+        """Assert that the bzr identity of 'branch' is 'identity_path'.
+
+        Actually, it'll be lp://dev/<identity_path>.
+        """
+        self.assertEqual(
+            identity_path, branch.shortened_path, "shortened path")
+        self.assertEqual(
+            'lp://dev/%s' % identity_path, branch.bzr_identity, "bzr identity")
+
+    def test_bzr_identity_default(self):
+        # By default, the bzr identity is an lp URL with the branch's unique
+        # name.
+        branch = self.factory.makeAnyBranch()
+        self.assertBzrIdentity(branch, branch.unique_name)
+
+    def test_bzr_identity_linked_to_product(self):
+        # If a branch is the development focus branch for a product, then it's
+        # bzr identity is lp:product.
+        branch = self.factory.makeProductBranch()
+        product = removeSecurityProxy(branch.product)
+        linked_branch = ICanHasLinkedBranch(product)
+        linked_branch.setBranch(branch)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
+
+    def test_bzr_identity_linked_to_product_series(self):
+        # If a branch is the development focus branch for a product series,
+        # then it's bzr identity is lp:product/series.
+        branch = self.factory.makeProductBranch()
+        product = branch.product
+        series = self.factory.makeProductSeries(product=product)
+        linked_branch = ICanHasLinkedBranch(series)
+        login_person(series.owner)
+        linked_branch.setBranch(branch)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
+
+    def test_bzr_identity_private_linked_to_product(self):
+        # Private branches also have a short lp:url.
+        branch = self.factory.makeProductBranch(
+            information_type=InformationType.USERDATA)
+        with celebrity_logged_in('admin'):
+            product = branch.product
+            ICanHasLinkedBranch(product).setBranch(branch)
+            self.assertBzrIdentity(branch, product.name)
+
+    def test_bzr_identity_linked_to_series_and_dev_focus(self):
+        # If a branch is the development focus branch for a product and the
+        # branch for a series, the bzr identity will be the storter of the two
+        # URLs.
+        branch = self.factory.makeProductBranch()
+        series = self.factory.makeProductSeries(product=branch.product)
+        product_link = ICanHasLinkedBranch(
+            removeSecurityProxy(branch.product))
+        series_link = ICanHasLinkedBranch(series)
+        product_link.setBranch(branch)
+        login_person(series.owner)
+        series_link.setBranch(branch)
+        self.assertBzrIdentity(branch, product_link.bzr_path)
+
+    def test_bzr_identity_junk_branch_always_unique_name(self):
+        # For junk branches, the bzr identity is always based on the unique
+        # name of the branch, even if it's linked to a product, product series
+        # or whatever.
+        branch = self.factory.makePersonalBranch()
+        product = removeSecurityProxy(self.factory.makeProduct())
+        ICanHasLinkedBranch(product).setBranch(branch)
+        self.assertBzrIdentity(branch, branch.unique_name)
+
+    def test_bzr_identity_linked_to_package(self):
+        # If a branch is linked to a pocket of a package, then the
+        # bzr identity is the path to that package.
+        branch = self.factory.makePackageBranch()
+        # Have to pick something that's not RELEASE in order to guarantee that
+        # it's not the dev focus source package.
+        pocket = PackagePublishingPocket.BACKPORTS
+        linked_branch = ICanHasLinkedBranch(
+            branch.sourcepackage.getSuiteSourcePackage(pocket))
+        registrant = branch.sourcepackage.distribution.owner
+        login_person(registrant)
+        linked_branch.setBranch(branch, registrant)
+        login(ANONYMOUS)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
+
+    def test_bzr_identity_linked_to_dev_package(self):
+        # If a branch is linked to the development focus version of a package
+        # then the bzr identity is distro/package.
+        sourcepackage = self.factory.makeSourcePackage()
+        distro_package = sourcepackage.distribution_sourcepackage
+        branch = self.factory.makePackageBranch(
+            sourcepackage=distro_package.development_version)
+        linked_branch = ICanHasLinkedBranch(distro_package)
+        registrant = sourcepackage.distribution.owner
+        run_with_login(
+            registrant,
+            linked_branch.setBranch, branch, registrant)
+        self.assertBzrIdentity(branch, linked_branch.bzr_path)
+
+    def test_identities_no_links(self):
         # If there are no links, the only branch identity is the unique name.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
-            [('lp://dev/' + branch.unique_name, branch)],
-            branch.branchIdentities())
+            [(branch.unique_name, branch)], branch.getBranchIdentities())
 
     def test_linked_to_product(self):
         # If a branch is linked to the product, it is also by definition
@@ -930,12 +1043,12 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         linked_branch.setBranch(branch)
         self.assertEqual(
             [linked_branch, ICanHasLinkedBranch(fooix.development_focus)],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/fooix', fooix),
-             ('lp://dev/fooix/devel', fooix.development_focus),
-             ('lp://dev/~eric/fooix/trunk', branch)],
-            branch.branchIdentities())
+            [('fooix', fooix),
+             ('fooix/devel', fooix.development_focus),
+             ('~eric/fooix/trunk', branch)],
+            branch.getBranchIdentities())
 
     def test_linked_to_product_series(self):
         # If a branch is linked to a non-development series of a product and
@@ -951,11 +1064,11 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         linked_branch.setBranch(branch)
         self.assertEqual(
             [linked_branch],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/fooix/future', future),
-             ('lp://dev/~eric/fooix/trunk', branch)],
-            branch.branchIdentities())
+            [('fooix/future', future),
+             ('~eric/fooix/trunk', branch)],
+            branch.getBranchIdentities())
 
     def test_linked_to_package(self):
         # If a branch is linked to a suite source package where the
@@ -983,12 +1096,12 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
 
         self.assertEqual(
             [distro_link, suite_sp_link],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/mint/choc', dsp),
-             ('lp://dev/mint/dev/choc', suite_sourcepackage),
-             ('lp://dev/~eric/mint/dev/choc/tip', branch)],
-            branch.branchIdentities())
+            [('mint/choc', dsp),
+             ('mint/dev/choc', suite_sourcepackage),
+             ('~eric/mint/dev/choc/tip', branch)],
+            branch.getBranchIdentities())
 
     def test_linked_to_package_not_release_pocket(self):
         # If a branch is linked to a suite source package where the
@@ -1015,11 +1128,11 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
 
         self.assertEqual(
             [suite_sp_link],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/mint/dev-backports/choc', suite_sourcepackage),
-             ('lp://dev/~eric/mint/dev/choc/tip', branch)],
-            branch.branchIdentities())
+            [('mint/dev-backports/choc', suite_sourcepackage),
+             ('~eric/mint/dev/choc/tip', branch)],
+            branch.getBranchIdentities())
 
     def test_linked_to_package_not_current_series(self):
         # If the branch is linked to a suite source package where the distro
@@ -1046,11 +1159,11 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
 
         self.assertEqual(
             [suite_sp_link],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/mint/supported/choc', suite_sp),
-             ('lp://dev/~eric/mint/supported/choc/tip', branch)],
-            branch.branchIdentities())
+            [('mint/supported/choc', suite_sp),
+             ('~eric/mint/supported/choc/tip', branch)],
+            branch.getBranchIdentities())
 
     def test_linked_across_project_to_package(self):
         # If a product branch is linked to a suite source package, the links
@@ -1076,17 +1189,17 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
 
         self.assertEqual(
             [distro_link, suite_sp_link],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/mint/choc', dsp),
-             ('lp://dev/mint/dev/choc', suite_sourcepackage),
-             ('lp://dev/~eric/fooix/trunk', branch)],
-            branch.branchIdentities())
+            [('mint/choc', dsp),
+             ('mint/dev/choc', suite_sourcepackage),
+             ('~eric/fooix/trunk', branch)],
+            branch.getBranchIdentities())
 
     def test_junk_branch_links(self):
-        # If a junk branch has links, those links are returned in the
-        # branchLinks, but the branchIdentities just has the branch unique
-        # name.
+        # If a junk branch has links, those links are returned by
+        # getBranchLinks, but getBranchIdentities just returns the branch
+        # unique name.
         eric = self.factory.makePerson(name='eric')
         branch = self.factory.makePersonalBranch(owner=eric, name='foo')
         fooix = removeSecurityProxy(self.factory.makeProduct())
@@ -1094,112 +1207,9 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
         linked_branch.setBranch(branch)
         self.assertEqual(
             [linked_branch, ICanHasLinkedBranch(fooix.development_focus)],
-            branch.branchLinks())
+            branch.getBranchLinks())
         self.assertEqual(
-            [('lp://dev/~eric/+junk/foo', branch)],
-            branch.branchIdentities())
-
-
-class TestBzrIdentity(TestCaseWithFactory):
-    """Test IBranch.bzr_identity."""
-
-    layer = DatabaseFunctionalLayer
-
-    def assertBzrIdentity(self, branch, identity_path):
-        """Assert that the bzr identity of 'branch' is 'identity_path'.
-
-        Actually, it'll be lp://dev/<identity_path>.
-        """
-        self.assertEqual(
-            'lp://dev/%s' % identity_path, branch.bzr_identity,
-            "bzr identity")
-
-    def test_default_identity(self):
-        # By default, the bzr identity is an lp URL with the branch's unique
-        # name.
-        branch = self.factory.makeAnyBranch()
-        self.assertBzrIdentity(branch, branch.unique_name)
-
-    def test_linked_to_product(self):
-        # If a branch is the development focus branch for a product, then it's
-        # bzr identity is lp:product.
-        branch = self.factory.makeProductBranch()
-        product = removeSecurityProxy(branch.product)
-        linked_branch = ICanHasLinkedBranch(product)
-        linked_branch.setBranch(branch)
-        self.assertBzrIdentity(branch, linked_branch.bzr_path)
-
-    def test_linked_to_product_series(self):
-        # If a branch is the development focus branch for a product series,
-        # then it's bzr identity is lp:product/series.
-        branch = self.factory.makeProductBranch()
-        product = branch.product
-        series = self.factory.makeProductSeries(product=product)
-        linked_branch = ICanHasLinkedBranch(series)
-        login_person(series.owner)
-        linked_branch.setBranch(branch)
-        self.assertBzrIdentity(branch, linked_branch.bzr_path)
-
-    def test_private_linked_to_product(self):
-        # Private branches also have a short lp:url.
-        branch = self.factory.makeProductBranch(
-            information_type=InformationType.USERDATA)
-        with celebrity_logged_in('admin'):
-            product = branch.product
-            ICanHasLinkedBranch(product).setBranch(branch)
-            self.assertBzrIdentity(branch, product.name)
-
-    def test_linked_to_series_and_dev_focus(self):
-        # If a branch is the development focus branch for a product and the
-        # branch for a series, the bzr identity will be the storter of the two
-        # URLs.
-        branch = self.factory.makeProductBranch()
-        series = self.factory.makeProductSeries(product=branch.product)
-        product_link = ICanHasLinkedBranch(
-            removeSecurityProxy(branch.product))
-        series_link = ICanHasLinkedBranch(series)
-        product_link.setBranch(branch)
-        login_person(series.owner)
-        series_link.setBranch(branch)
-        self.assertBzrIdentity(branch, product_link.bzr_path)
-
-    def test_junk_branch_always_unique_name(self):
-        # For junk branches, the bzr identity is always based on the unique
-        # name of the branch, even if it's linked to a product, product series
-        # or whatever.
-        branch = self.factory.makePersonalBranch()
-        product = removeSecurityProxy(self.factory.makeProduct())
-        ICanHasLinkedBranch(product).setBranch(branch)
-        self.assertBzrIdentity(branch, branch.unique_name)
-
-    def test_linked_to_package(self):
-        # If a branch is linked to a pocket of a package, then the
-        # bzr identity is the path to that package.
-        branch = self.factory.makePackageBranch()
-        # Have to pick something that's not RELEASE in order to guarantee that
-        # it's not the dev focus source package.
-        pocket = PackagePublishingPocket.BACKPORTS
-        linked_branch = ICanHasLinkedBranch(
-            branch.sourcepackage.getSuiteSourcePackage(pocket))
-        registrant = branch.sourcepackage.distribution.owner
-        login_person(registrant)
-        linked_branch.setBranch(branch, registrant)
-        login(ANONYMOUS)
-        self.assertBzrIdentity(branch, linked_branch.bzr_path)
-
-    def test_linked_to_dev_package(self):
-        # If a branch is linked to the development focus version of a package
-        # then the bzr identity is distro/package.
-        sourcepackage = self.factory.makeSourcePackage()
-        distro_package = sourcepackage.distribution_sourcepackage
-        branch = self.factory.makePackageBranch(
-            sourcepackage=distro_package.development_version)
-        linked_branch = ICanHasLinkedBranch(distro_package)
-        registrant = sourcepackage.distribution.owner
-        run_with_login(
-            registrant,
-            linked_branch.setBranch, branch, registrant)
-        self.assertBzrIdentity(branch, linked_branch.bzr_path)
+            [('~eric/+junk/foo', branch)], branch.getBranchIdentities())
 
 
 class TestBranchDeletion(TestCaseWithFactory):
@@ -1438,6 +1448,13 @@ class TestBranchDeletion(TestCaseWithFactory):
         )
         self.branch.destroySelf(break_references=True)
 
+    def test_related_webhooks_deleted(self):
+        webhook = self.factory.makeWebhook(target=self.branch)
+        webhook.ping()
+        self.branch.destroySelf()
+        transaction.commit()
+        self.assertRaises(LostObjectError, getattr, webhook, 'target')
+
 
 class TestBranchDeletionConsequences(TestCase):
     """Test determination and application of branch deletion consequences."""
@@ -1564,8 +1581,8 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a branch with a bug."""
         bug1 = self.factory.makeBug()
         bug1.linkBranch(self.branch, self.branch.owner)
-        bug_branch1 = bug1.linked_branches[0]
-        bug_branch1_id = bug_branch1.id
+        bug_branch1 = bug1.linked_bugbranches[0]
+        bug_branch1_id = removeSecurityProxy(bug_branch1).id
         self.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound, BugBranch.get, bug_branch1_id)
 
@@ -1667,6 +1684,23 @@ class TestBranchDeletionConsequences(TestCase):
         merge_proposal.nominateReviewer(self.factory.makePerson(),
                                         self.factory.makePerson())
         merge_proposal.target_branch.destroySelf(break_references=True)
+
+    def test_snap_requirements(self):
+        # If a branch is used by a snap package, the deletion requirements
+        # indicate this.
+        self.factory.makeSnap(branch=self.branch)
+        self.assertEqual(
+            {None: ('alter', _('Some snap packages build from this branch.'))},
+            self.branch.deletionRequirements())
+
+    def test_snap_deletion(self):
+        # break_references allows deleting a branch used by a snap package.
+        snap1 = self.factory.makeSnap(branch=self.branch)
+        snap2 = self.factory.makeSnap(branch=self.branch)
+        self.branch.destroySelf(break_references=True)
+        transaction.commit()
+        self.assertIsNone(snap1.branch)
+        self.assertIsNone(snap2.branch)
 
     def test_ClearDependentBranch(self):
         """ClearDependent.__call__ must clear the prerequisite branch."""
@@ -2098,6 +2132,22 @@ class TestCreateBranchRevisionFromIDs(TestCaseWithFactory):
         branch.createBranchRevisionFromIDs(
             [(rev.revision_id, revision_number)])
 
+    def test_ghost(self):
+        # createBranchRevisionFromIDs skips ghost revisions for which no
+        # Revision rows exist.
+        branch = self.factory.makeAnyBranch()
+        rev = self.factory.makeRevision()
+        revision_number = self.factory.getUniqueInteger()
+        ghost_rev_id = self.factory.getUniqueString("revision-id")
+        revision_id_sequence_pairs = [
+            (rev.revision_id, revision_number),
+            (ghost_rev_id, None),
+            ]
+        branch.createBranchRevisionFromIDs(revision_id_sequence_pairs)
+        self.assertEqual(
+            revision_number, branch.getBranchRevision(revision=rev).sequence)
+        self.assertIsNone(branch.getBranchRevision(revision_id=ghost_rev_id))
+
 
 class TestRevisionHistory(TestCaseWithFactory):
     """Tests for a branch's revision history."""
@@ -2170,6 +2220,16 @@ class TestRevisionHistory(TestCaseWithFactory):
         since = branch.getRevisionsSince(mid_revision.revision.revision_date)
         self.assertEqual(revisions[:mid_sequence], list(since))
 
+    def test_getCodebrowseUrlForRevision(self):
+        # IBranch.getCodebrowseUrlForRevision gives the URL to the browser
+        # for a specific revision of the code
+        branch = self.factory.makeBranch()
+        revision = 42
+        self.factory.makeRevisionsForBranch(branch, count=revision)
+        urlByRevision = branch.getCodebrowseUrlForRevision(42)
+        url = branch.getCodebrowseUrl()
+        self.assertEqual(urlByRevision, "%s/revision/%s" % (url, revision))
+
     def test_top_ancestor_has_no_parents(self):
         # The top-most revision of a branch (i.e. the first one) has no
         # parents.
@@ -2224,7 +2284,7 @@ class TestCodebrowse(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
             'http://bazaar.launchpad.dev/' + branch.unique_name,
-            branch.codebrowse_url())
+            branch.getCodebrowseUrl())
 
     def test_private(self):
         # The codebrowse URL for a private branch is a 'https' url.
@@ -2234,21 +2294,21 @@ class TestCodebrowse(TestCaseWithFactory):
         login_person(owner)
         self.assertEqual(
             'https://bazaar.launchpad.dev/' + branch.unique_name,
-            branch.codebrowse_url())
+            branch.getCodebrowseUrl())
 
     def test_extra_args(self):
-        # Any arguments to codebrowse_url are appended to the URL.
+        # Any arguments to getCodebrowseUrl are appended to the URL.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
             'http://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
-            branch.codebrowse_url('a', 'b'))
+            branch.getCodebrowseUrl('a', 'b'))
 
     def test_source_code_url(self):
         # The source code URL points to the codebrowse URL where you can
         # actually browse the source code.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
-            branch.browse_source_url, branch.codebrowse_url('files'))
+            branch.browse_source_url, branch.getCodebrowseUrl('files'))
 
     def test_no_revisions_not_browseable(self):
         # A branch with no revisions is not browseable.
@@ -3267,45 +3327,6 @@ class TestGetBzrBranch(TestCaseWithFactory):
         self.assertRaises(BadUrl, db_stacked.getBzrBranch)
 
 
-class TestMergeQueue(TestCaseWithFactory):
-    """Tests for branch merge queue functionality in branches."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_addToQueue(self):
-        """Test Branch.addToQueue."""
-        branch = self.factory.makeBranch()
-        queue = self.factory.makeBranchMergeQueue()
-        with person_logged_in(branch.owner):
-            branch.addToQueue(queue)
-
-        self.assertEqual(branch.merge_queue, queue)
-
-    def test_setMergeQueueConfig(self):
-        """Test Branch.setMergeQueueConfig."""
-        branch = self.factory.makeBranch()
-        config = json.dumps({
-            'path': '/',
-            'test': 'make test',
-            })
-
-        with person_logged_in(branch.owner):
-            branch.setMergeQueueConfig(config)
-
-        self.assertEqual(branch.merge_queue_config, config)
-
-    def test_setMergeQueueConfig_invalid(self):
-        """Test that invalid JSON strings aren't added to the database."""
-        branch = self.factory.makeBranch()
-        config = 'abc'
-
-        with person_logged_in(branch.owner):
-            self.assertRaises(
-                InvalidMergeQueueConfig,
-                branch.setMergeQueueConfig,
-                config)
-
-
 class TestBranchUnscan(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -3376,24 +3397,6 @@ class TestWebservice(TestCaseWithFactory):
         self.branch_url = api_url(self.branch_db)
         self.webservice = webservice_for_person(
             self.branch_db.owner, permission=OAuthPermission.WRITE_PUBLIC)
-
-    def test_set_merge_queue(self):
-        """Test that the merge queue and config can be set properly."""
-        with person_logged_in(ANONYMOUS):
-            queue_db = self.factory.makeBranchMergeQueue()
-            queue_url = api_url(queue_db)
-
-        config = json.dumps({'test': 'make check'})
-        self.webservice.patch(
-            self.branch_url, "application/json",
-            json.dumps({
-                "merge_queue_link": queue_url,
-                "merge_queue_config": config,
-                }),
-            api_version='devel')
-        with person_logged_in(ANONYMOUS):
-            self.assertEqual(self.branch_db.merge_queue, queue_db)
-            self.assertEqual(self.branch_db.merge_queue_config, config)
 
     def test_transitionToInformationType(self):
         """Test transitionToInformationType() API arguments."""

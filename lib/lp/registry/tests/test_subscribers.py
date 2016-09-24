@@ -230,7 +230,7 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     def test_display_escapee_user_data(self):
         # A notification is added if there is a message to show.
         product, user = self.make_product_user([License.OTHER_PROPRIETARY])
-        product.displayname = '<b>Look</b>'
+        product.display_name = '<b>Look</b>'
         notification = LicenseNotification(product)
         result = notification.display()
         self.assertIs(True, result)

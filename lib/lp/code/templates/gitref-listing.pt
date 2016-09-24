@@ -1,0 +1,83 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
+
+  <script type="text/javascript">
+function show_git_commit(id) {
+    var div = document.getElementById('git-ref-' + id);
+    if (div) {
+        div.style.display = "block";
+    }
+}
+function hide_git_commit(id) {
+    var div = document.getElementById('git-ref-' + id);
+    if (div) {
+        div.style.display = "none";
+    }
+}
+  </script>
+
+  <tal:needs-batch condition="context/has_multiple_pages">
+    <div id="branch-batch-links">
+      <tal:navigation replace="structure context/@@+navigation-links-upper" />
+    </div>
+  </tal:needs-batch>
+
+  <table tal:attributes="class context/table_class" id="gitreftable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Last Modified</th>
+        <th>Last Commit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="ref context/currentBatch">
+        <td>
+          <a tal:attributes="href ref/fmt:url"
+             tal:content="structure ref/name/fmt:break-long-words" />
+        </td>
+        <tal:no_commit condition="not: ref/committer_date">
+          <td colspan="2">
+            <metal:no-commit-message use-macro="ref/@@+macros/no-commit-message" />
+          </td>
+        </tal:no_commit>
+        <tal:has_commit condition="ref/committer_date">
+          <td>
+            <span class="sortkey"
+                  tal:content="ref/committer_date/fmt:datetime" />
+            <span tal:attributes="title ref/committer_date/fmt:datetime"
+                  tal:content="ref/committer_date/fmt:approximatedate" />
+          </td>
+          <td tal:attributes="onmouseover string:show_git_commit(${repeat/ref/index});
+                              onmouseout string:hide_git_commit(${repeat/ref/index});">
+            <div class="lastCommit">
+              <tal:revision-log replace="ref/commit_message_first_line/fmt:shorten/80" />
+            </div>
+            <div class="popupTitle"
+                 tal:attributes="id string:git-ref-${repeat/ref/index};
+                                 onmouseover string:hide_commit(${repeat/ref/index});">
+              <p>
+                <strong>Author:</strong>
+                <tal:author replace="structure ref/author/fmt:link" />
+                <br />
+                <strong>Author Date:</strong>
+                <tal:author replace="structure ref/author_date/fmt:datetime" />
+              </p>
+              <tal:commit-msg replace="structure ref/commit_message/fmt:text-to-html" />
+            </div>
+          </td>
+        </tal:has_commit>
+      </tr>
+      <tr tal:condition="not: context/batch/total">
+        <td colspan="3">
+          This repository has no branches.
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <tal:navigation replace="structure context/@@+navigation-links-lower" />
+
+</div>

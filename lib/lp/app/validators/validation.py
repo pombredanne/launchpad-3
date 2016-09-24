@@ -5,15 +5,12 @@ __metaclass__ = type
 
 __all__ = [
     'can_be_nominated_for_series',
-    'non_duplicate_branch',
     'valid_bug_number',
     'valid_cve_sequence',
     'validate_new_team_email',
     'validate_new_person_email',
     'validate_date_interval',
     ]
-
-from textwrap import dedent
 
 from zope.component import getUtility
 from zope.formlib.interfaces import WidgetsError
@@ -45,17 +42,6 @@ def can_be_nominated_for_series(series):
         raise LaunchpadValidationError(_(
             "This bug has already been nominated for these "
             "series: ${series}", mapping={'series': series_str}))
-
-    return True
-
-
-def non_duplicate_branch(value):
-    """Ensure that this branch hasn't already been linked to this bug."""
-    current_bug = getUtility(ILaunchBag).bug
-    if current_bug.hasBranch(value):
-        raise LaunchpadValidationError(_(dedent("""
-            This branch is already registered on this bug.
-            """)))
 
     return True
 
@@ -115,8 +101,8 @@ def validate_new_person_email(email):
 
     This validator is supposed to be used only when creating a new profile
     using the /people/+newperson page, as the message will say clearly to the
-    user that the profile he's trying to create already exists, so there's no
-    need to create another one.
+    user that the profile they're trying to create already exists, so there's
+    no need to create another one.
     """
     from lp.services.webapp.publisher import canonical_url
     from lp.registry.interfaces.person import IPersonSet

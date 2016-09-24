@@ -10,7 +10,6 @@ __all__ = [
     'DistroSeriesAdminView',
     'DistroSeriesBreadcrumb',
     'DistroSeriesEditView',
-    'DistroSeriesFacets',
     'DistroSeriesInitializeView',
     'DistroSeriesLocalDifferencesView',
     'DistroSeriesMissingPackagesView',
@@ -82,10 +81,7 @@ from lp.services.browser_helpers import get_plural_text
 from lp.services.database.constants import UTC_NOW
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp import (
-    GetitemNavigation,
-    StandardLaunchpadFacets,
-    )
+from lp.services.webapp import GetitemNavigation
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
@@ -202,18 +198,6 @@ class DistroSeriesBreadcrumb(Breadcrumb):
     @property
     def text(self):
         return self.context.named_version
-
-
-class DistroSeriesFacets(StandardLaunchpadFacets):
-
-    usedfor = IDistroSeries
-    enable_only = [
-        'overview',
-        'branches',
-        'bugs',
-        'specifications',
-        'translations',
-        ]
 
 
 class DistroSeriesOverviewMenu(
@@ -568,7 +552,7 @@ class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     It redirects to the main distroseries page after a successful edit.
     """
     schema = IDistroSeries
-    field_names = ['displayname', 'title', 'summary', 'description']
+    field_names = ['display_name', 'title', 'summary', 'description']
     custom_widget('status', LaunchpadDropdownWidget)
 
     @property
@@ -673,8 +657,8 @@ class IDistroSeriesAddForm(Interface):
         IDistroSeries["version"], description=_(
             "The version of the new series."))
 
-    displayname = copy_field(
-        IDistroSeries["displayname"], description=_(
+    display_name = copy_field(
+        IDistroSeries["display_name"], description=_(
             "The name of the new series as it would "
             "appear in a paragraph."))
 
@@ -687,7 +671,7 @@ class DistroSeriesAddView(LaunchpadFormView):
     field_names = [
         'name',
         'version',
-        'displayname',
+        'display_name',
         'summary',
         ]
 
@@ -709,8 +693,8 @@ class DistroSeriesAddView(LaunchpadFormView):
         # previous_series will be None if there isn't one.
         distroseries = self.context.newSeries(
             name=data['name'],
-            displayname=data['displayname'],
-            title=data['displayname'],
+            display_name=data['display_name'],
+            title=data['display_name'],
             summary=data['summary'],
             description=u"",
             version=data['version'],

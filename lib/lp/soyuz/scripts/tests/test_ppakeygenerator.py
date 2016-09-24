@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`PPAKeyGenerator` script class tests."""
@@ -10,6 +10,7 @@ from zope.component import getUtility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.propertycache import get_property_cache
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.scripts.ppakeygenerator import PPAKeyGenerator
@@ -30,7 +31,7 @@ class TestPPAKeyGenerator(TestCase):
         ubuntutest = getUtility(IDistributionSet).getByName('ubuntutest')
         archive.distribution = ubuntutest
 
-    def _getKeyGenerator(self, ppa_owner_name=None, txn=None):
+    def _getKeyGenerator(self, archive_reference=None, txn=None):
         """Return a `PPAKeyGenerator` instance.
 
         Monkey-patch the script object with a fake transaction manager
@@ -39,8 +40,8 @@ class TestPPAKeyGenerator(TestCase):
         """
         test_args = []
 
-        if ppa_owner_name is not None:
-            test_args.extend(['-p', ppa_owner_name])
+        if archive_reference is not None:
+            test_args.extend(['-A', archive_reference])
 
         key_generator = PPAKeyGenerator(
             name='ppa-generate-keys', test_args=test_args)
@@ -50,36 +51,34 @@ class TestPPAKeyGenerator(TestCase):
         key_generator.txn = txn
 
         def fake_key_generation(archive):
-            a_key = getUtility(IGPGKeySet).get(1)
-            archive.signing_key = a_key
+            a_key = getUtility(IGPGKeySet).getByFingerprint(
+                'ABCDEF0123456789ABCDDCBA0000111112345678')
+            archive.signing_key_fingerprint = a_key.fingerprint
+            archive.signing_key_owner = a_key.owner
+            del get_property_cache(archive).signing_key
 
         key_generator.generateKey = fake_key_generation
 
         return key_generator
 
-    def testPersonNotFound(self):
-        """Raises an error if the specified person does not exist."""
-        key_generator = self._getKeyGenerator(ppa_owner_name='biscuit')
+    def testArchiveNotFound(self):
+        """Raises an error if the specified archive does not exist."""
+        key_generator = self._getKeyGenerator(archive_reference='~biscuit')
         self.assertRaisesWithContent(
             LaunchpadScriptFailure,
-            "No person named 'biscuit' could be found.",
-            key_generator.main)
-
-    def testPersonHasNoPPA(self):
-        """Raises an error if the specified person does not have a PPA. """
-        key_generator = self._getKeyGenerator(ppa_owner_name='name16')
-        self.assertRaisesWithContent(
-            LaunchpadScriptFailure,
-            "Person named 'name16' has no PPA.",
+            "No archive named '~biscuit' could be found.",
             key_generator.main)
 
     def testPPAAlreadyHasSigningKey(self):
         """Raises an error if the specified PPA already has a signing_key."""
         cprov = getUtility(IPersonSet).getByName('cprov')
-        a_key = getUtility(IGPGKeySet).get(1)
-        cprov.archive.signing_key = a_key
+        a_key = getUtility(IGPGKeySet).getByFingerprint(
+            'ABCDEF0123456789ABCDDCBA0000111112345678')
+        cprov.archive.signing_key_fingerprint = a_key.fingerprint
+        cprov.archive.signing_key_owner = a_key.owner
 
-        key_generator = self._getKeyGenerator(ppa_owner_name='cprov')
+        key_generator = self._getKeyGenerator(
+            archive_reference='~cprov/ubuntu/ppa')
         self.assertRaisesWithContent(
             LaunchpadScriptFailure,
             ("PPA for Celso Providelo already has a signing_key (%s)" %
@@ -98,7 +97,8 @@ class TestPPAKeyGenerator(TestCase):
         self.assertTrue(cprov.archive.signing_key is None)
 
         txn = FakeTransaction()
-        key_generator = self._getKeyGenerator(ppa_owner_name='cprov', txn=txn)
+        key_generator = self._getKeyGenerator(
+            archive_reference='~cprov/ubuntutest/ppa', txn=txn)
         key_generator.main()
 
         self.assertTrue(cprov.archive.signing_key is not None)

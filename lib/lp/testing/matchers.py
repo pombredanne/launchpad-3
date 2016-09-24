@@ -46,9 +46,11 @@ from zope.security.proxy import (
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.webapp import canonical_url
 from lp.services.webapp.batching import BatchNavigator
-from lp.testing import normalize_whitespace
+from lp.testing import (
+    normalize_whitespace,
+    RequestTimelineCollector,
+    )
 from lp.testing._login import person_logged_in
-from lp.testing._webservice import QueryCollector
 
 
 class BrowsesWithQueryLimit(Matcher):
@@ -80,18 +82,12 @@ class BrowsesWithQueryLimit(Matcher):
                 context, view_name=self.view_name, **self.options)
         browser = setupBrowserForUser(self.user)
         flush_database_caches()
-        collector = QueryCollector()
-        collector.register()
-        try:
+        with RequestTimelineCollector() as collector:
             browser.open(context_url)
-            counter = HasQueryCount(LessThan(self.query_limit))
-            # When bug 724691 is fixed, this can become an AnnotateMismatch to
-            # describe the object being rendered.
-            return counter.match(collector)
-        finally:
-            # Unregister now in case this method is called multiple
-            # times in a single test.
-            collector.unregister()
+        counter = HasQueryCount(LessThan(self.query_limit))
+        # When bug 724691 is fixed, this can become an AnnotateMismatch to
+        # describe the object being rendered.
+        return counter.match(collector)
 
     def __str__(self):
         return "BrowsesWithQueryLimit(%s, %s)" % (self.query_limit, self.user)
@@ -168,15 +164,23 @@ class Provides(Matcher):
 
 
 class HasQueryCount(Matcher):
-    """Adapt a Binary Matcher to the query count on a QueryCollector.
+    """Adapt a Binary Matcher to a query count.
 
-    If there is a mismatch, the queries from the collector are provided as a
-    test attachment.
+    May match against a StormStatementRecorder or a
+    RequestTimelineCollector.
+
+    If there is a mismatch, the queries from the collector are provided
+    as a test attachment.
     """
 
-    def __init__(self, count_matcher):
+    def __init__(self, count_matcher, other_query_collector=None):
         """Create a HasQueryCount that will match using count_matcher."""
         self.count_matcher = count_matcher
+        self.other_query_collector = other_query_collector
+
+    @classmethod
+    def byEquality(cls, other_query_collector):
+        return cls(Equals(other_query_collector.count), other_query_collector)
 
     def __str__(self):
         return "HasQueryCount(%s)" % self.count_matcher
@@ -185,24 +189,34 @@ class HasQueryCount(Matcher):
         mismatch = self.count_matcher.match(something.count)
         if mismatch is None:
             return None
-        return _MismatchedQueryCount(mismatch, something)
+        return _MismatchedQueryCount(
+            mismatch, something,
+            other_query_collector=self.other_query_collector)
 
 
 class _MismatchedQueryCount(Mismatch):
     """The Mismatch for a HasQueryCount matcher."""
 
-    def __init__(self, mismatch, query_collector):
+    def __init__(self, mismatch, query_collector, other_query_collector=None):
         self.count_mismatch = mismatch
         self.query_collector = query_collector
+        self.other_query_collector = other_query_collector
 
     def describe(self):
         return "queries do not match: %s" % (self.count_mismatch.describe(),)
 
+    @staticmethod
+    def _getQueryDetails(collector):
+        result = [unicode(query).encode('utf8') for query in collector.queries]
+        return Content(UTF8_TEXT, lambda: ['\n'.join(result)])
+
     def get_details(self):
-        result = []
-        for query in self.query_collector.queries:
-            result.append(unicode(query).encode('utf8'))
-        return {'queries': Content(UTF8_TEXT, lambda: ['\n'.join(result)])}
+        details = {}
+        details['queries'] = self._getQueryDetails(self.query_collector)
+        if self.other_query_collector is not None:
+            details['other_queries'] = self._getQueryDetails(
+                self.other_query_collector)
+        return details
 
 
 class IsNotProxied(Mismatch):

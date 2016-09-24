@@ -63,6 +63,18 @@ Since the details have been changed, emails should have been sent out.
 Emails go out to the all the subscribers.  Now there are no subscribers
 so there whould be no emails.
 
+    >>> from zope.component import getUtility
+    >>> from lp.code.interfaces.branchjob import IBranchModifiedMailJobSource
+    >>> from lp.services.config import config
+    >>> from lp.services.job.runner import JobRunner
+
+    >>> def run_modified_mail_jobs():
+    ...     with permissive_security_policy(
+    ...             config.IBranchModifiedMailJobSource.dbuser):
+    ...         job_source = getUtility(IBranchModifiedMailJobSource)
+    ...         JobRunner.fromReady(job_source).runAll()
+
+    >>> run_modified_mail_jobs()
     >>> len(stub.test_emails)
     0
 
@@ -214,7 +226,6 @@ Editing the whiteboard
 The whiteboard is only visible and editable on import branches, and is
 editable by any user.
 
-    >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.code.enums import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
@@ -261,6 +272,7 @@ set.
 The subscribers of the branch are notified that someone else has
 modified the details of the branch.
 
+    >>> run_modified_mail_jobs()
     >>> len(stub.test_emails)
     1
 

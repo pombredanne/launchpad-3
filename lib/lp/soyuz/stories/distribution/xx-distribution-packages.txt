@@ -61,47 +61,6 @@ Now run a search for mozilla-firefox and check that it is found:
     The Mozilla Firefox web browser
     (Matching binaries: mozilla-firefox, mozilla-firefox-data.)
 
-Now try searching for text that we know to be in a change log entry, to
-prove that FTI works on change logs.  The text we're looking for is
-"placeholder" which is mentioned in the change log entry for pmount and
-libstdc++, so we are looking for two results here as the "placeholder"
-text is not mentioned in anything else that is indexed.
-
-    >>> browser.open("http://localhost/ubuntu/+search")
-    >>> field = browser.getControl(name="text")
-    >>> field.value = 'placeholder'
-    >>> browser.getControl('Search', index=0).click()
-
-Note, by default we only search on binary package names (as the fti is
-not currently so useful), so the initial result is empty, but contains
-a link to the fti/source package search:
-
-    >>> print extract_text(find_tag_by_id(browser.contents, 'no-results'))
-    Your search for &ldquo;placeholder&rdquo; did not return any results.
-    ...
-
-Clicking on the provided link to retry the search against source packages
-finds the fti results:
-
-    >>> browser.getLink(id='source-search').click()
-    >>> for tag in find_tags_by_class(
-    ...     browser.contents, 'batch-navigation-index'):
-    ...     print extract_text(tag)
-    All packages with sources matching your query &ldquo;placeholder&rdquo;
-    1...2 of 2 results
-
-    >>> soup = find_main_content(browser.contents)
-    >>> results = soup.findAll(attrs={'class': 'pagematch'})
-    >>> len(results)
-    2
-
-    >>> texts = [extract_text(html) for html in results]
-    >>> texts.sort()
-    >>> for text in texts:
-    ...    print text.encode('ascii', 'backslashreplace')
-    libstdc++
-    pmount
-
 
 Distribution package change summary
 -----------------------------------
@@ -194,7 +153,7 @@ The page has an appropriate title and main heading.
     iceweasel package : Ubuntu
 
     >>> print_location(user_browser.contents)
-    Hierarchy: Ubuntu Linux > iceweasel package
+    Hierarchy: Ubuntu > iceweasel package
     Tabs:
     * Overview (selected) - not linked
     * Code - http://code.launchpad.dev/ubuntu/+source/iceweasel
@@ -264,7 +223,6 @@ There's also a section on the page that gives some package information:
     Package information
     Maintainer: Foo Bar
     Urgency:* Low Urgency
-    Component:* main
     Architectures:* any
     Latest upload: 1.0
     *actual publishing details may vary in this distribution, these are just
@@ -391,7 +349,7 @@ from the index page.
     Change log : foobar package : Ubuntu
 
     >>> print_location(browser.contents)
-    Hierarchy: Ubuntu Linux > foobar package
+    Hierarchy: Ubuntu > foobar package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/foobar
     * Code - http://code.launchpad.dev/ubuntu/+source/foobar
@@ -582,7 +540,7 @@ source package hierarchy.
     Publishing history : alsa-utils package : Ubuntu
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu Linux > alsa-utils package
+    Hierarchy: Ubuntu > alsa-utils package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/+source/alsa-utils
     * Code - http://code.launchpad.dev/ubuntu/+source/alsa-utils

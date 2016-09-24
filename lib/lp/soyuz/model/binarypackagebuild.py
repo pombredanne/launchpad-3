@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,8 +17,10 @@ from operator import (
     attrgetter,
     itemgetter,
     )
+import warnings
 
 import apt_pkg
+from debian.deb822 import PkgRelation
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
@@ -43,13 +45,10 @@ from storm.store import (
     )
 from storm.zope import IResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -82,20 +81,15 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.mail.helpers import (
-    get_contact_email_addresses,
-    get_email_template,
-    )
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
-    )
-from lp.services.webapp import canonical_url
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
 from lp.soyuz.adapters.buildarch import determine_architectures_to_build
+from lp.soyuz.interfaces.archive import (
+    InvalidExternalDependencies,
+    validate_external_dependencies,
+    )
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     CannotBeRescored,
@@ -105,6 +99,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     )
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.mail.binarypackagebuild import BinaryPackageBuildMailer
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.files import BinaryPackageFile
@@ -151,8 +146,23 @@ PRIVATE_ARCHIVE_SCORE_BONUS = 10000
 COPY_ARCHIVE_SCORE_PENALTY = 2600
 
 
+def is_build_virtualized(archive, processor):
+    """Should a build for this `IArchive` and `IProcessor` be virtualized?"""
+    return (
+        archive.require_virtualized
+        or not processor.supports_nonvirtualized)
+
+
+def storm_validate_external_dependencies(build, attr, value):
+    assert attr == 'external_dependencies'
+    errors = validate_external_dependencies(value)
+    if len(errors) > 0:
+        raise InvalidExternalDependencies(errors)
+    return value
+
+
+@implementer(IBinaryPackageBuild)
 class BinaryPackageBuild(PackageBuildMixin, SQLBase):
-    implements(IBinaryPackageBuild)
     _table = 'BinaryPackageBuild'
     _defaultOrder = 'id'
 
@@ -215,7 +225,11 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     source_package_name = Reference(
         source_package_name_id, 'SourcePackageName.id')
 
-    def _getLatestPublication(self):
+    external_dependencies = Unicode(
+        name='external_dependencies',
+        validator=storm_validate_external_dependencies)
+
+    def getLatestSourcePublication(self):
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
         store = Store.of(self)
         results = store.find(
@@ -230,7 +244,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     @property
     def current_component(self):
         """See `IBuild`."""
-        latest_publication = self._getLatestPublication()
+        latest_publication = self.getLatestSourcePublication()
         # Production has some buggy builds without source publications.
         # They seem to have been created by early versions of gina and
         # the readding of hppa.
@@ -241,11 +255,16 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     def current_source_publication(self):
         """See `IBuild`."""
         from lp.soyuz.interfaces.publishing import active_publishing_status
-        latest_publication = self._getLatestPublication()
+        latest_publication = self.getLatestSourcePublication()
         if (latest_publication is not None and
             latest_publication.status in active_publishing_status):
             return latest_publication
         return None
+
+    @property
+    def api_source_package_name(self):
+        """See `IBuild`."""
+        return self.source_package_release.name
 
     @property
     def upload_changesfile(self):
@@ -290,11 +309,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # and the `LibraryFileContent` in cache because it's most likely
         # they will be needed.
         return DecoratedResultSet(results, itemgetter(0)).one()
-
-    @property
-    def is_virtualized(self):
-        """See `IBuild`"""
-        return self.archive.require_virtualized
 
     @property
     def title(self):
@@ -450,6 +464,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             BuildStatus.CHROOTWAIT,
             BuildStatus.FAILEDTOUPLOAD,
             BuildStatus.CANCELLED,
+            BuildStatus.SUPERSEDED,
             ]
 
         # If the build is currently in any of the failed states,
@@ -484,6 +499,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         self.upload_log = None
         self.dependencies = None
         self.failure_count = 0
+        self.virtualized = is_build_virtualized(self.archive, self.processor)
         self.queueBuild()
 
     def rescore(self, score):
@@ -519,27 +535,23 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         Return a triple containing the corresponding (name, version,
         relation) for the given dependency token.
         """
-        # XXX cprov 2006-02-27: it may not work for and'd and or'd syntax.
-        try:
-            name, version, relation = token[0]
-        except ValueError:
-            raise AssertionError(
-                "APT is not dealing correctly with a dependency token "
-                "'%r' from %s (%s) with the following dependencies: %s\n"
-                "It is expected to be a tuple containing only another "
-                "tuple with 3 elements  (name, version, relation)."
-                % (token, self.title, self.id, self.dependencies))
-        # Map relations to the canonical form used in control files.
-        if relation == '<':
-            relation = '<<'
-        elif relation == '>':
-            relation = '>>'
-        return (name, version, relation)
+        assert 'name' in token
+        assert 'version' in token
+        if token['version'] is None:
+            relation = ''
+            version = ''
+        else:
+            relation, version = token['version']
+            if relation == '<':
+                relation = '<<'
+            elif relation == '>':
+                relation = '>>'
+        return (token['name'], version, relation)
 
     def _checkDependencyVersion(self, available, required, relation):
         """Return True if the available version satisfies the context."""
         # This dict maps the package version relationship syntax in lambda
-        # functions which returns boolean according to the results of
+        # functions which returns boolean according to the results of the
         # apt_pkg.version_compare function (see the order above).
         # For further information about pkg relationship syntax see:
         #
@@ -549,7 +561,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             # any version is acceptable if no relationship is given
             '': lambda x: True,
             # strictly later
-            '>>': lambda x: x == 1,
+            '>>': lambda x: x > 0,
             # later or equal
             '>=': lambda x: x >= 0,
             # strictly equal
@@ -557,7 +569,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             # earlier or equal
             '<=': lambda x: x <= 0,
             # strictly earlier
-            '<<': lambda x: x == -1,
+            '<<': lambda x: x < 0,
             }
 
         # Use apt_pkg function to compare versions
@@ -591,13 +603,6 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
 
         return False
 
-    def _toAptFormat(self, token):
-        """Rebuild dependencies line in apt format."""
-        name, version, relation = self._parseDependencyToken(token)
-        if relation and version:
-            return '%s (%s %s)' % (name, relation, version)
-        return '%s' % name
-
     def updateDependencies(self):
         """See `IBuild`."""
 
@@ -605,21 +610,24 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         # properly.
         apt_pkg.init_system()
 
-        # Check package build dependencies using apt_pkg
+        # Check package build dependencies using debian.deb822
         try:
-            parsed_deps = apt_pkg.parse_depends(self.dependencies)
-        except (ValueError, TypeError):
+            with warnings.catch_warnings():
+                warnings.simplefilter("error")
+                parsed_deps = PkgRelation.parse_relations(self.dependencies)
+        except (AttributeError, Warning):
             raise UnparsableDependencies(
                 "Build dependencies for %s (%s) could not be parsed: '%s'\n"
                 "It indicates that something is wrong in buildd-slaves."
                 % (self.title, self.id, self.dependencies))
 
-        remaining_deps = [
-            self._toAptFormat(token) for token in parsed_deps
-            if not self._isDependencySatisfied(token)]
+        remaining_deps = []
+        for or_dep in parsed_deps:
+            if not any(self._isDependencySatisfied(token) for token in or_dep):
+                remaining_deps.append(or_dep)
 
         # Update dependencies line
-        self.dependencies = u", ".join(remaining_deps)
+        self.dependencies = unicode(PkgRelation.str(remaining_deps))
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
@@ -701,7 +709,7 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     def notify(self, extra_info=None):
         """See `IPackageBuild`.
 
-        If config.buildmaster.build_notification is disable, simply
+        If config.buildmaster.send_build_notification is disabled, simply
         return.
 
         If config.builddmaster.notify_owner is enabled and SPR.creator
@@ -715,148 +723,13 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         the record in question (all states are supported), see
         doc/build-notification.txt for further information.
         """
-
         if not config.builddmaster.send_build_notification:
             return
         if self.status == BuildStatus.FULLYBUILT:
             return
-
-        recipients = set()
-
-        fromaddress = format_address(
-            config.builddmaster.default_sender_name,
-            config.builddmaster.default_sender_address)
-
-        extra_headers = {
-            'X-Launchpad-Archive': self.archive.reference,
-            'X-Launchpad-Build-State': self.status.name,
-            'X-Launchpad-Build-Component': self.current_component.name,
-            'X-Launchpad-Build-Arch':
-                self.distro_arch_series.architecturetag,
-            }
-
-        # XXX cprov 2006-10-27: Temporary extra debug info about the
-        # SPR.creator in context, to be used during the service quarantine,
-        # notify_owner will be disabled to avoid *spamming* Debian people.
-        creator = self.source_package_release.creator
-        extra_headers['X-Creator-Recipient'] = ",".join(
-            get_contact_email_addresses(creator))
-
-        # Currently there are 7038 SPR published in edgy which the creators
-        # have no preferredemail. They are the autosync ones (creator = katie,
-        # 3583 packages) and the untouched sources since we have migrated from
-        # DAK (the rest). We should not spam Debian maintainers.
-
-        # Please note that both the package creator and the package uploader
-        # will be notified of failures if:
-        #     * the 'notify_owner' flag is set
-        #     * the package build (failure) occurred in the original
-        #       archive.
-        package_was_not_copied = (
-            self.archive == self.source_package_release.upload_archive)
-
-        if package_was_not_copied and config.builddmaster.notify_owner:
-            if (self.archive.is_ppa and creator.inTeam(self.archive.owner)
-                or
-                not self.archive.is_ppa):
-                # If this is a PPA, the package creator should only be
-                # notified if they are the PPA owner or in the PPA team.
-                # (see bug 375757)
-                # Non-PPA notifications inform the creator regardless.
-                recipients = recipients.union(
-                    get_contact_email_addresses(creator))
-            dsc_key = self.source_package_release.dscsigningkey
-            if dsc_key:
-                recipients = recipients.union(
-                    get_contact_email_addresses(dsc_key.owner))
-
-        # Modify notification contents according to the targeted archive.
-        # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
-        # We only send build-notifications to 'buildd-admin' celebrity for
-        # main archive candidates.
-        # For PPA build notifications we include the archive.owner
-        # contact_address.
-        subject = "[Build #%d] %s" % (self.id, self.title)
-        if not self.archive.is_ppa:
-            buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
-            recipients = recipients.union(
-                get_contact_email_addresses(buildd_admins))
-            source_url = canonical_url(self.distributionsourcepackagerelease)
-        else:
-            recipients = recipients.union(
-                get_contact_email_addresses(self.archive.owner))
-            # For PPAs we run the risk of having no available contact_address,
-            # for instance, when both, SPR.creator and Archive.owner have
-            # not enabled it.
-            if len(recipients) == 0:
-                return
-            subject += ' [%s]' % self.archive.reference
-            source_url = 'not available'
-            # The deprecated PPA reference header is included for Ubuntu
-            # PPAs to avoid breaking existing consumers.
-            if self.archive.distribution.name == u'ubuntu':
-                extra_headers['X-Launchpad-PPA'] = get_ppa_reference(
-                    self.archive)
-
-        # XXX cprov 2006-08-02: pending security recipients for SECURITY
-        # pocket build. We don't build SECURITY yet :(
-
-        # XXX cprov 2006-08-02: find out a way to glue parameters reported
-        # with the state in the build worflow, maybe by having an
-        # IBuild.statusReport property, which could also be used in the
-        # respective page template.
-        if self.status in [
-            BuildStatus.NEEDSBUILD, BuildStatus.SUPERSEDED]:
-            # untouched builds
-            buildduration = 'not available'
-            buildlog_url = 'not available'
-            builder_url = 'not available'
-        elif self.status == BuildStatus.UPLOADING:
-            buildduration = 'uploading'
-            buildlog_url = 'see builder page'
-            builder_url = 'not available'
-        elif self.status == BuildStatus.BUILDING:
-            # build in process
-            buildduration = 'not finished'
-            buildlog_url = 'see builder page'
-            builder_url = canonical_url(self.buildqueue_record.builder)
-        else:
-            # completed states (success and failure)
-            buildduration = DurationFormatterAPI(
-                self.duration).approximateduration()
-            buildlog_url = self.log_url
-            builder_url = canonical_url(self.builder)
-
-        if self.status == BuildStatus.FAILEDTOUPLOAD:
-            assert extra_info is not None, (
-                'Extra information is required for FAILEDTOUPLOAD '
-                'notifications.')
-            extra_info = 'Upload log:\n%s' % extra_info
-        else:
-            extra_info = ''
-
-        template = get_email_template('build-notification.txt', app='soyuz')
-        replacements = {
-            'source_name': self.source_package_release.name,
-            'source_version': self.source_package_release.version,
-            'architecturetag': self.distro_arch_series.architecturetag,
-            'build_state': self.status.title,
-            'build_duration': buildduration,
-            'buildlog_url': buildlog_url,
-            'builder_url': builder_url,
-            'build_title': self.title,
-            'build_url': canonical_url(self),
-            'source_url': source_url,
-            'extra_info': extra_info,
-            'archive_tag': self.archive.reference,
-            'component_tag': self.current_component.name,
-            }
-        message = template % replacements
-
-        for toaddress in recipients:
-            simple_sendmail(
-                fromaddress, toaddress, subject, message,
-                headers=extra_headers)
+        mailer = BinaryPackageBuildMailer.forStatus(
+            self, extra_info=extra_info)
+        mailer.sendAll()
 
     def _getDebByFileName(self, filename):
         """Helper function to get a .deb LFA in the context of this build."""
@@ -897,9 +770,17 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
         """See `IBinaryPackageBuild`."""
         return changes.signer
 
+    @property
+    def api_external_dependencies(self):
+        return self.external_dependencies
 
+    @api_external_dependencies.setter
+    def api_external_dependencies(self, value):
+        self.external_dependencies = value
+
+
+@implementer(IBinaryPackageBuildSet)
 class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
-    implements(IBinaryPackageBuildSet)
 
     def new(self, source_package_release, archive, distro_arch_series, pocket,
             arch_indep=None, status=BuildStatus.NEEDSBUILD, builder=None):
@@ -913,14 +794,15 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             BinaryPackageBuild.job_type, status, date_created, builder,
             archive)
+        processor = distro_arch_series.processor
+        virtualized = is_build_virtualized(archive, processor)
         return BinaryPackageBuild(
             build_farm_job=build_farm_job,
             distro_arch_series=distro_arch_series,
             source_package_release=source_package_release,
             archive=archive, pocket=pocket, arch_indep=arch_indep,
-            status=status, processor=distro_arch_series.processor,
-            virtualized=archive.require_virtualized, builder=builder,
-            is_distro_archive=archive.is_main,
+            status=status, processor=processor, virtualized=virtualized,
+            builder=builder, is_distro_archive=archive.is_main,
             distribution=distro_arch_series.distroseries.distribution,
             distro_series=distro_arch_series.distroseries,
             source_package_name=source_package_release.sourcepackagename,
@@ -1385,9 +1267,14 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         """
         # Return all distroarches with unrestricted processors or with
         # processors the archive is explicitly associated with.
-        return [distroarch for distroarch in available_archs
-            if not distroarch.processor.restricted or
-               distroarch.processor in archive.enabled_restricted_processors]
+        return [
+            das for das in available_archs
+            if (
+                das.enabled
+                and das.processor in archive.processors
+                and (
+                    das.processor.supports_virtualized
+                    or not archive.require_virtualized))]
 
     def createForSource(self, sourcepackagerelease, archive, distroseries,
                         pocket, architectures_available=None, logger=None):
@@ -1416,49 +1303,44 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
         # this series already has it set.
         need_arch_indep = not any(bpb.arch_indep for bpb in relevant_builds)
 
-        # Find the architectures for which the source should end up with
-        # binaries, parsing architecturehintlist as you'd expect.
-        # For an architecturehintlist of just 'all', this will
-        # be the current nominatedarchindep if need_arch_indep,
-        # otherwise nothing.
-        if architectures_available is None:
-            architectures_available = list(
-                distroseries.buildable_architectures)
-        architectures_available = self._getAllowedArchitectures(
-            archive, architectures_available)
-        candidate_architectures = determine_architectures_to_build(
-            sourcepackagerelease.architecturehintlist, archive, distroseries,
-            architectures_available, need_arch_indep)
+        # Find the architectures for which the source chould end up with
+        # new binaries. Exclude architectures not allowed in this
+        # archive and architectures that have already built. Order by
+        # Processor.id so determine_architectures_to_build is
+        # deterministic.
+        # XXX wgrant 2014-11-06: The fact that production's
+        # Processor 1 is i386, a good arch-indep candidate, is a
+        # total coincidence and this isn't a hack. I promise.
+        need_archs = sorted(
+            [das for das in
+             self._getAllowedArchitectures(
+                 archive,
+                 architectures_available
+                    or distroseries.buildable_architectures)
+             if das.architecturetag not in skip_archtags],
+            key=attrgetter('processor.id'))
+        nominated_arch_indep_tag = (
+            distroseries.nominatedarchindep.architecturetag
+            if distroseries.nominatedarchindep else None)
 
-        # Filter out any architectures for which we earlier found sufficient
-        # builds.
-        needed_architectures = [
-            das for das in candidate_architectures
-            if das.architecturetag not in skip_archtags]
-        if not needed_architectures:
-            return []
-
-        arch_indep_das = None
-        if need_arch_indep:
-            # The ideal arch_indep build is nominatedarchindep. But if
-            # that isn't a build we would otherwise create, use the DAS
-            # with the lowest Processor.id.
-            # XXX wgrant 2014-11-06: The fact that production's
-            # Processor 1 is i386, a good arch-indep candidate, is a
-            # total coincidence and this isn't a hack. I promise.
-            if distroseries.nominatedarchindep in needed_architectures:
-                arch_indep_das = distroseries.nominatedarchindep
-            else:
-                arch_indep_das = sorted(
-                    needed_architectures, key=attrgetter('processor.id'))[0]
+        # Filter the valid archs against the hint list and work out
+        # their arch-indepness.
+        create_tag_map = determine_architectures_to_build(
+            sourcepackagerelease.architecturehintlist,
+            sourcepackagerelease.getUserDefinedField(
+                'Build-Indep-Architecture'),
+            [das.architecturetag for das in need_archs],
+            nominated_arch_indep_tag, need_arch_indep)
 
         # Create builds for the remaining architectures.
         new_builds = []
-        for das in needed_architectures:
+        for das in sorted(need_archs, key=attrgetter('architecturetag')):
+            if das.architecturetag not in create_tag_map:
+                continue
             build = self.new(
                 source_package_release=sourcepackagerelease,
                 distro_arch_series=das, archive=archive, pocket=pocket,
-                arch_indep=das == arch_indep_das)
+                arch_indep=create_tag_map[das.architecturetag])
             new_builds.append(build)
             # Create the builds in suspended mode for disabled archives.
             build_queue = build.queueBuild(suspended=not archive.enabled)

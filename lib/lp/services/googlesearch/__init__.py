@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for searching and working with results."""
@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 import urllib
-import urllib2
 from urlparse import (
     parse_qsl,
     urlunparse,
@@ -21,7 +20,8 @@ import xml.etree.cElementTree as ET
 
 from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
-from zope.interface import implements
+import requests
+from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.googlesearch.interfaces import (
@@ -32,16 +32,19 @@ from lp.services.googlesearch.interfaces import (
     ISearchService,
     )
 from lp.services.timeline.requesttimeline import get_request_timeline
-from lp.services.timeout import TimeoutError
+from lp.services.timeout import (
+    TimeoutError,
+    urlfetch,
+    )
 from lp.services.webapp import urlparse
 
 
+@implementer(ISearchResult)
 class PageMatch:
     """See `ISearchResult`.
 
     A search result that represents a web page.
     """
-    implements(ISearchResult)
 
     @property
     def url_rewrite_exceptions(self):
@@ -124,12 +127,12 @@ class PageMatch:
         return self._strip_trailing_slash(url)
 
 
+@implementer(ISearchResults)
 class PageMatches:
     """See `ISearchResults`.
 
     A collection of PageMatches.
     """
-    implements(ISearchResults)
 
     def __init__(self, matches, start, total):
         """initialize a PageMatches.
@@ -156,12 +159,12 @@ class PageMatches:
         return iter(self._matches)
 
 
+@implementer(ISearchService)
 class GoogleSearchService:
     """See `ISearchService`.
 
     A search service that search Google for launchpad.net pages.
     """
-    implements(ISearchService)
 
     _default_values = {
         'client': 'google-csbe',
@@ -203,20 +206,19 @@ class GoogleSearchService:
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
         search_url = self.create_search_url(terms, start=start)
-        from lp.services.timeout import urlfetch
         request = get_current_browser_request()
         timeline = get_request_timeline(request)
         action = timeline.start("google-search-api", search_url)
         try:
-            gsp_xml = urlfetch(search_url)
-        except (TimeoutError, urllib2.HTTPError, urllib2.URLError) as error:
+            response = urlfetch(search_url)
+        except (TimeoutError, requests.RequestException) as error:
             # Google search service errors are not code errors. Let the
             # call site choose to handle the unavailable service.
             raise GoogleResponseError(
                 "The response errored: %s" % str(error))
         finally:
             action.finish()
-        page_matches = self._parse_google_search_protocol(gsp_xml)
+        page_matches = self._parse_google_search_protocol(response.content)
         return page_matches
 
     def _checkParameter(self, name, value, is_int=False):

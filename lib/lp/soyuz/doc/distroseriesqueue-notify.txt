@@ -1,10 +1,7 @@
 Queue Notify
 ============
 
-PackageUpload has a notify() method to send emails. We need to be logged
-into the security model in order to get any further.
-
-    >>> login('foo.bar@canonical.com')
+PackageUpload has a notify() method to send emails.
 
 Get a packageupload object for netapplet, which has a relatively intact
 set of supporting sample data.  It has rows in distribution,
@@ -59,7 +56,8 @@ this doctest.
     ...
     DEBUG above if files already exist in other distroseries.
     ...
-    DEBUG signer of the above package.
+    DEBUG You are receiving this email because you are the most recent person
+    DEBUG listed in this package's changelog.
 
 Helper functions to examine emails that were sent:
 
@@ -99,8 +97,8 @@ The mail body contains a list of files that were accepted:
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    You are receiving this email because you are the uploader, maintainer or
-    signer of the above package.
+    You are receiving this email because you are the most recent person
+    listed in this package's changelog.
     <BLANKLINE>
 
 Now we will process a signed package.  Signed packages will potentially
@@ -111,8 +109,10 @@ to the changer.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.registry.interfaces.gpg import IGPGKeySet
-    >>> gpgkey = getUtility(IGPGKeySet).get(1)
-    >>> removeSecurityProxy(netapplet_upload).signing_key = gpgkey
+    >>> gpgkey = getUtility(IGPGKeySet).getByFingerprint('ABCDEF0123456789ABCDDCBA0000111112345678')
+    >>> removeSecurityProxy(netapplet_upload).signing_key_owner = gpgkey.owner
+    >>> removeSecurityProxy(netapplet_upload).signing_key_fingerprint = (
+    ...     gpgkey.fingerprint)
 
 Now request the email:
 
@@ -133,15 +133,17 @@ Now request the email:
     DEBUG Sent a mail:
     ...
 
-There are two emails, the upload acknowledgement and the announcement,
-because this upload is already accepted.
+There are three emails, the upload acknowledgement to the changer, the
+upload acknowledgement to the signer, and the announcement, because this
+upload is already accepted.
 
     >>> msgs = pop_notifications()
     >>> len(msgs)
-    2
+    3
 
-The mail 'To:' addresses contain the signer and the changer's email.
-The announcement email contains the serieses changeslist.
+The two upload acknowledgements contain the changer's email and the signer's
+email in their respective 'To:' headers.
+The announcement email contains the series's changeslist.
 
     >>> def to_lower(address):
     ...     """Return lower-case version of email address."""
@@ -153,12 +155,10 @@ The announcement email contains the serieses changeslist.
     ...         [addr.strip() for addr in header_field.split(',')],
     ...         key=to_lower)
 
-    >>> for addr in extract_addresses(msgs[0]['To']):
-    ...     print addr
+    >>> for msg in msgs:
+    ...     print msg['To']
     Daniel Silverstone <daniel.silverstone@canonical.com>
     Foo Bar <foo.bar@canonical.com>
-
-    >>> print msgs[1]['To']
     autotest_changes@ubuntu.com
 
 The mail 'Bcc:' address is the uploader.  The announcement has the
@@ -167,35 +167,36 @@ uploader and the Debian derivatives address for the package uploaded.
     >>> for msg in msgs:
     ...     print extract_addresses(msg['Bcc'])
     ['Root <root@localhost>']
+    ['Root <root@localhost>']
     ['netapplet_derivatives@packages.qa.debian.org', 'Root <root@localhost>']
 
-The mail 'From:' addresses are the uploader and the changer.
+The mail 'From:' addresses are the uploader (for acknowledgements sent to
+the uploader and the changer) and the changer.
 
     >>> for msg in msgs:
     ...     print msg['From']
     Root <root@localhost>
+    Root <root@localhost>
     Daniel Silverstone <daniel.silverstone@canonical.com>
 
-    >>> print notification['Subject']
-    [ubuntu/breezy-autotest] netapplet 0.99.6-1 (New)
+    >>> print msgs[0]['Subject']
+    [ubuntu/breezy-autotest] netapplet 0.99.6-1 (Accepted)
 
 The mail body contains the same list of files again:
 
-    >>> print notification.get_payload(0) # doctest: -NORMALIZE_WHITESPACE
+    >>> print msgs[0].get_payload(0) # doctest: -NORMALIZE_WHITESPACE
     From nobody ...
     ...
-    NEW: netapplet_1.0-1.dsc
-    NEW: netapplet_1.0.orig.tar.gz
-    NEW: netapplet_1.0-1.diff.gz
+     OK: netapplet_1.0-1.dsc
+         -> Component: main Section: web
+     OK: netapplet_1.0.orig.tar.gz
+     OK: netapplet_1.0-1.diff.gz
     <BLANKLINE>
     ...
-    You may have gotten the distroseries wrong.  If so, you may get warnings
-    above if files already exist in other distroseries.
-    <BLANKLINE>
     -- =
     <BLANKLINE>
-    You are receiving this email because you are the uploader, maintainer or
-    signer of the above package.
+    You are receiving this email because you are the most recent person
+    listed in this package's changelog.
     <BLANKLINE>
 
 notify() will also work without passing the changes_file_object
@@ -216,32 +217,45 @@ demonstrates this usage:
     ...
     DEBUG Sent a mail:
     ...
-    DEBUG     Recipients: ... Silverstone ...
+    DEBUG   Recipients: ... Silverstone ...
     ...
     DEBUG above if files already exist in other distroseries.
     ...
-    DEBUG signer of the above package.
+    DEBUG You are receiving this email because you are the most recent person
+    DEBUG listed in this package's changelog.
+    DEBUG Sent a mail:
+    ...
+    DEBUG   Recipients: ... Bar ...
+    ...
+    DEBUG above if files already exist in other distroseries.
+    ...
+    DEBUG You are receiving this email because you made this upload.
 
-Only one email is generated:
+Two emails are generated, one to the changer and one to the signer:
 
-    >>> [notification] = pop_notifications()
+    >>> [changer_notification, signer_notification] = pop_notifications()
 
 The mail headers are the same as before:
 
-    >>> for addr in extract_addresses(notification['To']):
-    ...     print addr
+    >>> print changer_notification['To']
     Daniel Silverstone <daniel.silverstone@canonical.com>
+    >>> print signer_notification['To']
     Foo Bar <foo.bar@canonical.com>
 
-    >>> print notification['Bcc']
+    >>> print changer_notification['Bcc']
+    Root <root@localhost>
+    >>> print signer_notification['Bcc']
     Root <root@localhost>
 
-    >>> print notification['Subject']
+    >>> print changer_notification['Subject']
+    [ubuntu/breezy-autotest] netapplet 0.99.6-1 (New)
+    >>> print signer_notification['Subject']
     [ubuntu/breezy-autotest] netapplet 0.99.6-1 (New)
 
 The mail body contains the same list of files again:
 
-    >>> print notification.get_payload(0) # doctest: -NORMALIZE_WHITESPACE
+    >>> print changer_notification.get_payload(0)
+    ... # doctest: -NORMALIZE_WHITESPACE
     From nobody ...
     ...
     NEW: netapplet_1.0-1.dsc
@@ -254,8 +268,24 @@ The mail body contains the same list of files again:
     <BLANKLINE>
     -- =
     <BLANKLINE>
-    You are receiving this email because you are the uploader, maintainer or
-    signer of the above package.
+    You are receiving this email because you are the most recent person
+    listed in this package's changelog.
+    <BLANKLINE>
+    >>> print signer_notification.get_payload(0)
+    ... # doctest: -NORMALIZE_WHITESPACE
+    From nobody ...
+    ...
+    NEW: netapplet_1.0-1.dsc
+    NEW: netapplet_1.0.orig.tar.gz
+    NEW: netapplet_1.0-1.diff.gz
+    <BLANKLINE>
+    ...
+    You may have gotten the distroseries wrong.  If so, you may get warnings
+    above if files already exist in other distroseries.
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    You are receiving this email because you made this upload.
     <BLANKLINE>
 
 notify() will also generate rejection notices if the upload failed.  The
@@ -268,7 +298,19 @@ anything.
     ...     summary_text="Testing rejection message", logger=FakeLogger())
     DEBUG Building recipients list.
     ...
-    DEBUG Sending rejection email.
+    DEBUG Sent a mail:
+    DEBUG   Subject: [ubuntu/breezy-autotest] netapplet 0.99.6-1 (Rejected)
+    DEBUG   Sender: Root <root@localhost>
+    DEBUG   Recipients: ... Silverstone ...
+    DEBUG   Bcc: Root <root@localhost>
+    DEBUG   Body:
+    DEBUG Rejected:
+    DEBUG Testing rejection message
+    ...
+    DEBUG If you don't understand why your files were rejected, or if the
+    ...
+    DEBUG You are receiving this email because you are the most recent person
+    DEBUG listed in this package's changelog.
     ...
     DEBUG   Subject: [ubuntu/breezy-autotest] netapplet 0.99.6-1 (Rejected)
     DEBUG   Sender: Root <root@localhost>
@@ -280,13 +322,13 @@ anything.
     ...
     DEBUG If you don't understand why your files were rejected, or if the
     ...
-    DEBUG signer of the above package.
+    DEBUG You are receiving this email because you made this upload.
 
-Only one email is generated:
+Two emails are generated:
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    1
+    2
 
 Clean up, otherwise stuff is left lying around in /var/tmp.
 

@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from lazr.restful.interfaces import ITopLevelEntryLink
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.services.webapp.interfaces import ICanonicalUrlData
@@ -20,9 +20,9 @@ class IPillarSetLink(ITopLevelEntryLink, ICanonicalUrlData):
     """A marker interface."""
 
 
+@implementer(IPillarSetLink)
 class PillarSetLink:
     """The top-level link to the pillar set."""
-    implements(IPillarSetLink)
 
     link_name = 'pillars'
     entry_type = IPillarNameSet

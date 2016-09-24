@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for distroseries."""
@@ -10,12 +10,14 @@ __all__ = [
     ]
 
 from functools import partial
+import json
 
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.indices import (
     build_binary_stanza_fields,
     build_source_stanza_fields,
@@ -24,8 +26,10 @@ from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.interfaces import IStore
+from lp.services.webapp.interfaces import OAuthPermission
 from lp.soyuz.enums import (
     ArchivePurpose,
+    IndexCompressionType,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -39,7 +43,9 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    admin_logged_in,
     ANONYMOUS,
+    api_url,
     login,
     person_logged_in,
     record_two_runs,
@@ -52,6 +58,7 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.testing.matchers import HasQueryCount
+from lp.testing.pages import webservice_for_person
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -343,6 +350,70 @@ class TestDistroSeries(TestCaseWithFactory):
             for s in distroseries.api_valid_specifications]
         self.assertContentEqual([spec.workitems_text], workitems)
 
+    def test_backports_not_automatic(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.backports_not_automatic)
+        with admin_logged_in():
+            distroseries.backports_not_automatic = True
+        self.assertTrue(distroseries.backports_not_automatic)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertTrue(
+            naked_distroseries.publishing_options["backports_not_automatic"])
+
+    def test_include_long_descriptions(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertTrue(distroseries.include_long_descriptions)
+        with admin_logged_in():
+            distroseries.include_long_descriptions = False
+        self.assertFalse(distroseries.include_long_descriptions)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertFalse(
+            naked_distroseries.publishing_options["include_long_descriptions"])
+
+    def test_index_compressors(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertEqual(
+            [IndexCompressionType.GZIP, IndexCompressionType.BZIP2],
+            distroseries.index_compressors)
+        with admin_logged_in():
+            distroseries.index_compressors = [IndexCompressionType.XZ]
+        self.assertEqual(
+            [IndexCompressionType.XZ], distroseries.index_compressors)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertEqual(
+            ["xz"], naked_distroseries.publishing_options["index_compressors"])
+
+    def test_publish_by_hash(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.publish_by_hash)
+        with admin_logged_in():
+            distroseries.publish_by_hash = True
+        self.assertTrue(distroseries.publish_by_hash)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertTrue(
+            naked_distroseries.publishing_options["publish_by_hash"])
+
+    def test_advertise_by_hash(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.advertise_by_hash)
+        with admin_logged_in():
+            distroseries.advertise_by_hash = True
+        self.assertTrue(distroseries.advertise_by_hash)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertTrue(
+            naked_distroseries.publishing_options["advertise_by_hash"])
+
+    def test_strict_supported_component_dependencies(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertTrue(distroseries.strict_supported_component_dependencies)
+        with admin_logged_in():
+            distroseries.strict_supported_component_dependencies = False
+        self.assertFalse(distroseries.strict_supported_component_dependencies)
+        naked_distroseries = removeSecurityProxy(distroseries)
+        self.assertFalse(
+            naked_distroseries.publishing_options[
+                "strict_supported_component_dependencies"])
+
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 
@@ -522,7 +593,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 status=PackagePublishingStatus.PUBLISHED),
             5, 5)
         self.assertThat(recorder1, HasQueryCount(Equals(11)))
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_getBinaryPackagePublishing_query_count(self):
         # Check that the number of queries required to publish binary
@@ -544,7 +615,43 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
                 status=PackagePublishingStatus.PUBLISHED),
             5, 5)
         self.assertThat(recorder1, HasQueryCount(Equals(15)))
-        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
+
+class TestDistroSeriesWebservice(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_language_pack_full_export_requested_not_translations_admin(self):
+        # Somebody with only launchpad.TranslationsAdmin cannot request full
+        # language pack exports.
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.language_pack_full_export_requested)
+        group = self.factory.makeTranslationGroup()
+        with admin_logged_in():
+            distroseries.distribution.translationgroup = group
+        webservice = webservice_for_person(
+            group.owner, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.patch(
+            api_url(distroseries), "application/json",
+            json.dumps({"language_pack_full_export_requested": True}))
+        self.assertEqual(401, response.status)
+        self.assertFalse(distroseries.language_pack_full_export_requested)
+
+    def test_language_pack_full_export_requested_langpacks_admin(self):
+        # Somebody with launchpad.LanguagePacksAdmin can request full
+        # language pack exports.
+        distroseries = self.factory.makeDistroSeries()
+        self.assertFalse(distroseries.language_pack_full_export_requested)
+        person = self.factory.makePerson(
+            member_of=[getUtility(ILaunchpadCelebrities).rosetta_experts])
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.WRITE_PRIVATE)
+        response = webservice.patch(
+            api_url(distroseries), "application/json",
+            json.dumps({"language_pack_full_export_requested": True}))
+        self.assertEqual(209, response.status)
+        self.assertTrue(distroseries.language_pack_full_export_requested)
 
 
 class TestDistroSeriesSet(TestCaseWithFactory):

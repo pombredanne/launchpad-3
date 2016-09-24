@@ -15,7 +15,10 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     BugTaskStatusSearch,
     )
+from lp.registry.enums import VCSType
+from lp.services.config import config
 from lp.services.webapp import canonical_url
+from lp.services.webapp.vhosts import allvhosts
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
@@ -29,6 +32,65 @@ from lp.testing.views import create_initialized_view
 class TestProductSeries(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
+
+    def test_golang_meta_renders(self):
+        # ensure golang meta import path is rendered if project has
+        # bzr default vcs and default branch set.
+        # See: https://golang.org/cmd/go/#hdr-Remote_import_paths
+        owner = self.factory.makePerson(name='zardoz')
+        product = self.factory.makeProduct(name='wapcaplet')
+        series = self.factory.makeProductSeries(owner=owner, product=product,
+                                                name='a-series')
+        branch = self.factory.makeBranch(product=product, name='a-branch',
+                                         owner=owner)
+        view = create_initialized_view(series, '+index')
+        with person_logged_in(series.product.owner):
+            series.branch = branch
+            series.product.vcs = VCSType.BZR
+
+        golang_import = (
+            "{hostname}/wapcaplet/a-series bzr "
+            "{root_url}~zardoz/wapcaplet/a-branch").format(
+                hostname=config.vhost.mainsite.hostname,
+                root_url=allvhosts.configs['mainsite'].rooturl,
+            )
+        self.assertEqual(golang_import, view.golang_import_spec)
+        meta_tag = soupmatchers.Tag('go-import-meta', 'meta',
+                                    attrs={'name': 'go-import',
+                                           'content': golang_import})
+        browser = self.getViewBrowser(series, '+index',
+                                      user=series.branch.owner)
+        self.assertThat(browser.contents, soupmatchers.HTMLContains(meta_tag))
+
+    def test_golang_meta_no_default_branch(self):
+        # ensure golang meta import path is not rendered if series has
+        # no default branch.
+        series = self.factory.makeProductSeries()
+        view = create_initialized_view(series, '+index')
+        with person_logged_in(series.product.owner):
+            series.product.vcs = VCSType.BZR
+
+        self.assertIsNone(view.golang_import_spec)
+
+    def test_golang_meta_no_permissions(self):
+        # ensure golang meta import path is not rendered if user does
+        # not have launchpad.View permissions on branch.
+        owner = self.factory.makePerson()
+        simple_user = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=owner)
+        series = self.factory.makeProductSeries(owner=owner, product=product)
+        branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.PRIVATESECURITY)
+
+        with person_logged_in(owner):
+            series.branch = branch
+            series.product.vcs = VCSType.BZR
+            view = create_initialized_view(series, '+index')
+            self.assertIsNot(None, view.golang_import_spec)
+
+        with person_logged_in(simple_user):
+            view = create_initialized_view(series, '+index')
+            self.assertIsNone(view.golang_import_spec)
 
     def test_information_type_public(self):
         # A ProductSeries view should include its information_type,

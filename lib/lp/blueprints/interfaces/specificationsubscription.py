@@ -41,7 +41,7 @@ class ISpecificationSubscription(Interface):
             vocabulary='ValidPersonOrTeam', readonly=True,
             description=_(
             'The person you would like to subscribe to this blueprint. '
-            'They will be notified of the subscription by e-mail.')
+            'They will be notified of the subscription by email.')
             )
     personID = Attribute('db person value')
     specification = Int(title=_('Specification'), required=True,

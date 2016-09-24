@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native publication workflow for Soyuz. """
@@ -21,6 +21,7 @@ from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -38,17 +39,19 @@ from lp.soyuz.enums import (
     )
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     DeletionError,
+    IBinaryPackagePublishingHistory,
     IPublishingSet,
     OverrideError,
     PackagePublishingPriority,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
+    )
 from lp.soyuz.model.distroseriesdifferencejob import find_waiting_jobs
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.publishing import (
@@ -120,7 +123,7 @@ class SoyuzTestPublisher:
         except NotFoundError:
             self.breezy_autotest_i386 = self.breezy_autotest.newArch(
                 'i386', getUtility(IProcessorSet).getByName('386'), False,
-                self.person, supports_virtualized=True)
+                self.person)
         try:
             self.breezy_autotest_hppa = self.breezy_autotest['hppa']
         except NotFoundError:
@@ -431,7 +434,9 @@ class SoyuzTestPublisher:
         # Adjust the build record in way it looks complete.
         date_finished = datetime.datetime(2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC)
         date_started = date_finished - datetime.timedelta(minutes=5)
-        build.updateStatus(BuildStatus.BUILDING, date_started=date_started)
+        build.updateStatus(
+            BuildStatus.BUILDING, date_started=date_started,
+            force_invalid_transition=True)
         build.updateStatus(BuildStatus.FULLYBUILT, date_finished=date_finished)
         buildlog_filename = 'buildlog_%s-%s-%s.%s_%s_%s.txt.gz' % (
             build.distribution.name,
@@ -522,8 +527,8 @@ class SoyuzTestPublisher:
         """Make test data for SourcePackage.summary.
 
         The distroseries that is returned from this method needs to be
-        passed into updateDistroseriesPackageCache() so that
-        SourcePackage.summary can be populated.
+        passed into updatePackageCache() so that SourcePackage.summary can
+        be populated.
         """
         if source_pub is None:
             distribution = self.factory.makeDistribution(
@@ -560,11 +565,16 @@ class SoyuzTestPublisher:
             distroseries=source_pub.distroseries,
             source_package=source_pub.meta_sourcepackage)
 
-    def updateDistroSeriesPackageCache(self, distroseries):
+    def updatePackageCache(self, distroseries):
         with dbuser(config.statistician.dbuser):
+            DistributionSourcePackageCache.updateAll(
+                distroseries.distribution,
+                archive=distroseries.main_archive,
+                ztm=transaction,
+                log=DevNullLogger())
             DistroSeriesPackageCache.updateAll(
                 distroseries,
-                archive=distroseries.distribution.main_archive,
+                archive=distroseries.main_archive,
                 ztm=transaction,
                 log=DevNullLogger())
 
@@ -590,9 +600,14 @@ class TestNativePublishingBase(TestCaseWithFactory, SoyuzTestPublisher):
         self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def tearDown(self):
-        """Tear down blows the pool dir away."""
+        """Tear down blows the pool dirs away."""
         super(TestNativePublishingBase, self).tearDown()
-        shutil.rmtree(self.config.distroroot)
+        for root in (
+                self.config.distroroot,
+                config.personalpackagearchive.root,
+                config.personalpackagearchive.private_root):
+            if os.path.exists(root):
+                shutil.rmtree(root)
 
     def getPubSource(self, *args, **kwargs):
         """Overrides `SoyuzTestPublisher.getPubSource`.
@@ -874,7 +889,8 @@ class PublishingSetTests(TestCaseWithFactory):
         self.makeBinaryPublishing()
         record = self.publishing_set.getByIdAndArchive(
             self.publishing.id, self.archive, source=False)
-        self.assertEqual(None, record)
+        if record is not None:
+            self.assertTrue(IBinaryPackagePublishingHistory.providedBy(record))
 
     def test_getByIdAndArchive_finds_binary(self):
         binary_publishing = self.makeBinaryPublishing()
@@ -1490,22 +1506,6 @@ class TestPublishBinaries(TestCaseWithFactory):
         # causes a new publication to be created.
         args['pocket'] = PackagePublishingPocket.RELEASE
         [another_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
-
-    def test_primary_ddebs_need_ddebs_enabled(self):
-        debug = self.factory.makeBinaryPackageRelease(
-            binpackageformat=BinaryPackageFormat.DDEB)
-        args = self.makeArgs(
-            [debug], debug.build.distro_arch_series.distroseries)
-
-        # ddebs are rejected with build_debug_symbols unset
-        self.assertRaises(
-            QueueInconsistentStateError,
-            getUtility(IPublishingSet).publishBinaries, **args)
-
-        # But accepted with build_debug_symbols set
-        archive = debug.build.distro_arch_series.distroseries.main_archive
-        archive.build_debug_symbols = True
-        getUtility(IPublishingSet).publishBinaries(**args)
 
 
 class TestChangeOverride(TestNativePublishingBase):

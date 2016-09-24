@@ -13,7 +13,7 @@ from zope.i18n import (
     Message,
     translate,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.webapp.interfaces import IStructuredString
 
@@ -81,9 +81,8 @@ def translate_if_i18n(obj_or_msgid):
         return obj_or_msgid
 
 
+@implementer(IStructuredString)
 class structured:
-
-    implements(IStructuredString)
 
     def __init__(self, text, *reps, **kwreps):
         text = unicode(translate_if_i18n(text))

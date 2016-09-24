@@ -36,8 +36,8 @@ class ITranslationPolicy(Interface):
     """
 
     translationgroup = exported(ReferenceChoice(
-        title = _("Translation group"),
-        description = _("The translation group that helps review "
+        title=_("Translation group"),
+        description=_("The translation group that helps review "
             " translations for this project or distribution. The group's "
             " role depends on the permissions policy selected below."),
         required=False,

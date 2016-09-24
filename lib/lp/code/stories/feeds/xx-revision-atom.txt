@@ -24,9 +24,9 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
     ...    name='mary', displayname='Mary Murphy', email='mary@example.com')
     >>> fubar = factory.makeProject(name='fubar', displayname="Fubar")
     >>> fooix = factory.makeProduct(
-    ...     name='fooix', displayname="Fooix", project=fubar)
+    ...     name='fooix', displayname="Fooix", projectgroup=fubar)
     >>> fooey = factory.makeProduct(
-    ...     name='fooey', displayname="Fooey", project=fubar)
+    ...     name='fooey', displayname="Fooey", projectgroup=fubar)
     >>> fooix_branch = factory.makeProductBranch(
     ...     name='feature-x', product=fooix, owner=mike)
     >>> fooey_branch = factory.makeProductBranch(
@@ -139,10 +139,10 @@ Ensure the self link points to the feed location and there is only one.
     <link rel="self" href="http://feeds.launchpad.dev/fooix/revisions.atom" />
 
 
-== Feed for a project's revisions ==
+== Feed for a project group's revisions ==
 
-A feed for a project will show the most recent 25 revisions across any
-branch for any product that is associated with the project.
+A feed for a project group will show the most recent 25 revisions across any
+branch for any product that is associated with the project group.
 
     >>> anon_browser.open('http://feeds.launchpad.dev/fubar/revisions.atom')
     >>> validate_browser_feed(anon_browser)
@@ -151,7 +151,7 @@ branch for any product that is associated with the project.
     [u'Latest Revisions for Fubar']
 
 Ignore the date associated with the id of 'fubar' as this is the date created
-of the project, which will be different each time the test is run.
+of the project group, which will be different each time the test is run.
 
     >>> print_parse_ids(anon_browser)
     <id>tag:launchpad.net,...:/code/fubar</id>

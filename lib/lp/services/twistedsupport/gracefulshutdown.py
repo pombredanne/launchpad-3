@@ -27,7 +27,7 @@ from twisted.web import (
     resource,
     server,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 
 class ConnTrackingFactoryWrapper(WrappingFactory):
@@ -138,14 +138,13 @@ class ServerAvailableResource(resource.Resource):
         return ''
 
 
+@implementer(service.IServiceCollection)
 class OrderedMultiService(service.MultiService):
     """A MultiService that guarantees start and stop order.
 
     Services are started in the order they are attached, and stopped in in
     reverse order (waiting for each to stop before stopping the next).
     """
-
-    implements(service.IServiceCollection)
 
     @inlineCallbacks
     def stopService(self):

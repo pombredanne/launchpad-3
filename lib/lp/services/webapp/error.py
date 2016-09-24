@@ -6,7 +6,6 @@ __all__ = [
     'InvalidBatchSizeView',
     'NotFoundView',
     'ProtocolErrorView',
-    'ReadOnlyErrorView',
     'RequestExpiredView',
     'SystemErrorView',
     'TranslationUnavailableView',
@@ -22,7 +21,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.browser.interfaces import ISystemErrorView
 from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
-from zope.interface import implements
+from zope.interface import implementer
 
 import lp.layers
 from lp.services import features
@@ -33,12 +32,12 @@ from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import LaunchpadView
 
 
+@implementer(ISystemErrorView)
 class SystemErrorView(LaunchpadView):
     """Helper class for views on exceptions.
 
     Also, sets a 500 response code.
     """
-    implements(ISystemErrorView)
 
     page_title = 'Error: Launchpad system error'
 
@@ -257,21 +256,6 @@ class TranslationUnavailableView(SystemErrorView):
     page_title = 'Error: Translation page is not available'
 
     response_code = httplib.SERVICE_UNAVAILABLE
-
-    def __call__(self):
-        return self.index()
-
-
-class ReadOnlyErrorView(SystemErrorView):
-    """View rendered when an InvalidBatchSizeError is raised."""
-
-    page_title = "Error: you can't do this right now"
-
-    response_code = httplib.SERVICE_UNAVAILABLE
-
-    def isSystemError(self):
-        """We don't need to log these errors in the SiteLog."""
-        return False
 
     def __call__(self):
         return self.index()

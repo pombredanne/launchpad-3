@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -410,6 +410,17 @@
         lp.code.vocabularies.branch.BranchVocabulary"
       provides="zope.formlib.interfaces.IInputWidget"
       factory="lp.code.browser.widgets.branch.BranchPopupWidget"
+      permission="zope.Public"
+      />
+
+    <!-- Define the widget used by fields that use
+         DistributionSourcePackageVocabulary. -->
+    <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="zope.schema.interfaces.IChoice
+        lp.registry.vocabularies.DistributionSourcePackageVocabulary"
+      provides="zope.formlib.interfaces.IInputWidget"
+      factory="lp.app.widgets.popup.DistributionSourcePackagePickerWidget"
       permission="zope.Public"
       />
 

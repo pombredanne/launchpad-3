@@ -24,7 +24,7 @@ from storm.properties import (
     Unicode,
     )
 from storm.references import Reference
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.bugs.interfaces.bugsummary import (
@@ -52,10 +52,9 @@ from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.enumcol import EnumCol
 
 
+@implementer(IBugSummary)
 class BugSummary(Storm):
     """BugSummary Storm database class."""
-
-    implements(IBugSummary)
 
     __storm_table__ = 'combinedbugsummary'
 
@@ -95,6 +94,7 @@ class BugSummary(Storm):
     has_patch = Bool()
 
 
+@implementer(IBugSummaryDimension)
 class CombineBugSummaryConstraint:
     """A class to combine two separate bug summary constraints.
 
@@ -102,8 +102,6 @@ class CombineBugSummaryConstraint:
     + sourcepackage) - and essential when a dimension is not unique to a
     context.
     """
-
-    implements(IBugSummaryDimension)
 
     def __init__(self, *dimensions):
         self.dimensions = map(

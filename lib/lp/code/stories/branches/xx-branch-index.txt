@@ -426,7 +426,7 @@ used for the breadcrumbs and tabs.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print_location(browser.contents)
-    Hierarchy: The GNOME Terminal Emulator
+    Hierarchy: GNOME Terminal
     Tabs:
     * Overview - http://launchpad.dev/gnome-terminal
     * Code (selected) - http://code.launchpad.dev/gnome-terminal

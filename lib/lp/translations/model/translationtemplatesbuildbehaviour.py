@@ -18,7 +18,7 @@ import tempfile
 import transaction
 from twisted.internet import defer
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
@@ -35,9 +35,9 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.model.approver import TranslationBuildApprover
 
 
+@implementer(IBuildFarmJobBehaviour)
 class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `TranslationTemplateBuildJob`s to slaves."""
-    implements(IBuildFarmJobBehaviour)
 
     # Filename for the tarball of templates that the slave builds.
     templates_tarball_path = 'translation-templates.tar.gz'
@@ -116,7 +116,6 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
         # dangerous.
         if filename is None:
             logger.error("Build produced no tarball.")
-            self.build.updateStatus(BuildStatus.FULLYBUILT)
         else:
             tarball_file = open(filename)
             try:
@@ -129,9 +128,9 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
                     self._uploadTarball(
                         self.build.buildqueue_record.specific_build.branch,
                         tarball, logger)
+                    transaction.commit()
                     logger.debug("Upload complete.")
             finally:
-                self.build.updateStatus(BuildStatus.FULLYBUILT)
                 tarball_file.close()
                 os.remove(filename)
-        transaction.commit()
+        defer.returnValue(BuildStatus.FULLYBUILT)

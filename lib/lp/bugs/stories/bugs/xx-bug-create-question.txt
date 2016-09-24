@@ -21,8 +21,8 @@ An anonymous user cannot create a question.
     ...
     Unauthorized: ...
 
-No Privileges Person is doing triage for Ubuntu. He recognizes bug 10 is
-really a question. He chooses to make a question from it.
+No Privileges Person is doing triage for Ubuntu. They recognize bug 10 is
+really a question. They choose to make a question from it.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev'
@@ -36,7 +36,7 @@ really a question. He chooses to make a question from it.
 
 The 'Convert this to a question' page explains what will happen if No
 Privileges Person chooses to make the bug into a question. There is a
-field for a comment. He decides to create the question using the
+field for a comment. They decide to create the question using the
 'Convert this bug to a question' button.
 
     >>> find_main_content(user_browser.contents).p
@@ -80,14 +80,14 @@ bugtask directly.
 
     >>> user_browser.goBack(1)
 
-He sees his comment was appended to the bug report's messages.
+They see their comment was appended to the bug report's messages.
 
     >>> print extract_text(
     ...     find_tags_by_class(str(content), 'boardCommentBody')[-1])
     This bug is a question.
 
 No Privileges Person looks at the page heading and sees that Foo Bar is
-the bug owner. He sees the link to the question in the 'Related
+the bug owner. They see the link to the question in the 'Related
 questions' portlet, and uses it to go to the question page.
 
     >>> print user_browser.url
@@ -102,7 +102,7 @@ questions' portlet, and uses it to go to the question page.
     >>> user_browser.getLink('another test bug').click()
 
 No Privileges Person case see that the question was created from a bug.
-He uses the link to Related bug to return to the bug.
+They use the link to Related bug to return to the bug.
 
     >>> print user_browser.title
     Question #... : Questions : linux-source-2.6.15 package : Ubuntu
@@ -121,7 +121,7 @@ When a question cannot be created from a bug
 
 Thunderbird does not use Launchpad to track bugs. Questions cannot be
 made from its bugs. When No Privileges Person uses the link in the Bug
-Actions menu, the page explains why he cannot make the bug into a
+Actions menu, the page explains why they cannot make the bug into a
 question.
 
     >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/9')
@@ -152,8 +152,8 @@ the question.
     LookupError: ...
 
 If No Privileges Person were to create a question from a bug, then
-return to the create a question from a bug page using his back button or
-a bookmark, he sees that he cannot create the question again.
+return to the create a question from a bug page using their back button or
+a bookmark, they see that they cannot create the question again.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev'
@@ -171,9 +171,9 @@ a bookmark, he sees that he cannot create the question again.
     ...
     LookupError: ...
 
-Most browsers cache pages. When No Privileges Person uses his his
-browser's back button, after creating a question, he is re-shown the
-form as it was. He resubmit the form, and is notified that a question
+Most browsers cache pages. When No Privileges Person uses their
+browser's back button, after creating a question, they are re-shown the
+form as it was. They resubmit the form, and are notified that a question
 could not be created.
 
     >>> # Jokosher must enable answers to access questions.
@@ -200,7 +200,7 @@ could not be created.
 
     >>> message = find_tag_by_id(user_browser.contents, 'bug-is-question')
     >>> print extract_text(message)
-    This bug report was converted into a question:...question #16...
+    This bug report was converted into a question:...question #...
 
 
 Remove the question
@@ -231,7 +231,7 @@ the 'Convert back to a bug' button.
 
 No Privileges Person is shown the bug page again. There is a notice
 stating that a question was removed from the bug. The Related Questions
-portlet is gone too. He views the question and sees that it is still in
+portlet is gone too. They view the question and sees that it is still in
 the Open status.
 
     >>> user_browser.title
@@ -255,8 +255,8 @@ the Open status.
     ...     find_tag_by_id(user_browser.contents, 'question-status'))
     Status: Open
 
-No Privileges Person uses his browser's back button to view the bug
-again. The bug status is sill Invalid for Jokosher, but he can edit it.
+No Privileges Person uses their browser's back button to view the bug
+again. The bug status is sill Invalid for Jokosher, but they can edit it.
 
     >>> user_browser.goBack(count=1)
     >>> content = find_main_content(user_browser.contents)
@@ -266,7 +266,7 @@ again. The bug status is sill Invalid for Jokosher, but he can edit it.
     Affecting: Jokosher
     Filed here by: Foo Bar...
 
-He reads his comment that was appended to the bug report's messages.
+They read their comment that was appended to the bug report's messages.
 
     >>> print extract_text(
     ...     find_tags_by_class(str(content), 'boardComment')[-1])
@@ -278,7 +278,7 @@ He reads his comment that was appended to the bug report's messages.
 
 When the remove question page is visited, and there is no question, the
 form is not displayed. This can happened if the URL is hacked or the
-question was removed, and the user used his back button to return to the
+question was removed, and the user used their back button to return to the
 page. No Privileges Person sees a message that there is no question to
 remove.
 

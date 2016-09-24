@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initialize a distroseries from its parent distroseries."""
@@ -375,6 +375,17 @@ class InitializeDistroSeries:
         self.distroseries.include_long_descriptions = any(
             parent.include_long_descriptions
                 for parent in self.derivation_parents)
+        self.distroseries.index_compressors = list(
+            self.derivation_parents[0].index_compressors)
+        self.distroseries.publish_by_hash = any(
+            parent.publish_by_hash
+                for parent in self.derivation_parents)
+        self.distroseries.advertise_by_hash = any(
+            parent.advertise_by_hash
+                for parent in self.derivation_parents)
+        self.distroseries.strict_supported_component_dependencies = any(
+            parent.strict_supported_component_dependencies
+                for parent in self.derivation_parents)
 
     def _copy_architectures(self):
         das_filter = ' AND distroseries IN %s ' % (
@@ -384,10 +395,8 @@ class InitializeDistroSeries:
                 sqlvalues(self.arches))
         self._store.execute("""
             INSERT INTO DistroArchSeries
-            (distroseries, processor, architecturetag, owner, official,
-             supports_virtualized)
-            SELECT %s, processor, architecturetag, %s,
-                bool_and(official), bool_or(supports_virtualized)
+            (distroseries, processor, architecturetag, owner, official)
+            SELECT %s, processor, architecturetag, %s, bool_and(official)
             FROM DistroArchSeries WHERE enabled = TRUE %s
             GROUP BY processor, architecturetag
             """ % (sqlvalues(self.distroseries, self.distroseries.owner)

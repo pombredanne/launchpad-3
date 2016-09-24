@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Vocabularies for content objects.
@@ -31,6 +31,7 @@ __all__ = [
     'CommercialProjectsVocabulary',
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
+    'DistributionSourcePackageVocabulary',
     'DistributionVocabulary',
     'DistroSeriesDerivationVocabulary',
     'DistroSeriesDifferencesVocabulary',
@@ -63,7 +64,9 @@ __all__ = [
 
 
 from operator import attrgetter
+import re
 
+from lazr.restful.interfaces import IReference
 from sqlobject import (
     AND,
     CONTAINSSTRING,
@@ -71,18 +74,22 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
+    Column,
     Desc,
     Join,
     LeftJoin,
+    Not,
     Or,
     Select,
     SQL,
+    Table,
     Union,
     With,
     )
 from storm.info import ClassAlias
+from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.interfaces import IVocabularyTokenized
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -94,8 +101,10 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lp.answers.interfaces.question import IQuestion
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.blueprints.interfaces.specification import ISpecification
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.code.interfaces.branch import IBranch
 from lp.registry.enums import (
     EXCLUSIVE_TEAM_POLICY,
@@ -135,6 +144,9 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackageInDatabase,
+    )
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.distroseriesparent import DistroSeriesParent
@@ -166,6 +178,10 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.database.stormexpr import (
+    Case,
+    RegexpMatch,
+    )
 from lp.services.helpers import (
     ensure_unicode,
     shortlist,
@@ -191,8 +207,13 @@ from lp.services.webapp.vocabulary import (
     IHugeVocabulary,
     NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary,
+    NamedStormHugeVocabulary,
     SQLObjectVocabularyBase,
     VocabularyFilter,
+    )
+from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache,
     )
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 
@@ -244,9 +265,9 @@ class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'name'
 
 
+@implementer(IHugeVocabulary)
 class ProductVocabulary(SQLObjectVocabularyBase):
     """All `IProduct` objects vocabulary."""
-    implements(IHugeVocabulary)
     step_title = 'Search'
 
     _table = Product
@@ -308,9 +329,9 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         return self.emptySelectResults()
 
 
+@implementer(IHugeVocabulary)
 class ProjectGroupVocabulary(SQLObjectVocabularyBase):
     """All `IProjectGroup` objects vocabulary."""
-    implements(IHugeVocabulary)
 
     _table = ProjectGroup
     _orderBy = 'displayname'
@@ -367,7 +388,7 @@ def project_products_vocabulary_factory(context):
 class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
     """Describes the public teams in which the current user participates."""
     _table = Person
-    _orderBy = 'displayname'
+    _orderBy = 'display_name'
 
     INCLUDE_PRIVATE_TEAM = False
 
@@ -402,6 +423,7 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
         raise LookupError(token)
 
 
+@implementer(IHugeVocabulary)
 class NonMergedPeopleAndTeamsVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of all non-merged people and teams.
@@ -410,9 +432,8 @@ class NonMergedPeopleAndTeamsVocabulary(
     the people provided by it know how to deal with people which don't have
     a preferred email address, that is, unvalidated person profiles.
     """
-    implements(IHugeVocabulary)
 
-    _orderBy = ['displayname']
+    _orderBy = ['display_name']
     displayname = 'Select a Person or Team'
     step_title = 'Search'
 
@@ -434,6 +455,7 @@ class NonMergedPeopleAndTeamsVocabulary(
         return self._select(ensure_unicode(text))
 
 
+@implementer(IHugeVocabulary)
 class PersonAccountToMergeVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of all non-merged people with at least one email address.
@@ -441,9 +463,8 @@ class PersonAccountToMergeVocabulary(
     This vocabulary is a very specialized one, meant to be used only to choose
     accounts to merge. You *don't* want to use it.
     """
-    implements(IHugeVocabulary)
 
-    _orderBy = ['displayname']
+    _orderBy = ['display_name']
     displayname = 'Select a Person to Merge'
     step_title = 'Search'
     must_have_email = True
@@ -504,20 +525,21 @@ class VocabularyFilterTeam(VocabularyFilter):
         return [Person.teamownerID != None]
 
 
+@implementer(IHugeVocabulary)
 class ValidPersonOrTeamVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of valid, viewable Persons/Teams in Launchpad.
 
-    A Person is considered valid if she has a preferred email address, and
+    A Person is considered valid if they have a preferred email address, and
     Person.merged is None. Teams have no restrictions at all, which means that
     all teams the user has the permission to view are considered valid.  A
-    user can view private teams in which she is a member and any public team.
+    user can view private teams in which they are a member and any public
+    team.
 
     This vocabulary is registered as ValidPersonOrTeam, ValidAssignee,
     ValidMaintainer and ValidOwner, because they have exactly the same
     requisites.
     """
-    implements(IHugeVocabulary)
 
     displayname = 'Select a Person or Team'
     step_title = 'Search'
@@ -579,7 +601,7 @@ class ValidPersonOrTeamVocabulary(
                 get_person_visibility_terms(getUtility(ILaunchBag).user),
                 Person.merged == None,
                 *extra_clauses)
-            result.order_by(Person.displayname, Person.name)
+            result.order_by(Person.display_name, Person.name)
         else:
             # Do a full search based on the text given.
 
@@ -668,7 +690,7 @@ class ValidPersonOrTeamVocabulary(
                         1) DESC""" % self._karma_context_constraint)
             else:
                 rank_order = SQL("rank DESC")
-            result.order_by(rank_order, Person.displayname, Person.name)
+            result.order_by(rank_order, Person.display_name, Person.name)
         result.config(limit=self.LIMIT)
 
         # We will be displaying the person's irc nick(s) and emails in the
@@ -877,10 +899,9 @@ class AllUserTeamsParticipationVocabulary(ValidTeamVocabulary):
                         tp_alias.personID == user.id))]
 
 
+@implementer(IVocabularyTokenized)
 class PersonActiveMembershipVocabulary:
     """All the teams the person is an active member of."""
-
-    implements(IVocabularyTokenized)
 
     def __init__(self, context):
         assert IPerson.providedBy(context)
@@ -949,10 +970,9 @@ class NewPillarGranteeVocabulary(ValidPersonOrExclusiveTeamVocabulary):
             super(NewPillarGranteeVocabulary, self).extra_clause)
 
 
+@implementer(IHugeVocabulary)
 class ActiveMailingListVocabulary(FilteredVocabularyBase):
     """The set of all active mailing lists."""
-
-    implements(IHugeVocabulary)
 
     displayname = 'Select an active mailing list.'
     step_title = 'Search'
@@ -1074,7 +1094,7 @@ class UserTeamsParticipationPlusSelfVocabulary(
 
 class AllUserTeamsParticipationPlusSelfVocabulary(
     UserTeamsParticipationPlusSelfVocabulary):
-    """All public and private teams participates in and himself.
+    """All public and private teams participated in and themselves.
 
     This redefines UserTeamsParticipationVocabulary to include private teams
     and it includes the logged in user from
@@ -1106,9 +1126,23 @@ class UserTeamsParticipationPlusSelfSimpleDisplayVocabulary(
         return SimpleTerm(obj, obj.name, obj.displayname)
 
 
+class AllUserTeamsParticipationPlusSelfSimpleDisplayVocabulary(
+    AllUserTeamsParticipationPlusSelfVocabulary):
+    """Like `AllUserTeamsParticipationPlusSelfVocabulary` but the term title is
+    the person.displayname rather than unique_displayname.
+
+    See `UserTeamsParticipationPlusSelfSimpleDisplayVocabulary` for more
+    information on usage.
+    """
+
+    def toTerm(self, obj):
+        """See `IVocabulary`."""
+        return SimpleTerm(obj, obj.name, obj.displayname)
+
+
+@implementer(IHugeVocabulary)
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     """All `IProductRelease` objects vocabulary."""
-    implements(IHugeVocabulary)
 
     displayname = 'Select a Product Release'
     step_title = 'Search'
@@ -1174,9 +1208,9 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         return objs
 
 
+@implementer(IHugeVocabulary)
 class ProductSeriesVocabulary(SQLObjectVocabularyBase):
     """All `IProductSeries` objects vocabulary."""
-    implements(IHugeVocabulary)
 
     displayname = 'Select a Release Series'
     step_title = 'Search'
@@ -1399,6 +1433,7 @@ class MilestoneWithDateExpectedVocabulary(MilestoneVocabulary):
         return term
 
 
+@implementer(IHugeVocabulary)
 class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     """List all commercial projects.
 
@@ -1407,8 +1442,6 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
     contains the active projects the user maintains, or all active project
     if the user is a registry expert.
     """
-
-    implements(IHugeVocabulary)
 
     _table = Product
     _orderBy = 'displayname'
@@ -1560,6 +1593,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         return objs
 
 
+@implementer(IHugeVocabulary)
 class DistroSeriesDerivationVocabulary(FilteredVocabularyBase):
     """A vocabulary source for series to derive from.
 
@@ -1577,8 +1611,6 @@ class DistroSeriesDerivationVocabulary(FilteredVocabularyBase):
     It is permissible for a distribution to have both derived and non-derived
     series at the same time.
     """
-
-    implements(IHugeVocabulary)
 
     displayname = "Add a parent series"
     step_title = 'Search'
@@ -1647,7 +1679,7 @@ class DistroSeriesDerivationVocabulary(FilteredVocabularyBase):
             DistroSeries.distribution == Distribution.id,
             *where)
         query = query.order_by(
-            Distribution.displayname,
+            Distribution.display_name,
             Desc(DistroSeries.date_created)).config(distinct=True)
         return [series for (series, distribution) in query]
 
@@ -1682,13 +1714,12 @@ class DistroSeriesDerivationVocabulary(FilteredVocabularyBase):
             return self.find_terms(where)
 
 
+@implementer(IHugeVocabulary)
 class DistroSeriesDifferencesVocabulary(FilteredVocabularyBase):
     """A vocabulary source for differences relating to a series.
 
     Specifically, all `DistroSeriesDifference`s relating to a derived series.
     """
-
-    implements(IHugeVocabulary)
 
     displayname = "Choose a difference"
     step_title = 'Search'
@@ -1776,7 +1807,7 @@ class VocabularyFilterProjectGroup(VocabularyFilter):
 
     @property
     def filter_terms(self):
-        return [PillarName.project != None]
+        return [PillarName.projectgroup != None]
 
 
 class VocabularyFilterDistribution(VocabularyFilter):
@@ -1863,7 +1894,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     """Active `IDistribution` or `IProduct` objects vocabulary."""
     displayname = 'Select a project'
-    _filter = [PillarName.project == None, PillarName.active == True]
+    _filter = [PillarName.projectgroup == None, PillarName.active == True]
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj):
@@ -1931,15 +1962,245 @@ class SourcePackageNameIterator(BatchedCountableIterator):
         return [SimpleTerm(obj, obj.name, obj.name) for obj in results]
 
 
-class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
+class SourcePackageNameVocabulary(NamedStormHugeVocabulary):
     """A vocabulary that lists source package names."""
     displayname = 'Select a source package'
     _table = SourcePackageName
-    _orderBy = 'name'
+    # Use a subselect rather than a join to encourage the planner to do the
+    # quick SPN scan first and then use the results of that for an
+    # index-only scan of DSPC.
+    _clauses = [
+        SourcePackageName.id.is_in(Select(
+            DistributionSourcePackageCache.sourcepackagenameID,
+            # No current users of this vocabulary can easily provide a
+            # distribution context, since the distribution and source
+            # package name are typically selected together, so the best we
+            # can do is search for names that are present in public archives
+            # of any distribution.
+            where=Or(
+                Not(Archive._private),
+                DistributionSourcePackageCache.archive == None),
+            tables=LeftJoin(
+                DistributionSourcePackageCache, Archive,
+                DistributionSourcePackageCache.archiveID == Archive.id))),
+        ]
     iterator = SourcePackageNameIterator
+
+    def searchForTerms(self, query=None, vocab_filter=None):
+        if not query:
+            return self.emptySelectResults()
+
+        query = ensure_unicode(query).lower()
+        results = IStore(self._table).find(
+            self._table,
+            Or(
+                # Always return exact matches if they exist.
+                self._table.name == query,
+                # Subselect to avoid pathological planner behaviour.
+                self._table.id.is_in(Select(
+                    self._table.id,
+                    where=And(
+                        self._table.name.contains_string(query),
+                        *self._clauses),
+                    tables=self._table))))
+        rank = Case(
+            when=(
+                (self._table.name == query, 100),
+                (self._table.name.startswith(query + "-"), 75),
+                (self._table.name.startswith(query), 50),
+                (self._table.name.contains_string("-" + query), 25),
+                ),
+            else_=1)
+        results.order_by(Desc(rank), self._table.name)
+        return self.iterator(results.count(), results, self.toTerm)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        # package names are always lowercase.
+        # Package names are always lowercase.
         return super(SourcePackageNameVocabulary, self).getTermByToken(
             token.lower())
+
+
+@implementer(IHugeVocabulary)
+class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
+
+    displayname = 'Select a package'
+    step_title = 'Search by name'
+
+    def __init__(self, context):
+        self.context = context
+        if IReference.providedBy(context):
+            target = context.context.target
+        elif IBugTask.providedBy(context) or IQuestion.providedBy(context):
+            target = context.target
+        else:
+            target = context
+        try:
+            self.distribution = IDistribution(target)
+        except TypeError:
+            self.distribution = None
+        if IDistributionSourcePackage.providedBy(target):
+            self.dsp = target
+        else:
+            self.dsp = None
+
+    def __contains__(self, spn_or_dsp):
+        if spn_or_dsp == self.dsp:
+            # Historic values are always valid. The DSP used to
+            # initialize the vocabulary is always included.
+            return True
+        try:
+            self.toTerm(spn_or_dsp)
+            return True
+        except LookupError:
+            return False
+
+    def __iter__(self):
+        pass
+
+    def __len__(self):
+        pass
+
+    def setDistribution(self, distribution):
+        """Set the distribution after the vocabulary was instantiated."""
+        self.distribution = distribution
+
+    def _assertHasDistribution(self):
+        if self.distribution is None:
+            raise AssertionError(
+                "DistributionSourcePackageVocabulary cannot be used without "
+                "setting a distribution.")
+
+    @property
+    def _cache_location_clauses(self):
+        return [
+            Or(
+                DistributionSourcePackageCache.archiveID.is_in(
+                    self.distribution.all_distro_archive_ids),
+                DistributionSourcePackageCache.archive == None),
+            DistributionSourcePackageCache.distribution == self.distribution,
+            ]
+
+    def toTerm(self, spn_or_dsp):
+        """See `IVocabulary`."""
+        dsp = None
+        binary_names = None
+        if isinstance(spn_or_dsp, tuple):
+            # The DSP in DB was passed with its binary_names.
+            spn_or_dsp, binary_names = spn_or_dsp
+            if binary_names is not None:
+                binary_names = binary_names.split()
+        # XXX cjwatson 2016-07-27: Eventually this should just take a DSP
+        # and drop the complication of also accepting SPNs; but, for now,
+        # accepting an SPN reduces the amount of feature-flag checks
+        # required by users of this vocabulary.
+        if IDistributionSourcePackage.providedBy(spn_or_dsp):
+            dsp = spn_or_dsp
+        elif spn_or_dsp is not None:
+            self._assertHasDistribution()
+            dsp = self.distribution.getSourcePackage(spn_or_dsp)
+        if dsp is not None:
+            if dsp == self.dsp or dsp.is_official or self.distribution is None:
+                if binary_names:
+                    # Search already did the hard work of looking up binary
+                    # names.
+                    cache = get_property_cache(dsp)
+                    cache.binary_names = binary_names
+                # XXX cjwatson 2016-07-22: It's a bit odd for the token to
+                # return just the source package name and not the
+                # distribution name as well, but at the moment this is
+                # always fed into a package name box so things work much
+                # better this way.  If we ever do a true combined
+                # distribution/package picker, then this may need to be
+                # revisited.
+                return SimpleTerm(dsp, dsp.name, dsp.name)
+            else:
+                # Does this vocabulary have any package names at all?
+                empty = IStore(DistributionSourcePackageCache).find(
+                    DistributionSourcePackageCache.sourcepackagenameID,
+                    *self._cache_location_clauses).is_empty()
+                if empty:
+                    # If the vocabulary has no package names, then this is
+                    # probably a distribution not managed in Launchpad.  In
+                    # that case we are more liberal about allowing unknown
+                    # package names, in order to support existing uses such
+                    # as noting that the same bug exists in the same package
+                    # in multiple distributions.
+                    return SimpleTerm(dsp, dsp.name, dsp.name)
+        raise LookupError(self.distribution, spn_or_dsp)
+
+    def getTerm(self, spn_or_dsp):
+        """See `IBaseVocabulary`."""
+        return self.toTerm(spn_or_dsp)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        return self.toTerm(token)
+
+    def searchForTerms(self, query=None, vocab_filter=None):
+        """See `IHugeVocabulary`."""
+        self._assertHasDistribution()
+        if not query:
+            return EmptyResultSet()
+
+        query = unicode(query)
+        query_re = re.escape(query)
+        store = IStore(DistributionSourcePackageInDatabase)
+        # Construct the searchable text that could live in the DSP table.
+        # Limit the results to ensure the user could see all the batches.
+        # Rank only what is returned: exact source name, exact binary
+        # name, partial source name, and lastly partial binary name.
+        searchable_dspc_cte = With("SearchableDSPC", Select(
+            (DistributionSourcePackageCache.name,
+             DistributionSourcePackageCache.sourcepackagenameID,
+             DistributionSourcePackageCache.binpkgnames),
+            where=And(
+                Or(
+                    DistributionSourcePackageCache.name.contains_string(query),
+                    DistributionSourcePackageCache.binpkgnames.contains_string(
+                        query),
+                    ),
+                *self._cache_location_clauses),
+            tables=DistributionSourcePackageCache,
+            distinct=(DistributionSourcePackageCache.name,)))
+        SearchableDSPC = Table("SearchableDSPC")
+        searchable_dspc_name = Column("name", SearchableDSPC)
+        searchable_dspc_sourcepackagename = Column(
+            "sourcepackagename", SearchableDSPC)
+        searchable_dspc_binpkgnames = Column("binpkgnames", SearchableDSPC)
+        rank = Case(
+            when=(
+                # name == query
+                (searchable_dspc_name == query, 100),
+                (RegexpMatch(searchable_dspc_binpkgnames,
+                             r'(^| )%s( |$)' % query_re), 90),
+                # name.startswith(query + "-")
+                (searchable_dspc_name.startswith(query + "-"), 80),
+                (RegexpMatch(searchable_dspc_binpkgnames,
+                             r'(^| )%s-' % query_re), 70),
+                # name.startswith(query)
+                (searchable_dspc_name.startswith(query), 60),
+                (RegexpMatch(searchable_dspc_binpkgnames,
+                             r'(^| )%s' % query_re), 50),
+                # name.contains_string("-" + query)
+                (searchable_dspc_name.contains_string("-" + query), 40),
+                (RegexpMatch(searchable_dspc_binpkgnames,
+                             r'-%s' % query_re), 30),
+                ),
+            else_=1)
+        results = store.with_(searchable_dspc_cte).using(
+            DistributionSourcePackageInDatabase, SearchableDSPC).find(
+                (DistributionSourcePackageInDatabase,
+                 searchable_dspc_binpkgnames),
+                DistributionSourcePackageInDatabase.distribution ==
+                    self.distribution,
+                DistributionSourcePackageInDatabase.sourcepackagename_id ==
+                    searchable_dspc_sourcepackagename)
+        results.order_by(Desc(rank), searchable_dspc_name)
+
+        def make_term(row):
+            dspid, binary_names = row
+            dsp = dspid.distribution.getSourcePackage(dspid.sourcepackagename)
+            return self.toTerm((dsp, binary_names))
+
+        return CountableIterator(results.count(), results, make_term)

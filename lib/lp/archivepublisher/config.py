@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This is the python package that defines the
@@ -78,13 +78,21 @@ def getPubConfig(archive):
         pubconf.miscroot = None
 
     if archive.is_main:
-        pubconf.uefiroot = pubconf.archiveroot + '-uefi'
+        pubconf.signingroot = pubconf.archiveroot + '-uefi'
+        if not os.path.exists(pubconf.signingroot):
+            pubconf.signingroot = pubconf.archiveroot + '-signing'
+        pubconf.signingautokey = False
     elif archive.is_ppa:
-        pubconf.uefiroot = os.path.join(
-            ppa_config.signing_keys_root, "uefi",
+        signing_keys_root = os.path.join(ppa_config.signing_keys_root, "uefi")
+        if not os.path.exists(signing_keys_root):
+            signing_keys_root = os.path.join(
+                ppa_config.signing_keys_root, "signing")
+        pubconf.signingroot = os.path.join(signing_keys_root,
             archive.owner.name, archive.name)
+        pubconf.signingautokey = True
     else:
-        pubconf.uefiroot = None
+        pubconf.signingroot = None
+        pubconf.signingautokey = False
 
     pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
     pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
@@ -104,6 +112,15 @@ def getPubConfig(archive):
             meta_root, "meta", archive.name)
     else:
         pubconf.metaroot = None
+
+    # Files under this directory are moved into distsroot by the publisher
+    # the next time it runs.  This can be used by code that runs externally
+    # to the publisher (e.g. Contents generation) to publish files in a
+    # race-free way.
+    if archive.is_main:
+        pubconf.stagingroot = pubconf.archiveroot + '-staging'
+    else:
+        pubconf.stagingroot = None
 
     return pubconf
 
@@ -125,10 +142,11 @@ class Config(object):
             self.overrideroot,
             self.miscroot,
             self.temproot,
+            self.stagingroot,
             ]
 
         for directory in required_directories:
             if directory is None:
                 continue
             if not os.path.exists(directory):
-                os.makedirs(directory, 0755)
+                os.makedirs(directory, 0o755)

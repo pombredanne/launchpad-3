@@ -10,7 +10,6 @@ from lp.testing.pgsql import PgTestSetup
 
 
 def setUp(test):
-
     # Build a fresh, empty database and connect
     test._db_fixture = PgTestSetup()
     test._db_fixture.setUp()
@@ -55,10 +54,12 @@ def setUp(test):
     test.globs['con'] = con
     test.globs['cur'] = cur
 
+
 def tearDown(test):
     test.globs['con'].close()
     test._db_fixture.tearDown()
     del test._db_fixture
+
 
 def test_suite():
     suite = DocTestSuite(
@@ -67,4 +68,3 @@ def test_suite():
             )
     suite.layer = BaseLayer
     return suite
-

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -14,6 +14,7 @@ __all__ = [
 
 
 import hashlib
+import httplib
 from select import select
 import socket
 from socket import (
@@ -32,7 +33,7 @@ from urlparse import (
 
 from lazr.restful.utils import get_current_browser_request
 from storm.store import Store
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.config import (
     config,
@@ -53,9 +54,12 @@ from lp.services.timeline.requesttimeline import get_request_timeline
 
 def url_path_quote(filename):
     """Quote `filename` for use in a URL."""
-    # XXX RobertCollins 2004-09-21: Perhaps filenames with / in them
-    # should be disallowed?
-    return urllib.quote(filename).replace('/', '%2F')
+    # RFC 3986 says ~ should not be generated escaped, but urllib.quote
+    # predates it. Additionally, + is safe to use unescaped in paths and is
+    # frequently used in Debian versions, so leave it alone.
+    #
+    # This needs to match Library.getAlias' TimeLimitedToken handling.
+    return urllib.quote(filename, safe='/~+')
 
 
 def get_libraryfilealias_download_path(aliasID, filename):
@@ -282,6 +286,18 @@ class _File:
     def __init__(self, file, url):
         self.file = file
         self.url = url
+        headers = file.info()
+        chunked = (headers.get("Transfer-Encoding") == "chunked")
+        if not chunked and "Content-Length" in headers:
+            try:
+                self.length = int(headers["Content-Length"])
+            except ValueError:
+                self.length = None
+            else:
+                if self.length < 0:
+                    self.length = None
+        else:
+            self.length = None
 
     def read(self, chunksize=None):
         request = get_current_browser_request()
@@ -289,9 +305,20 @@ class _File:
         action = timeline.start("librarian-read", self.url)
         try:
             if chunksize is None:
-                return self.file.read()
+                s = self.file.read()
             else:
-                return self.file.read(chunksize)
+                if self.length is not None:
+                    chunksize = min(chunksize, self.length)
+                s = self.file.read(chunksize)
+            if self.length is not None:
+                self.length -= len(s)
+                # httplib doesn't quite do all the checking we need: in
+                # particular, it won't fail on a short bounded-size read
+                # from a non-chunked-transfer-coding resource.  Check this
+                # manually.
+                if not s and chunksize != 0 and self.length:
+                    raise httplib.IncompleteRead(s, expected=self.length)
+            return s
         finally:
             action.finish()
 
@@ -502,9 +529,9 @@ class FileDownloadClient:
                     raise
 
 
+@implementer(ILibrarianClient)
 class LibrarianClient(FileUploadClient, FileDownloadClient):
     """See `ILibrarianClient`."""
-    implements(ILibrarianClient)
 
     restricted = False
 
@@ -529,9 +556,9 @@ class LibrarianClient(FileUploadClient, FileDownloadClient):
             )
 
 
+@implementer(IRestrictedLibrarianClient)
 class RestrictedLibrarianClient(LibrarianClient):
     """See `IRestrictedLibrarianClient`."""
-    implements(IRestrictedLibrarianClient)
 
     restricted = True
 

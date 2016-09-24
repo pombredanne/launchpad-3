@@ -37,7 +37,7 @@ class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
         self.assertTrue(rationale in msg)
 
     def test_suppress_notify_true_does_not_notify(self):
-        """Test notifications are not sent when suppress_notify is True."""
+        """Test notifications aren't sent when suppress_notify is True."""
         bug = self.factory.makeBug()
         person_subscribing = self.factory.makePerson(
             name='foosuber', displayname='Foo Suber')
@@ -50,7 +50,7 @@ class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
         self.assertEqual(len(stub.test_emails), 0)
 
     def test_suppress_notify_default_does_not_notify(self):
-        """Test notifications are not sent when suppress_notify is undefined."""
+        """Test notifications aren't sent when suppress_notify is undefined."""
         bug = self.factory.makeBug()
         person_subscribing = self.factory.makePerson(
             name='foosuber', displayname='Foo Suber')

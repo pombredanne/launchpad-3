@@ -41,7 +41,7 @@ class TestAddMissingBuilds(TestCaseWithFactory):
 
         # i386 and hppa are enabled by STP but we need to mark hppa as
         # PPA-enabled.
-        self.stp.breezy_autotest_hppa.supports_virtualized = True
+        self.stp.breezy_autotest_hppa.processor.supports_virtualized = True
 
         # Create an arch-any and an arch-all source in a PPA.
         self.ppa = self.factory.makeArchive(

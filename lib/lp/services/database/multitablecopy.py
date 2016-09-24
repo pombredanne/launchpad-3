@@ -9,7 +9,7 @@ import logging
 import re
 import time
 
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database import postgresql
 from lp.services.database.sqlbase import (
@@ -23,12 +23,12 @@ from lp.services.looptuner import (
     )
 
 
+@implementer(ITunableLoop)
 class PouringLoop:
     """Loop body to pour data from holding tables back into source tables.
 
     Used by MultiTableCopy internally to tell DBLoopTuner what to do.
     """
-    implements(ITunableLoop)
 
     def __init__(self, from_table, to_table, transaction_manager, logger,
         batch_pouring_callback=None):

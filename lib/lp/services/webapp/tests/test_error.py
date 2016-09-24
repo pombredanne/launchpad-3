@@ -9,6 +9,7 @@ import socket
 import time
 import urllib2
 
+import psycopg2
 from storm.exceptions import (
     DisconnectionError,
     OperationalError,
@@ -26,10 +27,14 @@ from lp.services.webapp.error import (
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCase
 from lp.testing.fixture import (
+    CaptureOops,
     PGBouncerFixture,
     Urllib2Fixture,
     )
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    DatabaseLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import Contains
 
 
@@ -125,19 +130,76 @@ class TestDatabaseErrorViews(TestCase):
         url = 'http://launchpad.dev/'
         self.retryConnection(url, bouncer)
         # Now break the database, and we get an exception, along with
-        # our view.
+        # our view and several OOPSes from the retries.
         bouncer.stop()
-        error = self.getHTTPError(url)
+
+        with CaptureOops() as oopses:
+            error = self.getHTTPError(url)
         self.assertEqual(503, error.code)
         self.assertThat(error.read(),
                         Contains(DisconnectionErrorView.reason))
+        self.assertEqual(
+            ([('DisconnectionError', 'error with no message from the libpq')]
+             * 2) +
+            ([('DisconnectionError',
+               'could not connect to server: Connection refused')]
+             * 6),
+            [(oops['type'], oops['value'].split('\n')[0])
+             for oops in oopses.oopses])
+
         # We keep seeing the correct exception on subsequent requests.
-        error = self.getHTTPError(url)
+        with CaptureOops() as oopses:
+            error = self.getHTTPError(url)
         self.assertEqual(503, error.code)
         self.assertThat(error.read(),
                         Contains(DisconnectionErrorView.reason))
+        self.assertEqual(
+            ([('DisconnectionError',
+               'could not connect to server: Connection refused')]
+             * 8),
+            [(oops['type'], oops['value'].split('\n')[0])
+             for oops in oopses.oopses])
+
         # When the database is available again, requests succeed.
         bouncer.start()
+        self.retryConnection(url, bouncer)
+
+        # If we ask pgbouncer to disable the database, requests fail and
+        # get the same error page, but we don't log OOPSes except for
+        # the initial connection terminations. Disablement is always
+        # explicit maintenance, and we don't need lots of ongoing OOPSes
+        # to tell us about maintenance that we're doing.
+        dbname = DatabaseLayer._db_fixture.dbname
+        conn = psycopg2.connect("dbname=pgbouncer")
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute("DISABLE " + dbname)
+        cur.execute("KILL " + dbname)
+        cur.execute("RESUME " + dbname)
+
+        with CaptureOops() as oopses:
+            error = self.getHTTPError(url)
+        self.assertEqual(503, error.code)
+        self.assertThat(error.read(),
+                        Contains(DisconnectionErrorView.reason))
+        self.assertEqual(
+            [('DisconnectionError', 'database removed')],
+            [(oops['type'], oops['value'].split('\n')[0])
+             for oops in oopses.oopses])
+
+        # A second request doesn't log any OOPSes.
+        with CaptureOops() as oopses:
+            error = self.getHTTPError(url)
+        self.assertEqual(503, error.code)
+        self.assertThat(error.read(),
+                        Contains(DisconnectionErrorView.reason))
+        self.assertEqual(
+            [],
+            [(oops['type'], oops['value'].split('\n')[0])
+             for oops in oopses.oopses])
+
+        # When the database is available again, requests succeed.
+        cur.execute("ENABLE %s" % DatabaseLayer._db_fixture.dbname)
         self.retryConnection(url, bouncer)
 
     def test_disconnectionerror_view(self):

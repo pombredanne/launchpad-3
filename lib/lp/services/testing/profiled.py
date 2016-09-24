@@ -16,6 +16,7 @@ import time
 _profile_stats_filename = os.environ.get('lp_layer_profile_filename', None)
 _profiling_setup_time = None
 
+
 def profiled(func):
     """Decorator that automatically profiles invocations of the method."""
     def profiled_func(cls, *args, **kw):
@@ -72,9 +73,8 @@ def _update_profile_stats(cls, func, duration):
     stats[key] = (hits + 1, total_duration + duration)
 
     # Dump stats back to disk, making sure we flush
-    outf = open(_profile_stats_filename, 'wb')
-    pickle.dump(stats, outf, pickle.HIGHEST_PROTOCOL)
-    outf.close() # and flush
+    with open(_profile_stats_filename, 'wb') as outf:
+        pickle.dump(stats, outf, pickle.HIGHEST_PROTOCOL)
 
 
 def report_profile_stats():
@@ -104,4 +104,3 @@ def report_profile_stats():
     print
     print "Total duration of test run %0.1f seconds." % (
             time.time() - _profiling_setup_time)
-

@@ -34,8 +34,8 @@
            tal:attributes="href product/translationgroup/fmt:url"
              >Ubuntu Translation Group</a><br />
       </tal:has_prod_translationgrp>
-      <tal:has_project_group condition="product/project"
-                       define="projectgroup product/project">
+      <tal:has_project_group condition="product/projectgroup"
+                       define="projectgroup product/projectgroup">
         <b>Project group:</b>
           <a tal:content="projectgroup/displayname"
              tal:attributes="href string:/${projectgroup/name}/" /><br />

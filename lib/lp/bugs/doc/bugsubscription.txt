@@ -271,7 +271,7 @@ parameter values of level.
     Sample Person
 
 If No Privileges Person created a single filter with a notification
-level set to LIFECYCLE, he will not be included, if the parameter
+level set to LIFECYCLE, they will not be included, if the parameter
 `level` is METADATA or COMMENTS.
 
     >>> from lp.testing import person_logged_in
@@ -383,7 +383,7 @@ notification level or higher will be returned.
      ('mark@example.com', 'Subscriber'),
      ('test@canonical.com', 'Assignee')]
 
-When Sample Person is unsubscribed from linux_source_bug, he is no
+When Sample Person is unsubscribed from linux_source_bug, they are no
 longer included in the result of getBugNotificationRecipients() for
 the COMMENTS level...
 
@@ -533,7 +533,7 @@ The anonymous user (represented by None) also can't unsubscribe them.
     >>> subscription.canBeUnsubscribedByUser(None)
     False
 
-A user can unsubscribe a team he's a member of.
+A user can unsubscribe a team they're a member of.
 
     >>> team = factory.makeTeam()
     >>> member = factory.makePerson()
@@ -588,7 +588,7 @@ Only the bug reporter, Foo Bar, has an explicit subscription.
     ...  for subscription in new_bug.subscriptions]
     [u'Foo Bar']
 
-But because Sample Person is the distribution contact for Ubuntu, he
+But because Sample Person is the distribution contact for Ubuntu, they
 will be implicitly added to the notification recipients.
 
     >>> getSubscribers(new_bug)

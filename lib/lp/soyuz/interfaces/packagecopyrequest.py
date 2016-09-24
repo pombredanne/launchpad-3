@@ -195,4 +195,3 @@ class IPackageCopyRequestSet(Interface):
         :return: a (potentially empty) result set of `IPackageCopyRequest`
             instances.
         """
-

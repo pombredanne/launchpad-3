@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from sqlobject import ForeignKey
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.constants import DEFAULT
@@ -35,8 +35,8 @@ from lp.translations.interfaces.translationfileformat import (
     )
 
 
+@implementer(IPOExportRequestSet)
 class POExportRequestSet:
-    implements(IPOExportRequestSet)
 
     @property
     def entry_count(self):
@@ -182,8 +182,8 @@ class POExportRequestSet:
                 """ % ids_string)
 
 
+@implementer(IPOExportRequest)
 class POExportRequest(SQLBase):
-    implements(IPOExportRequest)
 
     _table = 'POExportRequest'
 

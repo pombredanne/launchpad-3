@@ -37,12 +37,13 @@ importing will be available to any user.
 
     >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> owner_browser.open('http://code.launchpad.dev/firefox')
-    >>> owner_browser.getLink('Configure code hosting').click()
+    >>> owner_browser.getLink('Configure Code').click()
+    >>> owner_browser.getControl('Bazaar', index=0).click()
     >>> owner_browser.getControl(
     ...     'Import a branch').click()
     >>> owner_browser.getControl('Branch URL').value = (
     ...     'git://example.com/firefox')
-    >>> owner_browser.getControl('Git').click()
+    >>> owner_browser.getControl('Git', index=1).click()
     >>> owner_browser.getControl('Branch name').value = 'trunk'
     >>> owner_browser.getControl('Update').click()
 
@@ -97,8 +98,8 @@ URL.
     at http://user:password@bzr.example.com/firefox/trunk.
     The next import is scheduled to run
     as soon as possible.
-    
-Specifing a Launchpad URL results in an error.
+
+Specifying a Launchpad URL results in an error.
 
     >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
     >>> browser.getControl('Branch Name').value = "invalid"
@@ -108,7 +109,23 @@ Specifing a Launchpad URL results in an error.
     >>> browser.getControl('Request Import').click()
     >>> print_feedback_messages(browser.contents)
     There is 1 error.
-    You can not create imports for branches that are hosted by Launchpad.
+    You cannot create imports for Bazaar branches that are hosted by
+    Launchpad.
+
+But a Launchpad Git URL is OK.
+
+    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
+    >>> browser.getControl('Project').value = "firefox"
+    >>> browser.getControl('Branch Name').value = "lp-git-import"
+    >>> browser.getControl('Git').click()
+    >>> browser.getControl('Repo URL', index=0).value = (
+    ...     "git://git.launchpad.net/firefox.git")
+    >>> browser.getControl('Request Import').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
+    Import Status: Reviewed
+    This branch is an import of the HEAD branch of the Git repository at
+    git://git.launchpad.net/firefox.git.
+    The next import is scheduled to run as soon as possible.
 
 Requesting a Subversion import
 ==============================

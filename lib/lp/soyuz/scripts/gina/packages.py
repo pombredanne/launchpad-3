@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Package information classes.
@@ -31,13 +31,14 @@ import tempfile
 from lp.app.validators.version import valid_debian_version
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.changesfile import ChangesFile
+from lp.archiveuploader.dscfile import DSCFile
+from lp.archiveuploader.nascentuploadfile import BaseBinaryUploadFile
 from lp.archiveuploader.utils import (
     DpkgSourceError,
     extract_dpkg_source,
     )
 from lp.services import encoding
 from lp.services.database.constants import UTC_NOW
-from lp.services.gpg.interfaces import GPGKeyAlgorithm
 from lp.services.scripts import log
 from lp.soyuz.enums import PackagePublishingPriority
 from lp.soyuz.scripts.gina import (
@@ -60,8 +61,6 @@ prioritymap = {
     # because of a bug in dak.
     "source": PackagePublishingPriority.EXTRA,
 }
-
-GPGALGOS = dict((item.value, item.name) for item in GPGKeyAlgorithm.items)
 
 
 #
@@ -210,6 +209,7 @@ class AbstractPackageData:
     archive_root = None
     package = None
     _required = None
+    _user_defined = None
     version = None
 
     # Component is something of a special case. It is set up in
@@ -225,8 +225,14 @@ class AbstractPackageData:
                                       (self.package, self.version))
 
         absent = object()
-        missing = [attr for attr in self._required if
-                   getattr(self, attr, absent) is absent]
+        missing = []
+        for attr in self._required:
+            if isinstance(attr, tuple):
+                if all(getattr(self, oneattr, absent) is absent
+                       for oneattr in attr):
+                    missing.append(attr)
+            elif getattr(self, attr, absent) is absent:
+                missing.append(attr)
         if missing:
             raise MissingRequiredArguments(missing)
 
@@ -244,12 +250,36 @@ class AbstractPackageData:
             self.do_package(distro_name, archive_root)
         finally:
             os.chdir(cwd)
-        # We only rmtree if everything worked as expected; otherwise,
-        # leave it around for forensics.
-        shutil.rmtree(tempdir)
+            shutil.rmtree(tempdir)
 
         self.date_uploaded = UTC_NOW
         return True
+
+    def is_field_known(self, lowfield):
+        """Is this field a known one?"""
+        # _known_fields contains the fields that archiveuploader recognises
+        # from a raw .dsc or .*deb; _required contains a few extra fields
+        # that are added to Sources and Packages index files.  If a field is
+        # in neither, it counts as user-defined.
+        if lowfield in self._known_fields:
+            return True
+        for required in self._required:
+            if isinstance(required, tuple):
+                if lowfield in required:
+                    return True
+            elif lowfield == required:
+                return True
+        return False
+
+    def set_field(self, key, value):
+        """Record an arbitrary control field."""
+        lowkey = key.lower()
+        if self.is_field_known(lowkey):
+            setattr(self, lowkey.replace("-", "_"), value)
+        else:
+            if self._user_defined is None:
+                self._user_defined = []
+            self._user_defined.append([key, value])
 
     def do_package(self, distro_name, archive_root):
         """To be provided by derived class."""
@@ -282,9 +312,11 @@ class SourcePackageData(AbstractPackageData):
         'section',
         'architecture',
         'directory',
-        'files',
+        ('files', 'checksums-sha1', 'checksums-sha256', 'checksums-sha512'),
         'component',
         ]
+
+    _known_fields = set(k.lower() for k in DSCFile.known_fields)
 
     def __init__(self, **args):
         for k, v in args.items():
@@ -312,13 +344,14 @@ class SourcePackageData(AbstractPackageData):
                 except UnicodeDecodeError:
                     raise DisplayNameDecodingError(
                         "Could not decode name %s" % displayname)
-            elif k == 'Files':
-                self.files = []
-                files = v.split("\n")
-                for f in files:
-                    self.files.append(stripseq(f.split(" ")))
+            elif k == 'Files' or k.startswith('Checksums-'):
+                if not hasattr(self, 'files'):
+                    self.files = []
+                    files = v.split("\n")
+                    for f in files:
+                        self.files.append(stripseq(f.split(" "))[-1])
             else:
-                setattr(self, k.lower().replace("-", "_"), v)
+                self.set_field(k, v)
 
         if self.section is None:
             self.section = 'misc'
@@ -399,11 +432,13 @@ class BinaryPackageData(AbstractPackageData):
         'filename',
         'component',
         'size',
-        'md5sum',
+        ('md5sum', 'sha1', 'sha256', 'sha512'),
         'description',
         'summary',
         'priority',
         ]
+
+    _known_fields = set(k.lower() for k in BaseBinaryUploadFile.known_fields)
 
     # Set in __init__
     source = None
@@ -452,7 +487,7 @@ class BinaryPackageData(AbstractPackageData):
                     raise MissingRequiredArguments("Installed-Size is "
                         "not a valid integer: %r" % v)
             else:
-                setattr(self, k.lower().replace("-", "_"), v)
+                self.set_field(k, v)
 
         if self.source:
             # We need to handle cases like "Source: myspell

@@ -24,7 +24,7 @@ from storm.expr import (
     LeftJoin,
     Or,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.registry.model.karma import (
@@ -56,8 +56,8 @@ from lp.services.worlddata.model.spokenin import SpokenIn
 SpokenIn
 
 
+@implementer(ILanguage)
 class Language(SQLBase):
-    implements(ILanguage)
 
     _table = 'Language'
 
@@ -177,8 +177,8 @@ class Language(SQLBase):
         return self.translators.count()
 
 
+@implementer(ILanguageSet)
 class LanguageSet:
-    implements(ILanguageSet)
 
     @staticmethod
     def _getTranslatorJoins():
@@ -197,7 +197,7 @@ class LanguageSet:
                     KarmaCategory.name == 'translations',
                     KarmaCache.categoryID == KarmaCategory.id,
                     KarmaCache.productID == None,
-                    KarmaCache.projectID == None,
+                    KarmaCache.projectgroupID == None,
                     KarmaCache.sourcepackagenameID == None,
                     KarmaCache.distributionID == None)),
             PersonLanguage.personID ==

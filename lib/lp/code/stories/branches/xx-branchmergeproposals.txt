@@ -13,7 +13,6 @@ In order to test notifications, we need a subscriber for the branch.
     ...     BranchMergeProposalStatus,
     ...     BranchSubscriptionNotificationLevel,
     ...     CodeReviewNotificationLevel)
-    ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> from lp.code.tests.helpers import (
     ...     make_merge_proposal_without_reviewers)
@@ -89,6 +88,8 @@ The summary reflects the selected target and prerequisite.
     lp://dev/~name12/gnome-terminal/pushed
     To merge this branch:
     bzr merge lp://dev/~name12/gnome-terminal/klingon
+    Related bugs:
+    Link a bug report
 
 
 Editing a commit message
@@ -259,67 +260,6 @@ The review is now reassigned to the HWDB team.
     >>> print_tag_with_id(foobar_browser.contents, 'code-review-votes')
     Reviewer                         Review Type  Date Requested Status...
     HWDB Team                        claimable    ... ago        Pending ...
-
-
-Marking as merged
------------------
-
-When a branch has been merged into the target branch, the proposal should
-be marked as merged.
-
-    >>> nopriv_browser.open(klingon_proposal)
-
-The edit icon at the end of the status allows the user to edit the status.
-
-    >>> nopriv_browser.getLink('Edit status').click()
-
-When marking a proposal as merged there is an optional revision number.
-If this is set then the when setting the merge proposal as merged the
-system looks for the revision in the history of the target branch,
-and if found uses the revision date as the merged date.  If it cannot
-find one, then the current time is used as the date merged.
-
-    >>> nopriv_browser.getControl(name='field.queue_status').displayValue = (
-    ...     ['Merged'])
-    >>> nopriv_browser.getControl('Change Status').click()
-
-The proposal is now shown as have being merged.
-
-    >>> print_summary(nopriv_browser)
-    Status: Merged
-    ...
-
-If the user subsequently wants to set the merged revision number,
-this can be updated by selecting the edit icon shown in the table
-next to the heading "Merged at revision".
-
-    >>> sample_browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> print extract_text(find_tag_by_id(
-    ...     sample_browser.contents, 'landing-targets'))
-    Merged into lp://dev/~name12/gnome-terminal/main
-    ...
-    >>> sample_browser.getLink('Merged').click()
-    >>> print_summary(sample_browser)
-    Status: Merged
-    ...
-    Merged at revision: not available
-    ...
-    >>> sample_browser.getLink(url='+merged').click()
-    >>> sample_browser.getControl('Merged Revision Number').value = '42'
-    >>> sample_browser.getControl('Mark as Merged').click()
-
-    >>> print_feedback_messages(sample_browser.contents)
-    The proposal&#x27;s merged revision has been updated.
-    >>> print_summary(sample_browser)
-    Status: Merged
-    Merged at revision: 42
-    ...
-    >>> sample_browser.getLink('~name12/gnome-terminal/klingon').click()
-    >>> print extract_text(find_tag_by_id(
-    ...     sample_browser.contents, 'landing-targets'))
-    Merged into lp://dev/~name12/gnome-terminal/main at revision 42
-    ...
 
 
 Resubmitting proposals
@@ -519,23 +459,25 @@ A branch merge proposal should show the bugs fixed and/or specs implemented
 in the source branch.
 
     >>> def print_bugs_and_specs(browser):
-    ...     links = find_tag_by_id(browser.contents,
-    ...         'related-bugs-and-blueprints')
-    ...     if links == None:
-    ...         print links
-    ...     else:
-    ...         print extract_text(links)
+    ...     for id in 'related-bugs', 'related-blueprints':
+    ...         links = find_tag_by_id(browser.contents, id)
+    ...         if links == None:
+    ...             print links
+    ...         else:
+    ...             print extract_text(links)
 
     >>> login('admin@canonical.com')
     >>> bmp = factory.makeBranchMergeProposal()
     >>> bmp_url = canonical_url(bmp)
     >>> logout()
 
-There shouldn't be a 'Linked bug reports and blueprints' section if there are
-none
+If there are no related bugs, the corresponding section should only show a
+"Link to bug report" link; if there are no related blueprints, there should
+be no corresponding section.
 
     >>> nopriv_browser.open(bmp_url)
     >>> print_bugs_and_specs(nopriv_browser)
+    Related bugs: Link a bug report
     None
 
     >>> login('admin@canonical.com')
@@ -547,7 +489,8 @@ The section is shown if there are links.
 
     >>> nopriv_browser.open(bmp_url)
     >>> print_bugs_and_specs(nopriv_browser)
-    Related bugs and blueprints: Bug #...: Bug for linking Undecided New
+    Related bugs: Bug #...: Bug for linking Undecided New Link a bug report
+    None
 
 
 Target branch edge cases
@@ -622,7 +565,7 @@ Create merge proposal with a preview diff, and go to its index page.
 The text of the review diff is in the page.
 
     >>> print repr(extract_text(get_review_diff()))
-    u'Preview Diff\nDownload diff\n1\n...Fake Diff\u1010'
+    u'Preview Diff\n[H/L] Next/Prev Comment, [J/K] Next/Prev File, [N/P] Next/Prev Hunk\nDownload diff\nSide-by-side diff\n1\n---\n2\n+++\n3\n@@ -0,0 +1 @@\n4\n+Fake Diff\u1010'
 
 There is also a link to the diff URL, which is the preview diff URL plus
 "+files/preview.diff". It redirects logged in users to the file in the
@@ -638,7 +581,7 @@ restricted librarian.
     >>> from lazr.uri import URI
     >>> print http(r"""
     ... GET %s HTTP/1.1
-    ... Authorization: Basic no-priv@canonical.com:test        
+    ... Authorization: Basic no-priv@canonical.com:test
     ... """ % URI(link['href']).path)
     HTTP/1.1 303 See Other
     ...
@@ -667,7 +610,8 @@ If the review diff is empty, then we say it is empty.
 Preview diff generation status
 ------------------------------
 
-    >>> update = find_tag_by_id(nopriv_browser.contents, 'diff-pending-update')
+    >>> update = find_tag_by_id(
+    ...     nopriv_browser.contents, 'diff-pending-update')
     >>> print extract_text(update)
     Updating diff...
     An updated diff will be available in a few minutes.  Reload to see the
@@ -713,7 +657,10 @@ access.
     >>> print_tag_with_id(nopriv_browser.contents, 'landing-targets')
     Ready for review for merging into lp://dev/fooix
       Eric the Viking: Pending (code) requested ... ago
-      Diff: 47 lines (+7/-0) 2 files modified                api
+      Diff: 47 lines (+7/-13) 2 files modified
+      file1 (+3/-8)
+      file2 (+4/-5)
+      api
 
 
 Merge proposal details shown on the bug page
@@ -734,4 +681,7 @@ details are shown on the bug page under the branch link.
     lp://dev/~fred/fooix/proposed
       Ready for review for merging into lp://dev/fooix
         Eric the Viking: Pending (code) requested ... ago
-        Diff: 47 lines (+7/-0) 2 files modified              api
+        Diff: 47 lines (+7/-13) 2 files modified
+        file1 (+3/-8)
+        file2 (+4/-5)
+	api

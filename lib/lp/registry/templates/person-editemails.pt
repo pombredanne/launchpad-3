@@ -10,15 +10,19 @@
 <div metal:fill-slot="main">
   <div metal:use-macro="context/@@launchpad_form/form">
     <metal:extra-info fill-slot="extra_info">
-      <h2>Your e-mail addresses</h2>
+      <h2>Your email addresses</h2>
       <p tal:condition="context/preferredemail">
-        Your preferred contact address for all Launchpad e-mail is:
+        Your preferred contact address for all Launchpad email is:
         <b tal:content="context/preferredemail/email" />
       </p>
       <p tal:condition="not: context/preferredemail"
          id="no-contact-address">
           Currently you don't have a contact address in Launchpad.
       </p>
+      <p>Looking to <a
+        tal:define="link context/menu:overview/editmailinglists"
+        tal:attributes="href link/target" 
+        >configure your mailing list subscriptions</a>?</p>
     </metal:extra-info>
 
     <metal:widgets fill-slot="widgets">
@@ -70,79 +74,6 @@
     </metal:widgets>
     <metal:widgets fill-slot="buttons" />
   </div>
-
-
-  <form action=""
-        method="post" enctype="multipart/form-data"
-        accept-charset="UTF-8" tal:condition="view/mailing_list_widgets">
-
-    <h2>Mailing list subscriptions</h2>
-
-    <p>You're a member of one or more teams with active mailing
-      lists. You can subscribe to a team's mailing list using any of
-      your verified email addresses.</p>
-
-    <table class="listing" style="width: 45em;">
-      <thead>
-        <th style="white-space:nowrap;">For mailing list</th>
-        <th>Subscribe with</th>
-      </thead>
-      <tbody>
-        <tr tal:repeat="widget view/mailing_list_widgets">
-          <td tal:content="structure widget/team/fmt:link">Team</td>
-          <td tal:content="structure widget/widget">Widget</td>
-        </tr>
-      </tbody>
-    </table>
-    <div style="padding-top: 1em; padding-bottom: 1em;">
-      <input tal:replace="structure view/action_update_subscriptions/render" />
-    </div>
-  </form>
-
-  <form action=""
-        method="post" enctype="multipart/form-data"
-        accept-charset="UTF-8">
-
-    <h2>Automatic subscription to mailing lists</h2>
-
-    <div id="notification-info">When a team you are a member of creates a new
-        mailing list, you will receive an email notification offering you the
-        opportunity to join the new mailing list.  Launchpad can also
-        automatically subscribe you to a team's mailing list whenever you
-        join a team.</div>
-
-    <tal:widget
-       define="widget nocall:view/widgets/mailing_list_auto_subscribe_policy">
-      <table class="form">
-
-        <thead>
-          <tr>
-            <th style="white-space:nowrap; text-align:left;">
-              <div style="margin-bottom: 1em;">
-                <label tal:attributes="for widget/name"
-                       tal:content="structure widget/label" />
-              </div>
-            </th>
-            <td></td>
-          </tr>
-        </thead>
-
-        <tbody>
-          <metal:block use-macro="context/@@launchpad_form/widget_row" />
-          <tr>
-            <td>
-              <input
-                 tal:replace="structure
-                              view/action_update_autosubscribe_policy/render" />
-            </td>
-            <td></td>
-          </tr>
-        </tbody>
-
-      </table>
-    </tal:widget>
-  </form>
-
 </div>
 </body>
 </html>

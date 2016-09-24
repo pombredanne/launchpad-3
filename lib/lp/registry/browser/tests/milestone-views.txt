@@ -306,7 +306,7 @@ The projectgroup milestones are virtual and cannot be modified. The template
 generates CSS that hides the space occupied by the side portlets.
 
     >>> projectgroup = factory.makeProject(name='flock')
-    >>> product.project = projectgroup
+    >>> product.projectgroup = projectgroup
     >>> project_milestone = projectgroup.getMilestone('kakapo')
     >>> view = create_initialized_view(
     ...     project_milestone, '+index', principal=person)
@@ -721,8 +721,8 @@ milestone.
     >>> [subscription for subscription in owner.structural_subscriptions]
     []
 
-No Privileges Person cannot access this view because he is neither the
-project owner or series driver..
+No Privileges Person cannot access this view because they are neither the
+project owner or series driver.
 
     >>> milestone = firefox_1_0.newMilestone('1.0.12')
     >>> ignored = login_person(no_priv)

@@ -31,6 +31,8 @@
   <include package=".statistics" />
   <include package=".temporaryblobstorage" />
   <include package=".verification" />
+  <include package=".webhooks" />
   <include package=".webservice" />
   <include package=".worlddata" />
+  <include package=".xref" />
 </configure>

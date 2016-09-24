@@ -183,8 +183,8 @@ IProductSet will also tell us which products can be translated:
 
     >>> for product in productset.getTranslatables():
     ...    print product.name
-    alsa-utils
     evolution
+    alsa-utils
 
 Only active products are listed as translatables.
 
@@ -222,7 +222,7 @@ External Bug Tracker
 
 If a product doesn't use Malone, it can specify that it uses an
 external bug tracker. It can either use its own bug tracker, or use its
-project's bug tracker. In order to make this logic easier for call
+project group's bug tracker. In order to make this logic easier for call
 sites, there is a method that takes care of it called
 getExternalBugTracker.
 
@@ -238,18 +238,18 @@ one.
     >>> firefox.getExternalBugTracker() is None
     True
 
-This is true even if its project has a bug tracker specified.
+This is true even if its project group has a bug tracker specified.
 
     >>> from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 
     >>> ignored = login_person(firefox.owner)
     >>> bug_tracker_set = getUtility(IBugTrackerSet)
     >>> gnome_bugzilla = bug_tracker_set.getByName('gnome-bugzilla')
-    >>> firefox.project.bugtracker = gnome_bugzilla
+    >>> firefox.projectgroup.bugtracker = gnome_bugzilla
     >>> firefox.getExternalBugTracker() is None
     True
 
-Now, if we say that Firefox doesn't use Malone, its project's bug
+Now, if we say that Firefox doesn't use Malone, its project group's bug
 tracker will be returned.
 
     >>> firefox.official_malone = False
@@ -261,7 +261,7 @@ tracker will be returned.
     u'gnome-bugzilla'
 
 
-If Firefox isn't happy with its project's bug tracker it can choose to
+If Firefox isn't happy with its project group's bug tracker it can choose to
 specify its own.
 
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
@@ -272,10 +272,10 @@ specify its own.
     EXTERNAL
 
 
-If neither the project nor the product have specified a bug tracker,
+If neither the project group nor the product have specified a bug tracker,
 None will of course be returned.
 
-    >>> firefox.project.bugtracker = None
+    >>> firefox.projectgroup.bugtracker = None
     >>> firefox.bugtracker = None
     >>> firefox.getExternalBugTracker() is None
     True
@@ -305,7 +305,7 @@ We can create new products with the createProduct() method:
     >>> product = productset.createProduct(
     ...     owner=owner,
     ...     name='test-product',
-    ...     displayname='Test Product',
+    ...     display_name='Test Product',
     ...     title='Test Product',
     ...     summary='A test product',
     ...     description='A description of the test product',
@@ -392,7 +392,7 @@ ProductSeries of a product.
     >>> [milestone.name for milestone in firefox.milestones]
     [u'1.0']
 
-Milestones for products can only be created by product/project owners,
+Milestones for products can only be created by product/project group owners,
 registry experts, or admins.
 
     >>> from datetime import datetime
@@ -519,6 +519,26 @@ Only active products are returned.
     gnome-terminal
     iso-codes
     landscape
+
+
+Products with Git repositories
+------------------------------
+
+Products are considered to officially support Launchpad as a location for
+their code if they have a default Git repository.
+
+    >>> from lp.code.interfaces.gitrepository import IGitRepositorySet
+    >>> firefox.development_focus.branch = None
+    >>> print firefox.official_codehosting
+    False
+    >>> print firefox.codehosting_usage.name
+    UNKNOWN
+    >>> getUtility(IGitRepositorySet).setDefaultRepository(
+    ...     firefox, factory.makeGitRepository(target=firefox))
+    >>> print firefox.official_codehosting
+    True
+    >>> print firefox.codehosting_usage.name
+    LAUNCHPAD
 
 
 Primary translatable

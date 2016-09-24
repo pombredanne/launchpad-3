@@ -36,7 +36,7 @@ message is displayed:
     >>> soup.first('div', 'message')
     <div class="message">Not a valid bug number or nickname.</div>
 
-The user is offered a link to search for bug in case he doesn't know the
+The user is offered a link to search for bug in case they don't know the
 bug number.
 
     >>> user_browser.getLink('Bug listing').click()
@@ -107,7 +107,7 @@ message is displayed:
     >>> flush_database_updates()
     >>> logout()
 
-A regular user shouldn't be able to link to a private bug he doesn't
+A regular user shouldn't be able to link to a private bug they don't
 have access to:
 
     # We use the no-priv user here because sample person is subscribed

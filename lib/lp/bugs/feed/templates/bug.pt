@@ -31,7 +31,10 @@
       </tal:milestone>
       <td tal:content="bugtask/status/title">Won't Fix</td>
       <td tal:content="bugtask/importance/title">Unknown</td>
-      <td tal:content="bugtask/assignee/displayname|string:-">Person</td>
+      <td tal:define="assignee bugtask/assignee"
+          tal:content="python:assignee and not assignee.private and assignee.displayname or '-'">
+        Person
+      </td>
       <td>
         <a tal:condition="bugtask/bugwatch"
             tal:attributes="href bugtask/bugwatch/url"

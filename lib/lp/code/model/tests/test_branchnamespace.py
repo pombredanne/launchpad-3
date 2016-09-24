@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IBranchNamespace` implementations."""
@@ -36,9 +36,9 @@ from lp.code.interfaces.branchnamespace import (
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.branchnamespace import (
-    PackageNamespace,
-    PersonalNamespace,
-    ProductNamespace,
+    PackageBranchNamespace,
+    PersonalBranchNamespace,
+    ProjectBranchNamespace,
     )
 from lp.registry.enums import (
     BranchSharingPolicy,
@@ -48,6 +48,10 @@ from lp.registry.enums import (
 from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
+    )
+from lp.registry.interfaces.accesspolicy import (
+    IAccessPolicyGrantFlatSource,
+    IAccessPolicySource,
     )
 from lp.registry.interfaces.distribution import NoSuchDistribution
 from lp.registry.interfaces.person import NoSuchPerson
@@ -283,8 +287,8 @@ class NamespaceMixin:
             name=name)
 
 
-class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
-    """Tests for `PersonalNamespace`."""
+class TestPersonalBranchNamespace(TestCaseWithFactory, NamespaceMixin):
+    """Tests for `PersonalBranchNamespace`."""
 
     layer = DatabaseFunctionalLayer
 
@@ -297,25 +301,25 @@ class TestPersonalNamespace(TestCaseWithFactory, NamespaceMixin):
         # A personal namespace has branches with names starting with
         # ~foo/+junk.
         person = self.factory.makePerson()
-        namespace = PersonalNamespace(person)
+        namespace = PersonalBranchNamespace(person)
         self.assertEqual('~%s/+junk' % person.name, namespace.name)
 
     def test_owner(self):
         # The person passed to a personal namespace is the owner.
         person = self.factory.makePerson()
-        namespace = PersonalNamespace(person)
+        namespace = PersonalBranchNamespace(person)
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
 
     def test_target(self):
         # The target of a personal namespace is the branch target of the owner
         # of that namespace.
         person = self.factory.makePerson()
-        namespace = PersonalNamespace(person)
+        namespace = PersonalBranchNamespace(person)
         self.assertEqual(IBranchTarget(person), namespace.target)
 
 
-class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
-    """Tests for `ProductNamespace`."""
+class TestProjectBranchNamespace(TestCaseWithFactory, NamespaceMixin):
+    """Tests for `ProjectBranchNamespace`."""
 
     layer = DatabaseFunctionalLayer
 
@@ -329,7 +333,7 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
         # A product namespace has branches with names starting with ~foo/bar.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
-        namespace = ProductNamespace(person, product)
+        namespace = ProjectBranchNamespace(person, product)
         self.assertEqual(
             '~%s/%s' % (person.name, product.name), namespace.name)
 
@@ -337,7 +341,7 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
         # The person passed to a product namespace is the owner.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
-        namespace = ProductNamespace(person, product)
+        namespace = ProjectBranchNamespace(person, product)
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
 
     def test_target(self):
@@ -345,7 +349,7 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
         # product.
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
-        namespace = ProductNamespace(person, product)
+        namespace = ProjectBranchNamespace(person, product)
         self.assertEqual(IBranchTarget(product), namespace.target)
 
     def test_validateMove_vcs_imports_rename_import_branch(self):
@@ -357,7 +361,7 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
             registrant=owner, target=IBranchTarget(product), branch_name=name)
         branch = code_import.branch
         new_name = self.factory.getUniqueString()
-        namespace = ProductNamespace(owner, product)
+        namespace = ProjectBranchNamespace(owner, product)
         with celebrity_logged_in('vcs_imports') as mover:
             self.assertIsNone(
                 namespace.validateMove(branch, mover, name=new_name))
@@ -370,13 +374,14 @@ class TestProductNamespace(TestCaseWithFactory, NamespaceMixin):
             registrant=owner, target=IBranchTarget(product))
         branch = code_import.branch
         new_owner = self.factory.makePerson()
-        new_namespace = ProductNamespace(new_owner, product)
+        new_namespace = ProjectBranchNamespace(new_owner, product)
         with celebrity_logged_in('vcs_imports') as mover:
             self.assertIsNone(new_namespace.validateMove(branch, mover))
 
 
-class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
-    """Tests for the privacy aspects of `ProductNamespace`.
+class TestProjectBranchNamespacePrivacyWithInformationType(
+    TestCaseWithFactory):
+    """Tests for the privacy aspects of `ProjectBranchNamespace`.
 
     This tests the behaviour for a product using the new
     branch_sharing_policy rules.
@@ -384,18 +389,18 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def makeProductNamespace(self, sharing_policy, person=None):
+    def makeProjectBranchNamespace(self, sharing_policy, person=None):
         if person is None:
             person = self.factory.makePerson()
         product = self.factory.makeProduct()
         self.factory.makeCommercialSubscription(product=product)
         with person_logged_in(product.owner):
             product.setBranchSharingPolicy(sharing_policy)
-        namespace = ProductNamespace(person, product)
+        namespace = ProjectBranchNamespace(person, product)
         return namespace
 
     def test_public_anyone(self):
-        namespace = self.makeProductNamespace(
+        namespace = self.makeProjectBranchNamespace(
             BranchSharingPolicy.PUBLIC)
         self.assertContentEqual(
             FREE_INFORMATION_TYPES, namespace.getAllowedInformationTypes())
@@ -403,13 +408,13 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             InformationType.PUBLIC, namespace.getDefaultInformationType())
 
     def test_forbidden_anyone(self):
-        namespace = self.makeProductNamespace(
+        namespace = self.makeProjectBranchNamespace(
             BranchSharingPolicy.FORBIDDEN)
         self.assertContentEqual([], namespace.getAllowedInformationTypes())
         self.assertEqual(None, namespace.getDefaultInformationType())
 
     def test_public_or_proprietary_anyone(self):
-        namespace = self.makeProductNamespace(
+        namespace = self.makeProjectBranchNamespace(
             BranchSharingPolicy.PUBLIC_OR_PROPRIETARY)
         self.assertContentEqual(
             NON_EMBARGOED_INFORMATION_TYPES,
@@ -418,13 +423,13 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             InformationType.PUBLIC, namespace.getDefaultInformationType())
 
     def test_proprietary_or_public_anyone(self):
-        namespace = self.makeProductNamespace(
+        namespace = self.makeProjectBranchNamespace(
             BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
         self.assertContentEqual([], namespace.getAllowedInformationTypes())
         self.assertIs(None, namespace.getDefaultInformationType())
 
     def test_proprietary_or_public_owner_grantee(self):
-        namespace = self.makeProductNamespace(
+        namespace = self.makeProjectBranchNamespace(
             BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
         with person_logged_in(namespace.product.owner):
             getUtility(IService, 'sharing').sharePillarInformation(
@@ -438,7 +443,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             namespace.getDefaultInformationType())
 
     def test_proprietary_or_public_caller_grantee(self):
-        namespace = self.makeProductNamespace(
+        namespace = self.makeProjectBranchNamespace(
             BranchSharingPolicy.PROPRIETARY_OR_PUBLIC)
         grantee = self.factory.makePerson()
         with person_logged_in(namespace.product.owner):
@@ -453,13 +458,13 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             namespace.getDefaultInformationType(grantee))
 
     def test_proprietary_anyone(self):
-        namespace = self.makeProductNamespace(
+        namespace = self.makeProjectBranchNamespace(
             BranchSharingPolicy.PROPRIETARY)
         self.assertContentEqual([], namespace.getAllowedInformationTypes())
         self.assertIs(None, namespace.getDefaultInformationType())
 
     def test_proprietary_branch_owner_grantee(self):
-        namespace = self.makeProductNamespace(
+        namespace = self.makeProjectBranchNamespace(
             BranchSharingPolicy.PROPRIETARY)
         with person_logged_in(namespace.product.owner):
             getUtility(IService, 'sharing').sharePillarInformation(
@@ -473,7 +478,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             namespace.getDefaultInformationType())
 
     def test_proprietary_caller_grantee(self):
-        namespace = self.makeProductNamespace(
+        namespace = self.makeProjectBranchNamespace(
             BranchSharingPolicy.PROPRIETARY)
         grantee = self.factory.makePerson()
         with person_logged_in(namespace.product.owner):
@@ -488,13 +493,13 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             namespace.getDefaultInformationType(grantee))
 
     def test_embargoed_or_proprietary_anyone(self):
-        namespace = self.makeProductNamespace(
+        namespace = self.makeProjectBranchNamespace(
             BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         self.assertContentEqual([], namespace.getAllowedInformationTypes())
         self.assertIs(None, namespace.getDefaultInformationType())
 
     def test_embargoed_or_proprietary_owner_grantee(self):
-        namespace = self.makeProductNamespace(
+        namespace = self.makeProjectBranchNamespace(
             BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         with person_logged_in(namespace.product.owner):
             getUtility(IService, 'sharing').sharePillarInformation(
@@ -508,7 +513,7 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             namespace.getDefaultInformationType())
 
     def test_embargoed_or_proprietary_caller_grantee(self):
-        namespace = self.makeProductNamespace(
+        namespace = self.makeProjectBranchNamespace(
             BranchSharingPolicy.EMBARGOED_OR_PROPRIETARY)
         grantee = self.factory.makePerson()
         with person_logged_in(namespace.product.owner):
@@ -522,9 +527,32 @@ class TestProductNamespacePrivacyWithInformationType(TestCaseWithFactory):
             InformationType.EMBARGOED,
             namespace.getDefaultInformationType(grantee))
 
+    def test_grantee_has_no_artifact_grant(self):
+        # The owner of a new branch in a project whose default information type
+        # is non-public does not have an artifact grant specifically for the
+        # new branch, because their existing policy grant is sufficient.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[person])
+        namespace = self.makeProjectBranchNamespace(
+            BranchSharingPolicy.PROPRIETARY, person=person)
+        with person_logged_in(namespace.product.owner):
+            getUtility(IService, 'sharing').sharePillarInformation(
+                namespace.product, team, namespace.product.owner,
+                {InformationType.PROPRIETARY: SharingPermission.ALL})
+        branch = namespace.createBranch(
+            BranchType.HOSTED, self.factory.getUniqueString(), person)
+        [policy] = getUtility(IAccessPolicySource).find(
+            [(namespace.product, InformationType.PROPRIETARY)])
+        apgfs = getUtility(IAccessPolicyGrantFlatSource)
+        self.assertContentEqual(
+            [(namespace.product.owner, {policy: SharingPermission.ALL}, []),
+             (team, {policy: SharingPermission.ALL}, [])],
+            apgfs.findGranteePermissionsByPolicy([policy]))
+        self.assertTrue(removeSecurityProxy(branch).visibleByUser(person))
 
-class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
-    """Tests for `PackageNamespace`."""
+
+class TestPackageBranchNamespace(TestCaseWithFactory, NamespaceMixin):
+    """Tests for `PackageBranchNamespace`."""
 
     layer = DatabaseFunctionalLayer
 
@@ -542,7 +570,7 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
-        namespace = PackageNamespace(
+        namespace = PackageBranchNamespace(
             person, SourcePackage(sourcepackagename, distroseries))
         self.assertEqual(
             '~%s/%s/%s/%s' % (
@@ -555,7 +583,7 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
-        namespace = PackageNamespace(
+        namespace = PackageBranchNamespace(
             person, SourcePackage(sourcepackagename, distroseries))
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
 
@@ -564,7 +592,7 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
         # sourcepackage.
         person = self.factory.makePerson()
         package = self.factory.makeSourcePackage()
-        namespace = PackageNamespace(person, package)
+        namespace = PackageBranchNamespace(person, package)
         self.assertEqual(IBranchTarget(package), namespace.target)
 
 
@@ -580,13 +608,13 @@ class TestNamespaceSet(TestCaseWithFactory):
     def test_get_personal(self):
         person = self.factory.makePerson()
         namespace = get_branch_namespace(person=person)
-        self.assertIsInstance(namespace, PersonalNamespace)
+        self.assertIsInstance(namespace, PersonalBranchNamespace)
 
     def test_get_product(self):
         person = self.factory.makePerson()
         product = self.factory.makeProduct()
         namespace = get_branch_namespace(person=person, product=product)
-        self.assertIsInstance(namespace, ProductNamespace)
+        self.assertIsInstance(namespace, ProjectBranchNamespace)
 
     def test_get_package(self):
         person = self.factory.makePerson()
@@ -595,14 +623,14 @@ class TestNamespaceSet(TestCaseWithFactory):
         namespace = get_branch_namespace(
             person=person, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
-        self.assertIsInstance(namespace, PackageNamespace)
+        self.assertIsInstance(namespace, PackageBranchNamespace)
 
     def test_lookup_personal(self):
         # lookup_branch_namespace returns a personal namespace if given a junk
         # path.
         person = self.factory.makePerson()
         namespace = lookup_branch_namespace('~%s/+junk' % person.name)
-        self.assertIsInstance(namespace, PersonalNamespace)
+        self.assertIsInstance(namespace, PersonalBranchNamespace)
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
 
     def test_lookup_personal_not_found(self):
@@ -616,7 +644,7 @@ class TestNamespaceSet(TestCaseWithFactory):
         product = self.factory.makeProduct()
         namespace = lookup_branch_namespace(
             '~%s/%s' % (person.name, product.name))
-        self.assertIsInstance(namespace, ProductNamespace)
+        self.assertIsInstance(namespace, ProjectBranchNamespace)
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
         self.assertEqual(product, removeSecurityProxy(namespace).product)
 
@@ -631,7 +659,7 @@ class TestNamespaceSet(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         namespace = lookup_branch_namespace(
             '~%s/%s' % (person.name, sourcepackage.path))
-        self.assertIsInstance(namespace, PackageNamespace)
+        self.assertIsInstance(namespace, PackageBranchNamespace)
         self.assertEqual(person, removeSecurityProxy(namespace).owner)
         namespace = removeSecurityProxy(namespace)
         self.assertEqual(sourcepackage, namespace.sourcepackage)
@@ -929,29 +957,29 @@ class BaseCanCreateBranchesMixin:
             namespace.canCreateBranches(self.factory.makePerson()))
 
 
-class TestPersonalNamespaceCanCreateBranches(TestCaseWithFactory,
-                                             BaseCanCreateBranchesMixin):
+class TestPersonalBranchNamespaceCanCreateBranches(TestCaseWithFactory,
+                                                   BaseCanCreateBranchesMixin):
 
     def _getNamespace(self, owner):
-        return PersonalNamespace(owner)
+        return PersonalBranchNamespace(owner)
 
 
-class TestPackageNamespaceCanCreateBranches(TestCaseWithFactory,
-                                            BaseCanCreateBranchesMixin):
+class TestPackageBranchNamespaceCanCreateBranches(TestCaseWithFactory,
+                                                  BaseCanCreateBranchesMixin):
 
     def _getNamespace(self, owner):
         source_package = self.factory.makeSourcePackage()
-        return PackageNamespace(owner, source_package)
+        return PackageBranchNamespace(owner, source_package)
 
 
-class TestProductNamespaceCanCreateBranches(TestCaseWithFactory,
-                                            BaseCanCreateBranchesMixin):
+class TestProjectBranchNamespaceCanCreateBranches(TestCaseWithFactory,
+                                                  BaseCanCreateBranchesMixin):
 
     def _getNamespace(self, owner,
                       branch_sharing_policy=BranchSharingPolicy.PUBLIC):
         product = self.factory.makeProduct(
             branch_sharing_policy=branch_sharing_policy)
-        return ProductNamespace(owner, product)
+        return ProjectBranchNamespace(owner, product)
 
     def setUp(self):
         # Setting visibility policies is an admin only task.
@@ -985,15 +1013,15 @@ class TestProductNamespaceCanCreateBranches(TestCaseWithFactory,
         self.assertFalse(namespace.canCreateBranches(other_person))
 
 
-class TestPersonalNamespaceAllowedInformationTypes(TestCaseWithFactory):
-    """Tests for PersonalNamespace.getAllowedInformationTypes."""
+class TestPersonalBranchNamespaceAllowedInformationTypes(TestCaseWithFactory):
+    """Tests for PersonalBranchNamespace.getAllowedInformationTypes."""
 
     layer = DatabaseFunctionalLayer
 
     def test_anyone(self):
         # +junk branches are not private for individuals
         person = self.factory.makePerson()
-        namespace = PersonalNamespace(person)
+        namespace = PersonalBranchNamespace(person)
         self.assertContentEqual(
             FREE_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
@@ -1001,7 +1029,7 @@ class TestPersonalNamespaceAllowedInformationTypes(TestCaseWithFactory):
     def test_public_team(self):
         # +junk branches for public teams cannot be private
         team = self.factory.makeTeam()
-        namespace = PersonalNamespace(team)
+        namespace = PersonalBranchNamespace(team)
         self.assertContentEqual(
             FREE_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
@@ -1009,14 +1037,14 @@ class TestPersonalNamespaceAllowedInformationTypes(TestCaseWithFactory):
     def test_private_team(self):
         # +junk branches can be private or public for private teams
         team = self.factory.makeTeam(visibility=PersonVisibility.PRIVATE)
-        namespace = PersonalNamespace(team)
+        namespace = PersonalBranchNamespace(team)
         self.assertContentEqual(
             NON_EMBARGOED_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
 
 
-class TestPackageNamespaceAllowedInformationTypes(TestCaseWithFactory):
-    """Tests for PackageNamespace.getAllowedInformationTypes."""
+class TestPackageBranchNamespaceAllowedInformationTypes(TestCaseWithFactory):
+    """Tests for PackageBranchNamespace.getAllowedInformationTypes."""
 
     layer = DatabaseFunctionalLayer
 
@@ -1024,7 +1052,7 @@ class TestPackageNamespaceAllowedInformationTypes(TestCaseWithFactory):
         # Source package branches are always public.
         source_package = self.factory.makeSourcePackage()
         person = self.factory.makePerson()
-        namespace = PackageNamespace(person, source_package)
+        namespace = PackageBranchNamespace(person, source_package)
         self.assertContentEqual(
             PUBLIC_INFORMATION_TYPES,
             namespace.getAllowedInformationTypes())
@@ -1100,27 +1128,27 @@ class BaseValidateNewBranchMixin:
                     namespace.validateBranchName, 'a' + c)
 
 
-class TestPersonalNamespaceValidateNewBranch(TestCaseWithFactory,
-                                             BaseValidateNewBranchMixin):
+class TestPersonalBranchNamespaceValidateNewBranch(TestCaseWithFactory,
+                                                   BaseValidateNewBranchMixin):
 
     def _getNamespace(self, owner):
-        return PersonalNamespace(owner)
+        return PersonalBranchNamespace(owner)
 
 
-class TestPackageNamespaceValidateNewBranch(TestCaseWithFactory,
-                                            BaseValidateNewBranchMixin):
+class TestPackageBranchNamespaceValidateNewBranch(TestCaseWithFactory,
+                                                  BaseValidateNewBranchMixin):
 
     def _getNamespace(self, owner):
         source_package = self.factory.makeSourcePackage()
-        return PackageNamespace(owner, source_package)
+        return PackageBranchNamespace(owner, source_package)
 
 
-class TestProductNamespaceValidateNewBranch(TestCaseWithFactory,
-                                            BaseValidateNewBranchMixin):
+class TestProjectBranchNamespaceValidateNewBranch(TestCaseWithFactory,
+                                                  BaseValidateNewBranchMixin):
 
     def _getNamespace(self, owner):
         product = self.factory.makeProduct()
-        return ProductNamespace(owner, product)
+        return ProjectBranchNamespace(owner, product)
 
 
 class JunkBranches(TestCaseWithFactory):
@@ -1232,7 +1260,7 @@ class TestBranchNamespaceMoveBranch(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(name="test")
         team = self.factory.makeTeam(branch.owner)
         product = self.factory.makeProduct()
-        namespace = ProductNamespace(team, product)
+        namespace = ProjectBranchNamespace(team, product)
         namespace.moveBranch(branch, branch.owner)
         self.assertEqual(team, branch.owner)
         # And for paranoia.

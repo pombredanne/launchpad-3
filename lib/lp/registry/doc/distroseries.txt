@@ -20,7 +20,6 @@ The IDistroSeriesSet utility is accessed in the usual fashion:
 
 
     >>> from zope.component import getUtility
-    >>> from lp.services.database.sqlbase import flush_database_updates
     >>> from lp.testing import verifyObject
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distroseries import (
@@ -107,14 +106,14 @@ It has a title for heading and titles...
     >>> print warty.title
     The Warty Warthog Release
 
-And a displayname for referring to it in a sentence.
+And a display_name for referring to it in a sentence.
 
-    >>> print warty.displayname
+    >>> print warty.display_name
     Warty
 
 The fullseriesname attribute is used when the context of the series name
 can be confused. Note that the value is created from the launchpad id names
-of the distribution and the series, though it may look like the displayname
+of the distribution and the series, though it may look like the display_name
 attributes were used.
 
     >>> print warty.fullseriesname
@@ -125,7 +124,7 @@ The version attribute holds the debversion of the series.
     >>> print warty.version
     4.10
 
-The named_version attribute is used is used to present the series displayname
+The named_version attribute is used is used to present the series display_name
 and version values consistently.
 
     >>> print warty.named_version
@@ -342,11 +341,11 @@ again" type set of assertions.
     >>> humpy.getPublishedSources('pmount').count()
     1
     >>> hoary.main_archive.getAllPublishedBinaries(
-    ...     distroarchseries=hoary['i386'], name='pmount',
+    ...     distroarchseries=hoary['i386'], name=u'pmount',
     ...     status=PackagePublishingStatus.PUBLISHED).count()
     1
     >>> humpy.main_archive.getAllPublishedBinaries(
-    ...     distroarchseries=humpy['i386'], name='pmount').count()
+    ...     distroarchseries=humpy['i386'], name=u'pmount').count()
     1
 
 Check if the attributes of an DRSPR instance for the just initialized
@@ -659,8 +658,8 @@ Creating DistroSeries
 
 Users with launchpad.Driver permission may create DistroSeries. In the
 case of a distribution that doesn't use Soyuz officially, a user who is
-a driver can create the series and he is automatically assigned to the
-series' driver role so that he can edit it.
+a driver can create the series and they are automatically assigned to the
+series' driver role so that they can edit it.
 
     >>> youbuntu = factory.makeDistribution(name='youbuntu')
     >>> yo_driver = factory.makePerson(name='yo-driver')
@@ -670,7 +669,7 @@ series' driver role so that he can edit it.
     False
 
     >>> yo_series = youbuntu.newSeries(
-    ...     name='island', displayname='Island', title='YouBuntu Island',
+    ...     name='island', display_name='Island', title='YouBuntu Island',
     ...     summary='summary', description='description', version='09.07',
     ...     previous_series=warty, registrant=yo_driver)
     >>> print yo_series.name
@@ -686,7 +685,7 @@ have permission to edit the series.
 
     >>> ignored = login_person(youbuntu.owner)
     >>> yo_series = youbuntu.newSeries(
-    ...     name='forest', displayname='Forest', title='YouBuntu Forest',
+    ...     name='forest', display_name='Forest', title='YouBuntu Forest',
     ...     summary='summary', description='description', version='09.07',
     ...     previous_series=warty, registrant=youbuntu.owner)
     >>> print yo_series.name
@@ -702,7 +701,7 @@ Ubuntu driver can not create series.
     >>> ubuntu.driver = yo_driver
     >>> ignored = login_person(yo_driver)
     >>> ubuntu.newSeries(
-    ...     name='finch', displayname='Finch', title='Ubuntu Finch',
+    ...     name='finch', display_name='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',
     ...     previous_series=warty, owner=ubuntu.driver)
     Traceback (most recent call last):
@@ -714,7 +713,7 @@ series.
 
     >>> ignored = login_person(ubuntu.owner.activemembers[0])
     >>> u_series = ubuntu.newSeries(
-    ...     name='finch', displayname='Finch', title='Ubuntu Finch',
+    ...     name='finch', display_name='Finch', title='Ubuntu Finch',
     ...     summary='summary', description='description', version='9.06',
     ...     previous_series=warty, registrant=ubuntu.owner)
     >>> print u_series.name

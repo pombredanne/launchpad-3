@@ -148,7 +148,7 @@ in a table at the top of the page.
     Reviewer                     Review Type    Date Requested    Status
     Eric the Viking (community)  timeless       ...               Abstain...
     a moment ago
-    Review via email: mp+1@code.launchpad.dev
+    Review via email: mp+...@code.launchpad.dev
 
 
 Commits shown in the conversation
@@ -188,6 +188,53 @@ shown as part of the conversation at the time they were pushed to Launchpad.
     4. By ... on 2009-09-12
     and it works!
 
+The same thing works for Git.  Note that the hosting client returns newest
+log entries first.
+
+    >>> from lp.code.tests.helpers import GitHostingFixture
+
+    >>> login('admin@canonical.com')
+    >>> bmp = factory.makeBranchMergeProposalForGit()
+    >>> bmp.requestReview(review_date)
+    >>> epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
+    >>> commit_date = review_date + timedelta(days=1)
+    >>> hosting_fixture = GitHostingFixture()
+    >>> for i in range(2):
+    ...     hosting_fixture.getLog.result.insert(0, {
+    ...         u'sha1': unicode(i * 2) * 40,
+    ...         u'message': u'Testing commits in conversation',
+    ...         u'author': {
+    ...             u'name': bmp.registrant.display_name,
+    ...             u'email': bmp.registrant.preferredemail.email,
+    ...             u'time': int((commit_date - epoch).total_seconds()),
+    ...             },
+    ...         })
+    ...     hosting_fixture.getLog.result.insert(0, {
+    ...         u'sha1': unicode(i * 2 + 1) * 40,
+    ...         u'message': u'and it works!',
+    ...         u'author': {
+    ...             u'name': bmp.registrant.display_name,
+    ...             u'email': bmp.registrant.preferredemail.email,
+    ...             u'time': int((commit_date - epoch).total_seconds()),
+    ...             },
+    ...         })
+    ...     commit_date += timedelta(days=1)
+    >>> url = canonical_url(bmp)
+    >>> logout()
+
+    >>> with hosting_fixture:
+    ...     browser.open(url)
+    >>> print_tag_with_id(browser.contents, 'conversation')
+    ~.../+git/...:... updated on 2009-09-12 ...
+    0000000... by ... on 2009-09-11
+    Testing commits in conversation
+    1111111... by ... on 2009-09-11
+    and it works!
+    2222222... by ... on 2009-09-12
+    Testing commits in conversation
+    3333333... by ... on 2009-09-12
+    and it works!
+
 
 Inline Comments
 ---------------
@@ -203,33 +250,35 @@ rendered with the following 'data-' attributes:
     >>> new_previewdiff = factory.makePreviewDiff(
     ...     merge_proposal=new_merge_proposal)
     >>> transaction.commit()
-    >>> comment = merge_proposal.createComment(
+    >>> comment1 = merge_proposal.createComment(
     ...    eric, None, content='a_content',
     ...    previewdiff_id=previewdiff.id,
     ...    inline_comments={'1': 'No!'}
     ... )
-    >>> transaction.commit()
-    >>> comment = new_merge_proposal.createComment(
+    >>> comment2 = new_merge_proposal.createComment(
     ...    eric, None, content='a_content',
     ...    previewdiff_id=new_previewdiff.id,
     ...    inline_comments={'1': 'Yes!'}
     ... )
+    >>> transaction.commit()
+    >>> previewdiff_id = previewdiff.id
+    >>> new_previewdiff_id = new_previewdiff.id
+    >>> comment1_id = comment1.id
+    >>> comment2_id = comment2.id
     >>> logout()
 
-    # helper for printing review comment 'data-' attributes.
-    >>> def print_comment_attributes(contents):
+    >>> def get_comment_attributes(contents):
+    ...     result = {}
     ...     comments = find_tags_by_class(contents, 'boardCommentDetails')
-    ...     print 'Text', 'Comment', 'Diff', 'Superseded'
     ...     for comment in comments:
     ...         tds = comment.findAll('td')
     ...         if len(tds) == 0:
     ...            continue
     ...         td = tds[0]
-    ...         print ' '.join(
-    ...             (extract_text(td),
-    ...              td['data-comment-id'],
+    ...         result[td['data-comment-id']] = (
     ...              td.get('data-previewdiff-id', '-'),
-    ...              td.get('data-from-superseded', '-')))
+    ...              td.get('data-from-superseded', '-'))
+    ...     return result
 
 The 'data-' attributes:
 
@@ -243,22 +292,19 @@ The 'data-' attributes:
 They are always available in `BranchMergeProposal` pages.
 
     >>> anon_browser.open(merge_proposal_url)
-    >>> print_comment_attributes(anon_browser.contents)
-    Text    Comment Diff Superseded
-    Eric...     1     -    False
-    Eric...     2     -    False
-    Eric...     3     -    False
-    Eric...     4     1    False
+    >>> comments = get_comment_attributes(anon_browser.contents)
+    >>> comments[str(comment1_id)] == (str(previewdiff_id), 'False')
+    True
+    >>> str(comment2_id) in comments
+    False
 
 When visualized in the new merge proposal the comments from the original
 merge proposal are marked as 'superseded' and there is a new and
 non-superseded local comment.
 
     >>> anon_browser.open(new_merge_proposal_url)
-    >>> print_comment_attributes(anon_browser.contents)
-    Text    Comment Diff Superseded
-    Eric...     1     -    True
-    Eric...     2     -    True
-    Eric...     3     -    True
-    Eric...     4     1    True
-    Eric...     5     2    False
+    >>> comments = get_comment_attributes(anon_browser.contents)
+    >>> comments[str(comment1_id)] == (str(previewdiff_id), 'True')
+    True
+    >>> comments[str(comment2_id)] == (str(new_previewdiff_id), 'False')
+    True

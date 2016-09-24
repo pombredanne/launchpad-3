@@ -14,7 +14,6 @@ To demonstrate this, we'll create a new project:
   >>> browser.open("http://launchpad.dev/projects/+new")
   >>> browser.getControl('URL', index=0).value = 'big-project'
   >>> browser.getControl('Name').value = 'Big Project'
-  >>> browser.getControl('Title').value = 'The Big Project'
   >>> browser.getControl('Summary').value = 'A big project indeed.'
   >>> browser.getControl('Continue').click()
 
@@ -28,7 +27,7 @@ In the beginning, a project hasn't had blueprints set up:
 
   >>> browser.open("http://blueprints.launchpad.dev/big-project")
   >>> print extract_text(find_main_content(browser.contents))
-  Blueprints...does not know how...Configure blueprints...
+  Blueprints...does not know how...Configure Blueprints...
 
 But it's easy to change that.
   

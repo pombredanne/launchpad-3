@@ -3,12 +3,12 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-  <table tal:condition="view/files" class="narrow listing">
+  <table tal:condition="view/files" class="wide listing">
   <thead>
     <tr>
     <th>File</th>
     <th>Size</th>
-    <th>MD5 Checksum</th>
+    <th>SHA-256 Checksum</th>
     </tr>
   </thead>
   <tbody>
@@ -20,7 +20,7 @@
             tal:content="file/filename">foo_1.0.dsc</a>
         </td>
         <td tal:content="file/content/filesize/fmt:bytes">10 bytes</td>
-        <td tal:content="file/content/md5">DEADBEEF</td>
+        <td tal:content="file/content/sha256">DEADBEEF</td>
       </tal:file_available>
       <tal:file_unavailable condition="file/deleted">
         <td span="3">

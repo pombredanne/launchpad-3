@@ -15,7 +15,7 @@ from sqlobject import (
     )
 from storm.store import Store
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.bugs.interfaces.bugattachment import (
@@ -28,10 +28,9 @@ from lp.services.database.sqlbase import SQLBase
 from lp.services.propertycache import cachedproperty
 
 
+@implementer(IBugAttachment)
 class BugAttachment(SQLBase):
     """A bug attachment."""
-
-    implements(IBugAttachment)
 
     _table = 'BugAttachment'
 
@@ -83,10 +82,9 @@ class BugAttachment(SQLBase):
         raise NotFoundError(filename)
 
 
+@implementer(IBugAttachmentSet)
 class BugAttachmentSet:
     """A set for bug attachments."""
-
-    implements(IBugAttachmentSet)
 
     def __getitem__(self, attach_id):
         """See IBugAttachmentSet."""

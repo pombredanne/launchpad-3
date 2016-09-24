@@ -1,0 +1,87 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad"
+>
+<head>
+  <tal:head-epilogue metal:fill-slot="head_epilogue">
+    <tal:has-target condition="view/target">
+      <meta tal:condition="view/target/pillar/codehosting_usage/enumvalue:UNKNOWN"
+        name="robots" content="noindex,nofollow" />
+    </tal:has-target>
+  </tal:head-epilogue>
+</head>
+
+<body>
+  <metal:side fill-slot="side" tal:define="context_menu context/menu:context">
+    <tal:has-target condition="view/target">
+      <div id="branch-portlet"
+          tal:condition="not: view/target/pillar/codehosting_usage/enumvalue:UNKNOWN">
+        <div id="privacy"
+            tal:define="private_class python: 'private' if view.default_information_type_is_private else 'public'"
+            tal:attributes="class string:first portlet ${private_class}">
+          <span tal:condition="not: view/default_information_type"
+            id="privacy-text">
+            You can't create new repositories for
+            <tal:name replace="context/displayname"/>.
+            <tal:sharing-link condition="context/required:launchpad.Edit">
+            <br/>This can be fixed by changing the branch sharing policy on the
+            <a tal:attributes="href string:${view/target/fmt:url:mainsite}/+sharing">sharing page</a>.
+            </tal:sharing-link>
+          </span>
+
+          <span tal:condition="view/default_information_type"
+            tal:attributes="class string:sprite ${private_class}"
+            id="privacy-text">
+            New repositories for <tal:name replace="view/target/displayname"/> are
+            <strong tal:content="view/default_information_type_title" />.
+          </span>
+        </div>
+      </div>
+
+      <div id="involvement" class="portlet"
+           tal:define="configure_code context/menu:overview/configure_code|nothing"
+           tal:condition="configure_code/enabled|nothing">
+        <ul>
+          <li tal:content="structure configure_code/fmt:link"></li>
+        </ul>
+      </div>
+    </tal:has-target>
+  </metal:side>
+  <metal:main fill-slot="main">
+    <span class="see-all" tal:condition="view/show_bzr_link">
+      <a tal:attributes="href context/fmt:url:code/+branches">View Bazaar branches</a>
+    </span>
+    <tal:default-repository
+        condition="view/default_git_repository"
+        define="repository view/default_git_repository">
+      <div class="yui-g first">
+        <div id="default-repository-management" class="top-portlet">
+          <tal:repository-management
+            replace="structure repository/@@++repository-management" />
+        </div>
+      </div>
+
+      <div class="yui-g">
+        <div id="default-repository-branches" class="portlet"
+            tal:define="branches view/default_git_repository_branches">
+          <h2>Branches</h2>
+          <tal:default-repository-branches
+            replace="structure branches/@@+ref-listing" />
+        </div>
+      </div>
+    </tal:default-repository>
+
+    <div class="yui-g">
+      <div id="other-repositories" class="portlet">
+        <h2>Other repositories</h2>
+        <tal:other-repos
+          content="structure view/repos/@@+gitrepository-listing" />
+      </div>
+    </div>
+  </metal:main>
+</body>
+</html>

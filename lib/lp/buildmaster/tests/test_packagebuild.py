@@ -54,7 +54,7 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         self.package_build.updateStatus(
             BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': u'deps'})
         self.assertEqual(u'deps', self.package_build.dependencies)
-        self.package_build.updateStatus(BuildStatus.FULLYBUILT)
+        self.package_build.updateStatus(BuildStatus.NEEDSBUILD)
         self.assertEqual(None, self.package_build.dependencies)
 
     def test_log_url(self):

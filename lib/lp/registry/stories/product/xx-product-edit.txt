@@ -74,7 +74,6 @@ First a user adds a product named newproductname.
     >>> user_browser.open('http://launchpad.dev/products/+new')
     >>> user_browser.getControl('URL', index=0).value = 'newproductname'
     >>> user_browser.getControl('Name').value = 'dname'
-    >>> user_browser.getControl('Title').value = 'title'
     >>> user_browser.getControl('Summary').value = 'summary'
     >>> user_browser.getControl('Continue').click()
 
@@ -91,7 +90,6 @@ Then a product named newproductname2.
     >>> user_browser.open('http://launchpad.dev/products/+new')
     >>> user_browser.getControl('URL', index=0).value = 'newproductname2'
     >>> user_browser.getControl('Name').value = 'dname2'
-    >>> user_browser.getControl('Title').value = 'title2'
     >>> user_browser.getControl('Summary').value = 'summary2'
     >>> user_browser.getControl('Continue').click()
 

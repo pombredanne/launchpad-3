@@ -1,24 +1,41 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Single selection widget using a popup to select one item from many."""
 
 __metaclass__ = type
+__all__ = [
+    "BugTrackerPickerWidget",
+    "DistributionSourcePackagePickerWidget",
+    "PersonPickerWidget",
+    "SearchForUpstreamPopupWidget",
+    "SourcePackageNameWidgetBase",
+    "UbuntuSourcePackageNameWidget",
+    "VocabularyPickerWidget",
+    ]
 
 from lazr.restful.utils import safe_hasattr
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.component import getUtility
+from zope.formlib.interfaces import ConversionError
 from zope.formlib.itemswidgets import (
     ItemsWidgetBase,
     SingleDataHelper,
     )
-from zope.schema.interfaces import IChoice
+from zope.schema.interfaces import (
+    IChoice,
+    InvalidValue,
+    )
 
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.vocabulary import (
     get_person_picker_entry_metadata,
     vocabulary_filters,
     )
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import structured
@@ -275,3 +292,91 @@ class SearchForUpstreamPopupWidget(VocabularyPickerWidget):
                 "looking for? "
                 '<a href="%s/+affects-new-product">Register it</a>.</strong>'
                 % canonical_url(self.context.context))
+
+
+class DistributionSourcePackagePickerWidget(VocabularyPickerWidget):
+    """Custom popup widget for choosing distribution/package combinations."""
+
+    __call__ = ViewPageTemplateFile(
+        'templates/distributionsourcepackage-picker.pt')
+
+    @property
+    def distribution_id(self):
+        return self._prefix + 'distribution'
+
+    distribution_name = ''
+    distroseries_id = ''
+
+
+class SourcePackageNameWidgetBase(DistributionSourcePackagePickerWidget):
+    """A base widget for choosing a SourcePackageName.
+
+    It accepts both binary and source package names.  Widgets inheriting
+    from this must implement `getDistribution`.
+
+    Most views should use LaunchpadTargetWidget or
+    DistributionSourcePackagePickerWidget instead, but this is useful in
+    cases where the distribution is fixed in some other way.
+    """
+
+    # Pages that use this widget don't display the distribution.
+    distribution_id = ''
+
+    def __init__(self, field, vocabulary, request):
+        super(SourcePackageNameWidgetBase, self).__init__(
+            field, vocabulary, request)
+        self.cached_values = {}
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            # The distribution may change later when we process form input,
+            # but setting it here makes it easier to construct some views,
+            # particularly edit views where we need to render the context.
+            distribution = self.getDistribution()
+            if distribution is not None:
+                self.context.vocabulary.setDistribution(distribution)
+
+    def getDistribution(self):
+        """Get the distribution used for package validation.
+
+        The package name has to be published in the returned distribution.
+        """
+        raise NotImplementedError
+
+    def _toFieldValue(self, input):
+        if not input:
+            return self.context.missing_value
+
+        distribution = self.getDistribution()
+        cached_value = self.cached_values.get(input)
+        if cached_value:
+            return cached_value
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            try:
+                self.context.vocabulary.setDistribution(distribution)
+                return self.context.vocabulary.getTermByToken(input).value
+            except LookupError:
+                raise ConversionError(
+                    "Launchpad doesn't know of any source package named"
+                    " '%s' in %s." % (input, distribution.displayname))
+        # Else the untrusted SPN vocab was used so it needs secondary
+        # verification.
+        try:
+            source = distribution.guessPublishedSourcePackageName(input)
+        except NotFoundError:
+            try:
+                source = self.convertTokensToValues([input])[0]
+            except InvalidValue:
+                raise ConversionError(
+                    "Launchpad doesn't know of any source package named"
+                    " '%s' in %s." % (input, distribution.displayname))
+        self.cached_values[input] = source
+        return source
+
+
+class UbuntuSourcePackageNameWidget(SourcePackageNameWidgetBase):
+    """A widget to select Ubuntu packages."""
+
+    distribution_name = 'ubuntu'
+
+    def getDistribution(self):
+        """See `SourcePackageNameWidgetBase`"""
+        return getUtility(ILaunchpadCelebrities).ubuntu

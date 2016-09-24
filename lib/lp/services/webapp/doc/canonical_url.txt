@@ -12,7 +12,7 @@ In this test, we'll use interfaces ICountrySet, ICountry and ITown, which we
 will put in lp.testing.
 
     >>> from lp.services.webapp.interfaces import ICanonicalUrlData
-    >>> from zope.interface import Interface, Attribute, implements
+    >>> from zope.interface import Interface, Attribute, implementer
 
     >>> class ICountrySet(Interface):
     ...     pass
@@ -75,17 +75,18 @@ Define a navigation for the Country URL.
 We don't have ICanonicalUrlData adapters for objects that provide any of these
 interfaces.  First, we create some countryset, country and town objects.
 
-    >>> class CountrySet:
-    ...     implements(ICountrySet)
+    >>> @implementer(ICountrySet)
+    ... class CountrySet:
+    ...     pass
     >>> countryset_instance = CountrySet()
 
-    >>> class Country:
-    ...    implements(ICountry)
+    >>> @implementer(ICountry)
+    ... class Country:
     ...    name = 'England'
     >>> country_instance = Country()
 
-    >>> class Town:
-    ...     implements(ITown)
+    >>> @implementer(ITown)
+    ... class Town:
     ...     country = country_instance
     ...     name = 'London'
     >>> town_instance = Town()
@@ -190,9 +191,8 @@ But, here, I want to test the variant of the zcml directive that specifes
 an adapter.
 
     >>> from lp.services.webapp.interfaces import ILaunchpadRoot
-    >>> class CountrySetUrl:
-    ...
-    ...     implements(ICanonicalUrlData)
+    >>> @implementer(ICanonicalUrlData)
+    ... class CountrySetUrl:
     ...
     ...     def __init__(self, context):
     ...         self.context = context
@@ -282,8 +282,8 @@ itself be adapted to ICanonicalUrlData.
 Now, we must test the case where the object can be adapted to
 ICanonicalUrlData, but its parent or its parent's parent (and so on) cannot.
 
-    >>> class ObjectThatHasUrl:
-    ...     implements(ICanonicalUrlData)
+    >>> @implementer(ICanonicalUrlData)
+    ... class ObjectThatHasUrl:
     ...     def __init__(self, name, parent):
     ...         self.path = name
     ...         self.inside = parent
@@ -358,9 +358,8 @@ getApplicationURL() from
 zope.publisher.interfaces.http.IHTTPApplicationRequest.
 
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
-    >>> class FakeRequest:
-    ...
-    ...     implements(IHTTPApplicationRequest)
+    >>> @implementer(IHTTPApplicationRequest)
+    ... class FakeRequest:
     ...
     ...     def __init__(self, applicationurl):
     ...         self.applicationurl = applicationurl
@@ -512,7 +511,7 @@ canonical url chain that provides at least one of the interfaces given.
 
 canonical_url() is sometimes used in code that doesn't have direct
 access to the current request, and always wants a URL that can be used
-in a browser (for example e-mail notifications or XHTML representations
+in a browser (for example email notifications or XHTML representations
 of objects). Therefore, if no request is explicitly given,
 canonical_url() returns the browser URL, even if the current request is
 a web service request

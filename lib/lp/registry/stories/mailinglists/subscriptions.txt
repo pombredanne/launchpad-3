@@ -4,8 +4,8 @@ Mailing list subscription management
 
 Teams can have mailing lists associated with them, and a member of a
 team with a usable mailing list can subscribe to that list. A person
-can subscribe to a mailing list using any of his email addresses, or a
-dynamic subscription which uses whichever email address is his
+can subscribe to a mailing list using any of their email addresses, or a
+dynamic subscription which uses whichever email address is their
 preferred address at a given time.
 
 Non-team members can request a subscription to a mailing list at the
@@ -69,7 +69,7 @@ Any team member can join the mailing list.
     >>> logout()
     >>> no_team_browser = setupBrowserFreshLogin(person)
 
-    >>> no_team_browser.open('http://launchpad.dev/people/+me/+editemails')
+    >>> no_team_browser.open('http://launchpad.dev/people/+me/+editmailinglists')
     >>> rosetta_admins = no_team_browser.getControl(
     ...     name='field.subscription.rosetta-admins')
     >>> rosetta_admins.displayOptions
@@ -89,11 +89,11 @@ it's currently the team contact method.
     >>> logout()
     >>> carlos_browser = setupBrowserFreshLogin(carlos)
     >>> carlos_browser.open('http://launchpad.dev/~carlos')
-    >>> carlos_browser.getLink(url="+editemails").click()
+    >>> carlos_browser.getLink(url="+editmailinglists").click()
 
     >>> from lp.services.helpers import backslashreplace
     >>> print backslashreplace(carlos_browser.title)
-    Change your e-mail settings...
+    Change your mailing list subscriptions...
 
     >>> admins = carlos_browser.getControl(name='field.subscription.admins')
     >>> rosetta_admins = carlos_browser.getControl(
@@ -198,9 +198,9 @@ to.  We will use Carlos, as he is an administrator for the Rosetta
 Admins team, and he should know if the list is available.
 
     >>> carlos_browser.open('http://launchpad.dev/~carlos')
-    >>> carlos_browser.getLink(url="+editemails").click()
+    >>> carlos_browser.getLink(url="+editmailinglists").click()
     >>> print backslashreplace(carlos_browser.title)
-    Change your e-mail settings...
+    Change your mailing list subscriptions...
 
     >>> rosetta_admins = carlos_browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -236,9 +236,9 @@ screen.
     >>> logout()
     >>> jdub_browser = setupBrowserFreshLogin(jdub)
     >>> jdub_browser.open('http://launchpad.dev/~jdub')
-    >>> jdub_browser.getLink(url="+editemails").click()
+    >>> jdub_browser.getLink(url="+editmailinglists").click()
     >>> print jdub_browser.title
-    Change your e-mail settings...
+    Change your mailing list subscriptions...
 
     >>> jdub_browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -260,9 +260,9 @@ been approved for the team.
 His mailing list subscription is now available to be managed.
 
     >>> jdub_browser.open('http://launchpad.dev/~jdub')
-    >>> jdub_browser.getLink(url="+editemails").click()
+    >>> jdub_browser.getLink(url="+editmailinglists").click()
     >>> print jdub_browser.title
-    Change your e-mail settings...
+    Change your mailing list subscriptions...
 
     >>> rosetta_team = jdub_browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -327,14 +327,14 @@ page, because he is not subscribed to the team mailing list.
     >>> carlos_browser.open('http://launchpad.dev/~admins')
     >>> carlos_browser.getLink('Subscribe to mailing list').click()
     >>> print carlos_browser.url
-    http://launchpad.dev/~carlos/+editemails
+    http://launchpad.dev/~carlos/+editmailinglists
 
 The unsubscribe link is visible for the rosetta admins team, which
 has an active mailing list.
 
     # Subscribe to the list using the normal technique.
     >>> carlos_browser.open('http://launchpad.dev/~carlos')
-    >>> carlos_browser.getLink(url="+editemails").click()
+    >>> carlos_browser.getLink(url="+editmailinglists").click()
     >>> rosetta_admins = carlos_browser.getControl(
     ...     name='field.subscription.rosetta-admins')
     >>> rosetta_admins.value = ['Preferred address']
@@ -469,9 +469,9 @@ Launchpad may automatically subscribe a person to a team's mailing
 list based on a setting in the person's Email preferences page.
 
     >>> carlos_browser.open('http://launchpad.dev/~carlos')
-    >>> carlos_browser.getLink(url="+editemails").click()
+    >>> carlos_browser.getLink(url="+editmailinglists").click()
     >>> print backslashreplace(carlos_browser.title)
-    Change your e-mail settings...
+    Change your mailing list subscriptions...
 
 Carlos's default setting, 'Ask me when I join a team', is still in place.
 
@@ -549,7 +549,7 @@ subscription settings will see the box checked by default.
     >>> logout()
     >>> browser = setupBrowserFreshLogin(james)
     >>> browser.open('http://launchpad.dev/~jblack')
-    >>> browser.getLink(url="+editemails").click()
+    >>> browser.getLink(url="+editmailinglists").click()
     >>> print_radio_button_field(browser.contents,
     ...     'mailing_list_auto_subscribe_policy')
     ( ) Never subscribe to mailing lists
@@ -566,7 +566,7 @@ subscription settings will see the box checked by default.
 
     # Change James' setting
     >>> browser.open('http://launchpad.dev/~jblack')
-    >>> browser.getLink(url="+editemails").click()
+    >>> browser.getLink(url="+editmailinglists").click()
     >>> set_autosubscribe_policy_and_submit('ALWAYS', browser)
     ( ) Never subscribe to mailing lists
     ( ) Ask me when I join a team
@@ -582,7 +582,7 @@ lists will not have the box checked.
 
     # Change James' setting
     >>> browser.open('http://launchpad.dev/~jblack')
-    >>> browser.getLink(url="+editemails").click()
+    >>> browser.getLink(url="+editmailinglists").click()
     >>> set_autosubscribe_policy_and_submit('NEVER', browser)
     (*) Never subscribe to mailing lists
     ( ) Ask me when I join a team
@@ -595,7 +595,7 @@ lists will not have the box checked.
 
     # Restore James' setting.
     >>> browser.open('http://launchpad.dev/~jblack')
-    >>> browser.getLink(url="+editemails").click()
+    >>> browser.getLink(url="+editmailinglists").click()
     >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION', browser)
     ( ) Never subscribe to mailing lists
     (*) Ask me when I join a team

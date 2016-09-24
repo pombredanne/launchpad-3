@@ -5,9 +5,7 @@
 
 __metaclass__ = type
 
-import errno
 import os
-import socket
 import tempfile
 
 from testtools.matchers import FileContains

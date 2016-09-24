@@ -38,6 +38,7 @@ from lp import _
 from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import Title
 from lp.services.messages.interfaces.message import IMessage
+from lp.services.webservice.apihelpers import patch_collection_property
 
 
 class BugAttachmentType(DBEnumeratedType):
@@ -116,6 +117,7 @@ class IBugAttachment(IHasBug):
         Bytes(title=_("The attachment content."),
               required=True,
               readonly=True))
+    _messageID = Int(title=_("Message ID"))
     message = exported(
         Reference(IMessage, title=_("The message that was created when we "
                                     "added this attachment.")))
@@ -144,7 +146,7 @@ class IBugAttachment(IHasBug):
 
 
 # Need to do this here because of circular imports.
-IMessage['bugattachments'].value_type.schema = IBugAttachment
+patch_collection_property(IMessage, 'bugattachments', IBugAttachment)
 
 
 class IBugAttachmentSet(Interface):

@@ -6,7 +6,7 @@ remote bug tracker into Launchpad.
 In order to demonstrate this we need to create example Bug, BugTracker
 and BugWatch instances with which to work.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.services.config import config
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
@@ -42,8 +42,8 @@ ExternalBugTracker class which implements these three methods.
     >>> from lp.bugs.externalbugtracker import (
     ...     ExternalBugTracker)
     >>> from lp.bugs.interfaces.externalbugtracker import ISupportsCommentImport
-    >>> class CommentImportingExternalBugTracker(ExternalBugTracker):
-    ...     implements(ISupportsCommentImport)
+    >>> @implementer(ISupportsCommentImport)
+    ... class CommentImportingExternalBugTracker(ExternalBugTracker):
     ...
     ...     comment_dict = {}
     ...     remote_comments = {
@@ -143,7 +143,7 @@ form which it was imported.
 
 In the examples above, joe.bloggs@example.com was used as the poster of
 all the comments. Since Joe didn't have a Launchpad account, it was
-created automatically for him, with the e-mail address marked as
+created automatically for him, with the email address marked as
 invalid.
 
     >>> joe = getUtility(IPersonSet).getByEmail('joe.bloggs@example.com',
@@ -160,7 +160,7 @@ invalid.
     >>> print joe.creation_comment
     when importing comments for Bugzilla *TESTING* #123456.
 
-If the poster's e-mail is already registered in Launchpad, the comment
+If the poster's email is already registered in Launchpad, the comment
 is associated with the existing person.
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
@@ -423,11 +423,11 @@ Once again, CVE links are created but no karma is assigned.
     >>> karma_helper.unregister_listener()
 
 
-== E-mail notifications ==
+== Email notifications ==
 
 When bug comments are imported, notifications are sent to inform the bug
 subscribers about it. The first time we import comments from a bug
-watch, there can be a lot of comments. To avoid causing a lot of e-mail
+watch, there can be a lot of comments. To avoid causing a lot of email
 notifications to be sent, only one notification is sent for all the
 comments.
 

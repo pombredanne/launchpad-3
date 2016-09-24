@@ -37,10 +37,10 @@
                        tal:content="context/screenshotsurl">
             http://www.foo.org/screenshots/
         </lp:screenshot>
-        <lp:inProject tal:condition="context/project">
+        <lp:inProject tal:condition="context/projectgroup">
             <lp:Project>
                 <lp:specifiedAt tal:attributes="rdf:resource
-                    string:${context/project/fmt:url}/+rdf" />
+                    string:${context/projectgroup/fmt:url}/+rdf" />
             </lp:Project>
         </lp:inProject>
         <lp:series tal:repeat="series context/series">

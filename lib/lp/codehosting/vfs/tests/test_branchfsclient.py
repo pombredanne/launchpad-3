@@ -56,7 +56,8 @@ class TestBranchFileSystemClient(TestCase):
         deferred = client.translatePath('/' + branch.unique_name)
         deferred.addCallback(
             self.assertEqual,
-            (BRANCH_TRANSPORT, dict(id=branch.id, writable=False), ''))
+            (BRANCH_TRANSPORT,
+             dict(id=branch.id, writable=False, private=False), ''))
         return deferred
 
     def test_get_matched_part(self):
@@ -120,7 +121,7 @@ class TestBranchFileSystemClient(TestCase):
         fake_data = self.factory.getUniqueString()
         client._addToCache(
             (BRANCH_TRANSPORT, fake_data, ''), '/%s' % branch.unique_name)
-        self.advanceTime(expiry_time/2)
+        self.advanceTime(expiry_time / 2)
         result = client._getFromCache('/%s/foo/bar' % branch.unique_name)
         self.assertEqual(
             (BRANCH_TRANSPORT, fake_data, 'foo/bar'), result)
@@ -135,7 +136,7 @@ class TestBranchFileSystemClient(TestCase):
         fake_data = self.factory.getUniqueString()
         client._addToCache(
             (BRANCH_TRANSPORT, fake_data, ''), '/%s' % branch.unique_name)
-        self.advanceTime(expiry_time*2)
+        self.advanceTime(expiry_time * 2)
         self.assertRaises(NotInCache, client._getFromCache,
                           '/%s/foo/bar' % branch.unique_name)
 
@@ -171,10 +172,12 @@ class TestBranchFileSystemClient(TestCase):
             (BRANCH_TRANSPORT, fake_data, ''), '/%s' % branch.unique_name)
         requested_path = '/%s/foo/bar' % branch.unique_name
         deferred = client.translatePath(requested_path)
+
         def path_translated((transport_type, data, trailing_path)):
             self.assertEqual(BRANCH_TRANSPORT, transport_type)
             self.assertEqual(fake_data, data)
             self.assertEqual('foo/bar', trailing_path)
+
         return deferred.addCallback(path_translated)
 
     def test_translatePath_adds_to_cache(self):
@@ -197,10 +200,13 @@ class TestBranchFileSystemClient(TestCase):
         deferred = client.translatePath(
             '/~' + branch.owner.name + '/' + branch.product.name +
             '/.bzr/format')
+
         def call_translatePath_again(ignored):
             return client.translatePath('/' + branch.unique_name)
+
         def check_results((transport_type, data, trailing_path)):
             self.assertEqual(BRANCH_TRANSPORT, transport_type)
+
         deferred.addCallback(call_translatePath_again)
         deferred.addCallback(check_results)
         return deferred
@@ -209,12 +215,15 @@ class TestBranchFileSystemClient(TestCase):
         # Don't cache failed translations. What would be the point?
         client = self.makeClient()
         deferred = client.translatePath('/foo/bar/baz')
+
         def translated_successfully(result):
             self.fail(
                 "Translated successfully. Expected error, got %r" % result)
+
         def failed_translation(failure):
             self.assertRaises(
                 NotInCache, client._getFromCache, '/foo/bar/baz')
+
         return deferred.addCallbacks(
             translated_successfully, failed_translation)
 

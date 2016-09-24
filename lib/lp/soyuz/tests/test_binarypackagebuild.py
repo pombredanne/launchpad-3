@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -78,7 +78,7 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         self.assertEqual(
             self.build.build_farm_job, removeSecurityProxy(bq)._build_farm_job)
         self.assertEqual(self.build, bq.specific_build)
-        self.assertEqual(self.build.is_virtualized, bq.virtualized)
+        self.assertEqual(self.build.virtualized, bq.virtualized)
         self.assertIsNotNone(bq.processor)
         self.assertEqual(bq, self.build.buildqueue_record)
 
@@ -187,6 +187,23 @@ class TestBinaryPackageBuild(TestCaseWithFactory):
         build.cancel()
         self.assertEqual(BuildStatus.CANCELLING, build.status)
         self.assertEqual(bq, build.buildqueue_record)
+
+    def test_getLatestSourcePublication(self):
+        distroseries = self.factory.makeDistroSeries()
+        archive = self.factory.makeArchive(
+            distribution=distroseries.distribution)
+        other_archive = self.factory.makeArchive(
+            distribution=distroseries.distribution)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, archive=archive)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, archive=other_archive,
+            sourcepackagerelease=spph.sourcepackagerelease)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease,
+            distroarchseries=das, archive=archive)
+        self.assertEqual(spph, build.getLatestSourcePublication())
 
 
 class TestBuildUpdateDependencies(TestCaseWithFactory):
@@ -305,6 +322,60 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build.updateStatus(
             BuildStatus.MANUALDEPWAIT,
             slave_status={'dependencies': u'dep-bin (= 999)'})
+        depwait_build.updateDependencies()
+        self.assertEqual(depwait_build.dependencies, u'')
+
+    def testStrictInequalities(self):
+        depwait_build = self._setupSimpleDepwaitContext()
+        self.layer.txn.commit()
+
+        for dep, expected in (
+                (u'dep-bin (<< 444)', u'dep-bin (<< 444)'),
+                (u'dep-bin (>> 444)', u''),
+                (u'dep-bin (<< 888)', u''),
+                (u'dep-bin (>> 888)', u'dep-bin (>> 888)'),
+                ):
+            depwait_build.updateStatus(
+                BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': dep})
+            depwait_build.updateDependencies()
+            self.assertEqual(expected, depwait_build.dependencies)
+
+    def testDisjunctions(self):
+        # If one of a set of alternatives becomes available, that set of
+        # alternatives is dropped from the outstanding dependencies.
+        depwait_build = self._setupSimpleDepwaitContext()
+        self.layer.txn.commit()
+
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={
+                'dependencies': u'dep-bin (>= 999) | alt-bin, dep-tools'})
+        depwait_build.updateDependencies()
+        self.assertEqual(
+            u'dep-bin (>= 999) | alt-bin, dep-tools',
+            depwait_build.dependencies)
+
+        self.publisher.getPubBinaries(
+            binaryname='alt-bin', status=PackagePublishingStatus.PUBLISHED)
+        self.layer.txn.commit()
+
+        depwait_build.updateDependencies()
+        self.assertEqual(u'dep-tools', depwait_build.dependencies)
+
+    def testAptVersionConstraints(self):
+        # launchpad-buildd can return apt-style version constraints
+        # using < and > rather than << and >>.
+        depwait_build = self._setupSimpleDepwaitContext()
+        self.layer.txn.commit()
+
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin (> 666), dep-bin (< 777)'})
+        depwait_build.updateDependencies()
+        self.assertEqual(depwait_build.dependencies, u'dep-bin (> 666)')
+        depwait_build.updateStatus(
+            BuildStatus.MANUALDEPWAIT,
+            slave_status={'dependencies': u'dep-bin (> 665)'})
         depwait_build.updateDependencies()
         self.assertEqual(depwait_build.dependencies, u'')
 
@@ -483,6 +554,72 @@ class TestBinaryPackageBuildWebservice(TestCaseWithFactory):
         logout()
         entry = self.webservice.get(build_url, api_version='devel').jsonBody()
         self.assertEndsWith(entry['builder_link'], builder_url)
+
+    def test_source_package_name(self):
+        name = self.build.source_package_release.name
+        build_url = api_url(self.build)
+        logout()
+        entry = self.webservice.get(build_url, api_version='devel').jsonBody()
+        self.assertEqual(name, entry['source_package_name'])
+
+    def test_external_dependencies_random_user(self):
+        # Normal users can look but not touch.
+        person = self.factory.makePerson()
+        build_url = api_url(self.build)
+        logout()
+        webservice = webservice_for_person(
+            person, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(build_url, api_version="devel").jsonBody()
+        self.assertIsNone(entry["external_dependencies"])
+        response = webservice.patch(
+            entry["self_link"], "application/json",
+            dumps({"external_dependencies": "random"}))
+        self.assertEqual(401, response.status)
+
+    def test_external_dependencies_owner(self):
+        # Normal archive owners can look but not touch.
+        build_url = api_url(self.build)
+        logout()
+        entry = self.webservice.get(build_url, api_version="devel").jsonBody()
+        self.assertIsNone(entry["external_dependencies"])
+        response = self.webservice.patch(
+            entry["self_link"], "application/json",
+            dumps({"external_dependencies": "random"}))
+        self.assertEqual(401, response.status)
+
+    def test_external_dependencies_ppa_owner_invalid(self):
+        # PPA admins can look and touch.
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
+        build_url = api_url(self.build)
+        logout()
+        webservice = webservice_for_person(
+            ppa_admin, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(build_url, api_version="devel").jsonBody()
+        self.assertIsNone(entry["external_dependencies"])
+        response = webservice.patch(
+            entry["self_link"], "application/json",
+            dumps({"external_dependencies": "random"}))
+        self.assertEqual(400, response.status)
+        self.assertIn("Invalid external dependencies", response.body)
+
+    def test_external_dependencies_ppa_owner_valid(self):
+        # PPA admins can look and touch.
+        ppa_admin_team = getUtility(ILaunchpadCelebrities).ppa_admin
+        ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
+        build_url = api_url(self.build)
+        logout()
+        webservice = webservice_for_person(
+            ppa_admin, permission=OAuthPermission.WRITE_PUBLIC)
+        entry = webservice.get(build_url, api_version="devel").jsonBody()
+        self.assertIsNone(entry["external_dependencies"])
+        dependencies = "deb http://example.org suite components"
+        response = webservice.patch(
+            entry["self_link"], "application/json",
+            dumps({"external_dependencies": dependencies}))
+        self.assertEqual(209, response.status)
+        self.assertEqual(
+            dependencies, response.jsonBody()["external_dependencies"])
 
 
 class TestPostprocessCandidate(TestCaseWithFactory):
@@ -750,11 +887,11 @@ class TestCalculateScore(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         self.assertScoreNotWriteableByOwner(archive)
 
-    def test_score_archive_allows_buildd_and_commercial_admin(self):
-        # Buildd and commercial admins can change an archive's build score.
+    def test_score_archive_allows_buildd_and_ppa_admin(self):
+        # Buildd and PPA admins can change an archive's build score.
         archive = self.factory.makeArchive()
         self.assertScoreWriteableByTeam(
             archive, getUtility(ILaunchpadCelebrities).buildd_admin)
         with anonymous_logged_in():
             self.assertScoreWriteableByTeam(
-                archive, getUtility(ILaunchpadCelebrities).commercial_admin)
+                archive, getUtility(ILaunchpadCelebrities).ppa_admin)

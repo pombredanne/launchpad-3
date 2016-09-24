@@ -11,7 +11,7 @@ __all__ = [
     'Privacy',
     ]
 
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.interfaces import (
     Forbidden,
     ForbiddenAttribute,
@@ -22,9 +22,9 @@ from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import IPrivacy
 
 
+@implementer(IPrivacy)
 class Privacy:
     """Represent any object as IPrivacy."""
-    implements(IPrivacy)
 
     def __init__(self, context, private):
         self.context = context

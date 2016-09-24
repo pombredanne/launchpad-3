@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Question models."""
@@ -14,7 +14,7 @@ __all__ = [
     ]
 
 from datetime import datetime
-from email.Utils import make_msgid
+from email.utils import make_msgid
 import operator
 
 from lazr.enum import (
@@ -39,7 +39,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 from zope.security.interfaces import Unauthorized
@@ -66,6 +66,7 @@ from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.question import IQuestion
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.answers.mail.question import QuestionRecipientReason
 from lp.answers.model.answercontact import AnswerContact
 from lp.answers.model.questionmessage import QuestionMessage
 from lp.answers.model.questionreopening import create_questionreopening
@@ -76,7 +77,6 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.buglinktarget import BugLinkTargetMixin
-from lp.coop.answersbugs.model import QuestionBug
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -93,6 +93,7 @@ from lp.registry.interfaces.product import (
     IProductSet,
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.database import bulk
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -118,6 +119,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.worlddata.helpers import is_english_variant
 from lp.services.worlddata.interfaces.language import ILanguage
 from lp.services.worlddata.model.language import Language
+from lp.services.xref.interfaces import IXRefSet
 
 
 class notify_question_modified:
@@ -157,10 +159,9 @@ class notify_question_modified:
         return notify_question_modified
 
 
+@implementer(IQuestion, IBugLinkTarget)
 class Question(SQLBase, BugLinkTargetMixin):
     """See `IQuestion`."""
-
-    implements(IQuestion, IBugLinkTarget)
 
     _table = 'Question'
     _defaultOrder = ['-priority', 'datecreated']
@@ -210,10 +211,6 @@ class Question(SQLBase, BugLinkTargetMixin):
     subscribers = SQLRelatedJoin('Person',
         joinColumn='question', otherColumn='person',
         intermediateTable='QuestionSubscription', orderBy='name')
-    bug_links = SQLMultipleJoin('QuestionBug',
-        joinColumn='question', orderBy='id')
-    bugs = SQLRelatedJoin('Bug', joinColumn='question', otherColumn='bug',
-        intermediateTable='QuestionBug', orderBy='id')
     messages = SQLMultipleJoin('QuestionMessage', joinColumn='question',
         prejoins=['message'], orderBy=['QuestionMessage.id'])
     reopenings = SQLMultipleJoin('QuestionReopening', orderBy='datecreated',
@@ -561,7 +558,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             (Person, QuestionSubscription),
             QuestionSubscription.person_id == Person.id,
             QuestionSubscription.question_id == self.id,
-            ).order_by(Person.displayname)
+            ).order_by(Person.display_name)
         return results
 
     def getIndirectSubscribers(self):
@@ -587,26 +584,30 @@ class Question(SQLBase, BugLinkTargetMixin):
     @cachedproperty
     def direct_recipients(self):
         """See `IQuestion`."""
+        # Circular import.
+        from lp.registry.model.person import get_recipients
         subscribers = NotificationRecipientSet()
-        reason = ("You received this question notification because you are "
-                  "a direct subscriber of the question.")
-        subscribers.add(self.subscribers, reason, 'Subscriber')
-        if self.owner in subscribers:
-            subscribers.remove(self.owner)
-            reason = (
-                "You received this question notification because you "
-                "asked the question.")
-            subscribers.add(self.owner, reason, 'Asker')
+        for subscriber in self.subscribers:
+            if subscriber == self.owner:
+                reason_factory = QuestionRecipientReason.forAsker
+            else:
+                reason_factory = QuestionRecipientReason.forSubscriber
+            for recipient in get_recipients(subscriber):
+                reason = reason_factory(subscriber, recipient)
+                subscribers.add(recipient, reason, reason.mail_header)
         return subscribers
 
     @cachedproperty
     def indirect_recipients(self):
         """See `IQuestion`."""
+        # Circular import.
+        from lp.registry.model.person import get_recipients
         subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:
-            reason = ('You received this question notification because you '
-                      'are the assignee for this question.')
-            subscribers.add(self.assignee, reason, 'Assignee')
+            for recipient in get_recipients(self.assignee):
+                reason = QuestionRecipientReason.forAssignee(
+                    self.assignee, recipient)
+                subscribers.add(recipient, reason, reason.mail_header)
         return subscribers
 
     def _newMessage(self, owner, content, action, new_status, subject=None,
@@ -658,27 +659,29 @@ class Question(SQLBase, BugLinkTargetMixin):
         self.status = new_status
         return tktmsg
 
+    @property
+    def bugs(self):
+        from lp.bugs.model.bug import Bug
+        bug_ids = [
+            int(id) for _, id in getUtility(IXRefSet).findFrom(
+                (u'question', unicode(self.id)), types=[u'bug'])]
+        return list(sorted(
+            bulk.load(Bug, bug_ids), key=operator.attrgetter('id')))
+
     # IBugLinkTarget implementation
-    def linkBug(self, bug):
-        """See `IBugLinkTarget`."""
-        # Subscribe the question's owner to the bug.
-        bug.subscribe(self.owner, self.owner)
-        return BugLinkTargetMixin.linkBug(self, bug)
-
-    def unlinkBug(self, bug):
-        """See `IBugLinkTarget`."""
-        buglink = BugLinkTargetMixin.unlinkBug(self, bug)
-        if buglink:
-            # Additionnaly, unsubscribe the question's owner to the bug
-            bug.unsubscribe(self.owner, self.owner)
-        return buglink
-
-    # Template methods for BugLinkTargetMixin.
-    buglinkClass = QuestionBug
-
-    def createBugLink(self, bug):
+    def createBugLink(self, bug, props=None):
         """See BugLinkTargetMixin."""
-        return QuestionBug(question=self, bug=bug)
+        if props is None:
+            props = {}
+        # XXX: Should set creator.
+        getUtility(IXRefSet).create(
+            {(u'question', unicode(self.id)):
+                {(u'bug', unicode(bug.id)): props}})
+
+    def deleteBugLink(self, bug):
+        """See BugLinkTargetMixin."""
+        getUtility(IXRefSet).delete(
+            {(u'question', unicode(self.id)): [(u'bug', unicode(bug.id))]})
 
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IQuestion`."""
@@ -691,10 +694,9 @@ class Question(SQLBase, BugLinkTargetMixin):
         message.visible = visible
 
 
+@implementer(IQuestionSet)
 class QuestionSet:
     """The set of questions in the Answer Tracker."""
-
-    implements(IQuestionSet)
 
     def __init__(self):
         """See `IQuestionSet`."""
@@ -708,11 +710,13 @@ class QuestionSet:
         return Question.select("""
             id in (SELECT Question.id
                 FROM Question
-                    LEFT OUTER JOIN QuestionBug
-                        ON Question.id = QuestionBug.question
-                    LEFT OUTER JOIN BugTask
-                        ON QuestionBug.bug = BugTask.bug
-                            AND BugTask.status != %s
+                LEFT OUTER JOIN XRef ON (
+                    XRef.from_type = 'question'
+                    AND XRef.from_id_int = Question.id
+                    AND XRef.to_type = 'bug')
+                LEFT OUTER JOIN BugTask ON (
+                    BugTask.bug = XRef.to_id_int
+                    AND BugTask.status != %s)
                 WHERE
                     Question.status IN (%s, %s)
                     AND (Question.datelastresponse IS NULL
@@ -869,7 +873,7 @@ class QuestionSearch:
     def __init__(self, search_text=None, needs_attention_from=None, sort=None,
                  status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
                  product=None, distribution=None, sourcepackagename=None,
-                 project=None):
+                 projectgroup=None):
         self.search_text = search_text
         self.nl_phrase_used = False
 
@@ -892,7 +896,7 @@ class QuestionSearch:
         self.product = product
         self.distribution = distribution
         self.sourcepackagename = sourcepackagename
-        self.project = project
+        self.projectgroup = projectgroup
 
     def getTargetConstraints(self):
         """Return the constraints related to the IQuestionTarget context."""
@@ -912,10 +916,10 @@ class QuestionSearch:
                 constraints.append(
                     'Question.sourcepackagename = %s' % sqlvalues(
                         self.sourcepackagename))
-        elif self.project:
+        elif self.projectgroup:
             constraints.append("""
                 Question.product = Product.id AND Product.active AND
-                Product.project = %s""" % sqlvalues(self.project))
+                Product.project = %s""" % sqlvalues(self.projectgroup))
 
         return constraints
 
@@ -923,7 +927,7 @@ class QuestionSearch:
         """Return the tables that should be joined for the constraints."""
         if self.needs_attention_from:
             return self.getMessageJoins(self.needs_attention_from)
-        elif self.project:
+        elif self.projectgroup:
             return self.getProductJoins()
         else:
             return []
@@ -935,14 +939,14 @@ class QuestionSearch:
             ("""LEFT OUTER JOIN QuestionMessage
                 ON QuestionMessage.question = Question.id
                 AND QuestionMessage.owner = %s""" % sqlvalues(person))]
-        if self.project:
+        if self.projectgroup:
             joins.extend(self.getProductJoins())
 
         return joins
 
     def getProductJoins(self):
-        """Create the joins needed to select contrains on progects by a
-        particular project."""
+        """Create the joins needed to select constraints on projects by a
+        particular project group."""
         return [('JOIN Product '
                  'ON Question.product = Product.id')]
 
@@ -988,8 +992,8 @@ class QuestionSearch:
         # The idea is to prejoin all dependant tables, except if the
         # object will be the same in all rows because it is used as a
         # search criteria.
-        if self.product or self.sourcepackagename or self.project:
-            # Will always be the same product, sourcepackage, or project.
+        if self.product or self.sourcepackagename or self.projectgroup:
+            # Will always be the same project, sourcepackage, or project group.
             return ['owner']
         elif self.distribution:
             # Same distribution, sourcepackagename will vary.
@@ -1061,15 +1065,16 @@ class QuestionTargetSearch(QuestionSearch):
                  status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
                  needs_attention_from=None, unsupported_target=None,
-                 project=None, product=None, distribution=None,
+                 projectgroup=None, product=None, distribution=None,
                  sourcepackagename=None):
-        assert (product is not None or distribution is not None or
-            project is not None), ("Missing a product, distribution or "
-                                   "project context.")
+        assert (
+            product is not None or distribution is not None or
+            projectgroup is not None), (
+                "Missing a project, distribution or project group context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
             needs_attention_from=needs_attention_from, sort=sort,
-            project=project, product=product,
+            projectgroup=projectgroup, product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
         if owner:
@@ -1321,7 +1326,7 @@ class QuestionTargetMixin:
                   LeftJoin(Person, AnswerContact.person == Person.id)]
         conditions = self._getConditionsToQueryAnswerContacts()
         results = self._store.using(*origin).find(Person, conditions)
-        return list(results.order_by(Person.displayname))
+        return list(results.order_by(Person.display_name))
 
     @property
     def direct_answer_contacts_with_languages(self):
@@ -1391,7 +1396,7 @@ class QuestionTargetMixin:
         from lp.registry.model.person import Person
         return Person.select(
             " AND ".join(constraints), clauseTables=clause_tables,
-            orderBy=['displayname'], distinct=True)
+            orderBy=['display_name'], distinct=True)
 
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""
@@ -1424,24 +1429,18 @@ class QuestionTargetMixin:
 
     def getAnswerContactRecipients(self, language):
         """See `IQuestionTarget`."""
+        # Circular import.
+        from lp.registry.model.person import get_recipients
         if language is None:
             contacts = self.answer_contacts
         else:
             contacts = self.getAnswerContactsForLanguage(language)
         recipients = NotificationRecipientSet()
-        for person in contacts:
-            reason_start = (
-                "You received this question notification because you are ")
-            if person.is_team:
-                reason = reason_start + (
-                    'a member of %s, which is an answer contact for %s.' % (
-                        person.displayname, self.displayname))
-                header = 'Answer Contact (%s) @%s' % (self.name, person.name)
-            else:
-                reason = reason_start + (
-                    'an answer contact for %s.' % self.displayname)
-                header = 'Answer Contact (%s)' % self.displayname
-            recipients.add(person, reason, header)
+        for contact in contacts:
+            for recipient in get_recipients(contact):
+                reason = QuestionRecipientReason.forAnswerContact(
+                    contact, recipient, self.name, self.displayname)
+                recipients.add(recipient, reason, reason.mail_header)
         return recipients
 
     def removeAnswerContact(self, person, subscribed_by):

@@ -1,0 +1,14 @@
+=== zbqvsvrq svyr 'yvo/yc/pbqr/vagresnprf/qvss.cl'
+--- yvo/yc/pbqr/vagresnprf/qvss.cl      2009-10-01 13:25:12 +0000
++++ yvo/yc/pbqr/vagresnprf/qvss.cl      2010-02-02 15:48:56 +0000
+@@ -121,6 +121,10 @@
+                 'Gur pbasyvpgf grkg qrfpevovat nal cngu be grkg pbasyvpgf.'),
+              ernqbayl=Gehr))
+ 
++    unf_pbasyvpgf = Obby(
++        gvgyr=_('Unf pbasyvpgf'), ernqbayl=Gehr,
++        qrfpevcgvba=_('Gur cerivrjrq zretr cebqhprf pbasyvpgf.'))
++
+     # Gur fpurzn sbe gur Ersrerapr trgf cngpurq va _fpurzn_pvephyne_vzcbegf.
+     oenapu_zretr_cebcbfny = rkcbegrq(
+         Ersrerapr(

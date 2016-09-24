@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the generate_ppa_htaccess.py script. """
@@ -32,8 +32,8 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
-from lp.services.mail import stub
 from lp.services.osutils import (
     ensure_directory_exists,
     remove_if_exists,
@@ -44,6 +44,7 @@ from lp.soyuz.enums import (
     ArchiveStatus,
     ArchiveSubscriberStatus,
     )
+from lp.soyuz.interfaces.archive import NAMED_AUTH_TOKEN_FEATURE_FLAG
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import (
     lp_dbuser,
@@ -72,6 +73,9 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         # does, so override the PPA's distro here.
         ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.ppa.distribution = ubuntutest
+
+        # Enable named auth tokens.
+        self.useFixture(FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u"on"}))
 
     def getScript(self, test_args=None):
         """Return a HtaccessTokenGenerator instance."""
@@ -261,13 +265,18 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             all_persons, persons1, persons2, tokens) = data
         team1_person = persons1[0]
 
+        # Named tokens should be ignored for deactivation.
+        self.ppa.newNamedAuthToken(u"tokenname1")
+        named_token = self.ppa.newNamedAuthToken(u"tokenname2")
+        named_token.deactivate()
+
         # Initially, nothing is eligible for deactivation.
         script = self.getScript()
         script.deactivateInvalidTokens()
         for person in tokens:
             self.assertNotDeactivated(tokens[person])
 
-        # Now remove someone from team1, he will lose his token but
+        # Now remove someone from team1. They will lose their token but
         # everyone else keeps theirs.
         with lp_dbuser():
             team1_person.leave(team1)
@@ -281,12 +290,10 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             self.assertNotDeactivated(tokens[person])
 
         # Ensure that a cancellation email was sent.
-        num_emails = len(stub.test_emails)
-        self.assertEqual(
-            num_emails, 1, "Expected 1 email, got %s" % num_emails)
+        self.assertEmailQueueLength(1)
 
-        # Promiscuous_person now leaves team1, but does not lose his
-        # token because he's also in team2. No other tokens are
+        # Promiscuous_person now leaves team1, but does not lose their
+        # token because they're also in team2. No other tokens are
         # affected.
         with lp_dbuser():
             promiscuous_person.leave(team1)
@@ -298,9 +305,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             self.assertNotDeactivated(tokens[person])
 
         # Ensure that a cancellation email was not sent.
-        num_emails = len(stub.test_emails)
-        self.assertEqual(
-            num_emails, 0, "Expected no emails, got %s" % num_emails)
+        self.assertEmailQueueLength(0)
 
         # Team 2 now leaves parent_team, and all its members lose their
         # tokens.
@@ -315,11 +320,11 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         for person in persons2:
             self.assertDeactivated(tokens[person])
 
-        # promiscuous_person also loses the token because he's not in
+        # promiscuous_person also loses the token because they're not in
         # either team now.
         self.assertDeactivated(tokens[promiscuous_person])
 
-        # lonely_person still has his token, he's not in any teams.
+        # lonely_person still has their token; they're not in any teams.
         self.assertNotDeactivated(tokens[lonely_person])
 
     def setupDummyTokens(self):
@@ -330,12 +335,9 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         sub2 = self.ppa.newSubscription(name16, self.ppa.owner)
         token1 = self.ppa.newAuthToken(name12)
         token2 = self.ppa.newAuthToken(name16)
+        token3 = self.ppa.newNamedAuthToken(u"tokenname3")
         self.layer.txn.commit()
-        subs = [sub1]
-        subs.append(sub2)
-        tokens = [token1]
-        tokens.append(token2)
-        return subs, tokens
+        return (sub1, sub2), (token1, token2, token3)
 
     def ensureNoFiles(self):
         """Ensure the .ht* files don't already exist."""
@@ -377,6 +379,36 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
             return_code, 0, "Got a bad return code of %s\nOutput:\n%s" %
                 (return_code, stderr))
         self.assertThat([htaccess, htpasswd], AllMatch(FileExists()))
+        os.remove(htaccess)
+        os.remove(htpasswd)
+
+    def testBasicOperation_with_named_tokens(self):
+        """Invoke the actual script and make sure it generates some files."""
+        token1 = self.ppa.newNamedAuthToken(u"tokenname1")
+        token2 = self.ppa.newNamedAuthToken(u"tokenname2")
+        token3 = self.ppa.newNamedAuthToken(u"tokenname3")
+        token3.deactivate()
+
+        # Call the script and check that we have a .htaccess and a .htpasswd.
+        htaccess, htpasswd = self.ensureNoFiles()
+        script = self.getScript()
+        script.main()
+        self.assertThat([htaccess, htpasswd], AllMatch(FileExists()))
+        with open(htpasswd) as htpasswd_file:
+            contents = htpasswd_file.read()
+        self.assertIn('+' + token1.name, contents)
+        self.assertIn('+' + token2.name, contents)
+        self.assertNotIn('+' + token3.name, contents)
+
+        # Deactivate a named token and verify it is removed from .htpasswd.
+        token2.deactivate()
+        script.main()
+        self.assertThat([htaccess, htpasswd], AllMatch(FileExists()))
+        with open(htpasswd) as htpasswd_file:
+            contents = htpasswd_file.read()
+        self.assertIn('+' + token1.name, contents)
+        self.assertNotIn('+' + token2.name, contents)
+        self.assertNotIn('+' + token3.name, contents)
         os.remove(htaccess)
         os.remove(htpasswd)
 
@@ -486,10 +518,6 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         script.sendCancellationEmail(tokens[0])
 
-        num_emails = len(stub.test_emails)
-        self.assertEqual(
-            num_emails, 1, "Expected 1 email, got %s" % num_emails)
-
         [email] = pop_notifications()
         self.assertEqual(
             email['Subject'],
@@ -537,9 +565,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
         script.sendCancellationEmail(token)
 
-        num_emails = len(stub.test_emails)
-        self.assertEqual(
-            num_emails, 0, "Expected 0 emails, got %s" % num_emails)
+        self.assertEmailQueueLength(0)
 
     def test_getTimeToSyncFrom(self):
         # Sync from 1s before previous start to catch anything made during the
@@ -609,14 +635,47 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         script = self.getScript()
         self.assertContentEqual(tokens[1:], script.getNewTokens())
 
+    def test_getDeactivatedNamedTokens_no_previous_run(self):
+        """All deactivated named tokens returned if there is no record
+        of previous run."""
+        last_start = datetime.now(pytz.UTC) - timedelta(seconds=90)
+        before_last_start = last_start - timedelta(seconds=30)
+
+        self.ppa.newNamedAuthToken(u"tokenname1")
+        token2 = self.ppa.newNamedAuthToken(u"tokenname2")
+        token2.deactivate()
+        token3 = self.ppa.newNamedAuthToken(u"tokenname3")
+        token3.date_deactivated = before_last_start
+
+        script = self.getScript()
+        self.assertContentEqual(
+            [token2, token3], script.getDeactivatedNamedTokens())
+
+    def test_getDeactivatedNamedTokens_only_those_since_last_run(self):
+        """Only named tokens deactivated since last run are returned."""
+        last_start = datetime.now(pytz.UTC) - timedelta(seconds=90)
+        before_last_start = last_start - timedelta(seconds=30)
+        tomorrow = datetime.now(pytz.UTC) + timedelta(days=1)
+
+        self.ppa.newNamedAuthToken(u"tokenname1")
+        token2 = self.ppa.newNamedAuthToken(u"tokenname2")
+        token2.deactivate()
+        token3 = self.ppa.newNamedAuthToken(u"tokenname3")
+        token3.date_deactivated = before_last_start
+        token4 = self.ppa.newNamedAuthToken(u"tokenname4")
+        token4.date_deactivated = tomorrow
+
+        script = self.getScript()
+        self.assertContentEqual(
+            [token2], script.getDeactivatedNamedTokens(last_start))
+
     def test_processes_PPAs_without_subscription(self):
         # A .htaccess file is written for Private PPAs even if they don't have
         # any subscriptions.
         htaccess, htpasswd = self.ensureNoFiles()
         transaction.commit()
 
-        # Call the script and check that we have a .htaccess and a
-        # .htpasswd.
+        # Call the script and check that we have a .htaccess and a .htpasswd.
         return_code, stdout, stderr = self.runScript()
         self.assertEqual(
             return_code, 0, "Got a bad return code of %s\nOutput:\n%s" %

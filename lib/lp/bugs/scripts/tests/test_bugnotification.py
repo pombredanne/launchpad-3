@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Tests for construction bug notification emails for sending."""
 
@@ -10,18 +10,23 @@ from datetime import (
     )
 import logging
 import re
+from smtplib import SMTPException
 import StringIO
 import unittest
 
 import pytz
 from storm.store import Store
-from testtools.matchers import Not
+from testtools.matchers import (
+    MatchesRegex,
+    Not,
+    )
 from transaction import commit
 from zope.component import (
     getSiteManager,
     getUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
+from zope.sendmail.interfaces import IMailDelivery
 
 from lp.app.enums import InformationType
 from lp.bugs.adapters.bugchange import (
@@ -38,6 +43,7 @@ from lp.bugs.adapters.bugchange import (
     CveLinkedToBug,
     CveUnlinkedFromBug,
     )
+from lp.bugs.enums import BugNotificationStatus
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBug,
@@ -63,6 +69,7 @@ from lp.bugs.scripts.bugnotification import (
     notification_batches,
     notification_comment_batches,
     process_deferred_notifications,
+    SendBugNotifications,
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
@@ -76,10 +83,13 @@ from lp.services.mail.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
+from lp.services.mail.sendmail import set_immediate_mail_delivery
+from lp.services.mail.stub import TestMailer
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
 from lp.testing import (
     login,
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -87,13 +97,14 @@ from lp.testing.dbuser import (
     lp_dbuser,
     switch_dbuser,
     )
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.matchers import Contains
 
 
+@implementer(IBug)
 class MockBug:
     """A bug which has only the attributes get_email_notifications() needs."""
-    implements(IBug)
 
     duplicateof = None
     information_type = InformationType.PUBLIC
@@ -184,10 +195,9 @@ class FakeNotification:
         self.activity = None
 
 
+@implementer(IBugNotificationSet)
 class FakeBugNotificationSetUtility:
     """A notification utility used for testing."""
-
-    implements(IBugNotificationSet)
 
     def getRecipientFilterData(self, bug, recipient_to_sources,
                                notifications):
@@ -1246,6 +1256,30 @@ class TestNotificationSignatureSeparator(TestCase):
             self.assertTrue(re.search('^-- $', template, re.MULTILINE))
 
 
+class TestExpandedNotificationFooters(EmailNotificationTestBase):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_expanded_footer(self):
+        # Recipients with expanded_notification_footers receive an expanded
+        # footer on messages, which is separated by the correct number of
+        # newlines.
+        with lp_dbuser(), person_logged_in(self.bug_subscriber):
+            self.bug_subscriber.expanded_notification_footers = True
+            expected_to = str(self.bug_subscriber.preferredemail.email)
+        self.bug.addChange(BugTitleChange(
+            self.ten_minutes_ago, self.person, "title",
+            "Old summary", "New summary"))
+        [payload] = [
+            payload for message, payload in self.get_messages()
+            if message["to"] == expected_to]
+        self.assertThat(payload, MatchesRegex(
+            r'.*To manage notifications about this bug go to:\n'
+            r'http://.*\+subscriptions\n'
+            r'\n'
+            r'Launchpad-Notification-Type: bug\n', re.S))
+
+
 class TestDeferredNotifications(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -1282,3 +1316,69 @@ class TestDeferredNotifications(TestCaseWithFactory):
         # And there are no longer any deferred.
         deferred = self.notification_set.getDeferredNotifications()
         self.assertEqual(0, deferred.count())
+
+
+class BrokenMailer(TestMailer):
+    """A mailer that raises an exception for certain recipient addresses."""
+
+    def __init__(self, broken):
+        self.broken = broken
+
+    def send(self, from_addr, to_addrs, message):
+        if any(to_addr in self.broken for to_addr in to_addrs):
+            raise SMTPException("test requested delivery failure")
+        return super(BrokenMailer, self).send(from_addr, to_addrs, message)
+
+
+class TestSendBugNotifications(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestSendBugNotifications, self).setUp()
+        self.notification_set = getUtility(IBugNotificationSet)
+        # Ensure there are no outstanding notifications.
+        for notification in self.notification_set.getNotificationsToSend():
+            notification.destroySelf()
+        self.ten_minutes_ago = datetime.now(pytz.UTC) - timedelta(minutes=10)
+
+    def test_oops_on_failed_delivery(self):
+        # If one notification fails to send, it logs an OOPS and doesn't get
+        # in the way of sending other notifications.
+        set_immediate_mail_delivery(False)
+        subscribers = []
+        for i in range(3):
+            bug = self.factory.makeBug()
+            subscriber = self.factory.makePerson()
+            subscribers.append(subscriber.preferredemail.email)
+            bug.default_bugtask.target.addSubscription(subscriber, subscriber)
+            message = getUtility(IMessageSet).fromText(
+                "subject", "a comment.", bug.owner,
+                datecreated=self.ten_minutes_ago)
+            bug.addCommentNotification(message)
+
+        notifications = list(get_email_notifications(
+            self.notification_set.getNotificationsToSend()))
+        self.assertEqual(3, len(notifications))
+
+        mailer = BrokenMailer([subscribers[1]])
+        with ZopeUtilityFixture(mailer, IMailDelivery, "Mail"):
+            switch_dbuser(config.malone.bugnotification_dbuser)
+            script = SendBugNotifications(
+                "send-bug-notifications", config.malone.bugnotification_dbuser,
+                ["-q"])
+            script.txn = self.layer.txn
+            script.main()
+
+        self.assertEqual(1, len(self.oopses))
+        self.assertIn(
+            "SMTPException: test requested delivery failure",
+            self.oopses[0]["tb_text"])
+        for i, (bug_notifications, _, messages) in enumerate(notifications):
+            for bug_notification in bug_notifications:
+                if i == 1:
+                    self.assertEqual(
+                        BugNotificationStatus.PENDING, bug_notification.status)
+                else:
+                    self.assertEqual(
+                        BugNotificationStatus.SENT, bug_notification.status)

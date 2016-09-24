@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
@@ -266,6 +266,32 @@ class TestBranchView(BrowserTestCase):
         login_person(branch.owner)
         self.assertFalse(view.user_can_upload)
 
+    def test_recipes_link_no_recipes(self):
+        # A branch with no recipes does not show a recipes link.
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        self.assertEqual('No recipes using this branch.', view.recipes_link)
+
+    def test_recipes_link_one_recipe(self):
+        # A branch with one recipe shows a link to that recipe.
+        branch = self.factory.makeAnyBranch()
+        recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
+        view = create_initialized_view(branch, '+index')
+        expected_link = (
+            '<a href="%s">1 recipe</a> using this branch.' %
+            canonical_url(recipe))
+        self.assertEqual(expected_link, view.recipes_link)
+
+    def test_recipes_link_more_recipes(self):
+        # A branch with more than one recipe shows a link to a listing.
+        branch = self.factory.makeAnyBranch()
+        self.factory.makeSourcePackageRecipe(branches=[branch])
+        self.factory.makeSourcePackageRecipe(branches=[branch])
+        view = create_initialized_view(branch, '+index')
+        self.assertEqual(
+            '<a href="+recipes">2 recipes</a> using this branch.',
+            view.recipes_link)
+
     def _addBugLinks(self, branch):
         for status in BugTaskStatus.items:
             bug = self.factory.makeBug(status=status)
@@ -466,6 +492,7 @@ class TestBranchView(BrowserTestCase):
             # These values are extracted here and used below.
             linked_bug_rendered_text = "\n".join(linked_bug_text)
             mp_url = canonical_url(mp, force_local_path=True)
+            branch_url = canonical_url(mp.source_branch, force_local_path=True)
             branch_display_name = mp.source_branch.displayname
 
         browser = self.getUserBrowser(canonical_url(branch))
@@ -493,8 +520,9 @@ class TestBranchView(BrowserTestCase):
 
         links = revision_content.findAll('a')
         self.assertEqual(mp_url, links[2]['href'])
-        self.assertEqual(linked_bug_urls[0], links[3]['href'])
-        self.assertEqual(linked_bug_urls[1], links[4]['href'])
+        self.assertEqual(branch_url, links[3]['href'])
+        self.assertEqual(linked_bug_urls[0], links[4]['href'])
+        self.assertEqual(linked_bug_urls[1], links[5]['href'])
 
     def test_view_for_user_with_artifact_grant(self):
         # Users with an artifact grant for a branch related to a private
@@ -558,7 +586,7 @@ class TestBranchView(BrowserTestCase):
         logout()
         with StormStatementRecorder() as recorder:
             browser.open(branch_url)
-        self.assertThat(recorder, HasQueryCount(Equals(26)))
+        self.assertThat(recorder, HasQueryCount(Equals(27)))
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):

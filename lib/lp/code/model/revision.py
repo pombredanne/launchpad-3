@@ -42,7 +42,7 @@ from storm.locals import (
     )
 from storm.store import Store
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import PUBLIC_INFORMATION_TYPES
@@ -78,10 +78,9 @@ from lp.services.identity.interfaces.emailaddress import (
     )
 
 
+@implementer(IRevision)
 class Revision(SQLBase):
     """See IRevision."""
-
-    implements(IRevision)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     log_body = StringCol(notNull=True)
@@ -180,8 +179,8 @@ class Revision(SQLBase):
         return result_set.first()
 
 
+@implementer(IRevisionAuthor)
 class RevisionAuthor(SQLBase):
-    implements(IRevisionAuthor)
 
     _table = 'RevisionAuthor'
 
@@ -196,7 +195,7 @@ class RevisionAuthor(SQLBase):
         """
         if '@' not in self.name:
             return self.name
-        return email.Utils.parseaddr(self.name)[0]
+        return email.utils.parseaddr(self.name)[0]
 
     email = StringCol(notNull=False, default=None)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=False,
@@ -218,10 +217,9 @@ class RevisionAuthor(SQLBase):
             return False
 
 
+@implementer(IRevisionParent)
 class RevisionParent(SQLBase):
     """The association between a revision and its parent."""
-
-    implements(IRevisionParent)
 
     _table = 'RevisionParent'
 
@@ -232,10 +230,9 @@ class RevisionParent(SQLBase):
     parent_id = StringCol(notNull=True)
 
 
+@implementer(IRevisionProperty)
 class RevisionProperty(SQLBase):
     """A property on a revision. See IRevisionProperty."""
-
-    implements(IRevisionProperty)
 
     _table = 'RevisionProperty'
 
@@ -245,16 +242,15 @@ class RevisionProperty(SQLBase):
     value = StringCol(notNull=True)
 
 
+@implementer(IRevisionSet)
 class RevisionSet:
-
-    implements(IRevisionSet)
 
     def getByRevisionId(self, revision_id):
         return Revision.selectOneBy(revision_id=revision_id)
 
     def _createRevisionAuthor(self, revision_author):
         """Extract out the email and check to see if it matches a Person."""
-        email_address = email.Utils.parseaddr(revision_author)[1]
+        email_address = email.utils.parseaddr(revision_author)[1]
         # If there is no @, then it isn't a real email address.
         if '@' not in email_address:
             email_address = None
@@ -414,13 +410,6 @@ class RevisionSet:
         present = store.find(Revision.revision_id, clause)
         return set(present)
 
-    def checkNewVerifiedEmail(self, email):
-        """See `IRevisionSet`."""
-        # Bypass zope's security because IEmailAddress.email is not public.
-        naked_email = removeSecurityProxy(email)
-        for author in RevisionAuthor.selectBy(email=naked_email.email):
-            author.personID = email.personID
-
     def getTipRevisionsForBranches(self, branches):
         """See `IRevisionSet`."""
         # If there are no branch_ids, then return None.
@@ -521,7 +510,7 @@ class RevisionSet:
             conditions = And(conditions, Branch.product == obj)
         elif IProjectGroup.providedBy(obj):
             origin.append(Join(Product, Branch.product == Product.id))
-            conditions = And(conditions, Product.project == obj)
+            conditions = And(conditions, Product.projectgroup == obj)
         else:
             raise AssertionError(
                 "Not an IProduct or IProjectGroup: %r" % obj)

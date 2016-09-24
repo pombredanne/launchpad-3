@@ -20,7 +20,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    implements,
+    implementer,
     providedBy,
     )
 from zope.schema.interfaces import (
@@ -83,9 +83,9 @@ from lp.services.webapp.interfaces import ILaunchBag
 error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')
 
 
+@implementer(IBugEmailCommand)
 class BugEmailCommand(EmailCommand):
     """Creates new bug, or returns an existing one."""
-    implements(IBugEmailCommand)
 
     _numberOfArguments = 1
     RANK = 0
@@ -153,6 +153,7 @@ class BugEmailCommand(EmailCommand):
             return bug, None
 
 
+@implementer(IBugEditEmailCommand)
 class PrivateEmailCommand(EmailCommand):
     """Marks a bug public or private.
 
@@ -160,8 +161,6 @@ class PrivateEmailCommand(EmailCommand):
     `IBug.setPrivate` to update privacy settings, rather than just
     updating an attribute.
     """
-
-    implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
     RANK = 3
@@ -217,10 +216,9 @@ class PrivateEmailCommand(EmailCommand):
         return context, current_event
 
 
+@implementer(IBugEditEmailCommand)
 class SecurityEmailCommand(EmailCommand):
     """Marks a bug as security related."""
-
-    implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
     RANK = 2
@@ -279,10 +277,9 @@ class SecurityEmailCommand(EmailCommand):
         return context, current_event
 
 
+@implementer(IBugEditEmailCommand)
 class SubscribeEmailCommand(EmailCommand):
     """Subscribes someone to the bug."""
-
-    implements(IBugEditEmailCommand)
     RANK = 7
 
     def execute(self, bug, current_event):
@@ -327,10 +324,9 @@ class SubscribeEmailCommand(EmailCommand):
         return bug, current_event
 
 
+@implementer(IBugEditEmailCommand)
 class UnsubscribeEmailCommand(EmailCommand):
     """Unsubscribes someone from the bug."""
-
-    implements(IBugEditEmailCommand)
     RANK = 8
 
     def execute(self, bug, current_event):
@@ -367,10 +363,9 @@ class UnsubscribeEmailCommand(EmailCommand):
         return bug, current_event
 
 
+@implementer(IBugEditEmailCommand)
 class SummaryEmailCommand(EditEmailCommand):
     """Changes the title of the bug."""
-
-    implements(IBugEditEmailCommand)
     _numberOfArguments = 1
     RANK = 1
     case_insensitive_args = False
@@ -403,10 +398,9 @@ class SummaryEmailCommand(EditEmailCommand):
         return {'title': self.string_args[0]}
 
 
+@implementer(IBugEditEmailCommand)
 class DuplicateEmailCommand(EmailCommand):
     """Marks a bug as a duplicate of another bug."""
-
-    implements(IBugEditEmailCommand)
     _numberOfArguments = 1
     RANK = 6
 
@@ -447,10 +441,9 @@ class DuplicateEmailCommand(EmailCommand):
         return bug, current_event
 
 
+@implementer(IBugEditEmailCommand)
 class CVEEmailCommand(EmailCommand):
     """Links a CVE to a bug."""
-
-    implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
     RANK = 5
@@ -471,10 +464,9 @@ class CVEEmailCommand(EmailCommand):
         return bug, current_event
 
 
+@implementer(IBugTaskEmailCommand)
 class AffectsEmailCommand(EmailCommand):
     """Either creates a new task, or edits an existing task."""
-
-    implements(IBugTaskEmailCommand)
     _numberOfArguments = 1
     RANK = 0
 
@@ -683,10 +675,9 @@ class AffectsEmailCommand(EmailCommand):
             return bug.addTask(user, bug_target)
 
 
+@implementer(IBugTaskEditEmailCommand)
 class AssigneeEmailCommand(EditEmailCommand):
     """Assigns someone to the bug."""
-
-    implements(IBugTaskEditEmailCommand)
 
     _numberOfArguments = 1
     RANK = 2
@@ -706,10 +697,9 @@ class AssigneeEmailCommand(EditEmailCommand):
         context.transitionToAssignee(attr_value)
 
 
+@implementer(IBugTaskEditEmailCommand)
 class MilestoneEmailCommand(EditEmailCommand):
     """Sets the milestone for the bugtask."""
-
-    implements(IBugTaskEditEmailCommand)
 
     _numberOfArguments = 1
     RANK = 3
@@ -739,6 +729,7 @@ class MilestoneEmailCommand(EditEmailCommand):
                 "milestones." % (context.pillar.title,))
 
 
+@implementer(IBugTaskEditEmailCommand)
 class DBSchemaEditEmailCommand(EditEmailCommand):
     """Helper class for edit DBSchema attributes.
 
@@ -750,8 +741,6 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
         class FooEmailCommand(DBSchemaEditEmailCommand):
             dbschema = FooDBSchema
     """
-
-    implements(IBugTaskEditEmailCommand)
 
     _numberOfArguments = 1
 
@@ -779,10 +768,9 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
         return {self.name: dbitem}
 
 
+@implementer(IBugEditEmailCommand)
 class InformationTypeEmailCommand(DBSchemaEditEmailCommand):
     """Change the information type of a bug."""
-
-    implements(IBugEditEmailCommand)
     dbschema = InformationType
     RANK = 3
 
@@ -824,9 +812,9 @@ class ImportanceEmailCommand(DBSchemaEditEmailCommand):
     RANK = 5
 
 
+@implementer(IBugTaskEditEmailCommand)
 class ReplacedByImportanceCommand(EmailCommand):
     """This command has been replaced by the 'importance' command."""
-    implements(IBugTaskEditEmailCommand)
     RANK = 1
 
     def execute(self, context, current_event):
@@ -837,10 +825,9 @@ class ReplacedByImportanceCommand(EmailCommand):
                     argument=self.name))
 
 
+@implementer(IBugEditEmailCommand)
 class TagEmailCommand(EmailCommand):
     """Assigns a tag to or removes a tag from bug."""
-
-    implements(IBugEditEmailCommand)
     RANK = 4
 
     def execute(self, bug, current_event):

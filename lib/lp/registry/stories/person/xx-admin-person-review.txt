@@ -63,10 +63,11 @@ hidden from the UI.
     >>> for tr in content.find(id='summary').findAll('tr'):
     ...     print extract_text(tr)
     Created: 2005-06-06
-    Creation reason: Created by the owner himself, coming from Launchpad.
+    Creation reason: Created by the owner themselves, coming from Launchpad.
     OpenID identifiers: salgado_oid
     Email addresses: guilherme.salgado@canonical.com
     Guessed email addresses: salgado@ubuntu.com
+    Status history:
 
 The page also contains a link back to the +review page.
 

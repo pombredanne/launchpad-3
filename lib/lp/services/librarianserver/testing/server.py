@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixture for the librarians."""
@@ -25,6 +25,7 @@ from lp.services.daemons.tachandler import (
     TacException,
     TacTestSetup,
     )
+from lp.services.librarian.model import LibraryFileContent
 from lp.services.librarianserver.storage import _relFileLocation
 from lp.services.osutils import get_pid_from_file
 
@@ -130,7 +131,7 @@ class LibrarianServerFixture(TacTestSetup):
             root_fixture = FunctionFixture(tempfile.mkdtemp, shutil.rmtree)
             self.useFixture(root_fixture)
             self._root = root_fixture.fn_result
-            os.chmod(self.root, 0700)
+            os.chmod(self.root, 0o700)
             # Give the root to the new librarian.
             os.environ['LP_LIBRARIAN_ROOT'] = self._root
         else:
@@ -139,7 +140,7 @@ class LibrarianServerFixture(TacTestSetup):
             if os.path.exists(self.root):
                 self.tearDownRoot()
             self.addCleanup(self.tearDownRoot)
-            os.makedirs(self.root, 0700)
+            os.makedirs(self.root, 0o700)
 
     def _waitForDaemonStartup(self):
         super(LibrarianServerFixture, self)._waitForDaemonStartup()
@@ -230,14 +231,16 @@ class LibrarianServerFixture(TacTestSetup):
         self.truncateLog()
 
 
-def fillLibrarianFile(fileid, content='Fake Content'):
+def fillLibrarianFile(fileid, content=None):
     """Write contents in disk for a librarian sampledata."""
+    if content is None:
+        content = 'x' * LibraryFileContent.get(fileid).filesize
+
     filepath = os.path.join(
         config.librarian_server.root, _relFileLocation(fileid))
 
     if not os.path.exists(os.path.dirname(filepath)):
         os.makedirs(os.path.dirname(filepath))
 
-    libfile = open(filepath, 'wb')
-    libfile.write(content)
-    libfile.close()
+    with open(filepath, 'wb') as libfile:
+        libfile.write(content)

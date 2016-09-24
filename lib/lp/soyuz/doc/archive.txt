@@ -295,46 +295,46 @@ published for all available architectures, i386 & hppa:
 
 'name' filter supporting partial string matching and 'not-found':
 
-    >>> cprov_archive.getPublishedOnDiskBinaries(name='pmou').count()
+    >>> cprov_archive.getPublishedOnDiskBinaries(name=u'pmou').count()
     1
-    >>> cprov_archive.getAllPublishedBinaries(name='pmou').count()
+    >>> cprov_archive.getAllPublishedBinaries(name=u'pmou').count()
     2
-    >>> cprov_archive.getPublishedOnDiskBinaries(name='foo').count()
+    >>> cprov_archive.getPublishedOnDiskBinaries(name=u'foo').count()
     0
-    >>> cprov_archive.getAllPublishedBinaries(name='foo').count()
+    >>> cprov_archive.getAllPublishedBinaries(name=u'foo').count()
     0
 
 Combining 'name' filter and 'exact_match' flag:
 
     >>> cprov_archive.getAllPublishedBinaries(
-    ...     name='pmou', exact_match=True).count()
+    ...     name=u'pmou', exact_match=True).count()
     0
     >>> cprov_archive.getAllPublishedBinaries(
-    ...     name='pmount', exact_match=True).count()
+    ...     name=u'pmount', exact_match=True).count()
     2
     >>> cprov_archive.getPublishedOnDiskBinaries(
-    ...     name='pmou', exact_match=True).count()
+    ...     name=u'pmou', exact_match=True).count()
     0
     >>> cprov_archive.getPublishedOnDiskBinaries(
-    ...     name='pmount', exact_match=True).count()
+    ...     name=u'pmount', exact_match=True).count()
     1
 
 It's possible to associate 'name' and 'version' filters:
 
     >>> cprov_archive.getPublishedOnDiskBinaries(
-    ...     name='moz', version='1.0').count()
+    ...     name=u'moz', version='1.0').count()
     2
 
     >>> cprov_archive.getAllPublishedBinaries(
-    ...     name='moz', version='1.0').count()
+    ...     name=u'moz', version='1.0').count()
     2
 
     >>> cprov_archive.getPublishedOnDiskBinaries(
-    ...     name='moz', version='666').count()
+    ...     name=u'moz', version='666').count()
     0
 
     >>> cprov_archive.getAllPublishedBinaries(
-    ...     name='moz', version='666').count()
+    ...     name=u'moz', version='666').count()
     0
 
 Both methods do not support passing the 'version' filter if the 'name'
@@ -429,44 +429,44 @@ Using 'pocket' filter:
 Associating 'name' and 'status' filters:
 
     >>> status_lookup = cprov_archive.getPublishedOnDiskBinaries(
-    ...     name='pmount', status=active_status)
+    ...     name=u'pmount', status=active_status)
     >>> status_lookup.count()
     1
 
     >>> status_lookup = cprov_archive.getAllPublishedBinaries(
-    ...     name='pmount', status=active_status)
+    ...     name=u'pmount', status=active_status)
     >>> status_lookup.count()
     2
 
     >>> status_lookup = cprov_archive.getPublishedOnDiskBinaries(
-    ...     name='foo', status=active_status)
+    ...     name=u'foo', status=active_status)
     >>> status_lookup.count()
     0
 
     >>> status_lookup = cprov_archive.getAllPublishedBinaries(
-    ...     name='foo', status=active_status)
+    ...     name=u'foo', status=active_status)
     >>> status_lookup.count()
     0
 
 Associating 'name', 'version' and 'status' filters:
 
     >>> status_lookup = cprov_archive.getPublishedOnDiskBinaries(
-    ...     name='pmount', version='0.1-1', status=active_status)
+    ...     name=u'pmount', version='0.1-1', status=active_status)
     >>> status_lookup.count()
     1
 
     >>> status_lookup = cprov_archive.getAllPublishedBinaries(
-    ...     name='pmount', version='0.1-1', status=active_status)
+    ...     name=u'pmount', version='0.1-1', status=active_status)
     >>> status_lookup.count()
     2
 
     >>> status_lookup = cprov_archive.getPublishedOnDiskBinaries(
-    ...     name='pmount', version='666', status=active_status)
+    ...     name=u'pmount', version='666', status=active_status)
     >>> status_lookup.count()
     0
 
     >>> status_lookup = cprov_archive.getAllPublishedBinaries(
-    ...     name='pmount', version='666', status=active_status)
+    ...     name=u'pmount', version='666', status=active_status)
     >>> status_lookup.count()
     0
 
@@ -474,13 +474,13 @@ Associating 'name', 'version', 'status' and 'distroarchseries' filters
 and 'exact_match' flag:
 
     >>> status_lookup = cprov_archive.getAllPublishedBinaries(
-    ...     name='pmount', version='0.1-1', distroarchseries=warty_i386,
+    ...     name=u'pmount', version='0.1-1', distroarchseries=warty_i386,
     ...     status=active_status, exact_match=True)
     >>> status_lookup.count()
     1
 
     >>> status_lookup = cprov_archive.getAllPublishedBinaries(
-    ...     name='pmount', version='0.1-1',
+    ...     name=u'pmount', version='0.1-1',
     ...     distroarchseries=[warty_i386, warty_hppa],
     ...     status=active_status, exact_match=True)
     >>> status_lookup.count()
@@ -592,7 +592,7 @@ decreases.
     >>> cprov_archive.number_of_binaries
     3
     >>> cprov_archive.getAllPublishedBinaries(
-    ...     name='mozilla-firefox')[0].supersede()
+    ...     name=u'mozilla-firefox')[0].supersede()
 
     >>> cprov_archive.number_of_binaries
     2
@@ -1190,7 +1190,7 @@ and user and give the team access to cprov's PPA:
     >>> for ppa in archive_set.getPPAsForUser(indirect_uploader):
     ...     print ppa.displayname
 
-But if we make him part of the uploader_team he'll gain access:
+But if we make them part of the uploader_team they'll gain access:
 
     >>> ignored = uploader_team.addMember(
     ...     indirect_uploader, indirect_uploader)
@@ -1711,17 +1711,25 @@ Re-enable Celso's PPA.
     >>> login('foo.bar@canonical.com')
     >>> cprov_archive.enable()
 
-Commercial admins can manage the privacy and build settings of any PPA.
-Additionally, a member of launchpad-ppa-self-admins can manage those
+PPA or commercial admins can manage the privacy and build settings of any
+PPA.  Additionally, a member of launchpad-ppa-self-admins can manage those
 settings on PPAs that they can otherwise edit.
 
     >>> login('celso.providelo@canonical.com')
     >>> check_permission('launchpad.Admin', cprov_archive)
     False
 
+    >>> ppa_admin = getUtility(IPersonSet).getByName('launchpad-ppa-admins')
+    >>> ppa_admin_member = factory.makePerson(
+    ...     email='ppa-member@canonical.com', member_of=[ppa_admin])
+    >>> login('ppa-member@canonical.com')
+    >>> check_permission('launchpad.Admin', cprov_archive)
+    True
+
     >>> login('commercial-member@canonical.com')
     >>> check_permission('launchpad.Admin', cprov_archive)
     True
+
     >>> celeb = getUtility(IPersonSet).getByName('launchpad-ppa-self-admins')
     >>> celeb.addMember(person=cprov, reviewer=celeb.teamowner)
     (True, ...)

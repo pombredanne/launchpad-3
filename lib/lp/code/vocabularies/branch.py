@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.vocabulary import SimpleTerm
 
 from lp.code.enums import BranchType
@@ -30,10 +30,9 @@ from lp.services.webapp.vocabulary import (
     )
 
 
+@implementer(IHugeVocabulary)
 class BranchVocabulary(SQLObjectVocabularyBase):
     """A vocabulary for searching branches."""
-
-    implements(IHugeVocabulary)
 
     _table = Branch
     _orderBy = ['name', 'id']

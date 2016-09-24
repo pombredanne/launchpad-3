@@ -46,12 +46,11 @@ class TestSourcePublicationListingExtra(BrowserTestCase):
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         # Create everything we need to create builds, such as a
         # DistroArchSeries and a builder.
-        self.processor = self.factory.makeProcessor()
+        self.processor = self.factory.makeProcessor(supports_virtualized=True)
         self.distroseries = self.factory.makeDistroSeries(
             distribution=getUtility(IDistributionSet)['ubuntu'])
         self.das = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor)
         self.archive = self.factory.makeArchive(
             distribution=self.distroseries.distribution)
         with person_logged_in(self.admin):

@@ -16,7 +16,7 @@ def test_simple_sendmail():
     Send an email (faked by TestMailer - no actual email is sent)
 
     >>> import email
-    >>> from email.MIMEText import MIMEText
+    >>> from email.mime.text import MIMEText
     >>> import transaction
     >>> from lp.services.mail import stub
     >>> from lp.services.mail.sendmail import simple_sendmail
@@ -107,6 +107,7 @@ def test_simple_sendmail():
     'Launchpad (canonical.com); Revision="1999";\n Instance="launchpad-lazr.conf"'
 
     """
+
 
 def test_suite():
     suite = DocTestSuite(checker=RENormalizing([

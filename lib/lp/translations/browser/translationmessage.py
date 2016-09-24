@@ -32,7 +32,7 @@ from zope.formlib.interfaces import IInputWidget
 from zope.formlib.utility import setUpWidgets
 from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import DropdownWidget
-from zope.interface import implements
+from zope.interface import implementer
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from lp.app.errors import UnexpectedFormData
@@ -1589,10 +1589,9 @@ class CurrentTranslationMessageZoomedView(CurrentTranslationMessageView):
         return None
 
 
+@implementer(ITranslationMessageSuggestions)
 class TranslationMessageSuggestions:
     """See `ITranslationMessageSuggestions`."""
-
-    implements(ITranslationMessageSuggestions)
 
     def __init__(self, title, translation, submissions,
                  user_is_official_translator, form_is_writeable,

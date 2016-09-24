@@ -396,31 +396,46 @@ class TestMakeBugtrackerName(TestCase):
     """Tests for make_bugtracker_name."""
 
     def test_url(self):
-        self.assertEquals(
+        self.assertEqual(
             'auto-bugs.example.com',
             make_bugtracker_name('http://bugs.example.com/shrubbery'))
 
     def test_email_address(self):
-        self.assertEquals(
+        self.assertEqual(
             'auto-foo.bar',
             make_bugtracker_name('mailto:foo.bar@somewhere.com'))
 
     def test_sanitises_forbidden_characters(self):
-        self.assertEquals(
+        self.assertEqual(
             'auto-foobar',
             make_bugtracker_name('mailto:foo_bar@somewhere.com'))
+
+    def test_github(self):
+        self.assertEqual(
+            'auto-github-user-repository',
+            make_bugtracker_name('https://github.com/user/repository/issues'))
+        self.assertEqual(
+            'auto-github-user-repository',
+            make_bugtracker_name('https://github.com/user/Repository/issues'))
+        # Invalid on the GitHub side, but let's make sure these don't blow up.
+        self.assertEqual(
+            'auto-github-user',
+            make_bugtracker_name('https://github.com/user/issues'))
+        self.assertEqual(
+            'auto-github-user-foo-bar',
+            make_bugtracker_name('https://github.com/user/foo/bar/issues'))
 
 
 class TestMakeBugtrackerTitle(TestCase):
     """Tests for make_bugtracker_title."""
 
     def test_url(self):
-        self.assertEquals(
+        self.assertEqual(
             'bugs.example.com/shrubbery',
             make_bugtracker_title('http://bugs.example.com/shrubbery'))
 
     def test_email_address(self):
-        self.assertEquals(
+        self.assertEqual(
             'Email to foo.bar@somewhere',
             make_bugtracker_title('mailto:foo.bar@somewhere.com'))
 
@@ -429,6 +444,6 @@ def test_suite():
     suite = unittest.TestLoader().loadTestsFromName(__name__)
     doctest_suite = DocTestSuite(
         'lp.bugs.model.bugtracker',
-        optionflags=NORMALIZE_WHITESPACE|ELLIPSIS)
+        optionflags=NORMALIZE_WHITESPACE | ELLIPSIS)
     suite.addTest(doctest_suite)
     return suite

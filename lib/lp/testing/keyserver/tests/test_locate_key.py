@@ -34,4 +34,3 @@ class LocateKeyTestCase(TestCase):
 
     def test_locate_key_no_match(self):
         self.assertKeyFile('0xDEADBEEF.get', None)
-

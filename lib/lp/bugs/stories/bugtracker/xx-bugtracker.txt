@@ -40,6 +40,7 @@ requires manual set up of a bug archive mirror.
     Savane
     PHP Project Bugtracker
     Google Code
+    GitHub Issues
 
 The bug tracker name is used in URLs and certain characters (like '!')
 aren't allowed.
@@ -416,8 +417,7 @@ The first and second restrictions both apply to the GNOME Bugzilla:
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'bugtracker-delete-not-possible-reasons'))
     Please note, this bug tracker cannot be deleted because:
-      This is the bug tracker for The GNOME Project and The GNOME Terminal
-      Emulator.
+      This is the bug tracker for GNOME and GNOME Terminal.
       There are linked bug watches and only members of ...Launchpad
         Administrators...
 

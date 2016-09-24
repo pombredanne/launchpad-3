@@ -14,7 +14,7 @@ from lazr.restful.utils import get_current_browser_request
 from storm.zope.interfaces import IZStorm
 from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.session.interfaces import (
     IClientIdManager,
     ISessionData,
@@ -39,6 +39,7 @@ class PGSessionBase:
         return getUtility(IZStorm).get(self.store_name)
 
 
+@implementer(ISessionDataContainer)
 class PGSessionDataContainer(PGSessionBase):
     """An ISessionDataContainer that stores data in PostgreSQL
 
@@ -61,7 +62,6 @@ class PGSessionDataContainer(PGSessionBase):
 
     Removing expired data needs to be done out of band.
     """
-    implements(ISessionDataContainer)
 
     # If we have a low enough resolution, we can determine active users
     # using the session data.
@@ -81,8 +81,8 @@ class PGSessionDataContainer(PGSessionBase):
         pass
 
 
+@implementer(ISessionData)
 class PGSessionData(PGSessionBase):
-    implements(ISessionData)
 
     session_data_container = None
 
@@ -161,8 +161,8 @@ class PGSessionData(PGSessionBase):
         pass
 
 
+@implementer(ISessionPkgData)
 class PGSessionPkgData(DictMixin, PGSessionBase):
-    implements(ISessionPkgData)
 
     @property
     def store(self):

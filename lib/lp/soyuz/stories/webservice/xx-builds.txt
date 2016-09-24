@@ -22,7 +22,10 @@ source publications can be retrieved.
     >>> ppa = getUtility(IPersonSet).getByName('cprov').archive
     >>> for pub in ppa.getPublishedSources():
     ...     pub = removeSecurityProxy(pub)
-    ...     pub.sourcepackagerelease.dscsigningkey = fake_signer
+    ...     pub.sourcepackagerelease.signing_key_owner = (
+    ...         fake_signer.owner)
+    ...     pub.sourcepackagerelease.signing_key_fingerprint = (
+    ...         fake_signer.fingerprint)
     >>> transaction.commit()
     >>> logout()
 
@@ -60,6 +63,7 @@ of properties:
     resource_type_link: u'http://api.launchpad.dev/beta/#build'
     score: None
     self_link: u'http://api.launchpad.dev/beta/~cprov/+archive/ubuntu/ppa/+build/26'
+    source_package_name: u'cdrkit'
     status: u'Failed to build'
     title: u'i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE'
     upload_log_url: None
@@ -92,6 +96,7 @@ Whereas the 1.0 webservice for builds maintains the old property names
     resource_type_link: u'http://.../#build'
     score: None
     self_link: u'http://.../~cprov/+archive/ubuntu/ppa/+build/26'
+    source_package_name: u'cdrkit'
     title: u'i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE'
     upload_log_url: None
     web_link: u'http://launchpad.../~cprov/+archive/ubuntu/ppa/+build/26'
@@ -120,10 +125,12 @@ devel webservice also contains build date_started and duration.
     dependencies: None
     distribution_link: u'http://.../ubuntu'
     duration: u'0:01:20'
+    external_dependencies: None
     pocket: u'Release'
     resource_type_link: u'http://.../#build'
     score: None
     self_link: u'http://.../~cprov/+archive/ubuntu/ppa/+build/26'
+    source_package_name: u'cdrkit'
     title: u'i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE'
     upload_log_url: None
     web_link: u'http://launchpad.../~cprov/+archive/ubuntu/ppa/+build/26'

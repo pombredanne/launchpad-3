@@ -35,6 +35,12 @@ div#edit-commit_message {
     top: 0;
     }
 
+.unselectable {
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
+
 /* === Fonts and colors === */
 
 .unavailable {
@@ -64,8 +70,22 @@ dd .whiteboard {
     padding-left: 1em;
 }
 
+form label {
+    font-weight: bold;
+}
+
 form.primary.search {
     margin-bottom: 2em;
+}
+
+.infobox {
+    color: #666;
+    display: inline-block;
+    padding: 0.5em 0.5em 0.5em 2em;
+    background: url(/@@/info) 0.5em 0.5em no-repeat;
+    background-color: rgb(249, 249, 249);
+    border: 1px solid #ddd;
+    border-radius: 3px
 }
 
 div#bugs-search-form.dynamic_bug_listing {
@@ -538,17 +558,36 @@ div.ppa-packaging-tmp-actions .portlet {
 
 /* --- Code --- */
 
+code.command {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    color: #626262;
+    padding: 4px;
+    font-family: "DejaVu Sans Mono", "Courier New", monospace;
+    font-size: 1.05em;
+}
+code.command-block {
+    display: block;
+    margin-bottom: 1em;
+    padding: 6px;
+}
+code.command-block:last-child {
+    margin: 0;
+}
 table.code {
     margin-bottom: 1em;
-    }
+}
 table.code th {
     text-align: left;
     font-weight: bold;
-    }
+}
 table.code th, table.code td {
     padding-right: 3em;
-    }
-
+}
+#git-expander-content {
+    margin-top: 1em;
+}
 .branch-no-dev-focus {
   background: #FFF59C;
   vertical-align: middle;
@@ -593,18 +632,30 @@ div.diff .horizontal {
 table.diff {
    white-space: pre-wrap;
    width: 100%;
-   table-layout: fixed;
    background-color: white;
    margin-bottom: 0.5em;
 }
+table.unidiff {
+   table-layout: fixed;
+}
+
+table.diff .nav-cursor:before {
+   content: "\0025B6";
+   font-weight: bold;
+   display: block;
+   float: left;
+   margin-left: 1.25em;
+}
 table.diff .text { padding-left: 0.5em; }
-table.diff .line-no {
+table.diff .line-no, table.diff .ss-line-no {
   text-align: right;
   background-color: #f6f6f6;
   color: #999;
   border-right: solid 4px white;
   width: 4em;
+  cursor: pointer;
 }
+
 table.diff .line-no.active {
   background: url(/@@/add) #f6f6f6 center left no-repeat;
 }
@@ -819,6 +870,13 @@ div.translation-help-links div {
     z-index: 9999;
     }
 
+
+/* === Webhooks === */
+
+table.listing tr.webhook-delivery:hover {
+    text-decoration: underline;
+    cursor: pointer;
+}
 
 
 /* ====== Content area styles ====== */

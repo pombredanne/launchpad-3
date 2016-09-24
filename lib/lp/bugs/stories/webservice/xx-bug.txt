@@ -75,14 +75,16 @@ Distribution or a DistributionSourcePackage.
     >>> project_collection = webservice.get(
     ...   "/projects?ws.op=search&text=firefox").jsonBody()
     >>> firefox = project_collection['entries'][0]
-    >>> print webservice.named_post(
+    >>> response = webservice.named_post(
     ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
     ...     target=firefox['self_link'])
+    >>> print response
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
     ...
+    >>> new_bug_id = int(response.getHeader("Location").rsplit('/', 1)[-1])
 
     >>> print webservice.named_post(
     ...     '/bugs', 'createBug',
@@ -195,25 +197,24 @@ Marking a bug as duplicate follows the same validation rules as available in
 the web UI. It is impossible, for example, to create circular relationships.
 Due to bug #1088358 the error is escaped as if it was HTML.
 
-
+    >>> dupe_url = webservice.getAbsoluteUrl('/bugs/%d' % new_bug_id)
     >>> print webservice.patch(
-    ...       webservice.getAbsoluteUrl('/bugs/16'), 'application/json',
+    ...       dupe_url, 'application/json',
     ...       dumps(dict(
     ...           duplicate_of_link=webservice.getAbsoluteUrl('/bugs/5'))))
     HTTP/1.1 209 Content Returned...
 
     >>> print webservice.patch(
     ...       webservice.getAbsoluteUrl('/bugs/5'), 'application/json',
-    ...       dumps(dict(
-    ...           duplicate_of_link=webservice.getAbsoluteUrl('/bugs/16'))))
+    ...       dumps(dict(duplicate_of_link=dupe_url)))
     HTTP/1.1 400 Bad Request
     ...
-    Bug 16 is already a duplicate of bug 5. You
+    Bug ... is already a duplicate of bug 5. You
     can only mark a bug report as duplicate of one that
     isn&#x27;t a duplicate itself...
 
     >>> print webservice.patch(
-    ...       webservice.getAbsoluteUrl('/bugs/16'), 'application/json',
+    ...       dupe_url, 'application/json',
     ...       dumps(dict(duplicate_of_link=None)))
     HTTP/1.1 209 Content Returned...
 
@@ -549,7 +550,7 @@ distribution.
     ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
     HTTP/1.1 301 Moved Permanently
     ...
-    Location: http://api.launchpad.dev/beta/ubuntu/+source/alsa-utils/+bug/19
+    Location: http://api.launchpad.dev/beta/ubuntu/+source/alsa-utils/+bug/...
     ...
 
 It's possible to get a list of similar bugs for a bug task by calling
@@ -852,9 +853,8 @@ We can also create new subscriptions.
     self_link: u'http://.../bugs/1/+subscription/cprov'
     ...
 
-An individual can only unsubscribe him or her self.  If
-the person argument is not provided, the web service
-uses the calling user.
+An individual can only unsubscribe themselves.  If the person argument is
+not provided, the web service uses the calling user.
 
     >>> print webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe')
@@ -896,8 +896,7 @@ service will return an unauthorized error.
     ...     person=webservice.getAbsoluteUrl('/~mark'))
     HTTP/1.1 401 Unauthorized...
 
-An individual can, however, unsubscribe a team to which
-he or she belongs.
+An individual can, however, unsubscribe a team to which they belong.
 
 For this example, we need a member of the ubuntu-team group,
 any member will do.
@@ -1107,7 +1106,7 @@ associated with a bug.
     HTTP/1.1 201 Created...
     Content-Length: 0
     ...
-    Location: http://.../bugs/1/+watch/13
+    Location: http://.../bugs/1/+watch/...
     ...
 
 Following the redirect, we can see the new bug watch:
@@ -1116,7 +1115,7 @@ Following the redirect, we can see the new bug watch:
     >>> new_bug_watch = webservice.get(new_bug_watch_path).jsonBody()
     >>> pprint_entry(new_bug_watch)
     bug_link: u'http://.../bugs/1'
-    bug_tasks_collection_link: u'http://.../bugs/1/+watch/13/bug_tasks'
+    bug_tasks_collection_link: u'http://.../bugs/1/+watch/.../bug_tasks'
     bug_tracker_link: u'http://.../bugs/bugtrackers/mozilla.org'
     date_created: u'...'
     date_last_changed: None
@@ -1128,10 +1127,10 @@ Following the redirect, we can see the new bug watch:
     remote_importance: None
     remote_status: None
     resource_type_link: u'http://.../#bug_watch'
-    self_link: u'http://.../bugs/1/+watch/13'
+    self_link: u'http://.../bugs/1/+watch/...'
     title: u'The Mozilla.org Bug Tracker #9876'
     url: u'https://bugzilla.mozilla.org/show_bug.cgi?id=9876'
-    web_link: u'http://bugs.../bugs/1/+watch/13'
+    web_link: u'http://bugs.../bugs/1/+watch/...'
 
 Bug Trackers
 ------------
@@ -1249,7 +1248,7 @@ An attachment can be added to the bug:
     HTTP/1.1 201 Created...
     Content-Length: 0
     ...
-    Location: http://.../bugs/1/+attachment/1
+    Location: http://.../bugs/1/+attachment/...
     ...
 
 Now, bug 1 has one attachment:
@@ -1262,13 +1261,13 @@ Now, bug 1 has one attachment:
     total_size: 1
     ---
     bug_link: u'http://.../bugs/1'
-    data_link: u'http://.../bugs/1/+attachment/1/data'
+    data_link: u'http://.../bugs/1/+attachment/.../data'
     message_link: u'http://.../firefox/+bug/1/comments/2'
     resource_type_link: u'http://.../#bug_attachment'
-    self_link: u'http://.../bugs/1/+attachment/1'
+    self_link: u'http://.../bugs/1/+attachment/...'
     title: u'numbers.txt'
     type: u'Unspecified'
-    web_link: u'http://bugs.../bugs/1/+attachment/1'
+    web_link: u'http://bugs.../bugs/1/+attachment/...'
     ---
 
 The attachment can be fetched directly:
@@ -1276,13 +1275,13 @@ The attachment can be fetched directly:
     >>> [attachment] = attachments['entries']
     >>> pprint_entry(webservice.get(attachment['self_link']).jsonBody())
     bug_link: u'http://.../bugs/1'
-    data_link: u'http://.../bugs/1/+attachment/1/data'
+    data_link: u'http://.../bugs/1/+attachment/.../data'
     message_link: u'http://.../firefox/+bug/1/comments/2'
     resource_type_link: u'http://.../#bug_attachment'
-    self_link: u'http://.../bugs/1/+attachment/1'
+    self_link: u'http://.../bugs/1/+attachment/...'
     title: u'numbers.txt'
     type: u'Unspecified'
-    web_link: u'http://bugs.../bugs/1/+attachment/1'
+    web_link: u'http://bugs.../bugs/1/+attachment/...'
 
 Fetching the data actually yields a redirect to the Librarian, which
 we must follow to download the data.
@@ -1390,13 +1389,15 @@ bug tasks for the target.
     total_size: 5
     ---
     ...
-    self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5'
+    target_link: u'http://api.launchpad.dev/beta/firefox'
     ...
-    self_link: u'http://api.launchpad.dev/beta/firefox/+bug/4'
+    target_link: u'http://api.launchpad.dev/beta/firefox'
     ...
-    self_link: u'http://api.launchpad.dev/beta/firefox/+bug/1'
+    target_link: u'http://api.launchpad.dev/beta/firefox'
     ...
-    self_link: u'http://api.launchpad.dev/beta/firefox/+bug/16'
+    target_link: u'http://api.launchpad.dev/beta/firefox'
+    ...
+    target_link: u'http://api.launchpad.dev/beta/firefox'
     ...
 
 Some parameters accept lists of values, just like when searching from
@@ -1548,13 +1549,9 @@ the advanced search interface.
     >>> ordered_bugtasks = webservice.named_get(
     ...     '/ubuntu', 'searchTasks',
     ...     order_by='-datecreated').jsonBody()['entries']
-    >>> for ordered_bugtask in ordered_bugtasks:
-    ...     print ordered_bugtask['self_link']
-    http://.../ubuntu/+source/alsa-utils/+bug/19
-    http://.../ubuntu/+source/evolution/+bug/18
-    http://.../ubuntu/+bug/17
-    http://.../ubuntu/+bug/2
-    http://.../ubuntu/+source/linux-source-2.6.15/+bug/10
+    >>> dates = [task['date_created'] for task in ordered_bugtasks]
+    >>> dates == sorted(dates, reverse=True)
+    True
 
 
 Hardware related bug tasks
@@ -1739,7 +1736,7 @@ user:
     >>> int(related['entries'][0]['bug_link'].split('/')[-1]) == testbug2.id
     True
 
-`testuser3` is not active, so the collection of related tasks to him is
+`testuser3` is not active, so the collection of related tasks to them is
 empty:
 
     >>> related = webservice.named_get(
@@ -1772,22 +1769,16 @@ We can search for bugs that are linked to branches...
     >>> bugtasks = webservice.named_get(
     ...     '/firefox', 'searchTasks',
     ...     linked_branches='Show only Bugs with linked Branches')
-    >>> for bugtask in bugtasks.jsonBody()['entries']:
-    ...     print bugtask['self_link']
-    http://api.launchpad.dev/beta/firefox/+bug/5
-    http://api.launchpad.dev/beta/firefox/+bug/4
+    >>> bugtasks.jsonBody()['total_size']
+    2
 
 ...and we can search for bugs that are not linked to branches.
 
     >>> bugtasks = webservice.named_get(
     ...     '/firefox', 'searchTasks',
     ...     linked_branches='Show only Bugs without linked Branches')
-    >>> for bugtask in bugtasks.jsonBody()['entries']:
-    ...     print bugtask['self_link']
-    http://api.launchpad.dev/beta/firefox/+bug/1
-    http://api.launchpad.dev/beta/firefox/+bug/16
-    http://api.launchpad.dev/beta/firefox/+bug/20
-    http://api.launchpad.dev/beta/firefox/+bug/24
+    >>> bugtasks.jsonBody()['total_size']
+    4
 
 
 Affected users
@@ -2117,13 +2108,15 @@ Each bug has a collection of activities that have taken place with it.
 
     >>> from lazr.restful.testing.webservice import (
     ...     pprint_collection, pprint_entry)
-    >>> activity = webservice.get(
+    >>> activity = anon_webservice.get(
     ...     bug_one['activity_collection_link']).jsonBody()
     >>> pprint_collection(activity)
     next_collection_link: u'http://.../bugs/1/activity?ws.size=5&memo=5&ws.start=5'
     resource_type_link: u'http://.../#bug_activity-page-resource'
     start: 0
     total_size: 24
+    ...
+    message: u"Decided problem wasn't silly after all"
     ...
 
     >>> bug_nine_activity = webservice.get(

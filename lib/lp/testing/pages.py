@@ -1,10 +1,11 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for page tests."""
 
 __metaclass__ = type
 
+from contextlib import contextmanager
 from datetime import datetime
 import doctest
 from itertools import chain
@@ -39,6 +40,7 @@ from zope.app.testing.functional import (
     SimpleCookie,
     )
 from zope.component import getUtility
+from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
 from zope.testbrowser.testing import Browser
@@ -52,6 +54,7 @@ from lp.services.oauth.interfaces import (
     OAUTH_REALM,
     )
 from lp.services.webapp import canonical_url
+from lp.services.webapp.authorization import LaunchpadPermissiveSecurityPolicy
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.services.webapp.url import urlsplit
@@ -61,7 +64,9 @@ from lp.testing import (
     login,
     login_person,
     logout,
+    person_logged_in,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import PageTestLayer
 from lp.testing.systemdocs import (
@@ -70,9 +75,9 @@ from lp.testing.systemdocs import (
     )
 
 SAMPLEDATA_ACCESS_SECRETS = {
-    'salgado-read-nonprivate': 'secret',
-    'salgado-change-anything': 'test',
-    'nopriv-read-nonprivate': 'mystery',
+    u'salgado-read-nonprivate': u'secret',
+    u'salgado-change-anything': u'test',
+    u'nopriv-read-nonprivate': u'mystery',
     }
 
 
@@ -131,10 +136,14 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
         Other parameters are passed to the HTTPCaller used to make the calls.
         """
         if oauth_consumer_key is not None and oauth_access_key is not None:
-            self.consumer = OAuthConsumer(oauth_consumer_key, '')
+            # XXX cjwatson 2016-01-25: Callers should be updated to pass
+            # Unicode directly, but that's a big change.
+            if isinstance(oauth_consumer_key, bytes):
+                oauth_consumer_key = unicode(oauth_consumer_key)
+            self.consumer = OAuthConsumer(oauth_consumer_key, u'')
             if oauth_access_secret is None:
                 oauth_access_secret = SAMPLEDATA_ACCESS_SECRETS.get(
-                    oauth_access_key, '')
+                    oauth_access_key, u'')
             self.access_token = OAuthToken(
                 oauth_access_key, oauth_access_secret)
             # This shouldn't be here, but many old tests expect it.
@@ -686,7 +695,7 @@ def safe_canonical_url(*args, **kwargs):
     return str(canonical_url(*args, **kwargs))
 
 
-def webservice_for_person(person, consumer_key='launchpad-library',
+def webservice_for_person(person, consumer_key=u'launchpad-library',
                           permission=OAuthPermission.READ_PUBLIC,
                           context=None):
     """Return a valid LaunchpadWebServiceCaller for the person.
@@ -754,6 +763,26 @@ def setupRosettaExpertBrowser():
     return setupBrowser(auth='Basic re@ex.com:test')
 
 
+@contextmanager
+def permissive_security_policy(dbuser_name=None):
+    """Context manager to run code with a permissive security policy.
+
+    This is just enough to run code such as `BaseMailer` that normally
+    expects to be called only from environments that use a permissive
+    security policy, such as jobs or scripts.
+    """
+    try:
+        old_policy = setSecurityPolicy(LaunchpadPermissiveSecurityPolicy)
+        if dbuser_name is not None:
+            dbuser_context = dbuser(dbuser_name)
+        else:
+            dbuser_context = contextmanager([None].__iter__)
+        with person_logged_in(ANONYMOUS), dbuser_context:
+            yield
+    finally:
+        setSecurityPolicy(old_policy)
+
+
 def setUpGlobs(test):
     test.globs['transaction'] = transaction
     test.globs['http'] = UnstickyCookieHTTPCaller()
@@ -794,6 +823,7 @@ def setUpGlobs(test):
     test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
+    test.globs['permissive_security_policy'] = permissive_security_policy
     test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
     test.globs['print_action_links'] = print_action_links
     test.globs['print_errors'] = print_errors
@@ -840,8 +870,7 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     # Add tests to the suite individually.
     if filenames:
         checker = doctest.OutputChecker()
-        paths=[os.path.join(storydir, filename)
-               for filename in filenames]
+        paths = [os.path.join(storydir, filename) for filename in filenames]
         suite.addTest(LayeredDocFileSuite(
             paths=paths,
             package=package, checker=checker, stdout_logging=False,

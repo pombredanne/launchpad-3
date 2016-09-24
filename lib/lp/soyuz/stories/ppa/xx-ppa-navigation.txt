@@ -135,7 +135,7 @@ displayed in batches.
 
     >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa?batch=1')
 
-Since he is on the first page, the 'First' and 'Previous' links are
+Since they are on the first page, the 'First' and 'Previous' links are
 inactive:
 
     >>> 'Previous' in anon_browser.contents
@@ -151,12 +151,12 @@ inactive:
       ..
     LinkNotFoundError...
 
-The user does not see the package he is looking for and proceeds to the
+The user does not see the package they are looking for and proceeds to the
 next page.
 
     >>> anon_browser.getLink('Next').click()
 
-The package of interest is not on this page either so he goes to the
+The package of interest is not on this page either so they go to the
 next page.
 
     >>> anon_browser.getLink('Next').click()

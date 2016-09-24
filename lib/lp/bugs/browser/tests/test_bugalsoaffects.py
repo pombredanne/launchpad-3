@@ -1,13 +1,17 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import get_feedback_messages
 
@@ -18,7 +22,7 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBugAlsoAffectsDistribution, self).setUp()
-        self.distribution = self.factory.makeDistribution()
+        self.distribution = self.factory.makeDistribution(displayname='Distro')
         removeSecurityProxy(self.distribution).official_malone = True
 
     def openBugPage(self, bug):
@@ -27,14 +31,40 @@ class TestBugAlsoAffectsDistribution(TestCaseWithFactory):
         return browser
 
     def test_bug_alsoaffects_spn_exists(self):
-        # If the source package name exists, there is no error.
+        # If a source package is published to a main archive with the given
+        # name, there is no error.
         bug = self.factory.makeBug()
-        spn = self.factory.makeSourcePackageName()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=self.distribution)
+        dsp1 = self.factory.makeDSPCache(distroseries=distroseries)
+        with person_logged_in(bug.owner):
+            bug.addTask(bug.owner, dsp1)
+        dsp2 = self.factory.makeDSPCache(distroseries=distroseries)
+        spn = dsp2.sourcepackagename
         browser = self.openBugPage(bug)
         browser.getLink(url='+distrotask').click()
         browser.getControl('Distribution').value = [self.distribution.name]
         browser.getControl('Source Package Name').value = spn.name
         browser.getControl('Continue').click()
+        self.assertEqual([], get_feedback_messages(browser.contents))
+
+    def test_bug_alsoaffects_spn_exists_dsp_picker_feature_flag(self):
+        # If the distribution source package for an spn is official,
+        # there is no error.
+        bug = self.factory.makeBug()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=self.distribution)
+        dsp1 = self.factory.makeDSPCache(distroseries=distroseries)
+        with person_logged_in(bug.owner):
+            bug.addTask(bug.owner, dsp1)
+        dsp2 = self.factory.makeDSPCache(
+            distroseries=distroseries, sourcepackagename='snarf')
+        with FeatureFixture({u"disclosure.dsp_picker.enabled": u"on"}):
+            browser = self.openBugPage(bug)
+            browser.getLink(url='+distrotask').click()
+            browser.getControl('Distribution').value = [self.distribution.name]
+            browser.getControl('Source Package Name').value = dsp2.name
+            browser.getControl('Continue').click()
         self.assertEqual([], get_feedback_messages(browser.contents))
 
     def test_bug_alsoaffects_spn_not_exists_with_published_binaries(self):

@@ -598,13 +598,18 @@ A person whose account_status is any of the statuses of
 INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
 
     >>> from lp.services.identity.interfaces.account import (
+    ...     AccountStatus,
     ...     INACTIVE_ACCOUNT_STATUSES)
     >>> naked_cprov.merged = None
     >>> checked_count = 0
     >>> for status in INACTIVE_ACCOUNT_STATUSES:
+    ...     # Placeholder accounts don't have email addresses, so don't
+    ...     # show up.
+    ...     if status == AccountStatus.PLACEHOLDER:
+    ...         continue
     ...     person = factory.makePerson(account_status=status)
     ...     checked_count += int(person in vocab)
-    >>> checked_count == len(INACTIVE_ACCOUNT_STATUSES)
+    >>> checked_count == len(INACTIVE_ACCOUNT_STATUSES) - 1
     True
 
 It is possible to search for alternative names.
@@ -966,6 +971,7 @@ will be returned.
      (u'Launchpad Beta Testers', u'Launchpad Beta Testers Owner'),
      (u'Launchpad Buildd Admins', u'Foo Bar'),
      (u'Launchpad Developers', u'Foo Bar'),
+     (u'Launchpad PPA Admins', u'Commercial Subscription Admins'),
      (u'Launchpad PPA Self Admins', u'Commercial Subscription Admins'),
      (u'Launchpad Users', u'Sample Person'),
      (u'Mailing List Experts', u'Launchpad Administrators'),
@@ -1015,7 +1021,7 @@ teams back.
      (u'Warty Security Team', u'Mark Shuttleworth'),
      (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
 
-A user who is a member of a private team will see that team in his
+A user who is a member of a private team will see that team in their
 search.
 
     >>> login('no-priv@canonical.com')
@@ -1100,10 +1106,11 @@ heterogeneous.
 
     >>> vocab = get_naked_vocab(None, "DistributionOrProduct")
     >>> for term in vocab:
-    ...     if 'Ubuntu' in term.title:
+    ...     if 'buntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Ubuntu Linux - class Distribution
-    Ubuntu Test - class Distribution
+    Kubuntu - class Distribution
+    Ubuntu - class Distribution
+    ubuntutest - class Distribution
 
 They can be looked up by their aliases too.
 
@@ -1167,10 +1174,11 @@ is heterogeneous.
 
     >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProjectGroup")
     >>> for term in vocab:
-    ...     if 'Ubuntu' in term.title:
+    ...     if 'buntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Ubuntu Linux - class Distribution
-    Ubuntu Test - class Distribution
+    Kubuntu - class Distribution
+    Ubuntu - class Distribution
+    ubuntutest - class Distribution
 
 They can be looked up by their aliases too.
 
@@ -1242,16 +1250,16 @@ _clauseTables).
     9
 
     >>> for term in featured_project_vocabulary:
-    ...     print term.token, term.value.displayname, term.title
-    applets         Gnome Applets        The Gnome Panel Applets
-    bazaar          Bazaar               Bazaar
-    firefox         Mozilla Firefox      Mozilla Firefox
-    gentoo          Gentoo               The Gentoo Linux
-    gnome           GNOME                The GNOME Project
-    gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator
-    mozilla The     Mozilla Project      The Mozilla Project
-    thunderbird     Mozilla Thunderbird  Mozilla Thunderbird
-    ubuntu          Ubuntu               Ubuntu Linux
+    ...     print term.token, term.title
+    applets         Gnome Applets
+    bazaar          Bazaar
+    firefox         Mozilla Firefox
+    gentoo          Gentoo
+    gnome           GNOME
+    gnome-terminal  GNOME Terminal
+    mozilla         The Mozilla Project
+    thunderbird     Mozilla Thunderbird
+    ubuntu          Ubuntu
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in featured_project_vocabulary

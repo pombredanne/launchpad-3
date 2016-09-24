@@ -33,7 +33,7 @@ and reviewer working mode.
 
 == Displaying translation groups and reviewers ==
 
-Evolution is part of the Gnome project, and when Gnome sets a
+Evolution is part of the Gnome project group, and when Gnome sets a
 translation group of its own, that too is shown here.
 
     >>> import re
@@ -51,7 +51,7 @@ translation group of its own, that too is shown here.
     >>> gnomegroup = TranslationGroup(name='gnomegroup',
     ...     title="Gnome translation group", summary="Testing group",
     ...     datecreated=UTC_NOW, owner=foobar)
-    >>> evolution.project.translationgroup = gnomegroup
+    >>> evolution.projectgroup.translationgroup = gnomegroup
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'
@@ -62,7 +62,7 @@ translation group of its own, that too is shown here.
 
 If the two groups are identical, however, it is only listed once.
 
-    >>> evolution.project.translationgroup = evolution.translationgroup
+    >>> evolution.projectgroup.translationgroup = evolution.translationgroup
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'
@@ -76,7 +76,7 @@ If no translation group is assigned, the page also mentions that.
 
     >>> original_translation_group = evolution.translationgroup
     >>> evolution.translationgroup = None
-    >>> evolution.project.translationgroup = None
+    >>> evolution.projectgroup.translationgroup = None
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'

@@ -87,6 +87,14 @@
         interface="lp.blueprints.interfaces.specificationworkitem.ISpecificationWorkItem"/>
   </class>
 
+  <!-- SpecificationWorkItemSet -->
+
+  <securedutility
+      class="lp.blueprints.model.specificationworkitem.SpecificationWorkItemSet"
+      provides="lp.blueprints.interfaces.specificationworkitem.ISpecificationWorkItemSet">
+    <allow interface="lp.blueprints.interfaces.specificationworkitem.ISpecificationWorkItemSet"/>
+  </securedutility>
+
   <!-- SpecificationDependency -->
 
   <class class="lp.blueprints.model.specificationdependency.SpecificationDependency">
@@ -181,18 +189,12 @@
         set_attributes="priority direction_approved"/>
     <require
         permission="launchpad.LimitedView"
-        attributes="bugs
-                    bug_links"/>
+        attributes="bugs"/>
     <require
         permission="launchpad.AnyAllowedPerson"
         attributes="linkBug
                     unlinkBug
                     setWorkItems"/>
-  </class>
-
-  <class class="lp.blueprints.model.specificationbug.SpecificationBug">
-    <allow interface="lp.blueprints.interfaces.specificationbug.ISpecificationBug"/>
-    <allow interface="lazr.restful.interfaces.IJSONPublishable"/>
   </class>
 
   <subscriber

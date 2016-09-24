@@ -63,7 +63,6 @@ class TranslationFormatInvalidInputErrorTest(TestCase):
         self.assertEqual(representation, "ro-\\u179a: hok baay heuy?")
 
 
-
 class TranslationFormatSyntaxErrorTest(TestCase):
     """Test `TranslationFormatSyntaxError`."""
 
@@ -97,4 +96,3 @@ def test_suite():
 
 if __name__ == '__main__':
     TextTestRunner().run(test_suite())
-

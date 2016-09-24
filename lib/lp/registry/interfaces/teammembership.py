@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Team membership interfaces."""
@@ -46,8 +46,8 @@ from zope.schema import (
 from lp import _
 
 # One week before a membership expires we send a notification to the member,
-# either inviting him to renew his own membership or asking him to get a team
-# admin to do so, depending on the team's renewal policy.
+# either inviting them to renew their own membership or asking them to get a
+# team admin to do so, depending on the team's renewal policy.
 DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT = 7
 
 
@@ -131,11 +131,12 @@ class ITeamMembership(Interface):
         Reference(title=_("Member"), required=True, readonly=True,
                   schema=Interface),  # Specified in interfaces/person.py.
         exported_as='member')
+    personID = Int(title=_("Person ID"), required=True, readonly=True)
     proposed_by = Attribute(_('Proponent'))
     reviewed_by = Attribute(
         _("The team admin who approved/rejected the member."))
     acknowledged_by = Attribute(
-        _('The person (usually the member or someone acting on his behalf) '
+        _('The person (usually the member or someone acting on their behalf) '
           'that acknowledged (accepted/declined) a membership invitation.'))
     last_changed_by = exported(
         Reference(title=_('Last person who change this'),
@@ -189,8 +190,8 @@ class ITeamMembership(Interface):
 
         A membership's expiration date can be changed by the team owner, by a
         Launchpad admin or by a team admin. In the latter case, though, the
-        expiration date can only be changed if the admin is not changing his
-        own membership.
+        expiration date can only be changed if the admin is not changing
+        their own membership.
         """
 
     @call_with(user=REQUEST_USER)
@@ -205,7 +206,7 @@ class ITeamMembership(Interface):
         """
 
     def canBeRenewedByMember():
-        """Can this membership be renewed by the member himself?
+        """Can this membership be renewed by the member themselves?
 
         A membership can be renewed if the team's renewal policy is ONDEMAND,
         the membership itself is active (status = [ADMIN|APPROVED]) and it's
@@ -215,7 +216,7 @@ class ITeamMembership(Interface):
 
     def sendSelfRenewalNotification():
         """Send an email to the team admins notifying that this membership
-        has been renewed by the member himself.
+        has been renewed by the member themselves.
 
         This method must not be called if the team's renewal policy is not
         ONDEMAND.

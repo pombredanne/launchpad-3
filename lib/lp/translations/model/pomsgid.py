@@ -8,7 +8,7 @@ from sqlobject import (
     SQLObjectNotFound,
     StringCol,
     )
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.services.database.sqlbase import (
     quote,
@@ -17,8 +17,8 @@ from lp.services.database.sqlbase import (
 from lp.translations.interfaces.pomsgid import IPOMsgID
 
 
+@implementer(IPOMsgID)
 class POMsgID(SQLBase):
-    implements(IPOMsgID)
 
     _table = 'POMsgID'
 
@@ -40,4 +40,3 @@ class POMsgID(SQLBase):
             raise SQLObjectNotFound(key)
         return r
     byMsgid = classmethod(byMsgid)
-

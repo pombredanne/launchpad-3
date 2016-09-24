@@ -39,14 +39,15 @@
         </span>
       </div>
 
-      <div id="involvement" class="portlet"
-           tal:define="menu context/menu:branches">
-        <p tal:define="link menu/code_import"
-           tal:condition="link/enabled"
-           tal:content="structure link/render"></p>
-        <p tal:define="configure_codehosting view/configure_codehosting | nothing"
-           tal:condition="configure_codehosting"
-           tal:replace="structure configure_codehosting/fmt:link"></p>
+      <div id="involvement" class="portlet">
+        <ul>
+          <li tal:define="link context/menu:branches/code_import"
+              tal:condition="link/enabled"
+              tal:content="structure link/render"></li>
+          <li tal:define="configure_code context/menu:overview/configure_code|nothing"
+              tal:condition="configure_code/enabled|nothing"
+              tal:replace="structure configure_code/fmt:link"></li>
+        </ul>
       </div>
 
     </div>
@@ -54,14 +55,19 @@
 
   <tal:main metal:fill-slot="main">
 
+    <span class="see-all" tal:condition="view/show_git_link">
+      <a tal:attributes="href context/fmt:url:code/+git">View Git repositories</a>
+    </span>
+
     <tal:branch-summary content="structure context/@@+branch-summary" />
 
     <tal:code-statistics
       condition="not: view/context/codehosting_usage/enumvalue:UNKNOWN"
-      replace="structure context/@@+portlet-product-codestatistics" />
+      replace="structure context/@@+portlet-product-branchstatistics" />
 
     <tal:has-branches condition="view/branch_count"
                       define="branches view/branches">
+      <h2>Bazaar branches</h2>
       <tal:branchlisting content="structure branches/@@+branch-listing" />
     </tal:has-branches>
 

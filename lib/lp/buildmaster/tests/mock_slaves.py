@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mock Build objects for tests soyuz buildd-system."""
@@ -37,6 +37,7 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interactor import BuilderSlave
 from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.services.config import config
+from lp.services.webapp import urlappend
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
 
@@ -120,7 +121,7 @@ class OkSlave:
 
     def info(self):
         self.call_log.append('info')
-        return defer.succeed(('1.0', self.arch_tag, 'debian'))
+        return defer.succeed(('1.0', self.arch_tag, 'binarypackage'))
 
     def resume(self):
         self.call_log.append('resume')
@@ -135,6 +136,10 @@ class OkSlave:
                 raise CannotFetchFile(url, info)
 
         return d.addCallback(check_present)
+
+    def getURL(self, sha1):
+        return urlappend(
+            'http://localhost:8221/filecache/', sha1).encode('utf8')
 
     def getFiles(self, files):
         dl = defer.gatherResults([
@@ -276,7 +281,6 @@ class SlaveTestHelpers(fixtures.Fixture):
 
     # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
     BASE_URL = 'http://localhost:8221'
-    TEST_URL = '%s/rpc/' % (BASE_URL,)
 
     def getServerSlave(self):
         """Set up a test build slave server.
@@ -291,14 +295,14 @@ class SlaveTestHelpers(fixtures.Fixture):
                 lambda: open(tachandler.logfile, 'r').readlines()))
         return tachandler
 
-    def getClientSlave(self, reactor=None, proxy=None):
+    def getClientSlave(self, reactor=None, proxy=None, pool=None):
         """Return a `BuilderSlave` for use in testing.
 
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
         return BuilderSlave.makeBuilderSlave(
             self.BASE_URL, 'vmhost', config.builddmaster.socket_timeout,
-            reactor, proxy)
+            reactor=reactor, proxy=proxy, pool=pool)
 
     def makeCacheFile(self, tachandler, filename):
         """Make a cache file available on the remote slave.
@@ -330,6 +334,11 @@ class SlaveTestHelpers(fixtures.Fixture):
         dsc_file = 'thing'
         self.makeCacheFile(tachandler, chroot_file)
         self.makeCacheFile(tachandler, dsc_file)
+        extra_args = {
+            'distribution': 'ubuntu',
+            'suite': 'precise',
+            'ogrecomponent': 'main',
+            }
         return slave.build(
-            build_id, 'debian', chroot_file, {'.dsc': dsc_file},
-            {'ogrecomponent': 'main'})
+            build_id, 'binarypackage', chroot_file, {'.dsc': dsc_file},
+            extra_args)

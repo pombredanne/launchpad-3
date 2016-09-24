@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystem build features."""
@@ -17,14 +17,13 @@ from urllib2 import (
 import pytz
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-from zope.testbrowser.browser import Browser
-from zope.testbrowser.testing import PublisherMechanizeBrowser
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import PersonVisibility
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
@@ -39,7 +38,6 @@ from lp.soyuz.interfaces.livefsbuild import (
     ILiveFSBuild,
     ILiveFSBuildSet,
     )
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testing import (
     ANONYMOUS,
     api_url,
@@ -242,7 +240,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
         build = self.factory.makeLiveFSBuild(
             name=u"livefs-1", requester=person, owner=person,
             distroarchseries=distroarchseries,
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC),
+            date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC),
             status=BuildStatus.FAILEDTOBUILD,
             builder=self.factory.makeBuilder(name="bob"),
             duration=timedelta(minutes=10))
@@ -259,6 +257,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
             "unstable" % build.id, subject)
         self.assertEqual(
             "Requester", notification["X-Launchpad-Message-Rationale"])
+        self.assertEqual(person.name, notification["X-Launchpad-Message-For"])
         self.assertEqual(
             "livefs-build-status",
             notification["X-Launchpad-Notification-Type"])
@@ -318,14 +317,6 @@ class TestLiveFSBuildSet(TestCaseWithFactory):
             [], getUtility(ILiveFSBuildSet).getByBuildFarmJobs([]))
 
 
-class NonRedirectingMechanizeBrowser(PublisherMechanizeBrowser):
-    """A `mechanize.Browser` that does not handle redirects."""
-
-    default_features = [
-        feature for feature in PublisherMechanizeBrowser.default_features
-        if feature != "_redirect"]
-
-
 class TestLiveFSBuildWebservice(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
@@ -347,7 +338,7 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         db_build = self.factory.makeLiveFSBuild(
             requester=self.person, unique_key=u"foo",
             metadata_override={"image_format": "plain"},
-            date_created=datetime(2014, 04, 25, 10, 38, 0, tzinfo=pytz.UTC))
+            date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC))
         build_url = api_url(db_build)
         logout()
         build = self.webservice.get(build_url).jsonBody()
@@ -441,7 +432,7 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         buildd_admin_webservice.default_api_version = "devel"
         logout()
         build = self.webservice.get(build_url).jsonBody()
-        self.assertEqual(2505, build["score"])
+        self.assertEqual(2510, build["score"])
         self.assertTrue(build["can_be_rescored"])
         response = self.webservice.named_post(
             build["self_link"], "rescore", score=5000)
@@ -451,17 +442,6 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         self.assertEqual(200, response.status)
         build = self.webservice.get(build_url).jsonBody()
         self.assertEqual(5000, build["score"])
-
-    def makeNonRedirectingBrowser(self, person):
-        # The test browser can only work with the appserver, not the
-        # librarian, so follow one layer of redirection through the
-        # appserver and then ask the librarian for the real file.
-        browser = Browser(mech_browser=NonRedirectingMechanizeBrowser())
-        browser.handleErrors = False
-        with person_logged_in(person):
-            browser.addHeader(
-                "Authorization", "Basic %s:test" % person.preferredemail.email)
-        return browser
 
     def assertCanOpenRedirectedUrl(self, browser, url):
         redirection = self.assertRaises(HTTPError, browser.open, url)
@@ -476,7 +456,7 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         build_url = api_url(db_build)
         logout()
         build = self.webservice.get(build_url).jsonBody()
-        browser = self.makeNonRedirectingBrowser(self.person)
+        browser = self.getNonRedirectingBrowser(user=self.person)
         self.assertIsNotNone(build["build_log_url"])
         self.assertCanOpenRedirectedUrl(browser, build["build_log_url"])
         self.assertIsNotNone(build["upload_log_url"])
@@ -496,6 +476,6 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
         response = self.webservice.named_get(build_url, "getFileUrls")
         self.assertEqual(200, response.status)
         self.assertContentEqual(file_urls, response.jsonBody())
-        browser = self.makeNonRedirectingBrowser(self.person)
+        browser = self.getNonRedirectingBrowser(user=self.person)
         for file_url in file_urls:
             self.assertCanOpenRedirectedUrl(browser, file_url)

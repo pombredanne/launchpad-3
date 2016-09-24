@@ -49,7 +49,7 @@ class ISignedMessage(Interface):
         """Returns the message header with the given name."""
 
     signedMessage = Attribute("The part that was signed, represented "
-                              "as an email.Message.")
+                              "as an email.message.Message.")
 
     signedContent = ASCII(title=_("Signed Content"),
                           description=_("The text that was signed."))
@@ -174,7 +174,7 @@ class INotificationRecipientSet(Interface):
 
         When the added person is a team without an email address, all its
         members emails will be added. If the person is already in the
-        recipients list, the reson for contacting him is not changed.
+        recipients list, the reason for contacting them is not changed.
 
         :param person: The `IPerson` or a sequence of `IPerson`
             that will be notified.

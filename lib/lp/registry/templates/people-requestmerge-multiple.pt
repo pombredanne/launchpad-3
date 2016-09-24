@@ -23,9 +23,9 @@
             <tal:email_visible condition="not: view/email_hidden">
               <p id="explanation">
               The account <code tal:content="view/dupe/name">foo</code>
-              has more than one registered e-mail address.
+              has more than one registered email address.
               You need to prove that you have access to
-              all e-mail addresses registered for this account.
+              all email addresses registered for this account.
               Unselect any you cannot access.
               If you don&#8217;t have access to one or more of these addresses,
               Launchpad will not be able to merge the account but all confirmed
@@ -56,9 +56,9 @@
               <p id="explanation">
                 The account <code tal:content="view/dupe/name">foo</code>
                 has <span tal:replace="view/dupeemails/count" /> registered
-                e-mail addresses but they are hidden.
+                email addresses but they are hidden.
                 You need to prove that you have access to
-                all e-mail addresses registered for this account.
+                all email addresses registered for this account.
               </p>
               <p>
                 To do so, click the button.  An email will be sent to each
@@ -93,7 +93,7 @@
             <p id="confirmation">
               Confirmation email messages were sent to the
               <span tal:content="view/dupeemails/count" /> registered
-              e-mail addresses for
+              email addresses for
               <code tal:content="view/dupe/name">foo</code>.
             </p>
           </tal:email_hidden>

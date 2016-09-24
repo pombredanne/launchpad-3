@@ -8,17 +8,16 @@ __all__ = ['AnswerContact']
 
 
 from sqlobject import ForeignKey
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.answers.interfaces.answercontact import IAnswerContact
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(IAnswerContact)
 class AnswerContact(SQLBase):
     """An entry for an answer contact for an `IQuestionTarget`."""
-
-    implements(IAnswerContact)
 
     _defaultOrder = ['id']
     _table = 'AnswerContact'

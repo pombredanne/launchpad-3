@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for CodeImports."""
@@ -194,14 +194,15 @@ class CodeImportBaseView(LaunchpadFormView):
                     canonical_url(code_import.branch),
                     code_import.branch.unique_name))
 
-    def _validateURL(self, url, existing_import=None, field_name='url'):
+    def _validateURL(self, url, rcs_type, existing_import=None,
+                     field_name='url'):
         """If the user has specified a url, we need to make sure that there
         isn't already an import with that url."""
         if url is None:
             self.setSecondaryFieldError(
                 field_name, 'Enter the URL of a foreign VCS branch.')
         else:
-            reason = validate_import_url(url, existing_import)
+            reason = validate_import_url(url, rcs_type, existing_import)
             if reason:
                 self.setFieldError(field_name, reason)
 
@@ -228,8 +229,9 @@ class NewCodeImportForm(Interface):
     git_repo_url = URIField(
         title=_("Repo URL"), required=False,
         description=_(
-            "The URL of the git repository.  The HEAD branch will be "
-            "imported."),
+            "The URL of the git repository. The HEAD branch will be "
+            "imported. You can import different branches by appending "
+            "',branch=$name' to the URL."),
         allowed_schemes=["git", "http", "https"],
         allow_userinfo=True,
         allow_port=True,
@@ -435,13 +437,15 @@ class CodeImportNewView(CodeImportBaseView):
             self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
         elif rcs_type == RevisionControlSystems.BZR_SVN:
             self._validateURL(
-                data.get('svn_branch_url'), field_name='svn_branch_url')
+                data.get('svn_branch_url'), rcs_type,
+                field_name='svn_branch_url')
         elif rcs_type == RevisionControlSystems.GIT:
             self._validateURL(
-                data.get('git_repo_url'), field_name='git_repo_url')
+                data.get('git_repo_url'), rcs_type, field_name='git_repo_url')
         elif rcs_type == RevisionControlSystems.BZR:
             self._validateURL(
-                data.get('bzr_branch_url'), field_name='bzr_branch_url')
+                data.get('bzr_branch_url'), rcs_type,
+                field_name='bzr_branch_url')
         else:
             raise AssertionError(
                 'Unexpected revision control type %r.' % rcs_type)
@@ -565,7 +569,8 @@ class CodeImportEditView(CodeImportBaseView):
                 data.get('cvs_root'), data.get('cvs_module'),
                 self.code_import)
         elif self.code_import.rcs_type in NON_CVS_RCS_TYPES:
-            self._validateURL(data.get('url'), self.code_import)
+            self._validateURL(
+                data.get('url'), self.code_import.rcs_type, self.code_import)
         else:
             raise AssertionError('Unknown rcs_type for code import.')
 
@@ -581,11 +586,14 @@ class CodeImportMachineView(LaunchpadView):
         return getUtility(ICodeImportMachineSet).getAll()
 
 
-def validate_import_url(url, existing_import=None):
+def validate_import_url(url, rcs_type, existing_import=None):
     """Validate the given import URL."""
-    if urlparse(url).netloc.endswith('launchpad.net'):
+    # XXX cjwatson 2015-06-12: Once we have imports into Git, this should be
+    # extended to prevent Git-to-Git self-imports as well.
+    if (rcs_type == RevisionControlSystems.BZR and
+            urlparse(url).netloc.endswith('launchpad.net')):
         return (
-            "You can not create imports for branches that are hosted by "
+            "You cannot create imports for Bazaar branches that are hosted by "
             "Launchpad.")
     code_import = getUtility(ICodeImportSet).getByURL(url)
     if code_import is not None:

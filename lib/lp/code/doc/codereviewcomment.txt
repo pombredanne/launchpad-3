@@ -86,7 +86,7 @@ Now run the pending job to send the email.
     >>> print_emails(include_reply_to=True, notifications=notifications)
     From: Sender Person <sender@example.com>
     To: ...
-    Reply-To: mp+1@code.launchpad.dev
+    Reply-To: mp+...@code.launchpad.dev
     Subject: Please merge
     Review: Approve db
     This patch is very nice.

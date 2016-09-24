@@ -7,10 +7,8 @@ instances having the LP XML-RPC plugin installed.
 For testing purposes, a custom XML-RPC transport can be passed to it,
 so that we can avoid network traffic in tests.
 
-    >>> from lp.bugs.externalbugtracker import (
-    ...     TracLPPlugin)
-    >>> from lp.bugs.tests.externalbugtracker import (
-    ...     TestTracXMLRPCTransport)
+    >>> from lp.bugs.externalbugtracker.trac import TracLPPlugin
+    >>> from lp.bugs.tests.externalbugtracker import TestTracXMLRPCTransport
     >>> test_transport = TestTracXMLRPCTransport('http://example.com/')
     >>> trac = TracLPPlugin(
     ...     'http://example.com/', xmlrpc_transport=test_transport)
@@ -92,7 +90,7 @@ After it has been called, the XML-RPC transport will have its
 auth_cookie attribute set.
 
     >>> test_transport.cookie_processor.cookiejar
-    <cookielib.CookieJar[Cookie(version=0, name='trac_auth'...
+    <...CookieJar[Cookie(version=0, name='trac_auth'...
 
 The XML-RPC transport's cookie_processor shares its cookiejar with the
 TracLPPlugin instance. This is so that the TracLPPlugin can use the
@@ -106,7 +104,7 @@ manually manipulate cookies.
 So if we look in the TracLPPlugin's CookieJar we'll see the same cookie:
 
     >>> trac._cookie_jar
-    <cookielib.CookieJar[Cookie(version=0, name='trac_auth'...
+    <...CookieJar[Cookie(version=0, name='trac_auth'...
 
 And altering the cookie in the TracLPPlugin's CookieJar will mean, of
 course, that it's altered in the XML-RPC transport's CookieJar, too.
@@ -125,11 +123,11 @@ course, that it's altered in the XML-RPC transport's CookieJar, too.
     >>> trac._cookie_jar.set_cookie(new_cookie)
 
     >>> trac._cookie_jar
-    <cookielib.CookieJar[Cookie(version=0, name='trac_auth',
+    <...CookieJar[Cookie(version=0, name='trac_auth',
     value='Look ma, a new cookie!'...>
 
     >>> test_transport.cookie_processor.cookiejar
-    <cookielib.CookieJar[Cookie(version=0, name='trac_auth',
+    <...CookieJar[Cookie(version=0, name='trac_auth',
     value='Look ma, a new cookie!'...>
 
 If authentication fails, a BugTrackerAuthenticationError will be raised.

@@ -32,6 +32,18 @@ For starters, Carlos uploads a tarball with 100 files to the queue.
     <div...Thank you for your upload. 100 files from the tarball will be
     automatically reviewed...
 
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.translations.enums import RosettaImportStatus
+    >>> login(ANONYMOUS)
+    >>> evo = getUtility(IProductSet).getByName('evolution')
+    >>> trunk = evo.getSeries('trunk')
+    >>> queue_entries = trunk.getTranslationImportQueueEntries(
+    ...     import_status=RosettaImportStatus.NEEDS_REVIEW)
+    >>> qid1 = queue_entries[0].id
+    >>> qid2 = queue_entries[1].id
+    >>> logout()
+
 On the import queue page, Carlos sees widgets for filtering his view of
 the queue, as well as the entries he just imported and the two that were
 already included in the sample data.
@@ -169,9 +181,9 @@ no entries matching the status that Carlos is filtering for.
 Carlos changes the status of the third entry to Blocked.
 
     >>> browser.open('http://translations.launchpad.dev/+imports')
-    >>> browser.getControl(name='field.status_3').value
+    >>> browser.getControl(name='field.status_%d' % qid1).value
     ['NEEDS_REVIEW']
-    >>> browser.getControl(name='field.status_3').value = ['BLOCKED']
+    >>> browser.getControl(name='field.status_%d' % qid1).value = ['BLOCKED']
     >>> browser.getControl('Change status').click()
     >>> print browser.url
     http://translations.launchpad.dev/+imports/+index
@@ -181,7 +193,7 @@ The entry now shows up in the Blocked filter.
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
     ...     'field.filter_status=BLOCKED&field.filter_extension=all')
-    >>> browser.getControl(name='field.status_3').value
+    >>> browser.getControl(name='field.status_%s' % qid1).value
     ['BLOCKED']
     >>> print_batch_heading(browser)
     1 ... 1 of 1 result
@@ -207,9 +219,9 @@ And the entries that need review are only 99.
 The fourth entry, Carlos deletes by setting its status to Deleted.
 
     >>> browser.open('http://translations.launchpad.dev/+imports')
-    >>> browser.getControl(name='field.status_4').value
+    >>> browser.getControl(name='field.status_%d' % qid2).value
     ['NEEDS_REVIEW']
-    >>> browser.getControl(name='field.status_4').value = ['DELETED']
+    >>> browser.getControl(name='field.status_%d' % qid2).value = ['DELETED']
     >>> browser.getControl('Change status').click()
     >>> browser.url
     'http://translations.launchpad.dev/+imports/+index'
@@ -219,7 +231,7 @@ It shows up in the Deleted filter.
     >>> browser.open(
     ...     'http://translations.launchpad.dev/+imports?'
     ...     'field.filter_status=DELETED&field.filter_extension=all')
-    >>> browser.getControl(name='field.status_4').value
+    >>> browser.getControl(name='field.status_%d' % qid2).value
     ['DELETED']
     >>> print_batch_heading(browser)
     1 ... 1 of 1 result

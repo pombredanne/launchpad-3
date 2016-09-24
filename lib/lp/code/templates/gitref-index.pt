@@ -1,0 +1,71 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad"
+>
+
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    #merge-summary, #recipe-summary {
+      margin-top: .5em;
+      margin-bottom: .1em;
+    }
+  </style>
+</metal:block>
+
+<body>
+
+<tal:registering metal:fill-slot="registering">
+  Last commit made on
+    <tal:committer-date replace="structure context/committer_date/fmt:date" />
+</tal:registering>
+
+<div metal:fill-slot="main">
+
+  <div class="yui-g first">
+    <div id="ref-management" class="portlet">
+      <tal:ref-management
+          replace="structure context/@@++ref-management" />
+    </div>
+  </div>
+
+  <div class="yui-g">
+    <div id="ref-relations" class="portlet">
+      <tal:ref-pending-merges
+           replace="structure context/@@++ref-pending-merges" />
+      <tal:ref-recipes replace="structure context/@@++ref-recipes" />
+      <div metal:use-macro="context/@@+snap-macros/related-snaps" />
+    </div>
+  </div>
+
+  <div class="yui-g">
+    <div id="ref-info" class="portlet">
+      <h2>Branch information</h2>
+      <div class="two-column-list">
+        <dl id="name">
+          <dt>Name:</dt>
+          <dd tal:content="context/name" />
+        </dl>
+
+        <dl id="repository">
+          <dt>Repository:</dt>
+          <dd tal:content="structure context/repository/fmt:link" />
+        </dl>
+      </div>
+    </div>
+  </div>
+
+  <div class="yui-g">
+    <div class="portlet" id="recent-commits">
+      <h2>Recent commits</h2>
+      <tal:commits replace="structure context/@@++ref-commits" />
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

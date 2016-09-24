@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive pool classes.
@@ -18,6 +18,7 @@ __all__ = [
 
 from collections import defaultdict
 import os
+import shutil
 import tempfile
 
 import apt_pkg
@@ -37,7 +38,7 @@ class NoBinaryArchive(Exception):
 class ArchiveFilesystemInfo:
     """Archive information files holder
 
-    This class gets and holds the Packages.gz and Source.gz files
+    This class gets and holds the Packages and Sources files
     from a Package Archive and holds them as internal attributes
     to be used for other classes.
     """
@@ -62,53 +63,53 @@ class ArchiveFilesystemInfo:
             raise MangledArchiveError("No archive directory for %s/%s" %
                                       (distroseries, component))
 
-        # Search and get the files with full path
-        sources_zipped = os.path.join(root, "dists", distroseries,
-                                      component, "source", "Sources.gz")
-        if not os.path.exists(sources_zipped):
-            raise MangledArchiveError("Archive missing Sources.gz at %s"
-                                      % sources_zipped)
-
         # Extract Sources index.
-        srcfd, sources_tagfile = tempfile.mkstemp()
-        call("gzip -dc %s > %s" % (sources_zipped, sources_tagfile))
-        srcfile = os.fdopen(srcfd)
-
-        # Holds the opened files and its names.
-        self.sources_tagfile = sources_tagfile
-        self.srcfile = srcfile
+        sources_prefix = os.path.join(
+            root, "dists", distroseries, component, "source", "Sources")
+        self.srcfile, self.sources_tagfile = self.openTagFile(sources_prefix)
 
         # Detect source-only mode and skip binary index parsing.
         if source_only:
             return
 
-        # Extract Binaries indexes.
+        # Extract binary indexes.
         dist_bin_dir = os.path.join(dist_dir, "binary-%s" % arch)
         if not os.path.exists(dist_bin_dir):
             raise NoBinaryArchive
 
-        binaries_zipped = os.path.join(dist_bin_dir, "Packages.gz")
-        if not os.path.exists(binaries_zipped):
-            raise MangledArchiveError("Archive mising Packages.gz at %s"
-                                      % binaries_zipped)
-        di_zipped = os.path.join(root, "dists", distroseries, component,
-                                 "debian-installer", "binary-%s" % arch,
-                                 "Packages.gz")
-        # Extract Binary indexes.
-        binfd, binaries_tagfile = tempfile.mkstemp()
-        call("gzip -dc %s > %s" % (binaries_zipped, binaries_tagfile))
-        binfile = os.fdopen(binfd)
+        self.binfile, self.binaries_tagfile = self.openTagFile(
+            os.path.join(dist_bin_dir, "Packages"))
 
-        difd, di_tagfile = tempfile.mkstemp()
-        if os.path.exists(di_zipped):
-            call("gzip -dc %s > %s" % (di_zipped, di_tagfile))
-        difile = os.fdopen(difd)
+        try:
+            self.difile, self.di_tagfile = self.openTagFile(
+                os.path.join(
+                    root, "dists", distroseries, component,
+                    "debian-installer", "binary-%s" % arch, "Packages"))
+        except MangledArchiveError:
+            # d-i binary indexes may be missing.  Put something empty in
+            # place so that PackagesMap doesn't need to care.
+            difd, self.di_tagfile = tempfile.mkstemp()
+            self.difile = os.fdopen(difd)
 
-        # Holds the opened files and its names.
-        self.binaries_tagfile = binaries_tagfile
-        self.binfile = binfile
-        self.di_tagfile = di_tagfile
-        self.difile = difile
+    def openTagFile(self, prefix):
+        for suffix in (".xz", ".bz2", ".gz", ""):
+            if os.path.exists(prefix + suffix):
+                # Extract index.
+                fd, tagfile = tempfile.mkstemp()
+                if suffix == ".xz":
+                    call("xz -dc %s > %s" % (prefix + suffix, tagfile))
+                elif suffix == ".bz2":
+                    call("bzip2 -dc %s > %s" % (prefix + suffix, tagfile))
+                elif suffix == ".gz":
+                    call("gzip -dc %s > %s" % (prefix + suffix, tagfile))
+                elif suffix == "":
+                    shutil.copy(prefix + suffix, tagfile)
+                else:
+                    raise AssertionError("Unknown suffix '%s'" % suffix)
+                return os.fdopen(fd), tagfile
+        else:
+            raise MangledArchiveError(
+                "Archive missing any variant of %s" % prefix)
 
     def cleanup(self):
         os.unlink(self.sources_tagfile)

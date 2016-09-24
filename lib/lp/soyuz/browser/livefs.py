@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """LiveFS views."""
@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'LiveFSAddView',
+    'LiveFSDeleteView',
     'LiveFSEditView',
     'LiveFSNavigation',
     'LiveFSNavigationMenu',
@@ -94,7 +95,7 @@ class LiveFSNavigationMenu(NavigationMenu):
 
     facet = 'overview'
 
-    links = ('admin', 'edit',)
+    links = ('admin', 'delete', 'edit')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -103,6 +104,10 @@ class LiveFSNavigationMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         return Link('+edit', 'Edit live filesystem', icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        return Link('+delete', 'Delete live filesystem', icon='trash-icon')
 
 
 class LiveFSView(LaunchpadView):
@@ -329,3 +334,27 @@ class LiveFSEditView(LiveFSMetadataValidatorMixin, BaseLiveFSEditView):
                             distro_series.displayname, owner.displayname))
             except NoSuchLiveFS:
                 pass
+
+
+class LiveFSDeleteView(BaseLiveFSEditView):
+    """View for deleting live filesystems."""
+
+    @property
+    def title(self):
+        return 'Delete %s live filesystem' % self.context.name
+
+    label = title
+
+    field_names = []
+
+    @property
+    def has_builds(self):
+        return not self.context.builds.is_empty()
+
+    @action('Delete live filesystem', name='delete')
+    def delete_action(self, action, data):
+        owner = self.context.owner
+        self.context.destroySelf()
+        # XXX cjwatson 2015-05-07 bug=1332479: This should go to
+        # Person:+livefs once that exists.
+        self.next_url = canonical_url(owner)

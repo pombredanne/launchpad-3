@@ -159,8 +159,8 @@ HWSubmission table.
     ...     HWSubmissionFormat,
     ...     IHWSubmissionSet,
     ...     )
-    >>> date_created = datetime(2007, 04, 01, tzinfo=pytz.timezone('UTC'))
-    >>> date_submitted = datetime(2007, 04, 02, tzinfo=pytz.timezone('UTC'))
+    >>> date_created = datetime(2007, 4, 1, tzinfo=pytz.timezone('UTC'))
+    >>> date_submitted = datetime(2007, 4, 2, tzinfo=pytz.timezone('UTC'))
     >>> submission_data = 'submission data'
     >>> hw_submission_set = getUtility(IHWSubmissionSet)
     >>> submission = hw_submission_set.createSubmission(
@@ -385,7 +385,7 @@ When an anonymous submitter later registers a Launchpad account, the field
     Beeblebrox
 
 If somebody has a Launchpad account, but submits HWDB test data using
-an email address which he has not added to his account, the submission
+an email address which they have not added to their account, the submission
 will have the `owner` field set to None.
 
     >>> submission = hw_submission_set.createSubmission(
@@ -404,7 +404,7 @@ will have the `owner` field set to None.
     >>> print submission.owner
     None
 
-When he adds this email address to his list of addresses in Launchpad,
+When they add this email address to their list of addresses in Launchpad,
 the field `owner` is updated.
 
     >>> email = getUtility(IEmailAddressSet).new(
@@ -717,7 +717,7 @@ are returned.
 
 It is also possible to search for a distroseries and architecture.
 
-    >>> from lp.soyuz.interfaces.processor import IProcessorSet
+    >>> from lp.buildmaster.interfaces.processor import IProcessorSet
     >>> amd64 = getUtility(IProcessorSet).getByName('amd64')
     >>> warty_amd64 = factory.makeDistroArchSeries(
     ...     distroseries=warty, architecturetag='amd64',

@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Soyuz buildd slave manager logic."""
@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BuilddManager',
     'BUILDD_MANAGER_LOG_NAME',
+    'SlaveScanner',
     ]
 
 import datetime
@@ -219,7 +220,20 @@ def recover_failure(logger, vitals, builder, retry, exception):
         elif job_action == False:
             # Fail and dequeue the job.
             logger.info("Failing job %s.", job.build_cookie)
-            job.specific_build.updateStatus(BuildStatus.FAILEDTOBUILD)
+            if job.specific_build.status == BuildStatus.FULLYBUILT:
+                # A FULLYBUILT build should be out of our hands, and
+                # probably has artifacts like binaries attached. It's
+                # impossible to enter the state twice, so don't revert
+                # the status. Something's wrong, so log an OOPS and get
+                # it out of the queue to avoid further corruption.
+                logger.warning(
+                    "Build is already successful! Dequeuing but leaving build "
+                    "status alone. Something is very wrong.")
+            else:
+                # Whatever it was before, we want it failed. We're an
+                # error handler, so let's not risk more errors.
+                job.specific_build.updateStatus(
+                    BuildStatus.FAILEDTOBUILD, force_invalid_transition=True)
             job.destroySelf()
         elif job_action == True:
             # Reset the job so it will be retried elsewhere.
@@ -319,6 +333,7 @@ class SlaveScanner:
         return d
 
     def _updateDateScanned(self, ignored):
+        self.logger.debug("Scan finished for builder %s" % self.builder_name)
         self.date_scanned = datetime.datetime.utcnow()
 
     def _scanFailed(self, retry, failure):
@@ -541,6 +556,7 @@ class NewBuildersScanner:
 
     def scan(self):
         """If a new builder appears, create a SlaveScanner for it."""
+        self.manager.logger.debug("Refreshing builders from the database.")
         try:
             self.manager.builder_factory.update()
             new_builders = self.checkForNewBuilders()
@@ -550,6 +566,7 @@ class NewBuildersScanner:
                 "Failure while updating builders:\n",
                 exc_info=True)
             transaction.abort()
+        self.manager.logger.debug("Builder refresh complete.")
 
     def checkForNewBuilders(self):
         """See if any new builders were added."""

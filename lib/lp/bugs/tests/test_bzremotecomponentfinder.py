@@ -142,16 +142,16 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
             u'alpha': {
                 'name': u'alpha',
                 'components': {
-                    u'1': {'name': u'1', },
-                    u'2': {'name': u'2', },
-                    u'3': {'name': u'3', },
+                    u'1': {'name': u'one', },
+                    u'2': {'name': u'two', },
+                    u'3': {'name': u'three', },
                     },
                 'versions': None,
                 },
             u'beta': {
                 'name': u'beta',
                 'components': {
-                    u'4': {'name': u'4', },
+                    u'4': {'name': u'four', },
                     },
                 'versions': None,
                 }
@@ -170,8 +170,8 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         self.assertEqual(1, len(list(comp_group.components)))
         comp = comp_group.getComponent(u'non-existant')
         self.assertIs(None, comp)
-        comp = comp_group.getComponent(u'4')
-        self.assertEqual(u'4', comp.name)
+        comp = comp_group.getComponent(u'four')
+        self.assertEqual(u'four', comp.name)
 
     def test_get_remote_products_and_components(self):
         """Does a full retrieve and storing of data."""

@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -45,11 +45,10 @@ class TestBuild(TestCaseWithFactory):
     def setUp(self):
         super(TestBuild, self).setUp()
         self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
-        self.processor = self.factory.makeProcessor()
+        self.processor = self.factory.makeProcessor(supports_virtualized=True)
         self.distroseries = self.factory.makeDistroSeries()
         self.das = self.factory.makeDistroArchSeries(
-            distroseries=self.distroseries, processor=self.processor,
-            supports_virtualized=True)
+            distroseries=self.distroseries, processor=self.processor)
         with person_logged_in(self.admin):
             self.publisher = SoyuzTestPublisher()
             self.publisher.prepareBreezyAutotest()
@@ -88,7 +87,7 @@ class TestBuild(TestCaseWithFactory):
         self.assertEquals(self.das, build.distro_arch_series)
         self.assertEquals(PackagePublishingPocket.RELEASE, build.pocket)
         self.assertEquals(self.das.architecturetag, build.arch_tag)
-        self.assertTrue(build.is_virtualized)
+        self.assertTrue(build.virtualized)
         self.assertEquals(
             '%s - %s' % (spph.source_package_name,
                 spph.source_package_version),
@@ -113,10 +112,10 @@ class TestBuild(TestCaseWithFactory):
         self.assertEquals(
             PackageUploadStatus.DONE, build.package_upload.status)
         self.assertEquals(
-            datetime(2008, 01, 01, 0, 0, 0, tzinfo=pytz.UTC),
+            datetime(2008, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             build.date_started)
         self.assertEquals(
-            datetime(2008, 01, 01, 0, 5, 0, tzinfo=pytz.UTC),
+            datetime(2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC),
             build.date_finished)
         self.assertEquals(timedelta(minutes=5), build.duration)
         expected_buildlog = 'buildlog_%s-%s-%s.%s_%s_FULLYBUILT.txt.gz' % (
@@ -166,8 +165,7 @@ class TestBuild(TestCaseWithFactory):
         # Builds can not be retried for released distroseries
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processor=self.processor,
-            supports_virtualized=True)
+            distroseries=distroseries, processor=self.processor)
         with person_logged_in(self.admin):
             distroseries.nominatedarchindep = das
             distroseries.status = SeriesStatus.OBSOLETE
@@ -184,8 +182,7 @@ class TestBuild(TestCaseWithFactory):
         # released.
         distroseries = self.factory.makeDistroSeries()
         das = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, processor=self.processor,
-            supports_virtualized=True)
+            distroseries=distroseries, processor=self.processor)
         archive = self.factory.makeArchive(
             purpose=ArchivePurpose.PARTNER,
             distribution=distroseries.distribution)
@@ -221,6 +218,16 @@ class TestBuild(TestCaseWithFactory):
         build.updateStatus(BuildStatus.CANCELLED)
         self.assertTrue(build.can_be_retried)
 
+    def test_retry_superseded(self):
+        # A superseded build can be retried
+        spph = self.publisher.getPubSource(
+            sourcename=self.factory.getUniqueString(),
+            version="%s.1" % self.factory.getUniqueInteger(),
+            distroseries=self.distroseries)
+        [build] = spph.createMissingBuilds()
+        build.updateStatus(BuildStatus.SUPERSEDED)
+        self.assertTrue(build.can_be_retried)
+
     def test_uploadlog(self):
         # The upload log can be attached to a build
         spph = self.publisher.getPubSource(
@@ -254,6 +261,23 @@ class TestBuild(TestCaseWithFactory):
         self.assertEquals(None, build.log)
         self.assertEquals(None, build.upload_log)
         self.assertEquals(0, build.failure_count)
+
+    def test_retry_resets_virtualized(self):
+        # Retrying a build recalculates its virtualization.
+        archive = self.factory.makeArchive(
+            distribution=self.distroseries.distribution, virtualized=False)
+        build = self.factory.makeBinaryPackageBuild(
+            distroarchseries=self.das, archive=archive,
+            processor=self.processor)
+        self.assertFalse(build.virtualized)
+        build.updateStatus(BuildStatus.BUILDING)
+        build.updateStatus(BuildStatus.FAILEDTOBUILD)
+        build.gotFailure()
+        self.processor.supports_nonvirtualized = False
+        with person_logged_in(self.admin):
+            build.retry()
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
+        self.assertTrue(build.virtualized)
 
     def test_create_bpr(self):
         # Test that we can create a BPR from a given build.

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for ArchiveDependency."""
@@ -9,21 +9,20 @@ __all__ = ['ArchiveDependency']
 
 
 from sqlobject import ForeignKey
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
-from lp.soyuz.adapters.archivedependencies import component_dependencies
+from lp.soyuz.adapters.archivedependencies import get_components_for_context
 from lp.soyuz.interfaces.archivedependency import IArchiveDependency
 
 
+@implementer(IArchiveDependency)
 class ArchiveDependency(SQLBase):
     """See `IArchiveDependency`."""
-
-    implements(IArchiveDependency)
 
     _table = 'ArchiveDependency'
     _defaultOrder = 'id'
@@ -63,7 +62,13 @@ class ArchiveDependency(SQLBase):
         if self.component is None:
             return pocket_title
 
-        component_part = ", ".join(
-            component_dependencies[self.component.name])
+        # XXX cjwatson 2016-03-31: This may be inaccurate, but we can't do
+        # much better since this ArchiveDependency applies to multiple
+        # series which may each resolve component dependencies in different
+        # ways.
+        distroseries = self.archive.distribution.currentseries
+
+        component_part = ", ".join(get_components_for_context(
+            self.component, distroseries, self.pocket))
 
         return "%s (%s)" % (pocket_title, component_part)

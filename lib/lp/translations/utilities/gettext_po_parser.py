@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Originally based on code from msgfmt.py (available from python source
@@ -15,15 +15,15 @@ __all__ = [
 
 import codecs
 import datetime
-from email.Utils import parseaddr
+from email.utils import parseaddr
 import logging
 import re
 
 import pytz
 from zope import datetime as zope_datetime
-from zope.interface import implements
+from zope.interface import implementer
 
-from lp.app.versioninfo import revno
+from lp.app import versioninfo
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationHeaderData,
     )
@@ -88,9 +88,9 @@ def parse_charset(string_to_parse, is_escaped=True):
     return charset
 
 
+@implementer(ITranslationHeaderData)
 class POHeader:
     """See `ITranslationHeaderData`."""
-    implements(ITranslationHeaderData)
 
     # Set of known keys in the .po header.
     _handled_keys_mapping = {
@@ -352,10 +352,10 @@ class POHeader:
             elif key == 'x-generator':
                 # Note the revision number so it would help for debugging
                 # problems with bad exports.
-                if revno is None:
+                if versioninfo.revision is None:
                     build = 'Unknown'
                 else:
-                    build = revno
+                    build = versioninfo.revision
                 raw_content_list.append(
                     '%s: Launchpad (build %s)\n' % (value, build))
             else:

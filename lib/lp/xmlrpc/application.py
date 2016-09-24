@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """XML-RPC API to the application roots."""
@@ -15,7 +15,7 @@ import xmlrpclib
 
 from zope.component import getUtility
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
@@ -24,21 +24,20 @@ from lp.code.interfaces.codehosting import ICodehostingApplication
 from lp.code.interfaces.codeimportscheduler import (
     ICodeImportSchedulerApplication,
     )
+from lp.code.interfaces.gitapi import IGitApplication
 from lp.registry.interfaces.mailinglist import IMailingListApplication
-from lp.registry.interfaces.person import (
-    ICanonicalSSOApplication,
-    ISoftwareCenterAgentApplication,
-    )
+from lp.registry.interfaces.person import ICanonicalSSOApplication
 from lp.services.authserver.interfaces import IAuthServerApplication
 from lp.services.features.xmlrpc import IFeatureFlagApplication
 from lp.services.webapp import LaunchpadXMLRPCView
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.xmlrpc.interfaces import IPrivateApplication
 
+
 # NOTE: If you add a traversal here, you should update
 # the regular expression in utilities/page-performance-report.ini
+@implementer(IPrivateApplication)
 class PrivateApplication:
-    implements(IPrivateApplication)
 
     @property
     def mailinglists(self):
@@ -66,11 +65,6 @@ class PrivateApplication:
         return getUtility(IPrivateMaloneApplication)
 
     @property
-    def softwarecenteragent(self):
-        """See `IPrivateApplication`."""
-        return getUtility(ISoftwareCenterAgentApplication)
-
-    @property
     def canonicalsso(self):
         """See `IPrivateApplication`."""
         return getUtility(ICanonicalSSOApplication)
@@ -79,6 +73,11 @@ class PrivateApplication:
     def featureflags(self):
         """See `IPrivateApplication`."""
         return getUtility(IFeatureFlagApplication)
+
+    @property
+    def git(self):
+        """See `IPrivateApplication`."""
+        return getUtility(IGitApplication)
 
 
 class ISelfTest(Interface):
@@ -97,9 +96,8 @@ class ISelfTest(Interface):
         """Raise an exception."""
 
 
+@implementer(ISelfTest)
 class SelfTest(LaunchpadXMLRPCView):
-
-    implements(ISelfTest)
 
     def make_fault(self):
         """Returns an xmlrpc fault."""

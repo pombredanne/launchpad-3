@@ -45,6 +45,7 @@ from lp import _
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.bugs.interfaces.hasbug import IHasBug
 from lp.services.fields import StrippedTextLine
+from lp.services.webservice.apihelpers import patch_collection_property
 
 
 class BugWatchActivityStatus(DBEnumeratedType):
@@ -265,7 +266,7 @@ class IBugWatch(IHasBug):
 
     def getBugMessages(clauses):
         """Return all the `IBugMessage`s that reference this BugWatch.
-        
+
         :param clauses: A iterable of Storm clauses to limit the messages.
         """
 
@@ -295,7 +296,7 @@ class IBugWatch(IHasBug):
 
 
 # Defined here because of circular imports.
-IBugTracker['watches'].value_type.schema = IBugWatch
+patch_collection_property(IBugTracker, 'watches', IBugWatch)
 
 
 class IBugWatchSet(Interface):

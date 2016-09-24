@@ -14,7 +14,7 @@ from timeline import Timeline
 
 # XXX RobertCollins 2010-09-01 bug=623199: Undesirable but pragmatic.
 # Because of this bug, rather than using request.annotations we have
-# to work in with the webapp.adapter request model, which is 
+# to work in with the webapp.adapter request model, which is
 # different to that used by get_current_browser_request.
 from lp.services import webapp
 

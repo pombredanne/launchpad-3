@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for the launchpad application."""
@@ -44,7 +44,7 @@ from zope.datetime import (
 from zope.i18nmessageid import Message
 from zope.interface import (
     alsoProvides,
-    implements,
+    implementer,
     Interface,
     )
 from zope.publisher.defaultview import getDefaultViewName
@@ -78,6 +78,7 @@ from lp.app.browser.tales import (
     )
 from lp.app.errors import (
     GoneError,
+    NameLookupFailed,
     NotFoundError,
     POSTToNonCanonicalURL,
     )
@@ -93,6 +94,7 @@ from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.errors import (
     CannotHaveLinkedBranch,
     InvalidNamespace,
@@ -102,8 +104,11 @@ from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import IBazaarApplication
 from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.gitlookup import IGitLookup
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.hardwaredb.interfaces.hwdb import IHWDBApplication
 from lp.layers import WebServiceLayer
+from lp.registry.enums import VCSType
 from lp.registry.interfaces.announcement import IAnnouncementSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -155,11 +160,12 @@ from lp.services.webapp.publisher import RedirectionView
 from lp.services.webapp.url import urlappend
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.snappy.interfaces.snap import ISnapSet
+from lp.snappy.interfaces.snappyseries import ISnappySeriesSet
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.livefs import ILiveFSSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
-from lp.soyuz.interfaces.processor import IProcessorSet
 from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationimportqueue import (
@@ -320,9 +326,7 @@ class Hierarchy(LaunchpadView):
                         remaining_crumb.rootsite_override = facet.rootsite
                     break
         if len(breadcrumbs) > 0:
-            page_crumb = self.makeBreadcrumbForRequestedPage()
-            if page_crumb:
-                breadcrumbs.append(page_crumb)
+            breadcrumbs.extend(self.makeBreadcrumbsForRequestedPage())
         return breadcrumbs
 
     @property
@@ -354,15 +358,15 @@ class Hierarchy(LaunchpadView):
         else:
             return None
 
-    def makeBreadcrumbForRequestedPage(self):
-        """Return an `IBreadcrumb` for the requested page.
+    def makeBreadcrumbsForRequestedPage(self):
+        """Return a sequence of `IBreadcrumb`s for the requested page.
 
         The `IBreadcrumb` for the requested page is created using the current
         URL and the page's name (i.e. the last path segment of the URL).
 
         If the view is the default one for the object or the current
-        facet, return None -- we'll have injected a facet Breadcrumb
-        earlier in the hierarchy which links here.
+        facet, no breadcrumbs are returned -- we'll have injected a
+        facet Breadcrumb earlier in the hierarchy which links here.
         """
         url = self.request.getURL()
         obj = self.request.traversed_objects[-2]
@@ -372,16 +376,22 @@ class Hierarchy(LaunchpadView):
         facet = queryUtility(IFacet, name=get_facet(view))
         if facet is not None:
             default_views.append(facet.default_view)
+        crumbs = []
+
+        # Views may provide an additional breadcrumb to precede them.
+        # This is useful to have an add view link back to its
+        # collection despite its parent being the context of the collection.
+        if hasattr(view, 'inside_breadcrumb'):
+            crumbs.append(view.inside_breadcrumb)
+
         if hasattr(view, '__name__') and view.__name__ not in default_views:
             title = getattr(view, 'page_title', None)
             if title is None:
                 title = getattr(view, 'label', None)
             if isinstance(title, Message):
                 title = i18n.translate(title, context=self.request)
-            breadcrumb = Breadcrumb(None, url=url, text=title)
-            return breadcrumb
-        else:
-            return None
+            crumbs.append(Breadcrumb(None, url=url, text=title))
+        return crumbs
 
     @property
     def display_breadcrumbs(self):
@@ -447,6 +457,7 @@ class ExceptionHierarchy(Hierarchy):
         return []
 
 
+@implementer(IBrowserPublisher, ITraversable)
 class Macro:
     """Keeps templates that are registered as pages from being URL accessable.
 
@@ -488,7 +499,6 @@ class Macro:
         permission="zope.Public"
         />
     """
-    implements(IBrowserPublisher, ITraversable)
 
     def __init__(self, context, request):
         self.context = context
@@ -760,6 +770,68 @@ class LaunchpadRootNavigation(Navigation):
 
         return self.redirectSubTree(target_url)
 
+    @stepto('+code')
+    def redirect_branch_or_repo(self):
+        """Redirect /+code/<foo> to the branch or repository named 'foo'.
+
+        'foo' can be the unique name of the branch/repo, or any of the aliases
+        for the branch/repo.
+
+        If 'foo' is invalid, or exists but the user does not have permission to
+        view 'foo', a NotFoundError is raised, resulting in a 404 error.
+
+        Unlike +branch, this works for both git and bzr repositories/branches.
+        """
+        target_url = None
+        path = '/'.join(self.request.stepstogo)
+
+        # Try a Git repository lookup first, since the schema is simpler and
+        # so it's quicker.
+        try:
+            repository, trailing = getUtility(IGitLookup).getByPath(path)
+            if repository is not None:
+                target_url = canonical_url(repository)
+                if trailing:
+                    target_url = urlappend(target_url, trailing)
+        except (InvalidNamespace, InvalidProductName, NameLookupFailed,
+                Unauthorized):
+            # Either the git repository wasn't found, or it was found but we
+            # lack authority to access it. In either case, attempt a bzr lookup
+            # so don't set target_url
+            pass
+
+        # Attempt a bzr lookup as well:
+        try:
+            branch, trailing = getUtility(IBranchLookup).getByLPPath(path)
+            bzr_url = canonical_url(branch)
+            if trailing != '':
+                bzr_url = urlappend(bzr_url, trailing)
+
+            if target_url and branch.product is not None:
+                # Project has both a bzr branch and a git repo. There's no
+                # right thing we can do here, so pretend we didn't see
+                # anything at all.
+                if branch.product.vcs is None:
+                    target_url = None
+                # if it's set to BZR, then set this branch as the target
+                if branch.product.vcs == VCSType.BZR:
+                    target_url = bzr_url
+            else:
+                target_url = bzr_url
+        except (NoLinkedBranch, CannotHaveLinkedBranch, InvalidNamespace,
+                InvalidProductName, NotFoundError):
+            # No bzr branch found either.
+            pass
+
+        # Either neither bzr nor git returned matches, or they did but we're
+        # not authorised to view them, or they both did and the project has not
+        # set its 'vcs' property to indicate which one to prefer. In all cases
+        # raise a 404:
+        if not target_url:
+            raise NotFoundError
+
+        return self.redirectSubTree(target_url)
+
     @stepto('+builds')
     def redirect_buildfarm(self):
         """Redirect old /+builds requests to new URL, /builders."""
@@ -778,11 +850,12 @@ class LaunchpadRootNavigation(Navigation):
         'branches': IBranchSet,
         'bugs': IMaloneApplication,
         'builders': IBuilderSet,
-        '+code': IBazaarApplication,
+        '+code-index': IBazaarApplication,
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
         '+countries': ICountrySet,
         'distros': IDistributionSet,
+        '+git': IGitRepositorySet,
         '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
@@ -795,6 +868,8 @@ class LaunchpadRootNavigation(Navigation):
         '+processors': IProcessorSet,
         'projects': IProductSet,
         'projectgroups': IProjectGroupSet,
+        '+snaps': ISnapSet,
+        '+snappy-series': ISnappySeriesSet,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
@@ -849,12 +924,15 @@ class LaunchpadRootNavigation(Navigation):
                 # team membership or Launchpad administration.
                 if (person.is_team and
                     not check_permission('launchpad.LimitedView', person)):
-                    raise NotFound(self.context, name)
+                    return None
                 # Only admins are permitted to see suspended users.
                 if person.account_status == AccountStatus.SUSPENDED:
                     if not check_permission('launchpad.Moderate', person):
                         raise GoneError(
                             'User is suspended: %s' % name)
+                if person.account_status == AccountStatus.PLACEHOLDER:
+                    if not check_permission('launchpad.Moderate', person):
+                        return None
                 return person
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded

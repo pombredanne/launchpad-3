@@ -295,7 +295,7 @@ external bug tracker (bug 484712).
 
 We'll create a non-functioning ExternalBugtracker to demonstrate this.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskStatus, BugTaskImportance)
     >>> from lp.bugs.interfaces.externalbugtracker import (
@@ -305,11 +305,10 @@ We'll create a non-functioning ExternalBugtracker to demonstrate this.
     ...     BATCH_SIZE_UNLIMITED, ExternalBugTracker)
 
     >>> nowish = datetime.now(utc)
-    >>> class UselessExternalBugTracker(ExternalBugTracker):
-    ...
-    ...     implements(
-    ...         ISupportsBackLinking, ISupportsCommentImport,
-    ...         ISupportsCommentPushing)
+    >>> @implementer(
+    ...     ISupportsBackLinking, ISupportsCommentImport,
+    ...     ISupportsCommentPushing)
+    ... class UselessExternalBugTracker(ExternalBugTracker):
     ...
     ...     batch_size = BATCH_SIZE_UNLIMITED
     ...

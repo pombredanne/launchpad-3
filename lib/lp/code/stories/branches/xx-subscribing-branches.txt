@@ -257,10 +257,10 @@ From this page the branch subscription can be altered...
     Mark Shuttleworth
 
 
-Private team's in public subscriptions
-======================================
+Private teams in public subscriptions
+=====================================
 
-If a private team is subscribed to a publicthe branch, it is visible
+If a private team is subscribed to a public branch, it is visible
 to everyone.
 
     >>> from lp.testing import login, logout
@@ -283,7 +283,7 @@ to everyone.
     >>> url = canonical_url(branch)
     >>> logout()
 
-No-priv is not a member of the private team, but he can see the team's
+No-priv is not a member of the private team, but they can see the team's
 display name in the subscriber list.
 
     >>> browser.open(url)

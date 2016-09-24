@@ -14,7 +14,7 @@ from zope.component import (
     provideAdapter,
     provideUtility,
     )
-from zope.interface import implements
+from zope.interface import implementer
 from zope.principalregistry.principalregistry import UnauthenticatedPrincipal
 from zope.publisher.browser import TestRequest
 from zope.publisher.http import BasicAuthAdapter
@@ -33,13 +33,13 @@ from lp.services.webapp.interfaces import (
     )
 
 
+@implementer(IPerson)
 class DummyPerson(object):
-    implements(IPerson)
     is_valid_person = True
 
 
+@implementer(IAccount)
 class DummyAccount(object):
-    implements(IAccount)
     person = DummyPerson()
 
 
@@ -47,8 +47,8 @@ Bruce = LaunchpadPrincipal(42, 'bruce', 'Bruce', DummyAccount())
 Bruce.person = Bruce.account.person
 
 
+@implementer(IPlacelessLoginSource)
 class DummyPlacelessLoginSource(object):
-    implements(IPlacelessLoginSource)
 
     def getPrincipalByLogin(self, id):
         return Bruce
@@ -77,7 +77,7 @@ class TestPlacelessAuth(PlacelessSetup, testtools.TestCase):
     def _make(self, login, pwd):
         dict = {
             'HTTP_AUTHORIZATION':
-            'Basic %s' % base64.encodestring('%s:%s' % (login, pwd))}
+            'Basic %s' % base64.b64encode('%s:%s' % (login, pwd))}
         request = TestRequest(**dict)
         return getUtility(IPlacelessAuthUtility), request
 

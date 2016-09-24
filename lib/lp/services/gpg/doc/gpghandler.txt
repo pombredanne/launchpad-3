@@ -269,18 +269,18 @@ to avoid the retrieval of more than one key.
 
     >>> fingerprint = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
     >>> gpghandler.getURLForKeyInServer(fingerprint)
-    'http://localhost:11371/pks/lookup?search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543&op=index'
+    'http://localhost:11371/pks/lookup?fingerprint=on&op=index&search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
 But you can also specify your own action:
 
     >>> gpghandler.getURLForKeyInServer(fingerprint, action="get")
-    'http://localhost:11371/pks/lookup?search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543&op=get'
+    'http://localhost:11371/pks/lookup?fingerprint=on&op=get&search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
 The method accepts a flag to retrieve a link to ubuntu's public
 keyserver web interface.
 
     >>> gpghandler.getURLForKeyInServer(fingerprint, public=True)
-    'http://keyserver.ubuntu.com:11371/pks/lookup?search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543&op=index'
+    'http://keyserver.ubuntu.com:11371/pks/lookup?fingerprint=on&op=index&search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
 
 == Keyserver uploads ==

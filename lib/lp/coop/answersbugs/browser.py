@@ -68,7 +68,7 @@ class QuestionMakeBugView(LaunchpadFormView):
         params = CreateBugParams(
             owner=self.user, title=data['title'], comment=data['description'])
         bug = question.target.createBug(params)
-        question.linkBug(bug)
+        question.linkBug(bug, user=self.user)
         bug.subscribe(question.owner, self.user)
         bug_added_event = ObjectModifiedEvent(
             question, unmodifed_question, ['bugs'])
@@ -76,6 +76,3 @@ class QuestionMakeBugView(LaunchpadFormView):
         self.request.response.addNotification(
             _('Thank you! Bug #$bugid created.', mapping={'bugid': bug.id}))
         self.next_url = canonical_url(bug)
-
-
-

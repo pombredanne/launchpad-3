@@ -49,8 +49,7 @@ with the getExternalBugTrackerToUse() method, which returns the correct
 instance.  Usually there is only one version, so the default for the
 original instance is to return itself.
 
-    >>> from lp.bugs.externalbugtracker import (
-    ...     ExternalBugTracker)
+    >>> from lp.bugs.externalbugtracker import ExternalBugTracker
     >>> external_bugtracker = ExternalBugTracker('http://example.com/')
     >>> chosen_bugtracker = external_bugtracker.getExternalBugTrackerToUse()
     >>> chosen_bugtracker is external_bugtracker
@@ -63,9 +62,11 @@ private _getExternalBugTrackersAndWatches() method, which returns a set of
 (ExternalBugTracker, bug_watches) tuples.
 
     >>> from lp.bugs.externalbugtracker import (
-    ...     Bugzilla, BugzillaAPI, BUG_TRACKER_CLASSES)
-    >>> from lp.bugs.interfaces.bugtracker import (
-    ...     BugTrackerType)
+    ...     Bugzilla,
+    ...     BUG_TRACKER_CLASSES,
+    ...     )
+    >>> from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
+    >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> factory = LaunchpadObjectFactory()
@@ -396,13 +397,13 @@ If the remote server time is unknown, we will refuse to import any
 comments from it. Bug watches will still be updated, but a warning is
 logged saying that comments won't be imported.
 
-    >>> from zope.interface import implements
+    >>> from zope.interface import implementer
     >>> from lp.bugs.interfaces.externalbugtracker import (
     ...     ISupportsCommentImport,
     ...     )
-    >>> class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
+    >>> @implementer(ISupportsCommentImport)
+    ... class CommentImportExternalBugTracker(TimeUnknownExternalBugTracker):
     ...     baseurl = 'http://whatever.com'
-    ...     implements(ISupportsCommentImport)
     ...     sync_comments = True
 
     >>> checkwatches_master = CheckwatchesMaster(
@@ -518,7 +519,7 @@ passed to getModifiedRemoteBugs(). Only the bugs that have been modified
 will then be passed on to initializeRemoteBugDB().
 
     >>> some_time_ago = datetime(
-    ...     2007, 03, 17, 16, 00, tzinfo=pytz.timezone('UTC'))
+    ...     2007, 3, 17, 16, 0, tzinfo=pytz.timezone('UTC'))
     >>> for bug_watch in bug_watches:
     ...     bug_watch.lastchecked = some_time_ago
     >>> transaction.commit()

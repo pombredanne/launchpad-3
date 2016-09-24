@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.features.flags import FeatureController
@@ -39,9 +39,8 @@ class IFeatureFlagApplication(ILaunchpadApplication):
         """
 
 
+@implementer(IFeatureFlagApplication)
 class FeatureFlagApplication:
-
-    implements(IFeatureFlagApplication)
 
     def getFeatureFlag(self, flag_name, active_scopes=()):
         scopes = list(default_scopes)

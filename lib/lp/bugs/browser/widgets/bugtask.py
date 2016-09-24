@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBugTask."""
@@ -13,14 +13,13 @@ __all__ = [
     "BugTaskTargetWidget",
     "BugWatchEditForm",
     "DBItemDisplayWidget",
+    "FileBugSourcePackageNameWidget",
     "NewLineToSpacesWidget",
-    "UbuntuSourcePackageNameWidget",
     ]
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib.interfaces import (
-    ConversionError,
     IDisplayWidget,
     IInputWidget,
     InputErrors,
@@ -35,26 +34,20 @@ from zope.formlib.widget import (
     Widget,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
-from zope.schema.interfaces import (
-    InvalidValue,
-    ValidationError,
-    )
+from zope.schema.interfaces import ValidationError
+from zope.schema.vocabulary import getVocabularyRegistry
 
 from lp import _
 from lp.app.browser.tales import TeamFormatterAPI
-from lp.app.errors import (
-    NotFoundError,
-    UnexpectedFormData,
-    )
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.errors import UnexpectedFormData
 from lp.app.widgets.helpers import get_widget_template
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.popup import (
     PersonPickerWidget,
-    VocabularyPickerWidget,
+    SourcePackageNameWidgetBase,
     )
 from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
@@ -66,17 +59,20 @@ from lp.bugs.interfaces.bugwatch import (
     UnrecognizedBugTrackerURL,
     )
 from lp.bugs.vocabularies import UsesBugsDistributionVocabulary
-from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
+from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interfaces import ILaunchBag
 
 
+@implementer(IInputWidget)
 class BugTaskAssigneeWidget(Widget):
     """A widget for setting the assignee on an IBugTask."""
-
-    implements(IInputWidget)
 
     __call__ = ViewPageTemplateFile(
         "templates/bugtask-assignee-widget.pt")
@@ -264,10 +260,10 @@ class BugTaskAssigneeWidget(Widget):
         return context.userCanUnassign(user) or context.assignee is None
 
     def showPersonChooserWidget(self):
-        """Should the person chooser widget bw shown?
+        """Should the person chooser widget be shown?
 
         The person chooser is shown only if the user can assign at least
-        one other person or team in addition to himself.
+        one other person or team in addition to themselves.
         """
         user = getUtility(ILaunchBag).user
         context = self.context.context
@@ -478,22 +474,14 @@ class BugTaskTargetWidget(LaunchpadTargetWidget):
         return vocabulary
 
 
-class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
+class BugTaskSourcePackageNameWidget(SourcePackageNameWidgetBase):
     """A widget for associating a bugtask with a SourcePackageName.
 
     It accepts both binary and source package names.
     """
 
-    def __init__(self, field, vocabulary, request):
-        super(BugTaskSourcePackageNameWidget, self).__init__(
-            field, vocabulary, request)
-        self.cached_values = {}
-
     def getDistribution(self):
-        """Get the distribution used for package validation.
-
-        The package name has be to published in the returned distribution.
-        """
+        """See `SourcePackageNameWidgetBase`."""
         field = self.context
         distribution = field.context.distribution
         if distribution is None and field.context.distroseries is not None:
@@ -503,41 +491,21 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
             " bugtasks on distributions or on distribution series.")
         return distribution
 
-    def _toFieldValue(self, input):
-        if not input:
-            return self.context.missing_value
 
-        distribution = self.getDistribution()
-        cached_value = self.cached_values.get(input)
-        if cached_value:
-            return cached_value
-        try:
-            source = distribution.guessPublishedSourcePackageName(input)
-        except NotFoundError:
-            try:
-                source = self.convertTokensToValues([input])[0]
-            except InvalidValue:
-                raise ConversionError(
-                    "Launchpad doesn't know of any source package named"
-                    " '%s' in %s." % (input, distribution.displayname))
-        self.cached_values[input] = source
-        return source
-
-
-class BugTaskAlsoAffectsSourcePackageNameWidget(
-    BugTaskSourcePackageNameWidget):
+class BugTaskAlsoAffectsSourcePackageNameWidget(SourcePackageNameWidgetBase):
     """Package widget for +distrotask.
 
-    This widgets works the same as `BugTaskSourcePackageNameWidget`,
-    except that it gets the distribution from the request.
+    This widget works the same as `BugTaskSourcePackageNameWidget`, except
+    that it gets the distribution from the request.
     """
 
+    distribution_id = 'field.distribution'
+
     def getDistribution(self):
-        """See `BugTaskSourcePackageNameWidget`"""
+        """See `SourcePackageNameWidgetBase`."""
         distribution_name = self.request.form.get('field.distribution')
         if distribution_name is None:
-            raise UnexpectedFormData(
-                "field.distribution wasn't in the request")
+            return None
         distribution = getUtility(IDistributionSet).getByName(
             distribution_name)
         if distribution is None:
@@ -546,18 +514,45 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(
         return distribution
 
 
-class UbuntuSourcePackageNameWidget(BugTaskSourcePackageNameWidget):
-    """A widget to select Ubuntu packages."""
+class FileBugSourcePackageNameWidget(SourcePackageNameWidgetBase):
+    """Package widget for +filebug.
+
+    This widget works the same as `BugTaskSourcePackageNameWidget`, except
+    that it expects the field's context to be a bug target rather than a bug
+    task.
+    """
 
     def getDistribution(self):
-        """See `BugTaskSourcePackageNameWidget`"""
-        return getUtility(ILaunchpadCelebrities).ubuntu
+        """See `SourcePackageNameWidgetBase`."""
+        field = self.context
+        pillar = field.context.pillar
+        assert IDistribution.providedBy(pillar), (
+            "FileBugSourcePackageNameWidget should be used only for"
+            " distribution bug targets.")
+        return pillar
+
+    def _toFieldValue(self, input):
+        """See `SourcePackageNameWidgetBase`."""
+        source = super(FileBugSourcePackageNameWidget, self)._toFieldValue(
+            input)
+        if (source is not None and
+                not bool(getFeatureFlag('disclosure.dsp_picker.enabled'))):
+            # XXX cjwatson 2016-07-25: Convert to a value that the
+            # IBug.packagename vocabulary will accept.  This is a fiddly
+            # hack, but it only needs to survive until we can switch to the
+            # DistributionSourcePackage picker across the board.
+            bspn_vocab = getVocabularyRegistry().get(
+                None, "BinaryAndSourcePackageName")
+            bspn = bspn_vocab.getTermByToken(source.name).value
+            self.cached_values[input] = bspn
+            return bspn
+        else:
+            return source
 
 
+@implementer(IDisplayWidget)
 class AssigneeDisplayWidget(BrowserWidget):
     """A widget for displaying an assignee."""
-
-    implements(IDisplayWidget)
 
     def __init__(self, context, vocabulary, request):
         super(AssigneeDisplayWidget, self).__init__(context, request)
@@ -583,10 +578,9 @@ class AssigneeDisplayWidget(BrowserWidget):
                 return renderElement('i', contents='unknown')
 
 
+@implementer(IDisplayWidget)
 class DBItemDisplayWidget(BrowserWidget):
     """A widget for displaying a bugtask dbitem."""
-
-    implements(IDisplayWidget)
 
     def __init__(self, context, vocabulary, request):
         super(DBItemDisplayWidget, self).__init__(context, request)

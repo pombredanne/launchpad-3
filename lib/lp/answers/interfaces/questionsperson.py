@@ -40,7 +40,7 @@ class IQuestionsPerson(IQuestionCollection):
         """Return a list of IQuestionTargets that a person is subscribed to.
 
         This will return IQuestionTargets that the person is registered as an
-        answer contact because he subscribed himself.
+        answer contact because they subscribed themselves.
         """
 
     @operation_returns_collection_of(Interface)  # IQuestionTarget
@@ -50,7 +50,7 @@ class IQuestionsPerson(IQuestionCollection):
         """Return a list of IQuestionTargets that are indirect subscriptions.
 
         This will return IQuestionTargets that the person or team is
-        registered as an answer contact because of his membership in a team.
+        registered as an answer contact because of their membership in a team.
         """
 
     @operation_parameters(

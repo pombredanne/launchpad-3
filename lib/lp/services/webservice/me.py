@@ -14,7 +14,7 @@ from lazr.restful.interfaces import (
     ITopLevelEntryLink,
     )
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import (
     IPerson,
@@ -27,9 +27,9 @@ class IMeLink(ITopLevelEntryLink, ICanonicalUrlData):
     """A marker interface."""
 
 
+@implementer(IMeLink)
 class MeLink:
     """The top-level link to the authenticated user's account."""
-    implements(IMeLink)
 
     link_name = 'me'
     entry_type = IPerson

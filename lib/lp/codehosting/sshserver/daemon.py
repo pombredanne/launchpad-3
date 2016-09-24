@@ -17,6 +17,10 @@ __all__ = [
 
 import os
 
+from lazr.sshserver.auth import (
+    LaunchpadAvatar,
+    PublicKeyFromLaunchpadChecker,
+    )
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import filetransfer
 from twisted.cred.portal import (
@@ -25,22 +29,17 @@ from twisted.cred.portal import (
     )
 from twisted.python import components
 from twisted.web.xmlrpc import Proxy
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.codehosting import sftp
 from lp.codehosting.sshserver.session import launch_smart_server
 from lp.services.config import config
-from lp.services.sshserver.auth import (
-    LaunchpadAvatar,
-    PublicKeyFromLaunchpadChecker,
-    )
 
 # The names of the key files of the server itself. The directory itself is
 # given in config.codehosting.host_key_pair_path.
 PRIVATE_KEY_FILE = 'ssh_host_key_rsa'
 PUBLIC_KEY_FILE = 'ssh_host_key_rsa.pub'
 
-OOPS_CONFIG_SECTION = 'codehosting'
 LOG_NAME = 'codehosting'
 ACCESS_LOG_NAME = 'codehosting.access'
 
@@ -63,8 +62,8 @@ components.registerAdapter(
     sftp.avatar_to_sftp_server, CodehostingAvatar, filetransfer.ISFTPServer)
 
 
+@implementer(IRealm)
 class Realm:
-    implements(IRealm)
 
     def __init__(self, authentication_proxy, codehosting_proxy):
         self.authentication_proxy = authentication_proxy

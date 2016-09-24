@@ -57,12 +57,12 @@ class ValidateTranslationsFile:
     name = 'validate-translations-file'
 
     validators = {
-	'dtd': validate_dtd,
-	'manifest': validate_xpi_manifest,
-	'po': validate_po,
-	'pot': validate_po,
-	'xpi': validate_xpi,
-	}
+        'dtd': validate_dtd,
+        'manifest': validate_xpi_manifest,
+        'po': validate_po,
+        'pot': validate_po,
+        'xpi': validate_xpi,
+        }
 
     def __init__(self, test_args=None):
         """Set up basic facilities, similar to `LaunchpadScript`."""

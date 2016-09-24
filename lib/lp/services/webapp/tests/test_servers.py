@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -26,16 +26,18 @@ from zope.component import (
     getUtility,
     )
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 
+from lp.app import versioninfo
 from lp.services.webapp.interfaces import IFinishReadOnlyRequestEvent
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import (
     ApplicationServerSettingRequestFactory,
     FeedsBrowserRequest,
     LaunchpadBrowserRequest,
+    LaunchpadBrowserResponse,
     LaunchpadTestRequest,
     PrivateXMLRPCRequest,
     VHostWebServiceRequestPublicationFactory,
@@ -288,8 +290,9 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
         # For this test we need to make the URL "/foo" resolve to a
         # resource.  To this end, we'll define a top-level collection
         # named 'foo'.
+        @implementer(IGenericCollection)
         class GenericCollection:
-            implements(IGenericCollection)
+            pass
 
         class MyRootResource(RootResource):
 
@@ -380,6 +383,11 @@ class TestBasicLaunchpadRequest(TestCase):
             response.getHeader(
                 'Strict-Transport-Security'), 'max-age=15552000')
 
+    def test_baserequest_revision_header(self):
+        response = LaunchpadBrowserRequest(StringIO.StringIO(''), {}).response
+        self.assertEqual(
+            versioninfo.revision, response.getHeader('X-Launchpad-Revision'))
+
     def test_baserequest_recovers_from_bad_path_info_encoding(self):
         # The request object recodes PATH_INFO to ensure sane_environment
         # does not raise a UnicodeDecodeError when LaunchpadBrowserRequest
@@ -396,6 +404,51 @@ class TestBasicLaunchpadRequest(TestCase):
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), env)
         self.assertEqual(
             [u'subproc\ufffds '], request.query_string_params['field.title'])
+
+
+class LaunchpadBrowserResponseHeaderInjection(TestCase):
+    """Test that LaunchpadBrowserResponse rejects header injection attempts.
+
+    Applications should reject data that they cannot safely serialise, but
+    zope.server and most WSGI containers don't complain when header names or
+    values contain CR or LF. So we reject them before they're added.
+    """
+
+    def test_setHeader_good(self):
+        response = LaunchpadBrowserResponse()
+        response.setHeader('Foo', 'bar')
+        self.assertEqual({'foo': ['bar']}, response._headers)
+
+    def test_setHeader_bad_name(self):
+        response = LaunchpadBrowserResponse()
+        self.assertRaises(ValueError, response.setHeader, 'Foo\n', 'bar')
+        self.assertRaises(ValueError, response.setHeader, 'Foo\r', 'bar')
+        self.assertRaises(ValueError, response.setHeader, 'Foo:', 'bar')
+        self.assertEqual({}, response._headers)
+
+    def test_setHeader_bad_value(self):
+        response = LaunchpadBrowserResponse()
+        self.assertRaises(ValueError, response.setHeader, 'Foo', 'bar\n')
+        self.assertRaises(ValueError, response.setHeader, 'Foo', 'bar\r')
+        self.assertEqual({}, response._headers)
+
+    def test_addHeader_good(self):
+        response = LaunchpadBrowserResponse()
+        response.addHeader('Foo', 'bar')
+        self.assertEqual({'Foo': ['bar']}, response._headers)
+
+    def test_addHeader_bad_name(self):
+        response = LaunchpadBrowserResponse()
+        self.assertRaises(ValueError, response.addHeader, 'Foo\n', 'bar')
+        self.assertRaises(ValueError, response.addHeader, 'Foo\r', 'bar')
+        self.assertRaises(ValueError, response.addHeader, 'Foo:', 'bar')
+        self.assertEqual({}, response._headers)
+
+    def test_addHeader_bad_value(self):
+        response = LaunchpadBrowserResponse()
+        self.assertRaises(ValueError, response.addHeader, 'Foo', 'bar\n')
+        self.assertRaises(ValueError, response.addHeader, 'Foo', 'bar\r')
+        self.assertEqual({}, response._headers)
 
 
 class TestFeedsBrowserRequest(TestCase):
@@ -510,12 +563,14 @@ class IThing(Interface):
     """Marker interface for a thing."""
 
 
+@implementer(IThing)
 class Thing:
-    implements(IThing)
+    pass
 
 
+@implementer(IThingSet)
 class ThingSet:
-    implements(IThingSet)
+    pass
 
 
 class TestLaunchpadBrowserRequest_getNearest(TestCase):

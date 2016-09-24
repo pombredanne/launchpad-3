@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive Contents files generator."""
@@ -14,9 +14,9 @@ import os
 from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
+from lp.archivepublisher.publishing import cannot_modify_suite
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.command_spawner import (
     CommandSpawner,
     OutputLineHandler,
@@ -27,6 +27,7 @@ from lp.services.database.policy import (
     DatabaseBlockedPolicy,
     SlaveOnlyDatabasePolicy,
     )
+from lp.services.osutils import ensure_directory_exists
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
@@ -132,22 +133,16 @@ class GenerateContentsFiles(LaunchpadCronScript):
             if not file_exists(path):
                 os.makedirs(path)
 
-    def getSupportedSeries(self):
-        """Return suites that are supported in this distribution.
-
-        "Supported" means not EXPERIMENTAL or OBSOLETE.
-        """
-        unsupported_status = (SeriesStatus.EXPERIMENTAL,
-                              SeriesStatus.OBSOLETE)
-        for series in self.distribution:
-            if series.status not in unsupported_status:
-                yield series
-
     def getSuites(self):
-        """Return suites that are actually supported in this distribution."""
-        for series in self.getSupportedSeries():
+        """Return suites that need Contents files."""
+        # XXX cjwatson 2015-09-23: This script currently only supports the
+        # primary archive.
+        archive = self.distribution.main_archive
+        for series in self.distribution.getNonObsoleteSeries():
             for pocket in PackagePublishingPocket.items:
                 suite = series.getSuite(pocket)
+                if cannot_modify_suite(archive, series, pocket):
+                    continue
                 if file_exists(os.path.join(self.config.distsroot, suite)):
                     yield suite
 
@@ -261,6 +256,7 @@ class GenerateContentsFiles(LaunchpadCronScript):
         """Update Contents file, if it has changed."""
         contents_dir = os.path.join(
             self.content_archive, self.distribution.name, 'dists', suite)
+        staging_dir = os.path.join(self.config.stagingroot, suite)
         contents_filename = "Contents-%s" % arch
         last_contents = os.path.join(contents_dir, ".%s" % contents_filename)
         current_contents = os.path.join(contents_dir, contents_filename)
@@ -269,16 +265,17 @@ class GenerateContentsFiles(LaunchpadCronScript):
         # re-fetch them unnecessarily.
         if differ_in_content(current_contents, last_contents):
             self.logger.debug(
-                "Installing new Contents file for %s/%s.", suite, arch)
+                "Staging new Contents file for %s/%s.", suite, arch)
 
             new_contents = os.path.join(
                 contents_dir, "%s.gz" % contents_filename)
             contents_dest = os.path.join(
-                self.config.distsroot, suite, "%s.gz" % contents_filename)
+                staging_dir, "%s.gz" % contents_filename)
 
+            ensure_directory_exists(os.path.dirname(contents_dest))
             os.rename(current_contents, last_contents)
             os.rename(new_contents, contents_dest)
-            os.chmod(contents_dest, 0664)
+            os.chmod(contents_dest, 0o664)
         else:
             self.logger.debug(
                 "Skipping unmodified Contents file for %s/%s.", suite, arch)

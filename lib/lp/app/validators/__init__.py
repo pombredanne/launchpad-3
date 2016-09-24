@@ -16,7 +16,7 @@ from zope.formlib.exception import (
     )
 from zope.formlib.interfaces import IWidgetInputError
 from zope.interface import (
-    implements,
+    implementer,
     Interface,
     )
 from zope.schema.interfaces import ValidationError
@@ -32,6 +32,7 @@ class ILaunchpadValidationError(IWidgetInputError):
         """Render as an HTML error message, as per IWidgetInputErrorView"""
 
 
+@implementer(ILaunchpadValidationError)
 class LaunchpadValidationError(ValidationError):
     """A LaunchpadValidationError may be raised from a schema field
     validation method.
@@ -48,7 +49,6 @@ class LaunchpadValidationError(ValidationError):
     ...     structured('<a title="%s">Ok</a>', '<evil/>')).snippet()
     u'<a title="&lt;evil/&gt;">Ok</a>'
     """
-    implements(ILaunchpadValidationError)
 
     def __init__(self, message, already_escaped=False):
         """Create a LaunchpadValidationError instance.
@@ -85,13 +85,13 @@ class ILaunchpadWidgetInputErrorView(Interface):
         """
 
 
+@implementer(ILaunchpadWidgetInputErrorView)
 class WidgetInputErrorView(Z3WidgetInputErrorView):
     """Display an input error as a snippet of text.
 
     This is used to override the default Z3 one which blindly HTML encodes
     error messages.
     """
-    implements(ILaunchpadWidgetInputErrorView)
 
     def snippet(self):
         """Convert a widget input error to an html snippet

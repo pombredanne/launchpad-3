@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -37,6 +37,7 @@
                 id
                 team
                 person
+                personID
                 status
                 proposed_by
                 acknowledged_by
@@ -103,6 +104,30 @@
       <allow interface=".interfaces.persontransferjob.IPersonDeactivateJobSource"/>
     </securedutility>
 
+    <securedutility
+        component=".model.persontransferjob.TeamInvitationNotificationJob"
+        provides=".interfaces.persontransferjob.ITeamInvitationNotificationJobSource">
+      <allow interface=".interfaces.persontransferjob.ITeamInvitationNotificationJobSource"/>
+    </securedutility>
+
+    <securedutility
+        component=".model.persontransferjob.TeamJoinNotificationJob"
+        provides=".interfaces.persontransferjob.ITeamJoinNotificationJobSource">
+      <allow interface=".interfaces.persontransferjob.ITeamJoinNotificationJobSource"/>
+    </securedutility>
+
+    <securedutility
+        component=".model.persontransferjob.ExpiringMembershipNotificationJob"
+        provides=".interfaces.persontransferjob.IExpiringMembershipNotificationJobSource">
+      <allow interface=".interfaces.persontransferjob.IExpiringMembershipNotificationJobSource"/>
+    </securedutility>
+
+    <securedutility
+        component=".model.persontransferjob.SelfRenewalNotificationJob"
+        provides=".interfaces.persontransferjob.ISelfRenewalNotificationJobSource">
+      <allow interface=".interfaces.persontransferjob.ISelfRenewalNotificationJobSource"/>
+    </securedutility>
+
     <class class=".model.persontransferjob.PersonTransferJob">
         <allow interface=".interfaces.persontransferjob.IPersonTransferJob"/>
     </class>
@@ -117,6 +142,22 @@
 
     <class class=".model.persontransferjob.PersonDeactivateJob">
       <allow interface=".interfaces.persontransferjob.IPersonDeactivateJob"/>
+    </class>
+
+    <class class=".model.persontransferjob.TeamInvitationNotificationJob">
+      <allow interface=".interfaces.persontransferjob.ITeamInvitationNotificationJob"/>
+    </class>
+
+    <class class=".model.persontransferjob.TeamJoinNotificationJob">
+      <allow interface=".interfaces.persontransferjob.ITeamJoinNotificationJob"/>
+    </class>
+
+    <class class=".model.persontransferjob.ExpiringMembershipNotificationJob">
+      <allow interface=".interfaces.persontransferjob.IExpiringMembershipNotificationJob"/>
+    </class>
+
+    <class class=".model.persontransferjob.SelfRenewalNotificationJob">
+      <allow interface=".interfaces.persontransferjob.ISelfRenewalNotificationJob"/>
     </class>
 
     <!-- IProductNotificationJob -->
@@ -269,13 +310,17 @@
         <require
             permission="launchpad.Edit"
             set_attributes="
-                displayname
+                display_name
                 title
                 summary
                 description
                 driver
                 backports_not_automatic
                 include_long_descriptions
+                index_compressors
+                publish_by_hash
+                advertise_by_hash
+                strict_supported_component_dependencies
                 inherit_overrides_from_parents"/>
 
         <!-- NB: check with SABDFL before modifying these, there is potential to
@@ -509,6 +554,7 @@
                 currentrelease
                 delete
                 development_version
+                display_name
                 displayname
                 distribution
                 distro
@@ -556,6 +602,11 @@
                 bug_reporting_guidelines
                 enable_bugfiling_duplicate_search
                 "/>
+
+        <!-- IHasGitRepositories -->
+
+        <allow
+            interface="lp.code.interfaces.hasgitrepositories.IHasGitRepositories" />
     </class>
     <adapter
         provides="lp.registry.interfaces.distribution.IDistribution"
@@ -565,7 +616,7 @@
     <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         provides="lp.services.webapp.interfaces.ILaunchpadContainer"
-        factory="lp.registry.publisher.LaunchpadDistributionSourcePackageContainer"/>
+        factory="lp.services.webapp.publisher.LaunchpadContainer"/>
     <adapter
         provides="lp.app.interfaces.launchpad.IServiceUsage"
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
@@ -987,9 +1038,10 @@
                 set_schema="lp.registry.interfaces.person.IPersonViewRestricted
                             lp.registry.interfaces.person.IPersonPublic
                             lp.registry.interfaces.person.ITeamPublic"
-                set_attributes="displayname icon logo visibility"/>
+                set_attributes="display_name icon logo visibility"/>
             <require
                 permission="launchpad.Moderate"
+                interface="lp.registry.interfaces.person.IPersonModerateRestricted"
                 set_attributes="name"/>
             <require
                 permission="launchpad.Special"
@@ -1001,9 +1053,9 @@
 
         <!-- Adding SSH keys is the only possibly harmful thing that can be done
         without the user's password, so we use a special permission here to make
-        sure only the user (and not launchpad admins) will be able to edit her own
-        ssh keys. Another option would be to require the user's password on this
-        page. GuilhermeSalgado 25/08/2005 -->
+        sure only the user (and not launchpad admins) will be able to edit
+        their own ssh keys. Another option would be to require the user's
+        password on this page. GuilhermeSalgado 25/08/2005 -->
 
 
         <!-- Team Views -->
@@ -1181,16 +1233,6 @@
         class="lp.registry.xmlrpc.mailinglist.MailingListAPIView"
         permission="zope.Public"/>
     <securedutility
-        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentApplication"
-        provides="lp.registry.interfaces.person.ISoftwareCenterAgentApplication">
-      <allow interface="lp.registry.interfaces.person.ISoftwareCenterAgentApplication" />
-    </securedutility>
-    <xmlrpc:view
-        for="lp.registry.interfaces.person.ISoftwareCenterAgentApplication"
-        interface="lp.registry.interfaces.person.ISoftwareCenterAgentAPI"
-        class="lp.registry.xmlrpc.softwarecenteragent.SoftwareCenterAgentAPI"
-        permission="zope.Public"/>
-    <securedutility
         class="lp.registry.xmlrpc.canonicalsso.CanonicalSSOApplication"
         provides="lp.registry.interfaces.person.ICanonicalSSOApplication">
       <allow interface="lp.registry.interfaces.person.ICanonicalSSOApplication" />
@@ -1244,6 +1286,11 @@
         <require
             permission="launchpad.Edit"
             set_attributes="active can_encrypt"/>
+    </class>
+    <class
+        class="lp.registry.model.gpgkey.GPGServiceKey">
+        <allow
+            interface="lp.registry.interfaces.gpg.IGPGKey"/>
     </class>
 
     <!-- GPGKeySet -->
@@ -1303,7 +1350,7 @@
                 commercial_subscription
                 description
                 development_focus
-                displayname
+                display_name
                 downloadurl
                 driver
                 freshmeatproject
@@ -1319,14 +1366,15 @@
                 official_codehosting
                 owner
                 programminglang
-                project
+                projectgroup
                 redeemSubscriptionVoucher
                 releaseroot
                 screenshotsurl
                 sourceforgeproject
                 summary
-                title
-                wikiurl"/>
+                vcs
+                wikiurl"
+            />
         <require
             permission="launchpad.BugSupervisor"
             set_attributes="
@@ -1484,16 +1532,6 @@
 
     </class>
 
-    <!-- ProductWithLicenses
-                                This is a decorator for IProduct that eliminates an additional query
-                                for the product licenses.
-        -->
-
-    <class
-        class="lp.registry.model.product.ProductWithLicenses">
-        <allow
-            interface="lp.registry.interfaces.product.IProduct"/>
-    </class>
     <adapter
         for="lp.registry.interfaces.product.IProduct"
         provides="lp.services.webapp.interfaces.ILaunchpadContainer"
@@ -1721,7 +1759,7 @@
                 bug_reporting_guidelines
                 description
                 development_series_alias
-                displayname
+                display_name
                 driver
                 enable_bug_expiration
                 homepage_content
@@ -1737,7 +1775,8 @@
                 package_derivatives_email
                 redirect_release_uploads
                 summary
-                title"/>
+                vcs
+                "/>
         <require
             permission="launchpad.Admin"
             set_attributes="
@@ -1942,6 +1981,7 @@
             attributes="
                 id
                 name
+                display_name
                 displayname
                 description
                 distribution
@@ -1960,7 +2000,6 @@
                 arch_series
                 last_probe_record
                 all_probe_records
-                has_ftp_or_rsync_base_url
                 base_url
                 date_created
                 country_dns_mirror
@@ -1984,7 +2023,7 @@
                 canTransitionToCountryMirror" />
         <require
             permission="launchpad.Edit"
-            set_attributes="name displayname description whiteboard
+            set_attributes="name display_name description whiteboard
                             http_base_url ftp_base_url rsync_base_url enabled
                             speed country content official_candidate owner"
             attributes="official_candidate whiteboard" />
@@ -2062,6 +2101,27 @@
         provides="lp.registry.interfaces.packaging.IPackagingUtil">
         <allow
             interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
+    </securedutility>
+
+    <!-- PersonDistributionSourcePackage -->
+
+    <class
+        class="lp.registry.model.persondistributionsourcepackage.PersonDistributionSourcePackage">
+        <allow
+            interface="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage" />
+    </class>
+
+    <adapter
+        provides="lp.services.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage"
+        factory="lp.registry.browser.persondistributionsourcepackage.PersonDistributionSourcePackageBreadcrumb"
+        permission="zope.Public"/>
+
+    <securedutility
+        component="lp.registry.model.persondistributionsourcepackage.PersonDistributionSourcePackage"
+        provides="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackageFactory">
+        <allow
+            interface="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackageFactory"/>
     </securedutility>
 
     <!-- PersonNotification -->

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchNamespace`."""
@@ -6,10 +6,12 @@
 __metaclass__ = type
 __all__ = [
     'BranchNamespaceSet',
-    'PackageNamespace',
-    'PersonalNamespace',
     'BRANCH_POLICY_ALLOWED_TYPES',
-    'ProductNamespace',
+    'BRANCH_POLICY_DEFAULT_TYPES',
+    'BRANCH_POLICY_REQUIRED_GRANTS',
+    'PackageBranchNamespace',
+    'PersonalBranchNamespace',
+    'ProjectBranchNamespace',
     ]
 
 
@@ -17,7 +19,7 @@ from lazr.lifecycle.event import ObjectCreatedEvent
 from storm.locals import And
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import (
@@ -111,7 +113,7 @@ BRANCH_POLICY_REQUIRED_GRANTS = {
     }
 
 
-class _BaseNamespace:
+class _BaseBranchNamespace:
     """Common code for branch namespaces."""
 
     def createBranch(self, branch_type, name, registrant, url=None,
@@ -155,19 +157,18 @@ class _BaseNamespace:
             repository_format=repository_format,
             control_format=control_format, distroseries=distroseries,
             sourcepackagename=sourcepackagename)
+        branch._reconcileAccess()
 
-        # The registrant of the branch should also be automatically subscribed
-        # in order for them to get code review notifications.  The implicit
-        # registrant subscription does not cause email to be sent about
-        # attribute changes, just merge proposals and code review comments.
+        # The owner of the branch should also be automatically subscribed in
+        # order for them to get code review notifications.  The default
+        # owner subscription does not cause email to be sent about attribute
+        # changes, just merge proposals and code review comments.
         branch.subscribe(
             self.owner,
             BranchSubscriptionNotificationLevel.NOEMAIL,
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.FULL,
             registrant)
-
-        branch._reconcileAccess()
 
         notify(ObjectCreatedEvent(branch))
         return branch
@@ -287,13 +288,12 @@ class _BaseNamespace:
         raise NotImplementedError
 
 
-class PersonalNamespace(_BaseNamespace):
+@implementer(IBranchNamespace, IBranchNamespacePolicy)
+class PersonalBranchNamespace(_BaseBranchNamespace):
     """A namespace for personal (or 'junk') branches.
 
     Branches in this namespace have names like '~foo/+junk/bar'.
     """
-
-    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person):
         self.owner = person
@@ -335,14 +335,13 @@ class PersonalNamespace(_BaseNamespace):
         return IBranchTarget(self.owner)
 
 
-class ProductNamespace(_BaseNamespace):
-    """A namespace for product branches.
+@implementer(IBranchNamespace, IBranchNamespacePolicy)
+class ProjectBranchNamespace(_BaseBranchNamespace):
+    """A namespace for project branches.
 
     This namespace is for all the branches owned by a particular person in a
-    particular product.
+    particular project.
     """
-
-    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, product):
         self.owner = person
@@ -391,14 +390,13 @@ class ProductNamespace(_BaseNamespace):
         return default_type
 
 
-class PackageNamespace(_BaseNamespace):
+@implementer(IBranchNamespace, IBranchNamespacePolicy)
+class PackageBranchNamespace(_BaseBranchNamespace):
     """A namespace for source package branches.
 
     This namespace is for all the branches owned by a particular person in a
     particular source package in a particular distroseries.
     """
-
-    implements(IBranchNamespace, IBranchNamespacePolicy)
 
     def __init__(self, person, sourcepackage):
         self.owner = person
@@ -440,15 +438,15 @@ class BranchNamespaceSet:
                 "product implies no distroseries or sourcepackagename. "
                 "Got %r, %r, %r."
                 % (product, distroseries, sourcepackagename))
-            return ProductNamespace(person, product)
+            return ProjectBranchNamespace(person, product)
         elif distroseries is not None:
             assert sourcepackagename is not None, (
                 "distroseries implies sourcepackagename. Got %r, %r"
                 % (distroseries, sourcepackagename))
-            return PackageNamespace(
+            return PackageBranchNamespace(
                 person, SourcePackage(sourcepackagename, distroseries))
         else:
-            return PersonalNamespace(person)
+            return PersonalBranchNamespace(person)
 
     def parse(self, namespace_name):
         """See `IBranchNamespaceSet`."""
@@ -538,7 +536,7 @@ class BranchNamespaceSet:
         If the given name is '+junk' or None, return None.
 
         :raise NoSuchProduct if there's no pillar with the given name or it is
-            a project.
+            a project group.
         """
         if pillar_name == '+junk':
             return None

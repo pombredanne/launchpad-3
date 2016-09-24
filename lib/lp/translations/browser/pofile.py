@@ -265,7 +265,11 @@ class POFileView(LaunchpadView):
 
     @cachedproperty
     def contributors(self):
-        return list(self.context.contributors)
+        people = list(self.context.contributors)
+        # Preload ValidPersonCache.
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            [person.id for person in people], need_validity=True))
+        return people
 
     @cachedproperty
     def user_can_edit(self):
@@ -630,8 +634,8 @@ class POFileTranslateView(BaseTranslationView, POFileMetadataViewMixin):
             id = int(match.group(1))
             potmsgset = self.context.potemplate.getPOTMsgSetByID(id)
             if potmsgset is None:
-                # This should only happen if someone tries to POST his own
-                # form instead of ours, and he uses a POTMsgSet id that
+                # This should only happen if someone tries to POST their own
+                # form instead of ours, and they use a POTMsgSet id that
                 # does not exist for this POTemplate.
                 raise UnexpectedFormData(
                     "Got translation for POTMsgID %d which is not in the "

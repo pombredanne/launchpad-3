@@ -285,7 +285,7 @@ class PropertyFileExportTest(unittest.TestCase):
             /* Escaped backslashes */
             f\\\\oo=b\\\\ar
             """).strip()
-    
+
         self.assertEqual(self.exporter.export(file).strip(), expected)
 
     def test_escape_comment(self):

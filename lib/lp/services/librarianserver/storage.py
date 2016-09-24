@@ -20,6 +20,7 @@ from lp.services.config import dbconfig
 from lp.services.database import write_transaction
 from lp.services.database.interfaces import IStore
 from lp.services.database.postgresql import ConnectionString
+from lp.services.features import getFeatureFlag
 from lp.services.librarianserver import swift
 
 
@@ -34,6 +35,34 @@ __all__ = [
     '_relFileLocation',
     '_sameFile',
     ]
+
+
+def fsync_path(path, dir=False):
+    fd = os.open(path, os.O_RDONLY | (os.O_DIRECTORY if dir else 0))
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def makedirs_fsync(name, mode=0777):
+    """makedirs_fsync(path [, mode=0777])
+
+    os.makedirs, but fsyncing on the way up to ensure durability.
+    """
+    head, tail = os.path.split(name)
+    if not tail:
+        head, tail = os.path.split(head)
+    if head and tail and not os.path.exists(head):
+        try:
+            makedirs_fsync(head, mode)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+        if tail == os.curdir:
+            return
+    os.mkdir(name, mode)
+    fsync_path(head, dir=True)
 
 
 class DigestMismatchError(Exception):
@@ -82,33 +111,37 @@ class LibrarianStorage:
 
     @defer.inlineCallbacks
     def open(self, fileid):
-        # Log our attempt.
-        self.swift_download_attempts += 1
+        if getFeatureFlag('librarian.swift.enabled'):
+            # Log our attempt.
+            self.swift_download_attempts += 1
 
-        if self.swift_download_attempts % 1000 == 0:
-            log.msg('{} Swift download attempts, {} failures'.format(
-                self.swift_download_attempts, self.swift_download_fails))
+            if self.swift_download_attempts % 1000 == 0:
+                log.msg('{} Swift download attempts, {} failures'.format(
+                    self.swift_download_attempts, self.swift_download_fails))
 
-        # First, try and stream the file from Swift.
-        container, name = swift.swift_location(fileid)
-        swift_connection = swift.connection_pool.get()
-        try:
-            headers, chunks = yield deferToThread(
-                swift_connection.get_object,
-                container, name, resp_chunk_size=self.CHUNK_SIZE)
-            swift_stream = TxSwiftStream(swift_connection, chunks)
-            defer.returnValue(swift_stream)
-        except swiftclient.ClientException as x:
-            if x.http_status != 404:
+            # First, try and stream the file from Swift.
+            container, name = swift.swift_location(fileid)
+            swift_connection = swift.connection_pool.get()
+            try:
+                headers, chunks = yield deferToThread(
+                    swift_connection.get_object,
+                    container, name, resp_chunk_size=self.CHUNK_SIZE)
+                swift_stream = TxSwiftStream(swift_connection, chunks)
+                defer.returnValue(swift_stream)
+            except swiftclient.ClientException as x:
+                if x.http_status == 404:
+                    swift.connection_pool.put(swift_connection)
+                else:
+                    self.swift_download_fails += 1
+                    log.err(x)
+            except Exception as x:
                 self.swift_download_fails += 1
                 log.err(x)
-        except Exception as x:
-            self.swift_download_fails += 1
-            log.err(x)
+            # If Swift failed, for any reason, fall through to try and
+            # stream the data from disk. In particular, files cannot be
+            # found in Swift until librarian-feed-swift.py has put them
+            # in there.
 
-        # If Swift failed, for any reason, try and stream the data from
-        # disk. In particular, files cannot be found in Swift until
-        # librarian-feed-swift.py has put them in there.
         path = self._fileLocation(fileid)
         if os.path.exists(path):
             defer.returnValue(open(path, 'rb'))
@@ -267,12 +300,14 @@ class LibraryFileUpload(object):
         if os.path.exists(location):
             raise DuplicateFileIDError(fileID)
         try:
-            os.makedirs(os.path.dirname(location))
+            makedirs_fsync(os.path.dirname(location))
         except OSError as e:
             # If the directory already exists, that's ok.
             if e.errno != errno.EEXIST:
                 raise
         shutil.move(self.tmpfilepath, location)
+        fsync_path(location)
+        fsync_path(os.path.dirname(location), dir=True)
 
 
 def _sameFile(path1, path2):

@@ -1,8 +1,8 @@
 = Voting on polls =
 
 Foo Bar (a member of the ubuntu-team) wants to vote on the 'never-closes'
-poll, which is a poll with secret votes, which means he'll get a token that he
-must use to see/change his vote afterwards.
+poll, which is a poll with secret votes, which means they'll get a token
+that they must use to see/change their vote afterwards.
 
     >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+polls')

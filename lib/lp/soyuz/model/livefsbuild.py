@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -23,7 +23,7 @@ from storm.locals import (
     )
 from storm.store import EmptyResultSet
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.buildmaster.enums import (
@@ -64,10 +64,9 @@ from lp.soyuz.mail.livefsbuild import LiveFSBuildMailer
 from lp.soyuz.model.archive import Archive
 
 
+@implementer(ILiveFSFile)
 class LiveFSFile(Storm):
     """See `ILiveFS`."""
-
-    implements(ILiveFSFile)
 
     __storm_table__ = 'LiveFSFile'
 
@@ -86,10 +85,9 @@ class LiveFSFile(Storm):
         self.libraryfile = libraryfile
 
 
+@implementer(ILiveFSBuild)
 class LiveFSBuild(PackageBuildMixin, Storm):
     """See `ILiveFSBuild`."""
-
-    implements(ILiveFSBuild)
 
     __storm_table__ = 'LiveFSBuild'
 
@@ -123,6 +121,8 @@ class LiveFSBuild(PackageBuildMixin, Storm):
 
     metadata_override = JSON('json_data_override')
 
+    _version = Unicode(name='version')
+
     date_created = DateTime(
         name='date_created', tzinfo=pytz.UTC, allow_none=False)
     date_started = DateTime(name='date_started', tzinfo=pytz.UTC)
@@ -147,7 +147,7 @@ class LiveFSBuild(PackageBuildMixin, Storm):
 
     def __init__(self, build_farm_job, requester, livefs, archive,
                  distro_arch_series, pocket, processor, virtualized,
-                 unique_key, metadata_override, date_created):
+                 unique_key, metadata_override, version, date_created):
         """Construct a `LiveFSBuild`."""
         if not getFeatureFlag(LIVEFS_FEATURE_FLAG):
             raise LiveFSFeatureDisabled
@@ -162,6 +162,7 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         self.virtualized = virtualized
         self.unique_key = unique_key
         self.metadata_override = metadata_override
+        self._version = version
         self.date_created = date_created
         self.status = BuildStatus.NEEDSBUILD
 
@@ -202,7 +203,10 @@ class LiveFSBuild(PackageBuildMixin, Storm):
     @property
     def version(self):
         """See `ILiveFSBuild`."""
-        return self.date_created.strftime("%Y%m%d-%H%M%S")
+        if self._version is not None:
+            return self._version
+        else:
+            return self.date_created.strftime("%Y%m%d-%H%M%S")
 
     @property
     def score(self):
@@ -246,7 +250,7 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         self.buildqueue_record.cancel()
 
     def calculateScore(self):
-        return 2505 + self.archive.relative_build_score
+        return 2510 + self.archive.relative_build_score
 
     def getMedianBuildDuration(self):
         """Return the median duration of our successful builds."""
@@ -336,11 +340,12 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         return [self.lfaUrl(lfa) for _, lfa, _ in self.getFiles()]
 
 
+@implementer(ILiveFSBuildSet)
 class LiveFSBuildSet(SpecificBuildFarmJobSourceMixin):
-    implements(ILiveFSBuildSet)
 
     def new(self, requester, livefs, archive, distro_arch_series, pocket,
-            unique_key=None, metadata_override=None, date_created=DEFAULT):
+            unique_key=None, metadata_override=None, version=None,
+            date_created=DEFAULT):
         """See `ILiveFSBuildSet`."""
         store = IMasterStore(LiveFSBuild)
         build_farm_job = getUtility(IBuildFarmJobSource).new(
@@ -349,8 +354,9 @@ class LiveFSBuildSet(SpecificBuildFarmJobSourceMixin):
         livefsbuild = LiveFSBuild(
             build_farm_job, requester, livefs, archive, distro_arch_series,
             pocket, distro_arch_series.processor,
-            livefs.require_virtualized or archive.require_virtualized,
-            unique_key, metadata_override, date_created)
+            not distro_arch_series.processor.supports_nonvirtualized
+            or livefs.require_virtualized or archive.require_virtualized,
+            unique_key, metadata_override, version, date_created)
         store.add(livefsbuild)
         return livefsbuild
 

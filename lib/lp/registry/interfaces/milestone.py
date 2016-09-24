@@ -65,7 +65,11 @@ from lp.services.fields import (
     NoneableDescription,
     NoneableTextLine,
     )
-from lp.services.webservice.apihelpers import patch_plain_parameter_type
+from lp.services.webservice.apihelpers import (
+    patch_collection_property,
+    patch_plain_parameter_type,
+    patch_reference_property,
+    )
 
 
 class MilestoneNameField(ContentNameField):
@@ -273,8 +277,8 @@ class IMilestone(IAbstractMilestone):
 
 
 # Avoid circular imports
-IBugTask['milestone'].schema = IMilestone
-IBugTaskSearchBase['milestone'].value_type.schema = IMilestone
+patch_reference_property(IBugTask, 'milestone', IMilestone)
+patch_collection_property(IBugTaskSearchBase, 'milestone', IMilestone)
 patch_plain_parameter_type(
     IBugTask, 'transitionToMilestone', 'new_milestone', IMilestone)
 
@@ -349,6 +353,6 @@ class ICanGetMilestonesDirectly(Interface):
 
 
 # Fix cyclic references.
-IMilestone['target'].schema = IHasMilestones
-IMilestone['series_target'].schema = IHasMilestones
-IProductRelease['milestone'].schema = IMilestone
+patch_reference_property(IMilestone, 'target', IHasMilestones)
+patch_reference_property(IMilestone, 'series_target', IHasMilestones)
+patch_reference_property(IProductRelease, 'milestone', IMilestone)

@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -34,13 +34,6 @@
             path_expression="string:+binarypub"
             attribute_to_parent="archive"
             urldata="lp.soyuz.browser.publishing.BinaryPublicationURL"/>
-        <browser:url for="lp.soyuz.interfaces.processor.IProcessorSet"
-            path_expression="string:+processors"
-            parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot"/>
-        <browser:url
-	    for="lp.soyuz.interfaces.processor.IProcessor"
-            path_expression="string:${name}"
-            parent_utility="lp.soyuz.interfaces.processor.IProcessorSet" />
     <browser:navigation
         module="lp.soyuz.browser.binarypackagerelease"
         classes="
@@ -173,9 +166,6 @@
     <browser:navigation
         module="lp.soyuz.browser.archive"
         classes="ArchiveNavigation" />
-    <browser:navigation
-        module="lp.soyuz.browser.processor"
-        classes="ProcessorSetNavigation" />
     <browser:url
         for="lp.soyuz.interfaces.archive.IPPA"
         path_expression="string:+archive"
@@ -678,7 +668,7 @@
         />
     <browser:url
         for="lp.soyuz.interfaces.binarypackagerelease.IBinaryPackageReleaseDownloadCount"
-        path_expression="string:+binaryhits/${binary_package_release/name}/${binary_package_release/version}/${binary_package_release/build/distro_arch_series/architecturetag}/${day}/${country/iso3166code2|string:unknown}"
+        path_expression="string:+binaryhits/${binary_package_release/name}/${binary_package_release/version}/${binary_package_release/build/distro_arch_series/architecturetag}/${day}/${country_code}"
         attribute_to_parent="archive"
         />
 
@@ -733,6 +723,12 @@
         permission="launchpad.Edit"
         name="+edit"
         template="../../app/templates/generic-edit.pt"/>
+    <browser:page
+        for="lp.soyuz.interfaces.livefs.ILiveFS"
+        class="lp.soyuz.browser.livefs.LiveFSDeleteView"
+        permission="launchpad.Edit"
+        name="+delete"
+        template="../templates/livefs-delete.pt"/>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.soyuz.interfaces.livefs.ILiveFS"

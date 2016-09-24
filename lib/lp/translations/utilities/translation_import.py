@@ -17,7 +17,7 @@ import pytz
 from storm.exceptions import TimeoutError
 import transaction
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -245,12 +245,6 @@ class ExistingPOFileInDatabase:
         """Marks a message as seen in the import, to avoid expiring it."""
         self.seen.add(self._getMessageKey(message))
 
-    def getUnseenMessages(self):
-        """Return a set of messages present in the database but not seen
-        in the file being imported.
-        """
-        return self.current_messages - self.seen
-
     def _getMessageKey(self, message):
         """Return tuple identifying `message`.
 
@@ -273,10 +267,9 @@ class ExistingPOFileInDatabase:
             return is_identical_translation(msg_in_db, message)
 
 
+@implementer(ITranslationImporter)
 class TranslationImporter:
     """Handle translation resources imports."""
-
-    implements(ITranslationImporter)
 
     @cachedproperty
     def supported_file_extensions(self):

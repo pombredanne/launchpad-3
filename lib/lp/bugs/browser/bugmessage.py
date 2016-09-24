@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugMessage-related browser view classes."""
@@ -11,9 +11,11 @@ __all__ = [
 from StringIO import StringIO
 
 from zope.component import getUtility
+from zope.formlib.widgets import TextAreaWidget
 
 from lp.app.browser.launchpadform import (
     action,
+    custom_widget,
     LaunchpadFormView,
     )
 from lp.bugs.browser.bugattachment import BugAttachmentContentCheck
@@ -28,13 +30,13 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
     schema = IBugMessageAddForm
     initial_focus_widget = None
 
+    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
+
+    page_title = "Add a comment or attachment"
+
     @property
     def label(self):
         return 'Add a comment or attachment to bug #%d' % self.context.bug.id
-
-    @property
-    def page_title(self):
-        return self.label
 
     @property
     def initial_values(self):
@@ -110,7 +112,7 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
             # If the patch flag is not consistent with the result of
             # the guess made in attachmentTypeConsistentWithContentType(),
             # we use the guessed type and lead the user to a page
-            # where he can override the flag value, if Launchpad's
+            # where they can override the flag value, if Launchpad's
             # guess is wrong.
             patch_flag_consistent = (
                 self.attachmentTypeConsistentWithContentType(

@@ -27,11 +27,13 @@ Now update Tomcat to actually have this data:
 
     >>> import transaction
     >>> from lp.services.database.sqlbase import flush_database_updates
+    >>> from lp.registry.enums import VCSType
     >>> from lp.registry.model.product import Product
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
 
     >>> tomcat = Product.selectOneBy(name="tomcat")
+    >>> tomcat.vcs = VCSType.GIT
     >>> tomcat.homepageurl = "http://home.page/"
     >>> tomcat.sourceforgeproject = "sf-tomcat"
     >>> tomcat.wikiurl = "http://wiki.url/"
@@ -57,7 +59,7 @@ Let's check it out:
     External downloads http://download.url/
 
     >>> print extract_text(find_tag_by_id(content, 'product-languages'))
-    Programming Languages: C++,Xenon and Purple
+    Programming languages: C++,Xenon and Purple
 
 When the sourceforge URL is identical to the homepage, we omit the homepage:
 
@@ -148,7 +150,7 @@ Any user can see that the project's licence is proprietary.
     '<...This project&rsquo;s licence is proprietary...
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'licences'))
-    Licences:
+    Licence:
     Other/Proprietary (Internal project.)
     Commercial subscription expires ...
 
@@ -178,7 +180,7 @@ category.
     None
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'licences'))
-    Licences:
+    Licence:
     GNU GPL v2
     Commercial subscription expires ...
 
@@ -235,7 +237,7 @@ The project page shows the series that is the focus of development.
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'development-focus'))
-    Mozilla Firefox trunk series  is the current focus of development
+    trunk series is the current focus of development.
 
 The page has a link to view the project's milestones.
 

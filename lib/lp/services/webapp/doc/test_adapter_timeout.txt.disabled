@@ -21,7 +21,7 @@ exception, and a time machine.
     >>> from textwrap import dedent
     >>> from zope.publisher.interfaces.browser import (
     ...     IBrowserRequest, IBrowserView, IBrowserPublisher)
-    >>> from zope.interface import Interface, implements
+    >>> from zope.interface import Interface, implementer
     >>> from zope.security.checker import CheckerPublic, MultiChecker
     >>> import zope.component
     >>> import lp.services.webapp.adapter
@@ -40,8 +40,8 @@ exception, and a time machine.
     ...     global _now
     ...     _now += delta
     >>> lp.services.webapp.adapter.time = fake_time # Monkey patch
-    >>> class DoomedView(BrowserView):
-    ...     implements(IBrowserPublisher)
+    >>> @implementer(IBrowserPublisher)
+    ... class DoomedView(BrowserView):
     ...     __Security_checker__ = MultiChecker((
     ...         (IBrowserView, CheckerPublic),
     ...         (IBrowserPublisher, CheckerPublic),

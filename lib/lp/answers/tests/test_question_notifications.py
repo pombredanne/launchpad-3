@@ -12,7 +12,7 @@ __all__ = [
 from unittest import TestCase
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QuestionRecipientSet
@@ -74,9 +74,9 @@ class StubQuestionMessage:
         self.subject = subject
 
 
+@implementer(IPerson)
 class FakeUser:
     """A fake user."""
-    implements(IPerson)
 
 
 class FakeEvent:

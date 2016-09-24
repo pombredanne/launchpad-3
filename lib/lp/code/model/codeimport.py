@@ -30,7 +30,7 @@ from storm.locals import Store
 from storm.references import Reference
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implements
+from zope.interface import implementer
 
 from lp.app.errors import NotFoundError
 from lp.code.enums import (
@@ -64,10 +64,9 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import SQLBase
 
 
+@implementer(ICodeImport)
 class CodeImport(SQLBase):
     """See `ICodeImport`."""
-
-    implements(ICodeImport)
     _table = 'CodeImport'
     _defaultOrder = ['id']
 
@@ -229,10 +228,9 @@ class CodeImport(SQLBase):
                 self.import_job, requester)
 
 
+@implementer(ICodeImportSet)
 class CodeImportSet:
     """See `ICodeImportSet`."""
-
-    implements(ICodeImportSet)
 
     def new(self, registrant, target, branch_name, rcs_type,
             url=None, cvs_root=None, cvs_module=None, review_status=None,

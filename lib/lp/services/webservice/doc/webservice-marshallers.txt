@@ -99,7 +99,7 @@ ensure that the resulting wadl matches lazr.restful conventions.
     Traceback (most recent call last):
     ...
     AssertionError: You exported some_person as an IChoice based on an
-    SQLObjectVocabularyBase, you should use
+    SQLObjectVocabularyBase/StormVocabularyBase; you should use
     lazr.restful.fields.ReferenceChoice instead.
 
 Cleanup.

@@ -107,7 +107,7 @@ class ProjectGroupMilestoneTagTest(TestCaseWithFactory):
         self.product = self.factory.makeProduct(
             name="product1",
             owner=self.owner,
-            project=self.project_group)
+            projectgroup=self.project_group)
         self.milestone = self.factory.makeMilestone(product=self.product)
 
     def _create_bugtasks(self, num, milestone=None):
