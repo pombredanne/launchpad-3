@@ -207,23 +207,8 @@ class IPublishingEdit(Interface):
 class IFilePublishing(Interface):
     """Base interface for *FilePublishing classes"""
 
-    distribution = Int(
-            title=_('Distribution ID'), required=True, readonly=True,
-            )
-    distroseriesname = TextLine(
-            title=_('Series name'), required=True, readonly=True,
-            )
     componentname = TextLine(
             title=_('Component name'), required=True, readonly=True,
-            )
-    publishingstatus = Int(
-            title=_('Package publishing status'), required=True, readonly=True,
-            )
-    pocket = Int(
-            title=_('Package publishing pocket'), required=True, readonly=True,
-            )
-    archive = Int(
-            title=_('Archive ID'), required=True, readonly=True,
             )
     libraryfilealias = Int(
             title=_('Binarypackage file alias'), required=True, readonly=True,
@@ -231,11 +216,6 @@ class IFilePublishing(Interface):
     libraryfilealiasfilename = TextLine(
             title=_('File name'), required=True, readonly=True,
             )
-    archive_url = Attribute('The on-archive URL for the published file.')
-
-    publishing_record = Attribute(
-        "Return the Source or Binary publishing record "
-        "(in the form of I{Source,Binary}PackagePublishingHistory).")
 
     def publish(diskpool, log):
         """Publish or ensure contents of this file in the archive.

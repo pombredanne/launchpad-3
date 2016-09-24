@@ -243,7 +243,7 @@ class DeathRow:
                 if (filename, file_md5) in considered_files:
                     self.logger.debug("Already verified.")
                     if file_path in condemned_files:
-                        condemned_records.add(pub_file.publishing_record)
+                        condemned_records.add(pub_record)
                     continue
                 considered_files.add((filename, file_md5))
 
@@ -255,7 +255,7 @@ class DeathRow:
                 # Update local containers, in preparation to file removal.
                 details.setdefault(file_path, pub_file_details)
                 condemned_files.add(file_path)
-                condemned_records.add(pub_file.publishing_record)
+                condemned_records.add(pub_record)
 
         # Check source and binary publishing records.
         for pub_record in condemned_source_files:

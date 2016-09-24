@@ -164,14 +164,6 @@ class FilePublishingBase:
         elif action == diskpool.results.NONE:
             log.debug("%s is already in pool with the same content." % path)
 
-    @property
-    def archive_url(self):
-        """See IFilePublishing."""
-        return (self.archive.archive_url + "/" +
-                makePoolPath(self.sourcepackagename, self.componentname) +
-                "/" +
-                self.libraryfilealiasfilename)
-
 
 @implementer(ISourcePackageFilePublishing)
 class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
@@ -182,11 +174,6 @@ class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
 
     _idType = unicode
     _defaultOrder = "id"
-
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey="Distribution",
-                              unique=False,
-                              notNull=True)
 
     sourcepackagepublishing = ForeignKey(
         dbName='sourcepackagepublishing',
@@ -204,22 +191,6 @@ class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
 
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True)
-
-    distroseriesname = StringCol(dbName='distroseriesname', unique=False,
-                                  notNull=True)
-
-    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               notNull=True, schema=PackagePublishingStatus)
-
-    pocket = EnumCol(dbName='pocket', unique=False,
-                     notNull=True, schema=PackagePublishingPocket)
-
-    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
-
-    @property
-    def publishing_record(self):
-        """See `IFilePublishing`."""
-        return self.sourcepackagepublishing
 
 
 @implementer(IBinaryPackageFilePublishing)
@@ -249,13 +220,6 @@ class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
 
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
                                   notNull=True, immutable=True)
-
-    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
-
-    @property
-    def publishing_record(self):
-        """See `ArchiveFilePublisherBase`."""
-        return self.binarypackagepublishing
 
 
 class ArchivePublisherBase:
