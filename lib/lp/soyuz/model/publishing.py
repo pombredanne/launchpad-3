@@ -142,31 +142,8 @@ def proxied_urls(files, parent):
     return [ProxiedLibraryFileAlias(file, parent).http_url for file in files]
 
 
-class FilePublishingBase:
-    """Base class to publish files in the archive."""
-
-    def publish(self, diskpool, log):
-        """See IFilePublishing."""
-        # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
-        # when retrieving data from DB.
-        source = self.sourcepackagename.encode('utf-8')
-        component = self.componentname.encode('utf-8')
-        filename = self.libraryfilealiasfilename.encode('utf-8')
-        filealias = self.libraryfilealias
-        sha1 = filealias.content.sha1
-        path = diskpool.pathFor(component, source, filename)
-
-        action = diskpool.addFile(component, source, filename, sha1, filealias)
-        if action == diskpool.results.FILE_ADDED:
-            log.debug("Added %s from library" % path)
-        elif action == diskpool.results.SYMLINK_ADDED:
-            log.debug("%s created as a symlink." % path)
-        elif action == diskpool.results.NONE:
-            log.debug("%s is already in pool with the same content." % path)
-
-
 @implementer(ISourcePackageFilePublishing)
-class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
+class SourcePackageFilePublishing(SQLBase):
     """Source package release files and their publishing status.
 
     Represents the source portion of the pool.
@@ -194,7 +171,7 @@ class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
 
 
 @implementer(IBinaryPackageFilePublishing)
-class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
+class BinaryPackageFilePublishing(SQLBase):
     """A binary package file which is published.
 
     Represents the binary portion of the pool.
@@ -241,7 +218,22 @@ class ArchivePublisherBase:
         """See `IPublishing`"""
         try:
             for pub_file in self.files:
-                pub_file.publish(diskpool, log)
+                # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
+                # when retrieving data from DB.
+                source = self.source_package_name.encode('utf-8')
+                component = self.component.name.encode('utf-8')
+                filename = pub_file.libraryfilealias.filename.encode('utf-8')
+                filealias = pub_file.libraryfilealias
+                sha1 = filealias.content.sha1
+                path = diskpool.pathFor(component, source, filename)
+
+                action = diskpool.addFile(component, source, filename, sha1, filealias)
+                if action == diskpool.results.FILE_ADDED:
+                    log.debug("Added %s from library" % path)
+                elif action == diskpool.results.SYMLINK_ADDED:
+                    log.debug("%s created as a symlink." % path)
+                elif action == diskpool.results.NONE:
+                    log.debug("%s is already in pool with the same content." % path)
         except PoolFileOverwriteError as e:
             message = "PoolFileOverwriteError: %s, skipping." % e
             properties = [('error-explanation', message)]
@@ -740,6 +732,11 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def build(self):
         return self.binarypackagerelease.build
+
+    @property
+    def source_package_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.binarypackagerelease.sourcepackagename
 
     @property
     def architecture_specific(self):

@@ -207,7 +207,7 @@ Publish files on disk and build a list of all created file paths
     ...                 pub_file.libraryfilealiasfilename.encode('utf-8')
     ...              )
     ...             unique_file_paths.add(file_path)
-    ...             pub_file.publish(quiet_disk_pool, BufferLogger())
+    ...         pub.publish(quiet_disk_pool, BufferLogger())
 
     >>> all_test_file_paths = sorted(unique_file_paths)
 

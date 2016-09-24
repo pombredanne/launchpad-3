@@ -217,14 +217,6 @@ class IFilePublishing(Interface):
             title=_('File name'), required=True, readonly=True,
             )
 
-    def publish(diskpool, log):
-        """Publish or ensure contents of this file in the archive.
-
-        Create symbolic link to files already present in different component
-        or add file from librarian if it's not present. Update the database
-        to represent the current archive state.
-        """
-
 #
 # Source package publishing
 #
