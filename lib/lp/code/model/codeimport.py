@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes including and related to CodeImport."""
@@ -46,6 +46,7 @@ from lp.code.errors import (
     CodeImportAlreadyRunning,
     CodeImportNotInReviewedState,
     )
+from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
     ICodeImport,
     ICodeImportSet,
@@ -232,7 +233,7 @@ class CodeImport(SQLBase):
 class CodeImportSet:
     """See `ICodeImportSet`."""
 
-    def new(self, registrant, target, branch_name, rcs_type,
+    def new(self, registrant, context, branch_name, rcs_type,
             url=None, cvs_root=None, cvs_module=None, review_status=None,
             owner=None):
         """See `ICodeImportSet`."""
@@ -246,6 +247,7 @@ class CodeImportSet:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s" % rcs_type)
+        target = IBranchTarget(context)
         if review_status is None:
             # Auto approve imports.
             review_status = CodeImportReviewStatus.REVIEWED

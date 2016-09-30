@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
@@ -149,7 +149,6 @@ from lp.code.enums import RevisionControlSystems
 from lp.code.errors import BranchExists
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
     ICodeImport,
     ICodeImportSet,
@@ -1932,11 +1931,6 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         else:
             raise AssertionError("Unknown branch type %s" % branch_type)
 
-    @property
-    def target(self):
-        """The branch target for the context."""
-        return IBranchTarget(self.context)
-
     def abort_update(self):
         """Abort transaction.
 
@@ -1991,7 +1985,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                     code_import = getUtility(ICodeImportSet).new(
                         owner=branch_owner,
                         registrant=self.user,
-                        target=IBranchTarget(self.target),
+                        context=self.context,
                         branch_name=branch_name,
                         rcs_type=rcs_item,
                         url=url,
