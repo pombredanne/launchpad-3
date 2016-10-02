@@ -8,14 +8,11 @@ __metaclass__ = type
 __all__ = [
     'DeletionError',
     'IArchiveSafePublisher',
-    'IBinaryPackageFilePublishing',
     'IBinaryPackagePublishingHistory',
     'IBinaryPackagePublishingHistoryEdit',
     'IBinaryPackagePublishingHistoryPublic',
-    'IFilePublishing',
     'IPublishingEdit',
     'IPublishingSet',
-    'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
     'ISourcePackagePublishingHistoryEdit',
     'ISourcePackagePublishingHistoryPublic',
@@ -204,61 +201,9 @@ class IPublishingEdit(Interface):
         # deleted in tandem.
 
 
-class IFilePublishing(Interface):
-    """Base interface for *FilePublishing classes"""
-
-    distribution = Int(
-            title=_('Distribution ID'), required=True, readonly=True,
-            )
-    distroseriesname = TextLine(
-            title=_('Series name'), required=True, readonly=True,
-            )
-    componentname = TextLine(
-            title=_('Component name'), required=True, readonly=True,
-            )
-    publishingstatus = Int(
-            title=_('Package publishing status'), required=True, readonly=True,
-            )
-    pocket = Int(
-            title=_('Package publishing pocket'), required=True, readonly=True,
-            )
-    archive = Int(
-            title=_('Archive ID'), required=True, readonly=True,
-            )
-    libraryfilealias = Int(
-            title=_('Binarypackage file alias'), required=True, readonly=True,
-            )
-    libraryfilealiasfilename = TextLine(
-            title=_('File name'), required=True, readonly=True,
-            )
-    archive_url = Attribute('The on-archive URL for the published file.')
-
-    publishing_record = Attribute(
-        "Return the Source or Binary publishing record "
-        "(in the form of I{Source,Binary}PackagePublishingHistory).")
-
-    def publish(diskpool, log):
-        """Publish or ensure contents of this file in the archive.
-
-        Create symbolic link to files already present in different component
-        or add file from librarian if it's not present. Update the database
-        to represent the current archive state.
-        """
-
 #
 # Source package publishing
 #
-
-
-class ISourcePackageFilePublishing(IFilePublishing):
-    """Source package release files and their publishing status"""
-    sourcepackagename = TextLine(
-            title=_('Binary package name'), required=True, readonly=True,
-            )
-    sourcepackagepublishing = Int(
-            title=_('Sourcepackage publishing record id'), required=True,
-            readonly=True,
-            )
 
 
 class ISourcePackagePublishingHistoryPublic(IPublishingView):
@@ -639,20 +584,6 @@ class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
 #
 
 
-class IBinaryPackageFilePublishing(IFilePublishing):
-    """Binary package files and their publishing status"""
-    # Note that it is really /source/ package name below, and not a
-    # thinko; at least, that's what Celso tells me the code uses
-    #   -- kiko, 2006-03-22
-    sourcepackagename = TextLine(
-            title=_('Source package name'), required=True, readonly=True,
-            )
-    binarypackagepublishing = Int(
-            title=_('Binary Package publishing record id'), required=True,
-            readonly=True,
-            )
-
-
 class IBinaryPackagePublishingHistoryPublic(IPublishingView):
     """A binary package publishing record."""
 
@@ -666,6 +597,8 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         required=False, readonly=False)
     binarypackagerelease = Attribute(
         "The binary package release being published")
+    source_package_name = Attribute(
+        'The source package name that built this binary.')
     distroarchseriesID = Int(
         title=_("The DB id for the distroarchseries."),
         required=False, readonly=False)

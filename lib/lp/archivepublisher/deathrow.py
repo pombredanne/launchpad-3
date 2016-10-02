@@ -223,16 +223,16 @@ class DeathRow:
             See `canRemove` for more information.
             """
             for pub_file in pub_record.files:
-                filename = pub_file.libraryfilealiasfilename
-                file_md5 = pub_file.libraryfilealias.content.md5
+                filename = pub_file.libraryfile.filename
+                file_md5 = pub_file.libraryfile.content.md5
 
                 self.logger.debug("Checking %s (%s)" % (filename, file_md5))
 
                 # Calculating the file path in pool.
                 pub_file_details = (
-                    pub_file.libraryfilealiasfilename,
-                    pub_file.sourcepackagename,
-                    pub_file.componentname,
+                    pub_file.libraryfile.filename,
+                    pub_record.source_package_name,
+                    pub_record.component_name,
                     )
                 file_path = self.diskpool.pathFor(*pub_file_details)
 
@@ -243,7 +243,7 @@ class DeathRow:
                 if (filename, file_md5) in considered_files:
                     self.logger.debug("Already verified.")
                     if file_path in condemned_files:
-                        condemned_records.add(pub_file.publishing_record)
+                        condemned_records.add(pub_record)
                     continue
                 considered_files.add((filename, file_md5))
 
@@ -255,7 +255,7 @@ class DeathRow:
                 # Update local containers, in preparation to file removal.
                 details.setdefault(file_path, pub_file_details)
                 condemned_files.add(file_path)
-                condemned_records.add(pub_file.publishing_record)
+                condemned_records.add(pub_record)
 
         # Check source and binary publishing records.
         for pub_record in condemned_source_files:

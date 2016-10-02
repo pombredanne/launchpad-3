@@ -3613,15 +3613,14 @@ class PersonSet:
         return person
 
     def ensurePerson(self, email, displayname, rationale, comment=None,
-                     registrant=None):
+                     registrant=None, name=None):
         """See `IPersonSet`."""
-        person = getUtility(IPersonSet).getByEmail(
-                    email,
-                    filter_status=False)
+        person = getUtility(IPersonSet).getByEmail(email, filter_status=False)
         if person is None:
             person, email_address = self.createPersonAndEmail(
-                email, rationale, comment=comment, displayname=displayname,
-                registrant=registrant, hide_email_addresses=True)
+                email, rationale, name=name, comment=comment,
+                displayname=displayname, registrant=registrant,
+                hide_email_addresses=True)
         return person
 
     def getByName(self, name, ignore_merged=True):

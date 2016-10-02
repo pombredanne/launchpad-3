@@ -701,7 +701,7 @@ class TestNativePublishing(TestNativePublishingBase):
             for pub in pubs:
                 pub.publish(self.disk_pool, self.logger)
                 self.assertEqual(PackagePublishingStatus.PUBLISHED, pub.status)
-                filename = pub.files[0].libraryfilealias.filename
+                filename = pub.files[0].libraryfile.filename
                 path = "%s/main/d/dbg/%s" % (self.pool_dir, filename)
                 existence_map[filename] = os.path.exists(path)
             return existence_map

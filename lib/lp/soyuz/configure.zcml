@@ -43,17 +43,6 @@
                 set_schema="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistory"/>
         </class>
 
-        <!-- BinaryPackageFilePublishing -->
-
-        <class
-            class="lp.soyuz.model.publishing.BinaryPackageFilePublishing">
-            <allow
-                interface="lp.soyuz.interfaces.publishing.IBinaryPackageFilePublishing"/>
-
-            <!-- XXX cprov 2006-06-14: missing security adapter -->
-
-        </class>
-
     <!-- DistroSeriesPackageCache -->
     <class
         class="lp.soyuz.model.distroseriespackagecache.DistroSeriesPackageCache">
@@ -96,17 +85,6 @@
             <require
                 permission="launchpad.InternalScriptsOnly"
                 set_schema="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"/>
-        </class>
-
-        <!-- SourcePackageFilePublishing -->
-
-        <class
-            class="lp.soyuz.model.publishing.SourcePackageFilePublishing">
-            <allow
-                interface="lp.soyuz.interfaces.publishing.ISourcePackageFilePublishing"/>
-
-            <!-- XXX cprov 2006-06-14: Missing security adapter. -->
-
         </class>
 
         <!-- PublishingSet -->

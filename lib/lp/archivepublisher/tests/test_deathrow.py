@@ -51,12 +51,12 @@ class TestDeathRow(TestCase):
         diskpool = DiskPool(pool_path, temp_path, logger)
         return DeathRow(archive, diskpool, logger)
 
-    def getDiskPoolPath(self, pub_file, diskpool):
+    def getDiskPoolPath(self, pub, pub_file, diskpool):
         """Return the absolute path to a published file in the disk pool/."""
         return diskpool.pathFor(
-            pub_file.componentname.encode('utf-8'),
-            pub_file.sourcepackagename.encode('utf8'),
-            pub_file.libraryfilealiasfilename.encode('utf-8'))
+            pub.component.name.encode('utf-8'),
+            pub.source_package_name.encode('utf8'),
+            pub_file.libraryfile.filename.encode('utf-8'))
 
     def assertIsFile(self, path):
         """Assert the path exists and is a regular file."""
@@ -112,10 +112,10 @@ class TestDeathRow(TestCase):
         for pub in test_publications:
             pub.publish(deathrow.diskpool, deathrow.logger)
         [main_dsc_path] = [
-            self.getDiskPoolPath(pub_file, deathrow.diskpool)
+            self.getDiskPoolPath(source_main, pub_file, deathrow.diskpool)
             for pub_file in source_main.files]
         [universe_dsc_path] = [
-            self.getDiskPoolPath(pub_file, deathrow.diskpool)
+            self.getDiskPoolPath(source_universe, pub_file, deathrow.diskpool)
             for pub_file in source_universe.files]
         self.assertIsFile(main_dsc_path)
         self.assertIsLink(universe_dsc_path)
