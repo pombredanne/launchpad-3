@@ -4,12 +4,10 @@
 __metaclass__ = type
 
 __all__ = [
-    'BinaryPackageFilePublishing',
     'BinaryPackagePublishingHistory',
     'get_current_source_releases',
     'makePoolPath',
     'PublishingSet',
-    'SourcePackageFilePublishing',
     'SourcePackagePublishingHistory',
     ]
 
@@ -91,10 +89,8 @@ from lp.soyuz.interfaces.distributionjob import (
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     DeletionError,
-    IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory,
     IPublishingSet,
-    ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory,
     name_priority_map,
     OverrideError,
@@ -142,122 +138,6 @@ def proxied_urls(files, parent):
     return [ProxiedLibraryFileAlias(file, parent).http_url for file in files]
 
 
-class FilePublishingBase:
-    """Base class to publish files in the archive."""
-
-    def publish(self, diskpool, log):
-        """See IFilePublishing."""
-        # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
-        # when retrieving data from DB.
-        source = self.sourcepackagename.encode('utf-8')
-        component = self.componentname.encode('utf-8')
-        filename = self.libraryfilealiasfilename.encode('utf-8')
-        filealias = self.libraryfilealias
-        sha1 = filealias.content.sha1
-        path = diskpool.pathFor(component, source, filename)
-
-        action = diskpool.addFile(component, source, filename, sha1, filealias)
-        if action == diskpool.results.FILE_ADDED:
-            log.debug("Added %s from library" % path)
-        elif action == diskpool.results.SYMLINK_ADDED:
-            log.debug("%s created as a symlink." % path)
-        elif action == diskpool.results.NONE:
-            log.debug("%s is already in pool with the same content." % path)
-
-    @property
-    def archive_url(self):
-        """See IFilePublishing."""
-        return (self.archive.archive_url + "/" +
-                makePoolPath(self.sourcepackagename, self.componentname) +
-                "/" +
-                self.libraryfilealiasfilename)
-
-
-@implementer(ISourcePackageFilePublishing)
-class SourcePackageFilePublishing(FilePublishingBase, SQLBase):
-    """Source package release files and their publishing status.
-
-    Represents the source portion of the pool.
-    """
-
-    _idType = unicode
-    _defaultOrder = "id"
-
-    distribution = ForeignKey(dbName='distribution',
-                              foreignKey="Distribution",
-                              unique=False,
-                              notNull=True)
-
-    sourcepackagepublishing = ForeignKey(
-        dbName='sourcepackagepublishing',
-        foreignKey='SourcePackagePublishingHistory')
-
-    libraryfilealias = ForeignKey(
-        dbName='libraryfilealias', foreignKey='LibraryFileAlias',
-        notNull=True)
-
-    libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
-                                         unique=False, notNull=True)
-
-    componentname = StringCol(dbName='componentname', unique=False,
-                              notNull=True)
-
-    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  notNull=True)
-
-    distroseriesname = StringCol(dbName='distroseriesname', unique=False,
-                                  notNull=True)
-
-    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
-                               notNull=True, schema=PackagePublishingStatus)
-
-    pocket = EnumCol(dbName='pocket', unique=False,
-                     notNull=True, schema=PackagePublishingPocket)
-
-    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
-
-    @property
-    def publishing_record(self):
-        """See `IFilePublishing`."""
-        return self.sourcepackagepublishing
-
-
-@implementer(IBinaryPackageFilePublishing)
-class BinaryPackageFilePublishing(FilePublishingBase, SQLBase):
-    """A binary package file which is published.
-
-    Represents the binary portion of the pool.
-    """
-
-    _idType = unicode
-    _defaultOrder = "id"
-
-    binarypackagepublishing = ForeignKey(
-        dbName='binarypackagepublishing',
-        foreignKey='BinaryPackagePublishingHistory', immutable=True)
-
-    libraryfilealias = ForeignKey(
-        dbName='libraryfilealias', foreignKey='LibraryFileAlias',
-        notNull=True)
-
-    libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
-                                         unique=False, notNull=True,
-                                         immutable=True)
-
-    componentname = StringCol(dbName='componentname', unique=False,
-                              notNull=True, immutable=True)
-
-    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  notNull=True, immutable=True)
-
-    archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
-
-    @property
-    def publishing_record(self):
-        """See `ArchiveFilePublisherBase`."""
-        return self.binarypackagepublishing
-
-
 class ArchivePublisherBase:
     """Base class for `IArchivePublisher`."""
 
@@ -277,7 +157,24 @@ class ArchivePublisherBase:
         """See `IPublishing`"""
         try:
             for pub_file in self.files:
-                pub_file.publish(diskpool, log)
+                # XXX cprov 2006-06-12 bug=49510: The encode should not
+                # be needed when retrieving data from DB.
+                source = self.source_package_name.encode('utf-8')
+                component = self.component.name.encode('utf-8')
+                filename = pub_file.libraryfile.filename.encode('utf-8')
+                filealias = pub_file.libraryfile
+                sha1 = filealias.content.sha1
+                path = diskpool.pathFor(component, source, filename)
+
+                action = diskpool.addFile(
+                    component, source, filename, sha1, filealias)
+                if action == diskpool.results.FILE_ADDED:
+                    log.debug("Added %s from library" % path)
+                elif action == diskpool.results.SYMLINK_ADDED:
+                    log.debug("%s created as a symlink." % path)
+                elif action == diskpool.results.NONE:
+                    log.debug(
+                        "%s is already in pool with the same content." % path)
         except PoolFileOverwriteError as e:
             message = "PoolFileOverwriteError: %s, skipping." % e
             properties = [('error-explanation', message)]
@@ -500,10 +397,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def files(self):
         """See `IPublishing`."""
-        preJoins = ['libraryfilealias', 'libraryfilealias.content']
-
-        return SourcePackageFilePublishing.selectBy(
-            sourcepackagepublishing=self).prejoin(preJoins)
+        files = self.sourcepackagerelease.files
+        lfas = bulk.load_related(LibraryFileAlias, files, ['libraryfileID'])
+        bulk.load_related(LibraryFileContent, lfas, ['contentID'])
+        return files
 
     def getSourceAndBinaryLibraryFiles(self):
         """See `IPublishing`."""
@@ -751,10 +648,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def files(self):
         """See `IPublishing`."""
-        preJoins = ['libraryfilealias', 'libraryfilealias.content']
-
-        return BinaryPackageFilePublishing.selectBy(
-            binarypackagepublishing=self).prejoin(preJoins)
+        files = self.binarypackagerelease.files
+        lfas = bulk.load_related(LibraryFileAlias, files, ['libraryfileID'])
+        bulk.load_related(LibraryFileContent, lfas, ['contentID'])
+        return files
 
     @property
     def distroseries(self):
@@ -776,6 +673,11 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def build(self):
         return self.binarypackagerelease.build
+
+    @property
+    def source_package_name(self):
+        """See `ISourcePackagePublishingHistory`"""
+        return self.binarypackagerelease.sourcepackagename
 
     @property
     def architecture_specific(self):
