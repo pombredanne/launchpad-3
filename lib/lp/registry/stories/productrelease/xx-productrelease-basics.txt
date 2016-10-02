@@ -153,12 +153,10 @@ Celso is a member of ubuntu-team, so he can edit this release too:
     >>> print browser.title
     0.6.6.6 : Series trunk : Tomcat
 
-And if no-priv owns the series...
+And if no-priv drives the series...
 
     >>> no_priv = Person.selectOneBy(name="no-priv")
-    >>> tomcat.getSeries('trunk').owner = no_priv
-    >>> from lp.services.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+    >>> tomcat.getSeries('trunk').driver = no_priv
 
 ... they can edit existing releases as well, even if they are owned by
 others:
