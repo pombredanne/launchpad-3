@@ -172,34 +172,18 @@ class BugImporter:
         person_set = getUtility(IPersonSet)
 
         launchpad_id = self.person_id_cache.get(email)
-        if launchpad_id is not None:
-            person = person_set.get(launchpad_id)
-            if person is not None and person.merged is not None:
-                person = None
-        else:
-            person = None
-
-        if person is None:
-            person = getUtility(IPersonSet).getByEmail(
-                    email,
-                    filter_status=False)
-
-            if person is None:
-                self.logger.debug('creating person for %s' % email)
-                # Has the short name been taken?
-                if name is not None and (
-                    person_set.getByName(name) is not None):
-                    # The short name is already taken, so we'll pass
-                    # None to createPersonAndEmail(), which will take
-                    # care of creating a unique one.
-                    name = None
-                person, address = (
-                    person_set.createPersonAndEmail(
-                        email=email, name=name, displayname=displayname,
-                        rationale=PersonCreationRationale.BUGIMPORT,
-                        comment=('when importing bugs for %s' %
-                                 self.product.displayname)))
-
+        person = person_set.get(launchpad_id) if launchpad_id else None
+        if person is None or person.merged is not None:
+            if name is not None and person_set.getByName(name) is not None:
+                # The short name is already taken, so we'll pass None to
+                # ensurePerson(), which will take care of generating a
+                # unique one if a new Person is required.
+                name = None
+            person = getUtility(IPersonSet).ensurePerson(
+                email=email, name=name, displayname=displayname,
+                rationale=PersonCreationRationale.BUGIMPORT,
+                comment=(
+                    'when importing bugs for %s' % self.product.displayname))
             self.person_id_cache[email] = person.id
 
         # if we are auto-verifying new accounts, make sure the person

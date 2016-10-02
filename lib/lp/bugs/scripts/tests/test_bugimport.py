@@ -41,6 +41,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
 from lp.services.database.sqlbase import cursor
+from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.testing import (
     login,
@@ -209,13 +210,7 @@ class GetPersonTestCase(TestCaseWithFactory):
 
     def test_find_existing_person(self):
         # Test that getPerson() returns an existing person.
-        person = getUtility(IPersonSet).getByEmail('foo@example.com')
-        self.assertEqual(person, None)
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-            email='foo@example.com',
-            rationale=PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        self.assertNotEqual(person, None)
-
+        person = self.factory.makePerson(email='foo@example.com')
         product = getUtility(IProductSet).getByName('netapplet')
         importer = bugimport.BugImporter(
             product, 'bugs.xml', 'bug-map.pickle')
@@ -257,11 +252,9 @@ class GetPersonTestCase(TestCaseWithFactory):
     def test_verify_existing_person(self):
         # Test that getPerson() will validate the email of an existing
         # user when verify_users=True.
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-            rationale=PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
-            email='foo@example.com')
+        person = self.factory.makePerson(
+            email='foo@example.com', account_status=AccountStatus.NOACCOUNT)
         self.assertEqual(person.preferredemail, None)
-
         product = getUtility(IProductSet).getByName('netapplet')
         importer = bugimport.BugImporter(
             product, 'bugs.xml', 'bug-map.pickle', verify_users=True)
@@ -276,15 +269,9 @@ class GetPersonTestCase(TestCaseWithFactory):
     def test_verify_doesnt_clobber_preferred_email(self):
         # Test that getPerson() does not clobber an existing verified
         # email address when verify_users=True.
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-            'foo@example.com',
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
-        transaction.commit()
-        self.failIf(person.account is None, 'Person must have an account.')
-        email = getUtility(IEmailAddressSet).new(
-            'foo@preferred.com', person)
+        person = self.factory.makePerson(email='foo@example.com')
+        email = getUtility(IEmailAddressSet).new('foo@preferred.com', person)
         person.setPreferredEmail(email)
-        transaction.commit()
         self.assertEqual(person.preferredemail.email, 'foo@preferred.com')
 
         product = getUtility(IProductSet).getByName('netapplet')

@@ -564,19 +564,14 @@ anything, as we only match against the beginning of an email address.
 
 A person with a single and unvalidated email address can be merged.
 
-    >>> from lp.registry.interfaces.person import PersonCreationRationale
-    >>> fooperson, email = person_set.createPersonAndEmail(
-    ...     'foobaz@bar.com', PersonCreationRationale.UNKNOWN,
-    ...     name='foobaz', displayname='foo baz')
-    >>> import transaction
-    >>> transaction.commit()
+    >>> from lp.services.identity.interfaces.account import AccountStatus
+    >>> fooperson = factory.makePerson(account_status=AccountStatus.NOACCOUNT)
     >>> fooperson in vocab
     True
 
 But any person without a single email address can't.
 
-    >>> email.destroySelf()
-    >>> transaction.commit()
+    >>> fooperson.guessedemails[0].destroySelf()
     >>> fooperson in vocab
     False
 
@@ -887,7 +882,6 @@ Search for names with '%' and '?' is supported.
     ...     symbolic_person, 'chat.freenode.net', '%percent')
     >>> irc_id =ircid_set.new(
     ...     symbolic_person, 'irc.fnord.net', 'question?')
-    >>> transaction.commit()
 
     >>> for person in vocab.search('%percent'):
     ...     print person.name
