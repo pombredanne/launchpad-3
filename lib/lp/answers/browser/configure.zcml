@@ -385,14 +385,14 @@
         />
   <browser:page
     for="lp.registry.interfaces.person.IPerson"
-    class="lp.registry.browser.person.PersonLatestQuestionsView"
+    class="lp.answers.browser.person.PersonLatestQuestionsView"
     name="+portlet-latestquestions"
     permission="zope.Public"
     template="../templates/questiontarget-portlet-latestquestions.pt"
     />
   <browser:page
     for="lp.registry.interfaces.person.IPerson"
-    class="lp.registry.browser.person.PersonSearchQuestionsView"
+    class="lp.answers.browser.person.PersonSearchQuestionsView"
     name="+questions"
     permission="zope.Public"
     />
@@ -404,7 +404,7 @@
     />
   <browser:page
     for="lp.registry.interfaces.person.IPerson"
-    class="lp.registry.browser.person.SearchAnsweredQuestionsView"
+    class="lp.answers.browser.person.SearchAnsweredQuestionsView"
     name="+answeredquestions"
     permission="zope.Public"
     />
@@ -416,7 +416,7 @@
     />
   <browser:page
     for="lp.registry.interfaces.person.IPerson"
-    class="lp.registry.browser.person.SearchAssignedQuestionsView"
+    class="lp.answers.browser.person.SearchAssignedQuestionsView"
     name="+assignedquestions"
     permission="zope.Public"
     />
@@ -428,7 +428,7 @@
     />
   <browser:page
     for="lp.registry.interfaces.person.IPerson"
-    class="lp.registry.browser.person.SearchCommentedQuestionsView"
+    class="lp.answers.browser.person.SearchCommentedQuestionsView"
     name="+commentedquestions"
     permission="zope.Public"
     />
@@ -440,7 +440,7 @@
     />
   <browser:page
     for="lp.registry.interfaces.person.IPerson"
-    class="lp.registry.browser.person.SearchCreatedQuestionsView"
+    class="lp.answers.browser.person.SearchCreatedQuestionsView"
     name="+createdquestions"
     permission="zope.Public"
     />
@@ -452,7 +452,7 @@
     />
   <browser:page
     for="lp.registry.interfaces.person.IPerson"
-    class="lp.registry.browser.person.SearchNeedAttentionQuestionsView"
+    class="lp.answers.browser.person.SearchNeedAttentionQuestionsView"
     name="+needattentionquestions"
     permission="zope.Public"
     />
@@ -464,7 +464,7 @@
     />
   <browser:page
     for="lp.registry.interfaces.person.IPerson"
-    class="lp.registry.browser.person.SearchSubscribedQuestionsView"
+    class="lp.answers.browser.person.SearchSubscribedQuestionsView"
     name="+subscribedquestions"
     permission="zope.Public"
     />
@@ -476,13 +476,13 @@
     />
   <browser:page
     for="lp.registry.interfaces.person.IPerson"
-    class="lp.registry.browser.person.PersonAnswerContactForView"
+    class="lp.answers.browser.person.PersonAnswerContactForView"
     name="+answer-contact-for"
     permission="zope.Public"
     template="../templates/person-answer-contact-for.pt"
     />
   <browser:menus
-    module="lp.registry.browser.person"
+    module="lp.answers.browser.person"
     classes="PersonAnswersMenu"
     />
   <browser:page
