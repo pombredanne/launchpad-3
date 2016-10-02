@@ -264,7 +264,9 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
 
     def test_run_git_updates_related_bugs(self):
         # The merge proposal has its related bugs updated.
-        bug = self.factory.makeBug()
+        projectgroup = self.factory.makeProject()
+        project = self.factory.makeProduct(projectgroup=projectgroup)
+        bug = self.factory.makeBug(target=project)
         # Create a structural subscription to ensure we don't short-circuit
         # in _get_structural_subscription_filter_id_query.
         subscriber = self.factory.makePerson()
