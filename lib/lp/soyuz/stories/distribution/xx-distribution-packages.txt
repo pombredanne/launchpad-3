@@ -217,6 +217,13 @@ javascript enabled, the information is shown in-place.
       iceweasel-1.0.dsc (123 bytes)
       mozilla-firefox_0.9_i386.deb (3 bytes)
 
+The version itself links to the corresponding distro package release.  (Our
+search includes a leading space in order to exclude the "Latest upload:"
+link.)
+
+    >>> print user_browser.getLink(" 1.0").attrs['href']
+    /ubuntu/+source/iceweasel/1.0
+
 There's also a section on the page that gives some package information:
 
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'current'))

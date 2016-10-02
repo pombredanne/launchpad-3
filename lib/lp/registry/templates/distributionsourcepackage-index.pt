@@ -146,7 +146,7 @@
           <a class="expander"
              tal:attributes="id string:pub${pub/id}-expander;
                              href string:${pub/archive/fmt:url}/+sourcepub/${pub/id}/+listing-archive-extra"></a>
-          <a tal:attributes="href row/version">
+          <a tal:attributes="href pub/meta_distributionsourcepackagerelease/fmt:url">
             <img src="/@@/package-source" />
             <tal:version content="row/version"/>
           </a>
