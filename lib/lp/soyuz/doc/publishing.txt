@@ -111,7 +111,7 @@ The iceweasel source has good data:
 
     >>> pub = spph.archive.getPublishedSources(name=u"iceweasel").first()
     >>> print pub.changesFileUrl()
-    http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
+    http://.../ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
 
 There is also a helper property to determine whether the current release for
 this package in the distroseries is newer than this publishing. Nothing is
@@ -132,7 +132,6 @@ source package release will be returned.
     ...     distroseries=pub.distroseries, version="1.1",
     ...     sourcename='iceweasel')
 
-    >>> from lp.services.propertycache import get_property_cache
     >>> del get_property_cache(pub).newer_distroseries_version
     >>> print pub.newer_distroseries_version.title
     iceweasel 1.1 source package in Ubuntu
@@ -176,8 +175,8 @@ The underlying method being used here is getUnpublishedBuildsForSources():
     ...     IPublishingSet)
     >>> ps = getUtility(IPublishingSet)
     >>> unpublished_builds = ps.getUnpublishedBuildsForSources([spph])
-    >>> for _, build, _ in sorted(unpublished_builds, key=lambda b:b[1].title):
-    ...     print build.title
+    >>> for _, b, _ in sorted(unpublished_builds, key=lambda b:b[1].title):
+    ...     print b.title
     hppa build of abc 666 in ubuntutest breezy-autotest RELEASE
     i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 

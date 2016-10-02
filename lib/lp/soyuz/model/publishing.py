@@ -157,8 +157,8 @@ class ArchivePublisherBase:
         """See `IPublishing`"""
         try:
             for pub_file in self.files:
-                # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
-                # when retrieving data from DB.
+                # XXX cprov 2006-06-12 bug=49510: The encode should not
+                # be needed when retrieving data from DB.
                 source = self.source_package_name.encode('utf-8')
                 component = self.component.name.encode('utf-8')
                 filename = pub_file.libraryfile.filename.encode('utf-8')
@@ -166,13 +166,15 @@ class ArchivePublisherBase:
                 sha1 = filealias.content.sha1
                 path = diskpool.pathFor(component, source, filename)
 
-                action = diskpool.addFile(component, source, filename, sha1, filealias)
+                action = diskpool.addFile(
+                    component, source, filename, sha1, filealias)
                 if action == diskpool.results.FILE_ADDED:
                     log.debug("Added %s from library" % path)
                 elif action == diskpool.results.SYMLINK_ADDED:
                     log.debug("%s created as a symlink." % path)
                 elif action == diskpool.results.NONE:
-                    log.debug("%s is already in pool with the same content." % path)
+                    log.debug(
+                        "%s is already in pool with the same content." % path)
         except PoolFileOverwriteError as e:
             message = "PoolFileOverwriteError: %s, skipping." % e
             properties = [('error-explanation', message)]
