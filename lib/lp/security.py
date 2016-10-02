@@ -1374,9 +1374,9 @@ class EditProductSeries(EditByOwnersOrAdmins):
     usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
-        """Allow product owner, some experts, or admins."""
-        if (user.inTeam(self.obj.product.owner) or
-            user.inTeam(self.obj.driver)):
+        """Allow product owner, drivers, some experts, or admins."""
+        if (user.isOwner(self.obj.product) or
+            user.isDriver(self.obj)):
             # The user is the owner of the product, or the release manager.
             return True
         # Rosetta experts need to be able to upload translations.
@@ -1710,9 +1710,8 @@ class EditProductRelease(EditByOwnersOrAdmins):
     usedfor = IProductRelease
 
     def checkAuthenticated(self, user):
-        if (user.inTeam(self.obj.productseries.owner) or
-            user.inTeam(self.obj.productseries.product.owner) or
-            user.inTeam(self.obj.productseries.driver)):
+        if (user.isOwner(self.obj.productseries.product) or
+            user.isDriver(self.obj.productseries)):
             # The user is an owner or a release manager.
             return True
         return EditByOwnersOrAdmins.checkAuthenticated(
