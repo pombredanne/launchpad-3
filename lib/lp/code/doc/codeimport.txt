@@ -96,7 +96,7 @@ three members of the vcs-imports team.
     >>> import email
     >>> message = email.message_from_string(stub.test_emails[0][2])
     >>> print message['subject']
-    New code import: widget/trunk-cvs
+    New code import: ~import-person/widget/trunk-cvs
     >>> print message['X-Launchpad-Message-Rationale']
     Operator @vcs-imports
     >>> print message['X-Launchpad-Message-For']
@@ -223,7 +223,7 @@ created if done through the web UI, so we'll add nopriv here.
     >>> print_emails(group_similar=True)
     From: Code Import Person <import@example.com>
     To: david.allouche@canonical.com, ...
-    Subject: Code import product.../name... status: Reviewed
+    Subject: Code import ~person-name-.../product.../name... status: Reviewed
     <BLANKLINE>
     ... is now being imported from:
         http://svn.example.com/project/trunk
@@ -239,7 +239,7 @@ created if done through the web UI, so we'll add nopriv here.
     ----------------------------------------
     From: Code Import Person <import@example.com>
     To: import@example.com
-    Subject: Code import product.../name... status: Reviewed
+    Subject: Code import ~person-name-.../product.../name... status: Reviewed
     <BLANKLINE>
     ... is now being imported from:
         http://svn.example.com/project/trunk
@@ -270,11 +270,11 @@ from a 'noreply' address.
     >>> print_emails(group_similar=True)
     From: noreply@launchpad.net
     To: david.allouche@canonical.com, ...
-    Subject: Code import product.../name... status: Reviewed
+    Subject: Code import ~person-name-.../product.../name... status: Reviewed
     ...
     From: noreply@launchpad.net
     To: import@example.com
-    Subject: Code import product.../name... status: Reviewed
+    Subject: Code import ~person-name-.../product.../name... status: Reviewed
     ...
 
 
