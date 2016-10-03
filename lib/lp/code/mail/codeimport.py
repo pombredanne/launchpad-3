@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to code imports."""
@@ -39,8 +39,7 @@ def new_import(code_import, event):
         # test.
         return
     user = IPerson(event.user)
-    subject = 'New code import: %s/%s' % (
-        code_import.branch.target.name, code_import.branch.name)
+    subject = 'New code import: %s' % code_import.branch.unique_name
     if code_import.rcs_type == RevisionControlSystems.CVS:
         location = '%s, %s' % (code_import.cvs_root, code_import.cvs_module)
     else:
@@ -154,9 +153,8 @@ def code_import_updated(code_import, event, new_whiteboard, person):
 
     headers = {'X-Launchpad-Branch': branch.unique_name}
 
-    subject = 'Code import %s/%s status: %s' % (
-        code_import.branch.target.name, branch.name,
-        code_import.review_status.title)
+    subject = 'Code import %s status: %s' % (
+        code_import.branch.unique_name, code_import.review_status.title)
 
     email_template = get_email_template(
         'code-import-status-updated.txt', app='code')
