@@ -21,6 +21,7 @@ __all__ = [
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
     'GitObjectType',
+    'GitRepositoryType',
     'NON_CVS_RCS_TYPES',
     'RevisionControlSystems',
     ]
@@ -78,7 +79,7 @@ class BranchLifecycleStatus(DBEnumeratedType):
 class BranchType(DBEnumeratedType):
     """Branch Type
 
-    The type of a branch determins the branch interaction with a number
+    The type of a branch determines the branch's interaction with a number
     of other subsystems.
     """
 
@@ -107,6 +108,30 @@ class BranchType(DBEnumeratedType):
 
         Registered in Launchpad with an external location,
         but is not to be mirrored, nor available through Launchpad.
+        """)
+
+
+class GitRepositoryType(DBEnumeratedType):
+    """Git Repository Type
+
+    The type of a repository determines its interaction with other
+    subsystems.
+    """
+
+    HOSTED = DBItem(1, """
+        Hosted
+
+        Launchpad is the primary location of this repository.
+        """)
+
+    # Skipping MIRRORED (2) to stay in sync with BranchType, in order to
+    # reduce confusion for manual database queries.
+
+    IMPORTED = DBItem(3, """
+        Imported
+
+        Repositories that have been imported from an externally hosted
+        repository and are made available through Launchpad.
         """)
 
 

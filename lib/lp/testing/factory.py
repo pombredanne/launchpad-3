@@ -112,6 +112,7 @@ from lp.code.enums import (
     CodeImportReviewStatus,
     CodeReviewNotificationLevel,
     GitObjectType,
+    GitRepositoryType,
     RevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
@@ -1754,14 +1755,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
 
-    def makeGitRepository(self, owner=None, reviewer=None, target=_DEFAULT,
-                          registrant=None, name=None, information_type=None,
+    def makeGitRepository(self, repository_type=None, owner=None,
+                          reviewer=None, target=_DEFAULT, registrant=None,
+                          name=None, information_type=None,
                           **optional_repository_args):
         """Create and return a new, arbitrary GitRepository.
 
         Any parameters for `IGitNamespace.createRepository` can be specified
         to override the default ones.
         """
+        if repository_type is None:
+            repository_type = GitRepositoryType.HOSTED
         if owner is None:
             owner = self.makePerson()
         if name is None:
@@ -1778,8 +1782,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         namespace = get_git_namespace(target, owner)
         repository = namespace.createRepository(
-            registrant=registrant, name=name, reviewer=reviewer,
-            **optional_repository_args)
+            repository_type=repository_type, registrant=registrant, name=name,
+            reviewer=reviewer, **optional_repository_args)
         naked_repository = removeSecurityProxy(repository)
         if information_type is not None:
             naked_repository.transitionToInformationType(

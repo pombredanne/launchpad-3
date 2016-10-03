@@ -20,6 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
+from lp.code.enums import GitRepositoryType
 from lp.code.errors import (
     GitRepositoryCreationException,
     GitRepositoryCreationFault,
@@ -171,7 +172,7 @@ class GitAPI(LaunchpadXMLRPCView):
 
         try:
             repository = namespace.createRepository(
-                requester, repository_name)
+                GitRepositoryType.HOSTED, requester, repository_name)
         except LaunchpadValidationError as e:
             # Despite the fault name, this just passes through the exception
             # text so there's no need for a new Git-specific fault.
