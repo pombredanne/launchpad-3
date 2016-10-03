@@ -1289,16 +1289,18 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(spiv.archive.id, pending_archive.id)
 
     def testDeletingArchive(self):
-        # IArchiveSet.getPendingPPAs should return archives that have a
+        # IArchiveSet.getPendingPPAs should include PPAs that have a
         # status of DELETING.
         ubuntu = getUtility(IDistributionSet)['ubuntu']
 
-        archive = self.factory.makeArchive()
-        old_num_pending_archives = ubuntu.getPendingPublicationPPAs().count()
-        archive.status = ArchiveStatus.DELETING
-        new_num_pending_archives = ubuntu.getPendingPublicationPPAs().count()
-        self.assertEqual(
-            1 + old_num_pending_archives, new_num_pending_archives)
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        copy_archive = self.factory.makeArchive(purpose=ArchivePurpose.COPY)
+        self.assertNotIn(ppa, ubuntu.getPendingPublicationPPAs())
+        self.assertNotIn(copy_archive, ubuntu.getPendingPublicationPPAs())
+        ppa.status = ArchiveStatus.DELETING
+        copy_archive.status = ArchiveStatus.DELETING
+        self.assertIn(ppa, ubuntu.getPendingPublicationPPAs())
+        self.assertNotIn(copy_archive, ubuntu.getPendingPublicationPPAs())
 
     def testPendingArchiveWithReapableFiles(self):
         # getPendingPublicationPPAs returns archives that have reapable

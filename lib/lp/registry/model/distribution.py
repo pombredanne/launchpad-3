@@ -1297,6 +1297,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             orderBy=['archive.id'], distinct=True)
 
         deleting_archives = Archive.selectBy(
+            distribution=self,
+            purpose=ArchivePurpose.PPA,
             status=ArchiveStatus.DELETING).orderBy(['archive.id'])
 
         return src_archives.union(bin_archives).union(
