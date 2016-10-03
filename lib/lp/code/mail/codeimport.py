@@ -39,7 +39,7 @@ def new_import(code_import, event):
         # test.
         return
     user = IPerson(event.user)
-    subject = 'New code import: %s' % code_import.branch.unique_name
+    subject = 'New code import: %s' % code_import.target.unique_name
     if code_import.rcs_type == RevisionControlSystems.CVS:
         location = '%s, %s' % (code_import.cvs_root, code_import.cvs_module)
     else:
@@ -52,7 +52,7 @@ def new_import(code_import, event):
         }
     body = get_email_template('new-code-import.txt', app='code') % {
         'person': code_import.registrant.displayname,
-        'branch': canonical_url(code_import.branch),
+        'target': canonical_url(code_import.target),
         'rcs_type': rcs_type_map[code_import.rcs_type],
         'location': location,
         }
@@ -61,7 +61,7 @@ def new_import(code_import, event):
         user.displayname, user.preferredemail.email)
 
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    headers = {'X-Launchpad-Branch': code_import.branch.unique_name,
+    headers = {'X-Launchpad-Branch': code_import.target.unique_name,
                'X-Launchpad-Message-Rationale':
                    'Operator @%s' % vcs_imports.name,
                'X-Launchpad-Message-For': vcs_imports.name,
@@ -103,7 +103,7 @@ def make_email_body_for_code_import_update(
             raise AssertionError('Unexpected review status for code import.')
 
     details_change_prefix = '\n'.join(textwrap.wrap(
-        "%s is now being imported from:" % code_import.branch.unique_name))
+        "%s is now being imported from:" % code_import.target.unique_name))
     if code_import.rcs_type == RevisionControlSystems.CVS:
         if (CodeImportEventDataType.OLD_CVS_ROOT in event_data or
             CodeImportEventDataType.OLD_CVS_MODULE in event_data):
@@ -142,26 +142,26 @@ def make_email_body_for_code_import_update(
 
 
 def code_import_updated(code_import, event, new_whiteboard, person):
-    """Email the branch subscribers, and the vcs-imports team with new status.
+    """Email the target subscribers, and the vcs-imports team with new status.
     """
-    branch = code_import.branch
-    recipients = branch.getNotificationRecipients()
+    target = code_import.target
+    recipients = target.getNotificationRecipients()
     # Add in the vcs-imports user.
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     herder_rationale = 'Operator @%s' % vcs_imports.name
     recipients.add(vcs_imports, None, herder_rationale)
 
-    headers = {'X-Launchpad-Branch': branch.unique_name}
+    headers = {'X-Launchpad-Branch': target.unique_name}
 
     subject = 'Code import %s status: %s' % (
-        code_import.branch.unique_name, code_import.review_status.title)
+        code_import.target.unique_name, code_import.review_status.title)
 
     email_template = get_email_template(
         'code-import-status-updated.txt', app='code')
     template_params = {
         'body': make_email_body_for_code_import_update(
             code_import, event, new_whiteboard),
-        'branch': canonical_url(code_import.branch)}
+        'target': canonical_url(code_import.target)}
 
     if person:
         from_address = format_address(
@@ -194,7 +194,7 @@ def code_import_updated(code_import, event, new_whiteboard, person):
                     # Give the users a link to unsubscribe.
                     template_params['unsubscribe'] = (
                         "\nTo unsubscribe from this branch go to "
-                        "%s/+edit-subscription." % canonical_url(branch))
+                        "%s/+edit-subscription." % canonical_url(target))
                 else:
                     template_params['unsubscribe'] = ''
                 for_person = subscription.person

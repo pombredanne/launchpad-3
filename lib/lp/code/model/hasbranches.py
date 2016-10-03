@@ -16,7 +16,10 @@ from functools import partial
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.enums import BranchMergeProposalStatus
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    TargetRevisionControlSystems,
+    )
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import (
     IAllBranches,
@@ -130,5 +133,6 @@ class HasCodeImportsMixin:
             owner=None):
         """See `IHasCodeImports`."""
         return getUtility(ICodeImportSet).new(
-            registrant, self, branch_name, rcs_type, url=url,
+            registrant, self, branch_name, rcs_type,
+            TargetRevisionControlSystems.BZR, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module, owner=owner)

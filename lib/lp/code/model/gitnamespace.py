@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IGitNamespace`."""
@@ -238,6 +238,7 @@ class PersonalGitNamespace(_BaseGitNamespace):
     has_defaults = False
     allow_push_to_set_default = False
     supports_merge_proposals = False
+    supports_code_imports = False
     allow_recipe_name_from_target = False
 
     def __init__(self, person):
@@ -316,6 +317,7 @@ class ProjectGitNamespace(_BaseGitNamespace):
     has_defaults = True
     allow_push_to_set_default = True
     supports_merge_proposals = True
+    supports_code_imports = True
     allow_recipe_name_from_target = True
 
     def __init__(self, person, project):
@@ -401,6 +403,7 @@ class PackageGitNamespace(_BaseGitNamespace):
     has_defaults = True
     allow_push_to_set_default = False
     supports_merge_proposals = True
+    supports_code_imports = True
     allow_recipe_name_from_target = True
 
     def __init__(self, person, distro_source_package):

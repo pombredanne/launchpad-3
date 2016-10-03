@@ -1,5 +1,5 @@
 A new %(rcs_type)s code import has been requested by %(person)s:
-    %(branch)s
+    %(target)s
 from
     %(location)s
 

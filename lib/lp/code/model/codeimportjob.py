@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for the CodeImportJob table."""
@@ -154,10 +154,10 @@ class CodeImportJobWorkflow:
         """See `ICodeImportJobWorkflow`."""
         assert code_import.review_status == CodeImportReviewStatus.REVIEWED, (
             "Review status of %s is not REVIEWED: %s" % (
-            code_import.branch.unique_name, code_import.review_status.name))
+            code_import.target.unique_name, code_import.review_status.name))
         assert code_import.import_job is None, (
             "Already associated to a CodeImportJob: %s" % (
-            code_import.branch.unique_name))
+            code_import.target.unique_name))
 
         if interval is None:
             interval = code_import.effective_update_interval
@@ -182,13 +182,13 @@ class CodeImportJobWorkflow:
         """See `ICodeImportJobWorkflow`."""
         assert code_import.review_status != CodeImportReviewStatus.REVIEWED, (
             "The review status of %s is %s." % (
-            code_import.branch.unique_name, code_import.review_status.name))
+            code_import.target.unique_name, code_import.review_status.name))
         assert code_import.import_job is not None, (
             "Not associated to a CodeImportJob: %s" % (
-            code_import.branch.unique_name,))
+            code_import.target.unique_name,))
         assert code_import.import_job.state == CodeImportJobState.PENDING, (
             "The CodeImportJob associated to %s is %s." % (
-            code_import.branch.unique_name,
+            code_import.target.unique_name,
             code_import.import_job.state.name))
         # CodeImportJobWorkflow is the only class that is allowed to delete
         # CodeImportJob rows, so destroySelf is not exposed in ICodeImportJob.
@@ -198,12 +198,12 @@ class CodeImportJobWorkflow:
         """See `ICodeImportJobWorkflow`."""
         assert import_job.state == CodeImportJobState.PENDING, (
             "The CodeImportJob associated with %s is %s."
-            % (import_job.code_import.branch.unique_name,
+            % (import_job.code_import.target.unique_name,
                import_job.state.name))
         assert import_job.requesting_user is None, (
             "The CodeImportJob associated with %s "
             "was already requested by %s."
-            % (import_job.code_import.branch.unique_name,
+            % (import_job.code_import.target.unique_name,
                import_job.requesting_user.name))
         # CodeImportJobWorkflow is the only class that is allowed to set the
         # date_due and requesting_user attributes of CodeImportJob, they are
@@ -219,7 +219,7 @@ class CodeImportJobWorkflow:
         """See `ICodeImportJobWorkflow`."""
         assert import_job.state == CodeImportJobState.PENDING, (
             "The CodeImportJob associated with %s is %s."
-            % (import_job.code_import.branch.unique_name,
+            % (import_job.code_import.target.unique_name,
                import_job.state.name))
         assert machine.state == CodeImportMachineState.ONLINE, (
             "The machine %s is %s."
@@ -241,7 +241,7 @@ class CodeImportJobWorkflow:
         """See `ICodeImportJobWorkflow`."""
         assert import_job.state == CodeImportJobState.RUNNING, (
             "The CodeImportJob associated with %s is %s."
-            % (import_job.code_import.branch.unique_name,
+            % (import_job.code_import.target.unique_name,
                import_job.state.name))
         # CodeImportJobWorkflow is the only class that is allowed to
         # set the heartbeat and logtail attributes of CodeImportJob,
@@ -281,7 +281,7 @@ class CodeImportJobWorkflow:
         """See `ICodeImportJobWorkflow`."""
         assert import_job.state == CodeImportJobState.RUNNING, (
             "The CodeImportJob associated with %s is %s."
-            % (import_job.code_import.branch.unique_name,
+            % (import_job.code_import.target.unique_name,
                import_job.state.name))
         code_import = import_job.code_import
         machine = import_job.machine
@@ -311,7 +311,8 @@ class CodeImportJobWorkflow:
             naked_import.date_last_successful = result.date_created
         # If the status was successful and revisions were imported, arrange
         # for the branch to be mirrored.
-        if status == CodeImportResultStatus.SUCCESS:
+        if (status == CodeImportResultStatus.SUCCESS and
+                code_import.branch is not None):
             code_import.branch.requestMirror()
         getUtility(ICodeImportEventSet).newFinish(
             code_import, machine)
@@ -320,7 +321,7 @@ class CodeImportJobWorkflow:
         """See `ICodeImportJobWorkflow`."""
         assert import_job.state == CodeImportJobState.RUNNING, (
             "The CodeImportJob associated with %s is %s."
-            % (import_job.code_import.branch.unique_name,
+            % (import_job.code_import.target.unique_name,
                import_job.state.name))
         # Cribbing from codeimport-job.txt, this method does four things:
         # 1) deletes the passed in job,
