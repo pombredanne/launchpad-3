@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mixin classes to implement methods for IHas<code related bits>."""
@@ -22,7 +22,7 @@ from lp.code.interfaces.branchcollection import (
     IAllBranches,
     IBranchCollection,
     )
-from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
@@ -129,6 +129,6 @@ class HasCodeImportsMixin:
             rcs_type=None, url=None, cvs_root=None, cvs_module=None,
             owner=None):
         """See `IHasCodeImports`."""
-        return IBranchTarget(self).newCodeImport(registrant, branch_name,
-                rcs_type, url=url, cvs_root=cvs_root, cvs_module=cvs_module,
-                owner=owner)
+        return getUtility(ICodeImportSet).new(
+            registrant, self, branch_name, rcs_type, url=url,
+            cvs_root=cvs_root, cvs_module=cvs_module, owner=owner)

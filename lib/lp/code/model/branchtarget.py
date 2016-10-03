@@ -22,7 +22,6 @@ from lp.code.interfaces.branchtarget import (
     check_default_stacked_on,
     IBranchTarget,
     )
-from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.linkedbranch import get_linked_to_branch
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -38,13 +37,6 @@ class _BaseBranchTarget:
 
     def __ne__(self, other):
         return self.context != other.context
-
-    def newCodeImport(self, registrant, branch_name, rcs_type, url=None,
-                      cvs_root=None, cvs_module=None, owner=None):
-        """See `IBranchTarget`."""
-        return getUtility(ICodeImportSet).new(
-            registrant, self.context, branch_name, rcs_type, url=url,
-            cvs_root=cvs_root, cvs_module=cvs_module, owner=owner)
 
     def getRelatedSeriesBranchInfo(self, parent_branch, limit_results=None):
         """See `IBranchTarget`."""
