@@ -20,9 +20,8 @@ IMilestone.
     >>> verifyObject(IProductRelease, firefox_109)
     True
 
-The driver for the release's milestone target cannot change the release, but
-the driver of the milestone's series_target is a release manager and can
-make changes.
+A person appointed to the project or series driver role is a release
+manager and can make changes.
 
     >>> from lp.services.webapp.authorization import check_permission
 
@@ -34,7 +33,7 @@ make changes.
 
     >>> ignored = login_person(driver)
     >>> check_permission('launchpad.Edit', firefox_109)
-    False
+    True
 
     >>> ignored = login_person(release_manager)
     >>> check_permission('launchpad.Edit', firefox_109)

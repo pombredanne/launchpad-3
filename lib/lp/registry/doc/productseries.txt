@@ -110,20 +110,20 @@ Let's check that the new series is properly associated to its product.
 
 = Drivers and release managers =
 
-A driver for an IProduct or IProjectGroup cannot modify a product series.
+A person appointed to the project or series driver role is a release
+manager and can edit a product series.
 
     >>> from lp.services.webapp.authorization import check_permission
 
-    >>> ignored = login_person(series_driver)
-    >>> print emacs_series.owner.name
-    name12
-    >>> print emacs_series.driver
-    None
+    >>> firefox_driver = factory.makePerson()
+    >>> ignored = login_person(firefox_driver)
     >>> check_permission('launchpad.Edit', emacs_series)
     False
-
-A person appointed to the series driver has the release manager role and can
-edit a product series.
+    >>> ignored = login_person(firefox.owner)
+    >>> firefox.driver = firefox_driver
+    >>> ignored = login_person(firefox_driver)
+    >>> check_permission('launchpad.Edit', emacs_series)
+    True
 
     >>> ignored = login_person(firefox.owner)
     >>> emacs_series.driver = series_driver
