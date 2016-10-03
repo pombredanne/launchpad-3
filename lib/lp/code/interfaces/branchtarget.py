@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for branch targets.
@@ -121,23 +121,6 @@ class IBranchTarget(Interface):
 
     def getBugTask(bug):
         """Get the BugTask for a given bug related to the branch target."""
-
-    def newCodeImport(registrant, branch_name, rcs_type, url=None,
-                      cvs_root=None, cvs_module=None, owner=None):
-        """Create a new code import for this target.
-
-        :param registrant: the `IPerson` who should be recorded as creating
-            the import and will own the resulting branch.
-        :param branch_name: the name the resulting branch should have.
-        :param rcs_type: the type of the foreign VCS.
-        :param url: the url to import from if the import isn't CVS.
-        :param cvs_root: if the import is from CVS the CVSROOT to import from.
-        :param cvs_module: if the import is from CVS the module to import.
-        :param owner: the `IPerson` to own the resulting branch, or None to
-            use registrant.
-        :returns: an `ICodeImport`.
-        :raises AssertionError: if supports_code_imports is False.
-        """
 
     def getRelatedSeriesBranchInfo(parent_branch, limit_results=None):
         """Find development branch info related to this parent branch.

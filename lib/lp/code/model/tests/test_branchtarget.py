@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch contexts."""
@@ -8,12 +8,8 @@ __metaclass__ = type
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
-from lp.code.enums import (
-    BranchType,
-    RevisionControlSystems,
-    )
+from lp.code.enums import BranchType
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.model.branchtarget import (
     check_default_stacked_on,
     PackageBranchTarget,
@@ -201,20 +197,6 @@ class TestPackageBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
     def test_supports_code_imports(self):
         self.assertTrue(self.target.supports_code_imports)
 
-    def test_creating_code_import_succeeds(self):
-        target_url = self.factory.getUniqueURL()
-        branch_name = self.factory.getUniqueString("name-")
-        owner = self.factory.makePerson()
-        code_import = self.target.newCodeImport(
-            owner, branch_name, RevisionControlSystems.GIT, url=target_url)
-        code_import = removeSecurityProxy(code_import)
-        self.assertProvides(code_import, ICodeImport)
-        self.assertEqual(target_url, code_import.url)
-        self.assertEqual(branch_name, code_import.branch.name)
-        self.assertEqual(owner, code_import.registrant)
-        self.assertEqual(owner, code_import.branch.owner)
-        self.assertEqual(self.target, code_import.branch.target)
-
     def test_allow_recipe_name_from_target(self):
         self.assertTrue(self.target.allow_recipe_name_from_target)
 
@@ -330,13 +312,6 @@ class TestPersonBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
     def test_doesnt_support_code_imports(self):
         self.assertFalse(self.target.supports_code_imports)
-
-    def test_creating_code_import_fails(self):
-        self.assertRaises(
-            AssertionError, self.target.newCodeImport,
-                self.factory.makePerson(),
-                self.factory.getUniqueString("name-"),
-                RevisionControlSystems.GIT, url=self.factory.getUniqueURL())
 
     def test_does_not_allow_recipe_name_from_target(self):
         self.assertFalse(self.target.allow_recipe_name_from_target)
@@ -461,20 +436,6 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
 
     def test_supports_code_imports(self):
         self.assertTrue(self.target.supports_code_imports)
-
-    def test_creating_code_import_succeeds(self):
-        target_url = self.factory.getUniqueURL()
-        branch_name = self.factory.getUniqueString("name-")
-        owner = self.factory.makePerson()
-        code_import = self.target.newCodeImport(
-            owner, branch_name, RevisionControlSystems.GIT, url=target_url)
-        code_import = removeSecurityProxy(code_import)
-        self.assertProvides(code_import, ICodeImport)
-        self.assertEqual(target_url, code_import.url)
-        self.assertEqual(branch_name, code_import.branch.name)
-        self.assertEqual(owner, code_import.registrant)
-        self.assertEqual(owner, code_import.branch.owner)
-        self.assertEqual(self.target, code_import.branch.target)
 
     def test_allow_recipe_name_from_target(self):
         self.assertTrue(self.target.allow_recipe_name_from_target)
