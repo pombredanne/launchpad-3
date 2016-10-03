@@ -21,7 +21,6 @@ Code import set utility
 CodeImports are created and found using the ICodeImportSet interface,
 which is registered as a utility.
 
-    >>> from lp.code.interfaces.branchtarget import IBranchTarget
     >>> from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
@@ -74,9 +73,9 @@ in the repository, known as the "module".
     >>> cvs = RevisionControlSystems.CVS
     >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
     >>> cvs_module = 'hello'
-    >>> target = IBranchTarget(factory.makeProduct(name='widget'))
+    >>> context = factory.makeProduct(name='widget')
     >>> cvs_import = code_import_set.new(
-    ...     registrant=nopriv, target=target, branch_name='trunk-cvs',
+    ...     registrant=nopriv, context=context, branch_name='trunk-cvs',
     ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
     >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
     True
@@ -136,7 +135,7 @@ retrieve the tree to import.
     >>> svn = RevisionControlSystems.BZR_SVN
     >>> svn_url = 'svn://svn.example.com/trunk'
     >>> svn_import = code_import_set.new(
-    ...     registrant=nopriv, target=target, branch_name='trunk-svn',
+    ...     registrant=nopriv, context=context, branch_name='trunk-svn',
     ...     rcs_type=svn, url=svn_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
     True
@@ -164,7 +163,7 @@ retrieve the branch to import.
     >>> git = RevisionControlSystems.GIT
     >>> git_url = 'git://git.example.com/hello.git'
     >>> git_import = code_import_set.new(
-    ...     registrant=nopriv, target=target, branch_name='trunk-git',
+    ...     registrant=nopriv, context=context, branch_name='trunk-git',
     ...     rcs_type=git, url=git_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(git_import))
     True

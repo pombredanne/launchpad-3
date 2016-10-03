@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code import interfaces."""
@@ -220,12 +220,12 @@ class ICodeImport(Interface):
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(registrant, target, branch_name, rcs_type, url=None,
+    def new(registrant, context, branch_name, rcs_type, url=None,
             cvs_root=None, cvs_module=None, review_status=None,
             owner=None):
         """Create a new CodeImport.
 
-        :param target: An `IBranchTarget` that the code is associated with.
+        :param context: An `IHasCodeImports` that the code is associated with.
         :param owner: The `IPerson` to set as the owner of the branch, or
             None to use registrant. registrant must be a member of owner to
             do this.
