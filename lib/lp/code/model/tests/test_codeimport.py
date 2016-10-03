@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of CodeImport and CodeImportSet."""
@@ -60,7 +60,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A subversion import can use the svn:// scheme."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
+            context=self.factory.makeProduct(),
             branch_name='imported',
             rcs_type=RevisionControlSystems.BZR_SVN,
             url=self.factory.getUniqueURL(scheme="svn"))
@@ -74,7 +74,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A specific review status can be set for a new import."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
+            context=self.factory.makeProduct(),
             branch_name='imported',
             rcs_type=RevisionControlSystems.BZR_SVN,
             url=self.factory.getUniqueURL(),
@@ -89,7 +89,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new CVS code import should have REVIEWED status."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
+            context=self.factory.makeProduct(),
             branch_name='imported',
             rcs_type=RevisionControlSystems.CVS,
             cvs_root=self.factory.getUniqueURL(),
@@ -105,7 +105,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A git import can have a git:// style URL."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
+            context=self.factory.makeProduct(),
             branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(scheme="git"),
@@ -120,7 +120,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new git import is always reviewed by default."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
+            context=self.factory.makeProduct(),
             branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
@@ -135,7 +135,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """A new bzr import is always reviewed by default."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
+            context=self.factory.makeProduct(),
             branch_name='mirrored',
             rcs_type=RevisionControlSystems.BZR,
             url=self.factory.getUniqueURL(),
@@ -151,7 +151,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
         registrant = self.factory.makePerson()
         self.assertRaises(AssertionError, CodeImportSet().new,
             registrant=registrant,
-            target=IBranchTarget(registrant),
+            context=registrant,
             branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
@@ -161,10 +161,9 @@ class TestCodeImportCreation(TestCaseWithFactory):
         """Test that we can create an import targetting a source package."""
         registrant = self.factory.makePerson()
         source_package = self.factory.makeSourcePackage()
-        target = IBranchTarget(source_package)
         code_import = CodeImportSet().new(
             registrant=registrant,
-            target=target,
+            context=source_package,
             branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
@@ -172,7 +171,8 @@ class TestCodeImportCreation(TestCaseWithFactory):
         code_import = removeSecurityProxy(code_import)
         self.assertEqual(registrant, code_import.registrant)
         self.assertEqual(registrant, code_import.branch.owner)
-        self.assertEqual(target, code_import.branch.target)
+        self.assertEqual(
+            IBranchTarget(source_package), code_import.branch.target)
         self.assertEqual(source_package, code_import.branch.sourcepackage)
         # And a job is still created
         self.assertIsNot(None, code_import.import_job)
@@ -183,10 +183,9 @@ class TestCodeImportCreation(TestCaseWithFactory):
         owner = self.factory.makeTeam()
         removeSecurityProxy(registrant).join(owner)
         source_package = self.factory.makeSourcePackage()
-        target = IBranchTarget(source_package)
         code_import = CodeImportSet().new(
             registrant=registrant,
-            target=target,
+            context=source_package,
             branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),
@@ -195,7 +194,8 @@ class TestCodeImportCreation(TestCaseWithFactory):
         self.assertEqual(registrant, code_import.registrant)
         self.assertEqual(owner, code_import.branch.owner)
         self.assertEqual(registrant, code_import.branch.registrant)
-        self.assertEqual(target, code_import.branch.target)
+        self.assertEqual(
+            IBranchTarget(source_package), code_import.branch.target)
         self.assertEqual(source_package, code_import.branch.sourcepackage)
         # And a job is still created
         self.assertIsNot(None, code_import.import_job)
@@ -205,12 +205,11 @@ class TestCodeImportCreation(TestCaseWithFactory):
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam()
         source_package = self.factory.makeSourcePackage()
-        target = IBranchTarget(source_package)
         self.assertRaises(
             BranchCreatorNotMemberOfOwnerTeam,
             CodeImportSet().new,
             registrant=registrant,
-            target=target,
+            context=source_package,
             branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             url=self.factory.getUniqueURL(),

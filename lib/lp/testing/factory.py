@@ -117,7 +117,6 @@ from lp.code.enums import (
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchnamespace import get_branch_namespace
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
@@ -2359,18 +2358,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Make a code import targetting a sourcepackage."""
         if sourcepackage is None:
             sourcepackage = self.makeSourcePackage()
-        target = IBranchTarget(sourcepackage)
-        return self.makeCodeImport(target=target, **kwargs)
+        return self.makeCodeImport(context=sourcepackage, **kwargs)
 
     def makeProductCodeImport(self, product=None, **kwargs):
         """Make a code import targetting a product."""
         if product is None:
             product = self.makeProduct()
-        target = IBranchTarget(product)
-        return self.makeCodeImport(target=target, **kwargs)
+        return self.makeCodeImport(context=product, **kwargs)
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
-                       cvs_module=None, target=None, branch_name=None,
+                       cvs_module=None, context=None, branch_name=None,
                        git_repo_url=None,
                        bzr_branch_url=None, registrant=None,
                        rcs_type=None, review_status=None):
@@ -2384,8 +2381,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             bzr_branch_url is None):
             svn_branch_url = self.getUniqueURL()
 
-        if target is None:
-            target = IBranchTarget(self.makeProduct())
+        if context is None:
+            context = self.makeProduct()
         if branch_name is None:
             branch_name = self.getUniqueString('name')
         if registrant is None:
@@ -2395,24 +2392,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if svn_branch_url is not None:
             assert rcs_type in (None, RevisionControlSystems.BZR_SVN)
             return code_import_set.new(
-                registrant, target, branch_name,
+                registrant, context, branch_name,
                 rcs_type=RevisionControlSystems.BZR_SVN,
                 url=svn_branch_url, review_status=review_status)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
             return code_import_set.new(
-                registrant, target, branch_name,
+                registrant, context, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
                 url=git_repo_url, review_status=review_status)
         elif bzr_branch_url is not None:
             return code_import_set.new(
-                registrant, target, branch_name,
+                registrant, context, branch_name,
                 rcs_type=RevisionControlSystems.BZR,
                 url=bzr_branch_url, review_status=review_status)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
             return code_import_set.new(
-                registrant, target, branch_name,
+                registrant, context, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
                 cvs_root=cvs_root, cvs_module=cvs_module,
                 review_status=review_status)

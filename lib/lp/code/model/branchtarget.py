@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch targets."""
@@ -43,7 +43,7 @@ class _BaseBranchTarget:
                       cvs_root=None, cvs_module=None, owner=None):
         """See `IBranchTarget`."""
         return getUtility(ICodeImportSet).new(
-            registrant, self, branch_name, rcs_type, url=url,
+            registrant, self.context, branch_name, rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module, owner=owner)
 
     def getRelatedSeriesBranchInfo(self, parent_branch, limit_results=None):

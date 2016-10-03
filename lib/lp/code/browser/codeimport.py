@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for CodeImports."""
@@ -63,7 +63,6 @@ from lp.code.interfaces.branchnamespace import (
     get_branch_namespace,
     IBranchNamespacePolicy,
     )
-from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
     ICodeImport,
     ICodeImportSet,
@@ -363,7 +362,7 @@ class CodeImportNewView(CodeImportBaseView):
         return getUtility(ICodeImportSet).new(
             registrant=self.user,
             owner=data['owner'],
-            target=IBranchTarget(product),
+            context=product,
             branch_name=data['branch_name'],
             rcs_type=data['rcs_type'],
             url=url,

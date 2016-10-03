@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the code import worker."""
@@ -1435,7 +1435,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
         devfocus = self.factory.makeAnyBranch()
         code_import = self.factory.makeCodeImport(
                 bzr_branch_url='bzr://bzr.example.com/foo',
-                target=devfocus.target)
+                context=devfocus.target.context)
         code_import.branch.stacked_on = devfocus
         details = CodeImportSourceDetails.fromCodeImport(
             code_import)
@@ -1450,7 +1450,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
         devfocus = self.factory.makeAnyBranch(
             information_type=InformationType.USERDATA)
         code_import = self.factory.makeCodeImport(
-                target=devfocus.target,
+                context=devfocus.target.context,
                 bzr_branch_url='bzr://bzr.example.com/foo')
         code_import.branch.stacked_on = devfocus
         details = CodeImportSourceDetails.fromCodeImport(

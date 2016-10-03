@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IBranchNamespace` implementations."""
@@ -358,7 +358,7 @@ class TestProjectBranchNamespace(TestCaseWithFactory, NamespaceMixin):
         product = self.factory.makeProduct()
         name = self.factory.getUniqueString()
         code_import = self.factory.makeCodeImport(
-            registrant=owner, target=IBranchTarget(product), branch_name=name)
+            registrant=owner, context=product, branch_name=name)
         branch = code_import.branch
         new_name = self.factory.getUniqueString()
         namespace = ProjectBranchNamespace(owner, product)
@@ -371,7 +371,7 @@ class TestProjectBranchNamespace(TestCaseWithFactory, NamespaceMixin):
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
         code_import = self.factory.makeCodeImport(
-            registrant=owner, target=IBranchTarget(product))
+            registrant=owner, context=product)
         branch = code_import.branch
         new_owner = self.factory.makePerson()
         new_namespace = ProjectBranchNamespace(new_owner, product)

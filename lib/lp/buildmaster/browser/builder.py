@@ -154,7 +154,7 @@ class BuilderSetView(LaunchpadView):
     @staticmethod
     def getBuilderSortKey(builder):
         return (
-            builder.virtualized,
+            not builder.virtualized,
             tuple(p.name for p in builder.processors),
             builder.name)
 

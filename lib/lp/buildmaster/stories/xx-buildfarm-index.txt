@@ -18,14 +18,15 @@ containing the build queue status summary for each build domain.
     1 available build machine, 1 disabled and 1 building of a total of
     2 registered.
     386
-    bob   Building i386 build of mozilla-firefox 0.9 ...
     frog  Disabled
-    Non-virtual build status
-    Architecture  Builders  Queue
-    386           1         1 job (1 minute)
+    386
+    bob   Building i386 build of mozilla-firefox 0.9 ...
     Virtual build status
     Architecture  Builders  Queue
     386           0         empty
+    Non-virtual build status
+    Architecture  Builders  Queue
+    386           1         1 job (1 minute)
 
 When building, the 'Status' column contains a link to the
 corresponding 'Build' page.
