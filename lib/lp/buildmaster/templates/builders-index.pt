@@ -80,14 +80,6 @@
        </div><!-- yui-u -->
 
        <div class="yui-u">
-         <div id="nonvirt-queue-status" class="portlet">
-           <div tal:define="category view/nonvirt_builders">
-             <div metal:use-macro="template/macros/builder-category" />
-           </div>
-         </div><!-- portlet -->
-       </div><!-- yui-u -->
-
-       <div class="yui-u">
          <div id="virt-queue-status" class="portlet">
            <div tal:define="category view/virt_builders">
              <div metal:use-macro="template/macros/builder-category" />
@@ -95,6 +87,13 @@
          </div><!-- portlet -->
        </div><!-- yui-u -->
 
+       <div class="yui-u">
+         <div id="nonvirt-queue-status" class="portlet">
+           <div tal:define="category view/nonvirt_builders">
+             <div metal:use-macro="template/macros/builder-category" />
+           </div>
+         </div><!-- portlet -->
+       </div><!-- yui-u -->
 
      </div><!-- yui-ge -->
     </div> <!-- main -->
