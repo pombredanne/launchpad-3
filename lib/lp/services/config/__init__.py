@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 '''
@@ -11,6 +11,7 @@ environment variable, and defaults to 'development'
 __metaclass__ = type
 
 
+import glob
 import logging
 import os
 import sys
@@ -213,12 +214,25 @@ class LaunchpadConfig:
             config_file = os.path.join(config_dir, 'launchpad-lazr.conf')
         schema = ImplicitTypeSchema(schema_file)
         self._config = schema.load(config_file)
+        self._loadConfigOverlays(config_file)
         try:
             self._config.validate()
         except ConfigErrors as error:
             message = '\n'.join([str(e) for e in error.errors])
             raise ConfigErrors(message)
         self._setZConfig()
+
+    def _loadConfigOverlays(self, config_file):
+        """Apply config overlays from the launchpad.config_overlay_dir."""
+        rel_dir = self._config['launchpad']['config_overlay_dir']
+        if not rel_dir:
+            return
+        dir = os.path.join(
+            os.path.dirname(os.path.abspath(config_file)), rel_dir)
+        for path in sorted(glob.glob(os.path.join(dir, '*-lazr.conf'))):
+            with open(path) as f:
+                text = f.read()
+            self._config.push(path, text)
 
     @property
     def zope_config_file(self):
