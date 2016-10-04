@@ -24,8 +24,4 @@ CREATE UNIQUE INDEX codeimport__branch__key
 CREATE UNIQUE INDEX codeimport__git_repository__key
     ON CodeImport(git_repository) WHERE git_repository IS NOT NULL;
 
-ALTER TABLE CodeImportJob ADD COLUMN secret text;
-
-COMMENT ON COLUMN CodeImportJob.secret IS 'A secret token used to communicate with the code hosting service.';
-
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 80, 0);
