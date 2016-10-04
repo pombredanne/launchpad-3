@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We know we are not using root and handlers.
@@ -15,12 +15,15 @@ from doctest import (
 import os
 import unittest
 
+from fixtures import TempDir
 from lazr.config import ConfigSchema
 from lazr.config.interfaces import ConfigErrors
 import pkg_resources
+import testtools
 import ZConfig
 
 import lp.services.config
+from lp.services.config.fixture import ConfigUseFixture
 
 # Configs that shouldn't be tested.
 EXCLUDED_CONFIGS = ['lpnet-template']
@@ -68,7 +71,7 @@ def make_config_test(config_file, description):
     return LAZRConfigTestCase
 
 
-class TestLaunchpadConfig(unittest.TestCase):
+class TestLaunchpadConfig(testtools.TestCase):
 
     def test_dir(self):
         # dir(config) returns methods, variables and section names.
@@ -87,6 +90,55 @@ class TestLaunchpadConfig(unittest.TestCase):
         config._getConfig()
         sections = set(config._config)
         self.assertEqual(sections, set(config))
+
+    def test_override_directory(self):
+        # The launchpad.config_overlay_dir setting can be used to load
+        # extra config files over the top. This is useful for overlaying
+        # non-version-controlled secrets.
+        config_dir = self.useFixture(TempDir(rootdir='configs')).path
+        config_name = os.path.basename(config_dir)
+        overlay_dir = self.useFixture(TempDir(rootdir='configs')).path
+        with open(os.path.join(config_dir, 'launchpad-lazr.conf'), 'w') as f:
+            f.write("""
+                [meta]
+                extends: ../testrunner/launchpad-lazr.conf
+
+                [launchpad]
+                config_overlay_dir: ../%s
+                """ % os.path.basename(overlay_dir))
+        os.symlink(
+            '../testrunner/launchpad.conf',
+            os.path.join(config_dir, 'launchpad.conf'))
+
+        config = lp.services.config.config
+
+        with ConfigUseFixture(config_name):
+            self.assertEqual('launchpad_main', config.launchpad.dbuser)
+            self.assertEqual('', config.launchpad.site_message)
+
+        with open(os.path.join(overlay_dir, '00-test-lazr.conf'), 'w') as f:
+            f.write("""
+                [launchpad]
+                dbuser: overlay-user
+                site_message: An overlay!
+                """)
+        with ConfigUseFixture(config_name):
+            self.assertEqual('overlay-user', config.launchpad.dbuser)
+            self.assertEqual('An overlay!', config.launchpad.site_message)
+
+        with open(os.path.join(overlay_dir, '01-test-lazr.conf'), 'w') as f:
+            f.write("""
+                [launchpad]
+                site_message: Another overlay!
+                """)
+        with ConfigUseFixture(config_name):
+            self.assertEqual('overlay-user', config.launchpad.dbuser)
+            self.assertEqual('Another overlay!', config.launchpad.site_message)
+
+        os.unlink(os.path.join(overlay_dir, '00-test-lazr.conf'))
+        with ConfigUseFixture(config_name):
+            self.assertEqual('launchpad_main', config.launchpad.dbuser)
+            self.assertEqual('Another overlay!', config.launchpad.site_message)
 
 
 def test_suite():
