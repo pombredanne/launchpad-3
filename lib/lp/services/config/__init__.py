@@ -225,6 +225,8 @@ class LaunchpadConfig:
     def _loadConfigOverlays(self, config_file):
         """Apply config overlays from the launchpad.config_overlay_dir."""
         rel_dir = self._config['launchpad']['config_overlay_dir']
+        if not rel_dir:
+            return
         dir = os.path.join(
             os.path.dirname(os.path.abspath(config_file)), rel_dir)
         for path in sorted(glob.glob(os.path.join(dir, '*-lazr.conf'))):
