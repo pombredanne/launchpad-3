@@ -2602,35 +2602,6 @@ ALTER TABLE bugbranch ENABLE TRIGGER ALL;
 
 
 
-ALTER TABLE cve DISABLE TRIGGER ALL;
-
-INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (1, '1999-8979', 2, 'Firefox crashes all the time', '2005-09-07 19:00:32.944561', '2005-09-13 14:00:03.508959', NULL);
-INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (2, '1999-2345', 1, 'Possible data loss', '2005-09-07 19:00:32.944561', '2005-09-13 14:00:03.513099', NULL);
-INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (3, '2005-2730', 1, 'The HTTP proxy in Astaro Security Linux 6.0 allows remote attackers to obtain sensitive information via an invalid request, which reveals a Proxy-authorization string in an error message.', '2005-09-13 14:05:15.669384', '2005-09-13 14:05:15.669384', NULL);
-INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (4, '2005-2731', 1, 'Directory traversal vulnerability in Astaro Security Linux 6.0, when using Webmin, allows remote authenticated webmin users to read arbitrary files via a ..  (dot dot) in the wfe_download parameter to index.fpl.', '2005-09-13 14:05:15.91729', '2005-09-13 14:05:15.91729', NULL);
-INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (5, '2005-2732', 1, 'AWStats 6.4, and possibly earlier versions, allows remote attackers to obtain sensitive information via a file that does not exist in the config parameter, which reveals the path in an error message.', '2005-09-13 14:05:15.992007', '2005-09-13 14:05:15.992007', NULL);
-INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (6, '2005-2733', 1, 'upload_img_cgi.php in Simple PHP Blog (SPHPBlog) does not properly restrict file extensions of uploaded files, which could allow remote attackers to execute arbitrary code.', '2005-09-13 14:05:16.072418', '2005-09-13 14:05:16.072418', NULL);
-INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (7, '2005-2734', 1, 'Cross-site scripting (XSS) vulnerability in Gallery 1.5.1-RC2 and earlier allows remote attackers to inject arbitrary web script or HTML via EXIF data, such as the Camera Model Tag.', '2005-09-13 14:05:16.202393', '2005-09-13 14:05:16.202393', NULL);
-INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (8, '2005-2735', 1, 'Cross-site scripting (XSS) vulnerability in phpGraphy 0.9.9a and earlier allows remote attackers to inject arbitrary web script or HTML via EXIF data, such as the Camera Model Tag.', '2005-09-13 14:05:16.412226', '2005-09-13 14:05:16.412226', NULL);
-INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (9, '2005-2736', 1, 'Cross-site scripting (XSS) vulnerability in YaPig 0.95 and earlier allows remote attackers to inject arbitrary web script or HTML via EXIF data, such as the Camera Model Tag.', '2005-09-13 14:05:16.841572', '2005-09-13 14:05:16.841572', NULL);
-INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (10, '2005-2737', 1, 'Cross-site scripting (XSS) vulnerability in PhotoPost PHP Pro 5.1 allows remote attackers to inject arbitrary web script or HTML via EXIF data, such as the Camera Model Tag.', '2005-09-13 14:05:17.043865', '2005-09-13 14:05:17.043865', NULL);
-
-
-ALTER TABLE cve ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bugcve DISABLE TRIGGER ALL;
-
-INSERT INTO bugcve (id, bug, cve, date_created) VALUES (1, 1, 1, '2006-10-16 18:31:43.127783');
-INSERT INTO bugcve (id, bug, cve, date_created) VALUES (2, 2, 2, '2006-10-16 18:31:43.128996');
-
-
-ALTER TABLE bugcve ENABLE TRIGGER ALL;
-
-
-
-
-
 ALTER TABLE bugwatch DISABLE TRIGGER ALL;
 
 INSERT INTO bugwatch (id, bug, bugtracker, remotebug, remotestatus, lastchanged, lastchecked, datecreated, owner, last_error_type, remote_importance, remote_lp_bug_id, next_check) VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12, NULL, 'BAZBAZ', NULL, NULL);
@@ -3115,8 +3086,8 @@ ALTER TABLE buildqueue ENABLE TRIGGER ALL;
 
 ALTER TABLE codeimport DISABLE TRIGGER ALL;
 
-INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, cvs_root, cvs_module, review_status, date_last_successful, owner, assignee, update_interval, url) VALUES (1, 75, '2007-06-25 20:04:04.226605', 52, 2, NULL, NULL, 20, NULL, 52, NULL, NULL, 'http://svn.example.org/svnroot/gnome-terminal/trunk');
-INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, cvs_root, cvs_module, review_status, date_last_successful, owner, assignee, update_interval, url) VALUES (2, 76, '2007-06-25 20:04:04.379285', 52, 1, ':pserver:anonymous@anoncvs.example.org:/cvs/gnome', 'evolution', 1, NULL, 52, NULL, NULL, NULL);
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, cvs_root, cvs_module, review_status, date_last_successful, owner, assignee, update_interval, url, git_repository) VALUES (1, 75, '2007-06-25 20:04:04.226605', 52, 2, NULL, NULL, 20, NULL, 52, NULL, NULL, 'http://svn.example.org/svnroot/gnome-terminal/trunk', NULL);
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, cvs_root, cvs_module, review_status, date_last_successful, owner, assignee, update_interval, url, git_repository) VALUES (2, 76, '2007-06-25 20:04:04.379285', 52, 1, ':pserver:anonymous@anoncvs.example.org:/cvs/gnome', 'evolution', 1, NULL, 52, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE codeimport ENABLE TRIGGER ALL;
@@ -3283,6 +3254,23 @@ ALTER TABLE customlanguagecode ENABLE TRIGGER ALL;
 
 
 
+
+
+ALTER TABLE cve DISABLE TRIGGER ALL;
+
+INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (1, '1999-8979', 2, 'Firefox crashes all the time', '2005-09-07 19:00:32.944561', '2005-09-13 14:00:03.508959', NULL);
+INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (2, '1999-2345', 1, 'Possible data loss', '2005-09-07 19:00:32.944561', '2005-09-13 14:00:03.513099', NULL);
+INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (3, '2005-2730', 1, 'The HTTP proxy in Astaro Security Linux 6.0 allows remote attackers to obtain sensitive information via an invalid request, which reveals a Proxy-authorization string in an error message.', '2005-09-13 14:05:15.669384', '2005-09-13 14:05:15.669384', NULL);
+INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (4, '2005-2731', 1, 'Directory traversal vulnerability in Astaro Security Linux 6.0, when using Webmin, allows remote authenticated webmin users to read arbitrary files via a ..  (dot dot) in the wfe_download parameter to index.fpl.', '2005-09-13 14:05:15.91729', '2005-09-13 14:05:15.91729', NULL);
+INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (5, '2005-2732', 1, 'AWStats 6.4, and possibly earlier versions, allows remote attackers to obtain sensitive information via a file that does not exist in the config parameter, which reveals the path in an error message.', '2005-09-13 14:05:15.992007', '2005-09-13 14:05:15.992007', NULL);
+INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (6, '2005-2733', 1, 'upload_img_cgi.php in Simple PHP Blog (SPHPBlog) does not properly restrict file extensions of uploaded files, which could allow remote attackers to execute arbitrary code.', '2005-09-13 14:05:16.072418', '2005-09-13 14:05:16.072418', NULL);
+INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (7, '2005-2734', 1, 'Cross-site scripting (XSS) vulnerability in Gallery 1.5.1-RC2 and earlier allows remote attackers to inject arbitrary web script or HTML via EXIF data, such as the Camera Model Tag.', '2005-09-13 14:05:16.202393', '2005-09-13 14:05:16.202393', NULL);
+INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (8, '2005-2735', 1, 'Cross-site scripting (XSS) vulnerability in phpGraphy 0.9.9a and earlier allows remote attackers to inject arbitrary web script or HTML via EXIF data, such as the Camera Model Tag.', '2005-09-13 14:05:16.412226', '2005-09-13 14:05:16.412226', NULL);
+INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (9, '2005-2736', 1, 'Cross-site scripting (XSS) vulnerability in YaPig 0.95 and earlier allows remote attackers to inject arbitrary web script or HTML via EXIF data, such as the Camera Model Tag.', '2005-09-13 14:05:16.841572', '2005-09-13 14:05:16.841572', NULL);
+INSERT INTO cve (id, sequence, status, description, datecreated, datemodified, fti) VALUES (10, '2005-2737', 1, 'Cross-site scripting (XSS) vulnerability in PhotoPost PHP Pro 5.1 allows remote attackers to inject arbitrary web script or HTML via EXIF data, such as the Camera Model Tag.', '2005-09-13 14:05:17.043865', '2005-09-13 14:05:17.043865', NULL);
+
+
+ALTER TABLE cve ENABLE TRIGGER ALL;
 
 
 
@@ -9162,16 +9150,6 @@ ALTER TABLE question ENABLE TRIGGER ALL;
 
 
 
-ALTER TABLE questionbug DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE questionbug ENABLE TRIGGER ALL;
-
-
-
-
-
 ALTER TABLE questionjob DISABLE TRIGGER ALL;
 
 
@@ -9452,6 +9430,13 @@ ALTER TABLE snapbuild ENABLE TRIGGER ALL;
 
 
 
+ALTER TABLE snapbuildjob DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE snapbuildjob ENABLE TRIGGER ALL;
+
+
 ALTER TABLE snapfile DISABLE TRIGGER ALL;
 
 
@@ -9576,17 +9561,6 @@ INSERT INTO specificationbranch (id, datecreated, specification, branch, summary
 
 
 ALTER TABLE specificationbranch ENABLE TRIGGER ALL;
-
-
-
-
-
-ALTER TABLE specificationbug DISABLE TRIGGER ALL;
-
-INSERT INTO specificationbug (id, specification, bug) VALUES (1, 3, 1);
-
-
-ALTER TABLE specificationbug ENABLE TRIGGER ALL;
 
 
 
