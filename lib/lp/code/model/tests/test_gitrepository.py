@@ -43,9 +43,11 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     GitObjectType,
+    GitRepositoryType,
     )
 from lp.code.errors import (
     CannotDeleteGitRepository,
+    CannotModifyNonHostedGitRepository,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     GitRepositoryCreatorNotOwner,
     GitRepositoryExists,
@@ -1333,6 +1335,23 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
         with person_logged_in(repository.owner):
             repository.default_branch = u"master"
+        self.assertEqual([], hosting_fixture.setProperties.calls)
+        self.assertEqual(u"refs/heads/master", repository.default_branch)
+
+    def test_set_default_branch_imported(self):
+        hosting_fixture = self.useFixture(GitHostingFixture())
+        repository = self.factory.makeGitRepository(
+            repository_type=GitRepositoryType.IMPORTED)
+        self.factory.makeGitRefs(
+            repository=repository,
+            paths=(u"refs/heads/master", u"refs/heads/new"))
+        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+        with person_logged_in(repository.owner):
+            self.assertRaisesWithContent(
+                CannotModifyNonHostedGitRepository,
+                "Cannot modify non-hosted Git repository %s." %
+                    repository.display_name,
+                setattr, repository, "default_branch", u"new")
         self.assertEqual([], hosting_fixture.setProperties.calls)
         self.assertEqual(u"refs/heads/master", repository.default_branch)
 

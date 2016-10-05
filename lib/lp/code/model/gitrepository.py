@@ -76,6 +76,7 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     CannotDeleteGitRepository,
+    CannotModifyNonHostedGitRepository,
     GitDefaultConflict,
     GitTargetError,
     NoSuchGitReference,
@@ -513,6 +514,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     @default_branch.setter
     def default_branch(self, value):
         """See `IGitRepository`."""
+        if self.repository_type != GitRepositoryType.HOSTED:
+            raise CannotModifyNonHostedGitRepository(self)
         ref = self.getRefByPath(value)
         if ref is None:
             raise NoSuchGitReference(self, value)

@@ -22,6 +22,7 @@ __all__ = [
     'CannotDeleteBranch',
     'CannotDeleteGitRepository',
     'CannotHaveLinkedBranch',
+    'CannotModifyNonHostedGitRepository',
     'CannotUpgradeBranch',
     'CannotUpgradeNonHosted',
     'CodeImportAlreadyRequested',
@@ -456,6 +457,16 @@ class GitDefaultConflict(Exception):
         self.target = target
         self.owner = owner
         Exception.__init__(self, message)
+
+
+@error_status(httplib.FORBIDDEN)
+class CannotModifyNonHostedGitRepository(Exception):
+    """Raised when trying to modify a non-hosted Git repository."""
+
+    def __init__(self, repository):
+        super(CannotModifyNonHostedGitRepository, self).__init__(
+            "Cannot modify non-hosted Git repository %s." %
+            repository.display_name)
 
 
 @error_status(httplib.BAD_REQUEST)
