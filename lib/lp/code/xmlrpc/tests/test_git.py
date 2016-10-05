@@ -9,6 +9,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.code.enums import GitRepositoryType
 from lp.code.errors import GitRepositoryCreationFault
 from lp.code.interfaces.codehosting import (
     LAUNCHPAD_ANONYMOUS,
@@ -153,6 +154,7 @@ class TestGitAPIMixin:
         self.assertEqual(
             (repository.getInternalPath(),),
             self.hosting_fixture.create.extract_args()[0])
+        self.assertEqual(GitRepositoryType.HOSTED, repository.repository_type)
         return repository
 
     def assertCreatesFromClone(self, requester, path, cloned_from,
@@ -192,6 +194,14 @@ class TestGitAPIMixin:
         requester = self.factory.makePerson()
         team = self.factory.makeTeam(self.factory.makePerson())
         repository = self.factory.makeGitRepository(owner=team)
+        path = u"/%s" % repository.unique_name
+        self.assertTranslates(requester, path, repository, False)
+        self.assertPermissionDenied(requester, path, permission="write")
+
+    def test_translatePath_imported(self):
+        requester = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=requester, repository_type=GitRepositoryType.IMPORTED)
         path = u"/%s" % repository.unique_name
         self.assertTranslates(requester, path, repository, False)
         self.assertPermissionDenied(requester, path, permission="write")
