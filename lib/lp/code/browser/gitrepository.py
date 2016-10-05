@@ -58,6 +58,7 @@ from lp.code.browser.widgets.gitrepositorytarget import (
     GitRepositoryTargetDisplayWidget,
     GitRepositoryTargetWidget,
     )
+from lp.code.enums import GitRepositoryType
 from lp.code.errors import (
     GitDefaultConflict,
     GitRepositoryCreationForbidden,
@@ -67,11 +68,11 @@ from lp.code.errors import (
 from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitref import IGitRefBatchNavigator
 from lp.code.interfaces.gitrepository import IGitRepository
+from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
     )
-from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
 from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -318,7 +319,9 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
     @property
     def user_can_push(self):
         """Whether the user can push to this branch."""
-        return check_permission("launchpad.Edit", self.context)
+        return (
+            self.context.repository_type == GitRepositoryType.HOSTED and
+            check_permission("launchpad.Edit", self.context))
 
     def branches(self):
         """All branches in this repository, sorted for display."""

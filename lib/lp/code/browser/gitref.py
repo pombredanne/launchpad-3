@@ -37,6 +37,7 @@ from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.code.enums import GitRepositoryType
 from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
@@ -115,7 +116,10 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
     @property
     def user_can_push(self):
         """Whether the user can push to this branch."""
-        return check_permission("launchpad.Edit", self.context)
+        return (
+            self.context.repository.repository_type ==
+                GitRepositoryType.HOSTED and
+            check_permission("launchpad.Edit", self.context))
 
     @property
     def show_merge_links(self):
