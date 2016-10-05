@@ -99,8 +99,8 @@ class BranchType(DBEnumeratedType):
     IMPORTED = DBItem(3, """
         Imported
 
-        Branches that have been imported from an externally hosted
-        branch in bzr or another VCS and are made available through Launchpad.
+        This branch has been imported from an externally-hosted branch in
+        bzr or another VCS and is made available through Launchpad.
         """)
 
     REMOTE = DBItem(4, """
@@ -130,8 +130,8 @@ class GitRepositoryType(DBEnumeratedType):
     IMPORTED = DBItem(3, """
         Imported
 
-        Repositories that have been imported from an externally hosted
-        repository and are made available through Launchpad.
+        This repository has been imported from an externally-hosted
+        repository and is made available through Launchpad.
         """)
 
 
