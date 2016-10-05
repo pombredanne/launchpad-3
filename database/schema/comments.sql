@@ -367,10 +367,6 @@ COMMENT ON TABLE BugTrackerComponentGroup IS 'A collection of components as mode
 COMMENT ON COLUMN BugTrackerComponentGroup.name IS 'The product or category name used in the remote bug tracker for grouping components.';
 COMMENT ON COLUMN BugTrackerComponentGroup.bug_tracker IS 'The external bug tracker this component group belongs to.';
 
--- BugCve
-
-COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
-
 
 -- BugWatch
 
@@ -1008,10 +1004,6 @@ COMMENT ON COLUMN Question.language IS 'The language of the question''s title an
 COMMENT ON COLUMN Question.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the question. So its a useful way for projects to add their own semantics or metadata to the Answer Tracker.';
 COMMENT ON COLUMN Question.faq IS 'The FAQ document that contains the long answer to this question.';
 
--- QuestionBug
-
-COMMENT ON TABLE QuestionBug IS 'A link between a question and a bug, showing that the bug is somehow related to this question.';
-
 -- QuestionMessage
 
 COMMENT ON TABLE QuestionMessage IS 'A link between a question and a message. This means that the message will be displayed on the question page.';
@@ -1337,10 +1329,6 @@ COMMENT ON COLUMN MessageChunk.content IS 'Text content for this chunk of the me
 COMMENT ON COLUMN MessageChunk.blob IS 'Binary content for this chunk of the message.';
 COMMENT ON COLUMN MessageChunk.sequence IS 'Order of a particular chunk. Chunks are orders in ascending order starting from 1.';
 
--- Comments on Lucille views
-COMMENT ON VIEW SourcePackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a sourcepackagerelease and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
-COMMENT ON VIEW BinaryPackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a binarypackage and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
-
 -- SourcePackageRelease
 
 COMMENT ON TABLE SourcePackageRelease IS 'SourcePackageRelease: A source
@@ -1497,9 +1485,6 @@ COMMENT ON TABLE SpecificationBranch IS 'A branch related to a specification, mo
 COMMENT ON COLUMN SpecificationBranch.specification IS 'The specification associated with this branch.';
 COMMENT ON COLUMN SpecificationBranch.branch IS 'The branch associated to the specification.';
 COMMENT ON COLUMN SpecificationBranch.registrant IS 'The person who linked the specification to the branch.';
-
--- SpecificationBug
-COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to related specs, and vice versa.';
 
 -- SpecificationSubscription
 COMMENT ON TABLE SpecificationSubscription IS 'A table capturing a subscription of a person to a specification.';
