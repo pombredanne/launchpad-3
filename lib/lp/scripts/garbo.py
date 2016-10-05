@@ -1840,9 +1840,8 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                     tunable_loop.run()
                     loop_logger.debug(
                         "%s completed sucessfully.", loop_name)
-                except Exception as e:
+                except Exception:
                     loop_logger.exception("Unhandled exception")
-                    print(e)
                     self.failure_count += 1
 
             finally:
