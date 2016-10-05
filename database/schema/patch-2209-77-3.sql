@@ -7,6 +7,7 @@ DROP FUNCTION generate_openid_identifier();
 DROP FUNCTION set_openid_identifier();
 DROP FUNCTION set_shipit_normalized_address();
 DROP FUNCTION is_printable_ascii(text);
+DROP FUNCTION is_person(text);
 
 -- Unused since r5499.
 DROP FUNCTION is_team(integer);
