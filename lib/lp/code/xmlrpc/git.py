@@ -229,7 +229,7 @@ class GitAPI(LaunchpadXMLRPCView):
             raise
 
     @return_fault
-    def _translatePath(self, requester, path, permission, can_authenticate):
+    def _translatePath(self, requester, path, permission, auth_params):
         if requester == LAUNCHPAD_ANONYMOUS:
             requester = None
         try:
@@ -247,6 +247,7 @@ class GitAPI(LaunchpadXMLRPCView):
             # Turn lookup errors for anonymous HTTP requests into
             # "authorisation required", so that the user-agent has a
             # chance to try HTTP basic auth.
+            can_authenticate = auth_params.get("can-authenticate", False)
             if can_authenticate and requester is None:
                 raise faults.Unauthorized()
             else:
@@ -257,16 +258,17 @@ class GitAPI(LaunchpadXMLRPCView):
         if len(auth_args) == 1:
             auth_params = auth_args[0]
             requester_id = auth_params.get("id")
-            can_authenticate = auth_params.get("can-authenticate", False)
         else:
             requester_id, can_authenticate = auth_args
+            auth_params = {
+                "id": requester_id, "can-authenticate": can_authenticate}
         if requester_id is None:
             requester_id = LAUNCHPAD_ANONYMOUS
         if isinstance(path, str):
             path = path.decode('utf-8')
         return run_with_login(
             requester_id, self._translatePath,
-            path.strip("/"), permission, can_authenticate)
+            path.strip("/"), permission, auth_params)
 
     def notify(self, translated_path):
         """See `IGitAPI`."""
