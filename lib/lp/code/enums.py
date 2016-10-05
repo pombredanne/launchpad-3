@@ -24,6 +24,7 @@ __all__ = [
     'GitRepositoryType',
     'NON_CVS_RCS_TYPES',
     'RevisionControlSystems',
+    'TargetRevisionControlSystems',
     ]
 
 from lazr.enum import (
@@ -397,6 +398,25 @@ class RevisionControlSystems(DBEnumeratedType):
         Bazaar
 
         Mirror of a Bazaar branch.
+        """)
+
+
+class TargetRevisionControlSystems(EnumeratedType):
+    """Target Revision Control Systems
+
+    Revision control systems that can be the target of a code import.
+    """
+
+    BZR = Item("""
+        Bazaar
+
+        Import to Bazaar.
+        """)
+
+    GIT = Item("""
+        Git
+
+        Import to Git.
         """)
 
 

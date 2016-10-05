@@ -633,6 +633,8 @@
     <allow attributes="id
                        date_created
                        branch
+                       git_repository
+                       target
                        registrant
                        owner
                        assignee

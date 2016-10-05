@@ -3,5 +3,5 @@ Hello,
 %(body)s
 
 -- 
-%(branch)s
+%(target)s
 %(rationale)s%(unsubscribe)s

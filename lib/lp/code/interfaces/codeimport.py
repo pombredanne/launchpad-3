@@ -43,6 +43,7 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.services.fields import (
     PublicPersonChoice,
     URIField,
@@ -86,10 +87,18 @@ class ICodeImport(Interface):
 
     branch = exported(
         ReferenceChoice(
-            title=_('Branch'), required=True, readonly=True,
+            title=_('Branch'), required=False, readonly=True,
             vocabulary='Branch', schema=IBranch,
             description=_("The Bazaar branch produced by the "
                 "import system.")))
+    git_repository = exported(
+        ReferenceChoice(
+            title=_('Git repository'), required=False, readonly=True,
+            vocabulary='GitRepository', schema=IGitRepository,
+            description=_(
+                "The Git repository produced by the import system.")))
+    target = Attribute(
+        "The branch/repository produced by the import system (VCS-agnostic).")
 
     registrant = PublicPersonChoice(
         title=_('Registrant'), required=True, readonly=True,
@@ -220,8 +229,8 @@ class ICodeImport(Interface):
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(registrant, context, branch_name, rcs_type, url=None,
-            cvs_root=None, cvs_module=None, review_status=None,
+    def new(registrant, context, branch_name, rcs_type, target_rcs_type,
+            url=None, cvs_root=None, cvs_module=None, review_status=None,
             owner=None):
         """Create a new CodeImport.
 
@@ -238,7 +247,10 @@ class ICodeImportSet(Interface):
         """
 
     def getByBranch(branch):
-        """Get the CodeImport, if any, associated to a Branch."""
+        """Get the CodeImport, if any, associated with a Branch."""
+
+    def getByGitRepository(repository):
+        """Get the CodeImport, if any, associated with a GitRepository."""
 
     def getByCVSDetails(cvs_root, cvs_module):
         """Get the CodeImport with the specified CVS details."""
