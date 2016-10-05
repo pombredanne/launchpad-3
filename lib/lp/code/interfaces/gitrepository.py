@@ -130,7 +130,10 @@ class IGitRepositoryView(IHasRecipes):
 
     repository_type = exported(Choice(
         title=_("Repository type"), required=True, readonly=True,
-        vocabulary=GitRepositoryType))
+        vocabulary=GitRepositoryType,
+        description=_(
+            "The way this repository is hosted: directly on Launchpad, or "
+            "imported from somewhere else.")))
 
     registrant = exported(PublicPersonChoice(
         title=_("Registrant"), required=True, readonly=True,
