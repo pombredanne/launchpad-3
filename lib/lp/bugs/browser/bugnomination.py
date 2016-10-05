@@ -52,9 +52,9 @@ class BugNominationView(LaunchpadFormView):
         LaunchpadFormView.initialize(self)
         # Update the submit label based on the user's permission.
         submit_action = self.__class__.actions.byname['actions.submit']
-        if self.userIsReleaseManager():
+        if self.userCanTarget():
             submit_action.label = _("Target")
-        elif self.userIsBugSupervisor():
+        elif self.userCanNominate():
             submit_action.label = _("Nominate")
         else:
             self.request.response.addErrorNotification(
@@ -68,19 +68,19 @@ class BugNominationView(LaunchpadFormView):
 
         The label returned depends on the user's privileges.
         """
-        if self.userIsReleaseManager():
+        if self.userCanTarget():
             return "Target bug #%d to series" % self.context.bug.id
         else:
             return "Nominate bug #%d for series" % self.context.bug.id
 
     page_title = label
 
-    def userIsReleaseManager(self):
-        """Does the current user have release management privileges?"""
+    def userCanTarget(self):
+        """Can the current user target the bug to a series?"""
         return self.current_bugtask.userHasDriverPrivileges(self.user)
 
-    def userIsBugSupervisor(self):
-        """Is the current user the bug supervisor?"""
+    def userCanNominate(self):
+        """Can the current user nominate the bug for a series?"""
         return self.current_bugtask.userHasBugSupervisorPrivileges(
             self.user)
 
