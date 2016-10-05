@@ -41,6 +41,7 @@ from storm.expr import (
     Or,
     Row,
     SQL,
+    Update,
     )
 from storm.info import ClassAlias
 from storm.store import EmptyResultSet
@@ -58,6 +59,7 @@ from lp.bugs.scripts.checkwatches.scheduler import (
     BugWatchScheduler,
     MAX_SAMPLE_SIZE,
     )
+from lp.code.enums import GitRepositoryType
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.codeimportevent import CodeImportEvent
 from lp.code.model.codeimportresult import CodeImportResult
@@ -65,6 +67,7 @@ from lp.code.model.diff import (
     Diff,
     PreviewDiff,
     )
+from lp.code.model.gitrepository import GitRepository
 from lp.code.model.revision import (
     RevisionAuthor,
     RevisionCache,
@@ -1603,6 +1606,33 @@ class SnapStoreSeriesPopulator(TunableLoop):
         transaction.commit()
 
 
+class GitRepositoryTypePopulator(TunableLoop):
+    """Populates GitRepository.repository_type with HOSTED."""
+
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(GitRepositoryTypePopulator, self).__init__(log, abort_time)
+        self.start_at = 1
+        self.store = IMasterStore(GitRepository)
+
+    def findRepositories(self):
+        return self.store.find(
+            GitRepository,
+            GitRepository.id >= self.start_at,
+            GitRepository._repository_type == None).order_by(GitRepository.id)
+
+    def isDone(self):
+        return self.findRepositories().is_empty()
+
+    def __call__(self, chunk_size):
+        ids = [repository.id for repository in self.findRepositories()]
+        self.store.execute(Update(
+            {GitRepository._repository_type: GitRepositoryType.HOSTED.value},
+            where=GitRepository.id.is_in(ids), table=GitRepository))
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1883,6 +1913,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         CodeImportResultPruner,
         DiffPruner,
         GitJobPruner,
+        GitRepositoryTypePopulator,
         HWSubmissionEmailLinker,
         LiveFSFilePruner,
         LoginTokenPruner,

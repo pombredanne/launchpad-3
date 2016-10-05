@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IGitNamespace`."""
@@ -70,9 +70,9 @@ from lp.services.propertycache import get_property_cache
 class _BaseGitNamespace:
     """Common code for Git repository namespaces."""
 
-    def createRepository(self, registrant, name, reviewer=None,
-                         information_type=None, date_created=DEFAULT,
-                         description=None):
+    def createRepository(self, repository_type, registrant, name,
+                         reviewer=None, information_type=None,
+                         date_created=DEFAULT, description=None):
         """See `IGitNamespace`."""
 
         self.validateRegistrant(registrant)
@@ -84,8 +84,9 @@ class _BaseGitNamespace:
                 raise GitRepositoryCreationForbidden()
 
         repository = GitRepository(
-            registrant, self.owner, self.target, name, information_type,
-            date_created, reviewer=reviewer, description=description)
+            repository_type, registrant, self.owner, self.target, name,
+            information_type, date_created, reviewer=reviewer,
+            description=description)
         repository._reconcileAccess()
 
         # The owner of the repository should also be automatically subscribed

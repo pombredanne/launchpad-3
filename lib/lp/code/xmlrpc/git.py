@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of the XML-RPC APIs for Git."""
@@ -20,6 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
+from lp.code.enums import GitRepositoryType
 from lp.code.errors import (
     GitRepositoryCreationException,
     GitRepositoryCreationFault,
@@ -75,7 +76,9 @@ class GitAPI(LaunchpadXMLRPCView):
             hosting_path = repository.getInternalPath()
         except Unauthorized:
             return None
-        writable = check_permission("launchpad.Edit", repository)
+        writable = (
+            repository.repository_type == GitRepositoryType.HOSTED and
+            check_permission("launchpad.Edit", repository))
         return {
             "path": hosting_path,
             "writable": writable,
@@ -171,7 +174,7 @@ class GitAPI(LaunchpadXMLRPCView):
 
         try:
             repository = namespace.createRepository(
-                requester, repository_name)
+                GitRepositoryType.HOSTED, requester, repository_name)
         except LaunchpadValidationError as e:
             # Despite the fault name, this just passes through the exception
             # text so there's no need for a new Git-specific fault.

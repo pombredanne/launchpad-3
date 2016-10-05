@@ -61,6 +61,7 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
+    GitRepositoryType,
     )
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
@@ -126,6 +127,13 @@ class IGitRepositoryView(IHasRecipes):
 
     date_created = exported(Datetime(
         title=_("Date created"), required=True, readonly=True))
+
+    repository_type = exported(Choice(
+        title=_("Repository type"), required=True, readonly=True,
+        vocabulary=GitRepositoryType,
+        description=_(
+            "The way this repository is hosted: directly on Launchpad, or "
+            "imported from somewhere else.")))
 
     registrant = exported(PublicPersonChoice(
         title=_("Registrant"), required=True, readonly=True,

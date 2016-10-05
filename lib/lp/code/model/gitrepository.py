@@ -70,9 +70,13 @@ from lp.app.interfaces.launchpad import (
     IPrivacy,
     )
 from lp.app.interfaces.services import IService
-from lp.code.enums import GitObjectType
+from lp.code.enums import (
+    GitObjectType,
+    GitRepositoryType,
+    )
 from lp.code.errors import (
     CannotDeleteGitRepository,
+    CannotModifyNonHostedGitRepository,
     GitDefaultConflict,
     GitTargetError,
     NoSuchGitReference,
@@ -238,6 +242,22 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     date_last_modified = DateTime(
         name='date_last_modified', tzinfo=pytz.UTC, allow_none=False)
 
+    _repository_type = EnumCol(
+        dbName='repository_type', enum=GitRepositoryType, notNull=False)
+
+    @property
+    def repository_type(self):
+        # XXX cjwatson 2016-10-03: Remove once this column has been
+        # backfilled.
+        if self._repository_type is None:
+            return GitRepositoryType.HOSTED
+        else:
+            return self._repository_type
+
+    @repository_type.setter
+    def repository_type(self, value):
+        self._repository_type = value
+
     registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
 
@@ -266,9 +286,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
     _default_branch = Unicode(name='default_branch', allow_none=True)
 
-    def __init__(self, registrant, owner, target, name, information_type,
-                 date_created, reviewer=None, description=None):
+    def __init__(self, repository_type, registrant, owner, target, name,
+                 information_type, date_created, reviewer=None,
+                 description=None):
         super(GitRepository, self).__init__()
+        self.repository_type = repository_type
         self.registrant = registrant
         self.owner = owner
         self.reviewer = reviewer
@@ -492,6 +514,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     @default_branch.setter
     def default_branch(self, value):
         """See `IGitRepository`."""
+        if self.repository_type != GitRepositoryType.HOSTED:
+            raise CannotModifyNonHostedGitRepository(self)
         ref = self.getRefByPath(value)
         if ref is None:
             raise NoSuchGitReference(self, value)

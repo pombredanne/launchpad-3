@@ -22,6 +22,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
+from lp.code.enums import GitRepositoryType
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.enums import BranchSharingPolicy
@@ -98,9 +99,17 @@ class TestGitRepositoryView(BrowserTestCase):
             self.assertTrue(view.user_can_push)
 
     def test_user_can_push_non_owner(self):
-        # Someone not associated with the repository cannot upload.
+        # Someone not associated with the repository cannot push.
         repository = self.factory.makeGitRepository()
         with person_logged_in(self.factory.makePerson()):
+            view = create_initialized_view(repository, "+index")
+            self.assertFalse(view.user_can_push)
+
+    def test_user_can_push_imported(self):
+        # Even the owner of an imported repository cannot push.
+        repository = self.factory.makeGitRepository(
+            repository_type=GitRepositoryType.IMPORTED)
+        with person_logged_in(repository.owner):
             view = create_initialized_view(repository, "+index")
             self.assertFalse(view.user_can_push)
 

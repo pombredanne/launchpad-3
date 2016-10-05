@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IGitNamespace` implementations."""
@@ -15,6 +15,7 @@ from lp.app.enums import (
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.app.validators import LaunchpadValidationError
+from lp.code.enums import GitRepositoryType
 from lp.code.errors import (
     GitDefaultConflict,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
@@ -63,7 +64,8 @@ class NamespaceMixin:
         namespace = self.getNamespace()
         repository_name = self.factory.getUniqueUnicode()
         registrant = removeSecurityProxy(namespace).owner
-        repository = namespace.createRepository(registrant, repository_name)
+        repository = namespace.createRepository(
+            GitRepositoryType.HOSTED, registrant, repository_name)
         self.assertEqual(
             "%s/+git/%s" % (namespace.name, repository_name),
             repository.unique_name)
@@ -78,8 +80,9 @@ class NamespaceMixin:
         reviewer = self.factory.makePerson()
         description = self.factory.getUniqueUnicode()
         repository = namespace.createRepository(
-            registrant, repository_name, reviewer=reviewer,
-            description=description)
+            GitRepositoryType.HOSTED, registrant, repository_name,
+            reviewer=reviewer, description=description)
+        self.assertEqual(GitRepositoryType.HOSTED, repository.repository_type)
         self.assertEqual(repository_name, repository.name)
         self.assertEqual(registrant, repository.registrant)
         self.assertEqual(reviewer, repository.reviewer)
@@ -90,7 +93,8 @@ class NamespaceMixin:
         namespace = self.getNamespace(owner)
         repository_name = self.factory.getUniqueUnicode()
         registrant = owner.teamowner
-        repository = namespace.createRepository(registrant, repository_name)
+        repository = namespace.createRepository(
+            GitRepositoryType.HOSTED, registrant, repository_name)
         self.assertEqual([owner], list(repository.subscribers))
 
     def test_getRepositories_no_repositories(self):
@@ -106,7 +110,8 @@ class NamespaceMixin:
         namespace = self.getNamespace()
         repository_name = self.factory.getUniqueUnicode()
         repository = namespace.createRepository(
-            removeSecurityProxy(namespace).owner, repository_name)
+            GitRepositoryType.HOSTED, removeSecurityProxy(namespace).owner,
+            repository_name)
         self.assertEqual([repository], list(namespace.getRepositories()))
 
     def test_getByName_default(self):
@@ -127,7 +132,8 @@ class NamespaceMixin:
         namespace = self.getNamespace()
         repository_name = self.factory.getUniqueUnicode()
         repository = namespace.createRepository(
-            removeSecurityProxy(namespace).owner, repository_name)
+            GitRepositoryType.HOSTED, removeSecurityProxy(namespace).owner,
+            repository_name)
         match = namespace.getByName(repository_name)
         self.assertEqual(repository, match)
 
@@ -140,7 +146,8 @@ class NamespaceMixin:
         namespace = self.getNamespace()
         repository_name = self.factory.getUniqueUnicode()
         namespace.createRepository(
-            removeSecurityProxy(namespace).owner, repository_name)
+            GitRepositoryType.HOSTED, removeSecurityProxy(namespace).owner,
+            repository_name)
         self.assertTrue(namespace.isNameUsed(repository_name))
 
     def test_findUnusedName_unused(self):
@@ -155,7 +162,9 @@ class NamespaceMixin:
         # it's already used.
         namespace = self.getNamespace()
         name = self.factory.getUniqueUnicode()
-        namespace.createRepository(removeSecurityProxy(namespace).owner, name)
+        namespace.createRepository(
+            GitRepositoryType.HOSTED, removeSecurityProxy(namespace).owner,
+            name)
         unused_name = namespace.findUnusedName(name)
         self.assertEqual("%s-1" % name, unused_name)
 
@@ -164,9 +173,12 @@ class NamespaceMixin:
         # it's already used.
         namespace = self.getNamespace()
         name = self.factory.getUniqueUnicode()
-        namespace.createRepository(removeSecurityProxy(namespace).owner, name)
         namespace.createRepository(
-            removeSecurityProxy(namespace).owner, name + "-1")
+            GitRepositoryType.HOSTED, removeSecurityProxy(namespace).owner,
+            name)
+        namespace.createRepository(
+            GitRepositoryType.HOSTED, removeSecurityProxy(namespace).owner,
+            name + "-1")
         unused_name = namespace.findUnusedName(name)
         self.assertEqual("%s-2" % name, unused_name)
 
@@ -187,7 +199,9 @@ class NamespaceMixin:
         namespace = self.getNamespace()
         namespace_owner = removeSecurityProxy(namespace).owner
         name = self.factory.getUniqueUnicode()
-        namespace.createRepository(removeSecurityProxy(namespace).owner, name)
+        namespace.createRepository(
+            GitRepositoryType.HOSTED, removeSecurityProxy(namespace).owner,
+            name)
         repository = self.factory.makeGitRepository(name=name)
         self.assertRaises(
             GitRepositoryExists,
@@ -224,7 +238,9 @@ class NamespaceMixin:
         namespace = self.getNamespace()
         namespace_owner = removeSecurityProxy(namespace).owner
         name = self.factory.getUniqueUnicode()
-        namespace.createRepository(removeSecurityProxy(namespace).owner, name)
+        namespace.createRepository(
+            GitRepositoryType.HOSTED, removeSecurityProxy(namespace).owner,
+            name)
         repository = self.factory.makeGitRepository()
         self.assertRaises(
             GitRepositoryExists,
@@ -454,7 +470,7 @@ class TestProjectGitNamespacePrivacyWithInformationType(TestCaseWithFactory):
                 namespace.target, team, namespace.target.owner,
                 {InformationType.PROPRIETARY: SharingPermission.ALL})
         repository = namespace.createRepository(
-            person, self.factory.getUniqueUnicode())
+            GitRepositoryType.HOSTED, person, self.factory.getUniqueUnicode())
         [policy] = getUtility(IAccessPolicySource).find(
             [(namespace.target, InformationType.PROPRIETARY)])
         apgfs = getUtility(IAccessPolicyGrantFlatSource)
@@ -598,7 +614,8 @@ class BaseValidateNewRepositoryMixin:
         # GitRepositoryExists is raised.
         namespace = self._getNamespace(self.factory.makePerson())
         repository = namespace.createRepository(
-            namespace.owner, self.factory.getUniqueUnicode())
+            GitRepositoryType.HOSTED, namespace.owner,
+            self.factory.getUniqueUnicode())
         self.assertRaises(
             GitRepositoryExists,
             namespace.validateRepositoryName, repository.name)
