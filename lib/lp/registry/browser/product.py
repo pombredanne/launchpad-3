@@ -145,7 +145,10 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.codeimport import validate_import_url
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
-from lp.code.enums import RevisionControlSystems
+from lp.code.enums import (
+    RevisionControlSystems,
+    TargetRevisionControlSystems,
+    )
 from lp.code.errors import BranchExists
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
@@ -1988,6 +1991,7 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         context=self.context,
                         branch_name=branch_name,
                         rcs_type=rcs_item,
+                        target_rcs_type=TargetRevisionControlSystems.BZR,
                         url=url,
                         cvs_root=cvs_root,
                         cvs_module=cvs_module)

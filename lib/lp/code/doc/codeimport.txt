@@ -52,8 +52,12 @@ Supported source systems
 
 The rcs_type field, which indicates whether the import is from CVS or
 Subversion, takes values from the 'RevisionControlSystems' vocabulary.
+Similarly, target_rcs_type takes values from 'TargetRevisionControlSystems'.
 
-    >>> from lp.code.enums import RevisionControlSystems
+    >>> from lp.code.enums import (
+    ...     RevisionControlSystems,
+    ...     TargetRevisionControlSystems,
+    ...     )
     >>> for item in RevisionControlSystems:
     ...     print item.title
     Concurrent Versions System
@@ -62,6 +66,10 @@ Subversion, takes values from the 'RevisionControlSystems' vocabulary.
     Git
     Mercurial
     Bazaar
+    >>> for item in TargetRevisionControlSystems:
+    ...     print item.title
+    Bazaar
+    Git
 
 
 Import from CVS
@@ -71,12 +79,14 @@ Code imports from CVS specify the CVSROOT value, and the path to import
 in the repository, known as the "module".
 
     >>> cvs = RevisionControlSystems.CVS
+    >>> target_bzr = TargetRevisionControlSystems.BZR
     >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
     >>> cvs_module = 'hello'
     >>> context = factory.makeProduct(name='widget')
     >>> cvs_import = code_import_set.new(
     ...     registrant=nopriv, context=context, branch_name='trunk-cvs',
-    ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
+    ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module,
+    ...     target_rcs_type=target_bzr)
     >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
     True
 
@@ -136,7 +146,7 @@ retrieve the tree to import.
     >>> svn_url = 'svn://svn.example.com/trunk'
     >>> svn_import = code_import_set.new(
     ...     registrant=nopriv, context=context, branch_name='trunk-svn',
-    ...     rcs_type=svn, url=svn_url)
+    ...     rcs_type=svn, url=svn_url, target_rcs_type=target_bzr)
     >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
     True
 
@@ -164,7 +174,7 @@ retrieve the branch to import.
     >>> git_url = 'git://git.example.com/hello.git'
     >>> git_import = code_import_set.new(
     ...     registrant=nopriv, context=context, branch_name='trunk-git',
-    ...     rcs_type=git, url=git_url)
+    ...     rcs_type=git, url=git_url, target_rcs_type=target_bzr)
     >>> verifyObject(ICodeImport, removeSecurityProxy(git_import))
     True
 
