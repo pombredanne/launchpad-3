@@ -30,6 +30,7 @@ from lp.bugs.interfaces.bugnomination import (
     IBugNominationForm,
     )
 from lp.bugs.interfaces.cve import ICveSet
+from lp.services.features import getFeatureFlag
 from lp.services.webapp import (
     canonical_url,
     LaunchpadView,
@@ -77,7 +78,11 @@ class BugNominationView(LaunchpadFormView):
 
     def userCanTarget(self):
         """Can the current user target the bug to a series?"""
-        return self.current_bugtask.userHasDriverPrivileges(self.user)
+        return (
+            self.current_bugtask.userHasDriverPrivileges(self.user)
+            or (getFeatureFlag('bugs.nominations.bug_supervisors_can_target')
+                and self.current_bugtask.userHasBugSupervisorPrivileges(
+                    self.user)))
 
     def userCanNominate(self):
         """Can the current user nominate the bug for a series?"""
