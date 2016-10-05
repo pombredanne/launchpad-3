@@ -252,8 +252,14 @@ class GitAPI(LaunchpadXMLRPCView):
             else:
                 raise
 
-    def translatePath(self, path, permission, requester_id, can_authenticate):
+    def translatePath(self, path, permission, *auth_args):
         """See `IGitAPI`."""
+        if len(auth_args) == 1:
+            auth_params = auth_args[0]
+            requester_id = auth_params.get("id")
+            can_authenticate = auth_params.get("can-authenticate", False)
+        else:
+            requester_id, can_authenticate = auth_args
         if requester_id is None:
             requester_id = LAUNCHPAD_ANONYMOUS
         if isinstance(path, str):

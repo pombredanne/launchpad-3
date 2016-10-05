@@ -5,6 +5,10 @@
 
 __metaclass__ = type
 
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -39,8 +43,13 @@ from lp.testing.layers import (
 from lp.xmlrpc import faults
 
 
-class TestGitAPIMixin:
+class TestGitAPIMixin(WithScenarios):
     """Helper methods for `IGitAPI` tests, and security-relevant tests."""
+
+    scenarios = [
+        ("auth_params_flat", {"auth_params_dict": False}),
+        ("auth_params_dict", {"auth_params_dict": True}),
+        ]
 
     def setUp(self):
         super(TestGitAPIMixin, self).setUp()
@@ -48,13 +57,22 @@ class TestGitAPIMixin:
         self.hosting_fixture = self.useFixture(GitHostingFixture())
         self.repository_set = getUtility(IGitRepositorySet)
 
+    def _translatePath(self, path, permission, auth_params):
+        if self.auth_params_dict:
+            return self.git_api.translatePath(path, permission, auth_params)
+        else:
+            return self.git_api.translatePath(
+                path, permission, auth_params.get("id"),
+                auth_params.get("can-authenticate", False))
+
     def assertGitRepositoryNotFound(self, requester, path, permission="read",
                                     can_authenticate=False):
         """Assert that the given path cannot be translated."""
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission, requester, can_authenticate)
+        fault = self._translatePath(
+            path, permission,
+            {"id": requester, "can-authenticate": can_authenticate})
         self.assertEqual(
             faults.GitRepositoryNotFound(path.strip("/")), fault)
 
@@ -64,8 +82,9 @@ class TestGitAPIMixin:
         """Assert that looking at the given path returns PermissionDenied."""
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission, requester, can_authenticate)
+        fault = self._translatePath(
+            path, permission,
+            {"id": requester, "can-authenticate": can_authenticate})
         self.assertEqual(faults.PermissionDenied(message), fault)
 
     def assertUnauthorized(self, requester, path,
@@ -74,8 +93,9 @@ class TestGitAPIMixin:
         """Assert that looking at the given path returns Unauthorized."""
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission, requester, can_authenticate)
+        fault = self._translatePath(
+            path, permission,
+            {"id": requester, "can-authenticate": can_authenticate})
         self.assertEqual(faults.Unauthorized(message), fault)
 
     def assertNotFound(self, requester, path, message, permission="read",
@@ -83,8 +103,9 @@ class TestGitAPIMixin:
         """Assert that looking at the given path returns NotFound."""
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission, requester, can_authenticate)
+        fault = self._translatePath(
+            path, permission,
+            {"id": requester, "can-authenticate": can_authenticate})
         self.assertEqual(faults.NotFound(message), fault)
 
     def assertInvalidSourcePackageName(self, requester, path, name,
@@ -94,8 +115,9 @@ class TestGitAPIMixin:
         InvalidSourcePackageName."""
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission, requester, can_authenticate)
+        fault = self._translatePath(
+            path, permission,
+            {"id": requester, "can-authenticate": can_authenticate})
         self.assertEqual(faults.InvalidSourcePackageName(name), fault)
 
     def assertInvalidBranchName(self, requester, path, message,
@@ -103,8 +125,9 @@ class TestGitAPIMixin:
         """Assert that looking at the given path returns InvalidBranchName."""
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission, requester, can_authenticate)
+        fault = self._translatePath(
+            path, permission,
+            {"id": requester, "can-authenticate": can_authenticate})
         self.assertEqual(faults.InvalidBranchName(Exception(message)), fault)
 
     def assertOopsOccurred(self, requester, path,
@@ -112,8 +135,9 @@ class TestGitAPIMixin:
         """Assert that looking at the given path OOPSes."""
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission, requester, can_authenticate)
+        fault = self._translatePath(
+            path, permission,
+            {"id": requester, "can-authenticate": can_authenticate})
         self.assertIsInstance(fault, faults.OopsOccurred)
         prefix = (
             "An unexpected error has occurred while creating a Git "
@@ -126,8 +150,9 @@ class TestGitAPIMixin:
                          trailing="", private=False):
         if requester not in (LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES):
             requester = requester.id
-        translation = self.git_api.translatePath(
-            path, permission, requester, can_authenticate)
+        translation = self._translatePath(
+            path, permission,
+            {"id": requester, "can-authenticate": can_authenticate})
         login(ANONYMOUS)
         self.assertEqual(
             {"path": repository.getInternalPath(), "writable": writable,
@@ -140,8 +165,9 @@ class TestGitAPIMixin:
             requester_id = requester
         else:
             requester_id = requester.id
-        translation = self.git_api.translatePath(
-            path, "write", requester_id, can_authenticate)
+        translation = self._translatePath(
+            path, "write",
+            {"id": requester_id, "can-authenticate": can_authenticate})
         login(ANONYMOUS)
         repository = getUtility(IGitRepositorySet).getByPath(
             requester, path.lstrip("/"))
@@ -657,3 +683,6 @@ class TestGitAPISecurity(TestGitAPIMixin, TestCaseWithFactory):
     """
 
     layer = AppServerLayer
+
+
+load_tests = load_tests_apply_scenarios
