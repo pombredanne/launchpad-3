@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for code import related mailings"""
@@ -7,7 +7,10 @@ from email import message_from_string
 
 import transaction
 
-from lp.code.enums import RevisionControlSystems
+from lp.code.enums import (
+    RevisionControlSystems,
+    TargetRevisionControlSystems,
+    )
 from lp.services.mail import stub
 from lp.testing import (
     login_person,
@@ -21,8 +24,8 @@ class TestNewCodeImports(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_cvs_import(self):
-        # Test the email for a new CVS import.
+    def test_cvs_to_bzr_import(self):
+        # Test the email for a new CVS-to-Bazaar import.
         eric = self.factory.makePerson(name='eric')
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
@@ -44,8 +47,8 @@ class TestNewCodeImports(TestCaseWithFactory):
             '-- \nYou are getting this email because you are a member of the '
             'vcs-imports team.\n', msg.get_payload(decode=True))
 
-    def test_svn_import(self):
-        # Test the email for a new subversion import.
+    def test_svn_to_bzr_import(self):
+        # Test the email for a new Subversion-to-Bazaar import.
         eric = self.factory.makePerson(name='eric')
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
@@ -67,8 +70,8 @@ class TestNewCodeImports(TestCaseWithFactory):
             '-- \nYou are getting this email because you are a member of the '
             'vcs-imports team.\n', msg.get_payload(decode=True))
 
-    def test_git_import(self):
-        # Test the email for a new git import.
+    def test_git_to_bzr_import(self):
+        # Test the email for a new git-to-Bazaar import.
         eric = self.factory.makePerson(name='eric')
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
@@ -84,6 +87,30 @@ class TestNewCodeImports(TestCaseWithFactory):
             'A new git code import has been requested '
             'by Eric:\n'
             '    http://code.launchpad.dev/~eric/fooix/master\n'
+            'from\n'
+            '    git://git.example.com/fooix.git\n'
+            '\n'
+            '-- \nYou are getting this email because you are a member of the '
+            'vcs-imports team.\n', msg.get_payload(decode=True))
+
+    def test_git_to_git_import(self):
+        # Test the email for a new git-to-git import.
+        eric = self.factory.makePerson(name='eric')
+        fooix = self.factory.makeProduct(name='fooix')
+        # Eric needs to be logged in for the mail to be sent.
+        login_person(eric)
+        self.factory.makeProductCodeImport(
+            git_repo_url='git://git.example.com/fooix.git',
+            branch_name=u'master', product=fooix, registrant=eric,
+            target_rcs_type=TargetRevisionControlSystems.GIT)
+        transaction.commit()
+        msg = message_from_string(stub.test_emails[0][2])
+        self.assertEqual('code-import', msg['X-Launchpad-Notification-Type'])
+        self.assertEqual('~eric/fooix/+git/master', msg['X-Launchpad-Branch'])
+        self.assertEqual(
+            'A new git code import has been requested '
+            'by Eric:\n'
+            '    http://code.launchpad.dev/~eric/fooix/+git/master\n'
             'from\n'
             '    git://git.example.com/fooix.git\n'
             '\n'

@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for a Git repository namespace."""
@@ -22,6 +22,7 @@ from lp.code.errors import InvalidNamespace
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 
 
@@ -33,8 +34,8 @@ class IGitNamespace(Interface):
 
     target = Attribute("The `IHasGitRepositories` for this namespace.")
 
-    def createRepository(registrant, name, information_type=None,
-                         date_created=None):
+    def createRepository(repository_type, registrant, name,
+                         information_type=None, date_created=None):
         """Create and return an `IGitRepository` in this namespace."""
 
     def isNameUsed(name):
@@ -95,6 +96,9 @@ class IGitNamespacePolicy(Interface):
 
     supports_merge_proposals = Attribute(
         "Does this namespace support merge proposals at all?")
+
+    supports_code_imports = Attribute(
+        "Does this namespace support code imports at all?")
 
     allow_recipe_name_from_target = Attribute(
         "Can recipe names reasonably be generated from the target name "
@@ -188,8 +192,10 @@ def get_git_namespace(target, owner):
         return getUtility(IGitNamespaceSet).get(
             owner, distribution=target.distribution,
             sourcepackagename=target.sourcepackagename)
-    else:
+    elif target is None or IPerson.providedBy(target):
         return getUtility(IGitNamespaceSet).get(owner)
+    else:
+        raise AssertionError("No Git namespace defined for %s" % target)
 
 
 # Marker for references to Git URL layouts: ##GITNAMESPACE##

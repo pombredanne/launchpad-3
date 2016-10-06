@@ -26,7 +26,10 @@ from storm.expr import (
     Func,
     Select,
     )
-from storm.locals import Store
+from storm.locals import (
+    Int,
+    Store,
+    )
 from storm.references import Reference
 from zope.component import getUtility
 from zope.event import notify
@@ -38,14 +41,17 @@ from lp.code.enums import (
     CodeImportJobState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
+    GitRepositoryType,
     NON_CVS_RCS_TYPES,
     RevisionControlSystems,
+    TargetRevisionControlSystems,
     )
 from lp.code.errors import (
     CodeImportAlreadyRequested,
     CodeImportAlreadyRunning,
     CodeImportNotInReviewedState,
     )
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import (
     ICodeImport,
@@ -53,6 +59,8 @@ from lp.code.interfaces.codeimport import (
     )
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
+from lp.code.interfaces.gitnamespace import get_git_namespace
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.mail.codeimport import code_import_updated
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.code.model.codeimportresult import CodeImportResult
@@ -71,8 +79,31 @@ class CodeImport(SQLBase):
     _table = 'CodeImport'
     _defaultOrder = ['id']
 
+    def __init__(self, target=None, *args, **kwargs):
+        if target is not None:
+            assert 'branch' not in kwargs
+            assert 'repository' not in kwargs
+            if IBranch.providedBy(target):
+                kwargs['branch'] = target
+            elif IGitRepository.providedBy(target):
+                kwargs['git_repository'] = target
+            else:
+                raise AssertionError("Unknown code import target %s" % target)
+        super(CodeImport, self).__init__(*args, **kwargs)
+
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=True)
+    branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=False)
+    git_repositoryID = Int(name='git_repository', allow_none=True)
+    git_repository = Reference(git_repositoryID, 'GitRepository.id')
+
+    @property
+    def target(self):
+        if self.branch is not None:
+            return self.branch
+        else:
+            assert self.git_repository is not None
+            return self.git_repository
+
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -175,12 +206,14 @@ class CodeImport(SQLBase):
         new_whiteboard = None
         if 'whiteboard' in data:
             whiteboard = data.pop('whiteboard')
-            if whiteboard != self.branch.whiteboard:
-                if whiteboard is None:
-                    new_whiteboard = ''
-                else:
-                    new_whiteboard = whiteboard
-                self.branch.whiteboard = whiteboard
+            # XXX cjwatson 2016-10-03: Do we need something similar for Git?
+            if self.branch is not None:
+                if whiteboard != self.branch.whiteboard:
+                    if whiteboard is None:
+                        new_whiteboard = ''
+                    else:
+                        new_whiteboard = whiteboard
+                    self.branch.whiteboard = whiteboard
         token = event_set.beginModify(self)
         for name, value in data.items():
             setattr(self, name, value)
@@ -196,7 +229,7 @@ class CodeImport(SQLBase):
         return event
 
     def __repr__(self):
-        return "<CodeImport for %s>" % self.branch.unique_name
+        return "<CodeImport for %s>" % self.target.unique_name
 
     def tryFailingImportAgain(self, user):
         """See `ICodeImport`."""
@@ -233,7 +266,7 @@ class CodeImport(SQLBase):
 class CodeImportSet:
     """See `ICodeImportSet`."""
 
-    def new(self, registrant, context, branch_name, rcs_type,
+    def new(self, registrant, context, branch_name, rcs_type, target_rcs_type,
             url=None, cvs_root=None, cvs_module=None, review_status=None,
             owner=None):
         """See `ICodeImportSet`."""
@@ -247,22 +280,37 @@ class CodeImportSet:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s" % rcs_type)
-        target = IBranchTarget(context)
+        if owner is None:
+            owner = registrant
+        if target_rcs_type == TargetRevisionControlSystems.BZR:
+            target = IBranchTarget(context)
+            namespace = target.getNamespace(owner)
+        elif target_rcs_type == TargetRevisionControlSystems.GIT:
+            if rcs_type != RevisionControlSystems.GIT:
+                raise AssertionError(
+                    "Can't import rcs_type %s into a Git repository" %
+                    rcs_type)
+            target = namespace = get_git_namespace(context, owner)
+        else:
+            raise AssertionError(
+                "Can't import to target_rcs_type %s" % target_rcs_type)
         if review_status is None:
             # Auto approve imports.
             review_status = CodeImportReviewStatus.REVIEWED
         if not target.supports_code_imports:
             raise AssertionError("%r doesn't support code imports" % target)
-        if owner is None:
-            owner = registrant
         # Create the branch for the CodeImport.
-        namespace = target.getNamespace(owner)
-        import_branch = namespace.createBranch(
-            branch_type=BranchType.IMPORTED, name=branch_name,
-            registrant=registrant)
+        if target_rcs_type == TargetRevisionControlSystems.BZR:
+            import_target = namespace.createBranch(
+                branch_type=BranchType.IMPORTED, name=branch_name,
+                registrant=registrant)
+        else:
+            import_target = namespace.createRepository(
+                repository_type=GitRepositoryType.IMPORTED, name=branch_name,
+                registrant=registrant)
 
         code_import = CodeImport(
-            registrant=registrant, owner=owner, branch=import_branch,
+            registrant=registrant, owner=owner, target=import_target,
             rcs_type=rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module,
             review_status=review_status)
@@ -302,6 +350,9 @@ class CodeImportSet:
     def getByBranch(self, branch):
         """See `ICodeImportSet`."""
         return CodeImport.selectOneBy(branch=branch)
+
+    def getByGitRepository(self, repository):
+        return CodeImport.selectOneBy(git_repository=repository)
 
     def search(self, review_status=None, rcs_type=None):
         """See `ICodeImportSet`."""

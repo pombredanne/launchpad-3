@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of the XML-RPC APIs for Git."""
@@ -20,6 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
+from lp.code.enums import GitRepositoryType
 from lp.code.errors import (
     GitRepositoryCreationException,
     GitRepositoryCreationFault,
@@ -75,7 +76,9 @@ class GitAPI(LaunchpadXMLRPCView):
             hosting_path = repository.getInternalPath()
         except Unauthorized:
             return None
-        writable = check_permission("launchpad.Edit", repository)
+        writable = (
+            repository.repository_type == GitRepositoryType.HOSTED and
+            check_permission("launchpad.Edit", repository))
         return {
             "path": hosting_path,
             "writable": writable,
@@ -171,7 +174,7 @@ class GitAPI(LaunchpadXMLRPCView):
 
         try:
             repository = namespace.createRepository(
-                requester, repository_name)
+                GitRepositoryType.HOSTED, requester, repository_name)
         except LaunchpadValidationError as e:
             # Despite the fault name, this just passes through the exception
             # text so there's no need for a new Git-specific fault.
@@ -226,7 +229,7 @@ class GitAPI(LaunchpadXMLRPCView):
             raise
 
     @return_fault
-    def _translatePath(self, requester, path, permission, can_authenticate):
+    def _translatePath(self, requester, path, permission, auth_params):
         if requester == LAUNCHPAD_ANONYMOUS:
             requester = None
         try:
@@ -244,20 +247,28 @@ class GitAPI(LaunchpadXMLRPCView):
             # Turn lookup errors for anonymous HTTP requests into
             # "authorisation required", so that the user-agent has a
             # chance to try HTTP basic auth.
+            can_authenticate = auth_params.get("can-authenticate", False)
             if can_authenticate and requester is None:
                 raise faults.Unauthorized()
             else:
                 raise
 
-    def translatePath(self, path, permission, requester_id, can_authenticate):
+    def translatePath(self, path, permission, *auth_args):
         """See `IGitAPI`."""
+        if len(auth_args) == 1:
+            auth_params = auth_args[0]
+            requester_id = auth_params.get("uid")
+        else:
+            requester_id, can_authenticate = auth_args
+            auth_params = {
+                "uid": requester_id, "can-authenticate": can_authenticate}
         if requester_id is None:
             requester_id = LAUNCHPAD_ANONYMOUS
         if isinstance(path, str):
             path = path.decode('utf-8')
         return run_with_login(
             requester_id, self._translatePath,
-            path.strip("/"), permission, can_authenticate)
+            path.strip("/"), permission, auth_params)
 
     def notify(self, translated_path):
         """See `IGitAPI`."""

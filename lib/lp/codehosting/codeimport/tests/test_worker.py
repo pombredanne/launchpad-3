@@ -44,6 +44,7 @@ from CVS import (
     tree as CVSTree,
     )
 from dulwich.repo import Repo as GitRepo
+from fixtures import FakeLogger
 import subvertpy
 import subvertpy.client
 import subvertpy.ra
@@ -935,6 +936,7 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
 
     def setUp(self):
         super(TestCVSImport, self).setUp()
+        self.useFixture(FakeLogger())
         self.setUpImport()
 
     def makeForeignCommit(self, source_details):

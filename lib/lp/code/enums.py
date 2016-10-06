@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/code modules."""
@@ -21,8 +21,10 @@ __all__ = [
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
     'GitObjectType',
+    'GitRepositoryType',
     'NON_CVS_RCS_TYPES',
     'RevisionControlSystems',
+    'TargetRevisionControlSystems',
     ]
 
 from lazr.enum import (
@@ -78,7 +80,7 @@ class BranchLifecycleStatus(DBEnumeratedType):
 class BranchType(DBEnumeratedType):
     """Branch Type
 
-    The type of a branch determins the branch interaction with a number
+    The type of a branch determines the branch's interaction with a number
     of other subsystems.
     """
 
@@ -98,8 +100,8 @@ class BranchType(DBEnumeratedType):
     IMPORTED = DBItem(3, """
         Imported
 
-        Branches that have been imported from an externally hosted
-        branch in bzr or another VCS and are made available through Launchpad.
+        This branch has been imported from an externally-hosted branch in
+        bzr or another VCS and is made available through Launchpad.
         """)
 
     REMOTE = DBItem(4, """
@@ -107,6 +109,30 @@ class BranchType(DBEnumeratedType):
 
         Registered in Launchpad with an external location,
         but is not to be mirrored, nor available through Launchpad.
+        """)
+
+
+class GitRepositoryType(DBEnumeratedType):
+    """Git Repository Type
+
+    The type of a repository determines its interaction with other
+    subsystems.
+    """
+
+    HOSTED = DBItem(1, """
+        Hosted
+
+        Launchpad is the primary location of this repository.
+        """)
+
+    # Skipping MIRRORED (2) to stay in sync with BranchType, in order to
+    # reduce confusion for manual database queries.
+
+    IMPORTED = DBItem(3, """
+        Imported
+
+        This repository has been imported from an externally-hosted
+        repository and is made available through Launchpad.
         """)
 
 
@@ -372,6 +398,25 @@ class RevisionControlSystems(DBEnumeratedType):
         Bazaar
 
         Mirror of a Bazaar branch.
+        """)
+
+
+class TargetRevisionControlSystems(EnumeratedType):
+    """Target Revision Control Systems
+
+    Revision control systems that can be the target of a code import.
+    """
+
+    BZR = Item("""
+        Bazaar
+
+        Import to Bazaar.
+        """)
+
+    GIT = Item("""
+        Git
+
+        Import to Git.
         """)
 
 

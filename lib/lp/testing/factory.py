@@ -112,7 +112,9 @@ from lp.code.enums import (
     CodeImportReviewStatus,
     CodeReviewNotificationLevel,
     GitObjectType,
+    GitRepositoryType,
     RevisionControlSystems,
+    TargetRevisionControlSystems,
     )
 from lp.code.errors import UnknownBranchTypeError
 from lp.code.interfaces.branch import IBranch
@@ -1754,14 +1756,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             revision_date=revision_date)
         return branch.createBranchRevision(sequence, revision)
 
-    def makeGitRepository(self, owner=None, reviewer=None, target=_DEFAULT,
-                          registrant=None, name=None, information_type=None,
+    def makeGitRepository(self, repository_type=None, owner=None,
+                          reviewer=None, target=_DEFAULT, registrant=None,
+                          name=None, information_type=None,
                           **optional_repository_args):
         """Create and return a new, arbitrary GitRepository.
 
         Any parameters for `IGitNamespace.createRepository` can be specified
         to override the default ones.
         """
+        if repository_type is None:
+            repository_type = GitRepositoryType.HOSTED
         if owner is None:
             owner = self.makePerson()
         if name is None:
@@ -1778,8 +1783,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         namespace = get_git_namespace(target, owner)
         repository = namespace.createRepository(
-            registrant=registrant, name=name, reviewer=reviewer,
-            **optional_repository_args)
+            repository_type=repository_type, registrant=registrant, name=name,
+            reviewer=reviewer, **optional_repository_args)
         naked_repository = removeSecurityProxy(repository)
         if information_type is not None:
             naked_repository.transitionToInformationType(
@@ -2370,21 +2375,28 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                        cvs_module=None, context=None, branch_name=None,
                        git_repo_url=None,
                        bzr_branch_url=None, registrant=None,
-                       rcs_type=None, review_status=None):
+                       rcs_type=None, target_rcs_type=None,
+                       review_status=None):
         """Create and return a new, arbitrary code import.
 
         The type of code import will be inferred from the source details
-        passed in, but defaults to a Subversion import from an arbitrary
-        unique URL.
+        passed in, but defaults to a Subversion->Bazaar import from an
+        arbitrary unique URL.  (If the target type is specified as Git, then
+        the source type instead defaults to Git.)
         """
+        if target_rcs_type is None:
+            target_rcs_type = TargetRevisionControlSystems.BZR
         if (svn_branch_url is cvs_root is cvs_module is git_repo_url is
             bzr_branch_url is None):
-            svn_branch_url = self.getUniqueURL()
+            if target_rcs_type == TargetRevisionControlSystems.BZR:
+                svn_branch_url = self.getUniqueURL()
+            else:
+                git_repo_url = self.getUniqueURL()
 
         if context is None:
             context = self.makeProduct()
         if branch_name is None:
-            branch_name = self.getUniqueString('name')
+            branch_name = self.getUniqueUnicode('name')
         if registrant is None:
             registrant = self.makePerson()
 
@@ -2394,23 +2406,27 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             return code_import_set.new(
                 registrant, context, branch_name,
                 rcs_type=RevisionControlSystems.BZR_SVN,
+                target_rcs_type=target_rcs_type,
                 url=svn_branch_url, review_status=review_status)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
             return code_import_set.new(
                 registrant, context, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
+                target_rcs_type=target_rcs_type,
                 url=git_repo_url, review_status=review_status)
         elif bzr_branch_url is not None:
             return code_import_set.new(
                 registrant, context, branch_name,
                 rcs_type=RevisionControlSystems.BZR,
+                target_rcs_type=target_rcs_type,
                 url=bzr_branch_url, review_status=review_status)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
             return code_import_set.new(
                 registrant, context, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
+                target_rcs_type=target_rcs_type,
                 cvs_root=cvs_root, cvs_module=cvs_module,
                 review_status=review_status)
 
@@ -2436,9 +2452,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             changelog += entry
         return self.makeLibraryFileAlias(content=changelog.encode("utf-8"))
 
-    def makeCodeImportEvent(self):
+    def makeCodeImportEvent(self, code_import=None):
         """Create and return a CodeImportEvent."""
-        code_import = self.makeCodeImport()
+        if code_import is None:
+            code_import = self.makeCodeImport()
         person = self.makePerson()
         code_import_event_set = getUtility(ICodeImportEventSet)
         return code_import_event_set.newCreate(code_import, person)
