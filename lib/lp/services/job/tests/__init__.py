@@ -40,6 +40,8 @@ def celery_worker(queue, cwd=None):
         '--queues', queue,
         '--include', 'lp.services.job.tests.celery_helpers',
     )
+    # Mostly duplicated from lazr.jobrunner.tests.test_celerytask.running,
+    # but we throw away stdout.
     with open('/dev/null', 'w') as devnull:
         proc = subprocess.Popen(
             ('bin/celery',) + cmd_args, stdout=devnull,
