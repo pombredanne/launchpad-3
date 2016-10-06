@@ -253,13 +253,18 @@ class GitAPI(LaunchpadXMLRPCView):
             else:
                 raise
 
-    def translatePath(self, path, permission, *auth_args):
+    def translatePath(self, path, permission, requester_id,
+                      can_authenticate=None):
         """See `IGitAPI`."""
-        if len(auth_args) == 1:
-            auth_params = auth_args[0]
+        if can_authenticate is None:
+            # XXX cjwatson 2016-10-06: Ugly compatibility hack.  This method
+            # should be "translatePath(self, path, permission, *auth_args)"
+            # instead, but it may be called using mapply which doesn't
+            # support the *auth_args syntax.  This can go away once turnip
+            # uses the new-style interface.
+            auth_params = requester_id
             requester_id = auth_params.get("uid")
         else:
-            requester_id, can_authenticate = auth_args
             auth_params = {
                 "uid": requester_id, "can-authenticate": can_authenticate}
         if requester_id is None:
