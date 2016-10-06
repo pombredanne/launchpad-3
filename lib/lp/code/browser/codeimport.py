@@ -53,6 +53,7 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     NON_CVS_RCS_TYPES,
     RevisionControlSystems,
+    TargetRevisionControlSystems,
     )
 from lp.code.errors import BranchExists
 from lp.code.interfaces.branch import (
@@ -365,6 +366,7 @@ class CodeImportNewView(CodeImportBaseView):
             context=product,
             branch_name=data['branch_name'],
             rcs_type=data['rcs_type'],
+            target_rcs_type=TargetRevisionControlSystems.BZR,
             url=url,
             cvs_root=cvs_root,
             cvs_module=cvs_module,
