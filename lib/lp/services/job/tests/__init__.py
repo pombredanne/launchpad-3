@@ -1,4 +1,4 @@
-# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,6 +12,7 @@ __all__ = [
 
 
 from contextlib import contextmanager
+import subprocess
 
 from testtools.content import text_content
 
@@ -19,6 +20,7 @@ from lp.services.job.runner import BaseRunnableJob
 from lp.testing.fixture import CaptureOops
 
 
+@contextmanager
 def celery_worker(queue, cwd=None):
     """Return a ContextManager for a "celery worker" instance.
 
@@ -26,7 +28,6 @@ def celery_worker(queue, cwd=None):
     currently-configured BROKER_URL, and able to run CeleryRunJob tasks.
     """
     from lp.services.job.celeryjob import CeleryRunJob
-    from lazr.jobrunner.tests.test_celerytask import running
     # convert config params to a URL, so they can be passed as --broker.
     with CeleryRunJob.app.broker_connection() as connection:
         broker_uri = connection.as_uri(include_password=True)
@@ -39,7 +40,17 @@ def celery_worker(queue, cwd=None):
         '--queues', queue,
         '--include', 'lp.services.job.tests.celery_helpers',
     )
-    return running('bin/celery', cmd_args, cwd=cwd)
+    # Mostly duplicated from lazr.jobrunner.tests.test_celerytask.running,
+    # but we throw away stdout.
+    with open('/dev/null', 'w') as devnull:
+        proc = subprocess.Popen(
+            ('bin/celery',) + cmd_args, stdout=devnull,
+            stderr=subprocess.PIPE, cwd=cwd)
+        try:
+            yield proc
+        finally:
+            proc.terminate()
+            proc.wait()
 
 
 @contextmanager
