@@ -257,11 +257,11 @@ class GitAPI(LaunchpadXMLRPCView):
         """See `IGitAPI`."""
         if len(auth_args) == 1:
             auth_params = auth_args[0]
-            requester_id = auth_params.get("id")
+            requester_id = auth_params.get("uid")
         else:
             requester_id, can_authenticate = auth_args
             auth_params = {
-                "id": requester_id, "can-authenticate": can_authenticate}
+                "uid": requester_id, "can-authenticate": can_authenticate}
         if requester_id is None:
             requester_id = LAUNCHPAD_ANONYMOUS
         if isinstance(path, str):

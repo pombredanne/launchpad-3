@@ -62,7 +62,7 @@ class TestGitAPIMixin(WithScenarios):
             return self.git_api.translatePath(path, permission, auth_params)
         else:
             return self.git_api.translatePath(
-                path, permission, auth_params.get("id"),
+                path, permission, auth_params.get("uid"),
                 auth_params.get("can-authenticate", False))
 
     def assertGitRepositoryNotFound(self, requester, path, permission="read",
@@ -72,7 +72,7 @@ class TestGitAPIMixin(WithScenarios):
             requester = requester.id
         fault = self._translatePath(
             path, permission,
-            {"id": requester, "can-authenticate": can_authenticate})
+            {"uid": requester, "can-authenticate": can_authenticate})
         self.assertEqual(
             faults.GitRepositoryNotFound(path.strip("/")), fault)
 
@@ -84,7 +84,7 @@ class TestGitAPIMixin(WithScenarios):
             requester = requester.id
         fault = self._translatePath(
             path, permission,
-            {"id": requester, "can-authenticate": can_authenticate})
+            {"uid": requester, "can-authenticate": can_authenticate})
         self.assertEqual(faults.PermissionDenied(message), fault)
 
     def assertUnauthorized(self, requester, path,
@@ -95,7 +95,7 @@ class TestGitAPIMixin(WithScenarios):
             requester = requester.id
         fault = self._translatePath(
             path, permission,
-            {"id": requester, "can-authenticate": can_authenticate})
+            {"uid": requester, "can-authenticate": can_authenticate})
         self.assertEqual(faults.Unauthorized(message), fault)
 
     def assertNotFound(self, requester, path, message, permission="read",
@@ -105,7 +105,7 @@ class TestGitAPIMixin(WithScenarios):
             requester = requester.id
         fault = self._translatePath(
             path, permission,
-            {"id": requester, "can-authenticate": can_authenticate})
+            {"uid": requester, "can-authenticate": can_authenticate})
         self.assertEqual(faults.NotFound(message), fault)
 
     def assertInvalidSourcePackageName(self, requester, path, name,
@@ -117,7 +117,7 @@ class TestGitAPIMixin(WithScenarios):
             requester = requester.id
         fault = self._translatePath(
             path, permission,
-            {"id": requester, "can-authenticate": can_authenticate})
+            {"uid": requester, "can-authenticate": can_authenticate})
         self.assertEqual(faults.InvalidSourcePackageName(name), fault)
 
     def assertInvalidBranchName(self, requester, path, message,
@@ -127,7 +127,7 @@ class TestGitAPIMixin(WithScenarios):
             requester = requester.id
         fault = self._translatePath(
             path, permission,
-            {"id": requester, "can-authenticate": can_authenticate})
+            {"uid": requester, "can-authenticate": can_authenticate})
         self.assertEqual(faults.InvalidBranchName(Exception(message)), fault)
 
     def assertOopsOccurred(self, requester, path,
@@ -137,7 +137,7 @@ class TestGitAPIMixin(WithScenarios):
             requester = requester.id
         fault = self._translatePath(
             path, permission,
-            {"id": requester, "can-authenticate": can_authenticate})
+            {"uid": requester, "can-authenticate": can_authenticate})
         self.assertIsInstance(fault, faults.OopsOccurred)
         prefix = (
             "An unexpected error has occurred while creating a Git "
@@ -152,7 +152,7 @@ class TestGitAPIMixin(WithScenarios):
             requester = requester.id
         translation = self._translatePath(
             path, permission,
-            {"id": requester, "can-authenticate": can_authenticate})
+            {"uid": requester, "can-authenticate": can_authenticate})
         login(ANONYMOUS)
         self.assertEqual(
             {"path": repository.getInternalPath(), "writable": writable,
@@ -167,7 +167,7 @@ class TestGitAPIMixin(WithScenarios):
             requester_id = requester.id
         translation = self._translatePath(
             path, "write",
-            {"id": requester_id, "can-authenticate": can_authenticate})
+            {"uid": requester_id, "can-authenticate": can_authenticate})
         login(ANONYMOUS)
         repository = getUtility(IGitRepositorySet).getByPath(
             requester, path.lstrip("/"))
