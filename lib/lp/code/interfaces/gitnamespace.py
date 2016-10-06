@@ -192,7 +192,7 @@ def get_git_namespace(target, owner):
         return getUtility(IGitNamespaceSet).get(
             owner, distribution=target.distribution,
             sourcepackagename=target.sourcepackagename)
-    elif IPerson.providedBy(target):
+    elif target is None or IPerson.providedBy(target):
         return getUtility(IGitNamespaceSet).get(owner)
     else:
         raise AssertionError("No Git namespace defined for %s" % target)
