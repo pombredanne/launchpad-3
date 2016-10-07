@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to bug nominations."""
@@ -14,6 +14,7 @@ from lp.bugs.interfaces.bugnomination import (
     IBugNomination,
     IBugNominationSet,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.testing import (
     celebrity_logged_in,
@@ -307,6 +308,26 @@ class TestCanApprove(TestCaseWithFactory):
         self.assertTrue(nomination.canApprove(product.owner))
         self.assertTrue(nomination.canApprove(product.driver))
         self.assertTrue(nomination.canApprove(series.driver))
+
+    def test_bug_supervisors_can_approve_with_feature_flag(self):
+        product = self.factory.makeProduct(driver=self.factory.makePerson())
+        series = self.factory.makeProductSeries(product=product)
+        with celebrity_logged_in('admin'):
+            product.bug_supervisor = self.factory.makePerson()
+            product.driver = self.factory.makePerson()
+            series.driver = self.factory.makePerson()
+
+        nomination = self.factory.makeBugNomination(target=series)
+
+        self.assertFalse(nomination.canApprove(product.bug_supervisor))
+        self.assertTrue(nomination.canApprove(product.driver))
+        self.assertTrue(nomination.canApprove(series.driver))
+
+        with FeatureFixture({
+                'bugs.nominations.bug_supervisors_can_target': 'on'}):
+            self.assertTrue(nomination.canApprove(product.bug_supervisor))
+            self.assertTrue(nomination.canApprove(product.driver))
+            self.assertTrue(nomination.canApprove(series.driver))
 
     def publishSource(self, series, sourcepackagename, component):
         return self.factory.makeSourcePackagePublishingHistory(

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes related to bug nomination.
@@ -37,6 +37,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.sqlbase import SQLBase
+from lp.services.features import getFeatureFlag
 
 
 @implementer(IBugNomination)
@@ -122,6 +123,12 @@ class BugNomination(SQLBase):
         # Use the class method to check permissions because there is not
         # yet a bugtask instance with the this target.
         BugTask = self.bug.bugtasks[0].__class__
+
+        if (getFeatureFlag('bugs.nominations.bug_supervisors_can_target') and
+                BugTask.userHasBugSupervisorPrivilegesContext(
+                    self.target, person)):
+            return True
+
         if BugTask.userHasDriverPrivilegesContext(self.target, person):
             return True
 

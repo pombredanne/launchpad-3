@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
@@ -104,6 +104,7 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.features import getFeatureFlag
 from lp.services.fields import DuplicateBug
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.mail.mailwrapper import MailWrapper
@@ -304,7 +305,9 @@ class BugContextMenu(ContextMenu):
         """Return the 'Target/Nominate for series' Link."""
         launchbag = getUtility(ILaunchBag)
         target = launchbag.product or launchbag.distribution
-        if check_permission("launchpad.Driver", target):
+        if check_permission("launchpad.Driver", target) or (
+                getFeatureFlag('bugs.nominations.bug_supervisors_can_target')
+                and check_permission("launchpad.BugSupervisor", target)):
             text = "Target to series"
             return Link('+nominate', text, icon='milestone')
         elif (check_permission("launchpad.BugSupervisor", target) or
