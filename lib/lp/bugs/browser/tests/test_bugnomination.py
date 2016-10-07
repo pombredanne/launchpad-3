@@ -12,6 +12,7 @@ from testtools.matchers import Not
 from zope.component import getUtility
 
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interaction import get_current_principal
 from lp.services.webapp.interfaces import (
     BrowserNotificationLevel,
@@ -62,6 +63,16 @@ class TestBugNominationView(TestCaseWithFactory):
         view = create_initialized_view(self.bug_task, name='+nominate')
         action = view.__class__.actions.byname['actions.submit']
         self.assertEqual('Nominate', action.label)
+
+    def test_submit_action_bug_supervisor_feature_flag(self):
+        # A bug supervisor sees the Target action label when the feature
+        # flag is enabled.
+        self.useFixture(FeatureFixture(
+            {'bugs.nominations.bug_supervisors_can_target': 'on'}))
+        login_person(self.bug_worker)
+        view = create_initialized_view(self.bug_task, name='+nominate')
+        action = view.__class__.actions.byname['actions.submit']
+        self.assertEqual('Target', action.label)
 
     def test_submit_action_driver(self):
         # A driver sees the Target action label.
