@@ -729,6 +729,15 @@
                     reclaimJob"/>
   </securedutility>
 
+  <!-- CodeImportJobMacaroonIssuer -->
+
+  <securedutility
+      class="lp.code.model.codeimportjob.CodeImportJobMacaroonIssuer"
+      provides="lp.services.macaroons.interfaces.IMacaroonIssuer"
+      name="code-import-job">
+    <allow interface="lp.services.macaroons.interfaces.IMacaroonIssuerPublic"/>
+  </securedutility>
+
   <!-- CodeImportEvent -->
 
   <class class="lp.code.model.codeimportevent.CodeImportEvent">

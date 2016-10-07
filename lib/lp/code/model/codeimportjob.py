@@ -12,6 +12,10 @@ __all__ = [
 
 import datetime
 
+from pymacaroons import (
+    Macaroon,
+    Verifier,
+    )
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -27,7 +31,9 @@ from lp.code.enums import (
     CodeImportMachineState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
+    GitRepositoryType,
     )
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJob,
@@ -37,6 +43,7 @@ from lp.code.interfaces.codeimportjob import (
     )
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
+from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.config import config
@@ -48,6 +55,7 @@ from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from lp.services.macaroons.interfaces import IMacaroonIssuer
 
 
 @implementer(ICodeImportJob)
@@ -340,3 +348,57 @@ class CodeImportJobWorkflow:
         # 4)
         getUtility(ICodeImportEventSet).newReclaim(
             code_import, machine, job_id)
+
+
+@implementer(IMacaroonIssuer)
+class CodeImportJobMacaroonIssuer:
+
+    @property
+    def _root_secret(self):
+        secret = config.codeimport.macaroon_secret_key
+        if not secret:
+            raise RuntimeError(
+                "codeimport.macaroon_secret_key not configured.")
+        return secret
+
+    def issueMacaroon(self, context):
+        """See `IMacaroonIssuer`."""
+        assert context.code_import.git_repository is not None
+        macaroon = Macaroon(
+            location=config.vhost.mainsite.hostname,
+            identifier="code-import-job", key=self._root_secret)
+        macaroon.add_first_party_caveat("code-import-job %s" % context.id)
+        return macaroon
+
+    def checkMacaroonIssuer(self, macaroon):
+        """See `IMacaroonIssuer`."""
+        try:
+            verifier = Verifier()
+            verifier.satisfy_general(
+                lambda caveat: caveat.startswith("code-import-job "))
+            return verifier.verify(macaroon, self._root_secret)
+        except Exception:
+            return False
+
+    def verifyMacaroon(self, macaroon, context):
+        """See `IMacaroonIssuer`."""
+        if IGitRepository.providedBy(context):
+            if context.repository_type != GitRepositoryType.IMPORTED:
+                return False
+            code_import = getUtility(ICodeImportSet).getByGitRepository(
+                context)
+            if code_import is None:
+                return False
+            job = code_import.import_job
+            if job is None:
+                return False
+        else:
+            job = context
+        try:
+            verifier = Verifier()
+            verifier.satisfy_exact("code-import-job %s" % job.id)
+            return (
+                verifier.verify(macaroon, self._root_secret) and
+                job.state == CodeImportJobState.RUNNING)
+        except Exception:
+            return False

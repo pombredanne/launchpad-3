@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeImportJob and CodeImportJobWorkflow."""
@@ -13,7 +13,12 @@ from datetime import datetime
 import StringIO
 import unittest
 
+from pymacaroons import Macaroon
 from pytz import UTC
+from testtools.matchers import (
+    MatchesListwise,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -23,6 +28,7 @@ from lp.code.enums import (
     CodeImportJobState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
+    TargetRevisionControlSystems,
     )
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
@@ -41,6 +47,7 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.interfaces.client import ILibrarianClient
+from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.webapp import canonical_url
 from lp.testing import (
     ANONYMOUS,
@@ -1142,6 +1149,71 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         self.assertEqual(
             [u'The import is already running.'],
             get_feedback_messages(user_browser.contents))
+
+
+class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
+    """Test CodeImportJob macaroon issuing and verification."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestCodeImportJobMacaroonIssuer, self).setUp()
+        login_for_code_imports()
+        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+
+    def makeJob(self, target_rcs_type=TargetRevisionControlSystems.GIT):
+        code_import = self.factory.makeCodeImport(
+            target_rcs_type=target_rcs_type)
+        return self.factory.makeCodeImportJob(code_import=code_import)
+
+    def test_issueMacaroon_refuses_branch(self):
+        job = self.makeJob(target_rcs_type=TargetRevisionControlSystems.BZR)
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        self.assertRaises(
+            AssertionError, removeSecurityProxy(issuer).issueMacaroon, job)
+
+    def test_issueMacaroon_good(self):
+        job = self.makeJob()
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
+        self.assertEqual("launchpad.dev", macaroon.location)
+        self.assertEqual("code-import-job", macaroon.identifier)
+        self.assertThat(macaroon.caveats, MatchesListwise([
+            MatchesStructure.byEquality(
+                caveat_id="code-import-job %s" % job.id),
+            ]))
+
+    def test_checkMacaroonIssuer_good(self):
+        job = self.makeJob()
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
+        self.assertTrue(issuer.checkMacaroonIssuer(macaroon))
+
+    def test_checkMacaroonIssuer_wrong_key(self):
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroon = Macaroon(key="another-secret")
+        self.assertFalse(issuer.checkMacaroonIssuer(macaroon))
+
+    def test_verifyMacaroon_good(self):
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        job = self.makeJob()
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        getUtility(ICodeImportJobWorkflow).startJob(job, machine)
+        macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
+        self.assertTrue(issuer.verifyMacaroon(macaroon, job))
+
+    def test_not_running(self):
+        job = self.makeJob()
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
+        self.assertFalse(issuer.verifyMacaroon(macaroon, job))
+
+    def test_wrong_job(self):
+        job = self.makeJob()
+        other_job = self.factory.makeCodeImportJob(code_import=job.code_import)
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroon = removeSecurityProxy(issuer).issueMacaroon(other_job)
+        self.assertFalse(issuer.verifyMacaroon(macaroon, job))
 
 
 def test_suite():
