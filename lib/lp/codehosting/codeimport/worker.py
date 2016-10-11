@@ -21,7 +21,13 @@ __all__ = [
 
 
 import os
+import re
 import shutil
+import subprocess
+from urlparse import (
+    urlsplit,
+    urlunsplit,
+    )
 
 # FIRST Ensure correct plugins are loaded. Do not delete this comment or the
 # line below this comment.
@@ -60,10 +66,16 @@ from lazr.uri import (
     InvalidURIError,
     URI,
     )
+from pymacaroons import Macaroon
 import SCM
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import RevisionControlSystems
-from lp.code.interfaces.branch import get_blacklisted_hostnames
+from lp.code.interfaces.branch import (
+    get_blacklisted_hostnames,
+    IBranch,
+    )
 from lp.code.interfaces.codehosting import (
     branch_id_alias,
     compose_public_url,
@@ -80,6 +92,7 @@ from lp.codehosting.safe_open import (
     SafeBranchOpener,
     )
 from lp.services.config import config
+from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.propertycache import cachedproperty
 
 
@@ -88,14 +101,16 @@ class CodeImportBranchOpenPolicy(BranchOpenPolicy):
 
     In summary:
      - follow references,
-     - only open non-Launchpad URLs for imports from Bazaar
+     - only open non-Launchpad URLs for imports from Bazaar to Bazaar or
+       from Git to Git
      - only open the allowed schemes
     """
 
     allowed_schemes = ['http', 'https', 'svn', 'git', 'ftp', 'bzr']
 
-    def __init__(self, rcstype):
+    def __init__(self, rcstype, target_rcstype):
         self.rcstype = rcstype
+        self.target_rcstype = target_rcstype
 
     def shouldFollowReferences(self):
         """See `BranchOpenPolicy.shouldFollowReferences`.
@@ -124,9 +139,7 @@ class CodeImportBranchOpenPolicy(BranchOpenPolicy):
             uri = URI(url)
         except InvalidURIError:
             raise BadUrl(url)
-        # XXX cjwatson 2015-06-12: Once we have imports into Git, this
-        # should be extended to prevent Git-to-Git self-imports as well.
-        if self.rcstype == "bzr":
+        if self.rcstype == self.target_rcstype:
             launchpad_domain = config.vhost.mainsite.hostname
             if uri.underDomain(launchpad_domain):
                 raise BadUrl(url)
@@ -269,36 +282,50 @@ class CodeImportSourceDetails:
     of the information suitable for passing around on executables' command
     lines.
 
-    :ivar target_id: The id of the Bazaar branch associated with this code
-        import, used for locating the existing import and the foreign tree.
+    :ivar target_id: The id of the Bazaar branch or the path of the Git
+        repository associated with this code import, used for locating the
+        existing import and the foreign tree.
     :ivar rcstype: 'cvs', 'git', 'bzr-svn', 'bzr' as appropriate.
+    :ivar target_rcstype: 'bzr' or 'git' as appropriate.
     :ivar url: The branch URL if rcstype in ['bzr-svn', 'git', 'bzr'], None
         otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
     :ivar stacked_on_url: The URL of the branch that the associated branch
         is stacked on, if any.
+    :ivar macaroon: A macaroon granting authority to push to the target
+        repository if target_rcstype == 'git', None otherwise.
     """
 
-    def __init__(self, target_id, rcstype, url=None, cvs_root=None,
-                 cvs_module=None, stacked_on_url=None):
+    def __init__(self, target_id, rcstype, target_rcstype, url=None,
+                 cvs_root=None, cvs_module=None, stacked_on_url=None,
+                 macaroon=None):
         self.target_id = target_id
         self.rcstype = rcstype
+        self.target_rcstype = target_rcstype
         self.url = url
         self.cvs_root = cvs_root
         self.cvs_module = cvs_module
         self.stacked_on_url = stacked_on_url
+        self.macaroon = macaroon
 
     @classmethod
     def fromArguments(cls, arguments):
         """Convert command line-style arguments to an instance."""
-        target_id = int(arguments.pop(0))
+        target_id = arguments.pop(0)
         rcstype = arguments.pop(0)
+        if ':' in rcstype:
+            rcstype, target_rcstype = rcstype.split(':', 1)
+        else:
+            target_rcstype = 'bzr'
         if rcstype in ['bzr-svn', 'git', 'bzr']:
             url = arguments.pop(0)
-            try:
-                stacked_on_url = arguments.pop(0)
-            except IndexError:
+            if target_rcstype == 'bzr':
+                try:
+                    stacked_on_url = arguments.pop(0)
+                except IndexError:
+                    stacked_on_url = None
+            else:
                 stacked_on_url = None
             cvs_root = cvs_module = None
         elif rcstype == 'cvs':
@@ -307,35 +334,54 @@ class CodeImportSourceDetails:
             [cvs_root, cvs_module] = arguments
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
+        if target_rcstype == 'bzr':
+            target_id = int(target_id)
+            macaroon = None
+        elif target_rcstype == 'git':
+            macaroon = Macaroon.deserialize(arguments.pop(0))
+        else:
+            raise AssertionError("Unknown target_rcstype %r." % target_rcstype)
         return cls(
-            target_id, rcstype, url, cvs_root, cvs_module, stacked_on_url)
+            target_id, rcstype, target_rcstype, url, cvs_root, cvs_module,
+            stacked_on_url, macaroon)
 
     @classmethod
     def fromCodeImportJob(cls, job):
         """Convert a `CodeImportJob` to an instance."""
         code_import = job.code_import
         target = code_import.target
-        if target.stacked_on is not None and not target.stacked_on.private:
-            stacked_path = branch_id_alias(target.stacked_on)
-            stacked_on_url = compose_public_url('http', stacked_path)
+        if IBranch.providedBy(target):
+            if target.stacked_on is not None and not target.stacked_on.private:
+                stacked_path = branch_id_alias(target.stacked_on)
+                stacked_on_url = compose_public_url('http', stacked_path)
+            else:
+                stacked_on_url = None
+            target_id = target.id
         else:
-            stacked_on_url = None
+            target_id = target.unique_name
         if code_import.rcs_type == RevisionControlSystems.BZR_SVN:
             return cls(
-                target.id, 'bzr-svn', str(code_import.url),
+                target_id, 'bzr-svn', 'bzr', str(code_import.url),
                 stacked_on_url=stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             return cls(
-                target.id, 'cvs',
+                target_id, 'cvs', 'bzr',
                 cvs_root=str(code_import.cvs_root),
                 cvs_module=str(code_import.cvs_module))
         elif code_import.rcs_type == RevisionControlSystems.GIT:
-            return cls(
-                target.id, 'git', str(code_import.url),
-                stacked_on_url=stacked_on_url)
+            if IBranch.providedBy(target):
+                return cls(
+                    target_id, 'git', 'bzr', str(code_import.url),
+                    stacked_on_url=stacked_on_url)
+            else:
+                issuer = getUtility(IMacaroonIssuer, 'code-import-job')
+                macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
+                return cls(
+                    target_id, 'git', 'git', str(code_import.url),
+                    macaroon=macaroon)
         elif code_import.rcs_type == RevisionControlSystems.BZR:
             return cls(
-                target.id, 'bzr', str(code_import.url),
+                target_id, 'bzr', 'bzr', str(code_import.url),
                 stacked_on_url=stacked_on_url)
         else:
             raise AssertionError("Unknown rcstype %r." % code_import.rcs_type)
@@ -343,7 +389,14 @@ class CodeImportSourceDetails:
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
         """
-        result = [str(self.target_id), self.rcstype]
+        result = [str(self.target_id)]
+        if self.target_rcstype == 'bzr':
+            result.append(self.rcstype)
+        elif self.target_rcstype == 'git':
+            result.append('%s:%s' % (self.rcstype, self.target_rcstype))
+        else:
+            raise AssertionError(
+                "Unknown target_rcstype %r." % self.target_rcstype)
         if self.rcstype in ['bzr-svn', 'git', 'bzr']:
             result.append(self.url)
             if self.stacked_on_url is not None:
@@ -353,6 +406,8 @@ class CodeImportSourceDetails:
             result.append(self.cvs_module)
         else:
             raise AssertionError("Unknown rcstype %r." % self.rcstype)
+        if self.target_rcstype == 'git':
+            result.append(self.macaroon.serialize())
         return result
 
 
@@ -918,3 +973,67 @@ class BzrImportWorker(PullingImportWorker):
         """See `PullingImportWorker.probers`."""
         from bzrlib.bzrdir import BzrProber, RemoteBzrProber
         return [BzrProber, RemoteBzrProber]
+
+
+class GitToGitImportWorker(ImportWorker):
+    """An import worker for imports from Git to Git."""
+
+    def _runGit(self, *args, **kwargs):
+        """Run git with arguments, sending output to the logger."""
+        cmd = ["git"] + list(args)
+        git_process = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, **kwargs)
+        for line in git_process.stdout:
+            line = line.decode("UTF-8", "replace").rstrip("\n")
+            # Remove any user/password data from URLs.
+            line = re.sub(r"://([^:]*:[^@]*@)(\S+)", r"://\2", line)
+            self._logger.info(line)
+        retcode = git_process.wait()
+        if retcode:
+            raise subprocess.CalledProcessError(retcode, cmd)
+
+    def _doImport(self):
+        self._logger.info("Starting job.")
+        self._logger.info(config.codeimport.git_repository_store)
+        try:
+            self._opener_policy.checkOneURL(self.source_details.url)
+        except BadUrl as e:
+            self._logger.info("Invalid URL: %s" % e)
+            return CodeImportWorkerExitCode.FAILURE_FORBIDDEN
+        unauth_target_url = urljoin(
+            config.codeimport.git_repository_store,
+            self.source_details.target_id)
+        split = urlsplit(unauth_target_url)
+        if split.hostname:
+            target_netloc = ":%s@%s" % (
+                self.source_details.macaroon.serialize(), split.hostname)
+        else:
+            target_netloc = ""
+        target_url = urlunsplit([
+            split.scheme, target_netloc, split.path, "", ""])
+        # XXX cjwatson 2016-10-11: Ideally we'd put credentials in a
+        # credentials store instead.  However, git only accepts credentials
+        # that have both a non-empty username and a non-empty password.
+        self._logger.info("Getting existing repository from hosting service.")
+        try:
+            self._runGit("clone", "--bare", target_url, "repository")
+        except subprocess.CalledProcessError as e:
+            self._logger.info(
+                "Unable to get existing repository from hosting service: "
+                "%s" % e)
+            return CodeImportWorkerExitCode.FAILURE
+        self._logger.info("Fetching remote repository.")
+        try:
+            self._runGit(
+                "remote", "add", "-f", "--mirror=fetch",
+                "mirror", self.source_details.url, cwd="repository")
+        except subprocess.CalledProcessError as e:
+            self._logger.info("Unable to fetch remote repository: %s" % e)
+            return CodeImportWorkerExitCode.FAILURE_INVALID
+        self._logger.info("Pushing repository to hosting service.")
+        try:
+            self._runGit("push", "--mirror", target_url, cwd="repository")
+        except subprocess.CalledProcessError as e:
+            self._logger.info("Unable to push to hosting service: %s" % e)
+            return CodeImportWorkerExitCode.FAILURE
+        return CodeImportWorkerExitCode.SUCCESS

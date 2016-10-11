@@ -11,8 +11,10 @@ __all__ = [
 import os
 import shutil
 import StringIO
+import subprocess
 import tempfile
 import urllib
+from urlparse import urlsplit
 
 from bzrlib.branch import Branch
 from bzrlib.tests import (
@@ -40,11 +42,14 @@ from lp.code.enums import (
     CodeImportResultStatus,
     CodeImportReviewStatus,
     RevisionControlSystems,
+    TargetRevisionControlSystems,
     )
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportjob import ICodeImportJobSet
 from lp.code.model.codeimport import CodeImport
 from lp.code.model.codeimportjob import CodeImportJob
+from lp.code.tests.helpers import GitHostingFixture
 from lp.codehosting.codeimport.tests.servers import (
     BzrServer,
     CVSServer,
@@ -65,6 +70,10 @@ from lp.codehosting.codeimport.workermonitor import (
     ExitQuietly,
     )
 from lp.services.config import config
+from lp.services.config.fixture import (
+    ConfigFixture,
+    ConfigUseFixture,
+    )
 from lp.services.log.logger import BufferLogger
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.tests.test_processmonitor import (
@@ -669,7 +678,7 @@ class CIWorkerMonitorForTesting(CodeImportWorkerMonitor):
         return protocol
 
 
-class TestWorkerMonitorIntegration(TestCaseInTempDir):
+class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
 
     layer = ZopelessAppServerLayer
     run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=60)
@@ -724,7 +733,7 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir):
         return self.factory.makeCodeImport(
             svn_branch_url=url, rcs_type=RevisionControlSystems.BZR_SVN)
 
-    def makeGitCodeImport(self):
+    def makeGitCodeImport(self, target_rcs_type=None):
         """Make a `CodeImport` that points to a real Git repository."""
         self.git_server = GitServer(self.repo_path, use_server=False)
         self.git_server.start_server()
@@ -734,7 +743,8 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir):
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImport(
-            git_repo_url=self.git_server.get_url())
+            git_repo_url=self.git_server.get_url(),
+            target_rcs_type=target_rcs_type)
 
     def makeBzrCodeImport(self):
         """Make a `CodeImport` that points to a real Bazaar branch."""
@@ -761,8 +771,9 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir):
         job = getUtility(ICodeImportJobSet).getJobForMachine('machine', 10)
         self.assertEqual(code_import, job.code_import)
         source_details = CodeImportSourceDetails.fromCodeImportJob(job)
-        clean_up_default_stores_for_import(source_details)
-        self.addCleanup(clean_up_default_stores_for_import, source_details)
+        if IBranch.providedBy(code_import.target):
+            clean_up_default_stores_for_import(source_details)
+            self.addCleanup(clean_up_default_stores_for_import, source_details)
         return job
 
     def assertCodeImportResultCreated(self, code_import):
@@ -773,10 +784,19 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir):
 
     def assertBranchImportedOKForCodeImport(self, code_import):
         """Assert that a branch was pushed into the default branch store."""
-        url = get_default_bazaar_branch_store()._getMirrorURL(
-            code_import.branch.id)
-        branch = Branch.open(url)
-        self.assertEqual(self.foreign_commit_count, branch.revno())
+        if IBranch.providedBy(code_import.target):
+            url = get_default_bazaar_branch_store()._getMirrorURL(
+                code_import.branch.id)
+            branch = Branch.open(url)
+            commit_count = branch.revno()
+        else:
+            repo_path = os.path.join(
+                urlsplit(config.codeimport.git_repository_store).path,
+                code_import.target.unique_name)
+            commit_count = int(subprocess.check_output(
+                ["git", "rev-list", "--count", "HEAD"],
+                cwd=repo_path, universal_newlines=True))
+        self.assertEqual(self.foreign_commit_count, commit_count)
 
     def assertImported(self, ignored, code_import_id):
         """Assert that the `CodeImport` of the given id was imported."""
@@ -838,6 +858,35 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir):
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()
+        result = self.performImport(job_id)
+        return result.addCallback(self.assertImported, code_import_id)
+
+    def test_import_git_to_git(self):
+        # Create a Git-to-Git CodeImport and import it.
+        target_store = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, target_store)
+        config_name = self.getUniqueString()
+        config_fixture = self.useFixture(ConfigFixture(
+            config_name, self.layer.config_fixture.instance_name))
+        setting_lines = [
+            "[codeimport]",
+            "git_repository_store: file://%s" % target_store,
+            "macaroon_secret_key: some-secret",
+            ]
+        config_fixture.add_section("\n" + "\n".join(setting_lines))
+        self.useFixture(ConfigUseFixture(config_name))
+        self.useFixture(GitHostingFixture())
+        job = self.getStartedJobForImport(self.makeGitCodeImport(
+            target_rcs_type=TargetRevisionControlSystems.GIT))
+        code_import_id = job.code_import.id
+        job_id = job.id
+        self.layer.txn.commit()
+        target_repo_path = os.path.join(
+            target_store, job.code_import.target.unique_name)
+        os.makedirs(target_repo_path)
+        target_git_server = GitServer(target_repo_path, use_server=False)
+        target_git_server.start_server(bare=True)
+        self.addCleanup(target_git_server.stop_server)
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
