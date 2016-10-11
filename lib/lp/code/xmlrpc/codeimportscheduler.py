@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The code import scheduler XML-RPC API."""
@@ -67,8 +67,8 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
     @return_fault
     def _getImportDataForJobID(self, job_id):
         job = self._getJob(job_id)
-        arguments = CodeImportSourceDetails.fromCodeImport(
-            job.code_import).asArguments()
+        arguments = CodeImportSourceDetails.fromCodeImportJob(
+            job).asArguments()
         branch = job.code_import.branch
         branch_url = canonical_url(branch)
         log_file_name = '%s.log' % branch.unique_name[1:].replace('/', '-')

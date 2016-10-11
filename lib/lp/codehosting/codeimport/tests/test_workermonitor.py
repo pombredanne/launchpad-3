@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the CodeImportWorkerMonitor and related classes."""
@@ -754,15 +754,15 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir):
         returns the job.  It also makes sure there are no branches or foreign
         trees in the default stores to interfere with processing this job.
         """
-        source_details = CodeImportSourceDetails.fromCodeImport(code_import)
-        clean_up_default_stores_for_import(source_details)
-        self.addCleanup(clean_up_default_stores_for_import, source_details)
         if code_import.review_status != CodeImportReviewStatus.REVIEWED:
             code_import.updateFromData(
                 {'review_status': CodeImportReviewStatus.REVIEWED},
                 self.factory.makePerson())
         job = getUtility(ICodeImportJobSet).getJobForMachine('machine', 10)
         self.assertEqual(code_import, job.code_import)
+        source_details = CodeImportSourceDetails.fromCodeImportJob(job)
+        clean_up_default_stores_for_import(source_details)
+        self.addCleanup(clean_up_default_stores_for_import, source_details)
         return job
 
     def assertCodeImportResultCreated(self, code_import):

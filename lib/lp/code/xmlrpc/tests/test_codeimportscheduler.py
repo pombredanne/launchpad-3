@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test for the methods of `ICodeImportScheduler`."""
@@ -63,8 +63,8 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
         code_import = removeSecurityProxy(code_import_job).code_import
         code_import_arguments, branch_url, log_file_name = \
             self.api.getImportDataForJobID(code_import_job.id)
-        import_as_arguments = CodeImportSourceDetails.fromCodeImport(
-            code_import).asArguments()
+        import_as_arguments = CodeImportSourceDetails.fromCodeImportJob(
+            code_import_job).asArguments()
         expected_log_file_name = '%s.log' % (
             code_import.branch.unique_name[1:].replace('/', '-'))
         self.assertEqual(

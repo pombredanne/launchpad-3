@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The code import worker. This imports code from foreign repositories."""
@@ -308,8 +308,9 @@ class CodeImportSourceDetails:
             branch_id, rcstype, url, cvs_root, cvs_module, stacked_on_url)
 
     @classmethod
-    def fromCodeImport(cls, code_import):
-        """Convert a `CodeImport` to an instance."""
+    def fromCodeImportJob(cls, job):
+        """Convert a `CodeImportJob` to an instance."""
+        code_import = job.code_import
         branch = code_import.branch
         if branch.stacked_on is not None and not branch.stacked_on.private:
             stacked_path = branch_id_alias(branch.stacked_on)
