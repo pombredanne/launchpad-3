@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'add_revision_to_branch',
     'get_non_existant_source_package_branch_unique_name',
+    'GitHostingFixture',
     'make_erics_fooix_project',
     'make_linked_package_branch',
     'make_merge_proposal_without_reviewers',
