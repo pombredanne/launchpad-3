@@ -134,7 +134,7 @@ class CodeImportWorkerMonitor:
         self.codeimport_endpoint = codeimport_endpoint
         self._call_finish_job = True
         self._log_file = tempfile.TemporaryFile()
-        self._branch_url = None
+        self._target_url = None
         self._log_file_name = 'no-name-set.txt'
         self._access_policy = access_policy
 
@@ -143,7 +143,7 @@ class CodeImportWorkerMonitor:
         context = {
             'twisted_failure': failure,
             'http_request': errorlog.ScriptRequest(
-                [('code_import_job_id', self._job_id)], self._branch_url),
+                [('code_import_job_id', self._job_id)], self._target_url),
             }
         report = config.create(context)
 
@@ -169,15 +169,15 @@ class CodeImportWorkerMonitor:
     def getWorkerArguments(self):
         """Get arguments for the worker for the import we are working on.
 
-        This also sets the _branch_url and _log_file_name attributes for use
+        This also sets the _target_url and _log_file_name attributes for use
         in the _logOopsFromFailure and finishJob methods respectively.
         """
         deferred = self.codeimport_endpoint.callRemote(
             'getImportDataForJobID', self._job_id)
 
         def _processResult(result):
-            code_import_arguments, branch_url, log_file_name = result
-            self._branch_url = branch_url
+            code_import_arguments, target_url, log_file_name = result
+            self._target_url = target_url
             self._log_file_name = log_file_name
             self._logger.info(
                 'Found source details: %s', code_import_arguments)

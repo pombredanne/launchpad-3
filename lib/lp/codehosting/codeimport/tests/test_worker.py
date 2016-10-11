@@ -78,7 +78,7 @@ from lp.codehosting.codeimport.worker import (
     get_default_bazaar_branch_store,
     GitImportWorker,
     ImportDataStore,
-    ImportWorker,
+    ToBzrImportWorker,
     )
 from lp.codehosting.safe_open import (
     AcceptAnythingPolicy,
@@ -428,7 +428,7 @@ class TestImportDataStore(WorkerTest):
         source_details = self.factory.makeCodeImportSourceDetails()
         # That the remote name is like this is part of the interface of
         # ImportDataStore.
-        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        remote_name = '%08x.tar.gz' % (source_details.target_id,)
         local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
         transport = self.get_transport()
         transport.put_bytes(remote_name, '')
@@ -442,7 +442,7 @@ class TestImportDataStore(WorkerTest):
         source_details = self.factory.makeCodeImportSourceDetails()
         # That the remote name is like this is part of the interface of
         # ImportDataStore.
-        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        remote_name = '%08x.tar.gz' % (source_details.target_id,)
         content = self.factory.getUniqueString()
         transport = self.get_transport()
         transport.put_bytes(remote_name, content)
@@ -457,7 +457,7 @@ class TestImportDataStore(WorkerTest):
         source_details = self.factory.makeCodeImportSourceDetails()
         # That the remote name is like this is part of the interface of
         # ImportDataStore.
-        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        remote_name = '%08x.tar.gz' % (source_details.target_id,)
         content = self.factory.getUniqueString()
         transport = self.get_transport()
         transport.put_bytes(remote_name, content)
@@ -481,7 +481,7 @@ class TestImportDataStore(WorkerTest):
         store.put(local_name)
         # That the remote name is like this is part of the interface of
         # ImportDataStore.
-        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        remote_name = '%08x.tar.gz' % (source_details.target_id,)
         self.assertEquals(content, transport.get_bytes(remote_name))
 
     def test_put_ensures_base(self):
@@ -509,7 +509,7 @@ class TestImportDataStore(WorkerTest):
         store.put(local_name, self.get_transport(local_prefix))
         # That the remote name is like this is part of the interface of
         # ImportDataStore.
-        remote_name = '%08x.tar.gz' % (source_details.branch_id,)
+        remote_name = '%08x.tar.gz' % (source_details.target_id,)
         self.assertEquals(content, transport.get_bytes(remote_name))
 
 
@@ -585,8 +585,8 @@ class TestForeignTreeStore(WorkerTest):
         transport = store.import_data_store._transport
         source_details = store.import_data_store.source_details
         self.assertTrue(
-            transport.has('%08x.tar.gz' % source_details.branch_id),
-            "Couldn't find '%08x.tar.gz'" % source_details.branch_id)
+            transport.has('%08x.tar.gz' % source_details.target_id),
+            "Couldn't find '%08x.tar.gz'" % source_details.target_id)
 
     def test_fetchFromArchiveFailure(self):
         # If a tree has not been archived yet, but we try to retrieve it from
@@ -631,7 +631,7 @@ class TestWorkerCore(WorkerTest):
 
     def makeImportWorker(self):
         """Make an ImportWorker."""
-        return ImportWorker(
+        return ToBzrImportWorker(
             self.source_details, self.get_transport('import_data'),
             self.makeBazaarBranchStore(), logging.getLogger("silent"),
             AcceptAnythingPolicy())
@@ -728,7 +728,7 @@ class TestGitImportWorker(WorkerTest):
         import_worker.import_data_store.put('git.db')
         # Make sure there's a Bazaar branch in the branch store.
         branch = self.make_branch('branch')
-        ImportWorker.pushBazaarBranch(import_worker, branch)
+        ToBzrImportWorker.pushBazaarBranch(import_worker, branch)
         # Finally, fetching the tree gets the git.db file too.
         branch = import_worker.getBazaarBranch()
         self.assertEqual(
@@ -747,7 +747,7 @@ class TestGitImportWorker(WorkerTest):
         import_worker.import_data_store.put('git-cache.tar.gz')
         # Make sure there's a Bazaar branch in the branch store.
         branch = self.make_branch('branch')
-        ImportWorker.pushBazaarBranch(import_worker, branch)
+        ToBzrImportWorker.pushBazaarBranch(import_worker, branch)
         # Finally, fetching the tree gets the git.db file too.
         new_branch = import_worker.getBazaarBranch()
         self.assertEqual(
@@ -767,13 +767,13 @@ def clean_up_default_stores_for_import(source_details):
     :source_details: A `CodeImportSourceDetails` describing the import.
     """
     tree_transport = get_transport(config.codeimport.foreign_tree_store)
-    prefix = '%08x' % source_details.branch_id
+    prefix = '%08x' % source_details.target_id
     if tree_transport.has('.'):
         for filename in tree_transport.list_dir('.'):
             if filename.startswith(prefix):
                 tree_transport.delete(filename)
     branchstore = get_default_bazaar_branch_store()
-    branch_name = '%08x' % source_details.branch_id
+    branch_name = '%08x' % source_details.target_id
     if branchstore.transport.has(branch_name):
         branchstore.transport.delete_tree(branch_name)
 
@@ -822,7 +822,7 @@ class TestActualImportMixin:
         """Get the Bazaar branch 'worker' stored into its BazaarBranchStore.
         """
         branch_url = worker.bazaar_branch_store._getMirrorURL(
-            worker.source_details.branch_id)
+            worker.source_details.target_id)
         return Branch.open(branch_url)
 
     def test_import(self):
@@ -885,7 +885,7 @@ class TestActualImportMixin:
         self.addCleanup(lambda: shutil.rmtree(tree_path))
 
         branch_url = get_default_bazaar_branch_store()._getMirrorURL(
-            source_details.branch_id)
+            source_details.target_id)
         branch = Branch.open(branch_url)
 
         self.assertEqual(self.foreign_commit_count, branch.revno())
@@ -1345,7 +1345,7 @@ class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS, worker.run())
         branch_url = self.bazaar_store._getMirrorURL(
-            worker.source_details.branch_id)
+            worker.source_details.target_id)
         branch = Branch.open(branch_url)
         self.assertEquals(self.revid, branch.last_revision())
 

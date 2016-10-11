@@ -69,10 +69,10 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
         job = self._getJob(job_id)
         arguments = CodeImportSourceDetails.fromCodeImportJob(
             job).asArguments()
-        branch = job.code_import.branch
-        branch_url = canonical_url(branch)
-        log_file_name = '%s.log' % branch.unique_name[1:].replace('/', '-')
-        return (arguments, branch_url, log_file_name)
+        target = job.code_import.target
+        target_url = canonical_url(target)
+        log_file_name = '%s.log' % target.unique_name[1:].replace('/', '-')
+        return (arguments, target_url, log_file_name)
 
     @return_fault
     def _updateHeartbeat(self, job_id, log_tail):

@@ -241,21 +241,21 @@ class TestWorkerMonitorUnit(TestCase):
         return worker_monitor.getWorkerArguments().addCallback(
             self.assertEqual, args)
 
-    def test_getWorkerArguments_sets_branch_url_and_logfilename(self):
-        # getWorkerArguments sets the _branch_url (for use in oops reports)
+    def test_getWorkerArguments_sets_target_url_and_logfilename(self):
+        # getWorkerArguments sets the _target_url (for use in oops reports)
         # and _log_file_name (for upload to the librarian) attributes on the
         # WorkerMonitor from the data returned by getImportDataForJobID.
-        branch_url = self.factory.getUniqueString()
+        target_url = self.factory.getUniqueString()
         log_file_name = self.factory.getUniqueString()
         worker_monitor = self.makeWorkerMonitorWithJob(
-            1, (['a'], branch_url, log_file_name))
+            1, (['a'], target_url, log_file_name))
 
         def check_branch_log(ignored):
             # Looking at the _ attributes here is in slightly poor taste, but
             # much much easier than them by logging and parsing an oops, etc.
             self.assertEqual(
-                (branch_url, log_file_name),
-                (worker_monitor._branch_url, worker_monitor._log_file_name))
+                (target_url, log_file_name),
+                (worker_monitor._target_url, worker_monitor._log_file_name))
 
         return worker_monitor.getWorkerArguments().addCallback(
             check_branch_log)
