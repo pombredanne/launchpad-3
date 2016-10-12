@@ -21,7 +21,6 @@ __all__ = [
 
 
 import os
-import re
 import shutil
 import subprocess
 from urlparse import (
@@ -94,6 +93,7 @@ from lp.codehosting.safe_open import (
 from lp.services.config import config
 from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.propertycache import cachedproperty
+from lp.services.utils import sanitise_urls
 
 
 class CodeImportBranchOpenPolicy(BranchOpenPolicy):
@@ -995,9 +995,7 @@ class GitToGitImportWorker(ImportWorker):
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, **kwargs)
         for line in git_process.stdout:
             line = line.decode("UTF-8", "replace").rstrip("\n")
-            # Remove any user/password data from URLs.
-            line = re.sub(r"://([^:]*:[^@]*@)(\S+)", r"://\2", line)
-            self._logger.info(line)
+            self._logger.info(sanitise_urls(line))
         retcode = git_process.wait()
         if retcode:
             raise subprocess.CalledProcessError(retcode, cmd)
