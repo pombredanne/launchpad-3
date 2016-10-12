@@ -386,23 +386,11 @@ class CodeImportJobMacaroonIssuer:
         """See `IMacaroonIssuer`."""
         if not self.checkMacaroonIssuer(macaroon):
             return False
-        if IGitRepository.providedBy(context):
-            if context.repository_type != GitRepositoryType.IMPORTED:
-                return False
-            code_import = getUtility(ICodeImportSet).getByGitRepository(
-                context)
-            if code_import is None:
-                return False
-            job = code_import.import_job
-            if job is None:
-                return False
-        else:
-            job = context
         try:
             verifier = Verifier()
-            verifier.satisfy_exact("code-import-job %s" % job.id)
+            verifier.satisfy_exact("code-import-job %s" % context.id)
             return (
                 verifier.verify(macaroon, self._root_secret) and
-                job.state == CodeImportJobState.RUNNING)
+                context.state == CodeImportJobState.RUNNING)
         except Exception:
             return False

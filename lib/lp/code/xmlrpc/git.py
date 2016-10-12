@@ -34,6 +34,7 @@ from lp.code.errors import (
     InvalidNamespace,
     )
 from lp.code.interfaces.codehosting import LAUNCHPAD_ANONYMOUS
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.gitapi import IGitAPI
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
@@ -83,7 +84,16 @@ class GitAPI(LaunchpadXMLRPCView):
         except ComponentLookupError:
             return False
         if repository is not None:
-            return issuer.verifyMacaroon(macaroon, repository)
+            if repository.repository_type != GitRepositoryType.IMPORTED:
+                return False
+            code_import = getUtility(ICodeImportSet).getByGitRepository(
+                repository)
+            if code_import is None:
+                return False
+            job = code_import.import_job
+            if job is None:
+                return False
+            return issuer.verifyMacaroon(macaroon, job)
         else:
             return issuer.checkMacaroonIssuer(macaroon)
 
