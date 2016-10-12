@@ -492,11 +492,11 @@ class ObjectFactory:
         epoch = datetime(2009, 1, 1, tzinfo=pytz.UTC)
         return epoch + timedelta(minutes=self.getUniqueInteger())
 
-    def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
+    def makeCodeImportSourceDetails(self, target_id=None, rcstype=None,
                                     url=None, cvs_root=None, cvs_module=None,
                                     stacked_on_url=None):
-        if branch_id is None:
-            branch_id = self.getUniqueInteger()
+        if target_id is None:
+            target_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'bzr-svn'
         if rcstype in ['bzr-svn', 'bzr']:
@@ -516,7 +516,7 @@ class ObjectFactory:
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return CodeImportSourceDetails(
-            branch_id, rcstype, url, cvs_root, cvs_module,
+            target_id, rcstype, url, cvs_root, cvs_module,
             stacked_on_url=stacked_on_url)
 
 

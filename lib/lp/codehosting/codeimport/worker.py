@@ -15,6 +15,7 @@ __all__ = [
     'ForeignTreeStore',
     'GitImportWorker',
     'ImportWorker',
+    'ToBzrImportWorker',
     'get_default_bazaar_branch_store',
     ]
 
@@ -268,18 +269,20 @@ class CodeImportSourceDetails:
     of the information suitable for passing around on executables' command
     lines.
 
-    :ivar branch_id: The id of the branch associated to this code import, used
-        for locating the existing import and the foreign tree.
+    :ivar target_id: The id of the Bazaar branch associated with this code
+        import, used for locating the existing import and the foreign tree.
     :ivar rcstype: 'cvs', 'git', 'bzr-svn', 'bzr' as appropriate.
     :ivar url: The branch URL if rcstype in ['bzr-svn', 'git', 'bzr'], None
         otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
+    :ivar stacked_on_url: The URL of the branch that the associated branch
+        is stacked on, if any.
     """
 
-    def __init__(self, branch_id, rcstype, url=None, cvs_root=None,
+    def __init__(self, target_id, rcstype, url=None, cvs_root=None,
                  cvs_module=None, stacked_on_url=None):
-        self.branch_id = branch_id
+        self.target_id = target_id
         self.rcstype = rcstype
         self.url = url
         self.cvs_root = cvs_root
@@ -289,7 +292,7 @@ class CodeImportSourceDetails:
     @classmethod
     def fromArguments(cls, arguments):
         """Convert command line-style arguments to an instance."""
-        branch_id = int(arguments.pop(0))
+        target_id = int(arguments.pop(0))
         rcstype = arguments.pop(0)
         if rcstype in ['bzr-svn', 'git', 'bzr']:
             url = arguments.pop(0)
@@ -305,34 +308,34 @@ class CodeImportSourceDetails:
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(
-            branch_id, rcstype, url, cvs_root, cvs_module, stacked_on_url)
+            target_id, rcstype, url, cvs_root, cvs_module, stacked_on_url)
 
     @classmethod
     def fromCodeImportJob(cls, job):
         """Convert a `CodeImportJob` to an instance."""
         code_import = job.code_import
-        branch = code_import.branch
-        if branch.stacked_on is not None and not branch.stacked_on.private:
-            stacked_path = branch_id_alias(branch.stacked_on)
+        target = code_import.target
+        if target.stacked_on is not None and not target.stacked_on.private:
+            stacked_path = branch_id_alias(target.stacked_on)
             stacked_on_url = compose_public_url('http', stacked_path)
         else:
             stacked_on_url = None
         if code_import.rcs_type == RevisionControlSystems.BZR_SVN:
             return cls(
-                branch.id, 'bzr-svn', str(code_import.url),
+                target.id, 'bzr-svn', str(code_import.url),
                 stacked_on_url=stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             return cls(
-                branch.id, 'cvs',
+                target.id, 'cvs',
                 cvs_root=str(code_import.cvs_root),
                 cvs_module=str(code_import.cvs_module))
         elif code_import.rcs_type == RevisionControlSystems.GIT:
             return cls(
-                branch.id, 'git', str(code_import.url),
+                target.id, 'git', str(code_import.url),
                 stacked_on_url=stacked_on_url)
         elif code_import.rcs_type == RevisionControlSystems.BZR:
             return cls(
-                branch.id, 'bzr', str(code_import.url),
+                target.id, 'bzr', str(code_import.url),
                 stacked_on_url=stacked_on_url)
         else:
             raise AssertionError("Unknown rcstype %r." % code_import.rcs_type)
@@ -340,7 +343,7 @@ class CodeImportSourceDetails:
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
         """
-        result = [str(self.branch_id), self.rcstype]
+        result = [str(self.target_id), self.rcstype]
         if self.rcstype in ['bzr-svn', 'git', 'bzr']:
             result.append(self.url)
             if self.stacked_on_url is not None:
@@ -374,7 +377,7 @@ class ImportDataStore:
         """
         self.source_details = source_details
         self._transport = transport
-        self._branch_id = source_details.branch_id
+        self._target_id = source_details.target_id
 
     def _getRemoteName(self, local_name):
         """Convert `local_name` to the name used to store a file.
@@ -394,7 +397,7 @@ class ImportDataStore:
         if dot_index < 0:
             raise AssertionError("local_name must have an extension.")
         ext = local_name[dot_index:]
-        return '%08x%s' % (self._branch_id, ext)
+        return '%08x%s' % (self._target_id, ext)
 
     def fetch(self, filename, dest_transport=None):
         """Retrieve `filename` from the store.
@@ -505,57 +508,23 @@ class ForeignTreeStore:
 class ImportWorker:
     """Oversees the actual work of a code import."""
 
-    # Where the Bazaar working tree will be stored.
-    BZR_BRANCH_PATH = 'bzr_branch'
-
-    # Should `getBazaarBranch` create a working tree?
-    needs_bzr_tree = True
-
-    required_format = BzrDirFormat.get_default_format()
-
-    def __init__(self, source_details, import_data_transport,
-                 bazaar_branch_store, logger, opener_policy):
+    def __init__(self, source_details, logger, opener_policy):
         """Construct an `ImportWorker`.
 
         :param source_details: A `CodeImportSourceDetails` object.
-        :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
-            uses this to fetch and store the Bazaar branches that are created
-            and updated during the import process.
         :param logger: A `Logger` to pass to cscvs.
         :param opener_policy: Policy object that decides what branches can
              be imported
         """
         self.source_details = source_details
-        self.bazaar_branch_store = bazaar_branch_store
-        self.import_data_store = ImportDataStore(
-            import_data_transport, self.source_details)
         self._logger = logger
         self._opener_policy = opener_policy
-
-    def getBazaarBranch(self):
-        """Return the Bazaar `Branch` that we are importing into."""
-        if os.path.isdir(self.BZR_BRANCH_PATH):
-            shutil.rmtree(self.BZR_BRANCH_PATH)
-        return self.bazaar_branch_store.pull(
-            self.source_details.branch_id, self.BZR_BRANCH_PATH,
-            self.required_format, self.needs_bzr_tree,
-            stacked_on_url=self.source_details.stacked_on_url)
-
-    def pushBazaarBranch(self, bazaar_branch):
-        """Push the updated Bazaar branch to the server.
-
-        :return: True if revisions were transferred.
-        """
-        return self.bazaar_branch_store.push(
-            self.source_details.branch_id, bazaar_branch,
-            self.required_format,
-            stacked_on_url=self.source_details.stacked_on_url)
 
     def getWorkingDirectory(self):
         """The directory we should change to and store all scratch files in.
         """
         base = config.codeimportworker.working_directory_root
-        dirname = 'worker-for-branch-%s' % self.source_details.branch_id
+        dirname = 'worker-for-branch-%s' % self.source_details.target_id
         return os.path.join(base, dirname)
 
     def run(self):
@@ -594,7 +563,56 @@ class ImportWorker:
         raise NotImplementedError()
 
 
-class CSCVSImportWorker(ImportWorker):
+class ToBzrImportWorker(ImportWorker):
+    """Oversees the actual work of a code import to Bazaar."""
+
+    # Where the Bazaar working tree will be stored.
+    BZR_BRANCH_PATH = 'bzr_branch'
+
+    # Should `getBazaarBranch` create a working tree?
+    needs_bzr_tree = True
+
+    required_format = BzrDirFormat.get_default_format()
+
+    def __init__(self, source_details, import_data_transport,
+                 bazaar_branch_store, logger, opener_policy):
+        """Construct a `ToBzrImportWorker`.
+
+        :param source_details: A `CodeImportSourceDetails` object.
+        :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
+            uses this to fetch and store the Bazaar branches that are created
+            and updated during the import process.
+        :param logger: A `Logger` to pass to cscvs.
+        :param opener_policy: Policy object that decides what branches can
+             be imported
+        """
+        super(ToBzrImportWorker, self).__init__(
+            source_details, logger, opener_policy)
+        self.bazaar_branch_store = bazaar_branch_store
+        self.import_data_store = ImportDataStore(
+            import_data_transport, self.source_details)
+
+    def getBazaarBranch(self):
+        """Return the Bazaar `Branch` that we are importing into."""
+        if os.path.isdir(self.BZR_BRANCH_PATH):
+            shutil.rmtree(self.BZR_BRANCH_PATH)
+        return self.bazaar_branch_store.pull(
+            self.source_details.target_id, self.BZR_BRANCH_PATH,
+            self.required_format, self.needs_bzr_tree,
+            stacked_on_url=self.source_details.stacked_on_url)
+
+    def pushBazaarBranch(self, bazaar_branch):
+        """Push the updated Bazaar branch to the server.
+
+        :return: True if revisions were transferred.
+        """
+        return self.bazaar_branch_store.push(
+            self.source_details.target_id, bazaar_branch,
+            self.required_format,
+            stacked_on_url=self.source_details.stacked_on_url)
+
+
+class CSCVSImportWorker(ToBzrImportWorker):
     """An ImportWorker for imports that use CSCVS.
 
     As well as invoking cscvs to do the import, this class also needs to
@@ -674,7 +692,7 @@ class CSCVSImportWorker(ImportWorker):
             return CodeImportWorkerExitCode.SUCCESS_NOCHANGE
 
 
-class PullingImportWorker(ImportWorker):
+class PullingImportWorker(ToBzrImportWorker):
     """An import worker for imports that can be done by a bzr plugin.
 
     Subclasses need to implement `probers`.
@@ -806,7 +824,7 @@ class GitImportWorker(PullingImportWorker):
         return config.codeimport.git_revisions_import_limit
 
     def getBazaarBranch(self):
-        """See `ImportWorker.getBazaarBranch`.
+        """See `ToBzrImportWorker.getBazaarBranch`.
 
         In addition to the superclass' behaviour, we retrieve bzr-git's
         caches, both legacy and modern, from the import data store and put
@@ -828,7 +846,7 @@ class GitImportWorker(PullingImportWorker):
         return branch
 
     def pushBazaarBranch(self, bazaar_branch):
-        """See `ImportWorker.pushBazaarBranch`.
+        """See `ToBzrImportWorker.pushBazaarBranch`.
 
         In addition to the superclass' behaviour, we store bzr-git's cache
         directory at .bzr/repository/git in the import data store.
