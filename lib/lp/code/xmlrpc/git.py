@@ -107,6 +107,8 @@ class GitAPI(LaunchpadXMLRPCView):
                 self._verifyMacaroon(macaroon_raw, naked_repository)):
             # The authentication parameters specifically grant access to
             # this repository, so we can bypass other checks.
+            # For the time being, this only works for code imports.
+            assert repository.repository_type == GitRepositoryType.IMPORTED
             hosting_path = naked_repository.getInternalPath()
             writable = True
             private = naked_repository.private
