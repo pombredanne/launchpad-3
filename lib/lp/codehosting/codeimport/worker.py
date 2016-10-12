@@ -994,15 +994,14 @@ class GitToGitImportWorker(ImportWorker):
 
     def _doImport(self):
         self._logger.info("Starting job.")
-        self._logger.info(config.codeimport.git_repository_store)
+        self._logger.info(config.codehosting.git_browse_root)
         try:
             self._opener_policy.checkOneURL(self.source_details.url)
         except BadUrl as e:
             self._logger.info("Invalid URL: %s" % e)
             return CodeImportWorkerExitCode.FAILURE_FORBIDDEN
         unauth_target_url = urljoin(
-            config.codeimport.git_repository_store,
-            self.source_details.target_id)
+            config.codehosting.git_browse_root, self.source_details.target_id)
         split = urlsplit(unauth_target_url)
         if split.hostname:
             target_netloc = ":%s@%s" % (

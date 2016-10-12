@@ -791,7 +791,7 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
             commit_count = branch.revno()
         else:
             repo_path = os.path.join(
-                urlsplit(config.codeimport.git_repository_store).path,
+                urlsplit(config.codehosting.git_browse_root).path,
                 code_import.target.unique_name)
             commit_count = int(subprocess.check_output(
                 ["git", "rev-list", "--count", "HEAD"],
@@ -869,8 +869,10 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
         config_fixture = self.useFixture(ConfigFixture(
             config_name, self.layer.config_fixture.instance_name))
         setting_lines = [
+            "[codehosting]",
+            "git_browse_root: file://%s" % target_store,
+            "",
             "[codeimport]",
-            "git_repository_store: file://%s" % target_store,
             "macaroon_secret_key: some-secret",
             ]
         config_fixture.add_section("\n" + "\n".join(setting_lines))
