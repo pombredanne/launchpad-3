@@ -1023,7 +1023,7 @@ class GitToGitImportWorker(ImportWorker):
         # that have both a non-empty username and a non-empty password.
         self._logger.info("Getting existing repository from hosting service.")
         try:
-            self._runGit("clone", "--bare", target_url, "repository")
+            self._runGit("clone", "--mirror", target_url, "repository")
         except subprocess.CalledProcessError as e:
             self._logger.info(
                 "Unable to get existing repository from hosting service: "
@@ -1031,9 +1031,17 @@ class GitToGitImportWorker(ImportWorker):
             return CodeImportWorkerExitCode.FAILURE
         self._logger.info("Fetching remote repository.")
         try:
+            self._runGit("config", "gc.auto", "0", cwd="repository")
             self._runGit(
-                "remote", "add", "-f", "--mirror=fetch",
-                "mirror", self.source_details.url, cwd="repository")
+                "fetch", "--prune", self.source_details.url, "+refs/*:refs/*",
+                cwd="repository")
+            # We should sync the remote HEAD as well.  This involves
+            # considerable gymnastics.  "git remote set-head --auto" does it
+            # if we can arrange a suitable temporary remote, or git 2.8.0
+            # has "git ls-remote --symref <repository> HEAD".  We then also
+            # need to set Launchpad's idea of HEAD, which is fiddly from an
+            # import worker.  For now we leave it at the default and trust
+            # that we'll be able to fix things up later.
         except subprocess.CalledProcessError as e:
             self._logger.info("Unable to fetch remote repository: %s" % e)
             return CodeImportWorkerExitCode.FAILURE_INVALID
