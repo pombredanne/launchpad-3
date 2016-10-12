@@ -314,6 +314,8 @@ class CodeImportSourceDetails:
         """Convert command line-style arguments to an instance."""
         target_id = arguments.pop(0)
         rcstype = arguments.pop(0)
+        # XXX cjwatson 2016-10-12: Remove compatibility code once the
+        # scheduler always passes both source and target types.
         if ':' in rcstype:
             rcstype, target_rcstype = rcstype.split(':', 1)
         else:
@@ -358,6 +360,10 @@ class CodeImportSourceDetails:
                 stacked_on_url = None
             target_id = target.id
         else:
+            # We don't have a better way to identify the target repository
+            # than the mutable unique name, but the macaroon constrains
+            # pushes tightly enough that the worst case is an authentication
+            # failure.
             target_id = target.unique_name
         if code_import.rcs_type == RevisionControlSystems.BZR_SVN:
             return cls(
@@ -391,6 +397,8 @@ class CodeImportSourceDetails:
         """
         result = [str(self.target_id)]
         if self.target_rcstype == 'bzr':
+            # XXX cjwatson 2016-10-12: Remove this special case once the
+            # worker always accepts the combined form.
             result.append(self.rcstype)
         elif self.target_rcstype == 'git':
             result.append('%s:%s' % (self.rcstype, self.target_rcstype))
@@ -407,6 +415,8 @@ class CodeImportSourceDetails:
         else:
             raise AssertionError("Unknown rcstype %r." % self.rcstype)
         if self.target_rcstype == 'git':
+            # XXX cjwatson 2016-10-12: Consider arranging for this to be
+            # passed to worker processes in the environment instead.
             result.append(self.macaroon.serialize())
         return result
 

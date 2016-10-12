@@ -1464,6 +1464,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
                 Equals(code_import.git_repository.unique_name),
                 Equals('git:git'), Equals('git://git.example.com/project.git'),
                 CodeImportJobMacaroonVerifies(code_import.git_repository)]),
+            # Start the job so that the macaroon can be verified.
             start_job=True)
 
     def test_cvs_arguments(self):
