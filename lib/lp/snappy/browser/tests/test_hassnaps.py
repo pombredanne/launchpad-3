@@ -93,7 +93,7 @@ class TestHasSnapsMenu(WithScenarios, TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    needs_hosting_fixture = False
+    needs_git_hosting_fixture = False
 
     scenarios = [
         ("Branch", {
@@ -101,13 +101,13 @@ class TestHasSnapsMenu(WithScenarios, TestCaseWithFactory):
             }),
         ("GitRef", {
             "context_factory": make_git_ref,
-            "needs_hosting_fixture": True,
+            "needs_git_hosting_fixture": True,
             }),
         ]
 
     def setUp(self):
         super(TestHasSnapsMenu, self).setUp()
-        if self.needs_hosting_fixture:
+        if self.needs_git_hosting_fixture:
             self.useFixture(GitHostingFixture())
 
     def makeSnap(self, context):

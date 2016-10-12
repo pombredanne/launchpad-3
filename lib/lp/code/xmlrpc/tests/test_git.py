@@ -29,6 +29,7 @@ from lp.code.interfaces.gitrepository import (
 from lp.code.tests.helpers import GitHostingFixture
 from lp.code.xmlrpc.git import GitAPI
 from lp.registry.enums import TeamMembershipPolicy
+from lp.services.config import config
 from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.webapp.escaping import html_escape
 from lp.testing import (
@@ -680,7 +681,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         self.assertPermissionDenied(
             None, path, permission="write",
             macaroon_raw=Macaroon(
-                identifier="another", key="another-secret").serialize())
+                location=config.vhost.mainsite.hostname, identifier="another",
+                key="another-secret").serialize())
         self.assertPermissionDenied(
             None, path, permission="write", macaroon_raw="nonsense")
 

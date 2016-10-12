@@ -34,6 +34,7 @@ from lp.code.errors import (
     InvalidNamespace,
     )
 from lp.code.interfaces.codehosting import LAUNCHPAD_ANONYMOUS
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.gitapi import IGitAPI
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
@@ -83,11 +84,20 @@ class GitAPI(LaunchpadXMLRPCView):
         except ComponentLookupError:
             return False
         if repository is not None:
-            return issuer.verifyMacaroon(macaroon, repository)
+            if repository.repository_type != GitRepositoryType.IMPORTED:
+                return False
+            code_import = getUtility(ICodeImportSet).getByGitRepository(
+                repository)
+            if code_import is None:
+                return False
+            job = code_import.import_job
+            if job is None:
+                return False
+            return issuer.verifyMacaroon(macaroon, job)
         else:
             return issuer.checkMacaroonIssuer(macaroon)
 
-    def _performLookup(self, requester, path, auth_params):
+    def _performLookup(self, path, auth_params):
         repository, extra_path = getUtility(IGitLookup).getByPath(path)
         if repository is None:
             return None
@@ -97,6 +107,8 @@ class GitAPI(LaunchpadXMLRPCView):
                 self._verifyMacaroon(macaroon_raw, naked_repository)):
             # The authentication parameters specifically grant access to
             # this repository, so we can bypass other checks.
+            # For the time being, this only works for code imports.
+            assert repository.repository_type == GitRepositoryType.IMPORTED
             hosting_path = naked_repository.getInternalPath()
             writable = True
             private = naked_repository.private
@@ -263,11 +275,11 @@ class GitAPI(LaunchpadXMLRPCView):
         if requester == LAUNCHPAD_ANONYMOUS:
             requester = None
         try:
-            result = self._performLookup(requester, path, auth_params)
+            result = self._performLookup(path, auth_params)
             if (result is None and requester is not None and
                 permission == "write"):
                 self._createRepository(requester, path)
-                result = self._performLookup(requester, path, auth_params)
+                result = self._performLookup(path, auth_params)
             if result is None:
                 raise faults.GitRepositoryNotFound(path)
             if permission != "read" and not result["writable"]:
