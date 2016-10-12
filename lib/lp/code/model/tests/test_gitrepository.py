@@ -36,6 +36,7 @@ from lp.app.enums import (
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchMergeProposalStatus,
@@ -44,6 +45,7 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     GitObjectType,
     GitRepositoryType,
+    TargetRevisionControlSystems,
     )
 from lp.code.errors import (
     CannotDeleteGitRepository,
@@ -57,6 +59,7 @@ from lp.code.event.git import GitRefsUpdatedEvent
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     )
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.defaultgit import ICanHasDefaultGitRepository
 from lp.code.interfaces.gitjob import (
     IGitRefScanJobSource,
@@ -88,6 +91,7 @@ from lp.code.model.gitjob import (
     )
 from lp.code.model.gitrepository import (
     ClearPrerequisiteRepository,
+    DeleteCodeImport,
     DeletionCallable,
     DeletionOperation,
     GitRepository,
@@ -118,6 +122,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
+from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
@@ -198,6 +203,16 @@ class TestGitRepository(TestCaseWithFactory):
         owner = self.factory.makePerson()
         repository = self.factory.makeGitRepository(owner=owner, target=owner)
         self.assertEqual(owner, repository.target)
+
+    def test_code_import(self):
+        self.useFixture(GitHostingFixture())
+        code_import = self.factory.makeCodeImport(
+            target_rcs_type=TargetRevisionControlSystems.GIT)
+        repository = code_import.git_repository
+        self.assertEqual(code_import, repository.code_import)
+        getUtility(ICodeImportSet).delete(code_import)
+        clear_property_cache(repository)
+        self.assertIsNone(repository.code_import)
 
 
 class TestGitIdentityMixin(TestCaseWithFactory):
@@ -396,6 +411,15 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
         self.assertIsNone(
             getUtility(IGitLookup).get(repository_id),
             "The repository has not been deleted.")
+
+    def test_code_import_does_not_disable_deletion(self):
+        # A repository that has an attached code import can be deleted.
+        self.useFixture(GitHostingFixture())
+        code_import = self.factory.makeCodeImport(
+            target_rcs_type=TargetRevisionControlSystems.GIT)
+        repository = code_import.git_repository
+        with celebrity_logged_in('vcs_imports'):
+            self.assertTrue(repository.canBeDeleted())
 
     def test_landing_target_disables_deletion(self):
         # A repository with a landing target cannot be deleted.
@@ -654,6 +678,27 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
             self.factory.makePerson(), self.factory.makePerson())
         merge_proposal.target_git_repository.destroySelf(break_references=True)
 
+    def test_code_import_requirements(self):
+        # Code imports are not included explicitly in deletion requirements.
+        self.useFixture(GitHostingFixture())
+        code_import = self.factory.makeCodeImport(
+            target_rcs_type=TargetRevisionControlSystems.GIT)
+        # Remove the implicit repository subscription first.
+        code_import.git_repository.unsubscribe(
+            code_import.git_repository.owner, code_import.git_repository.owner)
+        self.assertEqual(
+            {}, code_import.git_repository.getDeletionRequirements())
+
+    def test_code_import_deletion(self):
+        # break_references allows deleting a code import repository.
+        self.useFixture(GitHostingFixture())
+        code_import = self.factory.makeCodeImport(
+            target_rcs_type=TargetRevisionControlSystems.GIT)
+        code_import_id = code_import.id
+        code_import.git_repository.destroySelf(break_references=True)
+        self.assertRaises(
+            NotFoundError, getUtility(ICodeImportSet).get, code_import_id)
+
     def test_snap_requirements(self):
         # If a repository is used by a snap package, the deletion
         # requirements indicate this.
@@ -699,6 +744,16 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
             merge_proposal, "blah", merge_proposal.deleteProposal)()
         self.assertRaises(
             SQLObjectNotFound, BranchMergeProposal.get, merge_proposal_id)
+
+    def test_DeleteCodeImport(self):
+        # DeleteCodeImport.__call__ must delete the CodeImport.
+        self.useFixture(GitHostingFixture())
+        code_import = self.factory.makeCodeImport(
+            target_rcs_type=TargetRevisionControlSystems.GIT)
+        code_import_id = code_import.id
+        DeleteCodeImport(code_import)()
+        self.assertRaises(
+            NotFoundError, getUtility(ICodeImportSet).get, code_import_id)
 
     def test_deletionRequirements_with_SourcePackageRecipe(self):
         # Recipes are listed as deletion requirements.

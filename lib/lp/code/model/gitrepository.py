@@ -86,6 +86,7 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     notify_modified,
     )
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
@@ -1073,6 +1074,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         diff = hosting_client.getDiff(self.getInternalPath(), old, new)
         return diff["patch"]
 
+    @cachedproperty
+    def code_import(self):
+        return getUtility(ICodeImportSet).getByGitRepository(self)
+
     def canBeDeleted(self):
         """See `IGitRepository`."""
         # Can't delete if the repository is associated with anything.
@@ -1154,6 +1159,12 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             operation()
         for operation in deletion_operations:
             operation()
+        # Special-case code import, since users don't have lp.Edit on them,
+        # since if you can delete a repository you should be able to delete
+        # the code import, and since deleting the code import object itself
+        # isn't actually a very interesting thing to tell the user about.
+        if self.code_import is not None:
+            DeleteCodeImport(self.code_import)()
         Store.of(self).flush()
 
     def _deleteRepositoryAccessGrants(self):
@@ -1248,6 +1259,17 @@ class ClearPrerequisiteRepository(DeletionOperation):
         self.affected_object.prerequisite_git_repository = None
         self.affected_object.prerequisite_git_path = None
         self.affected_object.prerequisite_git_commit_sha1 = None
+
+
+class DeleteCodeImport(DeletionOperation):
+    """Deletion operation that deletes a repository's import."""
+
+    def __init__(self, code_import):
+        DeletionOperation.__init__(
+            self, code_import, msg("This is the import data for this branch."))
+
+    def __call__(self):
+        getUtility(ICodeImportSet).delete(self.affected_object)
 
 
 @implementer(IGitRepositorySet)

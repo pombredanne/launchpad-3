@@ -578,6 +578,7 @@ patch_collection_property(IGitRepository, 'refs', IGitRef)
 patch_collection_property(IGitRepository, 'subscriptions', IGitSubscription)
 patch_entry_return_type(IGitRepository, 'subscribe', IGitSubscription)
 patch_entry_return_type(IGitRepository, 'getSubscription', IGitSubscription)
+patch_reference_property(IGitRepository, 'code_import', ICodeImport)
 patch_collection_property(
     IGitRepository, 'landing_targets', IBranchMergeProposal)
 patch_collection_property(

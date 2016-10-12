@@ -260,6 +260,11 @@ class IGitRepositoryView(IHasRecipes):
         title=_("Persons subscribed to this repository."),
         readonly=True, value_type=Reference(IPerson)))
 
+    code_import = exported(Reference(
+        title=_("The associated CodeImport, if any."),
+        # Really ICodeImport, patched in _schema_circular_imports.py.
+        schema=Interface))
+
     def getRefByPath(path):
         """Look up a single reference in this repository by path.
 
@@ -946,14 +951,24 @@ class GitIdentityMixin:
         return identities
 
 
-def user_has_special_git_repository_access(user):
+def user_has_special_git_repository_access(user, repository=None):
     """Admins have special access.
 
     :param user: An `IPerson` or None.
+    :param repository: An `IGitRepository` or None when checking collection
+        access.
     """
     if user is None:
         return False
     roles = IPersonRoles(user)
     if roles.in_admin:
         return True
-    return False
+    if repository is None:
+        return False
+    code_import = repository.code_import
+    if code_import is None:
+        return False
+    return (
+        roles.in_vcs_imports
+        or (IPersonRoles(repository.owner).in_vcs_imports
+            and user.inTerm(code_import.registrant)))
