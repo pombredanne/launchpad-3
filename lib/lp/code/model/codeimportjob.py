@@ -372,6 +372,8 @@ class CodeImportJobMacaroonIssuer:
 
     def checkMacaroonIssuer(self, macaroon):
         """See `IMacaroonIssuer`."""
+        if macaroon.location != config.vhost.mainsite.hostname:
+            return False
         try:
             verifier = Verifier()
             verifier.satisfy_general(
