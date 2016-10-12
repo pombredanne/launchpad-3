@@ -384,6 +384,8 @@ class CodeImportJobMacaroonIssuer:
 
     def verifyMacaroon(self, macaroon, context):
         """See `IMacaroonIssuer`."""
+        if not self.checkMacaroonIssuer(macaroon):
+            return False
         if IGitRepository.providedBy(context):
             if context.repository_type != GitRepositoryType.IMPORTED:
                 return False

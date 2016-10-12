@@ -1210,13 +1210,32 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
         self.assertTrue(issuer.verifyMacaroon(macaroon, job))
 
-    def test_not_running(self):
+    def test_verifyMacaroon_wrong_location(self):
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        job = self.makeJob()
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        getUtility(ICodeImportJobWorkflow).startJob(job, machine)
+        macaroon = Macaroon(
+            location="another-location",
+            key=removeSecurityProxy(issuer)._root_secret)
+        self.assertFalse(issuer.verifyMacaroon(macaroon, job))
+
+    def test_verifyMacaroon_wrong_key(self):
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        job = self.makeJob()
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        getUtility(ICodeImportJobWorkflow).startJob(job, machine)
+        macaroon = Macaroon(
+            location=config.vhost.mainsite.hostname, key="another-secret")
+        self.assertFalse(issuer.verifyMacaroon(macaroon, job))
+
+    def test_verifyMacaroon_not_running(self):
         job = self.makeJob()
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
         self.assertFalse(issuer.verifyMacaroon(macaroon, job))
 
-    def test_wrong_job(self):
+    def test_verifyMacaroon_wrong_job(self):
         job = self.makeJob()
         other_job = self.factory.makeCodeImportJob(code_import=job.code_import)
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
