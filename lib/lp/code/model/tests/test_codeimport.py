@@ -67,20 +67,20 @@ class TestCodeImportBase(WithScenarios, TestCaseWithFactory):
             "supports_source_cvs": True,
             "supports_source_svn": True,
             "supports_source_bzr": True,
-            "needs_hosting_fixture": False,
+            "needs_git_hosting_fixture": False,
             }),
         ("GitRepository", {
             "target_rcs_type": TargetRevisionControlSystems.GIT,
             "supports_source_cvs": False,
             "supports_source_svn": False,
             "supports_source_bzr": False,
-            "needs_hosting_fixture": True,
+            "needs_git_hosting_fixture": True,
             }),
         ]
 
     def setUp(self, *args, **kwargs):
         super(TestCodeImportBase, self).setUp(*args, **kwargs)
-        if self.needs_hosting_fixture:
+        if self.needs_git_hosting_fixture:
             self.hosting_fixture = self.useFixture(GitHostingFixture())
 
 
@@ -167,7 +167,7 @@ class TestCodeImportCreation(TestCodeImportBase):
             code_import.review_status)
         # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
-        if self.needs_hosting_fixture:
+        if self.needs_git_hosting_fixture:
             # The repository is created on the hosting service.
             self.assertEqual(
                 (code_import.git_repository.getInternalPath(),),
@@ -188,7 +188,7 @@ class TestCodeImportCreation(TestCodeImportBase):
             code_import.review_status)
         # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
-        if self.needs_hosting_fixture:
+        if self.needs_git_hosting_fixture:
             # The repository is created on the hosting service.
             self.assertEqual(
                 (code_import.git_repository.getInternalPath(),),
