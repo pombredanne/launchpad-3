@@ -43,6 +43,7 @@ from lp.code.model.codeimportjob import (
     )
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.tests.codeimporthelpers import make_running_import
+from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     login,
@@ -66,14 +67,21 @@ class TestCodeImportBase(WithScenarios, TestCaseWithFactory):
             "supports_source_cvs": True,
             "supports_source_svn": True,
             "supports_source_bzr": True,
+            "needs_git_hosting_fixture": False,
             }),
         ("GitRepository", {
             "target_rcs_type": TargetRevisionControlSystems.GIT,
             "supports_source_cvs": False,
             "supports_source_svn": False,
             "supports_source_bzr": False,
+            "needs_git_hosting_fixture": True,
             }),
         ]
+
+    def setUp(self, *args, **kwargs):
+        super(TestCodeImportBase, self).setUp(*args, **kwargs)
+        if self.needs_git_hosting_fixture:
+            self.hosting_fixture = self.useFixture(GitHostingFixture())
 
 
 class TestCodeImportCreation(TestCodeImportBase):
@@ -159,6 +167,11 @@ class TestCodeImportCreation(TestCodeImportBase):
             code_import.review_status)
         # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
+        if self.needs_git_hosting_fixture:
+            # The repository is created on the hosting service.
+            self.assertEqual(
+                (code_import.git_repository.getInternalPath(),),
+                self.hosting_fixture.create.extract_args()[0])
 
     def test_git_import_reviewed(self):
         """A new git import is always reviewed by default."""
@@ -175,6 +188,11 @@ class TestCodeImportCreation(TestCodeImportBase):
             code_import.review_status)
         # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
+        if self.needs_git_hosting_fixture:
+            # The repository is created on the hosting service.
+            self.assertEqual(
+                (code_import.git_repository.getInternalPath(),),
+                self.hosting_fixture.create.extract_args()[0])
 
     def test_bzr_import_reviewed(self):
         """A new bzr import is always reviewed by default."""
@@ -352,7 +370,8 @@ class TestCodeImportStatusUpdate(TestCodeImportBase):
 
     def setUp(self):
         # Log in a VCS Imports member.
-        TestCaseWithFactory.setUp(self, 'david.allouche@canonical.com')
+        super(TestCodeImportStatusUpdate, self).setUp(
+            'david.allouche@canonical.com')
         self.import_operator = getUtility(IPersonSet).getByEmail(
             'david.allouche@canonical.com')
         # Remove existing jobs.
@@ -484,7 +503,7 @@ class TestCodeImportResultsAttribute(TestCodeImportBase):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestCodeImportResultsAttribute, self).setUp()
         self.code_import = self.factory.makeCodeImport(
             target_rcs_type=self.target_rcs_type)
 
@@ -550,7 +569,7 @@ class TestConsecutiveFailureCount(TestCodeImportBase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestConsecutiveFailureCount, self).setUp()
         login('no-priv@canonical.com')
         self.machine = self.factory.makeCodeImportMachine()
         self.machine.setOnline()
@@ -692,7 +711,7 @@ class TestTryFailingImportAgain(TestCodeImportBase):
 
     def setUp(self):
         # Log in a VCS Imports member.
-        TestCaseWithFactory.setUp(self)
+        super(TestTryFailingImportAgain, self).setUp()
         login_person(getUtility(ILaunchpadCelebrities).vcs_imports.teamowner)
 
     def test_mustBeFailing(self):
@@ -751,7 +770,7 @@ class TestRequestImport(TestCodeImportBase):
 
     def setUp(self):
         # We have to be logged in to request imports
-        TestCaseWithFactory.setUp(self, user='no-priv@canonical.com')
+        super(TestRequestImport, self).setUp(user='no-priv@canonical.com')
 
     def test_requestsJob(self):
         code_import = self.factory.makeCodeImport(

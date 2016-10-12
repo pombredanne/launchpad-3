@@ -59,6 +59,7 @@ from lp.code.interfaces.codeimport import (
     )
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
+from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.mail.codeimport import code_import_updated
@@ -308,6 +309,8 @@ class CodeImportSet:
             import_target = namespace.createRepository(
                 repository_type=GitRepositoryType.IMPORTED, name=branch_name,
                 registrant=registrant)
+            hosting_path = import_target.getInternalPath()
+            getUtility(IGitHostingClient).create(hosting_path)
 
         code_import = CodeImport(
             registrant=registrant, owner=owner, target=import_target,
