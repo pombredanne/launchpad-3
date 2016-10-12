@@ -43,6 +43,7 @@ from lp.code.tests.codeimporthelpers import (
     make_finished_import,
     make_running_import,
     )
+from lp.code.tests.helpers import GitHostingFixture
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -1160,6 +1161,7 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         super(TestCodeImportJobMacaroonIssuer, self).setUp()
         login_for_code_imports()
         self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        self.useFixture(GitHostingFixture())
 
     def makeJob(self, target_rcs_type=TargetRevisionControlSystems.GIT):
         code_import = self.factory.makeCodeImport(

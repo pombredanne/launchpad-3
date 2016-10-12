@@ -11,6 +11,7 @@ from lp.code.enums import (
     RevisionControlSystems,
     TargetRevisionControlSystems,
     )
+from lp.code.tests.helpers import GitHostingFixture
 from lp.services.mail import stub
 from lp.testing import (
     login_person,
@@ -95,6 +96,7 @@ class TestNewCodeImports(TestCaseWithFactory):
 
     def test_git_to_git_import(self):
         # Test the email for a new git-to-git import.
+        self.useFixture(GitHostingFixture())
         eric = self.factory.makePerson(name='eric')
         fooix = self.factory.makeProduct(name='fooix')
         # Eric needs to be logged in for the mail to be sent.
