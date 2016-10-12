@@ -97,7 +97,7 @@ class GitAPI(LaunchpadXMLRPCView):
         else:
             return issuer.checkMacaroonIssuer(macaroon)
 
-    def _performLookup(self, requester, path, auth_params):
+    def _performLookup(self, path, auth_params):
         repository, extra_path = getUtility(IGitLookup).getByPath(path)
         if repository is None:
             return None
@@ -273,11 +273,11 @@ class GitAPI(LaunchpadXMLRPCView):
         if requester == LAUNCHPAD_ANONYMOUS:
             requester = None
         try:
-            result = self._performLookup(requester, path, auth_params)
+            result = self._performLookup(path, auth_params)
             if (result is None and requester is not None and
                 permission == "write"):
                 self._createRepository(requester, path)
-                result = self._performLookup(requester, path, auth_params)
+                result = self._performLookup(path, auth_params)
             if result is None:
                 raise faults.GitRepositoryNotFound(path)
             if permission != "read" and not result["writable"]:
