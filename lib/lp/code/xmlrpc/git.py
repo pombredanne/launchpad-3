@@ -10,9 +10,13 @@ __all__ = [
 
 import sys
 
+from pymacaroons import Macaroon
 from storm.store import Store
 import transaction
-from zope.component import getUtility
+from zope.component import (
+    ComponentLookupError,
+    getUtility,
+    )
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
@@ -30,6 +34,7 @@ from lp.code.errors import (
     InvalidNamespace,
     )
 from lp.code.interfaces.codehosting import LAUNCHPAD_ANONYMOUS
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.gitapi import IGitAPI
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
@@ -53,6 +58,7 @@ from lp.registry.interfaces.product import (
     NoSuchProduct,
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.webapp import LaunchpadXMLRPCView
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.errorlog import ScriptRequest
@@ -68,22 +74,58 @@ class GitAPI(LaunchpadXMLRPCView):
         super(GitAPI, self).__init__(*args, **kwargs)
         self.repository_set = getUtility(IGitRepositorySet)
 
-    def _performLookup(self, path):
+    def _verifyMacaroon(self, macaroon_raw, repository=None):
+        try:
+            macaroon = Macaroon.deserialize(macaroon_raw)
+        except Exception:
+            return False
+        try:
+            issuer = getUtility(IMacaroonIssuer, macaroon.identifier)
+        except ComponentLookupError:
+            return False
+        if repository is not None:
+            if repository.repository_type != GitRepositoryType.IMPORTED:
+                return False
+            code_import = getUtility(ICodeImportSet).getByGitRepository(
+                repository)
+            if code_import is None:
+                return False
+            job = code_import.import_job
+            if job is None:
+                return False
+            return issuer.verifyMacaroon(macaroon, job)
+        else:
+            return issuer.checkMacaroonIssuer(macaroon)
+
+    def _performLookup(self, path, auth_params):
         repository, extra_path = getUtility(IGitLookup).getByPath(path)
         if repository is None:
             return None
-        try:
-            hosting_path = repository.getInternalPath()
-        except Unauthorized:
-            return None
-        writable = (
-            repository.repository_type == GitRepositoryType.HOSTED and
-            check_permission("launchpad.Edit", repository))
+        macaroon_raw = auth_params.get("macaroon")
+        naked_repository = removeSecurityProxy(repository)
+        if (macaroon_raw is not None and
+                self._verifyMacaroon(macaroon_raw, naked_repository)):
+            # The authentication parameters specifically grant access to
+            # this repository, so we can bypass other checks.
+            # For the time being, this only works for code imports.
+            assert repository.repository_type == GitRepositoryType.IMPORTED
+            hosting_path = naked_repository.getInternalPath()
+            writable = True
+            private = naked_repository.private
+        else:
+            try:
+                hosting_path = repository.getInternalPath()
+            except Unauthorized:
+                return None
+            writable = (
+                repository.repository_type == GitRepositoryType.HOSTED and
+                check_permission("launchpad.Edit", repository))
+            private = repository.private
         return {
             "path": hosting_path,
             "writable": writable,
             "trailing": extra_path,
-            "private": repository.private,
+            "private": private,
             }
 
     def _getGitNamespaceExtras(self, path, requester):
@@ -233,11 +275,11 @@ class GitAPI(LaunchpadXMLRPCView):
         if requester == LAUNCHPAD_ANONYMOUS:
             requester = None
         try:
-            result = self._performLookup(path)
+            result = self._performLookup(path, auth_params)
             if (result is None and requester is not None and
                 permission == "write"):
                 self._createRepository(requester, path)
-                result = self._performLookup(path)
+                result = self._performLookup(path, auth_params)
             if result is None:
                 raise faults.GitRepositoryNotFound(path)
             if permission != "read" and not result["writable"]:
@@ -286,5 +328,10 @@ class GitAPI(LaunchpadXMLRPCView):
 
     def authenticateWithPassword(self, username, password):
         """See `IGitAPI`."""
-        # Password authentication isn't supported yet.
-        return faults.Unauthorized()
+        # XXX cjwatson 2016-10-06: We only support free-floating macaroons
+        # at the moment, not ones bound to a user.
+        if not username and self._verifyMacaroon(password):
+            return {"macaroon": password}
+        else:
+            # Only macaroons are supported for password authentication.
+            return faults.Unauthorized()

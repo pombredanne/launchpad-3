@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test for the methods of `ICodeImportScheduler`."""
@@ -57,20 +57,20 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
         self.assertEqual(code_import_job.id, job_id)
 
     def test_getImportDataForJobID(self):
-        # getImportDataForJobID returns the worker arguments, branch url and
+        # getImportDataForJobID returns the worker arguments, target url and
         # log file name for an import corresponding to a particular job.
         code_import_job = self.makeCodeImportJob(running=True)
         code_import = removeSecurityProxy(code_import_job).code_import
-        code_import_arguments, branch_url, log_file_name = \
+        code_import_arguments, target_url, log_file_name = \
             self.api.getImportDataForJobID(code_import_job.id)
-        import_as_arguments = CodeImportSourceDetails.fromCodeImport(
-            code_import).asArguments()
+        import_as_arguments = CodeImportSourceDetails.fromCodeImportJob(
+            code_import_job).asArguments()
         expected_log_file_name = '%s.log' % (
-            code_import.branch.unique_name[1:].replace('/', '-'))
+            code_import.target.unique_name[1:].replace('/', '-'))
         self.assertEqual(
-            (import_as_arguments, canonical_url(code_import.branch),
+            (import_as_arguments, canonical_url(code_import.target),
              expected_log_file_name),
-            (code_import_arguments, branch_url, log_file_name))
+            (code_import_arguments, target_url, log_file_name))
 
     def test_getImportDataForJobID_not_found(self):
         # getImportDataForJobID returns a NoSuchCodeImportJob fault when there

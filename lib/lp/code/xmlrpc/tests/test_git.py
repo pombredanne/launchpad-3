@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from pymacaroons import Macaroon
 from testscenarios import (
     load_tests_apply_scenarios,
     WithScenarios,
@@ -13,8 +14,12 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
-from lp.code.enums import GitRepositoryType
+from lp.code.enums import (
+    GitRepositoryType,
+    TargetRevisionControlSystems,
+    )
 from lp.code.errors import GitRepositoryCreationFault
+from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitrepository import (
@@ -24,10 +29,13 @@ from lp.code.interfaces.gitrepository import (
 from lp.code.tests.helpers import GitHostingFixture
 from lp.code.xmlrpc.git import GitAPI
 from lp.registry.enums import TeamMembershipPolicy
+from lp.services.config import config
+from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.webapp.escaping import html_escape
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
+    celebrity_logged_in,
     login,
     person_logged_in,
     TestCaseWithFactory,
@@ -74,13 +82,15 @@ class TestGitAPIMixin(WithScenarios):
 
     def assertPermissionDenied(self, requester, path,
                                message="Permission denied.",
-                               permission="read", can_authenticate=False):
+                               permission="read", can_authenticate=False,
+                               macaroon_raw=None):
         """Assert that looking at the given path returns PermissionDenied."""
         if requester is not None:
             requester = requester.id
-        fault = self._translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = {"uid": requester, "can-authenticate": can_authenticate}
+        if macaroon_raw is not None:
+            auth_params["macaroon"] = macaroon_raw
+        fault = self._translatePath(path, permission, auth_params)
         self.assertEqual(faults.PermissionDenied(message), fault)
 
     def assertUnauthorized(self, requester, path,
@@ -143,12 +153,13 @@ class TestGitAPIMixin(WithScenarios):
 
     def assertTranslates(self, requester, path, repository, writable,
                          permission="read", can_authenticate=False,
-                         trailing="", private=False):
+                         macaroon_raw=None, trailing="", private=False):
         if requester is not None:
             requester = requester.id
-        translation = self._translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = {"uid": requester, "can-authenticate": can_authenticate}
+        if macaroon_raw is not None:
+            auth_params["macaroon"] = macaroon_raw
+        translation = self._translatePath(path, permission, auth_params)
         login(ANONYMOUS)
         self.assertEqual(
             {"path": repository.getInternalPath(), "writable": writable,
@@ -634,6 +645,47 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
             "GitRepositoryCreationFault: nothing here",
             self.oopses[0]["tb_text"])
 
+    def test_translatePath_code_import(self):
+        # A code import worker with a suitable macaroon can write to a
+        # repository associated with a running code import job.
+        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        code_imports = [
+            self.factory.makeCodeImport(
+                target_rcs_type=TargetRevisionControlSystems.GIT)
+            for _ in range(2)]
+        with celebrity_logged_in("vcs_imports"):
+            jobs = [
+                self.factory.makeCodeImportJob(code_import=code_import)
+                for code_import in code_imports]
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroons = [
+            removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
+        path = u"/%s" % code_imports[0].git_repository.unique_name
+        self.assertPermissionDenied(
+            None, path, permission="write", macaroon_raw=macaroons[0])
+        with celebrity_logged_in("vcs_imports"):
+            getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
+        # This only works with new-style passing of authentication parameters.
+        if self.auth_params_dict:
+            self.assertTranslates(
+                None, path, code_imports[0].git_repository, True,
+                permission="write", macaroon_raw=macaroons[0].serialize())
+        else:
+            self.assertPermissionDenied(
+                None, path, permission="write",
+                macaroon_raw=macaroons[0].serialize())
+        self.assertPermissionDenied(
+            None, path, permission="write",
+            macaroon_raw=macaroons[1].serialize())
+        self.assertPermissionDenied(
+            None, path, permission="write",
+            macaroon_raw=Macaroon(
+                location=config.vhost.mainsite.hostname, identifier="another",
+                key="another-secret").serialize())
+        self.assertPermissionDenied(
+            None, path, permission="write", macaroon_raw="nonsense")
+
     def test_notify(self):
         # The notify call creates a GitRefScanJob.
         repository = self.factory.makeGitRepository()
@@ -664,6 +716,26 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     def test_authenticateWithPassword(self):
         self.assertIsInstance(
             self.git_api.authenticateWithPassword('foo', 'bar'),
+            faults.Unauthorized)
+
+    def test_authenticateWithPassword_code_import(self):
+        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        code_import = self.factory.makeCodeImport(
+            target_rcs_type=TargetRevisionControlSystems.GIT)
+        with celebrity_logged_in("vcs_imports"):
+            job = self.factory.makeCodeImportJob(code_import=code_import)
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
+        self.assertEqual(
+            {"macaroon": macaroon.serialize()},
+            self.git_api.authenticateWithPassword("", macaroon.serialize()))
+        other_macaroon = Macaroon(identifier="another", key="another-secret")
+        self.assertIsInstance(
+            self.git_api.authenticateWithPassword(
+                "", other_macaroon.serialize()),
+            faults.Unauthorized)
+        self.assertIsInstance(
+            self.git_api.authenticateWithPassword("", "nonsense"),
             faults.Unauthorized)
 
 
