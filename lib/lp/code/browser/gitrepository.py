@@ -53,6 +53,7 @@ from lp.app.errors import NotFoundError
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.browser.branch import CodeEditOwnerMixin
+from lp.code.browser.codeimport import CodeImportTargetMixin
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.browser.widgets.gitrepositorytarget import (
     GitRepositoryTargetDisplayWidget,
@@ -191,6 +192,11 @@ class GitRepositoryNavigation(WebhookTargetNavigationMixin, Navigation):
             return None
         return GitRepositoryDiffView(self.context, self.request, old, new)
 
+    @stepto("+code-import")
+    def traverse_code_import(self):
+        """Traverses to the `ICodeImport` for the repository."""
+        return self.context.code_import
+
 
 class GitRepositoryEditMenu(NavigationMenu):
     """Edit menu for `IGitRepository`."""
@@ -294,7 +300,7 @@ class GitRefBatchNavigator(TableBatchNavigator):
 
 
 class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
-                        HasSnapsViewMixin):
+                        HasSnapsViewMixin, CodeImportTargetMixin):
 
     related_features = {
         "code.git.recipes.enabled": False,

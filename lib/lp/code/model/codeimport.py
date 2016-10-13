@@ -121,6 +121,13 @@ class CodeImport(SQLBase):
     rcs_type = EnumCol(schema=RevisionControlSystems,
         notNull=False, default=None)
 
+    @property
+    def target_rcs_type(self):
+        if self.branch is not None:
+            return TargetRevisionControlSystems.BZR
+        else:
+            return TargetRevisionControlSystems.GIT
+
     cvs_root = StringCol(default=None)
 
     cvs_module = StringCol(default=None)

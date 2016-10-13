@@ -89,12 +89,12 @@ from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
 from lp.code.browser.branchref import BranchRef
+from lp.code.browser.codeimport import CodeImportTargetMixin
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.browser.widgets.branchtarget import BranchTargetWidget
 from lp.code.enums import (
     BranchType,
-    CodeImportResultStatus,
     CodeImportReviewStatus,
     )
 from lp.code.errors import (
@@ -403,7 +403,7 @@ class BranchMirrorMixin:
 
 
 class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
-                 LaunchpadView, HasSnapsViewMixin):
+                 LaunchpadView, HasSnapsViewMixin, CodeImportTargetMixin):
 
     feed_types = (
         BranchFeedLink,
@@ -596,31 +596,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
         return collection.getExtendedRevisionDetails(
             self.user, self.context.latest_revisions)
 
-    @cachedproperty
-    def latest_code_import_results(self):
-        """Return the last 10 CodeImportResults."""
-        return list(self.context.code_import.results[:10])
-
-    def iconForCodeImportResultStatus(self, status):
-        """The icon to represent the `CodeImportResultStatus` `status`."""
-        if status == CodeImportResultStatus.SUCCESS_PARTIAL:
-            return "/@@/yes-gray"
-        elif status in CodeImportResultStatus.successes:
-            return "/@@/yes"
-        else:
-            return "/@@/no"
-
-    @property
-    def url_is_web(self):
-        """True if an imported branch's URL is HTTP or HTTPS."""
-        # You should only be calling this if it's an SVN, BZR or GIT code
-        # import
-        assert self.context.code_import
-        url = self.context.code_import.url
-        assert url
-        # https starts with http too!
-        return url.startswith("http")
-
     @property
     def show_merge_links(self):
         """Return whether or not merge proposal links should be shown.
@@ -799,7 +774,7 @@ class BranchEditFormView(LaunchpadEditFormView):
                 target is not None and target != self.context.target):
                 try:
                     self.context.setTarget(self.user, project=target)
-                except BranchTargetError, e:
+                except BranchTargetError as e:
                     self.setFieldError('target', e.message)
                     return
 
