@@ -493,12 +493,15 @@ class ObjectFactory:
         return epoch + timedelta(minutes=self.getUniqueInteger())
 
     def makeCodeImportSourceDetails(self, target_id=None, rcstype=None,
-                                    url=None, cvs_root=None, cvs_module=None,
-                                    stacked_on_url=None):
+                                    target_rcstype=None, url=None,
+                                    cvs_root=None, cvs_module=None,
+                                    stacked_on_url=None, macaroon=None):
         if target_id is None:
             target_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'bzr-svn'
+        if target_rcstype is None:
+            target_rcstype = 'bzr'
         if rcstype in ['bzr-svn', 'bzr']:
             assert cvs_root is cvs_module is None
             if url is None:
@@ -516,8 +519,8 @@ class ObjectFactory:
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return CodeImportSourceDetails(
-            target_id, rcstype, url, cvs_root, cvs_module,
-            stacked_on_url=stacked_on_url)
+            target_id, rcstype, target_rcstype, url, cvs_root, cvs_module,
+            stacked_on_url=stacked_on_url, macaroon=macaroon)
 
 
 class BareLaunchpadObjectFactory(ObjectFactory):

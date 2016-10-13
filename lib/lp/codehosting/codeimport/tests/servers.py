@@ -253,12 +253,15 @@ class GitServer(Server):
         else:
             return local_path_to_url(self.repository_path)
 
-    def createRepository(self, path):
-        GitRepo.init(path)
+    def createRepository(self, path, bare=False):
+        if bare:
+            GitRepo.init_bare(path)
+        else:
+            GitRepo.init(path)
 
-    def start_server(self):
+    def start_server(self, bare=False):
         super(GitServer, self).start_server()
-        self.createRepository(self.repository_path)
+        self.createRepository(self.repository_path, bare=bare)
         if self._use_server:
             repo = GitRepo(self.repository_path)
             self._server = TCPGitServerThread(
