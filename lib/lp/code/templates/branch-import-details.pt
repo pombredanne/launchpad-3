@@ -32,7 +32,7 @@
               <script type="text/javascript">
                   LPJS.use('lp.code.util', function(Y) {
                       Y.on("domready", function () {
-                          Y.lp.code.util.hookUpRetyImportSubmission(Y);
+                          Y.lp.code.util.hookUpRetryImportSubmission(Y);
                       }, window);});
               </script>
             </form>

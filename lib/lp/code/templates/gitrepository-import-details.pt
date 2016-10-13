@@ -14,6 +14,29 @@
         <div><strong>Import Status:</strong>
           <span tal:attributes="class string:codeimport${code_import/review_status/name}"
                 tal:content="code_import/review_status/title"/>
+            <form tal:attributes="action string:${context/fmt:url}/@@+try-again"
+                  tal:condition="python:view.user and code_import.review_status.name == 'FAILING'"
+                  style="display: inline; padding-left: 1em"
+                  id="tryagain"
+                  name="tryagain"
+                  method="post"
+                  enctype="multipart/form-data" accept-charset="UTF-8">
+              <input
+                 type="hidden"
+                 name="tryagain.actions.tryagain"
+                 value="" />
+              <input type="submit" id="tryagain.actions.tryagain"
+                 name="tryagain.actions.tryagain" value="Try Again"
+                 class="button"  />
+              <a href="#" class="hidden sprite retry"
+                id="tryagainlink">Try again</a>
+              <script type="text/javascript">
+                  LPJS.use('lp.code.util', function(Y) {
+                      Y.on("domready", function () {
+                          Y.lp.code.util.hookUpRetryImportSubmission(Y);
+                      }, window);});
+              </script>
+            </form>
         </div>
 
         <tal:git-import condition="code_import/rcs_type/enumvalue:GIT">
@@ -61,6 +84,9 @@
               <tal:date-started replace="job/date_due/fmt:displaydate">
                 in 2 hours
               </tal:date-started>.
+              <tal:button
+                 condition="view/user"
+                 replace="structure view/context/@@+request-import" />
             </tal:not-overdue>
           </tal:not-running>
           </div>
@@ -87,6 +113,18 @@
           <tal:result repeat="result view/latest_code_import_results">
             <metal:result use-macro="code_import/@@+macros/show_result"/>
           </tal:result>
+        </div>
+
+        <div class="actions">
+          <div
+            tal:define="link context_menu/edit_import"
+            tal:condition="link/enabled"
+            >
+            <a id="edit-import"
+               class="sprite add"
+               tal:attributes="href link/url"
+               tal:content="link/text" />
+          </div>
         </div>
       </tal:has-codeimport>
     </div>

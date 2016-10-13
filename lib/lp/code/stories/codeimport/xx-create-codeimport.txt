@@ -109,8 +109,8 @@ Specifying a Launchpad URL results in an error.
     >>> browser.getControl('Request Import').click()
     >>> print_feedback_messages(browser.contents)
     There is 1 error.
-    You cannot create imports for Bazaar branches that are hosted by
-    Launchpad.
+    You cannot create same-VCS imports for branches or repositories that are
+    hosted by Launchpad.
 
 But a Launchpad Git URL is OK.
 
