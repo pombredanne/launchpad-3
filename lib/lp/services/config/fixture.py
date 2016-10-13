@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixtures related to configs.
@@ -50,11 +50,11 @@ class ConfigFixture(Fixture):
 
     def setUp(self):
         super(ConfigFixture, self).setUp()
-        root = 'configs/' + self.instance_name
+        root = os.path.join(config.root, 'configs', self.instance_name)
         os.mkdir(root)
         self.absroot = os.path.abspath(root)
         self.addCleanup(shutil.rmtree, self.absroot)
-        source = 'configs/' + self.copy_from_instance
+        source = os.path.join(config.root, 'configs', self.copy_from_instance)
         for basename in os.listdir(source):
             if basename == 'launchpad-lazr.conf':
                 self.add_section(self._extend_str % self.copy_from_instance)

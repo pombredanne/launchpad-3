@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Generic Python utilities.
@@ -23,6 +23,7 @@ __all__ = [
     'obfuscate_structure',
     're_email_address',
     'run_capturing_output',
+    'sanitise_urls',
     'save_bz2_pickle',
     'text_delta',
     'traceback_info',
@@ -372,3 +373,15 @@ def obfuscate_structure(o):
             for key, value in o.iteritems())
     else:
         return o
+
+
+def sanitise_urls(s):
+    """Sanitise a string that may contain URLs for logging.
+
+    Some jobs are started with arguments that probably shouldn't be
+    logged in their entirety (usernames and passwords for P3As, for
+    example).  This function removes them.
+    """
+    # Remove credentials from URLs.
+    password_re = re.compile('://([^:]*:[^@]*@)(\S+)')
+    return password_re.sub(r'://<redacted>@\2', s)

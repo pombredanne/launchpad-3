@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Process a code import described by the command line arguments.
@@ -30,6 +30,7 @@ from lp.codehosting.codeimport.worker import (
     CSCVSImportWorker,
     get_default_bazaar_branch_store,
     GitImportWorker,
+    GitToGitImportWorker,
     )
 from lp.codehosting.safe_open import AcceptAnythingPolicy
 from lp.services import scripts
@@ -37,7 +38,7 @@ from lp.services.config import config
 
 
 opener_policies = {
-    "anything": lambda rcstype: AcceptAnythingPolicy(),
+    "anything": lambda rcstype, target_rcstype: AcceptAnythingPolicy(),
     "default": CodeImportBranchOpenPolicy,
     }
 
@@ -72,7 +73,10 @@ class CodeImportWorker:
         force_bzr_to_use_urllib()
         source_details = CodeImportSourceDetails.fromArguments(self.args)
         if source_details.rcstype == 'git':
-            import_worker_cls = GitImportWorker
+            if source_details.target_rcstype == 'bzr':
+                import_worker_cls = GitImportWorker
+            else:
+                import_worker_cls = GitToGitImportWorker
         elif source_details.rcstype == 'bzr-svn':
             import_worker_cls = BzrSvnImportWorker
         elif source_details.rcstype == 'bzr':
@@ -83,11 +87,15 @@ class CodeImportWorker:
             raise AssertionError(
                 'unknown rcstype %r' % source_details.rcstype)
         opener_policy = opener_policies[self.options.access_policy](
-            source_details.rcstype)
-        import_worker = import_worker_cls(
-            source_details,
-            get_transport(config.codeimport.foreign_tree_store),
-            get_default_bazaar_branch_store(), self.logger, opener_policy)
+            source_details.rcstype, source_details.target_rcstype)
+        if source_details.target_rcstype == 'bzr':
+            import_worker = import_worker_cls(
+                source_details,
+                get_transport(config.codeimport.foreign_tree_store),
+                get_default_bazaar_branch_store(), self.logger, opener_policy)
+        else:
+            import_worker = import_worker_cls(
+                source_details, self.logger, opener_policy)
         return import_worker.run()
 
 

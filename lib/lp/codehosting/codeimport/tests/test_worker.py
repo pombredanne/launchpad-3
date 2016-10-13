@@ -45,16 +45,26 @@ from CVS import (
     )
 from dulwich.repo import Repo as GitRepo
 from fixtures import FakeLogger
+from pymacaroons import Macaroon
 import subvertpy
 import subvertpy.client
 import subvertpy.ra
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    Matcher,
+    MatchesListwise,
+    Mismatch,
+    )
+from zope.component import getUtility
 
 from lp.app.enums import InformationType
+from lp.code.enums import TargetRevisionControlSystems
 from lp.code.interfaces.codehosting import (
     branch_id_alias,
     compose_public_url,
     )
+from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
+from lp.code.tests.helpers import GitHostingFixture
 import lp.codehosting
 from lp.codehosting.codeimport.tarball import (
     create_tarball,
@@ -90,7 +100,9 @@ from lp.codehosting.safe_open import (
 from lp.codehosting.tests.helpers import create_branch_with_one_revision
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
+from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.testing import (
+    celebrity_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
@@ -1049,7 +1061,7 @@ class PullingImportWorkerTests:
         worker = self.makeImportWorker(
             self.factory.makeCodeImportSourceDetails(
                 rcstype=self.rcstype, url="file:///local/path"),
-            opener_policy=CodeImportBranchOpenPolicy("bzr"))
+            opener_policy=CodeImportBranchOpenPolicy("bzr", "bzr"))
         self.assertEqual(
             CodeImportWorkerExitCode.FAILURE_FORBIDDEN, worker.run())
 
@@ -1285,7 +1297,7 @@ class CodeImportBranchOpenPolicyTests(TestCase):
 
     def setUp(self):
         super(CodeImportBranchOpenPolicyTests, self).setUp()
-        self.policy = CodeImportBranchOpenPolicy("bzr")
+        self.policy = CodeImportBranchOpenPolicy("bzr", "bzr")
 
     def test_follows_references(self):
         self.assertEquals(True, self.policy.shouldFollowReferences())
@@ -1309,13 +1321,21 @@ class CodeImportBranchOpenPolicyTests(TestCase):
         self.assertGoodUrl("bzr://bzr.example.com/somebzrurl/")
         self.assertBadUrl("bzr://bazaar.launchpad.dev/example")
 
-    def test_checkOneURL_git(self):
-        self.policy = CodeImportBranchOpenPolicy("git")
+    def test_checkOneURL_git_to_bzr(self):
+        self.policy = CodeImportBranchOpenPolicy("git", "bzr")
         self.assertBadUrl("/etc/passwd")
         self.assertBadUrl("file:///etc/passwd")
         self.assertBadUrl("unknown-scheme://devpad/")
         self.assertGoodUrl("git://git.example.com/repo")
         self.assertGoodUrl("git://git.launchpad.dev/example")
+
+    def test_checkOneURL_git_to_git(self):
+        self.policy = CodeImportBranchOpenPolicy("git", "git")
+        self.assertBadUrl("/etc/passwd")
+        self.assertBadUrl("file:///etc/passwd")
+        self.assertBadUrl("unknown-scheme://devpad/")
+        self.assertGoodUrl("git://git.example.com/repo")
+        self.assertBadUrl("git://git.launchpad.dev/example")
 
 
 class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
@@ -1387,6 +1407,19 @@ class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
             CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
 
 
+class CodeImportJobMacaroonVerifies(Matcher):
+    """Matches if a code-import-job macaroon can be verified."""
+
+    def __init__(self, code_import):
+        self.code_import = code_import
+
+    def match(self, macaroon_raw):
+        issuer = getUtility(IMacaroonIssuer, 'code-import-job')
+        macaroon = Macaroon.deserialize(macaroon_raw)
+        if not issuer.verifyMacaroon(macaroon, self.code_import.import_job):
+            return Mismatch("Macaroon '%s' does not verify" % macaroon_raw)
+
+
 class CodeImportSourceDetailsTests(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -1395,8 +1428,12 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
         # Use an admin user as we aren't checking edit permissions here.
         TestCaseWithFactory.setUp(self, 'admin@canonical.com')
 
-    def assertArgumentsMatch(self, code_import, matcher):
+    def assertArgumentsMatch(self, code_import, matcher, start_job=False):
         job = self.factory.makeCodeImportJob(code_import=code_import)
+        if start_job:
+            machine = self.factory.makeCodeImportMachine(set_online=True)
+            with celebrity_logged_in("vcs_imports"):
+                getUtility(ICodeImportJobWorkflow).startJob(job, machine)
         details = CodeImportSourceDetails.fromCodeImportJob(job)
         self.assertThat(details.asArguments(), matcher)
 
@@ -1415,6 +1452,20 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             code_import, Equals([
                 str(code_import.branch.id), 'git',
                 'git://git.example.com/project.git']))
+
+    def test_git_to_git_arguments(self):
+        self.pushConfig('codeimport', macaroon_secret_key='some-secret')
+        self.useFixture(GitHostingFixture())
+        code_import = self.factory.makeCodeImport(
+            git_repo_url="git://git.example.com/project.git",
+            target_rcs_type=TargetRevisionControlSystems.GIT)
+        self.assertArgumentsMatch(
+            code_import, MatchesListwise([
+                Equals(code_import.git_repository.unique_name),
+                Equals('git:git'), Equals('git://git.example.com/project.git'),
+                CodeImportJobMacaroonVerifies(code_import)]),
+            # Start the job so that the macaroon can be verified.
+            start_job=True)
 
     def test_cvs_arguments(self):
         code_import = self.factory.makeCodeImport(
