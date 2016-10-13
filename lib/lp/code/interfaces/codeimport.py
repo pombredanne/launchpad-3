@@ -267,11 +267,14 @@ class ICodeImportSet(Interface):
     def delete(id):
         """Delete a CodeImport given its id."""
 
-    def search(review_status=None, rcs_type=None):
+    def search(review_status=None, rcs_type=None, target_rcs_type=None):
         """Find the CodeImports of the given status and type.
 
         :param review_status: An entry from the `CodeImportReviewStatus`
             schema, or None, which signifies 'any status'.
         :param rcs_type: An entry from the `RevisionControlSystems`
             schema, or None, which signifies 'any type'.
+        :param target_rcs_type: An entry from the
+            `TargetRevisionControlSystems` schema, or None, which signifies
+            'any type'.
         """

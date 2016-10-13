@@ -364,11 +364,15 @@ class CodeImportSet:
     def getByGitRepository(self, repository):
         return CodeImport.selectOneBy(git_repository=repository)
 
-    def search(self, review_status=None, rcs_type=None):
+    def search(self, review_status=None, rcs_type=None, target_rcs_type=None):
         """See `ICodeImportSet`."""
         clauses = []
         if review_status is not None:
             clauses.append(CodeImport.review_status == review_status)
         if rcs_type is not None:
             clauses.append(CodeImport.rcs_type == rcs_type)
+        if target_rcs_type == TargetRevisionControlSystems.BZR:
+            clauses.append(CodeImport.branch != None)
+        elif target_rcs_type == TargetRevisionControlSystems.GIT:
+            clauses.append(CodeImport.git_repository != None)
         return IStore(CodeImport).find(CodeImport, *clauses)
