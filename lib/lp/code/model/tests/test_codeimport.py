@@ -30,6 +30,7 @@ from lp.code.errors import (
     BranchCreatorNotMemberOfOwnerTeam,
     CodeImportAlreadyRequested,
     CodeImportAlreadyRunning,
+    CodeImportInvalidTargetType,
     CodeImportNotInReviewedState,
     GitRepositoryCreatorNotMemberOfOwnerTeam,
     )
@@ -218,7 +219,7 @@ class TestCodeImportCreation(TestCodeImportBase):
     def test_junk_code_import_rejected(self):
         """You are not allowed to create code imports targetting +junk."""
         registrant = self.factory.makePerson()
-        self.assertRaises(AssertionError, CodeImportSet().new,
+        self.assertRaises(CodeImportInvalidTargetType, CodeImportSet().new,
             registrant=registrant,
             context=registrant,
             branch_name=u'imported',

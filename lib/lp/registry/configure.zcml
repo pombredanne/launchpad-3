@@ -607,6 +607,11 @@
 
         <allow
             interface="lp.code.interfaces.hasgitrepositories.IHasGitRepositories" />
+
+        <!-- IHasCodeImports -->
+
+        <allow
+            interface="lp.code.interfaces.hasbranches.IHasCodeImports" />
     </class>
     <adapter
         provides="lp.registry.interfaces.distribution.IDistribution"

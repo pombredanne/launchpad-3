@@ -27,7 +27,9 @@ __all__ = [
     'CannotUpgradeNonHosted',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
+    'CodeImportInvalidTargetType',
     'CodeImportNotInReviewedState',
+    'CodeImportGitTargetFeatureDisabled',
     'ClaimReviewFailed',
     'DiffNotFound',
     'GitDefaultConflict',
@@ -485,6 +487,25 @@ class CodeImportAlreadyRequested(Exception):
 @error_status(httplib.BAD_REQUEST)
 class CodeImportAlreadyRunning(Exception):
     """Raised when the user requests an import that is already running."""
+
+
+@error_status(httplib.BAD_REQUEST)
+class CodeImportInvalidTargetType(Exception):
+    """Raised for code imports with an invalid target for their type."""
+
+    def __init__(self, target, target_rcs_type):
+        super(CodeImportInvalidTargetType, self).__init__(
+            "Objects of type %s do not support code imports targeting %s." %
+            (target.__class__.__name__, target_rcs_type))
+
+
+@error_status(httplib.UNAUTHORIZED)
+class CodeImportGitTargetFeatureDisabled(Exception):
+    """Only certain users can create new Git-targeted code imports."""
+
+    def __init__(self):
+        super(CodeImportGitTargetFeatureDisabled, self).__init__(
+            "You do not have permission to create Git-targeted code imports.")
 
 
 @error_status(httplib.BAD_REQUEST)

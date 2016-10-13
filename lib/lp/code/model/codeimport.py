@@ -49,6 +49,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     CodeImportAlreadyRequested,
     CodeImportAlreadyRunning,
+    CodeImportInvalidTargetType,
     CodeImportNotInReviewedState,
     )
 from lp.code.interfaces.branch import IBranch
@@ -62,6 +63,10 @@ from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitrepository import IGitRepository
+from lp.code.interfaces.hasbranches import (
+    IHasCodeImportsToBazaar,
+    IHasCodeImportsToGit,
+    )
 from lp.code.mail.codeimport import code_import_updated
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.code.model.codeimportresult import CodeImportResult
@@ -291,9 +296,13 @@ class CodeImportSet:
         if owner is None:
             owner = registrant
         if target_rcs_type == TargetRevisionControlSystems.BZR:
+            if not IHasCodeImportsToBazaar.providedBy(context):
+                raise CodeImportInvalidTargetType(context, target_rcs_type)
             target = IBranchTarget(context)
             namespace = target.getNamespace(owner)
         elif target_rcs_type == TargetRevisionControlSystems.GIT:
+            if not IHasCodeImportsToGit.providedBy(context):
+                raise CodeImportInvalidTargetType(context, target_rcs_type)
             if rcs_type != RevisionControlSystems.GIT:
                 raise AssertionError(
                     "Can't import rcs_type %s into a Git repository" %

@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'IHasBranches',
     'IHasCodeImports',
+    'IHasCodeImportsToBazaar',
+    'IHasCodeImportsToGit',
     'IHasMergeProposals',
     'IHasRequestedReviews',
     ]
@@ -35,6 +37,7 @@ from lp.code.enums import (
     BranchLifecycleStatus,
     BranchMergeProposalStatus,
     RevisionControlSystems,
+    TargetRevisionControlSystems,
     )
 
 
@@ -154,13 +157,14 @@ class IHasCodeImports(Interface):
     This interface defines the common methods that for working with them.
     """
 
-    # In order to minimise dependancies the returns_collection is defined as
+    # In order to minimise dependencies the returns_collection is defined as
     # Interface here and defined fully in the circular imports file.
 
     @operation_parameters(
         branch_name=TextLine(
             title=_('Name of branch to create'), required=True),
         rcs_type=Choice(vocabulary=RevisionControlSystems, required=True),
+        target_rcs_type=Choice(vocabulary=TargetRevisionControlSystems),
         url=TextLine(title=_('Foreign VCS URL')),
         cvs_root=TextLine(title=_('CVS root URL')),
         cvs_module=TextLine(title=_('CVS module to import')),
@@ -170,19 +174,31 @@ class IHasCodeImports(Interface):
     @call_with(registrant=REQUEST_USER)
     @export_factory_operation(Interface, [])  # Really ICodeImport.
     @operation_for_version('beta')
-    def newCodeImport(registrant=None, branch_name=None, rcs_type=None,
-                      url=None, cvs_root=None, cvs_module=None, owner=None):
+    def newCodeImport(registrant=None, branch_name=None,
+                      rcs_type=None, target_rcs_type=None, url=None,
+                      cvs_root=None, cvs_module=None, owner=None):
         """Create a new code import.
 
         :param registrant: The IPerson to record as the registrant of the
-            import
-        :param branch_name: The name of the branch to create.
+            import.
+        :param branch_name: The name of the branch or repository to create.
         :param rcs_type: The type of the foreign VCS.
+        :param target_rcs_type: The type of the branch or repository to
+            create (Bazaar or Git).
         :param url: The URL to import from if the VCS type uses a single URL
             (i.e. isn't CVS).
         :param cvs_root: The CVSROOT for a CVS import.
         :param cvs_module: The module to import for a CVS import.
-        :param owner: Who should own the created branch, or None for it to
-            be the same as the registrant, or the caller over the API.
+        :param owner: Who should own the created branch or repository, or
+            None for it to be the same as the registrant, or the caller over
+            the API.
         :returns: An instance of `ICodeImport`.
         """
+
+
+class IHasCodeImportsToBazaar(IHasCodeImports):
+    """Marker interface for targets that support code imports to Bazaar."""
+
+
+class IHasCodeImportsToGit(IHasCodeImports):
+    """Marker interface for targets that support code imports to Git."""

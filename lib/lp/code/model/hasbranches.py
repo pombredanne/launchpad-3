@@ -20,18 +20,23 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     TargetRevisionControlSystems,
     )
+from lp.code.errors import CodeImportGitTargetFeatureDisabled
 from lp.code.interfaces.branch import DEFAULT_BRANCH_STATUS_IN_LISTING
 from lp.code.interfaces.branchcollection import (
     IAllBranches,
     IBranchCollection,
     )
-from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.codeimport import (
+    CODE_IMPORT_GIT_TARGET_FEATURE_FLAG,
+    ICodeImportSet,
+    )
 from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
     )
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.database.decoratedresultset import DecoratedResultSet
+from lp.services.features import getFeatureFlag
 
 
 class HasBranchesMixin:
@@ -129,10 +134,14 @@ class HasRequestedReviewsMixin:
 class HasCodeImportsMixin:
 
     def newCodeImport(self, registrant=None, branch_name=None,
-            rcs_type=None, url=None, cvs_root=None, cvs_module=None,
-            owner=None):
+            rcs_type=None, target_rcs_type=None, url=None,
+            cvs_root=None, cvs_module=None, owner=None):
         """See `IHasCodeImports`."""
+        if target_rcs_type is None:
+            target_rcs_type = TargetRevisionControlSystems.BZR
+        if (target_rcs_type == TargetRevisionControlSystems.GIT and
+                not getFeatureFlag(CODE_IMPORT_GIT_TARGET_FEATURE_FLAG)):
+            raise CodeImportGitTargetFeatureDisabled
         return getUtility(ICodeImportSet).new(
-            registrant, self, branch_name, rcs_type,
-            TargetRevisionControlSystems.BZR, url=url,
-            cvs_root=cvs_root, cvs_module=cvs_module, owner=owner)
+            registrant, self, branch_name, rcs_type, target_rcs_type,
+            url=url, cvs_root=cvs_root, cvs_module=cvs_module, owner=owner)

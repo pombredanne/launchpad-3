@@ -5,8 +5,9 @@ Launchpad can tell you about the code imports that power a branch
 if it is an import branch.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.testing.pages import webservice_for_person
+    >>> from lp.code.tests.helpers import GitHostingFixture
     >>> from lp.services.webapp.interfaces import OAuthPermission
+    >>> from lp.testing.pages import webservice_for_person
 
 First we create some objects for use in the tests.
 
@@ -59,6 +60,8 @@ We can get some information about the import using this URL.
     Reviewed
     >>> print representation['rcs_type']
     Subversion via bzr-svn
+    >>> print representation['target_rcs_type']
+    Bazaar
     >>> print representation['url']
     http://svn.domain.com/source
     >>> print representation['cvs_root']
@@ -109,6 +112,8 @@ and there is information available about the import itsef.
     Reviewed
     >>> print representation['rcs_type']
     Subversion via bzr-svn
+    >>> print representation['target_rcs_type']
+    Bazaar
     >>> print representation['url']
     http://svn.domain.com/package_source
     >>> print representation['cvs_root']
@@ -119,7 +124,8 @@ and there is information available about the import itsef.
     None
 
 
-== Creating Imports ==
+Creating Imports
+----------------
 
 We can create an import using the API by calling a method on the project.
 
@@ -137,8 +143,12 @@ We can create an import using the API by calling a method on the project.
     http://.../~import-owner/scruff/new-import/+code-import
     >>> print representation['branch_link']
     http://.../~import-owner/scruff/new-import
+    >>> print representation['git_repository_link']
+    None
     >>> print representation['rcs_type']
     Git
+    >>> print representation['target_rcs_type']
+    Bazaar
     >>> print representation['url'] == new_remote_url
     True
     >>> print representation['cvs_root']
@@ -164,14 +174,63 @@ If we must we can create a CVS import.
     http://.../~import-owner/scruff/cvs-import/+code-import
     >>> print representation['branch_link']
     http://.../~import-owner/scruff/cvs-import
+    >>> print representation['git_repository_link']
+    None
     >>> print representation['rcs_type']
     Concurrent Versions System
+    >>> print representation['target_rcs_type']
+    Bazaar
     >>> print representation['url']
     None
     >>> print representation['cvs_root'] == new_remote_url
     True
     >>> print representation['cvs_module'] == "foo"
     True
+    >>> print representation['date_last_successful']
+    None
+
+We can create a Git-to-Git import, provided that we have the feature flag.
+
+    >>> from lp.code.interfaces.codeimport import (
+    ...     CODE_IMPORT_GIT_TARGET_FEATURE_FLAG,
+    ...     )
+    >>> from lp.services.features.testing import FeatureFixture
+
+    >>> product_url = '/' + product_name
+    >>> new_remote_url = factory.getUniqueURL()
+    >>> response = import_webservice.named_post(
+    ...     product_url, 'newCodeImport', branch_name='new-import',
+    ...     rcs_type='Git', target_rcs_type='Git', url=new_remote_url)
+    >>> print response.status
+    401
+    >>> print response.body
+    You do not have permission to create Git-targeted code imports.
+    >>> with FeatureFixture({CODE_IMPORT_GIT_TARGET_FEATURE_FLAG: u'on'}):
+    ...     with GitHostingFixture():
+    ...         response = import_webservice.named_post(
+    ...             product_url, 'newCodeImport', branch_name='new-import',
+    ...             rcs_type='Git', target_rcs_type='Git', url=new_remote_url)
+    >>> print response.status
+    201
+    >>> location = response.getHeader('Location')
+    >>> response = import_webservice.get(location)
+    >>> representation = response.jsonBody()
+    >>> print representation['self_link']
+    http://.../~import-owner/scruff/+git/new-import/+code-import
+    >>> print representation['branch_link']
+    None
+    >>> print representation['git_repository_link']
+    http://.../~import-owner/scruff/+git/new-import
+    >>> print representation['rcs_type']
+    Git
+    >>> print representation['target_rcs_type']
+    Git
+    >>> print representation['url'] == new_remote_url
+    True
+    >>> print representation['cvs_root']
+    None
+    >>> print representation['cvs_module']
+    None
     >>> print representation['date_last_successful']
     None
 
@@ -193,7 +252,46 @@ We can also create an import targetting a source package.
     http://.../~import-owner/scruffbuntu/manic/scruff/new-import/+code-import
     >>> print representation['branch_link']
     http://.../~import-owner/scruffbuntu/manic/scruff/new-import
+    >>> print representation['git_repository_link']
+    None
     >>> print representation['rcs_type']
+    Git
+    >>> print representation['target_rcs_type']
+    Bazaar
+    >>> print representation['url'] == new_remote_url
+    True
+    >>> print representation['cvs_root']
+    None
+    >>> print representation['cvs_module']
+    None
+    >>> print representation['date_last_successful']
+    None
+
+We can create a Git-to-Git import targetting a distribution source package.
+
+    >>> distro_source_package_url = (
+    ...     '/' + distribution.name + '/+source/' + source_package.name)
+    >>> new_remote_url = factory.getUniqueURL()
+    >>> with FeatureFixture({CODE_IMPORT_GIT_TARGET_FEATURE_FLAG: u'on'}):
+    ...     with GitHostingFixture():
+    ...         response = import_webservice.named_post(
+    ...             distro_source_package_url, 'newCodeImport',
+    ...             branch_name='new-import', rcs_type='Git',
+    ...             target_rcs_type='Git', url=new_remote_url)
+    >>> print response.status
+    201
+    >>> location = response.getHeader('Location')
+    >>> response = import_webservice.get(location)
+    >>> representation = response.jsonBody()
+    >>> print representation['self_link']
+    http://.../~import-owner/scruffbuntu/+source/scruff/+git/new-import/+code-import
+    >>> print representation['branch_link']
+    None
+    >>> print representation['git_repository_link']
+    http://.../~import-owner/scruffbuntu/+source/scruff/+git/new-import
+    >>> print representation['rcs_type']
+    Git
+    >>> print representation['target_rcs_type']
     Git
     >>> print representation['url'] == new_remote_url
     True
@@ -220,8 +318,12 @@ If we wish to create a branch owned by a team we are part of then we can.
     http://.../~import-owner-team/scruff/team-import/+code-import
     >>> print representation['branch_link']
     http://.../~import-owner-team/scruff/team-import
+    >>> print representation['git_repository_link']
+    None
     >>> print representation['rcs_type']
     Git
+    >>> print representation['target_rcs_type']
+    Bazaar
     >>> print representation['url'] == new_remote_url
     True
     >>> print representation['cvs_root']
@@ -232,7 +334,8 @@ If we wish to create a branch owned by a team we are part of then we can.
     None
 
 
-== Requesting an Import ==
+Requesting an Import
+--------------------
 
 You can request that an approved, working import happen soon over the
 API using the requestImport() method.

@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Source package in Distribution interfaces."""
@@ -32,6 +32,7 @@ from lp.bugs.interfaces.structuralsubscription import (
     )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
+    IHasCodeImportsToGit,
     IHasMergeProposals,
     )
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
@@ -44,7 +45,7 @@ class IDistributionSourcePackage(IHeadingContext, IBugTarget, IHasBranches,
                                  IHasMergeProposals, IHasOfficialBugTags,
                                  IStructuralSubscriptionTarget,
                                  IQuestionTarget, IHasDrivers,
-                                 IHasGitRepositories):
+                                 IHasGitRepositories, IHasCodeImportsToGit):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking

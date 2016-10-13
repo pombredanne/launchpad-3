@@ -51,7 +51,7 @@ from lp.bugs.interfaces.bugtarget import (
     )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
-    IHasCodeImports,
+    IHasCodeImportsToBazaar,
     IHasMergeProposals,
     )
 from lp.registry.interfaces.productseries import IProductSeries
@@ -69,7 +69,7 @@ from lp.translations.interfaces.hastranslationtemplates import (
 
 
 class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
-                           IHasOfficialBugTags, IHasCodeImports,
+                           IHasOfficialBugTags, IHasCodeImportsToBazaar,
                            IHasTranslationImports, IHasTranslationTemplates,
                            IHasDrivers, IHasOwner):
     """Public attributes for SourcePackage."""
