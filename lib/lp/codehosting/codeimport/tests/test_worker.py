@@ -1410,13 +1410,13 @@ class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
 class CodeImportJobMacaroonVerifies(Matcher):
     """Matches if a code-import-job macaroon can be verified."""
 
-    def __init__(self, context):
-        self.context = context
+    def __init__(self, code_import):
+        self.code_import = code_import
 
     def match(self, macaroon_raw):
         issuer = getUtility(IMacaroonIssuer, 'code-import-job')
         macaroon = Macaroon.deserialize(macaroon_raw)
-        if not issuer.verifyMacaroon(macaroon, self.context):
+        if not issuer.verifyMacaroon(macaroon, self.code_import.import_job):
             return Mismatch("Macaroon '%s' does not verify" % macaroon_raw)
 
 
@@ -1463,7 +1463,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             code_import, MatchesListwise([
                 Equals(code_import.git_repository.unique_name),
                 Equals('git:git'), Equals('git://git.example.com/project.git'),
-                CodeImportJobMacaroonVerifies(code_import.git_repository)]),
+                CodeImportJobMacaroonVerifies(code_import)]),
             # Start the job so that the macaroon can be verified.
             start_job=True)
 
