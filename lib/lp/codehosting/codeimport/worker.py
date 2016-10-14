@@ -1013,6 +1013,8 @@ class GitToGitImportWorker(ImportWorker):
         if split.hostname:
             target_netloc = ":%s@%s" % (
                 self.source_details.macaroon.serialize(), split.hostname)
+            if split.port:
+                target_netloc += ":%s" % split.port
         else:
             target_netloc = ""
         target_url = urlunsplit([
