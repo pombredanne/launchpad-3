@@ -1002,7 +1002,6 @@ class GitToGitImportWorker(ImportWorker):
 
     def _doImport(self):
         self._logger.info("Starting job.")
-        self._logger.info(config.codehosting.git_browse_root)
         try:
             self._opener_policy.checkOneURL(self.source_details.url)
         except BadUrl as e:
