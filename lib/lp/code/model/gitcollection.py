@@ -42,6 +42,7 @@ from lp.code.interfaces.gitrepository import (
     user_has_special_git_repository_access,
     )
 from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.codeimport import CodeImport
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
 from lp.code.model.gitrepository import (
@@ -197,6 +198,15 @@ class GenericGitCollection:
         load_related(Distribution, repositories, ['distribution_id'])
         load_related(SourcePackageName, repositories, ['sourcepackagename_id'])
         load_related(Product, repositories, ['project_id'])
+        caches = {
+            repository.id: get_property_cache(repository)
+            for repository in repositories}
+        repository_ids = caches.keys()
+        for cache in caches.values():
+            cache.code_import = None
+        for code_import in IStore(CodeImport).find(
+                CodeImport, CodeImport.git_repositoryID.is_in(repository_ids)):
+            caches[code_import.git_repositoryID].code_import = code_import
 
     def getRepositories(self, find_expr=GitRepository, eager_load=False,
                         order_by_date=False, order_by_id=False):
@@ -216,7 +226,7 @@ class GenericGitCollection:
             repository_ids = set(repository.id for repository in rows)
             if not repository_ids:
                 return
-            load_related(Product, rows, ['project_id'])
+            GenericGitCollection.preloadDataForRepositories(rows)
             # So far have only needed the persons for their canonical_url - no
             # need for validity etc in the API call.
             load_related(Person, rows, ['owner_id', 'registrant_id'])

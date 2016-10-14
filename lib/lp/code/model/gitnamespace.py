@@ -117,9 +117,9 @@ class _BaseGitNamespace:
             name = "%s-%s" % (prefix, count)
         return name
 
-    def validateRegistrant(self, registrant):
+    def validateRegistrant(self, registrant, repository=None):
         """See `IGitNamespace`."""
-        if user_has_special_git_repository_access(registrant):
+        if user_has_special_git_repository_access(registrant, repository):
             return
         owner = self.owner
         if not registrant.inTeam(owner):
@@ -170,7 +170,7 @@ class _BaseGitNamespace:
         if name is None:
             name = repository.name
         self.validateRepositoryName(name)
-        self.validateRegistrant(mover)
+        self.validateRegistrant(mover, repository)
         self.validateDefaultFlags(repository)
 
     def moveRepository(self, repository, mover, new_name=None,

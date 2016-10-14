@@ -117,6 +117,7 @@ from lp.code.interfaces.codehosting import (
     BRANCH_ID_ALIAS_PREFIX,
     compose_public_url,
     )
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
@@ -813,8 +814,7 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
 
     @cachedproperty
     def code_import(self):
-        from lp.code.model.codeimport import CodeImportSet
-        return CodeImportSet().getByBranch(self)
+        return getUtility(ICodeImportSet).getByBranch(self)
 
     def _deletionRequirements(self):
         """Determine what operations must be performed to delete this branch.
@@ -1561,8 +1561,7 @@ class DeleteCodeImport(DeletionOperation):
             self, code_import, _('This is the import data for this branch.'))
 
     def __call__(self):
-        from lp.code.model.codeimport import CodeImportSet
-        CodeImportSet().delete(self.affected_object)
+        getUtility(ICodeImportSet).delete(self.affected_object)
 
 
 @implementer(IBranchSet)

@@ -119,10 +119,12 @@ class IGitNamespacePolicy(Interface):
         :return: An `InformationType`.
         """
 
-    def validateRegistrant(registrant):
+    def validateRegistrant(registrant, repository=None):
         """Check that the registrant can create a repository in this namespace.
 
         :param registrant: An `IPerson`.
+        :param repository: An optional `IGitRepository` to also check when
+            working with imported repositories.
         :raises GitRepositoryCreatorNotMemberOfOwnerTeam: if the namespace
             owner is a team and the registrant is not in that team.
         :raises GitRepositoryCreatorNotOwner: if the namespace owner is an
