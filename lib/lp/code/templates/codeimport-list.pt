@@ -19,12 +19,19 @@
       <option label="NEW">New</option>
       <option label="REVIEWED">Reviewed</option>
     </select>
+    from
     <select name="rcs_type" tal:replace="structure view/rcs_type_widget">
       <option label="">Any</option>
       <option label="BZR">Bazaar</option>
       <option label="GIT">Git</option>
       <option label="BZR_SVN">Subversion</option>
       <option label="SVN">Subversion (legacy)</option>
+    </select>
+    to
+    <select name="target_rcs_type" tal:replace="structure view/target_rcs_type_widget">
+      <option label="">Any</option>
+      <option label="BZR">Bazaar</option>
+      <option label="GIT">Git</option>
     </select>
     <input type="submit" name="submit"/>
   </form>
@@ -45,7 +52,10 @@
             Created
           </th>
           <th>
-            Type
+            Source type
+          </th>
+          <th>
+            Target type
           </th>
           <th>
             Location
@@ -60,11 +70,9 @@
 
           <td>
             <a href="code-import"
-               tal:attributes="href codeimport/branch/fmt:url">
-              <span tal:replace="codeimport/branch/target/name">
+               tal:attributes="href codeimport/target/fmt:url">
+              <span tal:replace="codeimport/target/unique_name">
                 target-name
-              </span>/<span tal:replace="codeimport/branch/name">
-                branch-name
               </span>
             </a>
           </td>
@@ -74,6 +82,10 @@
           </td>
 
           <td tal:content="codeimport/rcs_type/title">
+            some type
+          </td>
+
+          <td tal:content="codeimport/target_rcs_type/title">
             some type
           </td>
 

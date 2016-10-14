@@ -12,6 +12,7 @@ __all__ = [
     'CodeImportSetBreadcrumb',
     'CodeImportSetNavigation',
     'CodeImportSetView',
+    'CodeImportTargetMixin',
     'validate_import_url',
     ]
 
@@ -49,6 +50,7 @@ from lp.app.widgets.textwidgets import (
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
+    CodeImportResultStatus,
     CodeImportReviewStatus,
     CodeReviewNotificationLevel,
     NON_CVS_RCS_TYPES,
@@ -121,12 +123,19 @@ class CodeImportSetView(LaunchpadView):
         review_status_field = copy_field(
             ICodeImport['review_status'], required=False, default=None)
         self.review_status_widget = CustomWidgetFactory(DropdownWidgetWithAny)
-        setUpWidget(self, 'review_status',  review_status_field, IInputWidget)
+        setUpWidget(self, 'review_status', review_status_field, IInputWidget)
 
         rcs_type_field = copy_field(
             ICodeImport['rcs_type'], required=False, default=None)
         self.rcs_type_widget = CustomWidgetFactory(DropdownWidgetWithAny)
-        setUpWidget(self, 'rcs_type',  rcs_type_field, IInputWidget)
+        setUpWidget(self, 'rcs_type', rcs_type_field, IInputWidget)
+
+        target_rcs_type_field = copy_field(
+            ICodeImport['target_rcs_type'], required=False, default=None)
+        self.target_rcs_type_widget = CustomWidgetFactory(
+            DropdownWidgetWithAny)
+        setUpWidget(
+            self, 'target_rcs_type', target_rcs_type_field, IInputWidget)
 
         # status should be None if either (a) there were no query arguments
         # supplied, i.e. the user browsed directly to this page (this is when
@@ -136,13 +145,17 @@ class CodeImportSetView(LaunchpadView):
         review_status = None
         if self.review_status_widget.hasValidInput():
             review_status = self.review_status_widget.getInputValue()
-        # Similar for 'type'
+        # Similar for 'rcs_type' and 'target_rcs_type'.
         rcs_type = None
         if self.rcs_type_widget.hasValidInput():
             rcs_type = self.rcs_type_widget.getInputValue()
+        target_rcs_type = None
+        if self.target_rcs_type_widget.hasValidInput():
+            target_rcs_type = self.target_rcs_type_widget.getInputValue()
 
         imports = self.context.search(
-            review_status=review_status, rcs_type=rcs_type)
+            review_status=review_status, rcs_type=rcs_type,
+            target_rcs_type=target_rcs_type)
 
         self.batchnav = BatchNavigator(imports, self.request)
 
@@ -191,8 +204,8 @@ class CodeImportBaseView(LaunchpadFormView):
                 self.addError(structured("""
                     Those CVS details are already specified for
                     the imported branch <a href="%s">%s</a>.""",
-                    canonical_url(code_import.branch),
-                    code_import.branch.unique_name))
+                    canonical_url(code_import.target),
+                    code_import.target.unique_name))
 
     def _validateURL(self, url, rcs_type, existing_import=None,
                      field_name='url'):
@@ -495,12 +508,12 @@ def _makeEditAction(label, status, text):
 class CodeImportEditView(CodeImportBaseView):
     """View for editing code imports.
 
-    This view is registered against the branch, but mostly edits the code
-    import for that branch -- the exception being that it also allows the
-    editing of the branch whiteboard.  If the branch has no associated code
-    import, then the result is a 404.  If the branch does have a code import,
-    then the adapters property allows the form internals to do the associated
-    mappings.
+    This view is registered against the target, but mostly edits the code
+    import for that target -- the exception being that it also allows the
+    editing of the branch whiteboard in the case of Bazaar branches.  If the
+    target has no associated code import, then the result is a 404.  If the
+    target does have a code import, then the adapters property allows the
+    form internals to do the associated mappings.
     """
 
     schema = EditCodeImportForm
@@ -513,16 +526,20 @@ class CodeImportEditView(CodeImportBaseView):
 
     @property
     def initial_values(self):
-        return {'whiteboard': self.context.whiteboard}
+        if (self.code_import.target_rcs_type ==
+                TargetRevisionControlSystems.BZR):
+            return {'whiteboard': self.context.whiteboard}
+        else:
+            return {}
 
     def initialize(self):
-        """Show a 404 if the branch has no code import."""
+        """Show a 404 if the target has no code import."""
         self.code_import = self.context.code_import
         if self.code_import is None:
             raise NotFoundError
         if not self._super_user:
             raise Unauthorized
-        # The next and cancel location is the branch details page.
+        # The next and cancel location is the target details page.
         self.cancel_url = self.next_url = canonical_url(self.context)
         super(CodeImportEditView, self).initialize()
 
@@ -542,6 +559,10 @@ class CodeImportEditView(CodeImportBaseView):
             self.form_fields = self.form_fields.omit('cvs_root', 'cvs_module')
         else:
             raise AssertionError('Unknown rcs_type for code import.')
+
+        if (self.code_import.target_rcs_type !=
+                TargetRevisionControlSystems.BZR):
+            self.form_fields = self.form_fields.omit('whiteboard')
 
     def _showButtonForStatus(self, status):
         """If the status is different, and the user is super, show button."""
@@ -604,3 +625,32 @@ def validate_import_url(url, rcs_type, existing_import=None):
             "This foreign branch URL is already specified for the imported "
             "branch <a href='%s'>%s</a>.", canonical_url(code_import.branch),
             code_import.branch.unique_name)
+
+
+class CodeImportTargetMixin:
+    """Common code import methods for Branch and GitRepository views."""
+
+    @cachedproperty
+    def latest_code_import_results(self):
+        """Return the last 10 CodeImportResults."""
+        return list(self.context.code_import.results[:10])
+
+    def iconForCodeImportResultStatus(self, status):
+        """The icon to represent the `CodeImportResultStatus` `status`."""
+        if status == CodeImportResultStatus.SUCCESS_PARTIAL:
+            return "/@@/yes-gray"
+        elif status in CodeImportResultStatus.successes:
+            return "/@@/yes"
+        else:
+            return "/@@/no"
+
+    @property
+    def url_is_web(self):
+        """True if an imported branch's URL is HTTP or HTTPS."""
+        # You should only be calling this if it's an SVN, BZR or GIT code
+        # import
+        assert self.context.code_import
+        url = self.context.code_import.url
+        assert url
+        # https starts with http too!
+        return url.startswith("http")

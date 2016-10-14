@@ -642,6 +642,7 @@
                        series
                        review_status
                        rcs_type
+                       target_rcs_type
                        cvs_root
                        cvs_module
                        url

@@ -41,6 +41,7 @@ from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
     CodeImportReviewStatus,
     RevisionControlSystems,
+    TargetRevisionControlSystems,
     )
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.gitrepository import IGitRepository
@@ -112,11 +113,16 @@ class ICodeImport(Interface):
             description=_("Only reviewed imports are processed.")))
 
     rcs_type = exported(
-        Choice(title=_("Type of RCS"), readonly=True,
+        Choice(
+            title=_("Type of RCS"), readonly=True,
             required=True, vocabulary=RevisionControlSystems,
-            description=_(
-                "The version control system to import from. "
-                "Can be CVS or Subversion.")))
+            description=_("The revision control system to import from.")))
+
+    target_rcs_type = exported(
+        Choice(
+            title=_("Type of target RCS"), readonly=True,
+            required=True, vocabulary=TargetRevisionControlSystems,
+            description=_("The revision control system to import to.")))
 
     url = exported(
         URIField(title=_("URL"), required=False, readonly=True,
@@ -261,11 +267,14 @@ class ICodeImportSet(Interface):
     def delete(id):
         """Delete a CodeImport given its id."""
 
-    def search(review_status=None, rcs_type=None):
+    def search(review_status=None, rcs_type=None, target_rcs_type=None):
         """Find the CodeImports of the given status and type.
 
         :param review_status: An entry from the `CodeImportReviewStatus`
             schema, or None, which signifies 'any status'.
         :param rcs_type: An entry from the `RevisionControlSystems`
             schema, or None, which signifies 'any type'.
+        :param target_rcs_type: An entry from the
+            `TargetRevisionControlSystems` schema, or None, which signifies
+            'any type'.
         """

@@ -54,6 +54,16 @@
     </div>
   </div>
 
+  <div id="repository-import-details"
+       class="yui-g"
+       tal:condition="context/repository_type/enumvalue:IMPORTED">
+    <div class="portlet">
+      <h2>Import details</h2>
+      <tal:repository-import-details
+          replace="structure context/@@++repository-import-details" />
+    </div>
+  </div>
+
   <div class="yui-g">
     <div id="repository-branches" class="portlet"
          tal:define="branches view/branches">
