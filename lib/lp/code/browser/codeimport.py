@@ -123,12 +123,19 @@ class CodeImportSetView(LaunchpadView):
         review_status_field = copy_field(
             ICodeImport['review_status'], required=False, default=None)
         self.review_status_widget = CustomWidgetFactory(DropdownWidgetWithAny)
-        setUpWidget(self, 'review_status',  review_status_field, IInputWidget)
+        setUpWidget(self, 'review_status', review_status_field, IInputWidget)
 
         rcs_type_field = copy_field(
             ICodeImport['rcs_type'], required=False, default=None)
         self.rcs_type_widget = CustomWidgetFactory(DropdownWidgetWithAny)
-        setUpWidget(self, 'rcs_type',  rcs_type_field, IInputWidget)
+        setUpWidget(self, 'rcs_type', rcs_type_field, IInputWidget)
+
+        target_rcs_type_field = copy_field(
+            ICodeImport['target_rcs_type'], required=False, default=None)
+        self.target_rcs_type_widget = CustomWidgetFactory(
+            DropdownWidgetWithAny)
+        setUpWidget(
+            self, 'target_rcs_type', target_rcs_type_field, IInputWidget)
 
         # status should be None if either (a) there were no query arguments
         # supplied, i.e. the user browsed directly to this page (this is when
@@ -138,13 +145,17 @@ class CodeImportSetView(LaunchpadView):
         review_status = None
         if self.review_status_widget.hasValidInput():
             review_status = self.review_status_widget.getInputValue()
-        # Similar for 'type'
+        # Similar for 'rcs_type' and 'target_rcs_type'.
         rcs_type = None
         if self.rcs_type_widget.hasValidInput():
             rcs_type = self.rcs_type_widget.getInputValue()
+        target_rcs_type = None
+        if self.target_rcs_type_widget.hasValidInput():
+            target_rcs_type = self.target_rcs_type_widget.getInputValue()
 
         imports = self.context.search(
-            review_status=review_status, rcs_type=rcs_type)
+            review_status=review_status, rcs_type=rcs_type,
+            target_rcs_type=target_rcs_type)
 
         self.batchnav = BatchNavigator(imports, self.request)
 
