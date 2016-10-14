@@ -113,7 +113,7 @@
        tal:condition="context/branch_type/enumvalue:IMPORTED">
     <div class="portlet">
       <h2>Import details</h2>
-      <tal:branch-pending-merges
+      <tal:branch-import-details
           replace="structure context/@@++branch-import-details" />
     </div>
   </div>

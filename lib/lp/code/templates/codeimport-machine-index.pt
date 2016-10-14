@@ -42,7 +42,7 @@
         <table class="simple">
           <tal:jobs repeat="job jobs">
             <tr>
-              <td><tal:branch replace="structure job/code_import/branch/fmt:link"/></td>
+              <td><tal:target replace="structure job/code_import/target/fmt:link"/></td>
               <td>Started: <tal:started replace="job/date_started/fmt:approximatedate"/></td>
               <td>Last heartbeat: <tal:heartbeat replace="job/heartbeat/fmt:approximatedate"/></td>
             </tr>
@@ -71,7 +71,7 @@
             </tal:has-person>
             <tal:event replace="event/event_type/title" />
             <tal:code-import condition="event/code_import"
-                             replace="structure event/code_import/branch/fmt:link"/>
+                             replace="structure event/code_import/target/fmt:link"/>
           </dt>
           <dd tal:condition="event/items">
             <tal:items repeat="item event/items">

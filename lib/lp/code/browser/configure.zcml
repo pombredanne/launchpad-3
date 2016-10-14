@@ -361,7 +361,7 @@
             template="../templates/branch-recipes.pt" />
         <browser:page
             name="++branch-import-details"
-            template="../templates/branch-import-details.pt" />
+            template="../templates/import-details.pt" />
         <browser:page
             name="++branch-revisions"
             template="../templates/branch-revisions.pt" />
@@ -629,7 +629,7 @@
             permission="launchpad.AnyPerson"/>
     <browser:url
         for="lp.code.interfaces.codeimport.ICodeImport"
-        attribute_to_parent="branch"
+        attribute_to_parent="target"
         path_expression="string:+code-import"
         rootsite="code"/>
     <browser:navigation
@@ -815,6 +815,9 @@
         <browser:page
             name="++repository-recipes"
             template="../templates/gitrepository-recipes.pt"/>
+        <browser:page
+            name="++repository-import-details"
+            template="../templates/import-details.pt"/>
     </browser:pages>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"

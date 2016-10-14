@@ -40,9 +40,9 @@
                 <table class="simple">
                   <tal:jobs repeat="job jobs">
                     <tr>
-                      <td><tal:branch replace="structure job/code_import/branch/fmt:link"/></td>
-                      <td>Started: <tal:branch replace="job/date_started/fmt:approximatedate"/></td>
-                      <td>Last heartbeat: <tal:branch replace="job/heartbeat/fmt:approximatedate"/></td>
+                      <td><tal:target replace="structure job/code_import/target/fmt:link"/></td>
+                      <td>Started: <tal:started replace="job/date_started/fmt:approximatedate"/></td>
+                      <td>Last heartbeat: <tal:heartbeat replace="job/heartbeat/fmt:approximatedate"/></td>
                     </tr>
                   </tal:jobs>
                 </table>
