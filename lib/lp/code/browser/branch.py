@@ -537,6 +537,13 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
         return self.context.branch_type == BranchType.IMPORTED
 
     @property
+    def can_edit_import(self):
+        """Can the user edit this import?"""
+        # XXX cjwatson 2016-10-14: Delete this once we have views for
+        # editing Git imports.
+        return True
+
+    @property
     def is_import_branch_with_no_landing_candidates(self):
         """Is the branch an import branch with no landing candidates?"""
         if self.landing_candidates:

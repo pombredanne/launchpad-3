@@ -356,6 +356,13 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
         """Is this an imported repository?"""
         return self.context.repository_type == GitRepositoryType.IMPORTED
 
+    @property
+    def can_edit_import(self):
+        """Can the user edit this import?"""
+        # XXX cjwatson 2016-10-14: Delete this once we have views for
+        # editing Git imports.
+        return False
+
 
 class GitRepositoryEditFormView(LaunchpadEditFormView):
     """Base class for forms that edit a Git repository."""

@@ -4,17 +4,19 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="context_menu view/context/menu:context">
 
-  <tal:imported-branch tal:condition="view/is_imported">
-    <div id="import-details" tal:define="branch context;
-                                         code_import branch/code_import">
-      <tal:has-codeimport condition="branch/code_import"
-                          define="code_import branch/code_import">
+  <tal:imported tal:condition="view/is_imported">
+    <div id="import-details"
+         tal:define="branch_or_repository context;
+                     code_import branch_or_repository/code_import">
+      <tal:has-codeimport
+          condition="branch_or_repository/code_import"
+          define="code_import branch_or_repository/code_import">
 
         <div><strong>Import Status:</strong>
           <span tal:attributes="class string:codeimport${code_import/review_status/name}"
                 tal:content="code_import/review_status/title"/>
             <form tal:attributes="action string:${context/fmt:url}/@@+try-again"
-                  tal:condition="python:view.user and code_import.review_status.name == 'FAILING'"
+                  tal:condition="python:view.can_edit_import and view.user and code_import.review_status.name == 'FAILING'"
                   style="display: inline; padding-left: 1em"
                   id="tryagain"
                   name="tryagain"
@@ -39,7 +41,16 @@
         </div>
 
         <tal:git-import condition="code_import/rcs_type/enumvalue:GIT">
-          <p>This branch is an import of the HEAD branch of the Git repository at
+          <p id="git-import-details">
+            <tal:git-to-bzr-import
+                condition="code_import/target_rcs_type/enumvalue:BZR">
+              This branch is an import of the HEAD branch
+            </tal:git-to-bzr-import>
+            <tal:git-to-git-import
+                condition="code_import/target_rcs_type/enumvalue:GIT">
+              This repository is an import
+            </tal:git-to-git-import>
+            of the Git repository at
             <tal:is-web-url condition="view/url_is_web">
               <a tal:attributes="href code_import/url"
                  tal:content="code_import/url" />.
@@ -117,7 +128,7 @@
                 in 2 hours
               </tal:date-started>.
               <tal:button
-                 condition="view/user"
+                 condition="python:view.can_edit_import and view.user"
                  replace="structure view/context/@@+request-import" />
             </tal:not-overdue>
           </tal:not-running>
@@ -147,7 +158,7 @@
           </tal:result>
         </div>
 
-        <div class="actions">
+        <div class="actions" tal:condition="view/can_edit_import">
           <div
             tal:define="link context_menu/edit_import"
             tal:condition="link/enabled"
@@ -160,6 +171,6 @@
         </div>
       </tal:has-codeimport>
     </div>
-  </tal:imported-branch>
+  </tal:imported>
 
 </div>
