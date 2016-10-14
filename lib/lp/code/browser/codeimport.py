@@ -563,8 +563,8 @@ class CodeImportEditView(CodeImportBaseView):
         else:
             raise AssertionError('Unknown rcs_type for code import.')
 
-        if (self.code_import.target_rcs_type ==
-                TargetRevisionControlSystems.GIT):
+        if (self.code_import.target_rcs_type !=
+                TargetRevisionControlSystems.BZR):
             self.form_fields = self.form_fields.omit('whiteboard')
 
     def _showButtonForStatus(self, status):

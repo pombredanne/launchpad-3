@@ -361,7 +361,7 @@
             template="../templates/branch-recipes.pt" />
         <browser:page
             name="++branch-import-details"
-            template="../templates/branch-import-details.pt" />
+            template="../templates/import-details.pt" />
         <browser:page
             name="++branch-revisions"
             template="../templates/branch-revisions.pt" />
@@ -817,7 +817,7 @@
             template="../templates/gitrepository-recipes.pt"/>
         <browser:page
             name="++repository-import-details"
-            template="../templates/gitrepository-import-details.pt"/>
+            template="../templates/import-details.pt"/>
     </browser:pages>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"

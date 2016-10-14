@@ -240,9 +240,6 @@ class BranchEditMenu(NavigationMenu):
     links = (
         'edit', 'reviewer', 'edit_whiteboard', 'webhooks', 'delete')
 
-    def branch_is_import(self):
-        return self.context.branch_type == BranchType.IMPORTED
-
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change branch details'
@@ -256,7 +253,7 @@ class BranchEditMenu(NavigationMenu):
     @enabled_with_permission('launchpad.AnyPerson')
     def edit_whiteboard(self):
         text = 'Edit whiteboard'
-        enabled = self.branch_is_import()
+        enabled = self.context.branch_type == BranchType.IMPORTED
         return Link(
             '+whiteboard', text, icon='edit', enabled=enabled)
 
@@ -448,8 +445,7 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
 
         The whiteboard is only shown for import branches.
         """
-        if (self.context.branch_type == BranchType.IMPORTED and
-            self.context.whiteboard):
+        if self.is_imported and self.context.whiteboard:
             return True
         else:
             return False
@@ -536,11 +532,16 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
                 count).escapedtext
 
     @property
+    def is_imported(self):
+        """Is this an imported branch?"""
+        return self.context.branch_type == BranchType.IMPORTED
+
+    @property
     def is_import_branch_with_no_landing_candidates(self):
         """Is the branch an import branch with no landing candidates?"""
         if self.landing_candidates:
             return False
-        if not self.context.branch_type == BranchType.IMPORTED:
+        if not self.is_imported:
             return False
         return True
 

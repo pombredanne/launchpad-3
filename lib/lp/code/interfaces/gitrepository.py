@@ -968,7 +968,4 @@ def user_has_special_git_repository_access(user, repository=None):
     code_import = repository.code_import
     if code_import is None:
         return False
-    return (
-        roles.in_vcs_imports
-        or (IPersonRoles(repository.owner).in_vcs_imports
-            and user.inTerm(code_import.registrant)))
+    return roles.in_vcs_imports

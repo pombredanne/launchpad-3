@@ -368,6 +368,11 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
                 '<a href="+recipes">%s recipes</a> using this repository.',
                 count).escapedtext
 
+    @property
+    def is_imported(self):
+        """Is this an imported repository?"""
+        return self.context.repository_type == GitRepositoryType.IMPORTED
+
 
 class GitRepositoryEditFormView(LaunchpadEditFormView):
     """Base class for forms that edit a Git repository."""

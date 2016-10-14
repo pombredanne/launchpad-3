@@ -4,12 +4,13 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="context_menu view/context/menu:context">
 
-  <tal:imported-repository
-      condition="context/repository_type/enumvalue:IMPORTED">
-    <div id="import-details" tal:define="repository context;
-                                         code_import repository/code_import">
-      <tal:has-codeimport condition="repository/code_import"
-                          define="code_import repository/code_import">
+  <tal:imported tal:condition="view/is_imported">
+    <div id="import-details"
+         tal:define="branch_or_repository context;
+                     code_import branch_or_repository/code_import">
+      <tal:has-codeimport
+          condition="branch_or_repository/code_import"
+          define="code_import branch_or_repository/code_import">
 
         <div><strong>Import Status:</strong>
           <span tal:attributes="class string:codeimport${code_import/review_status/name}"
@@ -41,7 +42,15 @@
 
         <tal:git-import condition="code_import/rcs_type/enumvalue:GIT">
           <p id="git-import-details">
-            This repository is an import of the Git repository at
+            <tal:git-to-bzr-import
+                condition="code_import/target_rcs_type/enumvalue:BZR">
+              This branch is an import of the HEAD branch
+            </tal:git-to-bzr-import>
+            <tal:git-to-git-import
+                condition="code_import/target_rcs_type/enumvalue:GIT">
+              This repository is an import
+            </tal:git-to-git-import>
+            of the Git repository at
             <tal:is-web-url condition="view/url_is_web">
               <a tal:attributes="href code_import/url"
                  tal:content="code_import/url" />.
@@ -51,6 +60,40 @@
             </tal:not-web-url>
           </p>
         </tal:git-import>
+
+        <tal:bzr-import condition="code_import/rcs_type/enumvalue:BZR">
+          <p>This branch is an import of the Bazaar branch at
+            <tal:is-web-url condition="view/url_is_web">
+              <a tal:attributes="href code_import/url"
+                 tal:content="code_import/url" />.
+            </tal:is-web-url>
+            <tal:not-web-url condition="not: view/url_is_web">
+              <span tal:replace="code_import/url" />.
+            </tal:not-web-url>
+          </p>
+        </tal:bzr-import>
+
+        <tal:svn-import condition="code_import/rcs_type/enumvalue:BZR_SVN">
+          <p id="svn-import-details">
+            This branch is an import of the
+            <span tal:attributes="title code_import/rcs_type/title">Subversion</span>
+            branch from
+            <tal:is-web-url condition="view/url_is_web">
+              <a tal:attributes="href code_import/url"
+                 tal:content="code_import/url" />.
+            </tal:is-web-url>
+            <tal:not-web-url condition="not: view/url_is_web">
+              <span tal:replace="code_import/url" />.
+            </tal:not-web-url>
+          </p>
+        </tal:svn-import>
+
+        <tal:cvs-import condition="code_import/rcs_type/enumvalue:CVS">
+          <p>This branch is an import of the CVS module
+          <strong tal:content="code_import/cvs_module"/> from
+          <strong tal:content="code_import/cvs_root"/>.
+          </p>
+        </tal:cvs-import>
 
         <tal:has-job define="job code_import/import_job"
                      condition="job">
@@ -128,6 +171,6 @@
         </div>
       </tal:has-codeimport>
     </div>
-  </tal:imported-repository>
+  </tal:imported>
 
 </div>
