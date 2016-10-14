@@ -4,7 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="context_menu view/context/menu:context">
 
-  <tal:imported-branch tal:condition="context/branch_type/enumvalue:IMPORTED">
+  <tal:imported-branch tal:condition="view/is_imported">
     <div id="import-details" tal:define="branch context;
                                          code_import branch/code_import">
       <tal:has-codeimport condition="branch/code_import"
