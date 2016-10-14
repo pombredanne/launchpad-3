@@ -34,6 +34,7 @@ from lp.app.enums import (
     PRIVATE_INFORMATION_TYPES,
     PUBLIC_INFORMATION_TYPES,
     )
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.enums import NewSpecificationDefinitionStatus
 from lp.blueprints.interfaces.specification import ISpecificationSet
@@ -83,6 +84,7 @@ from lp.code.interfaces.branchnamespace import (
     )
 from lp.code.interfaces.branchrevision import IBranchRevision
 from lp.code.interfaces.codehosting import branch_id_alias
+from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
@@ -104,10 +106,6 @@ from lp.code.model.branchjob import (
     )
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchrevision import BranchRevision
-from lp.code.model.codeimport import (
-    CodeImport,
-    CodeImportSet,
-    )
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
@@ -191,9 +189,9 @@ class TestCodeImport(TestCase):
         code_import = self.factory.makeCodeImport()
         branch = code_import.branch
         self.assertEqual(code_import, branch.code_import)
-        CodeImportSet().delete(code_import)
+        getUtility(ICodeImportSet).delete(code_import)
         clear_property_cache(branch)
-        self.assertEqual(None, branch.code_import)
+        self.assertIsNone(branch.code_import)
 
 
 class TestBranchChanged(TestCaseWithFactory):
@@ -1664,12 +1662,12 @@ class TestBranchDeletionConsequences(TestCase):
         self.assertEqual({}, code_import.branch.deletionRequirements())
 
     def test_branchWithCodeImportDeletion(self):
-        """break_links allows deleting a code import branch."""
+        """break_references allows deleting a code import branch."""
         code_import = self.factory.makeCodeImport()
         code_import_id = code_import.id
         code_import.branch.destroySelf(break_references=True)
         self.assertRaises(
-            SQLObjectNotFound, CodeImport.get, code_import_id)
+            NotFoundError, getUtility(ICodeImportSet).get, code_import_id)
 
     def test_sourceBranchWithCodeReviewVoteReference(self):
         """Break_references handles CodeReviewVoteReference source branch."""
@@ -1750,7 +1748,7 @@ class TestBranchDeletionConsequences(TestCase):
         code_import_id = code_import.id
         DeleteCodeImport(code_import)()
         self.assertRaises(
-            SQLObjectNotFound, CodeImport.get, code_import_id)
+            NotFoundError, getUtility(ICodeImportSet).get, code_import_id)
 
     def test_deletionRequirements_with_SourcePackageRecipe(self):
         """Recipes are listed as deletion requirements."""

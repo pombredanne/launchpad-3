@@ -1569,6 +1569,11 @@ def user_has_special_branch_access(user, branch=None):
     code_import = branch.code_import
     if code_import is None:
         return False
+    # It used to be the case that all import branches were owned by the
+    # special, restricted team ~vcs-imports.  For these legacy code import
+    # branches, we still want the code import registrant to be able to edit
+    # them.  Similarly, we still want vcs-imports members to be able to edit
+    # those branches.
     return (
         roles.in_vcs_imports
         or (IPersonRoles(branch.owner).in_vcs_imports

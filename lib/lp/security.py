@@ -2273,7 +2273,7 @@ class EditGitRepository(AuthorizationBase):
         # "official" repositories, once those are defined.
         return (
             user.inTeam(self.obj.owner) or
-            user_has_special_git_repository_access(user.person))
+            user_has_special_git_repository_access(user.person, self.obj))
 
 
 class ModerateGitRepository(EditGitRepository):
