@@ -74,21 +74,15 @@ Git Recipe Listings
 Create a new sample repository, some branches in it, and some source package
 recipes to go along with them.
 
-    >>> from lp.code.interfaces.sourcepackagerecipe import (
-    ...     GIT_RECIPES_FEATURE_FLAG,
-    ...     )
-    >>> from lp.services.features.testing import FeatureFixture
-
     >>> login('foo.bar@canonical.com')
     >>> repository = factory.makeGitRepository()
     >>> ref1, ref2, ref3 = factory.makeGitRefs(
     ...     repository=repository,
     ...     paths=[u"refs/heads/a", u"refs/heads/b", u"refs/heads/c"])
-    >>> with FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}):
-    ...     recipe1a = factory.makeSourcePackageRecipe(branches=[ref1])
-    ...     recipe1b = factory.makeSourcePackageRecipe(branches=[ref1])
-    ...     recipe2 = factory.makeSourcePackageRecipe(branches=[ref2])
-    ...     recipe3 = factory.makeSourcePackageRecipe(branches=[ref3])
+    >>> recipe1a = factory.makeSourcePackageRecipe(branches=[ref1])
+    >>> recipe1b = factory.makeSourcePackageRecipe(branches=[ref1])
+    >>> recipe2 = factory.makeSourcePackageRecipe(branches=[ref2])
+    >>> recipe3 = factory.makeSourcePackageRecipe(branches=[ref3])
 
 Keep these urls, including the target url.  We'll use these later.
 

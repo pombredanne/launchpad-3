@@ -76,7 +76,6 @@ from lp.code.interfaces.gitrepository import (
     IGitRepositoryView,
     )
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob,
@@ -117,7 +116,6 @@ from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
-from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
@@ -482,14 +480,12 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
 
     def test_destroySelf_with_SourcePackageRecipe(self):
         # If repository is a base_git_repository in a recipe, it is deleted.
-        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
         recipe = self.factory.makeSourcePackageRecipe(
             branches=self.factory.makeGitRefs(owner=self.user))
         recipe.base_git_repository.destroySelf(break_references=True)
 
     def test_destroySelf_with_SourcePackageRecipe_as_non_base(self):
         # If repository is referred to by a recipe, it is deleted.
-        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
         [ref1] = self.factory.makeGitRefs(owner=self.user)
         [ref2] = self.factory.makeGitRefs(owner=self.user)
         self.factory.makeSourcePackageRecipe(branches=[ref1, ref2])
@@ -757,7 +753,6 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
 
     def test_deletionRequirements_with_SourcePackageRecipe(self):
         # Recipes are listed as deletion requirements.
-        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
         recipe = self.factory.makeSourcePackageRecipe(
             branches=self.factory.makeGitRefs())
         self.assertEqual(
@@ -1911,10 +1906,6 @@ class TestGitRepositoryUpdateLandingTargets(TestCaseWithFactory):
 class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
-
-    def setUp(self):
-        super(TestGitRepositoryMarkRecipesStale, self).setUp()
-        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
 
     def test_base_repository_recipe(self):
         # On ref changes, recipes where this ref is the base become stale.
