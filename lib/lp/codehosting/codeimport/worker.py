@@ -1028,7 +1028,7 @@ class GitToGitImportWorker(ImportWorker):
         except subprocess.CalledProcessError as e:
             self._logger.info(
                 "Unable to get existing repository from hosting service: "
-                "%s" % e)
+                "git clone exited %s" % e.returncode)
             return CodeImportWorkerExitCode.FAILURE
         self._logger.info("Fetching remote repository.")
         try:
@@ -1050,6 +1050,8 @@ class GitToGitImportWorker(ImportWorker):
         try:
             self._runGit("push", "--mirror", target_url, cwd="repository")
         except subprocess.CalledProcessError as e:
-            self._logger.info("Unable to push to hosting service: %s" % e)
+            self._logger.info(
+                "Unable to push to hosting service: git push exited %s" %
+                e.returncode)
             return CodeImportWorkerExitCode.FAILURE
         return CodeImportWorkerExitCode.SUCCESS
