@@ -295,20 +295,9 @@ class GitAPI(LaunchpadXMLRPCView):
             else:
                 raise
 
-    def translatePath(self, path, permission, requester_id,
-                      can_authenticate=None):
+    def translatePath(self, path, permission, auth_params):
         """See `IGitAPI`."""
-        if can_authenticate is None:
-            # XXX cjwatson 2016-10-06: Ugly compatibility hack.  This method
-            # should be "translatePath(self, path, permission, *auth_args)"
-            # instead, but it may be called using mapply which doesn't
-            # support the *auth_args syntax.  This can go away once turnip
-            # uses the new-style interface.
-            auth_params = requester_id
-            requester_id = auth_params.get("uid")
-        else:
-            auth_params = {
-                "uid": requester_id, "can-authenticate": can_authenticate}
+        requester_id = auth_params.get("uid")
         if requester_id is None:
             requester_id = LAUNCHPAD_ANONYMOUS
         if isinstance(path, str):

@@ -1266,7 +1266,8 @@ class DeleteCodeImport(DeletionOperation):
 
     def __init__(self, code_import):
         DeletionOperation.__init__(
-            self, code_import, msg("This is the import data for this branch."))
+            self, code_import,
+            msg("This is the import data for this repository."))
 
     def __call__(self):
         getUtility(ICodeImportSet).delete(self.affected_object)
