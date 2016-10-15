@@ -250,7 +250,7 @@ class NewCodeImportForm(Interface):
     git_repo_url = URIField(
         title=_("Repo URL"), required=False,
         description=_(
-            "The URL of the git repository.  For imports to Bazaar, the "
+            "The URL of the Git repository.  For imports to Bazaar, the "
             "HEAD branch will be imported by default, but you can import "
             "different branches by appending ',branch=$name' to the URL.  "
             "For imports to Git, the entire repository will be imported."),
