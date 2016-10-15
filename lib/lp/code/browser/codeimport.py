@@ -68,6 +68,7 @@ from lp.code.errors import (
     CodeImportAlreadyRequested,
     CodeImportAlreadyRunning,
     CodeImportNotInReviewedState,
+    GitRepositoryExists,
     )
 from lp.code.interfaces.branch import (
     IBranch,
@@ -82,6 +83,10 @@ from lp.code.interfaces.codeimport import (
     ICodeImportSet,
     )
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
+from lp.code.interfaces.gitnamespace import (
+    get_git_namespace,
+    IGitNamespacePolicy,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IPersonRoles
 from lp.services.fields import URIField
@@ -254,15 +259,23 @@ class NewCodeImportForm(Interface):
     git_repo_url = URIField(
         title=_("Repo URL"), required=False,
         description=_(
-            "The URL of the git repository. The HEAD branch will be "
-            "imported. You can import different branches by appending "
-            "',branch=$name' to the URL."),
+            "The URL of the Git repository.  For imports to Bazaar, the "
+            "HEAD branch will be imported by default, but you can import "
+            "different branches by appending ',branch=$name' to the URL.  "
+            "For imports to Git, the entire repository will be imported."),
         allowed_schemes=["git", "http", "https"],
         allow_userinfo=True,
         allow_port=True,
         allow_query=False,
         allow_fragment=False,
         trailing_slash=False)
+
+    git_target_rcs_type = Choice(
+        title=_("Target version control system"),
+        description=_(
+            "The version control system that the source code should be "
+            "imported into on the Launchpad side."),
+        required=False, vocabulary=TargetRevisionControlSystems)
 
     bzr_branch_url = URIField(
         title=_("Branch URL"), required=False,
@@ -277,10 +290,10 @@ class NewCodeImportForm(Interface):
     branch_name = copy_field(
         IBranch['name'],
         __name__='branch_name',
-        title=_('Branch Name'),
+        title=_('Name'),
         description=_(
-            "This will be used in the branch URL to identify the "
-            "imported branch.  Examples: main, trunk."),
+            "This will be used in the branch or repository URL to identify "
+            "the import.  Examples: main, trunk."),
         )
 
     product = Choice(
@@ -297,6 +310,7 @@ class CodeImportNewView(CodeImportBaseView):
     for_input = True
 
     custom_widget('rcs_type', LaunchpadRadioWidget)
+    custom_widget('git_target_rcs_type', LaunchpadRadioWidget)
 
     @property
     def initial_values(self):
@@ -304,6 +318,7 @@ class CodeImportNewView(CodeImportBaseView):
             'owner': self.user,
             'rcs_type': RevisionControlSystems.BZR,
             'branch_name': 'trunk',
+            'git_target_rcs_type': TargetRevisionControlSystems.BZR,
             }
 
     @property
@@ -365,6 +380,9 @@ class CodeImportNewView(CodeImportBaseView):
         self.rcs_type_git = str(git_button)
         self.rcs_type_bzr = str(bzr_button)
         self.rcs_type_emptymarker = str(empty_marker)
+        # This widget is only conditionally required in the rcs_type == GIT
+        # case, but we still don't want a "(nothing selected)" item.
+        self.widgets['git_target_rcs_type']._displayItemForMissingValue = False
 
     def _getImportLocation(self, data):
         """Return the import location based on type."""
@@ -385,13 +403,18 @@ class CodeImportNewView(CodeImportBaseView):
         """Create the code import."""
         product = self.getProduct(data)
         cvs_root, cvs_module, url = self._getImportLocation(data)
+        if data['rcs_type'] == RevisionControlSystems.GIT:
+            target_rcs_type = data.get(
+                'git_target_rcs_type', TargetRevisionControlSystems.BZR)
+        else:
+            target_rcs_type = TargetRevisionControlSystems.BZR
         return getUtility(ICodeImportSet).new(
             registrant=self.user,
             owner=data['owner'],
             context=product,
             branch_name=data['branch_name'],
             rcs_type=data['rcs_type'],
-            target_rcs_type=TargetRevisionControlSystems.BZR,
+            target_rcs_type=target_rcs_type,
             url=url,
             cvs_root=cvs_root,
             cvs_module=cvs_module,
@@ -419,16 +442,19 @@ class CodeImportNewView(CodeImportBaseView):
         except BranchExists as e:
             self._setBranchExists(e.existing_branch)
             return
+        except GitRepositoryExists as e:
+            self._setBranchExists(e.existing_repository)
+            return
 
         # Subscribe the user.
-        code_import.branch.subscribe(
+        code_import.target.subscribe(
             self.user,
             BranchSubscriptionNotificationLevel.FULL,
             BranchSubscriptionDiffSize.NODIFF,
             CodeReviewNotificationLevel.NOEMAIL,
             self.user)
 
-        self.next_url = canonical_url(code_import.branch)
+        self.next_url = canonical_url(code_import.target)
 
         self.request.response.addNotification("""
             New code import created. The code import will start shortly.""")
@@ -440,24 +466,41 @@ class CodeImportNewView(CodeImportBaseView):
         else:
             return data.get('product')
 
+    def validate_widgets(self, data, names=None):
+        """See `LaunchpadFormView`."""
+        self.widgets['git_target_rcs_type'].context.required = (
+            data.get('rcs_type') == RevisionControlSystems.GIT)
+        super(CodeImportNewView, self).validate_widgets(data, names=names)
+
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        # Make sure that the user is able to create branches for the specified
-        # namespace.
+        rcs_type = data['rcs_type']
+        if rcs_type == RevisionControlSystems.GIT:
+            target_rcs_type = data.get(
+                'git_target_rcs_type', TargetRevisionControlSystems.BZR)
+        else:
+            target_rcs_type = TargetRevisionControlSystems.BZR
+
+        # Make sure that the user is able to create branches/repositories
+        # for the specified namespace.
         product = self.getProduct(data)
         # 'owner' in data may be None if it failed validation.
         owner = data.get('owner')
         if product is not None and owner is not None:
-            namespace = get_branch_namespace(owner, product)
-            policy = IBranchNamespacePolicy(namespace)
-            if not policy.canCreateBranches(self.user):
+            if target_rcs_type == TargetRevisionControlSystems.BZR:
+                namespace = get_branch_namespace(owner, product)
+                policy = IBranchNamespacePolicy(namespace)
+                can_create = policy.canCreateBranches(self.user)
+            else:
+                namespace = get_git_namespace(product, owner)
+                policy = IGitNamespacePolicy(namespace)
+                can_create = policy.canCreateRepositories(self.user)
+            if not can_create:
                 self.setFieldError(
                     'product',
                     "You are not allowed to register imports for %s."
                     % product.displayname)
 
-        rcs_type = data['rcs_type']
-        target_rcs_type = TargetRevisionControlSystems.BZR
         # Make sure fields for unselected revision control systems
         # are blanked out:
         if rcs_type == RevisionControlSystems.CVS:

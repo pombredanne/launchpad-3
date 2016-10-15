@@ -520,6 +520,105 @@ class TestPackageGitNamespace(TestCaseWithFactory, NamespaceMixin):
         self.assertEqual(dsp, namespace.target)
 
 
+class BaseCanCreateRepositoriesMixin:
+    """Common tests for all namespaces."""
+
+    layer = DatabaseFunctionalLayer
+
+    def _getNamespace(self, owner):
+        # Return a namespace appropriate for the owner specified.
+        raise NotImplementedError(self._getNamespace)
+
+    def test_individual(self):
+        # For a GitNamespace for an individual, only the individual can own
+        # repositories there.
+        person = self.factory.makePerson()
+        namespace = self._getNamespace(person)
+        self.assertTrue(namespace.canCreateRepositories(person))
+
+    def test_other_user(self):
+        # Any other individual cannot own repositories targeted to the
+        # person.
+        person = self.factory.makePerson()
+        namespace = self._getNamespace(person)
+        self.assertFalse(
+            namespace.canCreateRepositories(self.factory.makePerson()))
+
+    def test_team_member(self):
+        # A member of a team is able to create a repository in this
+        # namespace.
+        person = self.factory.makePerson()
+        self.factory.makeTeam(owner=person)
+        namespace = self._getNamespace(person)
+        self.assertTrue(namespace.canCreateRepositories(person))
+
+    def test_team_non_member(self):
+        # A person who is not part of the team cannot create repositories
+        # for the personal team target.
+        person = self.factory.makePerson()
+        self.factory.makeTeam(owner=person)
+        namespace = self._getNamespace(person)
+        self.assertFalse(
+            namespace.canCreateRepositories(self.factory.makePerson()))
+
+
+class TestPersonalGitNamespaceCanCreateRepositories(
+    TestCaseWithFactory, BaseCanCreateRepositoriesMixin):
+
+    def _getNamespace(self, owner):
+        return PersonalGitNamespace(owner)
+
+
+class TestPackageGitNamespaceCanCreateBranches(
+    TestCaseWithFactory, BaseCanCreateRepositoriesMixin):
+
+    def _getNamespace(self, owner):
+        source_package = self.factory.makeSourcePackage()
+        return PackageGitNamespace(owner, source_package)
+
+
+class TestProjectGitNamespaceCanCreateBranches(
+    TestCaseWithFactory, BaseCanCreateRepositoriesMixin):
+
+    def _getNamespace(self, owner,
+                      branch_sharing_policy=BranchSharingPolicy.PUBLIC):
+        project = self.factory.makeProduct(
+            branch_sharing_policy=branch_sharing_policy)
+        return ProjectGitNamespace(owner, project)
+
+    def setUp(self):
+        # Setting visibility policies is an admin-only task.
+        super(TestProjectGitNamespaceCanCreateBranches, self).setUp(
+            "admin@canonical.com")
+
+    def test_any_person(self):
+        # If there is no privacy set up, any person can create a personal
+        # branch on the product.
+        person = self.factory.makePerson()
+        namespace = self._getNamespace(person, BranchSharingPolicy.PUBLIC)
+        self.assertTrue(namespace.canCreateRepositories(person))
+
+    def test_any_person_with_proprietary_repositories(self):
+        # If the sharing policy defaults to PROPRIETARY, then non-privileged
+        # users cannot create a repository.
+        person = self.factory.makePerson()
+        namespace = self._getNamespace(person, BranchSharingPolicy.PROPRIETARY)
+        self.assertFalse(namespace.canCreateRepositories(person))
+
+    def test_grantee_with_proprietary_repositories(self):
+        # If the sharing policy defaults to PROPRIETARY, then non-privileged
+        # users cannot create a repository.
+        person = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[person])
+        namespace = self._getNamespace(team, BranchSharingPolicy.PROPRIETARY)
+        getUtility(IService, "sharing").sharePillarInformation(
+            namespace.target, team, namespace.target.owner,
+            {InformationType.PROPRIETARY: SharingPermission.ALL})
+        self.assertTrue(namespace.canCreateRepositories(person))
+        self.assertFalse(namespace.canCreateRepositories(other_person))
+
+
 class TestNamespaceSet(TestCaseWithFactory):
     """Tests for `get_namespace`."""
 

@@ -45,7 +45,7 @@
         <tr>
           <td colspan="2">
             <div class="formHelp">
-              Enter details for the selected repository type.
+              Enter details for the selected version control system.
             </div>
           </td>
         </tr>
@@ -72,6 +72,10 @@
             </label>
             <table class="importdetails">
               <tal:widget define="widget nocall:view/widgets/git_repo_url">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+              <tal:widget define="widget nocall:view/widgets/git_target_rcs_type"
+                          condition="request/features/code.import.git_target">
                 <metal:block use-macro="context/@@launchpad_form/widget_row" />
               </tal:widget>
             </table>
@@ -131,6 +135,12 @@
                 }
             }
             updateField(form['field.git_repo_url'], rcs_type === 'GIT');
+            for (i = 0; i < form.elements.length; i++) {
+                if (form.elements[i].id.startsWith(
+                        'field.git_target_rcs_type.')) {
+                    updateField(form.elements[i], rcs_type === 'GIT');
+                }
+            }
             updateField(form['field.cvs_root'], rcs_type === 'CVS');
             updateField(form['field.cvs_module'], rcs_type === 'CVS');
             updateField(form['field.svn_branch_url'], rcs_type === 'BZR_SVN');
