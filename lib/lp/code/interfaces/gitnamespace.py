@@ -104,6 +104,13 @@ class IGitNamespacePolicy(Interface):
         "Can recipe names reasonably be generated from the target name "
         "rather than the branch name?")
 
+    def canCreateRepositories(user):
+        """Is the user allowed to create repositories for this namespace?
+
+        :param user: An `IPerson`.
+        :return: A Boolean value.
+        """
+
     def getAllowedInformationTypes(who):
         """Get the information types that a repository in this namespace can
         have.

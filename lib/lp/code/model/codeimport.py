@@ -63,7 +63,6 @@ from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitrepository import IGitRepository
-from lp.code.interfaces.hasbranches import IHasCodeImports
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.mail.codeimport import code_import_updated
 from lp.code.model.codeimportjob import CodeImportJobWorkflow

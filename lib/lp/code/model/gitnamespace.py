@@ -211,6 +211,19 @@ class _BaseGitNamespace:
             match = default
         return match
 
+    def canCreateRepositories(self, user):
+        """See `IGitNamespacePolicy`."""
+        try:
+            self.validateRegistrant(user)
+        except GitRepositoryCreatorNotMemberOfOwnerTeam:
+            return False
+        except GitRepositoryCreatorNotOwner:
+            return False
+        except GitRepositoryCreationForbidden:
+            return False
+        else:
+            return True
+
     def getAllowedInformationTypes(self, who=None):
         """See `IGitNamespace`."""
         raise NotImplementedError
