@@ -6,7 +6,11 @@ imported branches.  If the logged in user is an import operator
 (member of VCS imports or Launchpad admin) then they can see a link
 to edit the details.
 
-    >>> from lp.code.enums import RevisionControlSystems
+    >>> from lp.code.enums import (
+    ...     RevisionControlSystems,
+    ...     TargetRevisionControlSystems,
+    ...     )
+    >>> from lp.code.tests.helpers import GitHostingFixture
     >>> from lp.testing import ANONYMOUS, login, logout
     >>> login('test@canonical.com')
 
@@ -33,6 +37,15 @@ to edit the details.
     >>> git_import_location = str(canonical_url(git_import.branch))
     >>> git_import_branch_unique_name = git_import.branch.unique_name
 
+    >>> with GitHostingFixture():
+    ...     git_to_git_import = factory.makeProductCodeImport(
+    ...         git_repo_url="git://git.example.org/fooix2",
+    ...         target_rcs_type=TargetRevisionControlSystems.GIT)
+    >>> git_to_git_import_location = str(
+    ...     canonical_url(git_to_git_import.git_repository))
+    >>> git_to_git_repository_unique_name = (
+    ...     git_to_git_import.git_repository.unique_name)
+
     >>> package_import = factory.makePackageCodeImport(
     ...     git_repo_url="http://git.example.org/zap")
     >>> package_import_location = str(canonical_url(package_import.branch))
@@ -51,14 +64,27 @@ Both VCS Imports members and Launchpad administrators can edit the
 import:
 
     >>> def print_import_details(browser):
-    ...     div = find_tag_by_id(
-    ...         browser.contents, 'branch-import-details').div.div
-    ...     print extract_text(div)
+    ...     details = find_tag_by_id(
+    ...         browser.contents, 'branch-import-details')
+    ...     if details is None:
+    ...         details = find_tag_by_id(
+    ...             browser.contents, 'repository-import-details')
+    ...     print extract_text(details.div.div)
+
     >>> import_browser.open(svn_import_location)
     >>> print_import_details(import_browser)
     Import Status: Reviewed
     This branch is an import of the Subversion branch
     from svn://svn.example.com/fooix/trunk.
+    The next import is scheduled to run
+    as soon as possible.
+    Edit import source or review import
+
+    >>> import_browser.open(git_to_git_import_location)
+    >>> print_import_details(import_browser)
+    Import Status: Reviewed
+    This repository is an import of the Git repository
+    at git://git.example.org/fooix2.
     The next import is scheduled to run
     as soon as possible.
     Edit import source or review import
@@ -70,6 +96,7 @@ Editing details
 There are a number of buttons shown on the editing page for
 import operators.
 
+    >>> import_browser.open(svn_import_location)
     >>> import_browser.getLink('Edit import source or review import').click()
     >>> print_submit_buttons(import_browser.contents)
     Update
@@ -104,6 +131,11 @@ in the form.
     >>> import_browser.getLink('Edit import source or review import').click()
     >>> print_form_fields(import_browser)
     field.url: git://git.example.org/fooix
+
+    >>> import_browser.open(git_to_git_import_location)
+    >>> import_browser.getLink('Edit import source or review import').click()
+    >>> print_form_fields(import_browser)
+    field.url: git://git.example.org/fooix2
 
     >>> import_browser.open(package_import_location)
     >>> import_browser.getLink('Edit import source or review import').click()
@@ -147,11 +179,20 @@ CVS imports,
     >>> print_feedback_messages(import_browser.contents)
     The code import has been updated.
 
-Git imports,
+Git-to-Bazaar imports,
 
     >>> import_browser.open(git_import_location + '/+edit-import')
     >>> import_browser.getControl('URL').value = \
     ...     'git://user:password@git-new.example.org/fooix'
+    >>> import_browser.getControl('Update').click()
+    >>> print_feedback_messages(import_browser.contents)
+    The code import has been updated.
+
+Git-to-Git imports,
+
+    >>> import_browser.open(git_to_git_import_location + '/+edit-import')
+    >>> import_browser.getControl('URL').value = \
+    ...     'git://user:password@git-new.example.org/fooix2'
     >>> import_browser.getControl('Update').click()
     >>> print_feedback_messages(import_browser.contents)
     The code import has been updated.
