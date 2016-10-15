@@ -69,7 +69,6 @@ from lp.code.errors import (
 from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitref import IGitRefBatchNavigator
 from lp.code.interfaces.gitrepository import IGitRepository
-from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -269,9 +268,7 @@ class GitRepositoryContextMenu(ContextMenu, HasRecipesMenuMixin):
 
     def create_recipe(self):
         # You can't create a recipe for a private repository.
-        enabled = (
-            not self.context.private and
-            bool(getFeatureFlag(GIT_RECIPES_FEATURE_FLAG)))
+        enabled = not self.context.private
         text = "Create packaging recipe"
         return Link("+new-recipe", text, enabled=enabled, icon="add")
 
@@ -301,10 +298,6 @@ class GitRefBatchNavigator(TableBatchNavigator):
 
 class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
                         HasSnapsViewMixin, CodeImportTargetMixin):
-
-    related_features = {
-        "code.git.recipes.enabled": False,
-        }
 
     @property
     def page_title(self):

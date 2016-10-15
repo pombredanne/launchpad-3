@@ -41,10 +41,8 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.errors import (
     BuildAlreadyPending,
     BuildNotAllowedForDistro,
-    GitRecipesFeatureDisabled,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
-    GIT_RECIPES_FEATURE_FLAG,
     IRecipeBranchSource,
     ISourcePackageRecipe,
     ISourcePackageRecipeData,
@@ -70,7 +68,6 @@ from lp.services.database.interfaces import (
     IStore,
     )
 from lp.services.database.stormexpr import Greatest
-from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -230,15 +227,6 @@ class SourcePackageRecipe(Storm):
         sprecipe.date_created = date_created
         sprecipe.date_last_modified = date_created
         store.add(sprecipe)
-        # We can only do this feature flag check at the end, because we need
-        # to have constructed the SourcePackageRecipeData in order to know
-        # whether it refers to a Git repository and then we need the
-        # SourcePackageRecipe to respect DB constraints before doing
-        # anything else.  The transaction will be aborted either way if the
-        # check fails.
-        if (sprecipe.base_git_repository is not None and
-                not getFeatureFlag(GIT_RECIPES_FEATURE_FLAG)):
-            raise GitRecipesFeatureDisabled
         return sprecipe
 
     @staticmethod
