@@ -140,9 +140,11 @@ from lp.bugs.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin,
     )
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
-from lp.code.browser.branch import BranchNameValidationMixin
 from lp.code.browser.branchref import BranchRef
-from lp.code.browser.codeimport import validate_import_url
+from lp.code.browser.codeimport import (
+    CodeImportNameValidationMixin,
+    validate_import_url,
+    )
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.browser.vcslisting import TargetDefaultVCSNavigationMixin
 from lp.code.enums import (
@@ -1725,7 +1727,7 @@ def create_git_fields():
 
 class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                            ProductView,
-                           BranchNameValidationMixin):
+                           CodeImportNameValidationMixin):
     """The view to set a branch default for the Product."""
 
     label = 'Configure code'
