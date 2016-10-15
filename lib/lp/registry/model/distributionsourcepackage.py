@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes to represent source packages in a distribution."""
@@ -41,6 +41,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
+    HasCodeImportsMixin,
     HasMergeProposalsMixin,
     )
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -119,6 +120,7 @@ class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin,
                                 HasBranchesMixin,
+                                HasCodeImportsMixin,
                                 HasCustomLanguageCodesMixin,
                                 HasMergeProposalsMixin,
                                 HasDriversMixin):
