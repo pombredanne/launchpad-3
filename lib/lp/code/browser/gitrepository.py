@@ -26,10 +26,7 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
-from zope.component import (
-    getUtility,
-    queryAdapter,
-    )
+from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import (
@@ -43,7 +40,6 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.traversing.interfaces import IPathAdapter
 
 from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
@@ -63,14 +59,8 @@ from lp.code.browser.widgets.gitrepositorytarget import (
     GitRepositoryTargetDisplayWidget,
     GitRepositoryTargetWidget,
     )
-from lp.code.enums import (
-    CodeImportReviewStatus,
-    GitRepositoryType,
-    )
+from lp.code.enums import GitRepositoryType
 from lp.code.errors import (
-    CodeImportAlreadyRequested,
-    CodeImportAlreadyRunning,
-    CodeImportNotInReviewedState,
     GitDefaultConflict,
     GitRepositoryCreationForbidden,
     GitRepositoryExists,
@@ -675,83 +665,6 @@ class GitRepositoryDiffView:
 
     def browserDefault(self, request):
         return self, ()
-
-
-class GitRepositoryRequestImportView(LaunchpadFormView):
-    """The view to provide an 'Import now' button on the repository index page.
-
-    This only appears on the page of a repository with an associated code
-    import that is being actively imported and where there is a import
-    scheduled at some point in the future.
-    """
-
-    schema = IGitRepository
-    field_names = []
-
-    form_style = "display: inline"
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    @action("Import Now", name="request")
-    def request_import_action(self, action, data):
-        try:
-            self.context.code_import.requestImport(
-                self.user, error_if_already_requested=True)
-            self.request.response.addNotification(
-                "Import will run as soon as possible.")
-        except CodeImportNotInReviewedState:
-            self.request.response.addNotification(
-                "This import is no longer being updated automatically.")
-        except CodeImportAlreadyRunning:
-            self.request.response.addNotification(
-                "The import is already running.")
-        except CodeImportAlreadyRequested as e:
-            user = e.requesting_user
-            adapter = queryAdapter(user, IPathAdapter, 'fmt')
-            self.request.response.addNotification(
-                structured("The import has already been requested by %s." %
-                           adapter.link(None)))
-
-    @property
-    def prefix(self):
-        return "request%s" % self.context.id
-
-    @property
-    def action_url(self):
-        return "%s/@@+request-import" % canonical_url(self.context)
-
-
-class GitRepositoryTryImportAgainView(LaunchpadFormView):
-    """The view to provide an 'Try again' button on the repository index page.
-
-    This only appears on the page of a repository with an associated code
-    import that is marked as failing.
-    """
-
-    schema = IGitRepository
-    field_names = []
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    @action("Try Again", name="tryagain")
-    def request_try_again(self, action, data):
-        if (self.context.code_import.review_status !=
-            CodeImportReviewStatus.FAILING):
-            self.request.response.addNotification(
-                "The import is now %s."
-                % self.context.code_import.review_status.name)
-        else:
-            self.context.code_import.tryFailingImportAgain(self.user)
-            self.request.response.addNotification(
-                "Import will be tried again as soon as possible.")
-
-    @property
-    def prefix(self):
-        return "tryagain"
 
 
 class GitRepositoryDeletionView(LaunchpadFormView):
