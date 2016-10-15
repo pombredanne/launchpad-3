@@ -13,6 +13,8 @@ __all__ = [
     'CodeImportSetNavigation',
     'CodeImportSetView',
     'CodeImportTargetMixin',
+    'RequestImportView',
+    'TryImportAgainView',
     'validate_import_url',
     ]
 
@@ -23,7 +25,10 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
-from zope.component import getUtility
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
 from zope.formlib import form
 from zope.formlib.interfaces import IInputWidget
 from zope.formlib.utility import setUpWidget
@@ -31,6 +36,7 @@ from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import Interface
 from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
+from zope.traversing.interfaces import IPathAdapter
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -57,7 +63,12 @@ from lp.code.enums import (
     RevisionControlSystems,
     TargetRevisionControlSystems,
     )
-from lp.code.errors import BranchExists
+from lp.code.errors import (
+    BranchExists,
+    CodeImportAlreadyRequested,
+    CodeImportAlreadyRunning,
+    CodeImportNotInReviewedState,
+    )
 from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
@@ -207,15 +218,16 @@ class CodeImportBaseView(LaunchpadFormView):
                     canonical_url(code_import.target),
                     code_import.target.unique_name))
 
-    def _validateURL(self, url, rcs_type, existing_import=None,
-                     field_name='url'):
+    def _validateURL(self, url, rcs_type, target_rcs_type,
+                     existing_import=None, field_name='url'):
         """If the user has specified a url, we need to make sure that there
         isn't already an import with that url."""
         if url is None:
             self.setSecondaryFieldError(
                 field_name, 'Enter the URL of a foreign VCS branch.')
         else:
-            reason = validate_import_url(url, rcs_type, existing_import)
+            reason = validate_import_url(
+                url, rcs_type, target_rcs_type, existing_import)
             if reason:
                 self.setFieldError(field_name, reason)
 
@@ -445,20 +457,22 @@ class CodeImportNewView(CodeImportBaseView):
                     % product.displayname)
 
         rcs_type = data['rcs_type']
+        target_rcs_type = TargetRevisionControlSystems.BZR
         # Make sure fields for unselected revision control systems
         # are blanked out:
         if rcs_type == RevisionControlSystems.CVS:
             self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
         elif rcs_type == RevisionControlSystems.BZR_SVN:
             self._validateURL(
-                data.get('svn_branch_url'), rcs_type,
+                data.get('svn_branch_url'), rcs_type, target_rcs_type,
                 field_name='svn_branch_url')
         elif rcs_type == RevisionControlSystems.GIT:
             self._validateURL(
-                data.get('git_repo_url'), rcs_type, field_name='git_repo_url')
+                data.get('git_repo_url'), rcs_type, target_rcs_type,
+                field_name='git_repo_url')
         elif rcs_type == RevisionControlSystems.BZR:
             self._validateURL(
-                data.get('bzr_branch_url'), rcs_type,
+                data.get('bzr_branch_url'), rcs_type, target_rcs_type,
                 field_name='bzr_branch_url')
         else:
             raise AssertionError(
@@ -592,7 +606,8 @@ class CodeImportEditView(CodeImportBaseView):
                 self.code_import)
         elif self.code_import.rcs_type in NON_CVS_RCS_TYPES:
             self._validateURL(
-                data.get('url'), self.code_import.rcs_type, self.code_import)
+                data.get('url'), self.code_import.rcs_type,
+                self.code_import.target_rcs_type, self.code_import)
         else:
             raise AssertionError('Unknown rcs_type for code import.')
 
@@ -608,23 +623,25 @@ class CodeImportMachineView(LaunchpadView):
         return getUtility(ICodeImportMachineSet).getAll()
 
 
-def validate_import_url(url, rcs_type, existing_import=None):
+def validate_import_url(url, rcs_type, target_rcs_type, existing_import=None):
     """Validate the given import URL."""
-    # XXX cjwatson 2015-06-12: Once we have imports into Git, this should be
-    # extended to prevent Git-to-Git self-imports as well.
-    if (rcs_type == RevisionControlSystems.BZR and
+    if (rcs_type.name == target_rcs_type.name and
             urlparse(url).netloc.endswith('launchpad.net')):
         return (
-            "You cannot create imports for Bazaar branches that are hosted by "
-            "Launchpad.")
+            "You cannot create same-VCS imports for branches or repositories "
+            "that are hosted by Launchpad.")
     code_import = getUtility(ICodeImportSet).getByURL(url)
     if code_import is not None:
         if existing_import and code_import == existing_import:
             return None
+        if code_import.target_rcs_type == TargetRevisionControlSystems.BZR:
+            target_type = "branch"
+        else:
+            target_type = "repository"
         return structured(
             "This foreign branch URL is already specified for the imported "
-            "branch <a href='%s'>%s</a>.", canonical_url(code_import.branch),
-            code_import.branch.unique_name)
+            "%s <a href='%s'>%s</a>.", target_type,
+            canonical_url(code_import.target), code_import.target.unique_name)
 
 
 class CodeImportTargetMixin:
@@ -654,3 +671,80 @@ class CodeImportTargetMixin:
         assert url
         # https starts with http too!
         return url.startswith("http")
+
+
+class RequestImportView(LaunchpadFormView):
+    """Provide an 'Import now' button on the branch/repository index page.
+
+    This only appears on the page of a branch/repository with an associated
+    code import that is being actively imported and where there is a import
+    scheduled at some point in the future.
+    """
+
+    schema = Interface
+    field_names = []
+
+    form_style = "display: inline"
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Import Now', name='request')
+    def request_import_action(self, action, data):
+        try:
+            self.context.code_import.requestImport(
+                self.user, error_if_already_requested=True)
+            self.request.response.addNotification(
+                "Import will run as soon as possible.")
+        except CodeImportNotInReviewedState:
+            self.request.response.addNotification(
+                "This import is no longer being updated automatically.")
+        except CodeImportAlreadyRunning:
+            self.request.response.addNotification(
+                "The import is already running.")
+        except CodeImportAlreadyRequested as e:
+            user = e.requesting_user
+            adapter = queryAdapter(user, IPathAdapter, 'fmt')
+            self.request.response.addNotification(
+                structured("The import has already been requested by %s." %
+                           adapter.link(None)))
+
+    @property
+    def prefix(self):
+        return "request%s" % self.context.id
+
+    @property
+    def action_url(self):
+        return "%s/@@+request-import" % canonical_url(self.context)
+
+
+class TryImportAgainView(LaunchpadFormView):
+    """Provide an 'Try again' button on the branch/repository index page.
+
+    This only appears on the page of a branch/repository with an associated
+    code import that is marked as failing.
+    """
+
+    schema = Interface
+    field_names = []
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Try Again', name='tryagain')
+    def request_try_again(self, action, data):
+        if (self.context.code_import.review_status !=
+            CodeImportReviewStatus.FAILING):
+            self.request.response.addNotification(
+                "The import is now %s."
+                % self.context.code_import.review_status.name)
+        else:
+            self.context.code_import.tryFailingImportAgain(self.user)
+            self.request.response.addNotification(
+                "Import will be tried again as soon as possible.")
+
+    @property
+    def prefix(self):
+        return "tryagain"

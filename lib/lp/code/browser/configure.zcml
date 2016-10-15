@@ -498,13 +498,13 @@
         template="../templates/branch-edit-subscription.pt"/>
     <browser:page
         for="lp.code.interfaces.branch.IBranch"
-        class="lp.code.browser.branch.BranchRequestImportView"
+        class="lp.code.browser.codeimport.RequestImportView"
         name="+request-import"
         template="../templates/inline-form-only-buttons.pt"
         permission="launchpad.AnyPerson"/>
     <browser:page
         for="lp.code.interfaces.branch.IBranch"
-        class="lp.code.browser.branch.TryImportAgainView"
+        class="lp.code.browser.codeimport.TryImportAgainView"
         name="+try-again"
         template="../templates/inline-form-only-buttons.pt"
         permission="launchpad.AnyPerson"/>
@@ -853,6 +853,12 @@
         permission="launchpad.Edit"
         name="+edit"
         template="../templates/gitrepository-edit.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.codeimport.CodeImportEditView"
+        permission="launchpad.Edit"
+        name="+edit-import"
+        template="../../app/templates/generic-edit.pt"/>
     <class class="lp.code.browser.gitrepository.GitRepositoryDiffView">
         <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher"
                attributes="__call__"/>
@@ -881,6 +887,18 @@
         permission="launchpad.AnyPerson"
         name="+edit-subscription"
         template="../templates/gitrepository-edit-subscription.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.codeimport.RequestImportView"
+        permission="launchpad.AnyAllowedPerson"
+        name="+request-import"
+        template="../templates/inline-form-only-buttons.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.codeimport.TryImportAgainView"
+        permission="launchpad.AnyAllowedPerson"
+        name="+try-again"
+        template="../templates/inline-form-only-buttons.pt"/>
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.gitrepository.IGitRepository"

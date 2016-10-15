@@ -16,7 +16,7 @@
           <span tal:attributes="class string:codeimport${code_import/review_status/name}"
                 tal:content="code_import/review_status/title"/>
             <form tal:attributes="action string:${context/fmt:url}/@@+try-again"
-                  tal:condition="python:view.can_edit_import and view.user and code_import.review_status.name == 'FAILING'"
+                  tal:condition="python:view.user and code_import.review_status.name == 'FAILING'"
                   style="display: inline; padding-left: 1em"
                   id="tryagain"
                   name="tryagain"
@@ -34,7 +34,7 @@
               <script type="text/javascript">
                   LPJS.use('lp.code.util', function(Y) {
                       Y.on("domready", function () {
-                          Y.lp.code.util.hookUpRetyImportSubmission(Y);
+                          Y.lp.code.util.hookUpRetryImportSubmission(Y);
                       }, window);});
               </script>
             </form>
@@ -128,7 +128,7 @@
                 in 2 hours
               </tal:date-started>.
               <tal:button
-                 condition="python:view.can_edit_import and view.user"
+                 condition="view/user"
                  replace="structure view/context/@@+request-import" />
             </tal:not-overdue>
           </tal:not-running>
@@ -158,7 +158,7 @@
           </tal:result>
         </div>
 
-        <div class="actions" tal:condition="view/can_edit_import">
+        <div class="actions">
           <div
             tal:define="link context_menu/edit_import"
             tal:condition="link/enabled"

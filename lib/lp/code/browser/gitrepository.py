@@ -234,8 +234,8 @@ class GitRepositoryContextMenu(ContextMenu, HasRecipesMenuMixin):
     usedfor = IGitRepository
     facet = "branches"
     links = [
-        "add_subscriber", "create_recipe", "source", "subscription",
-        "view_recipes", "visibility"]
+        "add_subscriber", "create_recipe", "edit_import", "source",
+        "subscription", "view_recipes", "visibility"]
 
     @enabled_with_permission("launchpad.AnyPerson")
     def subscription(self):
@@ -265,6 +265,13 @@ class GitRepositoryContextMenu(ContextMenu, HasRecipesMenuMixin):
         """Return the "Change information type" Link."""
         text = "Change information type"
         return Link("+edit-information-type", text)
+
+    def edit_import(self):
+        text = "Edit import source or review import"
+        enabled = (
+            self.context.repository_type == GitRepositoryType.IMPORTED and
+            check_permission("launchpad.Edit", self.context.code_import))
+        return Link("+edit-import", text, icon="edit", enabled=enabled)
 
     def create_recipe(self):
         # You can't create a recipe for a private repository.
@@ -348,13 +355,6 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
     def is_imported(self):
         """Is this an imported repository?"""
         return self.context.repository_type == GitRepositoryType.IMPORTED
-
-    @property
-    def can_edit_import(self):
-        """Can the user edit this import?"""
-        # XXX cjwatson 2016-10-14: Delete this once we have views for
-        # editing Git imports.
-        return False
 
 
 class GitRepositoryEditFormView(LaunchpadEditFormView):

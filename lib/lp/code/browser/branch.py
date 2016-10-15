@@ -12,7 +12,6 @@ __all__ = [
     'BranchEditStatusView',
     'BranchEditView',
     'BranchEditWhiteboardView',
-    'BranchRequestImportView',
     'BranchReviewerEditView',
     'BranchMirrorStatusView',
     'BranchMirrorMixin',
@@ -24,7 +23,6 @@ __all__ = [
     'BranchView',
     'CodeEditOwnerMixin',
     'RegisterBranchMergeProposalView',
-    'TryImportAgainView',
     ]
 
 from datetime import datetime
@@ -39,10 +37,7 @@ from lazr.restful.interface import (
 from lazr.uri import URI
 import pytz
 import simplejson
-from zope.component import (
-    getUtility,
-    queryAdapter,
-    )
+from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.widgets import TextAreaWidget
@@ -61,7 +56,6 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.traversing.interfaces import IPathAdapter
 
 from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
@@ -93,18 +87,12 @@ from lp.code.browser.codeimport import CodeImportTargetMixin
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.browser.widgets.branchtarget import BranchTargetWidget
-from lp.code.enums import (
-    BranchType,
-    CodeImportReviewStatus,
-    )
+from lp.code.enums import BranchType
 from lp.code.errors import (
     BranchCreationForbidden,
     BranchExists,
     BranchTargetError,
     CannotUpgradeBranch,
-    CodeImportAlreadyRequested,
-    CodeImportAlreadyRunning,
-    CodeImportNotInReviewedState,
     InvalidBranchMergeProposal,
     )
 from lp.code.interfaces.branch import (
@@ -535,13 +523,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     def is_imported(self):
         """Is this an imported branch?"""
         return self.context.branch_type == BranchType.IMPORTED
-
-    @property
-    def can_edit_import(self):
-        """Can the user edit this import?"""
-        # XXX cjwatson 2016-10-14: Delete this once we have views for
-        # editing Git imports.
-        return True
 
     @property
     def is_import_branch_with_no_landing_candidates(self):
@@ -1301,80 +1282,3 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                     'target_branch',
                     "This branch is not mergeable into %s." %
                     target_branch.bzr_identity)
-
-
-class BranchRequestImportView(LaunchpadFormView):
-    """The view to provide an 'Import now' button on the branch index page.
-
-    This only appears on the page of a branch with an associated code import
-    that is being actively imported and where there is a import scheduled at
-    some point in the future.
-    """
-
-    schema = IBranch
-    field_names = []
-
-    form_style = "display: inline"
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    @action('Import Now', name='request')
-    def request_import_action(self, action, data):
-        try:
-            self.context.code_import.requestImport(
-                self.user, error_if_already_requested=True)
-            self.request.response.addNotification(
-                "Import will run as soon as possible.")
-        except CodeImportNotInReviewedState:
-            self.request.response.addNotification(
-                "This import is no longer being updated automatically.")
-        except CodeImportAlreadyRunning:
-            self.request.response.addNotification(
-                "The import is already running.")
-        except CodeImportAlreadyRequested as e:
-            user = e.requesting_user
-            adapter = queryAdapter(user, IPathAdapter, 'fmt')
-            self.request.response.addNotification(
-                structured("The import has already been requested by %s." %
-                           adapter.link(None)))
-
-    @property
-    def prefix(self):
-        return "request%s" % self.context.id
-
-    @property
-    def action_url(self):
-        return "%s/@@+request-import" % canonical_url(self.context)
-
-
-class TryImportAgainView(LaunchpadFormView):
-    """The view to provide an 'Try again' button on the branch index page.
-
-    This only appears on the page of a branch with an associated code import
-    that is marked as failing.
-    """
-
-    schema = IBranch
-    field_names = []
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    @action('Try Again', name='tryagain')
-    def request_try_again(self, action, data):
-        if (self.context.code_import.review_status !=
-            CodeImportReviewStatus.FAILING):
-            self.request.response.addNotification(
-                "The import is now %s."
-                % self.context.code_import.review_status.name)
-        else:
-            self.context.code_import.tryFailingImportAgain(self.user)
-            self.request.response.addNotification(
-                "Import will be tried again as soon as possible.")
-
-    @property
-    def prefix(self):
-        return "tryagain"
