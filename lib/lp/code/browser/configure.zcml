@@ -890,13 +890,13 @@
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitrepository.GitRepositoryRequestImportView"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.AnyAllowedPerson"
         name="+request-import"
         template="../templates/inline-form-only-buttons.pt"/>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitrepository.GitRepositoryTryImportAgainView"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.AnyAllowedPerson"
         name="+try-again"
         template="../templates/inline-form-only-buttons.pt"/>
     <adapter
