@@ -7,8 +7,6 @@ __metaclass__ = type
 __all__ = [
     'IHasBranches',
     'IHasCodeImports',
-    'IHasCodeImportsToBazaar',
-    'IHasCodeImportsToGit',
     'IHasMergeProposals',
     'IHasRequestedReviews',
     ]
@@ -194,11 +192,3 @@ class IHasCodeImports(Interface):
             the API.
         :returns: An instance of `ICodeImport`.
         """
-
-
-class IHasCodeImportsToBazaar(IHasCodeImports):
-    """Marker interface for targets that support code imports to Bazaar."""
-
-
-class IHasCodeImportsToGit(IHasCodeImports):
-    """Marker interface for targets that support code imports to Git."""

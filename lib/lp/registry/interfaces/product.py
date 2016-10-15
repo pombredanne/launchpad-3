@@ -100,8 +100,7 @@ from lp.bugs.interfaces.structuralsubscription import (
     )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
-    IHasCodeImportsToBazaar,
-    IHasCodeImportsToGit,
+    IHasCodeImports,
     IHasMergeProposals,
     )
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
@@ -485,8 +484,7 @@ class IProductView(
     IHasMugshot, IHasSprints, IHasTranslationImports,
     ITranslationPolicy, IKarmaContext, IMakesAnnouncements,
     IOfficialBugTagTargetPublic, IHasOOPSReferences,
-    IHasRecipes, IHasCodeImportsToBazaar, IHasCodeImportsToGit,
-    IServiceUsage, IHasGitRepositories):
+    IHasRecipes, IHasCodeImports, IServiceUsage, IHasGitRepositories):
     """Public IProduct properties."""
 
     registrant = exported(
