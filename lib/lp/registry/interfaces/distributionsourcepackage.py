@@ -32,7 +32,7 @@ from lp.bugs.interfaces.structuralsubscription import (
     )
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
-    IHasCodeImportsToGit,
+    IHasCodeImports,
     IHasMergeProposals,
     )
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
@@ -45,7 +45,7 @@ class IDistributionSourcePackage(IHeadingContext, IBugTarget, IHasBranches,
                                  IHasMergeProposals, IHasOfficialBugTags,
                                  IStructuralSubscriptionTarget,
                                  IQuestionTarget, IHasDrivers,
-                                 IHasGitRepositories, IHasCodeImportsToGit):
+                                 IHasGitRepositories, IHasCodeImports):
     """Represents a source package in a distribution.
 
     Create IDistributionSourcePackages by invoking

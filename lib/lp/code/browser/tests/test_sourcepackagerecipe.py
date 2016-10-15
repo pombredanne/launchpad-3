@@ -36,7 +36,6 @@ from lp.code.browser.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildView,
     )
 from lp.code.interfaces.sourcepackagerecipe import (
-    GIT_RECIPES_FEATURE_FLAG,
     MINIMAL_RECIPE_TEXT_BZR,
     MINIMAL_RECIPE_TEXT_GIT,
     )
@@ -49,7 +48,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from lp.services.database.constants import UTC_NOW
-from lp.services.features.testing import FeatureFixture
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import html_escape
@@ -208,10 +206,6 @@ class GitMixin:
     minimal_recipe_text = MINIMAL_RECIPE_TEXT_GIT
     branch_type = "repository"
     no_such_object_message = "is not a Git repository on Launchpad."
-
-    def setUp(self):
-        super(GitMixin, self).setUp()
-        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
 
     def makeBranch(self, **kwargs):
         return self.factory.makeGitRefs(**kwargs)[0]

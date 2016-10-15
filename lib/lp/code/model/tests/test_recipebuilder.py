@@ -29,13 +29,11 @@ from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
     TestHandleStatusMixin,
     TestVerifySuccessfulBuildMixin,
     )
-from lp.code.interfaces.sourcepackagerecipe import GIT_RECIPES_FEATURE_FLAG
 from lp.code.model.recipebuilder import RecipeBuildBehaviour
 from lp.code.model.sourcepackagerecipebuild import SourcePackageRecipeBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
-from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -261,7 +259,6 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self.assertEqual(args["archives"], expected_archives)
 
     def test_extraBuildArgs_git(self):
-        self.useFixture(FeatureFixture({GIT_RECIPES_FEATURE_FLAG: u"on"}))
         job = self.makeJob(git=True)
         distroarchseries = job.build.distroseries.architectures[0]
         expected_archives = get_sources_list_for_building(

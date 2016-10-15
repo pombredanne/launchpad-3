@@ -498,13 +498,13 @@
         template="../templates/branch-edit-subscription.pt"/>
     <browser:page
         for="lp.code.interfaces.branch.IBranch"
-        class="lp.code.browser.branch.BranchRequestImportView"
+        class="lp.code.browser.codeimport.RequestImportView"
         name="+request-import"
         template="../templates/inline-form-only-buttons.pt"
         permission="launchpad.AnyPerson"/>
     <browser:page
         for="lp.code.interfaces.branch.IBranch"
-        class="lp.code.browser.branch.TryImportAgainView"
+        class="lp.code.browser.codeimport.TryImportAgainView"
         name="+try-again"
         template="../templates/inline-form-only-buttons.pt"
         permission="launchpad.AnyPerson"/>
@@ -889,14 +889,14 @@
         template="../templates/gitrepository-edit-subscription.pt"/>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
-        class="lp.code.browser.gitrepository.GitRepositoryRequestImportView"
-        permission="launchpad.AnyPerson"
+        class="lp.code.browser.codeimport.RequestImportView"
+        permission="launchpad.AnyAllowedPerson"
         name="+request-import"
         template="../templates/inline-form-only-buttons.pt"/>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
-        class="lp.code.browser.gitrepository.GitRepositoryTryImportAgainView"
-        permission="launchpad.AnyPerson"
+        class="lp.code.browser.codeimport.TryImportAgainView"
+        permission="launchpad.AnyAllowedPerson"
         name="+try-again"
         template="../templates/inline-form-only-buttons.pt"/>
     <adapter

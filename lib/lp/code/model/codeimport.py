@@ -63,10 +63,7 @@ from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitrepository import IGitRepository
-from lp.code.interfaces.hasbranches import (
-    IHasCodeImportsToBazaar,
-    IHasCodeImportsToGit,
-    )
+from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.mail.codeimport import code_import_updated
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.code.model.codeimportresult import CodeImportResult
@@ -296,12 +293,17 @@ class CodeImportSet:
         if owner is None:
             owner = registrant
         if target_rcs_type == TargetRevisionControlSystems.BZR:
-            if not IHasCodeImportsToBazaar.providedBy(context):
+            # XXX cjwatson 2016-10-15: Testing
+            # IHasBranches.providedBy(context) would seem more in line with
+            # the Git case, but for some reason ProductSeries doesn't
+            # provide that.  We should sync this up somehow.
+            try:
+                target = IBranchTarget(context)
+            except TypeError:
                 raise CodeImportInvalidTargetType(context, target_rcs_type)
-            target = IBranchTarget(context)
             namespace = target.getNamespace(owner)
         elif target_rcs_type == TargetRevisionControlSystems.GIT:
-            if not IHasCodeImportsToGit.providedBy(context):
+            if not IHasGitRepositories.providedBy(context):
                 raise CodeImportInvalidTargetType(context, target_rcs_type)
             if rcs_type != RevisionControlSystems.GIT:
                 raise AssertionError(

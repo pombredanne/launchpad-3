@@ -171,8 +171,8 @@ External Bazaar imports can not use an Launchpad URL.
     >>> transaction.commit()
     >>> for error in view.errors:
     ...     print error
-    You cannot create imports for Bazaar branches that are hosted by
-    Launchpad.
+    You cannot create same-VCS imports for branches or repositories that are
+    hosted by Launchpad.
 
 Git imports can use a Launchpad URL.
 
