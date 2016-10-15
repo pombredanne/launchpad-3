@@ -30,7 +30,10 @@ from lp.app.enums import (
     InformationType,
     ServiceUsage,
     )
+from lp.code.enums import RevisionControlSystems
+from lp.code.interfaces.codeimport import CODE_IMPORT_GIT_TARGET_FEATURE_FLAG
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.browser.product import (
     ProjectAddStepOne,
     ProjectAddStepTwo,
@@ -47,6 +50,7 @@ from lp.registry.interfaces.product import (
 from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.vhosts import allvhosts
 from lp.testing import (
@@ -914,7 +918,7 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         # control defaults to empty.
         project = self.factory.makeProduct()
         browser = self.getBrowser(project, '+configure-code')
-        self.assertEqual('', browser.getControl('Git repository').value)
+        self.assertEqual('', browser.getControl('Git repository:').value)
 
     def test_initial_git_repository(self):
         # If a project has a default Git repository, its "Git repository"
@@ -926,20 +930,78 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         unique_name = repo.unique_name
         browser = self.getBrowser(project, '+configure-code')
         self.assertEqual(
-            unique_name, browser.getControl('Git repository').value)
+            unique_name, browser.getControl('Git repository:').value)
 
     def test_link_existing_git_repository(self):
         repo = removeSecurityProxy(self.factory.makeGitRepository(
             target=self.factory.makeProduct()))
         browser = self.getBrowser(repo.project, '+configure-code')
         browser.getControl('Git', index=0).click()
-        browser.getControl('Git repository').value = repo.shortened_path
+        self.assertTrue(browser.getControl(
+            'Link to a Git repository already on Launchpad').selected)
+        browser.getControl('Git repository:').value = repo.shortened_path
         browser.getControl('Update').click()
 
         tag = Tag(
             'success-div', 'div', attrs={'class': 'informational message'},
              text='Project settings updated.')
         self.assertThat(browser.contents, HTMLContains(tag))
+
+    def test_import_git_repository_requires_feature_flag(self):
+        project = self.factory.makeProduct()
+        browser = self.getBrowser(project, '+configure-code')
+        self.assertRaises(
+            LookupError, browser.getControl,
+            'Import a repository hosted somewhere else')
+
+    def test_import_git_repository(self):
+        self.useFixture(
+            FeatureFixture({CODE_IMPORT_GIT_TARGET_FEATURE_FLAG: u'on'}))
+        self.useFixture(GitHostingFixture())
+        owner = self.factory.makePerson()
+        project = self.factory.makeProduct(owner=owner)
+        browser = self.getBrowser(project, '+configure-code')
+        browser.getControl('Git', index=0).click()
+        browser.getControl('Import a repository hosted somewhere else').click()
+        browser.getControl('Repository name').value = 'imported'
+        browser.getControl('Repository URL').value = (
+            'https://git.example.org/imported')
+        browser.getControl('Update').click()
+
+        tag = Tag(
+            'success-div', 'div', attrs={'class': 'informational message'},
+             text='Code import created and repository set as default.')
+        self.assertThat(browser.contents, HTMLContains(tag))
+        login_person(owner)
+        repo = getUtility(IGitRepositorySet).getDefaultRepository(project)
+        self.assertIsNotNone(repo.code_import)
+        self.assertEqual(RevisionControlSystems.GIT, repo.code_import.rcs_type)
+        self.assertEqual(
+            'https://git.example.org/imported', repo.code_import.url)
+
+    def test_import_git_repository_bad_scheme(self):
+        self.useFixture(
+            FeatureFixture({CODE_IMPORT_GIT_TARGET_FEATURE_FLAG: u'on'}))
+        owner = self.factory.makePerson()
+        project = self.factory.makeProduct(owner=owner)
+        browser = self.getBrowser(project, '+configure-code')
+        browser.getControl('Git', index=0).click()
+        browser.getControl('Import a repository hosted somewhere else').click()
+        browser.getControl('Repository name').value = 'imported'
+        browser.getControl('Repository URL').value = (
+            'svn://svn.example.org/imported')
+        browser.getControl('Update').click()
+
+        tag = Tag(
+            'error', 'div', attrs={'class': 'message'},
+            text=(
+                'The URI scheme &quot;svn&quot; is not allowed.  '
+                'Only URIs with the following schemes may be used: '
+                'git, http, https'))
+        self.assertThat(browser.contents, HTMLContains(tag))
+        login_person(owner)
+        self.assertIsNone(
+            getUtility(IGitRepositorySet).getDefaultRepository(project))
 
     def test_editsshkeys_link_if_no_keys_registered(self):
         project = self.factory.makeProduct()
