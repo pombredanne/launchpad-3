@@ -25,10 +25,8 @@ from sqlobject import (
 from storm.expr import (
     And,
     Coalesce,
-    Count,
     Desc,
     Join,
-    NamedFunc,
     Not,
     Or,
     Select,
@@ -1366,21 +1364,6 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         # And now create a job to remove the branch from disk when it's done.
         job = getUtility(IReclaimBranchSpaceJobSource).create(branch_id)
         job.celeryRunOnCommit()
-
-    def commitsForDays(self, since):
-        """See `IBranch`."""
-
-        class DateTrunc(NamedFunc):
-            name = "date_trunc"
-
-        results = Store.of(self).find(
-            (DateTrunc(u'day', Revision.revision_date), Count(Revision.id)),
-            Revision.id == BranchRevision.revision_id,
-            Revision.revision_date > since,
-            BranchRevision.branch == self)
-        results = results.group_by(
-            DateTrunc(u'day', Revision.revision_date))
-        return sorted(results)
 
     def checkUpgrade(self):
         if self.branch_type is not BranchType.HOSTED:
