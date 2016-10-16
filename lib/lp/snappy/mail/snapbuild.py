@@ -47,6 +47,20 @@ class SnapBuildMailer(BaseMailer):
             "snap-build-upload-unauthorized", build)
 
     @classmethod
+    def forUploadFailure(cls, build):
+        """Create a mailer for notifying about store upload failures.
+
+        :param build: The relevant build.
+        """
+        requester = build.requester
+        recipients = {requester: RecipientReason.forBuildRequester(requester)}
+        return cls(
+            "Store upload failed for %(snap_name)s",
+            "snapbuild-uploadfailed.txt", recipients,
+            config.canonical.noreply_from_address,
+            "snap-build-upload-failed", build)
+
+    @classmethod
     def forUploadScanFailure(cls, build):
         """Create a mailer for notifying about store upload scan failures.
 
