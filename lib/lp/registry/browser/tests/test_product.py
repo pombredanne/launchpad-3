@@ -963,8 +963,8 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         browser = self.getBrowser(project, '+configure-code')
         browser.getControl('Git', index=0).click()
         browser.getControl('Import a repository hosted somewhere else').click()
-        browser.getControl('Repository name').value = 'imported'
-        browser.getControl('Repository URL').value = (
+        browser.getControl('Git repository name').value = 'imported'
+        browser.getControl('Git repository URL').value = (
             'https://git.example.org/imported')
         browser.getControl('Update').click()
 
@@ -987,8 +987,8 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         browser = self.getBrowser(project, '+configure-code')
         browser.getControl('Git', index=0).click()
         browser.getControl('Import a repository hosted somewhere else').click()
-        browser.getControl('Repository name').value = 'imported'
-        browser.getControl('Repository URL').value = (
+        browser.getControl('Git repository name').value = 'imported'
+        browser.getControl('Git repository URL').value = (
             'svn://svn.example.org/imported')
         browser.getControl('Update').click()
 

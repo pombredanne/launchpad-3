@@ -1739,14 +1739,14 @@ class SetBranchForm(Interface):
 
     git_repository_name = copy_field(
         IGitRepository['name'], __name__='git_repository_name',
-        title=_('Repository name'), description=_(''), required=True)
+        title=_('Git repository name'), description=_(''), required=True)
 
     git_repository_owner = copy_field(
         IGitRepository['owner'], __name__='git_repository_owner',
-        title=_('Repository owner'), description=_(''), required=True)
+        title=_('Git repository owner'), description=_(''), required=True)
 
     git_repository_url = URIField(
-        title=_('Repository URL'), required=True,
+        title=_('Git repository URL'), required=True,
         description=_('The URL of the Git repository.'),
         allowed_schemes=["git", "http", "https"],
         allow_userinfo=True, allow_port=True, allow_query=False,
