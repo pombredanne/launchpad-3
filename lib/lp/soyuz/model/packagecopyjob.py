@@ -237,7 +237,7 @@ class PackageCopyJobDerived(BaseRunnableJob):
 
     def getOperationDescription(self):
         """See `IPlainPackageCopyJob`."""
-        return "copying a package"
+        return "copying package %s" % self.context.package_name
 
     def getErrorRecipients(self):
         """See `IPlainPackageCopyJob`."""

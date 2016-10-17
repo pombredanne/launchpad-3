@@ -566,6 +566,19 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             ('package_copy_job_type', naked_job.context.job_type.title),
             oops_vars)
 
+    def test_getOperationDescription(self):
+        distroseries = self.factory.makeDistroSeries()
+        archive1 = self.factory.makeArchive(distroseries.distribution)
+        archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
+        job = getUtility(IPlainPackageCopyJobSource).create(
+            package_name="foo", source_archive=archive1,
+            target_archive=archive2, target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            package_version="1.0-1", include_binaries=False,
+            requester=requester)
+        self.assertEqual("copying package foo", job.getOperationDescription())
+
     def test_smoke(self):
         archive1 = self.factory.makeArchive(self.distroseries.distribution)
         archive2 = self.factory.makeArchive(self.distroseries.distribution)
