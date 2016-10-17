@@ -1,4 +1,4 @@
-# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for sync package jobs."""
@@ -560,6 +560,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertIn(('source_archive_id', archive1.id), oops_vars)
         self.assertIn(('target_archive_id', archive2.id), oops_vars)
         self.assertIn(('target_distroseries_id', distroseries.id), oops_vars)
+        self.assertIn(('package_name', 'foo'), oops_vars)
         self.assertIn(('package_copy_job_id', naked_job.context.id), oops_vars)
         self.assertIn(
             ('package_copy_job_type', naked_job.context.job_type.title),
