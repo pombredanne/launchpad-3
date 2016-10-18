@@ -22,6 +22,7 @@ from lp.snappy.interfaces.snapbuildjob import (
 from lp.snappy.interfaces.snapstoreclient import (
     BadReleaseResponse,
     BadScanStatusResponse,
+    BadUploadResponse,
     ISnapStoreClient,
     UnauthorizedUploadResponse,
     UploadNotScannedYetResponse,
@@ -170,6 +171,50 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual(
             "http://launchpad.dev/~requester/+snap/test-snap/+build/%d\n"
             "You are the requester of the build.\n" % snapbuild.id, footer)
+
+    def test_run_upload_failure_notifies(self):
+        # A run that gets some other upload failure from the store sends
+        # mail.
+        requester = self.factory.makePerson(name="requester")
+        snapbuild = self.factory.makeSnapBuild(
+            requester=requester, name="test-snap", owner=requester,
+            builder=self.factory.makeBuilder())
+        self.assertContentEqual([], snapbuild.store_upload_jobs)
+        job = SnapStoreUploadJob.create(snapbuild)
+        client = FakeSnapStoreClient()
+        client.upload.failure = BadUploadResponse("Failed to upload")
+        self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertEqual([], client.checkStatus.calls)
+        self.assertEqual([], client.release.calls)
+        self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertIsNone(job.store_url)
+        self.assertEqual("Failed to upload", job.error_message)
+        [notification] = pop_notifications()
+        self.assertEqual(
+            config.canonical.noreply_from_address, notification["From"])
+        self.assertEqual(
+            "Requester <%s>" % requester.preferredemail.email,
+            notification["To"])
+        subject = notification["Subject"].replace("\n ", " ")
+        self.assertEqual("Store upload failed for test-snap", subject)
+        self.assertEqual(
+            "Requester", notification["X-Launchpad-Message-Rationale"])
+        self.assertEqual(
+            requester.name, notification["X-Launchpad-Message-For"])
+        self.assertEqual(
+            "snap-build-upload-failed",
+            notification["X-Launchpad-Notification-Type"])
+        body, footer = notification.get_payload(decode=True).split("\n-- \n")
+        self.assertIn("Failed to upload", body)
+        build_url = (
+            "http://launchpad.dev/~requester/+snap/test-snap/+build/%d" %
+            snapbuild.id)
+        self.assertIn(build_url, body)
+        self.assertEqual(
+            "%s\nYou are the requester of the build.\n" % build_url, footer)
 
     def test_run_scan_pending_retries(self):
         # A run that finds that the store has not yet finished scanning the
