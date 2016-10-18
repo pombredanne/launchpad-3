@@ -480,6 +480,13 @@ class Snap(Storm, WebhookTargetMixin):
                 SnapFile.snapbuild = SnapBuild.id AND
                 SnapBuild.snap = ?
             """, (self.id,))
+        store.execute("""
+            DELETE FROM SnapBuildJob
+            USING SnapBuild
+            WHERE
+                SnapBuildJob.snapbuild = SnapBuild.id AND
+                SnapBuild.snap = ?
+            """, (self.id,))
         store.find(SnapBuild, SnapBuild.snap == self).remove()
         getUtility(IWebhookSet).delete(self.webhooks)
         store.remove(self)
