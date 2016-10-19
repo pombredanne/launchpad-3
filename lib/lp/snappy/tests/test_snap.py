@@ -62,8 +62,10 @@ from lp.snappy.interfaces.snapbuild import (
     ISnapBuild,
     ISnapBuildSet,
     )
+from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
 from lp.snappy.model.snap import SnapSet
 from lp.snappy.model.snapbuild import SnapFile
+from lp.snappy.model.snapbuildjob import SnapBuildJob
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -443,7 +445,7 @@ class TestSnapDeleteWithBuilds(TestCaseWithFactory):
 
     def test_delete_with_builds(self):
         # A snap package with builds can be deleted.  Doing so deletes all
-        # its builds and their files too.
+        # its builds, their files, and any associated build jobs too.
         owner = self.factory.makePerson()
         distroseries = self.factory.makeDistroSeries()
         snap = self.factory.makeSnap(
@@ -452,6 +454,7 @@ class TestSnapDeleteWithBuilds(TestCaseWithFactory):
         build = self.factory.makeSnapBuild(snap=snap)
         build_queue = build.queueBuild()
         snapfile = self.factory.makeSnapFile(snapbuild=build)
+        snap_build_job = getUtility(ISnapStoreUploadJobSource).create(build)
         self.assertTrue(getUtility(ISnapSet).exists(owner, u"condemned"))
         other_build = self.factory.makeSnapBuild()
         other_build.queueBuild()
@@ -460,6 +463,7 @@ class TestSnapDeleteWithBuilds(TestCaseWithFactory):
         build_id = build.id
         build_queue_id = build_queue.id
         build_farm_job_id = removeSecurityProxy(build).build_farm_job_id
+        snap_build_job_id = snap_build_job.job.job_id
         snapfile_id = removeSecurityProxy(snapfile).id
         with person_logged_in(snap.owner):
             snap.destroySelf()
@@ -470,6 +474,7 @@ class TestSnapDeleteWithBuilds(TestCaseWithFactory):
         self.assertIsNone(store.get(BuildQueue, build_queue_id))
         self.assertIsNone(store.get(BuildFarmJob, build_farm_job_id))
         self.assertIsNone(store.get(SnapFile, snapfile_id))
+        self.assertIsNone(store.get(SnapBuildJob, snap_build_job_id))
         # Unrelated builds are still present.
         clear_property_cache(other_build)
         self.assertEqual(
