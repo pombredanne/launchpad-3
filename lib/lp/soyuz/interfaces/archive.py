@@ -1157,6 +1157,7 @@ class IArchiveView(IHasBuildRecords):
                           "for this PPA or None if there is no signing "
                           "key available.")))
 
+    @call_with(eager_load=True)
     @rename_parameters_as(
         name="binary_name", distroarchseries="distro_arch_series")
     @operation_parameters(
@@ -1199,7 +1200,7 @@ class IArchiveView(IHasBuildRecords):
                           "publications since their last run."),
             required=False),
         )
-    # Really returns ISourcePackagePublishingHistory, see below for
+    # Really returns IBinaryPackagePublishingHistory, see below for
     # patch to avoid circular import.
     @operation_returns_collection_of(Interface)
     @export_operation_as("getPublishedBinaries")
@@ -1207,7 +1208,8 @@ class IArchiveView(IHasBuildRecords):
     def getAllPublishedBinaries(name=None, version=None, status=None,
                                 distroarchseries=None, pocket=None,
                                 exact_match=False, created_since_date=None,
-                                ordered=True, order_by_date=False):
+                                ordered=True, order_by_date=False,
+                                eager_load=False):
         """All `IBinaryPackagePublishingHistory` target to this archive.
 
         :param name: binary name filter (exact match or SQL LIKE controlled
