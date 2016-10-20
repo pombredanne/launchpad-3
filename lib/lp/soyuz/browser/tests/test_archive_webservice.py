@@ -526,6 +526,23 @@ class TestgetPublishedBinaries(WebServiceTestCase):
         publications = ws_archive.getPublishedBinaries(ordered=False)
         self.assertEqual(2, len(publications))
 
+    def test_getPublishedBinaries_query_count(self):
+        # getPublishedBinaries has a query count constant in the number of
+        # packages returned.
+        archive_url = api_url(self.archive)
+
+        def create_bpph():
+            with admin_logged_in():
+                self.factory.makeBinaryPackagePublishingHistory(
+                    archive=self.archive)
+
+        def get_binaries():
+            LaunchpadWebServiceCaller('consumer', '').named_get(
+                archive_url, 'getPublishedBinaries').jsonBody()
+
+        recorder1, recorder2 = record_two_runs(get_binaries, create_bpph, 1)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
 
 class TestremoveCopyNotification(WebServiceTestCase):
     """Test removeCopyNotification."""

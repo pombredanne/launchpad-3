@@ -865,7 +865,7 @@ class Archive(SQLBase):
                                 distroarchseries=None, pocket=None,
                                 exact_match=False, created_since_date=None,
                                 ordered=True, order_by_date=False,
-                                include_removed=True):
+                                include_removed=True, eager_load=False):
         """See `IArchive`."""
         clauses, order_by = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
@@ -873,8 +873,22 @@ class Archive(SQLBase):
             created_since_date=created_since_date, ordered=ordered,
             order_by_date=order_by_date, include_removed=include_removed)
 
-        return Store.of(self).find(
+        result = Store.of(self).find(
             BinaryPackagePublishingHistory, *clauses).order_by(*order_by)
+
+        def eager_load_api(bpphs):
+            bprs = load_related(
+                BinaryPackageRelease, bpphs, ['binarypackagereleaseID'])
+            load_related(BinaryPackageName, bprs, ['binarypackagenameID'])
+            bpbs = load_related(BinaryPackageBuild, bprs, ['buildID'])
+            sprs = load_related(
+                SourcePackageRelease, bpbs, ['source_package_release_id'])
+            load_related(SourcePackageName, sprs, ['sourcepackagenameID'])
+            load_related(Component, bpphs, ['componentID'])
+            load_related(Section, bpphs, ['sectionID'])
+        if eager_load:
+            result = DecoratedResultSet(result, pre_iter_hook=eager_load_api)
+        return result
 
     def getPublishedOnDiskBinaries(self, name=None, version=None, status=None,
                                    distroarchseries=None, pocket=None,
