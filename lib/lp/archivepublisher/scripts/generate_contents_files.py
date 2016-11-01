@@ -205,21 +205,6 @@ class GenerateContentsFiles(LaunchpadCronScript):
         else:
             self.logger.debug("Did not find overrides; not copying.")
 
-    def writeContentsTop(self, distro_name, distro_title):
-        """Write Contents.top file.
-
-        This method won't access the database.
-        """
-        output_filename = os.path.join(
-            self.content_archive, '%s-misc' % distro_name, "Contents.top")
-        parameters = {
-            'distrotitle': distro_title,
-        }
-        output_file = file(output_filename, 'w')
-        text = file(get_template("Contents.top")).read() % parameters
-        output_file.write(text)
-        output_file.close()
-
     def runAptFTPArchive(self, distro_name):
         """Run apt-ftparchive to produce the Contents files.
 
@@ -233,7 +218,7 @@ class GenerateContentsFiles(LaunchpadCronScript):
                 "apt-contents.conf"),
             ])
 
-    def generateContentsFiles(self, override_root, distro_name, distro_title):
+    def generateContentsFiles(self, override_root, distro_name):
         """Generate Contents files.
 
         This method may take a long time to run.
@@ -243,13 +228,10 @@ class GenerateContentsFiles(LaunchpadCronScript):
             evaluated without accessing the database.
         :param distro_name: Copy of `self.distribution.name` that can be
             evaluated without accessing the database.
-        :param distro_title: Copy of `self.distribution.title` that can be
-            evaluated without accessing the database.
         """
         self.logger.debug(
             "Running apt in private tree to generate new contents.")
         self.copyOverrides(override_root)
-        self.writeContentsTop(distro_name, distro_title)
         self.runAptFTPArchive(distro_name)
 
     def updateContentsFile(self, suite, arch):
@@ -309,14 +291,12 @@ class GenerateContentsFiles(LaunchpadCronScript):
 
         overrideroot = self.config.overrideroot
         distro_name = self.distribution.name
-        distro_title = self.distribution.title
 
         # This takes a while.  Ensure that we do it without keeping a
         # database transaction open.
         self.txn.commit()
         with DatabaseBlockedPolicy():
-            self.generateContentsFiles(
-                overrideroot, distro_name, distro_title)
+            self.generateContentsFiles(overrideroot, distro_name)
 
         self.updateContentsFiles(suites)
 
