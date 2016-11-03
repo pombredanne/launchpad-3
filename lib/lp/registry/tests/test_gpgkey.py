@@ -109,17 +109,6 @@ class GPGKeySetTests(TestCaseWithFactory):
         config_fixture.add_section('\n'.join(setting_lines))
         self.useFixture(ConfigUseFixture(config_name))
 
-    def test_getOwnerIdForPerson_uses_canonical_url(self):
-        keyset = getUtility(IGPGKeySet)
-        email = 'foo@bar.com'
-        person = self.factory.makePerson(email)
-        openid_canonical_root = self.getUniqueString()
-        self.set_config_parameters(openid_canonical_root=openid_canonical_root)
-
-        self.assertThat(
-            keyset.getOwnerIdForPerson(person),
-            StartsWith(openid_canonical_root))
-
     def test_getAllOwnerIdsForPerson_uses_canonical_url(self):
         keyset = getUtility(IGPGKeySet)
         email = 'foo@bar.com'

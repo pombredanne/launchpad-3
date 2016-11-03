@@ -351,31 +351,6 @@ class TestPersonIndexView(BrowserTestCase):
         self.assertTrue(view.should_show_gpgkeys_section)
 
 
-class PersonIndexViewGPGTimelineTests(BrowserTestCase):
-
-    layer = LaunchpadFunctionalLayer
-
-    def get_markup(self, view, person):
-        def fake_method():
-            return canonical_url(person)
-        with monkey_patch(view, _getURL=fake_method):
-            markup = view.render()
-        return markup
-
-    def get_timeline_for_person_index_view_render(self):
-        person = self.factory.makePerson()
-        self.factory.makeGPGKey(person)
-        view = create_initialized_view(person, '+index')
-        self.get_markup(view, person)
-        return get_request_timeline(
-            get_current_browser_request())
-
-    def assert_num_gpgservice_timeline_actions(self, expected_count, timeline):
-        self.assertEqual(
-            expected_count,
-            len([a for a in timeline.actions if 'gpgservice' in a.category]))
-
-
 class TestPersonViewKarma(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer

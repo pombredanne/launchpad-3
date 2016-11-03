@@ -83,9 +83,6 @@ class IGPGKeySet(Interface):
         inactive ones.
         """
 
-    def getOwnerIdForPerson(person):
-        """return an owner id string suitable for sending to gpgservice."""
-
     def getAllOwnerIdsForPerson(person):
         """Return all owner ids for a given person."""
 

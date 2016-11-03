@@ -186,12 +186,6 @@ class GPGKeySet:
         query += ' AND owner=%s' % sqlvalues(owner.id)
         return list(GPGKey.select(query, orderBy='id'))
 
-    def getOwnerIdForPerson(self, owner):
-        """See IGPGKeySet."""
-        url = IOpenIDPersistentIdentity(owner).openid_canonical_url
-        assert url is not None
-        return url
-
     def getAllOwnerIdsForPerson(self, owner):
         identifiers = IStore(OpenIdIdentifier).find(
             OpenIdIdentifier, account=owner.account)

@@ -8,7 +8,6 @@ __all__ = [
     'GPGKeyNotFoundError',
     'GPGKeyRevoked',
     'GPGKeyTemporarilyNotFoundError',
-    'GPGServiceException',
     'GPGUploadFailure',
     'GPGVerificationError',
     'IGPGHandler',
@@ -23,7 +22,6 @@ __all__ = [
 
 import re
 
-from gpgservice_client import GPGServiceException
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
