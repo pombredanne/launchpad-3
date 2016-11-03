@@ -63,58 +63,6 @@ class GPGKey(SQLBase):
         return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
 
 
-@implementer(IGPGKey)
-class GPGServiceKey:
-
-    def __init__(self, key_data):
-        self._key_data = key_data
-
-    @property
-    def active(self):
-        return self._key_data['enabled']
-
-    @property
-    def keysize(self):
-        return self._key_data['size']
-
-    @property
-    def algorithm(self):
-        return GPGKeyAlgorithm.items[self._key_data['algorithm']]
-
-    @property
-    def keyid(self):
-        return self._key_data['id']
-
-    @property
-    def fingerprint(self):
-        return self._key_data['fingerprint']
-
-    @property
-    def displayname(self):
-        return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
-
-    @property
-    def keyserverURL(self):
-        return getUtility(
-            IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
-
-    @property
-    def can_encrypt(self):
-        return self._key_data['can_encrypt']
-
-    @property
-    def owner(self):
-        return getUtility(IPersonSet).getByOpenIDIdentifier(
-            self._key_data['owner'])
-
-    @property
-    def ownerID(self):
-        return self.owner.id
-
-    def __eq__(self, other):
-        return self.fingerprint == other.fingerprint
-
-
 @implementer(IGPGKeySet)
 class GPGKeySet:
 
@@ -129,10 +77,6 @@ class GPGKeySet:
     def activate(self, requester, key, can_encrypt):
         """See `IGPGKeySet`."""
         fingerprint = key.fingerprint
-        # XXX: This is a little ugly - we can't use getByFingerprint
-        # here since if the READ_FROM_GPGSERVICE FF is set we'll get a
-        # GPGServiceKey object instead of a GPGKey object, and we need
-        # to change the database representation in all cases.
         lp_key = GPGKey.selectOneBy(fingerprint=fingerprint)
         if lp_key:
             assert lp_key.owner == requester
@@ -152,8 +96,6 @@ class GPGKeySet:
         return lp_key, is_new
 
     def deactivate(self, key):
-        # key could be a GPGServiceKey, which doesn't allow us to set it's
-        # active attribute. Retrieve it by fingerprint:
         lp_key = GPGKey.selectOneBy(fingerprint=key.fingerprint)
         lp_key.active = False
 
