@@ -31,9 +31,7 @@ from lp.code.enums import (
     CodeImportMachineState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
-    GitRepositoryType,
     )
-from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJob,
@@ -43,7 +41,6 @@ from lp.code.interfaces.codeimportjob import (
     )
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
-from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.config import config
@@ -367,7 +364,7 @@ class CodeImportJobMacaroonIssuer:
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname,
             identifier="code-import-job", key=self._root_secret)
-        macaroon.add_first_party_caveat("code-import-job %s" % context.id)
+        macaroon.add_first_party_caveat("lp.code-import-job %s" % context.id)
         return macaroon
 
     def checkMacaroonIssuer(self, macaroon):
@@ -377,7 +374,7 @@ class CodeImportJobMacaroonIssuer:
         try:
             verifier = Verifier()
             verifier.satisfy_general(
-                lambda caveat: caveat.startswith("code-import-job "))
+                lambda caveat: caveat.startswith("lp.code-import-job "))
             return verifier.verify(macaroon, self._root_secret)
         except Exception:
             return False
@@ -388,7 +385,7 @@ class CodeImportJobMacaroonIssuer:
             return False
         try:
             verifier = Verifier()
-            verifier.satisfy_exact("code-import-job %s" % context.id)
+            verifier.satisfy_exact("lp.code-import-job %s" % context.id)
             return (
                 verifier.verify(macaroon, self._root_secret) and
                 context.state == CodeImportJobState.RUNNING)
