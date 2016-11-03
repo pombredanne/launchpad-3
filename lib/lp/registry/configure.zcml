@@ -1292,11 +1292,6 @@
             permission="launchpad.Edit"
             set_attributes="active can_encrypt"/>
     </class>
-    <class
-        class="lp.registry.model.gpgkey.GPGServiceKey">
-        <allow
-            interface="lp.registry.interfaces.gpg.IGPGKey"/>
-    </class>
 
     <!-- GPGKeySet -->
 

@@ -28,7 +28,6 @@ __all__ = [
     'FunctionalLayer',
     'GoogleLaunchpadFunctionalLayer',
     'GoogleServiceLayer',
-    'GPGServiceLayer',
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
@@ -118,7 +117,6 @@ from lp.services.database.sqlbase import session_store
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
-from lp.services.gpg.interfaces import IGPGClient
 from lp.services.job.tests import celery_worker
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarianserver.testing.server import LibrarianServerFixture
@@ -150,7 +148,6 @@ from lp.testing import (
     logout,
     reset_logging,
     )
-from lp.testing.gpgservice import GPGKeyServiceFixture
 from lp.testing.pgsql import PgTestSetup
 from lp.testing.smtpd import SMTPController
 
@@ -1165,45 +1162,6 @@ class ZopelessLayer(BaseLayer):
         logout()
 
 
-class GPGServiceLayer(BaseLayer):
-
-    service_fixture = None
-    gpgservice_needs_reset = False
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        gpg_client = removeSecurityProxy(getUtility(IGPGClient))
-        gpg_client.registerWriteHook(cls._on_gpgservice_write)
-        cls.service_fixture = GPGKeyServiceFixture(BaseLayer.config_fixture)
-        cls.service_fixture.setUp()
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        gpg_client = removeSecurityProxy(getUtility(IGPGClient))
-        gpg_client.unregisterWriteHook(cls._on_gpgservice_write)
-        cls.service_fixture.cleanUp()
-        cls.service_fixture = None
-        logout()
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        if cls.gpgservice_needs_reset:
-            cls.service_fixture.reset_service_database()
-            cls.gpgservice_needs_reset = False
-
-    @classmethod
-    def _on_gpgservice_write(cls):
-        cls.gpgservice_needs_reset = True
-
-
 class TwistedLayer(BaseLayer):
     """A layer for cleaning up the Twisted thread pool."""
 
@@ -1332,7 +1290,7 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
         disconnect_stores()
 
 
-class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer, GPGServiceLayer):
+class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     """Provides the Launchpad Zope3 application server environment."""
 
     @classmethod
@@ -1496,7 +1454,7 @@ class LaunchpadTestSetup(PgTestSetup):
     host = 'localhost'
 
 
-class LaunchpadZopelessLayer(LaunchpadScriptLayer, GPGServiceLayer):
+class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     """Full Zopeless environment including Component Architecture and
     database connections initialized.
     """

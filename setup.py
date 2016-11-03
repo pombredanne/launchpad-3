@@ -41,7 +41,6 @@ setup(
         'FeedParser',
         'feedvalidator',
         'funkload',
-        'gpgservice-client',
         'html5browser',
         'httmock',
         'pygpgme',
