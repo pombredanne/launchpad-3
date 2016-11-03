@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'CodeImportEditView',
     'CodeImportMachineView',
+    'CodeImportNameValidationMixin',
     'CodeImportNewView',
     'CodeImportSetBreadcrumb',
     'CodeImportSetNavigation',
@@ -18,6 +19,7 @@ __all__ = [
     'validate_import_url',
     ]
 
+from textwrap import dedent
 from urlparse import urlparse
 
 from BeautifulSoup import BeautifulSoup
@@ -237,6 +239,23 @@ class CodeImportBaseView(LaunchpadFormView):
                 self.setFieldError(field_name, reason)
 
 
+class CodeImportNameValidationMixin:
+    """Provide branch/repository name validation logic for code imports."""
+
+    def _setBranchExists(self, existing_branch, field_name):
+        self.setFieldError(
+            field_name,
+            structured(dedent("""
+            There is already an existing import for
+            <a href="%(product_url)s">%(product_name)s</a>
+            with the name of
+            <a href="%(branch_url)s">%(branch_name)s</a>."""),
+                       product_url=canonical_url(existing_branch.target),
+                       product_name=existing_branch.target.name,
+                       branch_url=canonical_url(existing_branch),
+                       branch_name=existing_branch.name))
+
+
 class NewCodeImportForm(Interface):
     """The fields presented on the form for editing a code import."""
 
@@ -303,7 +322,7 @@ class NewCodeImportForm(Interface):
         )
 
 
-class CodeImportNewView(CodeImportBaseView):
+class CodeImportNewView(CodeImportBaseView, CodeImportNameValidationMixin):
     """The view to request a new code import."""
 
     schema = NewCodeImportForm
@@ -420,30 +439,16 @@ class CodeImportNewView(CodeImportBaseView):
             cvs_module=cvs_module,
             review_status=status)
 
-    def _setBranchExists(self, existing_branch):
-        """Set a field error indicating that the branch already exists."""
-        self.setFieldError(
-           'branch_name',
-            structured("""
-            There is already an existing import for
-            <a href="%(product_url)s">%(product_name)s</a>
-            with the name of
-            <a href="%(branch_url)s">%(branch_name)s</a>.""",
-                       product_url=canonical_url(existing_branch.target),
-                       product_name=existing_branch.target.name,
-                       branch_url=canonical_url(existing_branch),
-                       branch_name=existing_branch.name))
-
     @action(_('Request Import'), name='request_import')
     def request_import_action(self, action, data):
         """Create the code_import, and subscribe the user to the branch."""
         try:
             code_import = self._create_import(data, None)
         except BranchExists as e:
-            self._setBranchExists(e.existing_branch)
+            self._setBranchExists(e.existing_branch, 'branch_name')
             return
         except GitRepositoryExists as e:
-            self._setBranchExists(e.existing_repository)
+            self._setBranchExists(e.existing_repository, 'branch_name')
             return
 
         # Subscribe the user.

@@ -349,8 +349,10 @@ Using a branch name that already exists results in an error.
     ...     series, name='+setbranch', principal=driver, form=form)
     >>> for error in view.errors:
     ...     print error
-    Team Name ... already has a branch for
-    <em>Chevy</em> called <em>chevette-branch</em>.
+    There is already an existing import for
+    <a href="http://.../chevy">chevy</a>
+    with the name of
+    <a href="http://.../chevy/chevette-branch">chevette-branch</a>.
     >>> print view.errors_in_action
     True
     >>> print view.next_url

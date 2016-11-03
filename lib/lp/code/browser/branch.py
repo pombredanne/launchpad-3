@@ -15,7 +15,6 @@ __all__ = [
     'BranchReviewerEditView',
     'BranchMirrorStatusView',
     'BranchMirrorMixin',
-    'BranchNameValidationMixin',
     'BranchNavigation',
     'BranchEditMenu',
     'BranchUpgradeView',
@@ -617,22 +616,6 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
         return self.context.getSpecificationLinks(self.user)
 
 
-class BranchNameValidationMixin:
-    """Provide name validation logic used by several branch view classes."""
-
-    def _setBranchExists(self, existing_branch, field_name='name'):
-        owner = existing_branch.owner
-        if owner == self.user:
-            prefix = "You already have"
-        else:
-            prefix = "%s already has" % owner.displayname
-        message = structured(
-            "%s a branch for <em>%s</em> called <em>%s</em>.",
-            prefix, existing_branch.target.displayname,
-            existing_branch.name)
-        self.setFieldError(field_name, message)
-
-
 class BranchEditFormView(LaunchpadEditFormView):
     """Base class for forms that edit a branch."""
 
@@ -1067,8 +1050,7 @@ class CodeEditOwnerMixin:
                 self.form_fields = new_owner_field + self.form_fields
 
 
-class BranchEditView(CodeEditOwnerMixin, BranchEditFormView,
-                     BranchNameValidationMixin):
+class BranchEditView(CodeEditOwnerMixin, BranchEditFormView):
     """The main branch for editing the branch attributes."""
 
     @property
@@ -1094,6 +1076,18 @@ class BranchEditView(CodeEditOwnerMixin, BranchEditFormView,
         branch = self.context
         if branch.branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             self.form_fields = self.form_fields.omit('url')
+
+    def _setBranchExists(self, existing_branch, field_name='name'):
+        owner = existing_branch.owner
+        if owner == self.user:
+            prefix = "You already have"
+        else:
+            prefix = "%s already has" % owner.displayname
+        message = structured(
+            "%s a branch for <em>%s</em> called <em>%s</em>.",
+            prefix, existing_branch.target.displayname,
+            existing_branch.name)
+        self.setFieldError(field_name, message)
 
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
