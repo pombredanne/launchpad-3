@@ -445,10 +445,10 @@ class CodeImportNewView(CodeImportBaseView, CodeImportNameValidationMixin):
         try:
             code_import = self._create_import(data, None)
         except BranchExists as e:
-            self._setBranchExists(e.existing_branch)
+            self._setBranchExists(e.existing_branch, 'branch_name')
             return
         except GitRepositoryExists as e:
-            self._setBranchExists(e.existing_repository)
+            self._setBranchExists(e.existing_repository, 'branch_name')
             return
 
         # Subscribe the user.
