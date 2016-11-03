@@ -224,7 +224,6 @@ from lp.registry.interfaces.ssh import (
     SSHKeyType,
     )
 from lp.registry.model.commercialsubscription import CommercialSubscription
-from lp.registry.model.gpgkey import GPGServiceKey
 from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
@@ -240,12 +239,8 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.policy import MasterDatabasePolicy
 from lp.services.database.sqlbase import flush_database_updates
-from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (
-    GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG,
-    GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
     GPGKeyAlgorithm,
-    IGPGClient,
     IGPGHandler,
     )
 from lp.services.identity.interfaces.account import (
@@ -613,17 +608,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             algorithm=GPGKeyAlgorithm.R,
             active=True,
             can_encrypt=False)
-        if getFeatureFlag(GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG):
-            client = getUtility(IGPGClient)
-            openid_identifier = keyset.getOwnerIdForPerson(owner)
-            client.addKeyForTest(
-                openid_identifier, key.keyid, key.fingerprint, key.keysize,
-                key.algorithm.name, key.active, key.can_encrypt)
-            # Sadly client.addKeyForTest does not return the key that
-            # was added:
-            if getFeatureFlag(GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG):
-                return GPGServiceKey(
-                    client.getKeyByFingerprint(key.fingerprint))
         return key
 
     def makePerson(

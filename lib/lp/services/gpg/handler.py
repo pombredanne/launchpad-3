@@ -12,7 +12,6 @@ __all__ = [
 
 import atexit
 import httplib
-import json
 import os
 import shutil
 import socket
@@ -23,7 +22,6 @@ import tempfile
 import urllib
 
 import gpgme
-from gpgservice_client import GPGClient
 from lazr.restful.utils import get_current_browser_request
 import requests
 from zope.interface import implementer
@@ -40,7 +38,6 @@ from lp.services.gpg.interfaces import (
     GPGKeyTemporarilyNotFoundError,
     GPGUploadFailure,
     GPGVerificationError,
-    IGPGClient,
     IGPGHandler,
     IPymeKey,
     IPymeSignature,
@@ -622,8 +619,7 @@ class PymeUserId:
 def sanitize_fingerprint(fingerprint):
     """Sanitize a GPG fingerprint.
 
-    This is the ultimate implementation of IGPGHandler.sanitizeFingerprint, and
-    is also used by the IGPGClient implementation.
+    This is the ultimate implementation of IGPGHandler.sanitizeFingerprint.
     """
     # remove whitespaces, truncate to max of 40 (as per v4 keys) and
     # convert to upper case
@@ -634,43 +630,3 @@ def sanitize_fingerprint(fingerprint):
         return None
 
     return fingerprint
-
-
-@implementer(IGPGClient)
-class LPGPGClient(GPGClient):
-    """See IGPGClient."""
-
-    def __init__(self):
-        super(LPGPGClient, self).__init__(bypass_proxy=True)
-        self.action = None
-
-    def get_endpoint(self):
-        return config.gpgservice.api_endpoint
-
-    def get_timeout(self):
-        return 30.0
-
-    def on_request_start(self, method, path, data=None,
-                         headers=dict()):
-        assert self.action is None, "Error: Overlapping requests to gpgservice"
-        timeline = get_request_timeline(
-            get_current_browser_request())
-        if data:
-            data_summary = '%d byte body' % len(data)
-        else:
-            data_summary = 'no body'
-        header_whitelist = (
-            'content-type',
-            'x-gpg-fingerprint',
-        )
-        headers = dict(
-            [(k, v) for k, v in headers.items() if k.lower() in header_whitelist]
-        )
-        self.action = timeline.start(
-            "gpgservice-%s" % method.upper(),
-            ' '.join((path, data_summary, json.dumps(headers)))
-        )
-
-    def on_request_end(self):
-        self.action.finish()
-        self.action = None

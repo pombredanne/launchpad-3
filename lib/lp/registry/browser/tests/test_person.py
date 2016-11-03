@@ -42,11 +42,6 @@ from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
 from lp.services.config import config
-from lp.services.features.testing import FeatureFixture
-from lp.services.gpg.interfaces import (
-    GPG_HIDE_PERSON_KEY_LISTING,
-    GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG,
-    )
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.log.logger import FakeLogger
@@ -355,24 +350,6 @@ class TestPersonIndexView(BrowserTestCase):
         view = create_initialized_view(person, '+index')
         self.assertTrue(view.should_show_gpgkeys_section)
 
-    def test_gpg_keys_now_shown_for_owner_with_hide_keys_ff(self):
-        self.useFixture(FeatureFixture({
-            GPG_HIDE_PERSON_KEY_LISTING: True,
-        }))
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            view = create_initialized_view(person, '+index')
-            self.assertFalse(view.should_show_gpgkeys_section)
-
-    def test_gpg_keys_not_shown_for_user_with_gpg_keys_with_hide_keys_ff(self):
-        self.useFixture(FeatureFixture({
-            GPG_HIDE_PERSON_KEY_LISTING: True,
-        }))
-        person = self.factory.makePerson()
-        self.factory.makeGPGKey(person)
-        view = create_initialized_view(person, '+index')
-        self.assertFalse(view.should_show_gpgkeys_section)
-
 
 class PersonIndexViewGPGTimelineTests(BrowserTestCase):
 
@@ -397,25 +374,6 @@ class PersonIndexViewGPGTimelineTests(BrowserTestCase):
         self.assertEqual(
             expected_count,
             len([a for a in timeline.actions if 'gpgservice' in a.category]))
-
-    def test_hide_keys_ff_no_timeline_action(self):
-        self.useFixture(FeatureFixture({
-            GPG_HIDE_PERSON_KEY_LISTING: True,
-            GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG: True,
-        }))
-        timeline = self.get_timeline_for_person_index_view_render()
-
-        self.assert_num_gpgservice_timeline_actions(0, timeline)
-
-    def test_one_gpg_timeline_action_when_rendering_view(self):
-        self.useFixture(FeatureFixture({
-            GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG: True,
-        }))
-        timeline = self.get_timeline_for_person_index_view_render()
-
-        self.assert_num_gpgservice_timeline_actions(1, timeline)
-
-
 
 
 class TestPersonViewKarma(TestCaseWithFactory):

@@ -195,10 +195,7 @@ from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
-    GPG_DATABASE_READONLY_FEATURE_FLAG,
-    GPG_HIDE_PERSON_KEY_LISTING,
     GPGKeyNotFoundError,
-    GPGReadOnly,
     IGPGHandler,
     )
 from lp.services.identity.interfaces.account import (
@@ -1690,8 +1687,6 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
         It's shown when the person has OpenPGP keys registered or has rights
         to register new ones.
         """
-        if getFeatureFlag(GPG_HIDE_PERSON_KEY_LISTING):
-            return False
         return bool(self.gpg_keys) or (
             check_permission('launchpad.Edit', self.context))
 
@@ -2522,8 +2517,6 @@ class PersonGPGView(LaunchpadView):
     def form_action(self):
         if self.request.method != "POST":
             return ''
-        if getFeatureFlag(GPG_DATABASE_READONLY_FEATURE_FLAG):
-            raise GPGReadOnly()
         permitted_actions = [
             'claim_gpg',
             'deactivate_gpg',

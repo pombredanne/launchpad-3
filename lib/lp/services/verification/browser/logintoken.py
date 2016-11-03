@@ -40,13 +40,10 @@ from lp.registry.interfaces.person import (
     ITeam,
     )
 from lp.services.database.sqlbase import flush_database_updates
-from lp.services.features import getFeatureFlag
 from lp.services.gpg.interfaces import (
-    GPG_DATABASE_READONLY_FEATURE_FLAG,
     GPGKeyExpired,
     GPGKeyNotFoundError,
     GPGKeyRevoked,
-    GPGReadOnly,
     GPGVerificationError,
     IGPGHandler,
     )
@@ -262,8 +259,6 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
         super(ValidateGPGKeyView, self).initialize()
 
     def validate(self, data):
-        if getFeatureFlag(GPG_DATABASE_READONLY_FEATURE_FLAG):
-            raise GPGReadOnly()
         self.gpg_key = self._getGPGKey()
         if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
             self._validateSignOnlyGPGKey(data)

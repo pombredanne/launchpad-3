@@ -5,17 +5,6 @@
 
 __metaclass__ = type
 
-from testtools.matchers import (
-    Not,
-    Raises,
-    raises,
-    )
-
-from lp.services.features.testing import FeatureFixture
-from lp.services.gpg.interfaces import (
-    GPG_DATABASE_READONLY_FEATURE_FLAG,
-    GPGReadOnly,
-    )
 from lp.services.webapp import canonical_url
 from lp.testing import (
     login_person,
@@ -53,25 +42,3 @@ class TestPersonGPGView(TestCaseWithFactory):
         expected_url = (
             '%s/+editpgpkeys/+login?reauth=1' % canonical_url(person))
         self.assertEqual(expected_url, response.getHeader('location'))
-
-    def test_gpgkeys_POST_readonly_with_feature_flag_set(self):
-        self.useFixture(FeatureFixture({
-            GPG_DATABASE_READONLY_FEATURE_FLAG: True,
-        }))
-        person = self.factory.makePerson()
-        login_person(person)
-        view = create_initialized_view(
-            person, "+editpgpkeys", principal=person, method='POST',
-            have_fresh_login=True)
-        self.assertThat(view.render, raises(GPGReadOnly))
-
-    def test_gpgkeys_GET_readonly_with_feature_flag_set(self):
-        self.useFixture(FeatureFixture({
-            GPG_DATABASE_READONLY_FEATURE_FLAG: True,
-        }))
-        person = self.factory.makePerson()
-        login_person(person)
-        view = create_initialized_view(
-            person, "+editpgpkeys", principal=person, method='GET',
-            have_fresh_login=True)
-        self.assertThat(view.render, Not(Raises()))

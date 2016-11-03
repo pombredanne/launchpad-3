@@ -19,12 +19,7 @@ from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
-from lp.services.features.testing import FeatureFixture
-from lp.services.gpg.interfaces import (
-    GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG,
-    GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG,
-    GPGKeyAlgorithm,
-    )
+from lp.services.gpg.interfaces import GPGKeyAlgorithm
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.testing import TestCaseWithFactory
@@ -36,12 +31,6 @@ class GPGKeySetTests(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_can_add_keys_for_test(self):
-        # IGPGKeySet.new _only_ writes to the launchpad database, so this test
-        # only works if the read_from_gpgservice FF is *not* set. Once this is
-        # the default codepath this test should be deleted.
-        self.useFixture(FeatureFixture({
-            GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG: None,
-        }))
         keyset = getUtility(IGPGKeySet)
         person = self.factory.makePerson()
         fingerprint = "DEADBEEF12345678DEADBEEF12345678DEADBEEF"
@@ -140,15 +129,3 @@ class GPGKeySetTests(TestCaseWithFactory):
 
         for id in keyset.getAllOwnerIdsForPerson(person):
             self.assertThat(id, StartsWith(openid_canonical_root))
-
-
-class GPGKeySetWithGPGServiceTests(GPGKeySetTests):
-
-    """A copy of GPGKeySetTests, but with gpgservice used."""
-
-    def setUp(self):
-        super(GPGKeySetWithGPGServiceTests, self).setUp()
-        self.useFixture(FeatureFixture({
-            GPG_READ_FROM_GPGSERVICE_FEATURE_FLAG: True,
-            GPG_WRITE_TO_GPGSERVICE_FEATURE_FLAG: True,
-        }))
