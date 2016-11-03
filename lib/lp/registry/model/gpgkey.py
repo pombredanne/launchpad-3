@@ -185,11 +185,3 @@ class GPGKeySet:
             query = 'active=true'
         query += ' AND owner=%s' % sqlvalues(owner.id)
         return list(GPGKey.select(query, orderBy='id'))
-
-    def getAllOwnerIdsForPerson(self, owner):
-        identifiers = IStore(OpenIdIdentifier).find(
-            OpenIdIdentifier, account=owner.account)
-        openid_provider_root = config.launchpad.openid_canonical_root
-        return [
-            openid_provider_root + '+id/' + i.identifier.encode('ascii')
-            for i in identifiers]
