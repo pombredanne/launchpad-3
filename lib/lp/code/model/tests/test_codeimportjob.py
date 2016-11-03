@@ -1182,7 +1182,7 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         self.assertEqual("code-import-job", macaroon.identifier)
         self.assertThat(macaroon.caveats, MatchesListwise([
             MatchesStructure.byEquality(
-                caveat_id="code-import-job %s" % job.id),
+                caveat_id="lp.code-import-job %s" % job.id),
             ]))
 
     def test_checkMacaroonIssuer_good(self):

@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -229,6 +229,7 @@ class PackageCopyJobDerived(BaseRunnableJob):
             ('source_archive_id', self.context.source_archive_id),
             ('target_archive_id', self.context.target_archive_id),
             ('target_distroseries_id', self.context.target_distroseries_id),
+            ('package_name', self.context.package_name),
             ('package_copy_job_id', self.context.id),
             ('package_copy_job_type', self.context.job_type.title),
             ])
@@ -236,7 +237,7 @@ class PackageCopyJobDerived(BaseRunnableJob):
 
     def getOperationDescription(self):
         """See `IPlainPackageCopyJob`."""
-        return "copying a package"
+        return "copying package %s" % self.context.package_name
 
     def getErrorRecipients(self):
         """See `IPlainPackageCopyJob`."""

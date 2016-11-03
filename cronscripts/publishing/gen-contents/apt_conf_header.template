@@ -15,8 +15,6 @@ Default
 
 TreeDefault
 {
-   // Header for Contents file.
    Contents "$(DIST)/Contents-$(ARCH)";
-   Contents::Header "%(content_archive)s/%(distribution)s-misc/Contents.top";
 };
 
