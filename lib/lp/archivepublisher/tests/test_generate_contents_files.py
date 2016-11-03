@@ -257,20 +257,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
             'Architectures "%s source";' % das.architecturetag,
             apt_contents_conf)
 
-    def test_writeContentsTop(self):
-        # writeContentsTop writes a Contents.top file based on a
-        # standard template, with the distribution's title interpolated.
-        distro = self.makeDistro()
-        script = self.makeScript(distro)
-        content_archive = script.content_archive
-        script.writeContentsTop(distro.name, distro.title)
-
-        contents_top = file(
-            "%s/%s-misc/Contents.top" % (content_archive, distro.name)).read()
-
-        self.assertIn("This file maps", contents_top)
-        self.assertIn(distro.title, contents_top)
-
     def test_setUp_places_content_archive_in_distroroot(self):
         # The contents files are kept in subdirectories of distroroot.
         script = self.makeScript()
