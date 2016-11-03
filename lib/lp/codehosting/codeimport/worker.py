@@ -20,6 +20,7 @@ __all__ = [
     ]
 
 
+import io
 import os
 import shutil
 import subprocess
@@ -61,6 +62,11 @@ from bzrlib.urlutils import (
 import cscvs
 from cscvs.cmds import totla
 import CVS
+from dulwich.errors import GitProtocolError
+from dulwich.protocol import (
+    pkt_line,
+    Protocol,
+    )
 from lazr.uri import (
     InvalidURIError,
     URI,
@@ -93,6 +99,7 @@ from lp.codehosting.safe_open import (
 from lp.services.config import config
 from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.propertycache import cachedproperty
+from lp.services.timeout import urlfetch
 from lp.services.utils import sanitise_urls
 
 
@@ -1000,6 +1007,62 @@ class GitToGitImportWorker(ImportWorker):
         if retcode:
             raise subprocess.CalledProcessError(retcode, cmd)
 
+    def _getHead(self, repository, remote_name):
+        """Get HEAD from a configured remote in a local repository.
+
+        The returned ref name will be adjusted in such a way that it can be
+        passed to `_setHead` (e.g. refs/remotes/origin/master ->
+        refs/heads/master).
+        """
+        # This is a bit weird, but set-head will bail out if the target
+        # doesn't exist in the correct remotes namespace.  git 2.8.0 has
+        # "git ls-remote --symref <repository> HEAD" which would involve
+        # less juggling.
+        self._runGit(
+            "fetch", "-q", ".", "refs/heads/*:refs/remotes/%s/*" % remote_name,
+            cwd=repository)
+        self._runGit(
+            "remote", "set-head", remote_name, "--auto", cwd=repository)
+        ref_prefix = "refs/remotes/%s/" % remote_name
+        target_ref = subprocess.check_output(
+            ["git", "symbolic-ref", ref_prefix + "HEAD"],
+            cwd=repository, universal_newlines=True).rstrip("\n")
+        if not target_ref.startswith(ref_prefix):
+            raise GitProtocolError(
+                "'git remote set-head %s --auto' did not leave remote HEAD "
+                "under %s" % (remote_name, ref_prefix))
+        return "refs/heads/" + target_ref[len(ref_prefix):]
+
+    def _setHead(self, target_url, target_ref):
+        """Set HEAD on a remote repository.
+
+        This relies on the turnip-set-symbolic-ref extension.
+        """
+        service = "turnip-set-symbolic-ref"
+        url = urljoin(target_url, service)
+        headers = {
+            "Content-Type": "application/x-%s-request" % service,
+            }
+        body = pkt_line("HEAD %s" % target_ref) + pkt_line(None)
+        try:
+            response = urlfetch(url, method="POST", headers=headers, data=body)
+            response.raise_for_status()
+        except Exception as e:
+            raise GitProtocolError(str(e))
+        content_type = response.headers.get("Content-Type")
+        if content_type != ("application/x-%s-result" % service):
+            raise GitProtocolError(
+                "Invalid Content-Type from server: %s" % content_type)
+        content = io.BytesIO(response.content)
+        proto = Protocol(content.read, None)
+        pkts = list(proto.read_pkt_seq())
+        if pkts == [b"ACK HEAD"]:
+            pass
+        elif pkts and pkts[0].startswith(b"ERR "):
+            raise GitProtocolError(pkts[0][len(b"ERR "):])
+        else:
+            raise GitProtocolError("Unexpected packets %r from server" % pkts)
+
     def _doImport(self):
         self._logger.info("Starting job.")
         try:
@@ -1031,20 +1094,38 @@ class GitToGitImportWorker(ImportWorker):
         try:
             self._runGit("config", "gc.auto", "0", cwd="repository")
             self._runGit(
-                "fetch", "--prune", self.source_details.url, "+refs/*:refs/*",
+                "remote", "add", "source", self.source_details.url,
                 cwd="repository")
-            # We should sync the remote HEAD as well.  This involves
-            # considerable gymnastics.  "git remote set-head --auto" does it
-            # if we can arrange a suitable temporary remote, or git 2.8.0
-            # has "git ls-remote --symref <repository> HEAD".  We then also
-            # need to set Launchpad's idea of HEAD, which is fiddly from an
-            # import worker.  For now we leave it at the default and trust
-            # that we'll be able to fix things up later.
+            self._runGit(
+                "fetch", "--prune", "source", "+refs/*:refs/*",
+                cwd="repository")
+            try:
+                target_ref = self._getHead("repository", "source")
+            except (subprocess.CalledProcessError, GitProtocolError) as e2:
+                self._logger.info("Unable to fetch default branch: %s" % e2)
+                target_ref = None
+            self._runGit("remote", "rm", "source", cwd="repository")
+            # XXX cjwatson 2016-11-03: For some reason "git remote rm"
+            # doesn't actually remove the refs.
+            remote_refs = os.path.join(
+                "repository", "refs", "remotes", "source")
+            if os.path.isdir(remote_refs):
+                shutil.rmtree(remote_refs)
         except subprocess.CalledProcessError as e:
             self._logger.info("Unable to fetch remote repository: %s" % e)
             return CodeImportWorkerExitCode.FAILURE_INVALID
         self._logger.info("Pushing repository to hosting service.")
         try:
+            if target_ref is not None:
+                # Push the target of HEAD first to ensure that it is always
+                # available.
+                self._runGit(
+                    "push", target_url, "+%s:%s" % (target_ref, target_ref),
+                    cwd="repository")
+                try:
+                    self._setHead(target_url, target_ref)
+                except GitProtocolError as e:
+                    self._logger.info("Unable to set default branch: %s" % e)
             self._runGit("push", "--mirror", target_url, cwd="repository")
         except subprocess.CalledProcessError as e:
             self._logger.info(

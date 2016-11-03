@@ -35,6 +35,7 @@ from lp.codehosting.codeimport.worker import (
 from lp.codehosting.safe_open import AcceptAnythingPolicy
 from lp.services import scripts
 from lp.services.config import config
+from lp.services.timeout import set_default_timeout_function
 
 
 opener_policies = {
@@ -71,6 +72,7 @@ class CodeImportWorker:
 
     def main(self):
         force_bzr_to_use_urllib()
+        set_default_timeout_function(lambda: 60.0)
         source_details = CodeImportSourceDetails.fromArguments(self.args)
         if source_details.rcstype == 'git':
             if source_details.target_rcstype == 'bzr':
