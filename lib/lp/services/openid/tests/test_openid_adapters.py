@@ -29,7 +29,6 @@ class OpenIdAdapterTests(TestCaseWithFactory):
 
     def test_openid_adapter_openid_urls_obey_settings(self):
         self.set_launchpad_section_setings(
-            openid_canonical_root='https://login.testing.ubuntu.com',
             openid_provider_root='https://some.new.provider.com',
         )
         account = self.factory.makeAccount()
@@ -37,6 +36,3 @@ class OpenIdAdapterTests(TestCaseWithFactory):
         self.assertThat(
             i.openid_identity_url,
             StartsWith('https://some.new.provider.com'))
-        self.assertThat(
-            i.openid_canonical_url,
-            StartsWith('https://login.testing.ubuntu.com'))
