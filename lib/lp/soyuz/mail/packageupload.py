@@ -1,4 +1,4 @@
-# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -133,6 +133,7 @@ def add_recipient(recipients, person, reason_factory, logger=None):
 
 def fetch_information(spr, bprs, changes, previous_version=None):
     changelog = date = changedby = maintainer = None
+    notify_changed_by = False
 
     if changes:
         changelog = ChangesFile.formatChangesComment(
@@ -148,6 +149,8 @@ def fetch_information(spr, bprs, changes, previous_version=None):
                 changes.get('Maintainer'), 'Maintainer')
         except ParseMaintError:
             pass
+        notify_changed_by = changes.get(
+            'Launchpad-Notify-Changed-By', '') == 'yes'
     elif spr or bprs:
         if not spr and bprs:
             spr = bprs[0].build.source_package_release
@@ -166,6 +169,7 @@ def fetch_information(spr, bprs, changes, previous_version=None):
         'date': date,
         'changedby': changedby,
         'maintainer': maintainer,
+        'notify_changed_by': notify_changed_by,
         }
 
 
@@ -338,6 +342,19 @@ class PackageUploadMailer(BaseMailer):
                 add_recipient(
                     recipients, permission.person,
                     PackageUploadRecipientReason.forPPAUploader, logger=logger)
+
+            # If the "Launchpad-Notify-Changed-By: yes" field is set in the
+            # .changes file, we also consider changed-by.  The latter is
+            # intended for use by systems that automatically sign uploads on
+            # behalf of developers, in which case we want to make sure to
+            # notify the developer in question.  We assume that any systems
+            # clever enough to set this field are also clever enough to set
+            # a reasonable Changed-By field.
+            if info['notify_changed_by']:
+                debug(logger, "Adding changed-by to recipients")
+                add_recipient(
+                    recipients, changer,
+                    PackageUploadRecipientReason.forChangedBy, logger=logger)
         elif archive.is_copy:
             # For copy archives, notifying anyone else will probably only
             # confuse them.

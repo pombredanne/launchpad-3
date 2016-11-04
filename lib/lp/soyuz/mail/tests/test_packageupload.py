@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from textwrap import dedent
@@ -267,6 +267,26 @@ class TestNotification(TestCaseWithFactory):
             ]
         for field in fields:
             self.assertEqual((u'Foo Bar', u'foo.bar@example.com'), field)
+        self.assertFalse(info['notify_changed_by'])
+
+    def test_fetch_information_changes_notify_changed_by(self):
+        changes = {
+            'Date': '2001-01-01',
+            'Changed-By': 'Foo Bar <foo.bar@example.com>',
+            'Maintainer': 'Foo Bar <foo.bar@example.com>',
+            'Changes': ' * Foo!',
+            'Launchpad-Notify-Changed-By': 'yes',
+            }
+        info = fetch_information(None, None, changes)
+        self.assertEqual('2001-01-01', info['date'])
+        self.assertEqual(' * Foo!', info['changelog'])
+        fields = [
+            info['changedby'],
+            info['maintainer'],
+            ]
+        for field in fields:
+            self.assertEqual((u'Foo Bar', u'foo.bar@example.com'), field)
+        self.assertTrue(info['notify_changed_by'])
 
     def test_fetch_information_spr(self):
         creator = self.factory.makePerson(displayname=u"foø")
@@ -280,6 +300,7 @@ class TestNotification(TestCaseWithFactory):
             (u"foø", spr.creator.preferredemail.email), info['changedby'])
         self.assertEqual(
             (u"bær", spr.maintainer.preferredemail.email), info['maintainer'])
+        self.assertFalse(info['notify_changed_by'])
 
     def test_fetch_information_bprs(self):
         bpr = self.factory.makeBinaryPackageRelease()
@@ -293,6 +314,7 @@ class TestNotification(TestCaseWithFactory):
         self.assertEqual(
             (spr.maintainer.displayname, spr.maintainer.preferredemail.email),
             info['maintainer'])
+        self.assertFalse(info['notify_changed_by'])
 
     def test_calculate_subject_spr(self):
         spr = self.factory.makeSourcePackageRelease()
@@ -432,6 +454,35 @@ class TestNotification(TestCaseWithFactory):
         self.assertRecipientsEqual(
             [], changes, None, maintainer, changer,
             purpose=ArchivePurpose.COPY)
+
+    def test_getRecipientsForAction_ppa(self):
+        # Notifications for PPA uploads normally only go to the person who
+        # signed the upload.
+        blamer, maintainer, changer = self._setup_recipients()
+        changes = {
+            'Date': '2001-01-01',
+            'Changed-By': 'Changer <changer@example.com>',
+            'Maintainer': 'Maintainer <maintainer@example.com>',
+            'Changes': ' * Foo!',
+            }
+        self.assertRecipientsEqual(
+            [blamer], changes, blamer, maintainer, changer,
+            purpose=ArchivePurpose.PPA)
+
+    def test_getRecipientsForAction_ppa_notify_changed_by(self):
+        # If the .changes file contains "Launchpad-Notify-Changed-By: yes",
+        # notifications go to the changer even for PPA uploads.
+        blamer, maintainer, changer = self._setup_recipients()
+        changes = {
+            'Date': '2001-01-01',
+            'Changed-By': 'Changer <changer@example.com>',
+            'Maintainer': 'Maintainer <maintainer@example.com>',
+            'Changes': ' * Foo!',
+            'Launchpad-Notify-Changed-By': 'yes',
+            }
+        self.assertRecipientsEqual(
+            [blamer, changer], changes, blamer, maintainer, changer,
+            purpose=ArchivePurpose.PPA)
 
     def test__getHeaders_primary(self):
         # _getHeaders returns useful values for headers used for filtering.
