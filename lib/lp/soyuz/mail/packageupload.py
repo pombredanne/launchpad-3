@@ -347,7 +347,9 @@ class PackageUploadMailer(BaseMailer):
             # .changes file, we also consider changed-by.  The latter is
             # intended for use by systems that automatically sign uploads on
             # behalf of developers, in which case we want to make sure to
-            # notify the developer in question.
+            # notify the developer in question.  We assume that any systems
+            # clever enough to set this field are also clever enough to set
+            # a reasonable Changed-By field.
             if info['notify_changed_by']:
                 debug(logger, "Adding changed-by to recipients")
                 add_recipient(
