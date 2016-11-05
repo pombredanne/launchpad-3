@@ -278,7 +278,7 @@ class TurnipSetSymbolicRefHandler(Handler):
         except Exception as e:
             self.proto.write_pkt_line(b'ERR %s\n' % e)
         else:
-            self.proto.write_pkt_line(b'ACK %s' % name)
+            self.proto.write_pkt_line(b'ACK %s\n' % name)
         self.proto.write_pkt_line(None)
 
 

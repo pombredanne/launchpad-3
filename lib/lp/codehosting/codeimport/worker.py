@@ -1056,10 +1056,11 @@ class GitToGitImportWorker(ImportWorker):
         content = io.BytesIO(response.content)
         proto = Protocol(content.read, None)
         pkts = list(proto.read_pkt_seq())
-        if pkts == [b"ACK HEAD"]:
+        if len(pkts) == 1 and pkts[0].rstrip(b"\n") == b"ACK HEAD":
             pass
         elif pkts and pkts[0].startswith(b"ERR "):
-            raise GitProtocolError(pkts[0][len(b"ERR "):])
+            raise GitProtocolError(
+                pkts[0][len(b"ERR "):].rstrip(b"\n").decode("UTF-8"))
         else:
             raise GitProtocolError("Unexpected packets %r from server" % pkts)
 
