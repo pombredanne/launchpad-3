@@ -22,6 +22,7 @@ import subprocess
 import tempfile
 import threading
 import time
+from wsgiref.simple_server import make_server
 
 from bzrlib.branch import Branch
 from bzrlib.branchbuilder import BranchBuilder
@@ -37,12 +38,17 @@ from bzrlib.urlutils import (
     join as urljoin,
     )
 import CVS
+from dulwich.errors import NotGitRepository
 import dulwich.index
 from dulwich.objects import Blob
 from dulwich.repo import Repo as GitRepo
-from dulwich.server import (
-    DictBackend,
-    TCPGitServer,
+from dulwich.server import Backend
+from dulwich.web import (
+    GunzipFilter,
+    HTTPGitApplication,
+    LimitedInputFilter,
+    WSGIRequestHandlerLogger,
+    WSGIServerLogger,
     )
 import subvertpy.ra
 import subvertpy.repos
@@ -221,13 +227,29 @@ class CVSServer(Server):
         self._repository = self.createRepository(self._repository_path)
 
 
-class TCPGitServerThread(threading.Thread):
-    """Thread that runs a TCP Git server."""
+class GitStoreBackend(Backend):
+    """A backend that looks up repositories under a store directory."""
+
+    def __init__(self, root):
+        self.root = root
+
+    def open_repository(self, path):
+        full_path = os.path.normpath(os.path.join(self.root, path.lstrip("/")))
+        if not full_path.startswith(self.root + "/"):
+            raise NotGitRepository("Repository %s not under store" % path)
+        return GitRepo(full_path)
+
+
+class HTTPGitServerThread(threading.Thread):
+    """Thread that runs an HTTP Git server."""
 
     def __init__(self, backend, address, port=None):
-        super(TCPGitServerThread, self).__init__()
-        self.setName("TCP Git server on %s:%s" % (address, port))
-        self.server = TCPGitServer(backend, address, port)
+        super(HTTPGitServerThread, self).__init__()
+        self.setName("HTTP Git server on %s:%s" % (address, port))
+        app = GunzipFilter(LimitedInputFilter(HTTPGitApplication(backend)))
+        self.server = make_server(
+            address, port, app, handler_class=WSGIRequestHandlerLogger,
+            server_class=WSGIServerLogger)
 
     def run(self):
         self.server.serve_forever()
@@ -241,17 +263,19 @@ class TCPGitServerThread(threading.Thread):
 
 class GitServer(Server):
 
-    def __init__(self, repository_path, use_server=False):
+    def __init__(self, repository_store, use_server=False):
         super(GitServer, self).__init__()
-        self.repository_path = repository_path
+        self.repository_store = repository_store
         self._use_server = use_server
 
-    def get_url(self):
+    def get_url(self, repository_name):
         """Return a URL to the Git repository."""
         if self._use_server:
-            return 'git://%s:%d/' % self._server.get_address()
+            host, port = self._server.get_address()
+            return 'http://%s:%d/%s' % (host, port, repository_name)
         else:
-            return local_path_to_url(self.repository_path)
+            return local_path_to_url(
+                os.path.join(self.repository_store, repository_name))
 
     def createRepository(self, path, bare=False):
         if bare:
@@ -259,13 +283,11 @@ class GitServer(Server):
         else:
             GitRepo.init(path)
 
-    def start_server(self, bare=False):
+    def start_server(self):
         super(GitServer, self).start_server()
-        self.createRepository(self.repository_path, bare=bare)
         if self._use_server:
-            repo = GitRepo(self.repository_path)
-            self._server = TCPGitServerThread(
-                DictBackend({"/": repo}), "localhost", 0)
+            self._server = HTTPGitServerThread(
+                GitStoreBackend(self.repository_store), "localhost", 0)
             self._server.start()
 
     def stop_server(self):
@@ -273,8 +295,11 @@ class GitServer(Server):
         if self._use_server:
             self._server.stop()
 
-    def makeRepo(self, tree_contents):
-        repo = GitRepo(self.repository_path)
+    def makeRepo(self, repository_name, tree_contents):
+        repository_path = os.path.join(self.repository_store, repository_name)
+        os.mkdir(repository_path)
+        self.createRepository(repository_path, bare=self._use_server)
+        repo = GitRepo(repository_path)
         blobs = [
             (Blob.from_string(contents), filename) for (filename, contents)
             in tree_contents]

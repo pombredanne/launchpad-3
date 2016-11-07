@@ -14,7 +14,6 @@ import StringIO
 import subprocess
 import tempfile
 import urllib
-from urlparse import urlsplit
 
 from bzrlib.branch import Branch
 from bzrlib.tests import (
@@ -739,11 +738,11 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
         self.git_server.start_server()
         self.addCleanup(self.git_server.stop_server)
 
-        self.git_server.makeRepo([('README', 'contents')])
+        self.git_server.makeRepo('source', [('README', 'contents')])
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImport(
-            git_repo_url=self.git_server.get_url(),
+            git_repo_url=self.git_server.get_url('source'),
             target_rcs_type=target_rcs_type)
 
     def makeBzrCodeImport(self):
@@ -791,8 +790,7 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
             commit_count = branch.revno()
         else:
             repo_path = os.path.join(
-                urlsplit(config.codehosting.git_browse_root).path,
-                code_import.target.unique_name)
+                self.target_store, code_import.target.unique_name)
             commit_count = int(subprocess.check_output(
                 ["git", "rev-list", "--count", "HEAD"],
                 cwd=repo_path, universal_newlines=True))
@@ -863,14 +861,17 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
 
     def test_import_git_to_git(self):
         # Create a Git-to-Git CodeImport and import it.
-        target_store = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, target_store)
+        self.target_store = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.target_store)
+        target_git_server = GitServer(self.target_store, use_server=True)
+        target_git_server.start_server()
+        self.addCleanup(target_git_server.stop_server)
         config_name = self.getUniqueString()
         config_fixture = self.useFixture(ConfigFixture(
             config_name, self.layer.config_fixture.instance_name))
         setting_lines = [
             "[codehosting]",
-            "git_browse_root: file://%s" % target_store,
+            "git_browse_root: %s" % target_git_server.get_url(""),
             "",
             "[codeimport]",
             "macaroon_secret_key: some-secret",
@@ -884,11 +885,9 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
         job_id = job.id
         self.layer.txn.commit()
         target_repo_path = os.path.join(
-            target_store, job.code_import.target.unique_name)
+            self.target_store, job.code_import.target.unique_name)
         os.makedirs(target_repo_path)
-        target_git_server = GitServer(target_repo_path, use_server=False)
-        target_git_server.start_server(bare=True)
-        self.addCleanup(target_git_server.stop_server)
+        target_git_server.createRepository(target_repo_path, bare=True)
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 

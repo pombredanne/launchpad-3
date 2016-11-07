@@ -1163,16 +1163,16 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
     def makeSourceDetails(self, branch_name, files, stacked_on_url=None):
         """Make a Git `CodeImportSourceDetails` pointing at a real Git repo.
         """
-        repository_path = self.makeTemporaryDirectory()
-        git_server = GitServer(repository_path)
+        repository_store = self.makeTemporaryDirectory()
+        git_server = GitServer(repository_store)
         git_server.start_server()
         self.addCleanup(git_server.stop_server)
 
-        git_server.makeRepo(files)
+        git_server.makeRepo('source', files)
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='git', url=git_server.get_url(),
+            rcstype='git', url=git_server.get_url('source'),
             stacked_on_url=stacked_on_url)
 
     def test_non_master(self):

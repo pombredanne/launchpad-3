@@ -1010,13 +1010,10 @@ class GitToGitImportWorker(ImportWorker):
         unauth_target_url = urljoin(
             config.codehosting.git_browse_root, self.source_details.target_id)
         split = urlsplit(unauth_target_url)
-        if split.hostname:
-            target_netloc = ":%s@%s" % (
-                self.source_details.macaroon.serialize(), split.hostname)
-            if split.port:
-                target_netloc += ":%s" % split.port
-        else:
-            target_netloc = ""
+        target_netloc = ":%s@%s" % (
+            self.source_details.macaroon.serialize(), split.hostname)
+        if split.port:
+            target_netloc += ":%s" % split.port
         target_url = urlunsplit([
             split.scheme, target_netloc, split.path, "", ""])
         # XXX cjwatson 2016-10-11: Ideally we'd put credentials in a
