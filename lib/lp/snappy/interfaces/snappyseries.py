@@ -107,6 +107,10 @@ class ISnappySeriesEditableAttributes(Interface):
     status = exported(Choice(
         title=_("Status"), required=True, vocabulary=SeriesStatus))
 
+    preferred_distro_series = exported(Reference(
+        IDistroSeries, title=_("Preferred distro series"),
+        required=False, readonly=False))
+
     usable_distro_series = exported(List(
         title=_("Usable distro series"),
         description=_(

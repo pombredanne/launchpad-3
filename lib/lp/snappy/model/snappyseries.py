@@ -60,18 +60,40 @@ class SnappySeries(Storm):
 
     status = EnumCol(enum=SeriesStatus, notNull=True)
 
+    preferred_distro_series_id = Int(
+        name='preferred_distro_series', allow_none=True)
+    _preferred_distro_series = Reference(
+        preferred_distro_series_id, 'DistroSeries.id')
+
     def __init__(self, registrant, name, display_name, status,
-                 date_created=DEFAULT):
+                 preferred_distro_series=None, date_created=DEFAULT):
         super(SnappySeries, self).__init__()
         self.registrant = registrant
         self.name = name
         self.display_name = display_name
         self.status = status
         self.date_created = date_created
+        self.preferred_distro_series = preferred_distro_series
 
     @property
     def title(self):
         return self.display_name
+
+    @property
+    def preferred_distro_series(self):
+        return self._preferred_distro_series
+
+    @preferred_distro_series.setter
+    def preferred_distro_series(self, value):
+        if value is not None:
+            existing = Store.of(self).find(
+                SnappyDistroSeries,
+                SnappyDistroSeries.snappy_series == self,
+                SnappyDistroSeries.distro_series == value)
+            if existing.is_empty():
+                link = SnappyDistroSeries(self, value)
+                Store.of(self).add(link)
+        self._preferred_distro_series = value
 
     @property
     def usable_distro_series(self):
@@ -79,7 +101,7 @@ class SnappySeries(Storm):
             DistroSeries,
             SnappyDistroSeries.snappy_series == self,
             SnappyDistroSeries.distro_series_id == DistroSeries.id)
-        return rows.order_by(DistroSeries.id)
+        return rows.order_by(Desc(DistroSeries.id))
 
     @usable_distro_series.setter
     def usable_distro_series(self, value):
@@ -125,11 +147,13 @@ class SnappySeriesSet:
     """See `ISnappySeriesSet`."""
 
     def new(self, registrant, name, display_name, status,
-            date_created=DEFAULT):
+            preferred_distro_series=None, date_created=DEFAULT):
         """See `ISnappySeriesSet`."""
         store = IMasterStore(SnappySeries)
         snappy_series = SnappySeries(
-            registrant, name, display_name, status, date_created=date_created)
+            registrant, name, display_name, status,
+            preferred_distro_series=preferred_distro_series,
+            date_created=date_created)
         store.add(snappy_series)
         return snappy_series
 
@@ -160,7 +184,7 @@ class SnappySeriesSet:
     def getAll(self):
         """See `ISnappySeriesSet`."""
         return IStore(SnappySeries).find(SnappySeries).order_by(
-            SnappySeries.name)
+            Desc(SnappySeries.name))
 
 
 @implementer(ISnappyDistroSeriesSet)

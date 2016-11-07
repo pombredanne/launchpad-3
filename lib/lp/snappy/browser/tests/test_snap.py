@@ -154,7 +154,7 @@ class TestSnapAddView(BrowserTestCase):
             version="13.10")
         with admin_logged_in():
             self.snappyseries = self.factory.makeSnappySeries(
-                usable_distro_series=[self.distroseries])
+                preferred_distro_series=self.distroseries)
         self.snap_store_client = FakeMethod()
         self.snap_store_client.listChannels = FakeMethod(result=[
             {"name": "stable", "display_name": "Stable"},
@@ -175,7 +175,7 @@ class TestSnapAddView(BrowserTestCase):
                 distroseries=distroseries, architecturetag=name,
                 processor=processor)
         with admin_logged_in():
-            self.factory.makeSnappySeries(usable_distro_series=[distroseries])
+            self.factory.makeSnappySeries(preferred_distro_series=distroseries)
         return distroseries
 
     def assertProcessorControls(self, processors_control, enabled, disabled):
@@ -187,29 +187,25 @@ class TestSnapAddView(BrowserTestCase):
             for name in disabled])
         self.assertThat(processors_control.controls, MatchesSetwise(*matchers))
 
-    def test_initial_distroseries(self):
-        # The initial distroseries is the newest that is current or in
-        # development.
-        old = self.factory.makeUbuntuDistroSeries(
-            version="14.04", status=SeriesStatus.DEVELOPMENT)
-        development = self.factory.makeUbuntuDistroSeries(
-            version="14.10", status=SeriesStatus.DEVELOPMENT)
-        experimental = self.factory.makeUbuntuDistroSeries(
-            version="15.04", status=SeriesStatus.EXPERIMENTAL)
+    def test_initial_store_distro_series(self):
+        # The initial store_distro_series uses the preferred distribution
+        # series for the latest snappy series.
+        lts = self.factory.makeUbuntuDistroSeries(
+            version="16.04", status=SeriesStatus.CURRENT)
+        current = self.factory.makeUbuntuDistroSeries(
+            version="16.10", status=SeriesStatus.CURRENT)
         with admin_logged_in():
-            self.factory.makeSnappySeries(
-                usable_distro_series=[old, development, experimental])
+            self.factory.makeSnappySeries(usable_distro_series=[lts, current])
             newest = self.factory.makeSnappySeries(
-                usable_distro_series=[development, experimental])
-            self.factory.makeSnappySeries(
-                usable_distro_series=[old, experimental])
+                preferred_distro_series=lts,
+                usable_distro_series=[lts, current])
         branch = self.factory.makeAnyBranch()
         with person_logged_in(self.person):
             view = create_initialized_view(branch, "+new-snap")
         self.assertThat(
             view.initial_values["store_distro_series"],
             MatchesStructure.byEquality(
-                snappy_series=newest, distro_series=development))
+                snappy_series=newest, distro_series=lts))
 
     def test_create_new_snap_not_logged_in(self):
         branch = self.factory.makeAnyBranch()
