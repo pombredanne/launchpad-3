@@ -484,6 +484,10 @@ patch_choice_parameter_type(
     IArchive, '_addArchiveDependency', 'pocket', PackagePublishingPocket)
 patch_entry_return_type(
     IArchive, '_addArchiveDependency', IArchiveDependency)
+patch_plain_parameter_type(
+    IArchive, 'markSuiteDirty', 'distroseries', IDistroSeries)
+patch_choice_parameter_type(
+    IArchive, 'markSuiteDirty', 'pocket', PackagePublishingPocket)
 
 # IBuildFarmJob
 patch_choice_property(IBuildFarmJob, 'status', BuildStatus)

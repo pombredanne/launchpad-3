@@ -671,6 +671,10 @@ class IArchiveView(IHasBuildRecords):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!")))
 
+    dirty_suites = Attribute(
+        "Suites that the next publisher run should publish regardless of "
+        "pending publications.")
+
     processors = exported(
         CollectionField(
             title=_("Processors"),
@@ -2201,6 +2205,29 @@ class IArchiveEdit(Interface):
         """Deactivate named authorization tokens in bulk.
 
         :param names: A list of token names.
+        """
+
+    @operation_parameters(
+        distroseries=Reference(
+            # Really IDistroSeries.
+            Interface,
+            title=_("Distro series"), required=True),
+        pocket=Choice(
+            title=_("Pocket"),
+            # Really PackagePublishingPocket.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        )
+    @export_write_operation()
+    @operation_for_version("devel")
+    def markSuiteDirty(distroseries, pocket):
+        """Mark a suite as dirty in this archive.
+
+        The next publisher run will publish this suite regardless of whether
+        it has any pending publications.
+
+        :param distroseries: An `IDistroSeries`.
+        :param pocket: A `PackagePublishingPocket`.
         """
 
 

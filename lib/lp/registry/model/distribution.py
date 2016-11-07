@@ -1296,13 +1296,23 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             reapable_af_query, clauseTables=['ArchiveFile'],
             orderBy=['archive.id'], distinct=True)
 
+        dirty_suites_query = """
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        Archive.dirty_suites IS NOT NULL
+        """ % sqlvalues(ArchivePurpose.PPA, self)
+
+        dirty_suites_archives = Archive.select(
+            dirty_suites_query, orderBy=['archive.id'], distinct=True)
+
         deleting_archives = Archive.selectBy(
             distribution=self,
             purpose=ArchivePurpose.PPA,
             status=ArchiveStatus.DELETING).orderBy(['archive.id'])
 
         return src_archives.union(bin_archives).union(
-            reapable_af_archives).union(deleting_archives)
+            reapable_af_archives).union(dirty_suites_archives).union(
+            deleting_archives)
 
     def getArchiveByComponent(self, component_name):
         """See `IDistribution`."""
