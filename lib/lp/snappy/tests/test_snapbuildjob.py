@@ -133,8 +133,10 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
     def test_run_unauthorized_notifies(self):
         # A run that gets 401 from the store sends mail.
         requester = self.factory.makePerson(name="requester")
+        requester_team = self.factory.makeTeam(
+            owner=requester, name="requester-team", members=[requester])
         snapbuild = self.factory.makeSnapBuild(
-            requester=requester, name="test-snap", owner=requester,
+            requester=requester_team, name="test-snap", owner=requester_team,
             builder=self.factory.makeBuilder())
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
@@ -159,25 +161,30 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         subject = notification["Subject"].replace("\n ", " ")
         self.assertEqual("Store authorization failed for test-snap", subject)
         self.assertEqual(
-            "Requester", notification["X-Launchpad-Message-Rationale"])
+            "Requester @requester-team",
+            notification["X-Launchpad-Message-Rationale"])
         self.assertEqual(
-            requester.name, notification["X-Launchpad-Message-For"])
+            requester_team.name, notification["X-Launchpad-Message-For"])
         self.assertEqual(
             "snap-build-upload-unauthorized",
             notification["X-Launchpad-Notification-Type"])
         body, footer = notification.get_payload(decode=True).split("\n-- \n")
         self.assertIn(
-            "http://launchpad.dev/~requester/+snap/test-snap/+authorize", body)
+            "http://launchpad.dev/~requester-team/+snap/test-snap/+authorize",
+            body)
         self.assertEqual(
-            "http://launchpad.dev/~requester/+snap/test-snap/+build/%d\n"
-            "You are the requester of the build.\n" % snapbuild.id, footer)
+            "http://launchpad.dev/~requester-team/+snap/test-snap/+build/%d\n"
+            "Your team Requester Team is the requester of the build.\n" %
+            snapbuild.id, footer)
 
     def test_run_upload_failure_notifies(self):
         # A run that gets some other upload failure from the store sends
         # mail.
         requester = self.factory.makePerson(name="requester")
+        requester_team = self.factory.makeTeam(
+            owner=requester, name="requester-team", members=[requester])
         snapbuild = self.factory.makeSnapBuild(
-            requester=requester, name="test-snap", owner=requester,
+            requester=requester_team, name="test-snap", owner=requester_team,
             builder=self.factory.makeBuilder())
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
@@ -201,20 +208,22 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         subject = notification["Subject"].replace("\n ", " ")
         self.assertEqual("Store upload failed for test-snap", subject)
         self.assertEqual(
-            "Requester", notification["X-Launchpad-Message-Rationale"])
+            "Requester @requester-team",
+            notification["X-Launchpad-Message-Rationale"])
         self.assertEqual(
-            requester.name, notification["X-Launchpad-Message-For"])
+            requester_team.name, notification["X-Launchpad-Message-For"])
         self.assertEqual(
             "snap-build-upload-failed",
             notification["X-Launchpad-Notification-Type"])
         body, footer = notification.get_payload(decode=True).split("\n-- \n")
         self.assertIn("Failed to upload", body)
         build_url = (
-            "http://launchpad.dev/~requester/+snap/test-snap/+build/%d" %
+            "http://launchpad.dev/~requester-team/+snap/test-snap/+build/%d" %
             snapbuild.id)
         self.assertIn(build_url, body)
         self.assertEqual(
-            "%s\nYou are the requester of the build.\n" % build_url, footer)
+            "%s\nYour team Requester Team is the requester of the build.\n" %
+            build_url, footer)
 
     def test_run_scan_pending_retries(self):
         # A run that finds that the store has not yet finished scanning the
@@ -260,8 +269,10 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
     def test_run_scan_failure_notifies(self):
         # A run that gets a scan failure from the store sends mail.
         requester = self.factory.makePerson(name="requester")
+        requester_team = self.factory.makeTeam(
+            owner=requester, name="requester-team", members=[requester])
         snapbuild = self.factory.makeSnapBuild(
-            requester=requester, name="test-snap", owner=requester,
+            requester=requester_team, name="test-snap", owner=requester_team,
             builder=self.factory.makeBuilder())
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
@@ -286,17 +297,19 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         subject = notification["Subject"].replace("\n ", " ")
         self.assertEqual("Store upload scan failed for test-snap", subject)
         self.assertEqual(
-            "Requester", notification["X-Launchpad-Message-Rationale"])
+            "Requester @requester-team",
+            notification["X-Launchpad-Message-Rationale"])
         self.assertEqual(
-            requester.name, notification["X-Launchpad-Message-For"])
+            requester_team.name, notification["X-Launchpad-Message-For"])
         self.assertEqual(
             "snap-build-upload-scan-failed",
             notification["X-Launchpad-Notification-Type"])
         body, footer = notification.get_payload(decode=True).split("\n-- \n")
         self.assertIn("Scan failed.", body)
         self.assertEqual(
-            "http://launchpad.dev/~requester/+snap/test-snap/+build/%d\n"
-            "You are the requester of the build.\n" % snapbuild.id, footer)
+            "http://launchpad.dev/~requester-team/+snap/test-snap/+build/%d\n"
+            "Your team Requester Team is the requester of the build.\n" %
+            snapbuild.id, footer)
 
     def test_run_release(self):
         # A run configured to automatically release the package to certain
@@ -324,8 +337,10 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         # channels but that encounters the manual review state on upload
         # sends mail.
         requester = self.factory.makePerson(name="requester")
+        requester_team = self.factory.makeTeam(
+            owner=requester, name="requester-team", members=[requester])
         snapbuild = self.factory.makeSnapBuild(
-            requester=requester, name="test-snap", owner=requester,
+            requester=requester_team, name="test-snap", owner=requester_team,
             store_channels=["stable", "edge"])
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
@@ -353,24 +368,28 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         subject = notification["Subject"].replace("\n ", " ")
         self.assertEqual("test-snap held for manual review", subject)
         self.assertEqual(
-            "Requester", notification["X-Launchpad-Message-Rationale"])
+            "Requester @requester-team",
+            notification["X-Launchpad-Message-Rationale"])
         self.assertEqual(
-            requester.name, notification["X-Launchpad-Message-For"])
+            requester_team.name, notification["X-Launchpad-Message-For"])
         self.assertEqual(
             "snap-build-release-manual-review",
             notification["X-Launchpad-Notification-Type"])
         body, footer = notification.get_payload(decode=True).split("\n-- \n")
         self.assertIn(self.store_url, body)
         self.assertEqual(
-            "http://launchpad.dev/~requester/+snap/test-snap/+build/%d\n"
-            "You are the requester of the build.\n" % snapbuild.id, footer)
+            "http://launchpad.dev/~requester-team/+snap/test-snap/+build/%d\n"
+            "Your team Requester Team is the requester of the build.\n" %
+            snapbuild.id, footer)
 
     def test_run_release_failure_notifies(self):
         # A run configured to automatically release the package to certain
         # channels but that fails to do so sends mail.
         requester = self.factory.makePerson(name="requester")
+        requester_team = self.factory.makeTeam(
+            owner=requester, name="requester-team", members=[requester])
         snapbuild = self.factory.makeSnapBuild(
-            requester=requester, name="test-snap", owner=requester,
+            requester=requester_team, name="test-snap", owner=requester_team,
             store_channels=["stable", "edge"])
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
@@ -396,9 +415,10 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         subject = notification["Subject"].replace("\n ", " ")
         self.assertEqual("Store release failed for test-snap", subject)
         self.assertEqual(
-            "Requester", notification["X-Launchpad-Message-Rationale"])
+            "Requester @requester-team",
+            notification["X-Launchpad-Message-Rationale"])
         self.assertEqual(
-            requester.name, notification["X-Launchpad-Message-For"])
+            requester_team.name, notification["X-Launchpad-Message-For"])
         self.assertEqual(
             "snap-build-release-failed",
             notification["X-Launchpad-Notification-Type"])
@@ -406,5 +426,6 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertIn("Failed to publish", body)
         self.assertIn(self.store_url, body)
         self.assertEqual(
-            "http://launchpad.dev/~requester/+snap/test-snap/+build/%d\n"
-            "You are the requester of the build.\n" % snapbuild.id, footer)
+            "http://launchpad.dev/~requester-team/+snap/test-snap/+build/%d\n"
+            "Your team Requester Team is the requester of the build.\n" %
+            snapbuild.id, footer)
