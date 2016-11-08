@@ -3,8 +3,10 @@
 
 SET client_min_messages=ERROR;
 
-ALTER TABLE SnappySeries ADD COLUMN preferred_distro_series integer REFERENCES distroseries;
+ALTER TABLE SnappyDistroSeries ADD COLUMN preferred boolean DEFAULT false NOT NULL;
 
-COMMENT ON COLUMN SnappySeries.preferred_distro_series IS 'The preferred distribution series for use with this snappy series.';
+CREATE UNIQUE INDEX snappydistroseries__snappy_series__preferred__idx ON SnappyDistroSeries (snappy_series) WHERE preferred;
+
+COMMENT ON COLUMN SnappyDistroSeries.preferred IS 'True if this record identifies the default distribution series for builds for this snappy series.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 69, 6);
