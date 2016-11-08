@@ -1031,7 +1031,10 @@ class GitToGitImportWorker(ImportWorker):
             raise GitProtocolError(
                 "'git remote set-head %s --auto' did not leave remote HEAD "
                 "under %s" % (remote_name, ref_prefix))
-        return "refs/heads/" + target_ref[len(ref_prefix):]
+        real_target_ref = "refs/heads/" + target_ref[len(ref_prefix):]
+        # Ensure the result is a valid ref name, just in case.
+        self._runGit("check-ref-format", real_target_ref, cwd="repository")
+        return real_target_ref
 
     def _setHead(self, target_url, target_ref):
         """Set HEAD on a remote repository.
