@@ -1101,10 +1101,10 @@ class GitToGitImportWorker(ImportWorker):
                 "fetch", "--prune", "source", "+refs/*:refs/*",
                 cwd="repository")
             try:
-                target_ref = self._getHead("repository", "source")
+                new_head = self._getHead("repository", "source")
             except (subprocess.CalledProcessError, GitProtocolError) as e2:
                 self._logger.info("Unable to fetch default branch: %s" % e2)
-                target_ref = None
+                new_head = None
             self._runGit("remote", "rm", "source", cwd="repository")
             # XXX cjwatson 2016-11-03: For some reason "git remote rm"
             # doesn't actually remove the refs.
@@ -1117,14 +1117,14 @@ class GitToGitImportWorker(ImportWorker):
             return CodeImportWorkerExitCode.FAILURE_INVALID
         self._logger.info("Pushing repository to hosting service.")
         try:
-            if target_ref is not None:
+            if new_head is not None:
                 # Push the target of HEAD first to ensure that it is always
                 # available.
                 self._runGit(
-                    "push", target_url, "+%s:%s" % (target_ref, target_ref),
+                    "push", target_url, "+%s:%s" % (new_head, new_head),
                     cwd="repository")
                 try:
-                    self._setHead(target_url, target_ref)
+                    self._setHead(target_url, new_head)
                 except GitProtocolError as e:
                     self._logger.info("Unable to set default branch: %s" % e)
             self._runGit("push", "--mirror", target_url, cwd="repository")
