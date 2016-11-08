@@ -69,6 +69,9 @@ class TestSnappySeries(TestCaseWithFactory):
         snappy_series.preferred_distro_series = dses[0]
         self.assertEqual(dses[0], snappy_series.preferred_distro_series)
         self.assertContentEqual(dses, snappy_series.usable_distro_series)
+        snappy_series.preferred_distro_series = None
+        self.assertIsNone(snappy_series.preferred_distro_series)
+        self.assertContentEqual(dses, snappy_series.usable_distro_series)
 
     def test_new_no_usable_distro_series(self):
         snappy_series = self.factory.makeSnappySeries()

@@ -13,6 +13,7 @@ __all__ = [
 
 import pytz
 from storm.locals import (
+    Bool,
     DateTime,
     Desc,
     Int,
@@ -60,11 +61,6 @@ class SnappySeries(Storm):
 
     status = EnumCol(enum=SeriesStatus, notNull=True)
 
-    preferred_distro_series_id = Int(
-        name='preferred_distro_series', allow_none=True)
-    _preferred_distro_series = Reference(
-        preferred_distro_series_id, 'DistroSeries.id')
-
     def __init__(self, registrant, name, display_name, status,
                  preferred_distro_series=None, date_created=DEFAULT):
         super(SnappySeries, self).__init__()
@@ -81,19 +77,32 @@ class SnappySeries(Storm):
 
     @property
     def preferred_distro_series(self):
-        return self._preferred_distro_series
+        row = Store.of(self).find(
+            SnappyDistroSeries,
+            SnappyDistroSeries.snappy_series == self,
+            SnappyDistroSeries.preferred == True).one()
+        return row.distro_series if row is not None else None
 
     @preferred_distro_series.setter
     def preferred_distro_series(self, value):
+        current = Store.of(self).find(
+            SnappyDistroSeries,
+            SnappyDistroSeries.snappy_series == self,
+            SnappyDistroSeries.preferred == True).one()
+        if current is not None:
+            if current.distro_series == value:
+                return
+            current.preferred = False
         if value is not None:
-            existing = Store.of(self).find(
+            row = Store.of(self).find(
                 SnappyDistroSeries,
                 SnappyDistroSeries.snappy_series == self,
-                SnappyDistroSeries.distro_series == value)
-            if existing.is_empty():
-                link = SnappyDistroSeries(self, value)
-                Store.of(self).add(link)
-        self._preferred_distro_series = value
+                SnappyDistroSeries.distro_series == value).one()
+            if row is not None:
+                row.preferred = True
+            else:
+                row = SnappyDistroSeries(self, value, preferred=True)
+                Store.of(self).add(row)
 
     @property
     def usable_distro_series(self):
@@ -131,10 +140,13 @@ class SnappyDistroSeries(Storm):
     distro_series_id = Int(name='distro_series', allow_none=False)
     distro_series = Reference(distro_series_id, 'DistroSeries.id')
 
-    def __init__(self, snappy_series, distro_series):
+    preferred = Bool(name='preferred', allow_none=False)
+
+    def __init__(self, snappy_series, distro_series, preferred=False):
         super(SnappyDistroSeries, self).__init__()
         self.snappy_series = snappy_series
         self.distro_series = distro_series
+        self.preferred = preferred
 
     @property
     def title(self):
