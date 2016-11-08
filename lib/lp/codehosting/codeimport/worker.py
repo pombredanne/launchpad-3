@@ -1064,6 +1064,18 @@ class GitToGitImportWorker(ImportWorker):
         else:
             raise GitProtocolError("Unexpected packets %r from server" % pkts)
 
+    def _deleteRefs(self, repository, pattern):
+        """Delete all refs in `repository` matching `pattern`."""
+        # XXX cjwatson 2016-11-08: We might ideally use something like:
+        # "git for-each-ref --format='delete %(refname)%00%(objectname)%00' \
+        #   <pattern> | git update-ref --stdin -z
+        # ... which would be faster, but that requires git 1.8.5.
+        remote_refs = subprocess.check_output(
+            ["git", "for-each-ref", "--format=%(refname)", pattern],
+            cwd="repository").splitlines()
+        for remote_ref in remote_refs:
+            self._runGit("update-ref", "-d", remote_ref, cwd="repository")
+
     def _doImport(self):
         self._logger.info("Starting job.")
         try:
@@ -1108,10 +1120,7 @@ class GitToGitImportWorker(ImportWorker):
             self._runGit("remote", "rm", "source", cwd="repository")
             # XXX cjwatson 2016-11-03: For some reason "git remote rm"
             # doesn't actually remove the refs.
-            remote_refs = os.path.join(
-                "repository", "refs", "remotes", "source")
-            if os.path.isdir(remote_refs):
-                shutil.rmtree(remote_refs)
+            self._deleteRefs("repository", "refs/remotes/source/*")
         except subprocess.CalledProcessError as e:
             self._logger.info("Unable to fetch remote repository: %s" % e)
             return CodeImportWorkerExitCode.FAILURE_INVALID
