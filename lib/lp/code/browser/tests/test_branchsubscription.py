@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchSubscriptions."""
@@ -31,7 +31,7 @@ class TestBranchSubscriptionAddOtherView(TestCaseWithFactory):
             'field.actions.subscribe_action': 'Subscribe'}
         with person_logged_in(owner):
             view = create_initialized_view(
-                branch, '+addsubscriber', pricipal=owner, form=form)
+                branch, '+addsubscriber', principal=owner, form=form)
             self.assertContentEqual(
                 ['Open and delegated teams cannot be subscribed to private '
                 'branches.'], view.errors)
@@ -48,5 +48,5 @@ class TestBranchSubscriptionAddOtherView(TestCaseWithFactory):
             'field.actions.subscribe_action': 'Subscribe'}
         with person_logged_in(owner):
             view = create_initialized_view(
-                branch, '+addsubscriber', pricipal=owner, form=form)
+                branch, '+addsubscriber', principal=owner, form=form)
             self.assertContentEqual([], view.errors)
