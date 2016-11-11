@@ -4,10 +4,7 @@
 __metaclass__ = type
 
 from lazr.restfulclient.errors import BadRequest
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    )
+from testtools.matchers import LessThan
 from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
@@ -62,11 +59,7 @@ class TestBranch(TestCaseWithFactory):
         list_mps()
         recorder1, recorder2 = record_two_runs(list_mps, create_mp, 2)
         self.assertThat(recorder1, HasQueryCount(LessThan(30)))
-        # Each new MP triggers a query for Person, BranchMergeProposal
-        # and PreviewDiff. Eventually they should be batched, but this
-        # at least ensures the situation doesn't get worse.
-        self.assertThat(
-            recorder2, HasQueryCount(Equals(recorder1.count + (2 * 3))))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_landing_targets_constant_queries(self):
         project = self.factory.makeProduct()
@@ -93,11 +86,7 @@ class TestBranch(TestCaseWithFactory):
         list_mps()
         recorder1, recorder2 = record_two_runs(list_mps, create_mp, 2)
         self.assertThat(recorder1, HasQueryCount(LessThan(30)))
-        # Each new MP triggers a query for Person, BranchMergeProposal
-        # and PreviewDiff. Eventually they should be batched, but this
-        # at least ensures the situation doesn't get worse.
-        self.assertThat(
-            recorder2, HasQueryCount(Equals(recorder1.count + (2 * 3))))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestBranchOperations(TestCaseWithFactory):

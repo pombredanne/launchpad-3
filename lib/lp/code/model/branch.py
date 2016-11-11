@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+from functools import partial
 import operator
 
 from bzrlib import urlutils
@@ -481,17 +482,8 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
 
     def getPrecachedLandingTargets(self, user):
         """See `IBranch`."""
-        # Circular import.
-        from lp.code.model.branchcollection import GenericBranchCollection
-
-        def eager_load(rows):
-            branches = bulk.load_related(
-                Branch, rows, ['target_branchID', 'prerequisite_branchID'])
-            GenericBranchCollection.preloadVisibleStackedOnBranches(
-                branches, user)
-
-        return DecoratedResultSet(
-            self.landing_targets, pre_iter_hook=eager_load)
+        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
+        return DecoratedResultSet(self.landing_targets, pre_iter_hook=loader)
 
     @property
     def _api_landing_targets(self):
@@ -515,17 +507,9 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
 
     def getPrecachedLandingCandidates(self, user):
         """See `IBranch`."""
-        # Circular import.
-        from lp.code.model.branchcollection import GenericBranchCollection
-
-        def eager_load(rows):
-            branches = bulk.load_related(
-                Branch, rows, ['source_branchID', 'prerequisite_branchID'])
-            GenericBranchCollection.preloadVisibleStackedOnBranches(
-                branches, user)
-
+        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
         return DecoratedResultSet(
-            self.landing_candidates, pre_iter_hook=eager_load)
+            self.landing_candidates, pre_iter_hook=loader)
 
     @property
     def _api_landing_candidates(self):
