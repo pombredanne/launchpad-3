@@ -952,7 +952,7 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         browser = self.getBrowser(project, '+configure-code')
         self.assertRaises(
             LookupError, browser.getControl,
-            'Import a repository hosted somewhere else')
+            'Import a Git repository hosted somewhere else')
 
     def test_import_git_repository(self):
         self.useFixture(
@@ -962,7 +962,8 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         project = self.factory.makeProduct(owner=owner)
         browser = self.getBrowser(project, '+configure-code')
         browser.getControl('Git', index=0).click()
-        browser.getControl('Import a repository hosted somewhere else').click()
+        browser.getControl(
+            'Import a Git repository hosted somewhere else').click()
         browser.getControl('Git repository name').value = 'imported'
         browser.getControl('Git repository URL').value = (
             'https://git.example.org/imported')
@@ -986,7 +987,8 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         project = self.factory.makeProduct(owner=owner)
         browser = self.getBrowser(project, '+configure-code')
         browser.getControl('Git', index=0).click()
-        browser.getControl('Import a repository hosted somewhere else').click()
+        browser.getControl(
+            'Import a Git repository hosted somewhere else').click()
         browser.getControl('Git repository name').value = 'imported'
         browser.getControl('Git repository URL').value = (
             'svn://svn.example.org/imported')

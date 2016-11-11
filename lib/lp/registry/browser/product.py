@@ -1680,7 +1680,7 @@ GIT_REPOSITORY_TYPE_VOCABULARY = SimpleVocabulary((
     SimpleTerm(LINK_LP, LINK_LP,
                _("Link to a Git repository already on Launchpad")),
     SimpleTerm(IMPORT_EXTERNAL, IMPORT_EXTERNAL,
-               _("Import a repository hosted somewhere else")),
+               _("Import a Git repository hosted somewhere else")),
     ))
 
 
@@ -1710,7 +1710,7 @@ class SetBranchForm(Interface):
 
     branch_type = Choice(
         title=_('Import type'), vocabulary=BRANCH_TYPE_VOCABULARY,
-        description=_("The type of import"), required=True)
+        description=_("Whether the branch is imported"), required=True)
 
     branch_name = copy_field(
         IBranch['name'], __name__='branch_name', title=_('Branch name'),
@@ -1735,7 +1735,7 @@ class SetBranchForm(Interface):
     git_repository_type = Choice(
         title=_('Import type'), required=True,
         vocabulary=GIT_REPOSITORY_TYPE_VOCABULARY,
-        description=_('The type of import'))
+        description=_('Whether the repository is imported'))
 
     git_repository_name = copy_field(
         IGitRepository['name'], __name__='git_repository_name',
