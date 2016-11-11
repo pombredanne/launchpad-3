@@ -39,7 +39,7 @@ If linking to an existing branch is selected then the branch location
 must be provided.
 
     >>> form = {
-    ...     'field.branch_type': 'link-lp-bzr',
+    ...     'field.branch_type': 'link-lp',
     ...     'field.actions.update': 'Update',
     ...     }
     >>> view = create_initialized_view(
@@ -52,7 +52,7 @@ Setting the branch location to an invalid branch results in another
 validation error.
 
     >>> form = {
-    ...     'field.branch_type': 'link-lp-bzr',
+    ...     'field.branch_type': 'link-lp',
     ...     'field.branch_location': 'foo',
     ...     'field.actions.update': 'Update',
     ...     }
@@ -69,7 +69,7 @@ Providing a valid branch results in a successful linking.
     >>> branch = factory.makeBranch(
     ...     name='impala-branch', owner=driver, product=product)
     >>> form = {
-    ...     'field.branch_type': 'link-lp-bzr',
+    ...     'field.branch_type': 'link-lp',
     ...     'field.branch_location': branch.unique_name,
     ...     'field.actions.update': 'Update',
     ...     }
