@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
@@ -561,6 +561,24 @@ class TestBranchView(BrowserTestCase):
         view = create_view(branch, '+index')
         with StormStatementRecorder() as recorder:
             view.landing_candidates
+        self.assertThat(recorder, HasQueryCount(Equals(5)))
+
+    def test_query_count_landing_targets(self):
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product)
+        for i in range(10):
+            self.factory.makeBranchMergeProposal(source_branch=branch)
+        stacked = self.factory.makeBranch(product=product)
+        target = self.factory.makeBranch(stacked_on=stacked, product=product)
+        prereq = self.factory.makeBranch(product=product)
+        self.factory.makeBranchMergeProposal(
+            source_branch=branch, target_branch=target,
+            prerequisite_branch=prereq)
+        Store.of(branch).flush()
+        Store.of(branch).invalidate()
+        view = create_view(branch, '+index')
+        with StormStatementRecorder() as recorder:
+            view.landing_targets
         self.assertThat(recorder, HasQueryCount(Equals(5)))
 
     def test_query_count_subscriber_content(self):

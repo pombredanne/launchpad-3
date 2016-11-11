@@ -473,8 +473,29 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_last_modified = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
-    landing_targets = SQLMultipleJoin(
-        'BranchMergeProposal', joinColumn='source_branch')
+    @property
+    def landing_targets(self):
+        """See `IBranch`."""
+        return Store.of(self).find(
+            BranchMergeProposal, BranchMergeProposal.source_branch == self)
+
+    def getPrecachedLandingTargets(self, user):
+        """See `IBranch`."""
+        # Circular import.
+        from lp.code.model.branchcollection import GenericBranchCollection
+
+        def eager_load(rows):
+            branches = bulk.load_related(
+                Branch, rows, ['target_branchID', 'prerequisite_branchID'])
+            GenericBranchCollection.preloadVisibleStackedOnBranches(
+                branches, user)
+
+        return DecoratedResultSet(
+            self.landing_targets, pre_iter_hook=eager_load)
+
+    @property
+    def _api_landing_targets(self):
+        return self.getPrecachedLandingTargets(getUtility(ILaunchBag).user)
 
     @property
     def active_landing_targets(self):

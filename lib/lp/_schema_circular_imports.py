@@ -240,7 +240,8 @@ patch_collection_property(IBranch, 'dependent_branches', IBranchMergeProposal)
 patch_entry_return_type(IBranch, 'getSubscription', IBranchSubscription)
 patch_collection_property(
     IBranch, '_api_landing_candidates', IBranchMergeProposal)
-patch_collection_property(IBranch, 'landing_targets', IBranchMergeProposal)
+patch_collection_property(
+    IBranch, '_api_landing_targets', IBranchMergeProposal)
 patch_plain_parameter_type(IBranch, 'linkBug', 'bug', IBug)
 patch_plain_parameter_type(
     IBranch, 'linkSpecification', 'spec', ISpecification)

@@ -485,7 +485,8 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @cachedproperty
     def landing_targets(self):
         """Return a filtered list of landing targets."""
-        return latest_proposals_for_each_branch(self.context.landing_targets)
+        targets = self.context.getPrecachedLandingTargets(self.user)
+        return latest_proposals_for_each_branch(targets)
 
     @property
     def latest_landing_candidates(self):
