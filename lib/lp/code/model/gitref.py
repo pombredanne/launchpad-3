@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 from datetime import datetime
+from functools import partial
 import json
 from urllib import quote_plus
 from urlparse import urlsplit
@@ -51,7 +52,6 @@ from lp.code.model.branchmergeproposal import (
     BranchMergeProposalGetter,
     )
 from lp.services.config import config
-from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
@@ -59,6 +59,7 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class GitRefMixin:
@@ -185,25 +186,34 @@ class GitRefMixin:
             BranchMergeProposal.source_git_repository == self.repository,
             BranchMergeProposal.source_git_path == self.path)
 
+    def getPrecachedLandingTargets(self, user):
+        """See `IGitRef`."""
+        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
+        return DecoratedResultSet(self.landing_targets, pre_iter_hook=loader)
+
+    @property
+    def _api_landing_targets(self):
+        return self.getPrecachedLandingTargets(getUtility(ILaunchBag).user)
+
     @property
     def landing_candidates(self):
         """See `IGitRef`."""
-        # Circular import.
-        from lp.code.model.gitrepository import GitRepository
-
-        result = Store.of(self).find(
+        return Store.of(self).find(
             BranchMergeProposal,
             BranchMergeProposal.target_git_repository == self.repository,
             BranchMergeProposal.target_git_path == self.path,
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
-        def eager_load(rows):
-            load_related(
-                GitRepository, rows,
-                ["source_git_repositoryID", "prerequisite_git_repositoryID"])
+    def getPrecachedLandingCandidates(self, user):
+        """See `IGitRef`."""
+        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
+        return DecoratedResultSet(
+            self.landing_candidates, pre_iter_hook=loader)
 
-        return DecoratedResultSet(result, pre_iter_hook=eager_load)
+    @property
+    def _api_landing_candidates(self):
+        return self.getPrecachedLandingCandidates(getUtility(ILaunchBag).user)
 
     @property
     def dependent_landings(self):

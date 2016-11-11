@@ -12,6 +12,8 @@ import re
 from BeautifulSoup import BeautifulSoup
 import pytz
 import soupmatchers
+from storm.store import Store
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -23,9 +25,11 @@ from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
+    StormStatementRecorder,
     )
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     extract_text,
     find_tags_by_class,
@@ -220,3 +224,35 @@ class TestGitRefView(BrowserTestCase):
                     soupmatchers.Tag(
                         'all commits link', 'a', text='All commits',
                         attrs={'href': expected_url}))))
+
+    def test_query_count_landing_candidates(self):
+        project = self.factory.makeProduct()
+        [ref] = self.factory.makeGitRefs(target=project)
+        for i in range(10):
+            self.factory.makeBranchMergeProposalForGit(target_ref=ref)
+        [source] = self.factory.makeGitRefs(target=project)
+        [prereq] = self.factory.makeGitRefs(target=project)
+        self.factory.makeBranchMergeProposalForGit(
+            source_ref=source, target_ref=ref, prerequisite_ref=prereq)
+        Store.of(ref).flush()
+        Store.of(ref).invalidate()
+        view = create_view(ref, '+index')
+        with StormStatementRecorder() as recorder:
+            view.landing_candidates
+        self.assertThat(recorder, HasQueryCount(Equals(11)))
+
+    def test_query_count_landing_targets(self):
+        project = self.factory.makeProduct()
+        [ref] = self.factory.makeGitRefs(target=project)
+        for i in range(10):
+            self.factory.makeBranchMergeProposalForGit(source_ref=ref)
+        [target] = self.factory.makeGitRefs(target=project)
+        [prereq] = self.factory.makeGitRefs(target=project)
+        self.factory.makeBranchMergeProposalForGit(
+            source_ref=ref, target_ref=target, prerequisite_ref=prereq)
+        Store.of(ref).flush()
+        Store.of(ref).invalidate()
+        view = create_view(ref, '+index')
+        with StormStatementRecorder() as recorder:
+            view.landing_targets
+        self.assertThat(recorder, HasQueryCount(Equals(11)))

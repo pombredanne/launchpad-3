@@ -133,12 +133,14 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
     @cachedproperty
     def landing_targets(self):
         """Return a filtered list of landing targets."""
-        return latest_proposals_for_each_branch(self.context.landing_targets)
+        targets = self.context.getPrecachedLandingTargets(self.user)
+        return latest_proposals_for_each_branch(targets)
 
     @cachedproperty
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
-        return [proposal for proposal in self.context.landing_candidates
+        candidates = self.context.getPrecachedLandingCandidates(self.user)
+        return [proposal for proposal in candidates
                 if check_permission("launchpad.View", proposal)]
 
     def _getBranchCountText(self, count):

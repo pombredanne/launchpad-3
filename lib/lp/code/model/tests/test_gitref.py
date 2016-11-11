@@ -18,6 +18,7 @@ from testtools.matchers import (
     EndsWith,
     Equals,
     Is,
+    LessThan,
     MatchesListwise,
     MatchesStructure,
     )
@@ -36,6 +37,7 @@ from lp.testing import (
     ANONYMOUS,
     api_url,
     person_logged_in,
+    record_two_runs,
     TestCaseWithFactory,
     verifyObject,
     )
@@ -43,6 +45,7 @@ from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import webservice_for_person
 
 
@@ -461,6 +464,30 @@ class TestGitRefWebservice(TestCaseWithFactory):
         self.assertThat(
             landing_candidates["entries"][0]["self_link"], EndsWith(bmp_url))
 
+    def test_landing_candidates_constant_queries(self):
+        project = self.factory.makeProduct()
+        with person_logged_in(project.owner):
+            [trunk] = self.factory.makeGitRefs(target=project)
+            trunk_url = api_url(trunk)
+            webservice = webservice_for_person(
+                project.owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+        def create_mp():
+            with admin_logged_in():
+                [ref] = self.factory.makeGitRefs(
+                    target=project,
+                    information_type=InformationType.PRIVATESECURITY)
+                self.factory.makeBranchMergeProposalForGit(
+                    source_ref=ref, target_ref=trunk)
+
+        def list_mps():
+            webservice.get(trunk_url + "/landing_candidates")
+
+        list_mps()
+        recorder1, recorder2 = record_two_runs(list_mps, create_mp, 2)
+        self.assertThat(recorder1, HasQueryCount(LessThan(30)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
     def test_landing_targets(self):
         bmp_db = self.factory.makeBranchMergeProposalForGit()
         with person_logged_in(bmp_db.registrant):
@@ -475,6 +502,30 @@ class TestGitRefWebservice(TestCaseWithFactory):
         self.assertEqual(1, len(landing_targets["entries"]))
         self.assertThat(
             landing_targets["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_landing_targets_constant_queries(self):
+        project = self.factory.makeProduct()
+        with person_logged_in(project.owner):
+            [source] = self.factory.makeGitRefs(target=project)
+            source_url = api_url(source)
+            webservice = webservice_for_person(
+                project.owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+        def create_mp():
+            with admin_logged_in():
+                [ref] = self.factory.makeGitRefs(
+                    target=project,
+                    information_type=InformationType.PRIVATESECURITY)
+                self.factory.makeBranchMergeProposalForGit(
+                    source_ref=source, target_ref=ref)
+
+        def list_mps():
+            webservice.get(source_url + "/landing_targets")
+
+        list_mps()
+        recorder1, recorder2 = record_two_runs(list_mps, create_mp, 2)
+        self.assertThat(recorder1, HasQueryCount(LessThan(30)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_dependent_landings(self):
         [ref] = self.factory.makeGitRefs()

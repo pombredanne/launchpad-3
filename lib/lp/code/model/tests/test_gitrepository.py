@@ -20,6 +20,7 @@ from storm.exceptions import LostObjectError
 from storm.store import Store
 from testtools.matchers import (
     EndsWith,
+    LessThan,
     MatchesSetwise,
     MatchesStructure,
     )
@@ -2800,6 +2801,31 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         self.assertThat(
             landing_candidates["entries"][0]["self_link"], EndsWith(bmp_url))
 
+    def test_landing_candidates_constant_queries(self):
+        project = self.factory.makeProduct()
+        with person_logged_in(project.owner):
+            repository = self.factory.makeGitRepository(target=project)
+            repository_url = api_url(repository)
+            webservice = webservice_for_person(
+                project.owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+        def create_mp():
+            with admin_logged_in():
+                [target] = self.factory.makeGitRefs(repository=repository)
+                [source] = self.factory.makeGitRefs(
+                    target=project,
+                    information_type=InformationType.PRIVATESECURITY)
+                self.factory.makeBranchMergeProposalForGit(
+                    source_ref=source, target_ref=target)
+
+        def list_mps():
+            webservice.get(repository_url + "/landing_candidates")
+
+        list_mps()
+        recorder1, recorder2 = record_two_runs(list_mps, create_mp, 2)
+        self.assertThat(recorder1, HasQueryCount(LessThan(40)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
     def test_landing_targets(self):
         bmp_db = self.factory.makeBranchMergeProposalForGit()
         with person_logged_in(bmp_db.registrant):
@@ -2814,6 +2840,31 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         self.assertEqual(1, len(landing_targets["entries"]))
         self.assertThat(
             landing_targets["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_landing_targets_constant_queries(self):
+        project = self.factory.makeProduct()
+        with person_logged_in(project.owner):
+            repository = self.factory.makeGitRepository(target=project)
+            repository_url = api_url(repository)
+            webservice = webservice_for_person(
+                project.owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+        def create_mp():
+            with admin_logged_in():
+                [source] = self.factory.makeGitRefs(repository=repository)
+                [target] = self.factory.makeGitRefs(
+                    target=project,
+                    information_type=InformationType.PRIVATESECURITY)
+                self.factory.makeBranchMergeProposalForGit(
+                    source_ref=source, target_ref=target)
+
+        def list_mps():
+            webservice.get(repository_url + "/landing_targets")
+
+        list_mps()
+        recorder1, recorder2 = record_two_runs(list_mps, create_mp, 2)
+        self.assertThat(recorder1, HasQueryCount(LessThan(30)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_dependent_landings(self):
         [ref] = self.factory.makeGitRefs()

@@ -204,22 +204,34 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         and their subscriptions.
         """
 
-    landing_targets = exported(CollectionField(
-        title=_("Landing targets"),
-        description=_(
-            "A collection of the merge proposals where this reference is the "
-            "source."),
-        readonly=True,
-        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
-        value_type=Reference(Interface)))
-    landing_candidates = exported(CollectionField(
-        title=_("Landing candidates"),
-        description=_(
-            "A collection of the merge proposals where this reference is the "
-            "target."),
-        readonly=True,
-        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
-        value_type=Reference(Interface)))
+    landing_targets = Attribute(
+        "A collection of the merge proposals where this reference is "
+        "the source.")
+    _api_landing_targets = exported(
+        CollectionField(
+            title=_("Landing targets"),
+            description=_(
+                "A collection of the merge proposals where this reference is "
+                "the source."),
+            readonly=True,
+            # Really IBranchMergeProposal, patched in
+            # _schema_circular_imports.py.
+            value_type=Reference(Interface)),
+        exported_as="landing_targets")
+    landing_candidates = Attribute(
+        "A collection of the merge proposals where this reference is "
+        "the target.")
+    _api_landing_candidates = exported(
+        CollectionField(
+            title=_("Landing candidates"),
+            description=_(
+                "A collection of the merge proposals where this reference is "
+                "the target."),
+            readonly=True,
+            # Really IBranchMergeProposal, patched in
+            # _schema_circular_imports.py.
+            value_type=Reference(Interface)),
+        exported_as="landing_candidates")
     dependent_landings = exported(CollectionField(
         title=_("Dependent landings"),
         description=_(
@@ -228,6 +240,18 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         readonly=True,
         # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
         value_type=Reference(Interface)))
+
+    def getPrecachedLandingTargets(user):
+        """Return precached landing targets.
+
+        Target and prerequisite repositories are preloaded.
+        """
+
+    def getPrecachedLandingCandidates(user):
+        """Return precached landing candidates.
+
+        Source and prerequisite repositories are preloaded.
+        """
 
     # XXX cjwatson 2015-04-16: Rename in line with landing_targets above
     # once we have a better name.
