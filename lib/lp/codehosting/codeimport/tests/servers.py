@@ -15,6 +15,7 @@ __metaclass__ = type
 from cStringIO import StringIO
 import errno
 import os
+import re
 import shutil
 import signal
 import stat
@@ -42,9 +43,13 @@ from dulwich.errors import NotGitRepository
 import dulwich.index
 from dulwich.objects import Blob
 from dulwich.repo import Repo as GitRepo
-from dulwich.server import Backend
+from dulwich.server import (
+    Backend,
+    Handler,
+    )
 from dulwich.web import (
     GunzipFilter,
+    handle_service_request,
     HTTPGitApplication,
     LimitedInputFilter,
     WSGIRequestHandlerLogger,
@@ -240,13 +245,55 @@ class GitStoreBackend(Backend):
         return GitRepo(full_path)
 
 
+class TurnipSetSymbolicRefHandler(Handler):
+    """Dulwich protocol handler for setting a symbolic ref.
+
+    Transcribed from turnip.pack.git.PackBackendProtocol.
+    """
+
+    def __init__(self, backend, args, proto, http_req=None):
+        super(TurnipSetSymbolicRefHandler, self).__init__(
+            backend, proto, http_req=http_req)
+        self.repo = backend.open_repository(args[0])
+
+    def handle(self):
+        line = self.proto.read_pkt_line()
+        if line is None:
+            self.proto.write_pkt_line(b"ERR Invalid set-symbolic-ref-line\n")
+            self.proto.write_pkt_line(None)
+            return
+        name, target = line.split(b" ", 1)
+        if name != b"HEAD":
+            self.proto.write_pkt_line(
+                b'ERR Symbolic ref name must be "HEAD"\n')
+            self.proto.write_pkt_line(None)
+            return
+        if target.startswith(b"-"):
+            self.proto.write_pkt_line(
+                b'ERR Symbolic ref target may not start with "-"\n')
+            self.proto.write_pkt_line(None)
+            return
+        try:
+            self.repo.refs.set_symbolic_ref(name, target)
+        except Exception as e:
+            self.proto.write_pkt_line(b'ERR %s\n' % e)
+        else:
+            self.proto.write_pkt_line(b'ACK %s\n' % name)
+        self.proto.write_pkt_line(None)
+
+
 class HTTPGitServerThread(threading.Thread):
     """Thread that runs an HTTP Git server."""
 
     def __init__(self, backend, address, port=None):
         super(HTTPGitServerThread, self).__init__()
         self.setName("HTTP Git server on %s:%s" % (address, port))
-        app = GunzipFilter(LimitedInputFilter(HTTPGitApplication(backend)))
+        app = HTTPGitApplication(
+            backend,
+            handlers={'turnip-set-symbolic-ref': TurnipSetSymbolicRefHandler})
+        app.services[('POST', re.compile('/turnip-set-symbolic-ref$'))] = (
+            handle_service_request)
+        app = GunzipFilter(LimitedInputFilter(app))
         self.server = make_server(
             address, port, app, handler_class=WSGIRequestHandlerLogger,
             server_class=WSGIServerLogger)
@@ -297,7 +344,7 @@ class GitServer(Server):
 
     def makeRepo(self, repository_name, tree_contents):
         repository_path = os.path.join(self.repository_store, repository_name)
-        os.mkdir(repository_path)
+        os.makedirs(repository_path)
         self.createRepository(repository_path, bare=self._use_server)
         repo = GitRepo(repository_path)
         blobs = [

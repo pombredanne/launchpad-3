@@ -20,6 +20,7 @@ from bzrlib.tests import (
     TestCase as BzrTestCase,
     TestCaseInTempDir,
     )
+from dulwich.repo import Repo as GitRepo
 import oops_twisted
 from testtools.deferredruntest import (
     assert_fails_with,
@@ -775,6 +776,27 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
             self.addCleanup(clean_up_default_stores_for_import, source_details)
         return job
 
+    def makeTargetGitServer(self):
+        """Set up a target Git server that can receive imports."""
+        self.target_store = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.target_store)
+        self.target_git_server = GitServer(self.target_store, use_server=True)
+        self.target_git_server.start_server()
+        self.addCleanup(self.target_git_server.stop_server)
+        config_name = self.getUniqueString()
+        config_fixture = self.useFixture(ConfigFixture(
+            config_name, self.layer.config_fixture.instance_name))
+        setting_lines = [
+            "[codehosting]",
+            "git_browse_root: %s" % self.target_git_server.get_url(""),
+            "",
+            "[codeimport]",
+            "macaroon_secret_key: some-secret",
+            ]
+        config_fixture.add_section("\n" + "\n".join(setting_lines))
+        self.useFixture(ConfigUseFixture(config_name))
+        self.useFixture(GitHostingFixture())
+
     def assertCodeImportResultCreated(self, code_import):
         """Assert that a `CodeImportResult` was created for `code_import`."""
         self.assertEqual(len(list(code_import.results)), 1)
@@ -796,7 +818,7 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
                 cwd=repo_path, universal_newlines=True))
         self.assertEqual(self.foreign_commit_count, commit_count)
 
-    def assertImported(self, ignored, code_import_id):
+    def assertImported(self, code_import_id):
         """Assert that the `CodeImport` of the given id was imported."""
         # In the in-memory tests, check that resetTimeout on the
         # CodeImportWorkerMonitorProtocol was called at least once.
@@ -832,53 +854,40 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
 
         return deferred.addBoth(save_protocol_object)
 
+    @defer.inlineCallbacks
     def test_import_cvs(self):
         # Create a CVS CodeImport and import it.
         job = self.getStartedJobForImport(self.makeCVSCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()
-        result = self.performImport(job_id)
-        return result.addCallback(self.assertImported, code_import_id)
+        yield self.performImport(job_id)
+        self.assertImported(code_import_id)
 
+    @defer.inlineCallbacks
     def test_import_subversion(self):
         # Create a Subversion CodeImport and import it.
         job = self.getStartedJobForImport(self.makeSVNCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()
-        result = self.performImport(job_id)
-        return result.addCallback(self.assertImported, code_import_id)
+        yield self.performImport(job_id)
+        self.assertImported(code_import_id)
 
+    @defer.inlineCallbacks
     def test_import_git(self):
         # Create a Git CodeImport and import it.
         job = self.getStartedJobForImport(self.makeGitCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()
-        result = self.performImport(job_id)
-        return result.addCallback(self.assertImported, code_import_id)
+        yield self.performImport(job_id)
+        self.assertImported(code_import_id)
 
+    @defer.inlineCallbacks
     def test_import_git_to_git(self):
         # Create a Git-to-Git CodeImport and import it.
-        self.target_store = tempfile.mkdtemp()
-        self.addCleanup(shutil.rmtree, self.target_store)
-        target_git_server = GitServer(self.target_store, use_server=True)
-        target_git_server.start_server()
-        self.addCleanup(target_git_server.stop_server)
-        config_name = self.getUniqueString()
-        config_fixture = self.useFixture(ConfigFixture(
-            config_name, self.layer.config_fixture.instance_name))
-        setting_lines = [
-            "[codehosting]",
-            "git_browse_root: %s" % target_git_server.get_url(""),
-            "",
-            "[codeimport]",
-            "macaroon_secret_key: some-secret",
-            ]
-        config_fixture.add_section("\n" + "\n".join(setting_lines))
-        self.useFixture(ConfigUseFixture(config_name))
-        self.useFixture(GitHostingFixture())
+        self.makeTargetGitServer()
         job = self.getStartedJobForImport(self.makeGitCodeImport(
             target_rcs_type=TargetRevisionControlSystems.GIT))
         code_import_id = job.code_import.id
@@ -887,27 +896,63 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
         target_repo_path = os.path.join(
             self.target_store, job.code_import.target.unique_name)
         os.makedirs(target_repo_path)
-        target_git_server.createRepository(target_repo_path, bare=True)
-        result = self.performImport(job_id)
-        return result.addCallback(self.assertImported, code_import_id)
+        self.target_git_server.createRepository(target_repo_path, bare=True)
+        yield self.performImport(job_id)
+        self.assertImported(code_import_id)
+        target_repo = GitRepo(target_repo_path)
+        self.assertContentEqual(
+            ["heads/master"], target_repo.refs.keys(base="refs"))
+        self.assertEqual(
+            "ref: refs/heads/master", target_repo.refs.read_ref("HEAD"))
 
+    @defer.inlineCallbacks
+    def test_import_git_to_git_refs_changed(self):
+        # Create a Git-to-Git CodeImport and import it incrementally with
+        # ref and HEAD changes.
+        self.makeTargetGitServer()
+        job = self.getStartedJobForImport(self.makeGitCodeImport(
+            target_rcs_type=TargetRevisionControlSystems.GIT))
+        code_import_id = job.code_import.id
+        job_id = job.id
+        self.layer.txn.commit()
+        source_repo = GitRepo(os.path.join(self.repo_path, "source"))
+        commit = source_repo.refs["refs/heads/master"]
+        source_repo.refs["refs/heads/one"] = commit
+        source_repo.refs["refs/heads/two"] = commit
+        source_repo.refs.set_symbolic_ref("HEAD", "refs/heads/one")
+        del source_repo.refs["refs/heads/master"]
+        target_repo_path = os.path.join(
+            self.target_store, job.code_import.target.unique_name)
+        self.target_git_server.makeRepo(
+            job.code_import.target.unique_name, [("NEWS", "contents")])
+        yield self.performImport(job_id)
+        self.assertImported(code_import_id)
+        target_repo = GitRepo(target_repo_path)
+        self.assertContentEqual(
+            ["heads/one", "heads/two"], target_repo.refs.keys(base="refs"))
+        self.assertEqual(
+            "ref: refs/heads/one",
+            GitRepo(target_repo_path).refs.read_ref("HEAD"))
+
+    @defer.inlineCallbacks
     def test_import_bzr(self):
         # Create a Bazaar CodeImport and import it.
         job = self.getStartedJobForImport(self.makeBzrCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()
-        result = self.performImport(job_id)
-        return result.addCallback(self.assertImported, code_import_id)
+        yield self.performImport(job_id)
+        self.assertImported(code_import_id)
 
+    @defer.inlineCallbacks
     def test_import_bzrsvn(self):
         # Create a Subversion-via-bzr-svn CodeImport and import it.
         job = self.getStartedJobForImport(self.makeBzrSvnCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()
-        result = self.performImport(job_id)
-        return result.addCallback(self.assertImported, code_import_id)
+        yield self.performImport(job_id)
+        self.assertImported(code_import_id)
 
 
 class DeferredOnExit(protocol.ProcessProtocol):
