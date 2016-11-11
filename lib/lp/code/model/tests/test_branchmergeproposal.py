@@ -660,7 +660,7 @@ class TestMergeProposalGetPreviewDiff(TestCaseWithFactory):
             self.mp_two.getPreviewDiff, self.preview_diff.id)
 
 
-class TestMergeProposalNotification(TestCaseWithFactory):
+class TestMergeProposalNotificationMixin:
     """Test that events are created when merge proposals are manipulated"""
 
     layer = DatabaseFunctionalLayer
@@ -672,32 +672,29 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         # When a merge proposal is created needing review, the
         # BranchMergeProposalNeedsReviewEvent is raised as well as the usual
         # ObjectCreatedEvent.
-        source_branch = self.factory.makeProductBranch()
-        target_branch = self.factory.makeProductBranch(
-            product=source_branch.product)
+        source = self.makeBranch()
+        target = self.makeBranch(same_target_as=source)
         registrant = self.factory.makePerson()
         result, events = self.assertNotifies(
             [ObjectCreatedEvent, BranchMergeProposalNeedsReviewEvent], False,
-            source_branch.addLandingTarget, registrant, target_branch,
-            needs_review=True)
+            source.addLandingTarget, registrant, target, needs_review=True)
         self.assertEqual(result, events[0].object)
 
     def test_notifyOnCreate_work_in_progress(self):
         # When a merge proposal is created as work in progress, the
         # BranchMergeProposalNeedsReviewEvent is not raised.
-        source_branch = self.factory.makeProductBranch()
-        target_branch = self.factory.makeProductBranch(
-            product=source_branch.product)
+        source = self.makeBranch()
+        target = self.makeBranch(same_target_as=source)
         registrant = self.factory.makePerson()
         result, events = self.assertNotifies(
             [ObjectCreatedEvent], False,
-            source_branch.addLandingTarget, registrant, target_branch)
+            source.addLandingTarget, registrant, target)
         self.assertEqual(result, events[0].object)
 
     def test_needs_review_from_work_in_progress(self):
         # Transitioning from work in progress to needs review raises the
         # BranchMergeProposalNeedsReviewEvent event.
-        bmp = self.factory.makeBranchMergeProposal(
+        bmp = self.makeBranchMergeProposal(
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
         with person_logged_in(bmp.registrant):
             self.assertNotifies(
@@ -706,7 +703,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 
     def test_needs_review_no_op(self):
         # Calling needs review when in needs review does not notify.
-        bmp = self.factory.makeBranchMergeProposal(
+        bmp = self.makeBranchMergeProposal(
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         with person_logged_in(bmp.registrant):
             self.assertNoNotification(
@@ -714,7 +711,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 
     def test_needs_review_from_approved(self):
         # Calling needs review when approved does not notify either.
-        bmp = self.factory.makeBranchMergeProposal(
+        bmp = self.makeBranchMergeProposal(
             set_state=BranchMergeProposalStatus.CODE_APPROVED)
         with person_logged_in(bmp.registrant):
             self.assertNoNotification(
@@ -722,17 +719,17 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 
     def test_getNotificationRecipients(self):
         """Ensure that recipients can be added/removed with subscribe"""
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal()
         # Both of the branch owners are now subscribed to their own
         # branches with full code review notification level set.
-        source_owner = bmp.source_branch.owner
-        target_owner = bmp.target_branch.owner
+        source_owner = bmp.merge_source.owner
+        target_owner = bmp.merge_target.owner
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
         subscriber_set = set([source_owner, target_owner])
         self.assertEqual(subscriber_set, set(recipients.keys()))
         source_subscriber = self.factory.makePerson()
-        bmp.source_branch.subscribe(
+        bmp.merge_source.subscribe(
             source_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL,
@@ -741,7 +738,7 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             CodeReviewNotificationLevel.STATUS)
         subscriber_set.add(source_subscriber)
         self.assertEqual(subscriber_set, set(recipients.keys()))
-        bmp.source_branch.subscribe(
+        bmp.merge_source.subscribe(
             source_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL,
@@ -754,21 +751,21 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 
     def test_getNotificationRecipientLevels(self):
         """Ensure that only recipients with the right level are returned"""
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal()
         full_subscriber = self.factory.makePerson()
-        bmp.source_branch.subscribe(full_subscriber,
+        bmp.merge_source.subscribe(full_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, full_subscriber)
         status_subscriber = self.factory.makePerson()
-        bmp.source_branch.subscribe(status_subscriber,
+        bmp.merge_source.subscribe(status_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.STATUS, status_subscriber)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
         # Both of the branch owners are now subscribed to their own
         # branches with full code review notification level set.
-        source_owner = bmp.source_branch.owner
-        target_owner = bmp.target_branch.owner
+        source_owner = bmp.merge_source.owner
+        target_owner = bmp.merge_target.owner
         self.assertEqual(set([full_subscriber, status_subscriber,
                               source_owner, target_owner]),
                          set(recipients.keys()))
@@ -778,27 +775,26 @@ class TestMergeProposalNotification(TestCaseWithFactory):
                          set(recipients.keys()))
 
     def test_getNotificationRecipientsAnyBranch(self):
-        prerequisite_branch = self.factory.makeProductBranch()
-        bmp = self.factory.makeBranchMergeProposal(
-            prerequisite_branch=prerequisite_branch)
+        prerequisite = self.makeBranch()
+        bmp = self.makeBranchMergeProposal(prerequisite=prerequisite)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.NOEMAIL)
-        source_owner = bmp.source_branch.owner
-        target_owner = bmp.target_branch.owner
-        prerequisite_owner = bmp.prerequisite_branch.owner
+        source_owner = bmp.merge_source.owner
+        target_owner = bmp.merge_target.owner
+        prerequisite_owner = bmp.merge_prerequisite.owner
         self.assertEqual(
             set([source_owner, target_owner, prerequisite_owner]),
             set(recipients.keys()))
         source_subscriber = self.factory.makePerson()
-        bmp.source_branch.subscribe(source_subscriber,
+        bmp.merge_source.subscribe(source_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, source_subscriber)
         target_subscriber = self.factory.makePerson()
-        bmp.target_branch.subscribe(target_subscriber,
+        bmp.merge_target.subscribe(target_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, target_subscriber)
         prerequisite_subscriber = self.factory.makePerson()
-        bmp.prerequisite_branch.subscribe(prerequisite_subscriber,
+        bmp.merge_prerequisite.subscribe(prerequisite_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, prerequisite_subscriber)
         recipients = bmp.getNotificationRecipients(
@@ -810,11 +806,11 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             set(recipients.keys()))
 
     def test_getNotificationRecipientsIncludesReviewers(self):
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal()
         # Both of the branch owners are now subscribed to their own
         # branches with full code review notification level set.
-        source_owner = bmp.source_branch.owner
-        target_owner = bmp.target_branch.owner
+        source_owner = bmp.merge_source.owner
+        target_owner = bmp.merge_target.owner
         login_person(source_owner)
         reviewer = self.factory.makePerson()
         bmp.nominateReviewer(reviewer, registrant=source_owner)
@@ -825,11 +821,11 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 
     def test_getNotificationRecipientsIncludesTeamReviewers(self):
         # If the reviewer is a team, the team gets the email.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal()
         # Both of the branch owners are now subscribed to their own
         # branches with full code review notification level set.
-        source_owner = bmp.source_branch.owner
-        target_owner = bmp.target_branch.owner
+        source_owner = bmp.merge_source.owner
+        target_owner = bmp.merge_target.owner
         login_person(source_owner)
         reviewer = self.factory.makeTeam()
         bmp.nominateReviewer(reviewer, registrant=source_owner)
@@ -842,9 +838,9 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         # If the registrant of the proposal is being notified of the
         # proposals, they get their rationale set to "Registrant".
         registrant = self.factory.makePerson()
-        bmp = self.factory.makeBranchMergeProposal(registrant=registrant)
+        bmp = self.makeBranchMergeProposal(registrant=registrant)
         # Make sure that the registrant is subscribed.
-        bmp.source_branch.subscribe(registrant,
+        bmp.merge_source.subscribe(registrant,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, registrant)
         recipients = bmp.getNotificationRecipients(
@@ -852,14 +848,14 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         reason = recipients[registrant]
         self.assertEqual("Registrant", reason.mail_header)
         self.assertEqual(
-            "You proposed %s for merging." % bmp.source_branch.bzr_identity,
+            "You proposed %s for merging." % bmp.merge_source.identity,
             reason.getReason())
 
     def test_getNotificationRecipients_Registrant_not_subscribed(self):
         # If the registrant of the proposal is not subscribed, we don't send
         # them any email.
         registrant = self.factory.makePerson()
-        bmp = self.factory.makeBranchMergeProposal(registrant=registrant)
+        bmp = self.makeBranchMergeProposal(registrant=registrant)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
         self.assertFalse(registrant in recipients)
@@ -867,13 +863,13 @@ class TestMergeProposalNotification(TestCaseWithFactory):
     def test_getNotificationRecipients_Owner(self):
         # If the owner of the source branch is subscribed (which is the
         # default), then they get a rationale telling them they are the Owner.
-        bmp = self.factory.makeBranchMergeProposal()
+        bmp = self.makeBranchMergeProposal()
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
-        reason = recipients[bmp.source_branch.owner]
+        reason = recipients[bmp.merge_source.owner]
         self.assertEqual("Owner", reason.mail_header)
         self.assertEqual(
-            "You are the owner of %s." % bmp.source_branch.bzr_identity,
+            "You are the owner of %s." % bmp.merge_source.identity,
             reason.getReason())
 
     def test_getNotificationRecipients_team_owner(self):
@@ -881,8 +877,8 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         # default), but the owner is a team, then none of the headers will say
         # Owner.
         team = self.factory.makeTeam()
-        branch = self.factory.makeProductBranch(owner=team)
-        bmp = self.factory.makeBranchMergeProposal(source_branch=branch)
+        branch = self.makeBranch(owner=team)
+        bmp = self.makeBranchMergeProposal(source=branch)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
         headers = set([reason.mail_header for reason in recipients.values()])
@@ -890,10 +886,10 @@ class TestMergeProposalNotification(TestCaseWithFactory):
 
     def test_getNotificationRecipients_Owner_not_subscribed(self):
         # If the owner of the source branch has unsubscribed themselves, then
-        # we don't send them eamil.
-        bmp = self.factory.makeBranchMergeProposal()
-        owner = bmp.source_branch.owner
-        bmp.source_branch.unsubscribe(owner, owner)
+        # we don't send them email.
+        bmp = self.makeBranchMergeProposal()
+        owner = bmp.merge_source.owner
+        bmp.merge_source.unsubscribe(owner, owner)
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.STATUS)
         self.assertFalse(owner in recipients)
@@ -903,10 +899,9 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         # they do not get email about the proposal.
         owner = self.factory.makePerson()
         product = self.factory.makeProduct()
-        source = self.factory.makeBranch(owner=owner, product=product)
-        target = self.factory.makeBranch(owner=owner, product=product)
-        bmp = self.factory.makeBranchMergeProposal(
-            source_branch=source, target_branch=target)
+        source = self.makeBranch(owner=owner, target=product)
+        target = self.makeBranch(owner=owner, target=product)
+        bmp = self.makeBranchMergeProposal(source=source, target=target)
         # Subscribe eric to the source branch only.
         eric = self.factory.makePerson()
         source.subscribe(
@@ -935,6 +930,38 @@ class TestMergeProposalNotification(TestCaseWithFactory):
         self.assertNotIn(bob, recipients)
         self.assertNotIn(eric, recipients)
         self.assertIn(charlie, recipients)
+
+
+class TestMergeProposalNotificationBzr(
+    TestMergeProposalNotificationMixin, TestCaseWithFactory):
+
+    def makeBranch(self, same_target_as=None, target=None, **kwargs):
+        if same_target_as is not None:
+            kwargs["product"] = same_target_as.product
+        elif target is not None:
+            kwargs["product"] = target
+        return self.factory.makeProductBranch(**kwargs)
+
+    def makeBranchMergeProposal(self, source=None, target=None,
+                                prerequisite=None, **kwargs):
+        return self.factory.makeBranchMergeProposal(
+            source_branch=source, target_branch=target,
+            prerequisite_branch=prerequisite, **kwargs)
+
+
+class TestMergeProposalNotificationGit(
+    TestMergeProposalNotificationMixin, TestCaseWithFactory):
+
+    def makeBranch(self, same_target_as=None, **kwargs):
+        if same_target_as is not None:
+            kwargs["target"] = same_target_as.target
+        return self.factory.makeGitRefs(**kwargs)[0]
+
+    def makeBranchMergeProposal(self, source=None, target=None,
+                                prerequisite=None, **kwargs):
+        return self.factory.makeBranchMergeProposalForGit(
+            source_ref=source, target_ref=target,
+            prerequisite_ref=prerequisite, **kwargs)
 
 
 class TestMergeProposalWebhooksMixin:

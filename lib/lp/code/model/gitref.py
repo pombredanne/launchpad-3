@@ -132,6 +132,11 @@ class GitRefMixin:
         """See `IGitRef`."""
         return self.repository.visibleByUser(user)
 
+    def transitionToInformationType(self, information_type, user,
+                                    verify_policy=True):
+        return self.repository.transitionToInformationType(
+            information_type, user, verify_policy=verify_policy)
+
     @property
     def reviewer(self):
         """See `IGitRef`."""
@@ -172,6 +177,10 @@ class GitRefMixin:
     def getSubscription(self, person):
         """See `IGitRef`."""
         return self.repository.getSubscription(person)
+
+    def unsubscribe(self, person, unsubscribed_by):
+        """See `IGitRef`."""
+        return self.repository.unsubscribe(person, unsubscribed_by)
 
     def getNotificationRecipients(self):
         """See `IGitRef`."""

@@ -360,13 +360,13 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
                 "protocols",
             }
 
-    def createDeb(self, filename, data_format, members=None):
+    def createDeb(self, filename, control_format, data_format, members=None):
         """Return the contents of a dummy .deb file."""
         tempdir = self.makeTemporaryDirectory()
         if members is None:
             members = [
                 "debian-binary",
-                "control.tar.gz",
+                "control.tar.%s" % control_format,
                 "data.tar.%s" % data_format,
                 ]
         for member in members:
@@ -379,10 +379,13 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
 
     def createDebBinaryUploadFile(self, filename, component_and_section,
                                   priority_name, package, version, changes,
-                                  data_format=None, members=None):
+                                  control_format=None, data_format=None,
+                                  members=None):
         """Create a DebBinaryUploadFile."""
-        if data_format is not None or members is not None:
-            data = self.createDeb(filename, data_format, members=members)
+        if (control_format is not None or data_format is not None or
+                members is not None):
+            data = self.createDeb(
+                filename, control_format, data_format, members=members)
         else:
             data = "DUMMY DATA"
         (path, md5, sha1, size) = self.writeUploadFile(filename, data)
@@ -408,11 +411,20 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         self.assertEquals("0.42", uploadfile.source_version)
         self.assertEquals("0.42", uploadfile.control_version)
 
-    def test_verifyFormat_xz(self):
-        # verifyFormat accepts xz-compressed .debs.
+    def test_verifyFormat_control_xz(self):
+        # verifyFormat accepts .debs with an xz-compressed control member.
         uploadfile = self.createDebBinaryUploadFile(
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
-            None, data_format="xz")
+            None, control_format="xz", data_format="gz")
+        control = self.getBaseControl()
+        uploadfile.parseControl(control)
+        self.assertEqual([], list(uploadfile.verifyFormat()))
+
+    def test_verifyFormat_data_xz(self):
+        # verifyFormat accepts .debs with an xz-compressed data member.
+        uploadfile = self.createDebBinaryUploadFile(
+            "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
+            None, control_format="gz", data_format="xz")
         control = self.getBaseControl()
         uploadfile.parseControl(control)
         self.assertEqual([], list(uploadfile.verifyFormat()))
