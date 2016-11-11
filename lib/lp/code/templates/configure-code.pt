@@ -51,10 +51,10 @@
                 <div metal:use-macro="context/@@+configure-code-macros/no-keys"></div>
               </div>
 
+              <h3>Link or import an existing branch</h3>
               <table id="form_bzr" class="form">
                 <tr>
                   <td>
-                    <h3>Link or import an existing branch</h3>
                     <label tal:replace="structure view/branch_type_link">
                       Link to a Bazaar branch already on Launchpad
                     </label>
@@ -133,20 +133,47 @@
                 <span class="sprite gitbranch">Git settings</span>
               </a>
               <div id="git-expander-content">
-                <div id="form_git" class="form">
-                  <div class="push-instructions">
-                    <div metal:use-macro="context/@@+configure-code-macros/push-instructions-git"></div>
-                    <div metal:use-macro="context/@@+configure-code-macros/no-keys"></div>
-                  </div>
-
-                  <h3>Link an existing repository</h3>
-                  <p>Link to an existing Git repository already on Launchpad</p>
-                  <table>
-                    <tal:widget define="widget nocall:view/widgets/git_repository_location">
-                      <metal:block use-macro="context/@@launchpad_form/widget_row" />
-                    </tal:widget>
-                  </table>
+                <div class="push-instructions">
+                  <div metal:use-macro="context/@@+configure-code-macros/push-instructions-git"></div>
+                  <div metal:use-macro="context/@@+configure-code-macros/no-keys"></div>
                 </div>
+
+                <h3>Link or import an existing repository</h3>
+                <table id="form_git" class="form">
+                  <tr>
+                    <td>
+                      <label tal:replace="structure view/git_repository_type_link">
+                        Link to a Git repository already on Launchpad
+                      </label>
+                      <table class="subordinate">
+                        <tal:widget define="widget nocall:view/widgets/git_repository_location">
+                          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                        </tal:widget>
+                      </table>
+                    </td>
+                  </tr>
+
+                  <tr id="git_mirror"
+                      tal:condition="request/features/code.import.git_target">
+                    <td>
+                      <label tal:replace="structure view/git_repository_type_import">
+                        Import a repository hosted somewhere else
+                      </label>
+                      <table class="subordinate">
+                        <tal:widget define="widget nocall:view/widgets/git_repository_name">
+                          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                        </tal:widget>
+                        <tal:widget define="widget nocall:view/widgets/git_repository_owner">
+                          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                        </tal:widget>
+
+                        <tal:widget define="widget nocall:view/widgets/git_repository_url">
+                          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+                        </tal:widget>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
               </div>
             </div>
           </tal:block>
