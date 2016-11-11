@@ -607,6 +607,7 @@ class PublishFTPMaster(LaunchpadCronScript):
                         continue
                     if self.updateStagedFilesForSuite(archive_config, suite):
                         archive.markSuiteDirty(series, pocket)
+                        self.txn.commit()
 
     def publish(self, distribution, security_only=False):
         """Do the main publishing work.
