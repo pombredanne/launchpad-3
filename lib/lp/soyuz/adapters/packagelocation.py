@@ -15,6 +15,7 @@ __all__ = [
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import ArchivePurpose
 
 
@@ -88,7 +89,6 @@ def build_package_location(distribution_name, suite=None, purpose=None,
     from lp.registry.interfaces.distribution import IDistributionSet
     from lp.soyuz.interfaces.archive import IArchiveSet
     from lp.soyuz.interfaces.packageset import IPackagesetSet
-    from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     try:
         distribution = getUtility(IDistributionSet)[distribution_name]

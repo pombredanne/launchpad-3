@@ -104,6 +104,7 @@ from lp.app.validators.name import name_validator
 from lp.buildmaster.interfaces.processor import IProcessor
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     PersonChoice,
@@ -484,8 +485,7 @@ class IArchiveSubscriberView(Interface):
         pocket=Choice(
             title=_("Pocket"),
             description=_("The pocket into which this entry is published"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=False, readonly=True),
         exact_match=Bool(
             title=_("Exact Match"),
@@ -847,8 +847,7 @@ class IArchiveView(IHasBuildRecords):
         pocket=Choice(
             title=_("Pocket"),
             description=_("The pocket into which this entry is published"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         strict_component=Bool(
             title=_("Strict component"), required=False),
@@ -1180,8 +1179,7 @@ class IArchiveView(IHasBuildRecords):
         pocket=Choice(
             title=_("Pocket"),
             description=_("The pocket into which this entry is published"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=False, readonly=True),
         exact_match=Bool(
             description=_("Whether or not to filter binary names by exact "
@@ -1374,8 +1372,7 @@ class IArchiveView(IHasBuildRecords):
     @operation_parameters(
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         )
     # Really IArchivePermission, set below to avoid circular import.
@@ -1392,8 +1389,7 @@ class IArchiveView(IHasBuildRecords):
     @operation_parameters(
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         distroseries=Reference(
             # Really IDistroSeries, avoiding a circular import here.
@@ -1835,8 +1831,7 @@ class IArchiveEdit(Interface):
         person=Reference(schema=IPerson),
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         )
     # Really IArchivePermission, set below to avoid circular import.
@@ -1877,8 +1872,7 @@ class IArchiveEdit(Interface):
         person=Reference(schema=IPerson),
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         distroseries=Reference(
             # Really IDistroSeries, avoiding a circular import here.
@@ -1953,8 +1947,7 @@ class IArchiveEdit(Interface):
         person=Reference(schema=IPerson),
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         )
     @export_write_operation()
@@ -1986,8 +1979,7 @@ class IArchiveEdit(Interface):
         person=Reference(schema=IPerson),
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         distroseries=Reference(
             # Really IDistroSeries, avoiding a circular import here.
@@ -2068,8 +2060,7 @@ class IArchiveEdit(Interface):
         pocket=Choice(
             title=_("Pocket"),
             description=_("The pocket into which this entry is published"),
-            # Really PackagePublishingPocket.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         component=TextLine(title=_("Component"), required=False),
         )
@@ -2214,8 +2205,7 @@ class IArchiveEdit(Interface):
             title=_("Distro series"), required=True),
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         )
     @export_write_operation()
