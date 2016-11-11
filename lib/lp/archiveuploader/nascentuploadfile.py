@@ -722,10 +722,10 @@ class BaseBinaryUploadFile(PackageUploadFile):
             yield UploadError(
                 "%s: first chunk is %s, expected debian-binary." % (
                 self.filename, debian_binary))
-        if control_tar != "control.tar.gz":
+        if control_tar not in ("control.tar.gz", "control.tar.xz"):
             yield UploadError(
-                "%s: second chunk is %s, expected control.tar.gz." % (
-                self.filename, control_tar))
+                "%s: second chunk is %s, expected control.tar.gz or "
+                "control.tar.xz." % (self.filename, control_tar))
         if data_tar not in ("data.tar.gz", "data.tar.bz2", "data.tar.lzma",
                             "data.tar.xz"):
             yield UploadError(
