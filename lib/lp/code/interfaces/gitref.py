@@ -155,6 +155,16 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         """Can the specified user see the repository containing this
         reference?"""
 
+    def transitionToInformationType(information_type, user,
+                                    verify_policy=True):
+        """Set the information type for this reference's repository.
+
+        :param information_type: The `InformationType` to transition to.
+        :param user: The `IPerson` who is making the change.
+        :param verify_policy: Check if the new information type complies
+            with the `IGitNamespacePolicy`.
+        """
+
     reviewer = Attribute(
         "The person or exclusive team that is responsible for reviewing "
         "proposals and merging into this reference.")
@@ -196,6 +206,13 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
 
     def getSubscription(person):
         """Return the `GitSubscription` for this person."""
+
+    def unsubscribe(person, unsubscribed_by):
+        """Remove the person's subscription to this reference's repository.
+
+        :param person: The person or team to unsubscribe from the repository.
+        :param unsubscribed_by: The person doing the unsubscribing.
+        """
 
     def getNotificationRecipients():
         """Return a complete INotificationRecipientSet instance.

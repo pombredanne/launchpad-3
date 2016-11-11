@@ -190,7 +190,8 @@ class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
         repository = self.factory.makeGitRepository()
         with person_logged_in(repository.owner):
             self.factory.makeGitSubscription(
-                repository, private_subscriber, repository.owner)
+                repository=repository, person=private_subscriber,
+                subscribed_by=repository.owner)
         # Ensure the repository subscriber is rendered.
         url = canonical_url(repository, rootsite='code')
         user = self.factory.makePerson()
@@ -207,7 +208,8 @@ class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
         repository = self.factory.makeGitRepository()
         with person_logged_in(private_subscriber):
             self.factory.makeGitSubscription(
-                repository, private_subscriber, repository.owner)
+                repository=repository, person=private_subscriber,
+                subscribed_by=repository.owner)
         # Viewing the repository doesn't show the private subscriber.
         url = canonical_url(repository, rootsite='code')
         browser = self._getBrowser()
@@ -230,7 +232,8 @@ class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
             target=project, owner=owner, name=u"repo",
             information_type=InformationType.USERDATA)
         with person_logged_in(owner):
-            self.factory.makeGitSubscription(repository, subscriber, owner)
+            self.factory.makeGitSubscription(
+                repository=repository, person=subscriber, subscribed_by=owner)
             base_url = canonical_url(repository, rootsite='code')
             expected_title = '%s : Git : Code : %s' % (
                 repository.identity, project.displayname)
@@ -251,7 +254,8 @@ class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
             target=project, owner=owner,
             information_type=InformationType.USERDATA)
         with person_logged_in(owner):
-            self.factory.makeGitSubscription(repository, subscriber, owner)
+            self.factory.makeGitSubscription(
+                repository=repository, person=subscriber, subscribed_by=owner)
             base_url = canonical_url(repository, rootsite='code')
             project_url = canonical_url(project, rootsite='code')
         url = '%s/+subscription/%s' % (base_url, subscriber.name)
