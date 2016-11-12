@@ -15,7 +15,6 @@ import logging
 from StringIO import StringIO
 import time
 
-from psycopg2 import IntegrityError
 from pytz import UTC
 from storm.exceptions import LostObjectError
 from storm.expr import (
@@ -49,10 +48,7 @@ from lp.code.bzr import (
     BranchFormat,
     RepositoryFormat,
     )
-from lp.code.enums import (
-    CodeImportResultStatus,
-    GitRepositoryType,
-    )
+from lp.code.enums import CodeImportResultStatus
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.model.branchjob import (
@@ -1556,44 +1552,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.assertEqual(sses[1], snaps[4].store_series)
         # Snaps with more than one possible store series are untouched.
         self.assertIsNone(snaps[5].store_series)
-
-    def test_GitRepositoryTypePopulator(self):
-        switch_dbuser('testadmin')
-        old_repositories = [self.factory.makeGitRepository() for _ in range(2)]
-        for repository in old_repositories:
-            removeSecurityProxy(repository)._repository_type = None
-        try:
-            Store.of(old_repositories[0]).flush()
-        except IntegrityError:
-            # Now enforced by DB NOT NULL constraint; backfilling is no
-            # longer necessary.
-            return
-        hosted_repositories = [
-            self.factory.makeGitRepository(
-                repository_type=GitRepositoryType.HOSTED)
-            for _ in range(2)]
-        imported_repositories = [
-            self.factory.makeGitRepository(
-                repository_type=GitRepositoryType.IMPORTED)
-            for _ in range(2)]
-        transaction.commit()
-
-        self.runDaily()
-
-        # Old repositories are backfilled.
-        for repository in old_repositories:
-            self.assertEqual(
-                GitRepositoryType.HOSTED,
-                removeSecurityProxy(repository)._repository_type)
-        # Other repositories are left alone.
-        for repository in hosted_repositories:
-            self.assertEqual(
-                GitRepositoryType.HOSTED,
-                removeSecurityProxy(repository)._repository_type)
-        for repository in imported_repositories:
-            self.assertEqual(
-                GitRepositoryType.IMPORTED,
-                removeSecurityProxy(repository)._repository_type)
 
 
 class TestGarboTasks(TestCaseWithFactory):
