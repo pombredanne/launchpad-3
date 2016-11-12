@@ -110,7 +110,10 @@ from lp.services.fields import (
     PublicPersonChoice,
     StrippedTextLine,
     )
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent
 
@@ -474,8 +477,7 @@ class IArchiveSubscriberView(Interface):
         status=Choice(
             title=_('Package Publishing Status'),
             description=_('The status of this publishing record'),
-            # Really PackagePublishingStatus, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingStatus,
             required=False),
         distroseries=Reference(
             # Really IDistroSeries, fixed below to avoid circular import.
@@ -1166,8 +1168,7 @@ class IArchiveView(IHasBuildRecords):
         status=Choice(
             title=_("Package Publishing Status"),
             description=_("The status of this publishing record"),
-            # Really PackagePublishingStatus, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingStatus,
             required=False),
         distroarchseries=Reference(
             # Really IDistroArchSeries, circular import fixed below.

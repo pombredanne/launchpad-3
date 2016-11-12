@@ -68,6 +68,10 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
+from lp.registry.enums import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
@@ -91,7 +95,11 @@ from lp.services.fields import (
     UniqueField,
     )
 from lp.services.webservice.apihelpers import patch_plain_parameter_type
-from lp.soyuz.enums import IndexCompressionType
+from lp.soyuz.enums import (
+    IndexCompressionType,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
@@ -533,9 +541,7 @@ class IDistroSeriesPublic(
                 "Return items that are more recent than this timestamp."),
             required=False),
         status=Choice(
-            # Really PackageUploadCustomFormat, patched in
-            # _schema_circular_imports.py
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackageUploadStatus,
             title=_("Package Upload Status"),
             description=_("Return only items that have this status."),
             required=False),
@@ -553,9 +559,7 @@ class IDistroSeriesPublic(
             description=_("Return only items targeted to this pocket"),
             required=False),
         custom_type=Choice(
-            # Really PackageUploadCustomFormat, patched in
-            # _schema_circular_imports.py
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackageUploadCustomFormat,
             title=_("Custom Type"),
             description=_("Return only items with custom files of this "
                           "type."),
@@ -838,14 +842,14 @@ class IDistroSeriesPublic(
             title=_("The parent series to consider."),
             required=False),
         difference_type=Choice(
-            vocabulary=DBEnumeratedType,  # DistroSeriesDifferenceType
+            vocabulary=DistroSeriesDifferenceType,
             title=_("Only return differences of this type."), required=False),
         source_package_name_filter=TextLine(
             title=_("Only return differences for packages matching this "
                     "name."),
             required=False),
         status=Choice(
-            vocabulary=DBEnumeratedType,  # DistroSeriesDifferenceStatus
+            vocabulary=DistroSeriesDifferenceStatus,
             title=_("Only return differences of this status."),
             required=False),
         child_version_higher=Bool(

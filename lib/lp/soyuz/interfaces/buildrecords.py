@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IHasBuildRecords interface.
@@ -32,6 +32,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.buildmaster.enums import BuildStatus
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -48,8 +49,7 @@ class IHasBuildRecords(Interface):
         build_state=Choice(
             title=_('Build status'), required=False,
             description=_('The status of this build record'),
-            # Really a BuildStatus see _schema_circular_imports.
-            vocabulary=DBEnumeratedType),
+            vocabulary=BuildStatus),
         pocket=Choice(
             title=_("Pocket"), required=False, readonly=True,
             description=_("The pocket into which this entry is published"),
