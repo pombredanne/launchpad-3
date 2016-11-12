@@ -235,14 +235,14 @@ class PublishDistro(PublisherScript):
             suites.add((series.name, pocket))
         return suites
 
-    def findDirtySuites(self, distribution, archive):
+    def findExplicitlyDirtySuites(self, archive):
         """Find the suites that have been explicitly marked as dirty."""
         for suite in self.options.dirty_suites:
-            yield self.findSuite(distribution, suite)
+            yield self.findSuite(archive.distribution, suite)
         if archive.dirty_suites is not None:
             for suite in archive.dirty_suites:
                 try:
-                    yield distribution.getDistroSeriesAndPocket(suite)
+                    yield archive.distribution.getDistroSeriesAndPocket(suite)
                 except NotFoundError:
                     self.logger.exception(
                         "Failed to parse dirty suite '%s' for archive '%s'" %
@@ -360,8 +360,8 @@ class PublishDistro(PublisherScript):
                     elif archive.can_be_published:
                         publisher = self.getPublisher(
                             distribution, archive, allowed_suites)
-                        for distroseries, pocket in self.findDirtySuites(
-                                distribution, archive):
+                        for distroseries, pocket in (
+                                self.findExplicitlyDirtySuites(archive)):
                             if not cannot_modify_suite(
                                     archive, distroseries, pocket):
                                 publisher.markPocketDirty(
