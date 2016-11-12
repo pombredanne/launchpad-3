@@ -2419,6 +2419,10 @@ class Archive(SQLBase):
 
     def markSuiteDirty(self, distroseries, pocket):
         """See `IArchive`."""
+        if distroseries.distribution != self.distribution:
+            raise ValueError(
+                "%s is not a series of %s." %
+                (distroseries, self.distribution))
         suite = distroseries.getSuite(pocket)
         if self.dirty_suites is None:
             self.dirty_suites = [suite]
