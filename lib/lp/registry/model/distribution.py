@@ -1303,7 +1303,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """ % sqlvalues(ArchivePurpose.PPA, self)
 
         dirty_suites_archives = Archive.select(
-            dirty_suites_query, orderBy=['archive.id'], distinct=True)
+            dirty_suites_query, orderBy=['archive.id'])
 
         deleting_archives = Archive.selectBy(
             distribution=self,
