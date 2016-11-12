@@ -308,6 +308,16 @@ class PublishDistro(PublisherScript):
 
         Commits transactions along the way.
         """
+        for distroseries, pocket in self.findExplicitlyDirtySuites(archive):
+            if not cannot_modify_suite(archive, distroseries, pocket):
+                publisher.markPocketDirty(distroseries, pocket)
+        if archive.dirty_suites is not None:
+            # Clear the explicit dirt indicator before we start doing
+            # time-consuming publishing, which might race with an
+            # Archive.markSuiteDirty call.
+            archive.dirty_suites = None
+            self.txn.commit()
+
         publisher.setupArchiveDirs()
         if self.options.enable_publishing:
             publisher.A_publish(
@@ -360,14 +370,7 @@ class PublishDistro(PublisherScript):
                     elif archive.can_be_published:
                         publisher = self.getPublisher(
                             distribution, archive, allowed_suites)
-                        for distroseries, pocket in (
-                                self.findExplicitlyDirtySuites(archive)):
-                            if not cannot_modify_suite(
-                                    archive, distroseries, pocket):
-                                publisher.markPocketDirty(
-                                    distroseries, pocket)
                         self.publishArchive(archive, publisher)
-                        archive.dirty_suites = None
                         work_done = True
                     else:
                         work_done = False
