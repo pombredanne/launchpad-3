@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of nascent uploads.
@@ -128,6 +128,7 @@ class NascentUpload:
         :param logger: the logger to be used.
         """
         changesfile = ChangesFile(changesfile_path, policy, logger)
+        changesfile.parse()
         return cls(changesfile, policy, logger)
 
     def process(self, build=None):

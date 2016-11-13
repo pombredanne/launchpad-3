@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ ChangesFile class
@@ -81,6 +81,11 @@ class ChangesFile(SignableTagFile):
     files = None
 
     def __init__(self, filepath, policy, logger):
+        self.filepath = filepath
+        self.policy = policy
+        self.logger = logger
+
+    def parse(self):
         """Process the given changesfile.
 
         Does:
@@ -97,11 +102,8 @@ class ChangesFile(SignableTagFile):
         Logger and Policy are instances built in uploadprocessor.py passed
         via NascentUpload class.
         """
-        self.filepath = filepath
-        self.policy = policy
-        self.logger = logger
-
-        self.parse(verify_signature=not policy.unsigned_changes_ok)
+        super(ChangesFile, self).parse(
+            verify_signature=not self.policy.unsigned_changes_ok)
 
         for field in self.mandatory_fields:
             if field not in self._dict:

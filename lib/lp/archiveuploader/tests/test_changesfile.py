@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test ChangesFile functionality."""
@@ -175,7 +175,9 @@ class ChangesFileTests(TestCase):
             changes.dump(changes_fd)
         finally:
             changes_fd.close()
-        return ChangesFile(path, self.policy, self.logger)
+        changesfile = ChangesFile(path, self.policy, self.logger)
+        changesfile.parse()
+        return changesfile
 
     def getBaseChanges(self):
         contents = Changes()
@@ -360,33 +362,34 @@ class TestSignatureVerification(TestCase):
         # A correctly signed changes file is excepted, and all its
         # content is parsed.
         path = datadir('signatures/signed.changes')
-        parsed = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
+        changesfile = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
+        changesfile.parse()
         self.assertEqual(
             getUtility(IPersonSet).getByEmail('foo.bar@canonical.com'),
-            parsed.signer)
+            changesfile.signer)
         expected = "\AFormat: 1.7\n.*foo_1.0-1.diff.gz\Z"
         self.assertTextMatchesExpressionIgnoreWhitespace(
             expected,
-            parsed.parsed_content)
+            changesfile.parsed_content)
 
     def test_no_signature_rejected(self):
         # An unsigned changes file is rejected.
         path = datadir('signatures/unsigned.changes')
-        self.assertRaises(
-            UploadError,
-            ChangesFile, path, InsecureUploadPolicy(), BufferLogger())
+        changesfile = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
+        self.assertRaises(UploadError, changesfile.parse)
 
     def test_prefix_ignored(self):
         # A signed changes file with an unsigned prefix has only the
         # signed part parsed.
         path = datadir('signatures/prefixed.changes')
-        parsed = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
+        changesfile = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
+        changesfile.parse()
         self.assertEqual(
             getUtility(IPersonSet).getByEmail('foo.bar@canonical.com'),
-            parsed.signer)
+            changesfile.signer)
         expected = "\AFormat: 1.7\n.*foo_1.0-1.diff.gz\Z"
         self.assertTextMatchesExpressionIgnoreWhitespace(
             expected,
-            parsed.parsed_content)
-        self.assertEqual("breezy", parsed.suite_name)
-        self.assertNotIn("evil", parsed.changes_comment)
+            changesfile.parsed_content)
+        self.assertEqual("breezy", changesfile.suite_name)
+        self.assertNotIn("evil", changesfile.changes_comment)
