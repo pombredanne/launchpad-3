@@ -144,6 +144,9 @@ class SignableTagFile:
         if verify_signature:
             self.signingkey, self.parsed_content = self.verifySignature(
                 self.raw_content, self.filepath)
+            if self.signingkey.active == False:
+                raise UploadError("File %s is signed with a deactivated key %s"
+                                  % (self.filepath, self.signingkey.keyid))
         else:
             self.logger.debug("%s can be unsigned." % self.filename)
             self.parsed_content = self.raw_content
@@ -178,10 +181,6 @@ class SignableTagFile:
         if key is None:
             raise UploadError("Signing key %s not registered in launchpad."
                               % sig.fingerprint)
-
-        if key.active == False:
-            raise UploadError("File %s is signed with a deactivated key %s"
-                              % (filename, key.keyid))
 
         return (key, sig.plain_data)
 
