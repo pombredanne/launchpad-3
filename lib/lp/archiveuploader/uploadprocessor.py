@@ -338,9 +338,10 @@ class UploadHandler:
         # The path we want for NascentUpload is the path to the folder
         # containing the changes file (and the other files referenced by it).
         changesfile_path = os.path.join(self.upload_path, changes_file)
+        upload = NascentUpload.from_changesfile_path(
+            changesfile_path, policy, self.processor.log, parse=False)
         try:
-            upload = NascentUpload.from_changesfile_path(
-                changesfile_path, policy, self.processor.log)
+            upload.parse_changes()
         except UploadError as e:
             # We failed to parse the changes file, so we have no key or
             # Changed-By to notify of the rejection. Just log it and

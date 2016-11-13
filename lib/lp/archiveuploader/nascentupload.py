@@ -117,7 +117,8 @@ class NascentUpload:
         self.changes = changesfile
 
     @classmethod
-    def from_changesfile_path(cls, changesfile_path, policy, logger):
+    def from_changesfile_path(cls, changesfile_path, policy, logger,
+                              parse=True):
         """Create a NascentUpload from the given changesfile path.
 
         May raise UploadError due to unrecoverable problems building
@@ -126,10 +127,18 @@ class NascentUpload:
         :param changesfile_path: path to the changesfile to be uploaded.
         :param policy: the upload policy to be used.
         :param logger: the logger to be used.
+        :param parse: if True, parse the changesfile immediately; otherwise
+            the caller must call parse_changes.
         """
         changesfile = ChangesFile(changesfile_path, policy, logger)
-        changesfile.parse()
-        return cls(changesfile, policy, logger)
+        upload = cls(changesfile, policy, logger)
+        if parse:
+            upload.parse_changes()
+        return upload
+
+    def parse_changes(self):
+        """Parse the changesfile, raising UploadError if that fails."""
+        self.changes.parse()
 
     def process(self, build=None):
         """Process this upload, checking it against policy, loading it into
