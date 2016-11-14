@@ -925,9 +925,9 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertFalse(script.updateStagedFilesForSuite(
             archive_config, distroseries.name))
 
-    def test_updateStagedFiles_updated_suites(self):
-        # updateStagedFiles returns a list of suites for which it updated
-        # staged files.
+    def test_updateStagedFiles_marks_suites_dirty(self):
+        # updateStagedFiles marks the suites for which it updated staged
+        # files as dirty.
         distro = self.makeDistroWithPublishDirectory()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         das = self.factory.makeDistroArchSeries(distroseries=distroseries)
@@ -945,9 +945,8 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         os.makedirs(staging_suite)
         write_marker_file(
             [staging_suite, "%s.gz" % contents_filename], "Contents")
-        self.assertEqual(
-            [(distro.main_archive, distroseries.name)],
-            script.updateStagedFiles(distro))
+        script.updateStagedFiles(distro)
+        self.assertEqual([distroseries.name], distro.main_archive.dirty_suites)
 
     def test_updateStagedFiles_considers_partner_archive(self):
         # updateStagedFiles considers the partner archive as well as the

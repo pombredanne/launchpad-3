@@ -402,16 +402,8 @@ class CodeImportSourceDetails:
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
         """
-        result = [str(self.target_id)]
-        if self.target_rcstype == 'bzr':
-            # XXX cjwatson 2016-10-12: Remove this special case once the
-            # worker always accepts the combined form.
-            result.append(self.rcstype)
-        elif self.target_rcstype == 'git':
-            result.append('%s:%s' % (self.rcstype, self.target_rcstype))
-        else:
-            raise AssertionError(
-                "Unknown target_rcstype %r." % self.target_rcstype)
+        result = [
+            str(self.target_id), '%s:%s' % (self.rcstype, self.target_rcstype)]
         if self.rcstype in ['bzr-svn', 'git', 'bzr']:
             result.append(self.url)
             if self.stacked_on_url is not None:

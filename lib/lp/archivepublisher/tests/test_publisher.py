@@ -1318,6 +1318,16 @@ class TestPublisher(TestPublisherBase):
             now - timedelta(hours=12))
         self.assertIn(archive, ubuntu.getPendingPublicationPPAs())
 
+    def testDirtySuitesArchive(self):
+        # getPendingPublicationPPAs returns archives that have dirty_suites
+        # set.
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        archive = self.factory.makeArchive()
+        self.assertNotIn(archive, ubuntu.getPendingPublicationPPAs())
+        archive.markSuiteDirty(
+            ubuntu.currentseries, PackagePublishingPocket.RELEASE)
+        self.assertIn(archive, ubuntu.getPendingPublicationPPAs())
+
     def _checkCompressedFiles(self, archive_publisher, base_file_path,
                               suffixes):
         """Assert that the various compressed versions of a file are equal.

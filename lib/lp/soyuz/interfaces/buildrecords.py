@@ -14,7 +14,6 @@ __all__ = [
     ]
 import httplib
 
-from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
     error_status,
@@ -33,6 +32,7 @@ from zope.schema import (
 
 from lp import _
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -53,8 +53,7 @@ class IHasBuildRecords(Interface):
         pocket=Choice(
             title=_("Pocket"), required=False, readonly=True,
             description=_("The pocket into which this entry is published"),
-            # Really a PackagePublishingPocket see _schema_circular_imports.
-            vocabulary=DBEnumeratedType))
+            vocabulary=PackagePublishingPocket))
     @call_with(user=REQUEST_USER, binary_only=True)
     # Really a IBuild see _schema_circular_imports.
     @operation_returns_collection_of(Interface)

@@ -125,7 +125,6 @@ from lp.registry.interfaces.pillar import (
     IPillar,
     IPillarNameSet,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import (
     IProduct,
     IProductSet,
@@ -158,7 +157,6 @@ from lp.services.messages.interfaces.message import (
     )
 from lp.services.webservice.apihelpers import (
     patch_choice_parameter_type,
-    patch_choice_property,
     patch_collection_property,
     patch_collection_return_type,
     patch_entry_explicit_version,
@@ -311,18 +309,12 @@ patch_plain_parameter_type(
     IPersonEditRestricted, 'createPPA', 'distribution', IDistribution)
 patch_entry_return_type(IPersonEditRestricted, 'createPPA', IArchive)
 
-patch_choice_parameter_type(
-    IHasBuildRecords, 'getBuildRecords', 'pocket', PackagePublishingPocket)
 patch_collection_return_type(
     IHasBuildRecords, 'getBuildRecords', IBinaryPackageBuild)
 
 patch_reference_property(ISourcePackagePublic, 'distroseries', IDistroSeries)
 patch_reference_property(ISourcePackagePublic, 'productseries', IProductSeries)
-patch_choice_parameter_type(
-    ISourcePackagePublic, 'getBranch', 'pocket', PackagePublishingPocket)
 patch_entry_return_type(ISourcePackagePublic, 'getBranch', IBranch)
-patch_choice_parameter_type(
-    ISourcePackageEdit, 'setBranch', 'pocket', PackagePublishingPocket)
 patch_plain_parameter_type(ISourcePackageEdit, 'setBranch', 'branch', IBranch)
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 
@@ -416,43 +408,13 @@ patch_entry_return_type(IArchive, 'newSubscription', IArchiveSubscriber)
 patch_plain_parameter_type(
     IArchive, 'getArchiveDependency', 'dependency', IArchive)
 patch_entry_return_type(IArchive, 'getArchiveDependency', IArchiveDependency)
-patch_plain_parameter_type(
-    IArchive, 'api_getPublishedSources', 'distroseries', IDistroSeries)
 patch_collection_return_type(
     IArchive, 'api_getPublishedSources', ISourcePackagePublishingHistory)
-patch_choice_parameter_type(
-    IArchive, 'api_getPublishedSources', 'pocket', PackagePublishingPocket)
 patch_plain_parameter_type(
     IArchive, 'getAllPublishedBinaries', 'distroarchseries',
     IDistroArchSeries)
 patch_collection_return_type(
     IArchive, 'getAllPublishedBinaries', IBinaryPackagePublishingHistory)
-patch_choice_parameter_type(
-    IArchive, 'getAllPublishedBinaries', 'pocket', PackagePublishingPocket)
-patch_plain_parameter_type(
-    IArchive, 'isSourceUploadAllowed', 'distroseries', IDistroSeries)
-patch_plain_parameter_type(
-    IArchive, '_checkUpload', 'distroseries', IDistroSeries)
-patch_choice_parameter_type(
-    IArchive, '_checkUpload', 'pocket', PackagePublishingPocket)
-patch_choice_parameter_type(
-    IArchive, 'getUploadersForPocket', 'pocket', PackagePublishingPocket)
-patch_choice_parameter_type(
-    IArchive, 'getQueueAdminsForPocket', 'pocket', PackagePublishingPocket)
-patch_plain_parameter_type(
-    IArchive, 'getQueueAdminsForPocket', 'distroseries', IDistroSeries)
-patch_choice_parameter_type(
-    IArchive, 'newPocketUploader', 'pocket', PackagePublishingPocket)
-patch_choice_parameter_type(
-    IArchive, 'newPocketQueueAdmin', 'pocket', PackagePublishingPocket)
-patch_plain_parameter_type(
-    IArchive, 'newPocketQueueAdmin', 'distroseries', IDistroSeries)
-patch_choice_parameter_type(
-    IArchive, 'deletePocketUploader', 'pocket', PackagePublishingPocket)
-patch_choice_parameter_type(
-    IArchive, 'deletePocketQueueAdmin', 'pocket', PackagePublishingPocket)
-patch_plain_parameter_type(
-    IArchive, 'deletePocketQueueAdmin', 'distroseries', IDistroSeries)
 patch_plain_parameter_type(
     IArchive, 'newPackagesetUploader', 'packageset', IPackageset)
 patch_plain_parameter_type(
@@ -463,8 +425,6 @@ patch_plain_parameter_type(
     IArchive, 'removeArchiveDependency', 'dependency', IArchive)
 patch_plain_parameter_type(
     IArchive, '_addArchiveDependency', 'dependency', IArchive)
-patch_choice_parameter_type(
-    IArchive, '_addArchiveDependency', 'pocket', PackagePublishingPocket)
 patch_entry_return_type(
     IArchive, '_addArchiveDependency', IArchiveDependency)
 
@@ -501,8 +461,6 @@ patch_reference_property(IDistroSeries, 'main_archive', IArchive)
 patch_collection_property(
     IDistroSeries, 'enabled_architectures', IDistroArchSeries)
 patch_reference_property(IDistroSeries, 'distribution', IDistribution)
-patch_choice_parameter_type(
-    IDistroSeries, 'getPackageUploads', 'pocket', PackagePublishingPocket)
 patch_plain_parameter_type(
     IDistroSeries, 'getPackageUploads', 'archive', IArchive)
 patch_collection_return_type(
@@ -577,7 +535,6 @@ patch_plain_parameter_type(
 patch_collection_return_type(IPackageset, 'relatedSets', IPackageset)
 
 # IPackageUpload
-patch_choice_property(IPackageUpload, 'pocket', PackagePublishingPocket)
 patch_reference_property(IPackageUpload, 'distroseries', IDistroSeries)
 patch_reference_property(IPackageUpload, 'archive', IArchive)
 patch_reference_property(IPackageUpload, 'copy_source_archive', IArchive)
