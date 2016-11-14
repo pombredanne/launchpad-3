@@ -235,6 +235,19 @@ class PublishDistro(PublisherScript):
             suites.add((series.name, pocket))
         return suites
 
+    def findExplicitlyDirtySuites(self, archive):
+        """Find the suites that have been explicitly marked as dirty."""
+        for suite in self.options.dirty_suites:
+            yield self.findSuite(archive.distribution, suite)
+        if archive.dirty_suites is not None:
+            for suite in archive.dirty_suites:
+                try:
+                    yield archive.distribution.getDistroSeriesAndPocket(suite)
+                except NotFoundError:
+                    self.logger.exception(
+                        "Failed to parse dirty suite '%s' for archive '%s'" %
+                        (suite, archive.reference))
+
     def getCopyArchives(self, distribution):
         """Find copy archives for the selected distribution."""
         copy_archives = list(
@@ -295,6 +308,16 @@ class PublishDistro(PublisherScript):
 
         Commits transactions along the way.
         """
+        for distroseries, pocket in self.findExplicitlyDirtySuites(archive):
+            if not cannot_modify_suite(archive, distroseries, pocket):
+                publisher.markPocketDirty(distroseries, pocket)
+        if archive.dirty_suites is not None:
+            # Clear the explicit dirt indicator before we start doing
+            # time-consuming publishing, which might race with an
+            # Archive.markSuiteDirty call.
+            archive.dirty_suites = None
+            self.txn.commit()
+
         publisher.setupArchiveDirs()
         if self.options.enable_publishing:
             publisher.A_publish(
@@ -347,13 +370,6 @@ class PublishDistro(PublisherScript):
                     elif archive.can_be_published:
                         publisher = self.getPublisher(
                             distribution, archive, allowed_suites)
-                        for suite in self.options.dirty_suites:
-                            distroseries, pocket = self.findSuite(
-                                distribution, suite)
-                            if not cannot_modify_suite(
-                                    archive, distroseries, pocket):
-                                publisher.markPocketDirty(
-                                    distroseries, pocket)
                         self.publishArchive(archive, publisher)
                         work_done = True
                     else:

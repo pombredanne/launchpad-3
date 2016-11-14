@@ -74,6 +74,7 @@ from lp.registry.interfaces.milestone import (
     IMilestone,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import (
     IHasAppointedDriver,
     IHasOwner,
@@ -546,9 +547,7 @@ class IDistroSeriesPublic(
             description=_("Return only items for this archive."),
             required=False),
         pocket=Choice(
-            # Really PackagePublishingPocket, patched in
-            # _schema_circular_imports.py
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             title=_("Pocket"),
             description=_("Return only items targeted to this pocket"),
             required=False),

@@ -102,8 +102,10 @@ from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators.name import name_validator
 from lp.buildmaster.interfaces.processor import IProcessor
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     PersonChoice,
@@ -478,14 +480,11 @@ class IArchiveSubscriberView(Interface):
             vocabulary=DBEnumeratedType,
             required=False),
         distroseries=Reference(
-            # Really IDistroSeries, fixed below to avoid circular import.
-            Interface,
-            title=_("Distroseries name"), required=False),
+            IDistroSeries, title=_("Distroseries name"), required=False),
         pocket=Choice(
             title=_("Pocket"),
             description=_("The pocket into which this entry is published"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=False, readonly=True),
         exact_match=Bool(
             title=_("Exact Match"),
@@ -671,6 +670,10 @@ class IArchiveView(IHasBuildRecords):
             "context build.\n"
             "NOTE: This is for migration of OEM PPAs only!")))
 
+    dirty_suites = Attribute(
+        "Suites that the next publisher run should publish regardless of "
+        "pending publications.")
+
     processors = exported(
         CollectionField(
             title=_("Processors"),
@@ -833,9 +836,7 @@ class IArchiveView(IHasBuildRecords):
     @operation_parameters(
         person=Reference(schema=IPerson),
         distroseries=Reference(
-            # Really IDistroSeries, avoiding a circular import here.
-            Interface,
-            title=_("The distro series"), required=True),
+            IDistroSeries, title=_("The distro series"), required=True),
         sourcepackagename=TextLine(
             title=_("Source package name"), required=True),
         component=TextLine(
@@ -843,8 +844,7 @@ class IArchiveView(IHasBuildRecords):
         pocket=Choice(
             title=_("Pocket"),
             description=_("The pocket into which this entry is published"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         strict_component=Bool(
             title=_("Strict component"), required=False),
@@ -1094,9 +1094,7 @@ class IArchiveView(IHasBuildRecords):
             title=_("Source package name"), required=True),
         person=Reference(schema=IPerson),
         distroseries=Reference(
-            # Really IDistroSeries, avoiding a circular import here.
-            Interface,
-            title=_("The distro series"), required=False))
+            IDistroSeries, title=_("The distro series"), required=False))
     @export_read_operation()
     def isSourceUploadAllowed(sourcepackagename, person, distroseries=None):
         """True if the person is allowed to upload the given source package.
@@ -1176,8 +1174,7 @@ class IArchiveView(IHasBuildRecords):
         pocket=Choice(
             title=_("Pocket"),
             description=_("The pocket into which this entry is published"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=False, readonly=True),
         exact_match=Bool(
             description=_("Whether or not to filter binary names by exact "
@@ -1370,8 +1367,7 @@ class IArchiveView(IHasBuildRecords):
     @operation_parameters(
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         )
     # Really IArchivePermission, set below to avoid circular import.
@@ -1388,13 +1384,10 @@ class IArchiveView(IHasBuildRecords):
     @operation_parameters(
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         distroseries=Reference(
-            # Really IDistroSeries, avoiding a circular import here.
-            Interface,
-            title=_("Distro series"), required=False),
+            IDistroSeries, title=_("Distro series"), required=False),
         )
     # Really IArchivePermission, set below to avoid circular import.
     @operation_returns_collection_of(Interface)
@@ -1831,8 +1824,7 @@ class IArchiveEdit(Interface):
         person=Reference(schema=IPerson),
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         )
     # Really IArchivePermission, set below to avoid circular import.
@@ -1873,13 +1865,10 @@ class IArchiveEdit(Interface):
         person=Reference(schema=IPerson),
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         distroseries=Reference(
-            # Really IDistroSeries, avoiding a circular import here.
-            Interface,
-            title=_("Distro series"), required=True),
+            IDistroSeries, title=_("Distro series"), required=True),
         )
     # Really IArchivePermission, set below to avoid circular import.
     @export_factory_operation(Interface, [])
@@ -1949,8 +1938,7 @@ class IArchiveEdit(Interface):
         person=Reference(schema=IPerson),
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         )
     @export_write_operation()
@@ -1982,13 +1970,10 @@ class IArchiveEdit(Interface):
         person=Reference(schema=IPerson),
         pocket=Choice(
             title=_("Pocket"),
-            # Really PackagePublishingPocket, circular import fixed below.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         distroseries=Reference(
-            # Really IDistroSeries, avoiding a circular import here.
-            Interface,
-            title=_("Distro series"), required=True),
+            IDistroSeries, title=_("Distro series"), required=True),
         )
     @export_write_operation()
     @operation_for_version("devel")
@@ -2064,8 +2049,7 @@ class IArchiveEdit(Interface):
         pocket=Choice(
             title=_("Pocket"),
             description=_("The pocket into which this entry is published"),
-            # Really PackagePublishingPocket.
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             required=True),
         component=TextLine(title=_("Component"), required=False),
         )
@@ -2201,6 +2185,26 @@ class IArchiveEdit(Interface):
         """Deactivate named authorization tokens in bulk.
 
         :param names: A list of token names.
+        """
+
+    @operation_parameters(
+        distroseries=Reference(
+            IDistroSeries, title=_("Distro series"), required=True),
+        pocket=Choice(
+            title=_("Pocket"),
+            vocabulary=PackagePublishingPocket,
+            required=True),
+        )
+    @export_write_operation()
+    @operation_for_version("devel")
+    def markSuiteDirty(distroseries, pocket):
+        """Mark a suite as dirty in this archive.
+
+        The next publisher run will publish this suite regardless of whether
+        it has any pending publications.
+
+        :param distroseries: An `IDistroSeries`.
+        :param pocket: A `PackagePublishingPocket`.
         """
 
 

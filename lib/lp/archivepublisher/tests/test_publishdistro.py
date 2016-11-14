@@ -20,7 +20,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
-from lp.archivepublisher.interfaces.archivesigningkey import IArchiveSigningKey
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.publishing import Publisher
 from lp.archivepublisher.scripts.publishdistro import PublishDistro
@@ -436,6 +438,24 @@ class TestPublishDistro(TestNativePublishingBase):
         # breezy-autotest has its Release files rewritten.
         self.assertThat(breezy_inrelease_path, PathExists())
 
+    def testDirtySuites(self):
+        """publish-distro can be told to publish specific suites."""
+        archive = self.factory.makeArchive(distribution=self.ubuntutest)
+        self.layer.txn.commit()
+
+        # publish-distro has nothing to publish.
+        self.runPublishDistro(['--ppa'])
+        breezy_release_path = os.path.join(
+            getPubConfig(archive).distsroot, 'breezy-autotest', 'Release')
+        self.assertThat(breezy_release_path, Not(PathExists()))
+
+        # ... but it will publish a suite anyway if it is marked as dirty.
+        archive.markSuiteDirty(
+            archive.distribution.getSeries('breezy-autotest'),
+            PackagePublishingPocket.RELEASE)
+        self.runPublishDistro(['--ppa'])
+        self.assertThat(breezy_release_path, PathExists())
+
 
 class FakeArchive:
     """A very simple fake `Archive`."""
@@ -444,6 +464,7 @@ class FakeArchive:
         self.can_be_published = True
         self.purpose = purpose
         self.status = ArchiveStatus.ACTIVE
+        self.dirty_suites = []
 
 
 class FakePublisher:
