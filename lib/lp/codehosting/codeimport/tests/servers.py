@@ -260,18 +260,15 @@ class TurnipSetSymbolicRefHandler(Handler):
         line = self.proto.read_pkt_line()
         if line is None:
             self.proto.write_pkt_line(b"ERR Invalid set-symbolic-ref-line\n")
-            self.proto.write_pkt_line(None)
             return
         name, target = line.split(b" ", 1)
         if name != b"HEAD":
             self.proto.write_pkt_line(
                 b'ERR Symbolic ref name must be "HEAD"\n')
-            self.proto.write_pkt_line(None)
             return
         if target.startswith(b"-"):
             self.proto.write_pkt_line(
                 b'ERR Symbolic ref target may not start with "-"\n')
-            self.proto.write_pkt_line(None)
             return
         try:
             self.repo.refs.set_symbolic_ref(name, target)
@@ -279,7 +276,6 @@ class TurnipSetSymbolicRefHandler(Handler):
             self.proto.write_pkt_line(b'ERR %s\n' % e)
         else:
             self.proto.write_pkt_line(b'ACK %s\n' % name)
-        self.proto.write_pkt_line(None)
 
 
 class HTTPGitServerThread(threading.Thread):
