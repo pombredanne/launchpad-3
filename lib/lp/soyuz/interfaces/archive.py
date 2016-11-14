@@ -102,6 +102,7 @@ from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators.name import name_validator
 from lp.buildmaster.interfaces.processor import IProcessor
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.gpg import IGPGKey
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -479,9 +480,7 @@ class IArchiveSubscriberView(Interface):
             vocabulary=DBEnumeratedType,
             required=False),
         distroseries=Reference(
-            # Really IDistroSeries, fixed below to avoid circular import.
-            Interface,
-            title=_("Distroseries name"), required=False),
+            IDistroSeries, title=_("Distroseries name"), required=False),
         pocket=Choice(
             title=_("Pocket"),
             description=_("The pocket into which this entry is published"),
@@ -837,9 +836,7 @@ class IArchiveView(IHasBuildRecords):
     @operation_parameters(
         person=Reference(schema=IPerson),
         distroseries=Reference(
-            # Really IDistroSeries, avoiding a circular import here.
-            Interface,
-            title=_("The distro series"), required=True),
+            IDistroSeries, title=_("The distro series"), required=True),
         sourcepackagename=TextLine(
             title=_("Source package name"), required=True),
         component=TextLine(
@@ -1097,9 +1094,7 @@ class IArchiveView(IHasBuildRecords):
             title=_("Source package name"), required=True),
         person=Reference(schema=IPerson),
         distroseries=Reference(
-            # Really IDistroSeries, avoiding a circular import here.
-            Interface,
-            title=_("The distro series"), required=False))
+            IDistroSeries, title=_("The distro series"), required=False))
     @export_read_operation()
     def isSourceUploadAllowed(sourcepackagename, person, distroseries=None):
         """True if the person is allowed to upload the given source package.
@@ -1392,9 +1387,7 @@ class IArchiveView(IHasBuildRecords):
             vocabulary=PackagePublishingPocket,
             required=True),
         distroseries=Reference(
-            # Really IDistroSeries, avoiding a circular import here.
-            Interface,
-            title=_("Distro series"), required=False),
+            IDistroSeries, title=_("Distro series"), required=False),
         )
     # Really IArchivePermission, set below to avoid circular import.
     @operation_returns_collection_of(Interface)
@@ -1875,9 +1868,7 @@ class IArchiveEdit(Interface):
             vocabulary=PackagePublishingPocket,
             required=True),
         distroseries=Reference(
-            # Really IDistroSeries, avoiding a circular import here.
-            Interface,
-            title=_("Distro series"), required=True),
+            IDistroSeries, title=_("Distro series"), required=True),
         )
     # Really IArchivePermission, set below to avoid circular import.
     @export_factory_operation(Interface, [])
@@ -1982,9 +1973,7 @@ class IArchiveEdit(Interface):
             vocabulary=PackagePublishingPocket,
             required=True),
         distroseries=Reference(
-            # Really IDistroSeries, avoiding a circular import here.
-            Interface,
-            title=_("Distro series"), required=True),
+            IDistroSeries, title=_("Distro series"), required=True),
         )
     @export_write_operation()
     @operation_for_version("devel")
@@ -2200,9 +2189,7 @@ class IArchiveEdit(Interface):
 
     @operation_parameters(
         distroseries=Reference(
-            # Really IDistroSeries.
-            Interface,
-            title=_("Distro series"), required=True),
+            IDistroSeries, title=_("Distro series"), required=True),
         pocket=Choice(
             title=_("Pocket"),
             vocabulary=PackagePublishingPocket,

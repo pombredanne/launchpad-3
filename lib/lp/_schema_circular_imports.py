@@ -422,8 +422,6 @@ patch_entry_return_type(IArchive, 'newSubscription', IArchiveSubscriber)
 patch_plain_parameter_type(
     IArchive, 'getArchiveDependency', 'dependency', IArchive)
 patch_entry_return_type(IArchive, 'getArchiveDependency', IArchiveDependency)
-patch_plain_parameter_type(
-    IArchive, 'api_getPublishedSources', 'distroseries', IDistroSeries)
 patch_collection_return_type(
     IArchive, 'api_getPublishedSources', ISourcePackagePublishingHistory)
 patch_choice_parameter_type(
@@ -436,16 +434,6 @@ patch_collection_return_type(
 patch_choice_parameter_type(
     IArchive, 'getAllPublishedBinaries', 'status', PackagePublishingStatus)
 patch_plain_parameter_type(
-    IArchive, 'isSourceUploadAllowed', 'distroseries', IDistroSeries)
-patch_plain_parameter_type(
-    IArchive, '_checkUpload', 'distroseries', IDistroSeries)
-patch_plain_parameter_type(
-    IArchive, 'getQueueAdminsForPocket', 'distroseries', IDistroSeries)
-patch_plain_parameter_type(
-    IArchive, 'newPocketQueueAdmin', 'distroseries', IDistroSeries)
-patch_plain_parameter_type(
-    IArchive, 'deletePocketQueueAdmin', 'distroseries', IDistroSeries)
-patch_plain_parameter_type(
     IArchive, 'newPackagesetUploader', 'packageset', IPackageset)
 patch_plain_parameter_type(
     IArchive, 'getUploadersForPackageset', 'packageset', IPackageset)
@@ -457,8 +445,6 @@ patch_plain_parameter_type(
     IArchive, '_addArchiveDependency', 'dependency', IArchive)
 patch_entry_return_type(
     IArchive, '_addArchiveDependency', IArchiveDependency)
-patch_plain_parameter_type(
-    IArchive, 'markSuiteDirty', 'distroseries', IDistroSeries)
 
 # IBuildFarmJob
 patch_choice_property(IBuildFarmJob, 'status', BuildStatus)
