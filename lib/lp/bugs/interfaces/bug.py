@@ -22,7 +22,6 @@ __all__ = [
     'IProjectGroupBugAddForm',
     ]
 
-from lazr.enum import DBEnumeratedType
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     accessor_for,
@@ -809,13 +808,6 @@ class IBugEdit(Interface):
         file_alias.restricted.
         """
 
-    def linkMergeProposal(merge_proposal, user, check_permissions=True):
-        """Ensure that this MP is linked to this bug."""
-
-    def unlinkMergeProposal(merge_proposal, user, check_permissions=True):
-        """Ensure that any links between this bug and the given MP are removed.
-        """
-
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
@@ -971,13 +963,10 @@ class IBugEdit(Interface):
     def newMessage(owner, subject, content):
         """Create a new message, and link it to this object."""
 
-    # The level actually uses BugNotificationLevel as its vocabulary,
-    # but due to circular import problems we fix that in
-    # _schema_circular_imports.py rather than here.
     @operation_parameters(
         person=Reference(IPerson, title=_('Person'), required=True),
         level=Choice(
-            vocabulary=DBEnumeratedType, required=False,
+            vocabulary=BugNotificationLevel, required=False,
             title=_('Level')))
     @call_with(subscribed_by=REQUEST_USER, suppress_notify=False)
     @export_write_operation()

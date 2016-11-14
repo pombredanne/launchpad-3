@@ -23,7 +23,6 @@ from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
-from lp.bugs.enums import BugNotificationLevel
 from lp.bugs.interfaces.bug import (
     IBug,
     IFrontPageBugAddForm,
@@ -51,7 +50,6 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionTarget,
     )
-from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import (
     IBuilder,
     IBuilderSet,
@@ -93,10 +91,6 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmission,
     IHWSubmissionDevice,
     IHWVendorID,
-    )
-from lp.registry.enums import (
-    DistroSeriesDifferenceStatus,
-    DistroSeriesDifferenceType,
     )
 from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
@@ -163,7 +157,6 @@ from lp.services.messages.interfaces.message import (
     )
 from lp.services.webservice.apihelpers import (
     patch_choice_parameter_type,
-    patch_choice_property,
     patch_collection_property,
     patch_collection_return_type,
     patch_entry_explicit_version,
@@ -180,11 +173,6 @@ from lp.services.worlddata.interfaces.country import (
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
-    )
-from lp.soyuz.enums import (
-    PackagePublishingStatus,
-    PackageUploadCustomFormat,
-    PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivedependency import IArchiveDependency
@@ -321,8 +309,6 @@ patch_plain_parameter_type(
     IPersonEditRestricted, 'createPPA', 'distribution', IDistribution)
 patch_entry_return_type(IPersonEditRestricted, 'createPPA', IArchive)
 
-patch_choice_parameter_type(
-    IHasBuildRecords, 'getBuildRecords', 'build_state', BuildStatus)
 patch_collection_return_type(
     IHasBuildRecords, 'getBuildRecords', IBinaryPackageBuild)
 
@@ -424,15 +410,11 @@ patch_plain_parameter_type(
 patch_entry_return_type(IArchive, 'getArchiveDependency', IArchiveDependency)
 patch_collection_return_type(
     IArchive, 'api_getPublishedSources', ISourcePackagePublishingHistory)
-patch_choice_parameter_type(
-    IArchive, 'api_getPublishedSources', 'status', PackagePublishingStatus)
 patch_plain_parameter_type(
     IArchive, 'getAllPublishedBinaries', 'distroarchseries',
     IDistroArchSeries)
 patch_collection_return_type(
     IArchive, 'getAllPublishedBinaries', IBinaryPackagePublishingHistory)
-patch_choice_parameter_type(
-    IArchive, 'getAllPublishedBinaries', 'status', PackagePublishingStatus)
 patch_plain_parameter_type(
     IArchive, 'newPackagesetUploader', 'packageset', IPackageset)
 patch_plain_parameter_type(
@@ -447,7 +429,6 @@ patch_entry_return_type(
     IArchive, '_addArchiveDependency', IArchiveDependency)
 
 # IBuildFarmJob
-patch_choice_property(IBuildFarmJob, 'status', BuildStatus)
 patch_reference_property(IBuildFarmJob, 'buildqueue_record', IBuildQueue)
 
 # IComment
@@ -480,11 +461,6 @@ patch_reference_property(IDistroSeries, 'main_archive', IArchive)
 patch_collection_property(
     IDistroSeries, 'enabled_architectures', IDistroArchSeries)
 patch_reference_property(IDistroSeries, 'distribution', IDistribution)
-patch_choice_parameter_type(
-    IDistroSeries, 'getPackageUploads', 'status', PackageUploadStatus)
-patch_choice_parameter_type(
-    IDistroSeries, 'getPackageUploads', 'custom_type',
-    PackageUploadCustomFormat)
 patch_plain_parameter_type(
     IDistroSeries, 'getPackageUploads', 'archive', IArchive)
 patch_collection_return_type(
@@ -496,11 +472,6 @@ patch_collection_return_type(IDistroSeries, 'getDerivedSeries', IDistroSeries)
 patch_collection_return_type(IDistroSeries, 'getParentSeries', IDistroSeries)
 patch_plain_parameter_type(
     IDistroSeries, 'getDifferencesTo', 'parent_series', IDistroSeries)
-patch_choice_parameter_type(
-    IDistroSeries, 'getDifferencesTo', 'status', DistroSeriesDifferenceStatus)
-patch_choice_parameter_type(
-    IDistroSeries, 'getDifferencesTo', 'difference_type',
-    DistroSeriesDifferenceType)
 patch_collection_return_type(
     IDistroSeries, 'getDifferencesTo', IDistroSeriesDifference)
 patch_collection_return_type(
@@ -645,8 +616,6 @@ patch_plain_parameter_type(
 patch_collection_property(IBug, 'linked_merge_proposals', IBranchMergeProposal)
 patch_plain_parameter_type(
     IBug, 'linkMergeProposal', 'merge_proposal', IBranchMergeProposal)
-patch_choice_parameter_type(
-    IBug, 'subscribe', 'level', BugNotificationLevel)
 patch_plain_parameter_type(
     IBug, 'unlinkMergeProposal', 'merge_proposal', IBranchMergeProposal)
 

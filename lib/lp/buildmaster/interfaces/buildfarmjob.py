@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for Soyuz build farm jobs."""
@@ -14,7 +14,6 @@ __all__ = [
     'ISpecificBuildFarmJobSource',
     ]
 
-from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
@@ -34,7 +33,10 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.buildmaster.enums import BuildFarmJobType
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.processor import IProcessor
 from lp.services.librarian.interfaces import ILibraryFileAlias
@@ -137,10 +139,7 @@ class IBuildFarmJob(Interface):
 
     status = exported(
         Choice(
-            title=_('Status'), required=True,
-            # Really BuildStatus, patched in
-            # _schema_circular_imports.py
-            vocabulary=DBEnumeratedType,
+            title=_('Status'), required=True, vocabulary=BuildStatus,
             description=_("The current status of the job.")),
         ("1.0", dict(exported_as="buildstate")),
         as_of="beta",
