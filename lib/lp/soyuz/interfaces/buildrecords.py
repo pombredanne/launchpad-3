@@ -14,7 +14,6 @@ __all__ = [
     ]
 import httplib
 
-from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
     error_status,
@@ -32,6 +31,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
@@ -49,8 +49,7 @@ class IHasBuildRecords(Interface):
         build_state=Choice(
             title=_('Build status'), required=False,
             description=_('The status of this build record'),
-            # Really a BuildStatus see _schema_circular_imports.
-            vocabulary=DBEnumeratedType),
+            vocabulary=BuildStatus),
         pocket=Choice(
             title=_("Pocket"), required=False, readonly=True,
             description=_("The pocket into which this entry is published"),
