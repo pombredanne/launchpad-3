@@ -434,14 +434,12 @@ class PublishFTPMaster(LaunchpadCronScript):
         publish_distro.main()
 
     def publishDistroArchive(self, distribution, archive,
-                             security_suites=None, updated_suites=[]):
+                             security_suites=None):
         """Publish the results for an archive.
 
         :param archive: Archive to publish.
         :param security_suites: An optional list of suites to restrict
             the publishing to.
-        :param updated_suites: An optional list of archive/suite pairs that
-            have been updated out of band and should be republished.
         """
         purpose = archive.purpose
         archive_config = self.configs[distribution][purpose]
@@ -456,9 +454,6 @@ class PublishFTPMaster(LaunchpadCronScript):
         arguments = ['-R', temporary_dists]
         if archive.purpose == ArchivePurpose.PARTNER:
             arguments.append('--partner')
-        for updated_archive, updated_suite in updated_suites:
-            if archive == updated_archive:
-                arguments.extend(['--dirty-suite', updated_suite])
 
         os.rename(get_backup_dists(archive_config), temporary_dists)
         try:
@@ -554,15 +549,14 @@ class PublishFTPMaster(LaunchpadCronScript):
             security_suites=security_suites)
         return True
 
-    def publishDistroUploads(self, distribution, updated_suites=[]):
+    def publishDistroUploads(self, distribution):
         """Publish the distro's complete uploads."""
         self.logger.debug("Full publication.  This may take some time.")
         for archive in get_publishable_archives(distribution):
             if archive.purpose in self.configs[distribution]:
                 # This, for the main archive, is where the script spends
                 # most of its time.
-                self.publishDistroArchive(
-                    distribution, archive, updated_suites=updated_suites)
+                self.publishDistroArchive(distribution, archive)
 
     def updateStagedFilesForSuite(self, archive_config, suite):
         """Install all staged files for a single archive and suite.
@@ -602,7 +596,6 @@ class PublishFTPMaster(LaunchpadCronScript):
 
     def updateStagedFiles(self, distribution):
         """Install all staged files for a distribution's archives."""
-        updated_suites = []
         for archive in get_publishable_archives(distribution):
             if archive.purpose not in self.configs[distribution]:
                 continue
@@ -613,8 +606,8 @@ class PublishFTPMaster(LaunchpadCronScript):
                     if cannot_modify_suite(archive, series, pocket):
                         continue
                     if self.updateStagedFilesForSuite(archive_config, suite):
-                        updated_suites.append((archive, suite))
-        return updated_suites
+                        archive.markSuiteDirty(series, pocket)
+                        self.txn.commit()
 
     def publish(self, distribution, security_only=False):
         """Do the main publishing work.
@@ -631,9 +624,8 @@ class PublishFTPMaster(LaunchpadCronScript):
             if security_only:
                 has_published = self.publishSecurityUploads(distribution)
             else:
-                updated_suites = self.updateStagedFiles(distribution)
-                self.publishDistroUploads(
-                    distribution, updated_suites=updated_suites)
+                self.updateStagedFiles(distribution)
+                self.publishDistroUploads(distribution)
                 # Let's assume the main archive is always modified
                 has_published = True
 

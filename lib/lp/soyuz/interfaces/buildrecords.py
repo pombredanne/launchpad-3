@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IHasBuildRecords interface.
@@ -32,6 +32,7 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -53,8 +54,7 @@ class IHasBuildRecords(Interface):
         pocket=Choice(
             title=_("Pocket"), required=False, readonly=True,
             description=_("The pocket into which this entry is published"),
-            # Really a PackagePublishingPocket see _schema_circular_imports.
-            vocabulary=DBEnumeratedType))
+            vocabulary=PackagePublishingPocket))
     @call_with(user=REQUEST_USER, binary_only=True)
     # Really a IBuild see _schema_circular_imports.
     @operation_returns_collection_of(Interface)

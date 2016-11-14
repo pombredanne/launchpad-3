@@ -113,8 +113,8 @@ from lp.testing import (
     login,
     login_person,
     person_logged_in,
-    StormStatementRecorder,
     RequestTimelineCollector,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -4136,3 +4136,51 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
                  (existing_bpn, 'i386'): BinaryOverride(component=self.main),
                  (other_bpn, 'amd64'): BinaryOverride(component=self.main),
                 }))
+
+
+class TestMarkSuiteDirty(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_default_is_none(self):
+        archive = self.factory.makeArchive()
+        self.assertIsNone(archive.dirty_suites)
+
+    def test_requires_owner(self):
+        archive = self.factory.makeArchive()
+        self.assertRaises(Unauthorized, getattr, archive, "markSuiteDirty")
+
+    def test_first_suite(self):
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution)
+        with person_logged_in(archive.owner):
+            archive.markSuiteDirty(
+                distroseries, PackagePublishingPocket.UPDATES)
+        self.assertEqual(
+            ["%s-updates" % distroseries.name], archive.dirty_suites)
+
+    def test_already_dirty(self):
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution)
+        with person_logged_in(archive.owner):
+            archive.markSuiteDirty(
+                distroseries, PackagePublishingPocket.UPDATES)
+            archive.markSuiteDirty(
+                distroseries, PackagePublishingPocket.UPDATES)
+        self.assertEqual(
+            ["%s-updates" % distroseries.name], archive.dirty_suites)
+
+    def test_second_suite(self):
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution)
+        with person_logged_in(archive.owner):
+            archive.markSuiteDirty(
+                distroseries, PackagePublishingPocket.UPDATES)
+            archive.markSuiteDirty(
+                distroseries, PackagePublishingPocket.RELEASE)
+        self.assertContentEqual(
+            ["%s-updates" % distroseries.name, distroseries.name],
+            archive.dirty_suites)

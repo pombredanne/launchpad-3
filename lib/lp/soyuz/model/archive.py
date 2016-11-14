@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table Archive."""
@@ -36,6 +36,7 @@ from storm.expr import (
     )
 from storm.properties import (
     Int,
+    JSON,
     Unicode,
     )
 from storm.references import Reference
@@ -361,6 +362,8 @@ class Archive(SQLBase):
     suppress_subscription_notifications = BoolCol(
         dbName='suppress_subscription_notifications',
         notNull=True, default=False)
+
+    dirty_suites = JSON(name='dirty_suites', allow_none=True)
 
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
@@ -2413,6 +2416,18 @@ class Archive(SQLBase):
             raise AssertionError("Job is not failed")
         Store.of(pcj.context).remove(pcj.context)
         job.destroySelf()
+
+    def markSuiteDirty(self, distroseries, pocket):
+        """See `IArchive`."""
+        if distroseries.distribution != self.distribution:
+            raise ValueError(
+                "%s is not a series of %s." %
+                (distroseries, self.distribution))
+        suite = distroseries.getSuite(pocket)
+        if self.dirty_suites is None:
+            self.dirty_suites = [suite]
+        elif suite not in self.dirty_suites:
+            self.dirty_suites.append(suite)
 
 
 def validate_ppa(owner, distribution, proposed_name, private=False):

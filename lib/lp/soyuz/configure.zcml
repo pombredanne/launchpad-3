@@ -350,7 +350,7 @@
         <require
             permission="launchpad.InternalScriptsOnly"
             attributes="signing_key_owner"
-            set_attributes="distribution signing_key_owner
+            set_attributes="dirty_suites distribution signing_key_owner
                             signing_key_fingerprint"/>
     </class>
     <adapter
