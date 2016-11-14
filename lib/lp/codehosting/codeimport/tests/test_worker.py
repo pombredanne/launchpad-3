@@ -1442,7 +1442,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             bzr_branch_url="http://example.com/foo")
         self.assertArgumentsMatch(
             code_import, Equals([
-                str(code_import.branch.id), 'bzr',
+                str(code_import.branch.id), 'bzr:bzr',
                 'http://example.com/foo']))
 
     def test_git_arguments(self):
@@ -1450,7 +1450,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             git_repo_url="git://git.example.com/project.git")
         self.assertArgumentsMatch(
             code_import, Equals([
-                str(code_import.branch.id), 'git',
+                str(code_import.branch.id), 'git:bzr',
                 'git://git.example.com/project.git']))
 
     def test_git_to_git_arguments(self):
@@ -1472,7 +1472,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             cvs_root=':pserver:foo@example.com/bar', cvs_module='bar')
         self.assertArgumentsMatch(
             code_import, Equals([
-                str(code_import.branch.id), 'cvs',
+                str(code_import.branch.id), 'cvs:bzr',
                 ':pserver:foo@example.com/bar', 'bar']))
 
     def test_bzr_svn_arguments(self):
@@ -1480,7 +1480,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             svn_branch_url='svn://svn.example.com/trunk')
         self.assertArgumentsMatch(
             code_import, Equals([
-                str(code_import.branch.id), 'bzr-svn',
+                str(code_import.branch.id), 'bzr-svn:bzr',
                 'svn://svn.example.com/trunk']))
 
     def test_bzr_stacked(self):
@@ -1491,7 +1491,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
         code_import.branch.stacked_on = devfocus
         self.assertArgumentsMatch(
             code_import, Equals([
-                str(code_import.branch.id), 'bzr',
+                str(code_import.branch.id), 'bzr:bzr',
                 'bzr://bzr.example.com/foo',
                 compose_public_url('http', branch_id_alias(devfocus))]))
 
@@ -1505,5 +1505,5 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
         code_import.branch.stacked_on = devfocus
         self.assertArgumentsMatch(
             code_import, Equals([
-                str(code_import.branch.id), 'bzr',
+                str(code_import.branch.id), 'bzr:bzr',
                 'bzr://bzr.example.com/foo']))
