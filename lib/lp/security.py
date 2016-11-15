@@ -302,16 +302,11 @@ class LimitedViewDeferredToView(AuthorizationBase):
     usedfor = Interface
 
     def checkUnauthenticated(self):
-        return (
-            self.forwardCheckUnauthenticated(self.obj, 'launchpad.View') or
-            self.forwardCheckUnauthenticated(
-                self.obj, 'launchpad.SubscriberView'))
+        return self.forwardCheckUnauthenticated(permission='launchpad.View')
 
     def checkAuthenticated(self, user):
-        return (
-            self.forwardCheckAuthenticated(user, self.obj, 'launchpad.View') or
-            self.forwardCheckAuthenticated(
-                user, self.obj, 'launchpad.SubscriberView'))
+        return self.forwardCheckAuthenticated(
+            user, permission='launchpad.View')
 
 
 class AdminByAdminsTeam(AuthorizationBase):
@@ -2619,6 +2614,23 @@ class SubscriberViewArchive(ViewArchive):
             Archive.id, And(Archive.id == self.obj.id, filter)).is_empty()
 
 
+class LimitedViewArchive(AuthorizationBase):
+    """Restricted existence knowledge of private archives.
+
+    Just delegate to SubscriberView, since that includes View.
+    """
+    permission = 'launchpad.LimitedView'
+    usedfor = IArchive
+
+    def checkUnauthenticated(self):
+        return self.forwardCheckUnauthenticated(
+            permission='launchpad.SubscriberView')
+
+    def checkAuthenticated(self, user):
+        return self.forwardCheckAuthenticated(
+            user, permission='launchpad.SubscriberView')
+
+
 class EditArchive(AuthorizationBase):
     """Restrict archive editing operations.
 
@@ -2811,18 +2823,12 @@ class ViewSourcePackagePublishingHistory(AuthorizationBase):
     usedfor = ISourcePackagePublishingHistory
 
     def checkUnauthenticated(self):
-        return (
-            self.forwardCheckUnauthenticated(
-                self.obj.archive, 'launchpad.View') or
-            self.forwardCheckUnauthenticated(
-                self.obj.archive, 'launchpad.SubscriberView'))
+        return self.forwardCheckUnauthenticated(
+            self.obj.archive, 'launchpad.SubscriberView')
 
     def checkAuthenticated(self, user):
-        return (
-            self.forwardCheckAuthenticated(
-                user, self.obj.archive, 'launchpad.View') or
-            self.forwardCheckAuthenticated(
-                user, self.obj.archive, 'launchpad.SubscriberView'))
+        return self.forwardCheckAuthenticated(
+            user, self.obj.archive, 'launchpad.SubscriberView')
 
 
 class EditPublishing(DelegatedAuthorization):
