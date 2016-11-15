@@ -678,7 +678,7 @@ def validate_import_url(url, rcs_type, target_rcs_type, existing_import=None):
         return (
             "You cannot create same-VCS imports for branches or repositories "
             "that are hosted by Launchpad.")
-    code_import = getUtility(ICodeImportSet).getByURL(url)
+    code_import = getUtility(ICodeImportSet).getByURL(url, target_rcs_type)
     if code_import is not None:
         if existing_import and code_import == existing_import:
             return None

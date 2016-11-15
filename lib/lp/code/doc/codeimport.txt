@@ -159,7 +159,7 @@ Creating a CodeImport object creates a corresponding CodeImportEvent.
 The CodeImportSet is also able to retrieve the code imports with the
 specified subversion branch url.
 
-    >>> existing_import = code_import_set.getByURL(svn_url)
+    >>> existing_import = code_import_set.getByURL(svn_url, target_bzr)
     >>> svn_import == existing_import
     True
 
@@ -187,9 +187,37 @@ Creating a CodeImport object creates a corresponding CodeImportEvent.
 The CodeImportSet is also able to retrieve the code imports with the
 specified git repo url.
 
-    >>> existing_import = code_import_set.getByURL(git_url)
+    >>> existing_import = code_import_set.getByURL(git_url, target_bzr)
     >>> git_import == existing_import
     True
+
+Code imports from Git may target Git rather than Bazaar.
+
+    >>> from lp.code.tests.helpers import GitHostingFixture
+
+    >>> target_git = TargetRevisionControlSystems.GIT
+    >>> with GitHostingFixture():
+    ...     git_to_git_import = code_import_set.new(
+    ...         registrant=nopriv, context=context, branch_name=u'hello',
+    ...         rcs_type=git, url=git_url, target_rcs_type=target_git)
+    >>> verifyObject(ICodeImport, removeSecurityProxy(git_to_git_import))
+    True
+
+    >>> git_to_git_events = event_set.getEventsForCodeImport(
+    ...     git_to_git_import)
+    >>> [event.event_type.name for event in git_to_git_events]
+    ['CREATE']
+
+    >>> existing_import = code_import_set.getByURL(git_url, target_git)
+    >>> git_to_git_import == existing_import
+    True
+
+The previous Git-to-Bazaar import of the same URL is unaffected.
+
+    >>> existing_import = code_import_set.getByURL(git_url, target_bzr)
+    >>> git_import == existing_import
+    True
+
 
 Updating code import details
 ----------------------------
