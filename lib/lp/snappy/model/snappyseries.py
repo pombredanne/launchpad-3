@@ -77,11 +77,11 @@ class SnappySeries(Storm):
 
     @property
     def preferred_distro_series(self):
-        row = Store.of(self).find(
-            SnappyDistroSeries,
+        return Store.of(self).find(
+            DistroSeries,
             SnappyDistroSeries.snappy_series == self,
+            SnappyDistroSeries.distro_series_id == DistroSeries.id,
             SnappyDistroSeries.preferred == True).one()
-        return row.distro_series if row is not None else None
 
     @preferred_distro_series.setter
     def preferred_distro_series(self, value):
