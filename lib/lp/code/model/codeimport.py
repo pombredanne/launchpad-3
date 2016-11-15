@@ -369,8 +369,11 @@ class CodeImportSet:
         clauses = [CodeImport.url == url]
         if target_rcs_type == TargetRevisionControlSystems.BZR:
             clauses.append(CodeImport.branch != None)
-        else:
+        elif target_rcs_type == TargetRevisionControlSystems.GIT:
             clauses.append(CodeImport.git_repository != None)
+        else:
+            raise AssertionError(
+                "Unknown target_rcs_type %s" % target_rcs_type)
         return IStore(CodeImport).find(CodeImport, *clauses).one()
 
     def getByBranch(self, branch):
