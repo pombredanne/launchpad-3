@@ -11,10 +11,7 @@ from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.tests.test_branch import PermissionTest
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.webapp.authorization import (
-    check_permission,
-    clear_cache as clear_permission_cache,
-    )
+from lp.services.webapp.authorization import check_permission
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import (
     admin_logged_in,
