@@ -2462,10 +2462,11 @@ class BranchMergeProposalEdit(AuthorizationBase):
           * the reviewer for the merge_target
           * an administrator
         """
-        return (user.inTeam(self.obj.registrant) or
+        if (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.merge_source.owner) or
-                self.forwardCheckAuthenticated(user, self.obj.merge_target) or
-                user.inTeam(self.obj.merge_target.reviewer))
+                user.inTeam(self.obj.merge_target.reviewer)):
+            return True
+        return self.forwardCheckAuthenticated(user, self.obj.merge_target)
 
 
 class AdminDistroSeriesLanguagePacks(
