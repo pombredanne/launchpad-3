@@ -1787,7 +1787,8 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             branch_location=self.series.branch,
             git_repository_type=LINK_LP,
             git_repository_location=repository_set.getDefaultRepository(
-                self.context.pillar))
+                self.context.pillar),
+            git_repository_name=self.context.pillar.name)
 
     @property
     def git_ssh_url(self):
