@@ -84,8 +84,10 @@ class TestSnappySeries(TestCaseWithFactory):
         self.assertContentEqual([dses[0]], snappy_series.usable_distro_series)
         snappy_series.usable_distro_series = dses
         self.assertContentEqual(dses, snappy_series.usable_distro_series)
+        snappy_series.preferred_distro_series = dses[0]
         snappy_series.usable_distro_series = []
         self.assertContentEqual([], snappy_series.usable_distro_series)
+        self.assertIsNone(snappy_series.preferred_distro_series)
 
     def test_anonymous(self):
         # Anyone can view an `ISnappySeries`.

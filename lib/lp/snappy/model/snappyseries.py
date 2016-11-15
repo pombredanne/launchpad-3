@@ -32,6 +32,10 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.snappy.interfaces.snappyseries import (
     ISnappyDistroSeries,
     ISnappyDistroSeriesSet,
@@ -75,13 +79,17 @@ class SnappySeries(Storm):
     def title(self):
         return self.display_name
 
-    @property
-    def preferred_distro_series(self):
+    @cachedproperty
+    def _preferred_distro_series(self):
         return Store.of(self).find(
             DistroSeries,
             SnappyDistroSeries.snappy_series == self,
             SnappyDistroSeries.distro_series_id == DistroSeries.id,
             SnappyDistroSeries.preferred == True).one()
+
+    @property
+    def preferred_distro_series(self):
+        return self._preferred_distro_series
 
     @preferred_distro_series.setter
     def preferred_distro_series(self, value):
@@ -93,6 +101,7 @@ class SnappySeries(Storm):
             if current.distro_series == value:
                 return
             current.preferred = False
+            get_property_cache(self)._preferred_distro_series = None
         if value is not None:
             row = Store.of(self).find(
                 SnappyDistroSeries,
@@ -103,6 +112,7 @@ class SnappySeries(Storm):
             else:
                 row = SnappyDistroSeries(self, value, preferred=True)
                 Store.of(self).add(row)
+            get_property_cache(self)._preferred_distro_series = value
 
     @property
     def usable_distro_series(self):
@@ -120,6 +130,8 @@ class SnappySeries(Storm):
             SnappyDistroSeries.distro_series_id == DistroSeries.id))
         for distro_series in enablements:
             if distro_series not in value:
+                if enablements[distro_series].preferred:
+                    get_property_cache(self)._preferred_distro_series = None
                 Store.of(self).remove(enablements[distro_series])
         for distro_series in value:
             if distro_series not in enablements:
