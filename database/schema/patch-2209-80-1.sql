@@ -4,9 +4,9 @@
 SET client_min_messages=ERROR;
 
 CREATE UNIQUE INDEX codeimport__url__branch__idx
-    ON CodeImport(url) WHERE branch IS NOT NULL;
+    ON CodeImport(url) WHERE url IS NOT NULL AND branch IS NOT NULL;
 CREATE UNIQUE INDEX codeimport__url__git_repository__idx
-    ON CodeImport(url) WHERE git_repository IS NOT NULL;
+    ON CodeImport(url) WHERE url IS NOT NULL AND git_repository IS NOT NULL;
 DROP INDEX codeimport__url__idx;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 80, 1);
