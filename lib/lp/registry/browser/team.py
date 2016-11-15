@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1822,13 +1822,14 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
                 MailingListAutoSubscribePolicy.NEVER)
 
     @property
-    def team_is_moderated(self):
-        """Is this team a moderated team?
+    def direct_team_membership_requires_approval(self):
+        """Does direct membership of this team require approval?
 
-        Return True if the team's membership policy is MODERATED.
+        Return True if the team's membership policy is DELEGATED or MODERATED.
         """
         policy = self.context.membership_policy
-        return policy == TeamMembershipPolicy.MODERATED
+        return policy in (
+            TeamMembershipPolicy.DELEGATED, TeamMembershipPolicy.MODERATED)
 
     @property
     def next_url(self):
@@ -1847,7 +1848,7 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
             # control over it.
             self.user.join(self.context, may_subscribe_to_list=False)
 
-            if self.team_is_moderated:
+            if self.direct_team_membership_requires_approval:
                 response.addInfoNotification(
                     _('Your request to join ${team} is awaiting '
                       'approval.',
@@ -1872,7 +1873,7 @@ class TeamJoinView(LaunchpadFormView, TeamJoinMixin):
             # all of the error cases.
             self.context.mailing_list.subscribe(self.user)
 
-            if self.team_is_moderated:
+            if self.direct_team_membership_requires_approval:
                 response.addInfoNotification(
                     _('Your mailing list subscription is '
                       'awaiting approval.'))
