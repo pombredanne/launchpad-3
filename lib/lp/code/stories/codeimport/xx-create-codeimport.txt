@@ -207,7 +207,8 @@ Requesting a Git-to-Git import
 ==============================
 
 The user is required to enter a project that the import is for,
-a name for the import repository, and a Git repository location.
+a name for the import repository, and a Git repository location.  The URL is
+allowed to match that of an existing Bazaar-targeted import.
 
     >>> from lp.code.interfaces.codeimport import (
     ...     CODE_IMPORT_GIT_TARGET_FEATURE_FLAG,
@@ -222,7 +223,7 @@ a name for the import repository, and a Git repository location.
     ...     browser.getControl('Git', index=0).click()
     ...     browser.getControl('Git', index=1).click()
     ...     browser.getControl('Repo URL', index=0).value = (
-    ...         "git://example.com/firefox2.git")
+    ...         "git://example.com/firefox.git")
     ...     with GitHostingFixture():
     ...         browser.getControl('Request Import').click()
 
@@ -231,7 +232,7 @@ When the user clicks continue, the approved import repository is created.
     >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
     Import Status: Reviewed
     This repository is an import of the Git repository at
-    git://example.com/firefox2.git.
+    git://example.com/firefox.git.
     The next import is scheduled to run as soon as possible.
 
 

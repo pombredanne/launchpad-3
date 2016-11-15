@@ -265,8 +265,8 @@ class ICodeImportSet(Interface):
     def getByCVSDetails(cvs_root, cvs_module):
         """Get the CodeImport with the specified CVS details."""
 
-    def getByURL(url):
-        """Get the CodeImport with the url."""
+    def getByURL(url, target_rcs_type):
+        """Get the CodeImport with the URL and target RCS type."""
 
     def delete(id):
         """Delete a CodeImport given its id."""
