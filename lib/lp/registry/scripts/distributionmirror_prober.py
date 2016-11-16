@@ -536,14 +536,14 @@ class ArchiveMirrorProberCallbacks(LoggingMixin):
         MirrorDistroSeriesSource or a MirrorDistroArchSeries.
         """
         if IDistroArchSeries.providedBy(self.series):
-            text = ("Series %s, Architecture %s" %
-                    (self.series.distroseries.title,
-                     self.series.architecturetag))
+            series = self.series.distroseries
+            arch = self.series.architecturetag
         else:
-            text = "Series %s" % self.series.title
-        text += (", Component %s and Pocket %s" %
-                 (self.component.name, self.pocket.title))
-        return text
+            series = self.series
+            arch = 'source'
+        return '%s %s %s %s' % (
+            series.distribution.name, series.getSuite(self.pocket), arch,
+            self.component.name)
 
     def logError(self, failure, url):
         msg = ("%s on %s of %s\n"
