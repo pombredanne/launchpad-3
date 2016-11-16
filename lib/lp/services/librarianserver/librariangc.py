@@ -725,7 +725,7 @@ def swift_files(max_lfc_id):
                 names = sorted(
                     swift_connection.get_container(
                         container, full_listing=True)[1],
-                    key=lambda x: int(x['name']))
+                    key=lambda x: map(int, x['name'].split('/')))
                 for name in names:
                     yield (container, name)
             except swiftclient.ClientException as x:
