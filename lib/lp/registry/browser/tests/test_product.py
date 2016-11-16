@@ -960,11 +960,13 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         self.useFixture(GitHostingFixture())
         owner = self.factory.makePerson()
         project = self.factory.makeProduct(owner=owner)
+        project_name = project.name
         browser = self.getBrowser(project, '+configure-code')
         browser.getControl('Git', index=0).click()
         browser.getControl(
             'Import a Git repository hosted somewhere else').click()
-        browser.getControl('Git repository name').value = 'imported'
+        self.assertEqual(
+            project_name, browser.getControl('Git repository name').value)
         browser.getControl('Git repository URL').value = (
             'https://git.example.org/imported')
         browser.getControl('Update').click()
@@ -979,6 +981,7 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         self.assertEqual(RevisionControlSystems.GIT, repo.code_import.rcs_type)
         self.assertEqual(
             'https://git.example.org/imported', repo.code_import.url)
+        self.assertEqual(project.name, repo.name)
 
     def test_import_git_repository_bad_scheme(self):
         self.useFixture(
@@ -989,7 +992,6 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         browser.getControl('Git', index=0).click()
         browser.getControl(
             'Import a Git repository hosted somewhere else').click()
-        browser.getControl('Git repository name').value = 'imported'
         browser.getControl('Git repository URL').value = (
             'svn://svn.example.org/imported')
         browser.getControl('Update').click()
