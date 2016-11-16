@@ -102,8 +102,8 @@ approved, though.
     >>> print find_tag_by_id(browser.contents, 'maincontent').renderContents()
     <BLANKLINE>
     ...
-    Since this is a moderated team, one of its administrators will have to
-    approve your membership before you actually become a member.
+    One of this team's administrators will have to approve your membership
+    before you actually become a member.
     ...
 
 If the user changes their mind because this is a moderated team, they can
@@ -116,6 +116,39 @@ hit the 'Cancel' button, going back to the team's page...
 ...and then do everything again, if they really want to join.
 
     >>> browser.getLink('Join the team').click()
+    >>> browser.getControl(name='field.actions.join').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail'
+
+    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+    ...     print tag.renderContents()
+    Your request to join your own team is awaiting approval.
+
+Delegated teams also require approval of direct membership.
+
+    >>> login('test@canonical.com')
+    >>> myemail.membership_policy = TeamMembershipPolicy.DELEGATED
+    >>> myemail.syncUpdate()
+    >>> logout()
+
+    >>> browser = setupBrowser(auth='Basic colin.watson@ubuntulinux.com:test')
+    >>> browser.open('http://launchpad.dev/~myemail')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'subscription-policy'))
+    Membership policy:
+    Delegated Team
+
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~myemail/+join'
+
+    >>> print find_tag_by_id(browser.contents, 'maincontent').renderContents()
+    <BLANKLINE>
+    ...
+    One of this team's administrators will have to approve your membership
+    before you actually become a member.
+    ...
+
     >>> browser.getControl(name='field.actions.join').click()
     >>> browser.url
     'http://launchpad.dev/~myemail'
@@ -164,7 +197,8 @@ home page, since they can't join it.
     'http://launchpad.dev/~myemail'
 
 On the team's +members page we can now see Karl as an approved member,
-James Blackwell as a proposed one and Jeff Waugh won't be there at all.
+Colin Watson and James Blackwell as proposed members, and Jeff Waugh won't
+be there at all.
 
     >>> anon_browser.open('http://launchpad.dev/~myemail')
     >>> anon_browser.getLink('All members').click()
@@ -179,6 +213,7 @@ James Blackwell as a proposed one and Jeff Waugh won't be there at all.
 
     >>> for link in find_tag_by_id(contents, 'proposedmembers').findAll('a'):
     ...     print link.renderContents()
+    Colin Watson
     James Blackwell
 
 
@@ -270,6 +305,7 @@ in the past, so we'll approve his membership.
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~myemail/+members')
     >>> print_members(browser.contents, 'proposedmembers')
+    Colin Watson
     James Blackwell
 
     >>> browser.open('http://launchpad.dev/~myemail/+member/jblack')
