@@ -1050,14 +1050,16 @@ class GitToGitImportWorker(ImportWorker):
                 "Invalid Content-Type from server: %s" % content_type)
         content = io.BytesIO(response.content)
         proto = Protocol(content.read, None)
-        pkts = list(proto.read_pkt_seq())
-        if len(pkts) == 1 and pkts[0].rstrip(b"\n") == b"ACK HEAD":
+        pkt = proto.read_pkt_line()
+        if pkt is None:
+            raise GitProtocolError("Unexpected flush-pkt from server")
+        elif pkt.rstrip(b"\n") == b"ACK HEAD":
             pass
-        elif pkts and pkts[0].startswith(b"ERR "):
+        elif pkt.startswith(b"ERR "):
             raise GitProtocolError(
-                pkts[0][len(b"ERR "):].rstrip(b"\n").decode("UTF-8"))
+                pkt[len(b"ERR "):].rstrip(b"\n").decode("UTF-8"))
         else:
-            raise GitProtocolError("Unexpected packets %r from server" % pkts)
+            raise GitProtocolError("Unexpected packet %r from server" % pkt)
 
     def _deleteRefs(self, repository, pattern):
         """Delete all refs in `repository` matching `pattern`."""
