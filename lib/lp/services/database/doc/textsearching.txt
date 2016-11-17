@@ -340,14 +340,12 @@ shows a bug: The FTI data for the string "aa ~bb~ cc" contains the words
 
 XXX Abel Deuring 2012-06-20 bug=1015519: XML tags cannot be searched.
 
-    >>> print search_same('foo <bar> baz')
-    FTI data: 'baz':2 'foo':1 query: 'foo' & 'baz' match: True
-
-More specifically, tags are simply dropped from the FTI data and from
-search queries.
+Tags are simply dropped from the FTI data. The terms show up without
+brackets in parsed queries as a consequence of phrase operator stripping
+added for PostgreSQL 9.6.
 
     >>> print search('some text <div>whatever</div>', '<div>')
-    FTI data: 'text':2 'whatev':3 query: None match: None
+    FTI data: 'text':2 'whatev':3 query: 'div' match: False
 
 Of course, omitting '<' and '>'from the query does not help.
 

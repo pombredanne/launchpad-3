@@ -12,7 +12,7 @@ ALTER TABLE accesspolicy DROP CONSTRAINT has_target;
 -- If type is set, then either product or distribution must be set and person must be null.
 ALTER TABLE accesspolicy ADD CONSTRAINT has_target
     CHECK (
-      (type IS NOT NULL AND (product IS NULL <> distribution IS NULL) AND person IS NULL)
+      (type IS NOT NULL AND ((product IS NULL) <> (distribution IS NULL)) AND person IS NULL)
       OR
       (type IS NULL AND person IS NOT NULL and product IS NULL AND distribution IS NULL) );
 
