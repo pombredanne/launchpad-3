@@ -171,7 +171,7 @@ class TestGitRepositoryView(BrowserTestCase):
         self.assertThat(directions.renderContents(), DocTestMatches(dedent("""
             To authenticate with the Launchpad Git hosting service, you need
             to <a href="http://launchpad.dev/~{user.name}/+editsshkeys">
-            register a SSH key</a>.
+            register an SSH key</a>.
             """).format(user=self.user),
             flags=doctest.NORMALIZE_WHITESPACE))
 

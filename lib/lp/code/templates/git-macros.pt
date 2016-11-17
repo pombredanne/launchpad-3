@@ -71,7 +71,7 @@
         <p tal:condition="not:view/user/sshkeys" id="ssh-key-directions">
           To authenticate with the Launchpad Git hosting service, you need to
           <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
-            register a SSH key</a>.
+            register an SSH key</a>.
         </p>
       </tal:can-push>
 
