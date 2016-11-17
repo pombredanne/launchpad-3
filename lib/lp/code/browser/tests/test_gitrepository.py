@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from datetime import datetime
 import doctest
+from textwrap import dedent
 
 from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
@@ -46,6 +47,8 @@ from lp.testing.matchers import (
     HasQueryCount,
     )
 from lp.testing.pages import (
+    extract_text,
+    find_tag_by_id,
     get_feedback_messages,
     setupBrowser,
     setupBrowserForUser,
@@ -112,6 +115,101 @@ class TestGitRepositoryView(BrowserTestCase):
         with person_logged_in(repository.owner):
             view = create_initialized_view(repository, "+index")
             self.assertFalse(view.user_can_push)
+
+    def test_push_directions_not_logged_in_individual(self):
+        # If the user is not logged in, they are given appropriate
+        # directions for a repository owned by a person.
+        repository = self.factory.makeGitRepository()
+        browser = self.getViewBrowser(repository, no_login=True)
+        directions = find_tag_by_id(browser.contents, "push-directions")
+        login_person(self.user)
+        self.assertThat(directions.renderContents(), DocTestMatches(dedent("""
+            Only <a
+            href="http://launchpad.dev/~{owner.name}">{owner.display_name}</a>
+            can upload to this repository. If you are {owner.display_name}
+            please <a href="+login">log in</a> for upload directions.
+            """).format(owner=repository.owner),
+            flags=doctest.NORMALIZE_WHITESPACE))
+
+    def test_push_directions_not_logged_in_team(self):
+        # If the user is not logged in, they are given appropriate
+        # directions for a repository owned by a team.
+        team = self.factory.makeTeam()
+        repository = self.factory.makeGitRepository(owner=team)
+        browser = self.getViewBrowser(repository, no_login=True)
+        directions = find_tag_by_id(browser.contents, "push-directions")
+        login_person(self.user)
+        self.assertThat(directions.renderContents(), DocTestMatches(dedent("""
+            Members of <a
+            href="http://launchpad.dev/~{owner.name}">{owner.display_name}</a>
+            can upload to this repository. <a href="+login">Log in</a> for
+            directions.
+            """).format(owner=repository.owner),
+            flags=doctest.NORMALIZE_WHITESPACE))
+
+    def test_push_directions_logged_in_can_push(self):
+        # If the user is logged in and can push to the repository, we
+        # explain how to do so.
+        self.factory.makeSSHKey(person=self.user, send_notification=False)
+        repository = self.factory.makeGitRepository(owner=self.user)
+        browser = self.getViewBrowser(repository)
+        directions = find_tag_by_id(browser.contents, "push-directions")
+        login_person(self.user)
+        self.assertThat(extract_text(directions), DocTestMatches(dedent("""
+            Update this repository:
+            git push git+ssh://git.launchpad.dev/{repository.shortened_path}
+            """).format(repository=repository),
+            flags=doctest.NORMALIZE_WHITESPACE))
+
+    def test_push_directions_logged_in_can_push_no_sshkeys(self):
+        # If the user is logged in and can push to the repository but has no
+        # SSH key registered, we point to the SSH keys form.
+        repository = self.factory.makeGitRepository(owner=self.user)
+        browser = self.getViewBrowser(repository)
+        directions = find_tag_by_id(browser.contents, "ssh-key-directions")
+        login_person(self.user)
+        self.assertThat(directions.renderContents(), DocTestMatches(dedent("""
+            To authenticate with the Launchpad Git hosting service, you need
+            to <a href="http://launchpad.dev/~{user.name}/+editsshkeys">
+            register a SSH key</a>.
+            """).format(user=self.user),
+            flags=doctest.NORMALIZE_WHITESPACE))
+
+    def test_push_directions_logged_in_cannot_push_individual(self):
+        # If the user is logged in but cannot push to a repository owned by
+        # a person, we explain who can push.
+        repository = self.factory.makeGitRepository()
+        browser = self.getViewBrowser(repository)
+        directions = find_tag_by_id(browser.contents, "push-directions")
+        login_person(self.user)
+        self.assertThat(directions.renderContents(), DocTestMatches(dedent("""
+            You cannot push to this repository. Only <a
+            href="http://launchpad.dev/~{owner.name}">{owner.display_name}</a>
+            can push to this repository.
+            """).format(owner=repository.owner),
+            flags=doctest.NORMALIZE_WHITESPACE))
+
+    def test_push_directions_logged_in_cannot_push_team(self):
+        # If the user is logged in but cannot push to a repository owned by
+        # a team, we explain who can push.
+        team = self.factory.makeTeam()
+        repository = self.factory.makeGitRepository(owner=team)
+        browser = self.getViewBrowser(repository)
+        directions = find_tag_by_id(browser.contents, "push-directions")
+        login_person(self.user)
+        self.assertThat(directions.renderContents(), DocTestMatches(dedent("""
+            You cannot push to this repository. Members of <a
+            href="http://launchpad.dev/~{owner.name}">{owner.display_name}</a>
+            can push to this repository.
+            """).format(owner=repository.owner),
+            flags=doctest.NORMALIZE_WHITESPACE))
+
+    def test_no_push_directions_for_imported_repository(self):
+        # Imported repositories never show push directions.
+        repository = self.factory.makeGitRepository(
+            repository_type=GitRepositoryType.IMPORTED)
+        browser = self.getViewBrowser(repository)
+        self.assertIsNone(find_tag_by_id(browser.contents, "push-directions"))
 
     def test_view_for_user_with_artifact_grant(self):
         # Users with an artifact grant for a repository related to a private

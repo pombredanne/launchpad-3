@@ -36,22 +36,23 @@
     </dd>
   </dl>
 
-  <div id="upload-directions">
+  <div id="push-directions"
+       tal:condition="context/repository_type/enumvalue:HOSTED">
     <tal:not-logged-in condition="not:view/user">
       <tal:individual condition="not:context/owner/is_team">
-          Only
-          <a tal:attributes="href context/owner/fmt:url"
-             tal:content="context/owner/displayname">Person</a>
-          can upload to this <tal:kind replace="kind" />. If you are
-          <tal:branch-owner replace="context/owner/displayname"/>
-          please <a href="+login">log in</a> for upload directions.
+        Only
+        <a tal:attributes="href context/owner/fmt:url"
+           tal:content="context/owner/displayname">Person</a>
+        can upload to this <tal:kind replace="kind" />. If you are
+        <tal:branch-owner replace="context/owner/displayname"/>
+        please <a href="+login">log in</a> for upload directions.
       </tal:individual>
       <tal:team tal:condition="context/owner/is_team">
-          Members of
-          <a tal:attributes="href context/owner/fmt:url"
-             tal:content="context/owner/displayname">Team</a>
-          can upload to this <tal:kind replace="kind" />.
-          <a href="+login">Log in</a> for directions.
+        Members of
+        <a tal:attributes="href context/owner/fmt:url"
+           tal:content="context/owner/displayname">Team</a>
+        can upload to this <tal:kind replace="kind" />.
+        <a href="+login">Log in</a> for directions.
       </tal:team>
     </tal:not-logged-in>
 
@@ -75,18 +76,18 @@
       </tal:can-push>
 
       <tal:cannot-push condition="not:view/user_can_push">
-        <div id="push-directions" tal:condition="not:context/owner/is_team">
+        <tal:individual condition="not:context/owner/is_team">
           You cannot push to this <tal:kind replace="kind" />. Only
           <a tal:attributes="href context/owner/fmt:url"
              tal:content="context/owner/displayname">Person</a>
           can push to this <tal:kind replace="kind" />.
-        </div>
-        <div id="push-directions" tal:condition="context/owner/is_team">
+        </tal:individual>
+        <tal:team condition="context/owner/is_team">
           You cannot push to this <tal:kind replace="kind" />. Members of
           <a tal:attributes="href context/owner/fmt:url"
              tal:content="context/owner/displayname">Team</a>
           can push to this <tal:kind replace="kind" />.
-        </div>
+        </tal:team>
       </tal:cannot-push>
     </tal:logged-in>
 
