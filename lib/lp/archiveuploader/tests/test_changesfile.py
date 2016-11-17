@@ -176,7 +176,8 @@ class ChangesFileTests(TestCase):
         finally:
             changes_fd.close()
         changesfile = ChangesFile(path, self.policy, self.logger)
-        changesfile.parse()
+        for error in changesfile.parseChanges():
+            raise error
         return changesfile
 
     def getBaseChanges(self):
@@ -359,11 +360,11 @@ class TestSignatureVerification(TestCase):
         import_public_test_keys()
 
     def test_valid_signature_accepted(self):
-        # A correctly signed changes file is excepted, and all its
+        # A correctly signed changes file is accepted, and all its
         # content is parsed.
         path = datadir('signatures/signed.changes')
         changesfile = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
-        changesfile.parse()
+        self.assertEqual([], list(changesfile.parseChanges()))
         self.assertEqual(
             getUtility(IPersonSet).getByEmail('foo.bar@canonical.com'),
             changesfile.signer)
@@ -376,14 +377,16 @@ class TestSignatureVerification(TestCase):
         # An unsigned changes file is rejected.
         path = datadir('signatures/unsigned.changes')
         changesfile = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
-        self.assertRaises(UploadError, changesfile.parse)
+        errors = list(changesfile.parseChanges())
+        self.assertIsInstance(errors[0], UploadError)
+        self.assertEqual(1, len(errors))
 
     def test_prefix_ignored(self):
         # A signed changes file with an unsigned prefix has only the
         # signed part parsed.
         path = datadir('signatures/prefixed.changes')
         changesfile = ChangesFile(path, InsecureUploadPolicy(), BufferLogger())
-        changesfile.parse()
+        self.assertEqual([], list(changesfile.parseChanges()))
         self.assertEqual(
             getUtility(IPersonSet).getByEmail('foo.bar@canonical.com'),
             changesfile.signer)

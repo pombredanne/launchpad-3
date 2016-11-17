@@ -117,8 +117,7 @@ class NascentUpload:
         self.changes = changesfile
 
     @classmethod
-    def from_changesfile_path(cls, changesfile_path, policy, logger,
-                              parse=True):
+    def from_changesfile_path(cls, changesfile_path, policy, logger):
         """Create a NascentUpload from the given changesfile path.
 
         May raise UploadError due to unrecoverable problems building
@@ -127,18 +126,9 @@ class NascentUpload:
         :param changesfile_path: path to the changesfile to be uploaded.
         :param policy: the upload policy to be used.
         :param logger: the logger to be used.
-        :param parse: if True, parse the changesfile immediately; otherwise
-            the caller must call parse_changes.
         """
         changesfile = ChangesFile(changesfile_path, policy, logger)
-        upload = cls(changesfile, policy, logger)
-        if parse:
-            upload.parse_changes()
-        return upload
-
-    def parse_changes(self):
-        """Parse the changesfile, raising UploadError if that fails."""
-        self.changes.parse()
+        return cls(changesfile, policy, logger)
 
     def process(self, build=None):
         """Process this upload, checking it against policy, loading it into
@@ -150,6 +140,8 @@ class NascentUpload:
         """
         policy = self.policy
         self.logger.debug("Beginning processing.")
+
+        self.run_and_reject_on_error(self.changes.parseChanges)
 
         try:
             policy.setDistroSeriesAndPocket(self.changes.suite_name)
@@ -784,7 +776,7 @@ class NascentUpload:
                 IDistributionSet)['ubuntu'].currentseries
             return distroseries.createQueueEntry(
                 PackagePublishingPocket.RELEASE,
-                distroseries.main_archive, self.changes.filename,
+                self.policy.archive, self.changes.filename,
                 self.changes.raw_content, signing_key=self.changes.signingkey)
         else:
             return distroseries.createQueueEntry(

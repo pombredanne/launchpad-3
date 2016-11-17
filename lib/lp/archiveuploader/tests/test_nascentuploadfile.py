@@ -209,7 +209,7 @@ class PackageUploadFileTestCase(NascentUploadFileTestCase):
         with open(path, "w") as changes_fd:
             changes.dump(changes_fd)
         changesfile = ChangesFile(path, self.policy, self.logger)
-        changesfile.parse()
+        self.assertEqual([], list(changesfile.parseChanges()))
         return changesfile
 
 
