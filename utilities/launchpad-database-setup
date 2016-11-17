@@ -18,7 +18,7 @@ fi
 # https://dev.launchpad.net/DatabaseSetup which are intended for
 # initial Launchpad setup on an otherwise unconfigured postgresql instance
 
-for pgversion in 9.1 9.3
+for pgversion in 9.3 9.5 9.6
 do
   sudo grep -qs "^auto" /etc/postgresql/$pgversion/main/start.conf
   if [ $? -eq 0 ]; then

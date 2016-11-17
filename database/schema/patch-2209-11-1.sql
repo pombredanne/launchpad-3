@@ -17,7 +17,7 @@ CREATE TABLE AccessPolicy (
     product integer REFERENCES product,
     distribution integer REFERENCES distribution,
     type integer NOT NULL,
-    CONSTRAINT has_target CHECK (product IS NULL != distribution IS NULL)
+    CONSTRAINT has_target CHECK ((product IS NULL) != (distribution IS NULL))
 );
 
 CREATE UNIQUE INDEX accesspolicy__product__type__key
@@ -29,7 +29,7 @@ CREATE TABLE AccessArtifact (
     id serial PRIMARY KEY,
     bug integer REFERENCES bug,
     branch integer, -- FK to be added later.
-    CONSTRAINT has_artifact CHECK (bug IS NULL != branch IS NULL)
+    CONSTRAINT has_artifact CHECK ((bug IS NULL) != (branch IS NULL))
 );
 
 CREATE UNIQUE INDEX accessartifact__bug__key
