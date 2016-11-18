@@ -126,6 +126,9 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         "with any leading refs/heads/ removed; for example, "
         "~launchpad-pqm/launchpad:master.")
 
+    repository_type = Attribute(
+        "The type of the repository containing this reference.")
+
     owner = Attribute("The owner of the repository containing this reference.")
 
     target = Attribute(
