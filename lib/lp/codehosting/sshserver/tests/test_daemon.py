@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the codehosting SSH server glue."""
@@ -72,8 +72,8 @@ class TestFactory(TestCase):
         return server_transport
 
     def test_authentication_uses_our_userauth_service(self):
-        # The service of a SSHServerTransport after authentication has started
-        # is an instance of our SSHUserAuthServer class.
+        # The service of an SSHServerTransport after authentication has
+        # started is an instance of our SSHUserAuthServer class.
         factory = self.makeFactory()
         transport = self.beginAuthentication(factory)
         self.assertIsInstance(transport.service, SSHUserAuthServer)
