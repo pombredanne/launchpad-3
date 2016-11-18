@@ -243,21 +243,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     date_last_modified = DateTime(
         name='date_last_modified', tzinfo=pytz.UTC, allow_none=False)
 
-    _repository_type = EnumCol(
-        dbName='repository_type', enum=GitRepositoryType, notNull=False)
-
-    @property
-    def repository_type(self):
-        # XXX cjwatson 2016-10-03: Remove once this column has been
-        # backfilled.
-        if self._repository_type is None:
-            return GitRepositoryType.HOSTED
-        else:
-            return self._repository_type
-
-    @repository_type.setter
-    def repository_type(self, value):
-        self._repository_type = value
+    repository_type = EnumCol(
+        dbName='repository_type', enum=GitRepositoryType, notNull=True)
 
     registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
