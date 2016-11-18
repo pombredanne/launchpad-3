@@ -95,6 +95,11 @@ class GitRefMixin:
         return "%s:%s" % (self.repository.unique_name, self.name)
 
     @property
+    def repository_type(self):
+        """See `IGitRef`."""
+        return self.repository.repository_type
+
+    @property
     def owner(self):
         """See `IGitRef`."""
         return self.repository.owner
