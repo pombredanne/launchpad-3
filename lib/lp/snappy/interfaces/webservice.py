@@ -19,11 +19,13 @@ __all__ = [
 
 from lp.services.webservice.apihelpers import (
     patch_collection_property,
+    patch_collection_return_type,
     patch_entry_return_type,
     patch_reference_property,
     )
 from lp.snappy.interfaces.snap import (
     ISnap,
+    ISnapEdit,
     ISnapSet,
     ISnapView,
     )
@@ -45,3 +47,6 @@ patch_entry_return_type(ISnapView, 'requestBuild', ISnapBuild)
 patch_collection_property(ISnapView, 'builds', ISnapBuild)
 patch_collection_property(ISnapView, 'completed_builds', ISnapBuild)
 patch_collection_property(ISnapView, 'pending_builds', ISnapBuild)
+
+# ISnapEdit
+patch_collection_return_type(ISnapEdit, 'requestAutoBuilds', ISnapBuild)

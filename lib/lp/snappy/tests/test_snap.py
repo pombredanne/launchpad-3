@@ -16,6 +16,7 @@ from storm.exceptions import LostObjectError
 from storm.locals import Store
 from testtools.matchers import (
     Equals,
+    MatchesSetwise,
     MatchesStructure,
     )
 import transaction
@@ -306,6 +307,30 @@ class TestSnap(TestCaseWithFactory):
         snap.requestBuild(
             snap.owner, snap.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.UPDATES)
+
+    def test_requestAutoBuilds(self):
+        # requestAutoBuilds creates new builds for all configured
+        # architectures with appropriate parameters.
+        distroseries = self.factory.makeDistroSeries()
+        dases = []
+        for _ in range(3):
+            processor = self.factory.makeProcessor(supports_virtualized=True)
+            dases.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=processor))
+        archive = self.factory.makeArchive()
+        snap = self.factory.makeSnap(
+            distroseries=distroseries,
+            processors=[das.processor for das in dases[:2]],
+            auto_build_archive=archive,
+            auto_build_pocket=PackagePublishingPocket.PROPOSED)
+        with person_logged_in(snap.owner):
+            builds = snap.requestAutoBuilds()
+        self.assertThat(builds, MatchesSetwise(
+            *(MatchesStructure.byEquality(
+                requester=snap.owner, snap=snap, archive=archive,
+                distro_arch_series=das,
+                pocket=PackagePublishingPocket.PROPOSED)
+              for das in dases[:2])))
 
     def test_getBuilds(self):
         # Test the various getBuilds methods.
@@ -1068,7 +1093,8 @@ class TestSnapWebservice(TestCaseWithFactory):
 
     def makeSnap(self, owner=None, distroseries=None, branch=None,
                  git_ref=None, processors=None, webservice=None,
-                 private=False):
+                 private=False, auto_build_archive=None,
+                 auto_build_pocket=None):
         if owner is None:
             owner = self.person
         if distroseries is None:
@@ -1088,6 +1114,10 @@ class TestSnapWebservice(TestCaseWithFactory):
         if processors is not None:
             kwargs["processors"] = [
                 api_url(processor) for processor in processors]
+        if auto_build_archive is not None:
+            kwargs["auto_build_archive"] = api_url(auto_build_archive)
+        if auto_build_pocket is not None:
+            kwargs["auto_build_pocket"] = auto_build_pocket.title
         logout()
         response = webservice.named_post(
             "/+snaps", "new", owner=owner_url, distro_series=distroseries_url,
@@ -1429,6 +1459,102 @@ class TestSnapWebservice(TestCaseWithFactory):
             "Snap package builds against private archives are only allowed "
             "if the snap package owner and the archive owner are equal.",
             response.body)
+
+    def test_requestAutoBuilds(self):
+        # requestAutoBuilds can be performed over the webservice.
+        distroseries = self.factory.makeDistroSeries()
+        dases = []
+        for _ in range(3):
+            processor = self.factory.makeProcessor(supports_virtualized=True)
+            dases.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=processor))
+        archive = self.factory.makeArchive()
+        snap = self.makeSnap(
+            distroseries=distroseries,
+            processors=[das.processor for das in dases[:2]],
+            auto_build_archive=archive,
+            auto_build_pocket=PackagePublishingPocket.PROPOSED)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestAutoBuilds")
+        self.assertEqual(200, response.status)
+        builds = response.jsonBody()
+        self.assertContentEqual(
+            [self.getURL(das) for das in dases[:2]],
+            [build["distro_arch_series_link"] for build in builds])
+
+    def test_requestAutoBuilds_requires_auto_build_archive(self):
+        # requestAutoBuilds fails if auto_build_archive is not set.
+        snap = self.makeSnap()
+        response = self.webservice.named_post(
+            snap["self_link"], "requestAutoBuilds")
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "This snap package cannot have automatic builds created for it "
+            "because auto_build_archive is not set.",
+            response.body)
+
+    def test_requestAutoBuilds_requires_auto_build_pocket(self):
+        # requestAutoBuilds fails if auto_build_pocket is not set.
+        snap = self.makeSnap(auto_build_archive=self.factory.makeArchive())
+        response = self.webservice.named_post(
+            snap["self_link"], "requestAutoBuilds")
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "This snap package cannot have automatic builds created for it "
+            "because auto_build_pocket is not set.",
+            response.body)
+
+    def test_requestAutoBuilds_requires_all_requests_to_succeed(self):
+        # requestAutoBuilds fails if any one of its build requests fail.
+        distroseries = self.factory.makeDistroSeries()
+        dases = []
+        for _ in range(2):
+            processor = self.factory.makeProcessor(supports_virtualized=True)
+            dases.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=processor))
+        archive = self.factory.makeArchive(enabled=False)
+        snap = self.makeSnap(
+            distroseries=distroseries,
+            processors=[das.processor for das in dases[:2]],
+            auto_build_archive=archive,
+            auto_build_pocket=PackagePublishingPocket.PROPOSED)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestAutoBuilds")
+        self.assertEqual(403, response.status)
+        self.assertEqual(
+            "%s is disabled." % archive.displayname, response.body)
+        response = self.webservice.get(snap["builds_collection_link"])
+        self.assertEqual([], response.jsonBody()["entries"])
+
+    def test_requestAutoBuilds_allows_already_pending(self):
+        # requestAutoBuilds succeeds if some of its build requests are
+        # already pending.
+        distroseries = self.factory.makeDistroSeries()
+        dases = []
+        das_urls = []
+        for _ in range(3):
+            processor = self.factory.makeProcessor(supports_virtualized=True)
+            dases.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=processor))
+            das_urls.append(api_url(dases[-1]))
+        archive = self.factory.makeArchive()
+        archive_url = api_url(archive)
+        snap = self.makeSnap(
+            distroseries=distroseries,
+            processors=[das.processor for das in dases[:2]],
+            auto_build_archive=archive,
+            auto_build_pocket=PackagePublishingPocket.PROPOSED)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=das_urls[0], pocket="Proposed")
+        self.assertEqual(201, response.status)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestAutoBuilds")
+        self.assertEqual(200, response.status)
+        builds = response.jsonBody()
+        self.assertContentEqual(
+            [self.getURL(dases[1])],
+            [build["distro_arch_series_link"] for build in builds])
 
     def test_getBuilds(self):
         # The builds, completed_builds, and pending_builds properties are as
