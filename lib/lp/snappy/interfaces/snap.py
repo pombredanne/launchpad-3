@@ -320,9 +320,12 @@ class ISnapEdit(IWebhookTarget):
     @operation_returns_collection_of(Interface)
     @export_write_operation()
     @operation_for_version("devel")
-    def requestAutoBuilds(logger=None):
+    def requestAutoBuilds(allow_failures=False, logger=None):
         """Create and return automatic builds for this snap package.
 
+        :param allow_failures: If True, log exceptions other than "already
+            pending" from individual build requests; if False, raise them to
+            the caller.
         :param logger: An optional logger.
         :raises CannotRequestAutoBuilds: if no auto_build_archive or
             auto_build_pocket is set.

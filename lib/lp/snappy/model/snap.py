@@ -382,7 +382,7 @@ class Snap(Storm, WebhookTargetMixin):
         result.order_by(order_by)
         return result
 
-    def requestAutoBuilds(self, logger=None):
+    def requestAutoBuilds(self, allow_failures=False, logger=None):
         """See `ISnapSet`."""
         builds = []
         if self.auto_build_archive is None:
@@ -410,7 +410,9 @@ class Snap(Storm, WebhookTargetMixin):
                         " - %s/%s/%s: %s",
                         self.owner.name, self.name, arch.architecturetag, e)
             except Exception as e:
-                if logger is not None:
+                if not allow_failures:
+                    raise
+                elif logger is not None:
                     logger.exception(
                         " - %s/%s/%s: %s",
                         self.owner.name, self.name, arch.architecturetag, e)
@@ -756,7 +758,8 @@ class SnapSet:
         snaps = cls._findStaleSnaps()
         builds = []
         for snap in snaps:
-            builds.extend(snap.requestAutoBuilds(logger=logger))
+            builds.extend(snap.requestAutoBuilds(
+                allow_failures=True, logger=logger))
         return builds
 
     def detachFromBranch(self, branch):
