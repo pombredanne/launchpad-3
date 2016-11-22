@@ -8,8 +8,10 @@ __metaclass__ = type
 __all__ = [
     'BadSnapSearchContext',
     'CannotModifySnapProcessor',
+    'CannotRequestAutoBuilds',
     'DuplicateSnapName',
     'ISnap',
+    'ISnapEdit',
     'ISnapSet',
     'ISnapView',
     'NoSourceForSnap',
@@ -41,6 +43,7 @@ from lazr.restful.declarations import (
     exported,
     operation_for_version,
     operation_parameters,
+    operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
     )
@@ -68,8 +71,8 @@ from zope.security.interfaces import (
     )
 
 from lp import _
-from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.errors import NameLookupFailed
+from lp.app.interfaces.launchpad import IPrivacy
 from lp.app.validators.name import name_validator
 from lp.buildmaster.interfaces.processor import IProcessor
 from lp.code.interfaces.branch import IBranch
@@ -203,6 +206,16 @@ class CannotModifySnapProcessor(Exception):
             self._fmt % {'processor': processor.name})
 
 
+@error_status(httplib.BAD_REQUEST)
+class CannotRequestAutoBuilds(Exception):
+    """Snap package is not configured for automatic builds."""
+
+    def __init__(self, field):
+        super(CannotRequestAutoBuilds, self).__init__(
+            "This snap package cannot have automatic builds created for it "
+            "because %s is not set." % field)
+
+
 class ISnapView(Interface):
     """`ISnap` attributes that require launchpad.View permission."""
 
@@ -247,7 +260,7 @@ class ISnapView(Interface):
         archive=Reference(schema=IArchive),
         distro_arch_series=Reference(schema=IDistroArchSeries),
         pocket=Choice(vocabulary=PackagePublishingPocket))
-    # Really ISnapBuild, patched in _schema_circular_imports.py.
+    # Really ISnapBuild, patched in lp.snappy.interfaces.webservice.
     @export_factory_operation(Interface, [])
     @operation_for_version("devel")
     def requestBuild(requester, archive, distro_arch_series, pocket):
@@ -280,7 +293,7 @@ class ISnapView(Interface):
         description=_(
             "All builds of this snap package, sorted in descending order "
             "of finishing (or starting if not completed successfully)."),
-        # Really ISnapBuild, patched in _schema_circular_imports.py.
+        # Really ISnapBuild, patched in lp.snappy.interfaces.webservice.
         value_type=Reference(schema=Interface), readonly=True)))
 
     completed_builds = exported(doNotSnapshot(CollectionField(
@@ -288,7 +301,7 @@ class ISnapView(Interface):
         description=_(
             "Completed builds of this snap package, sorted in descending "
             "order of finishing."),
-        # Really ISnapBuild, patched in _schema_circular_imports.py.
+        # Really ISnapBuild, patched in lp.snappy.interfaces.webservice.
         value_type=Reference(schema=Interface), readonly=True)))
 
     pending_builds = exported(doNotSnapshot(CollectionField(
@@ -296,12 +309,28 @@ class ISnapView(Interface):
         description=_(
             "Pending builds of this snap package, sorted in descending "
             "order of creation."),
-        # Really ISnapBuild, patched in _schema_circular_imports.py.
+        # Really ISnapBuild, patched in lp.snappy.interfaces.webservice.
         value_type=Reference(schema=Interface), readonly=True)))
 
 
 class ISnapEdit(IWebhookTarget):
     """`ISnap` methods that require launchpad.Edit permission."""
+
+    # Really ISnapBuild, patched in lp.snappy.interfaces.webservice.
+    @operation_returns_collection_of(Interface)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def requestAutoBuilds(allow_failures=False, logger=None):
+        """Create and return automatic builds for this snap package.
+
+        :param allow_failures: If True, log exceptions other than "already
+            pending" from individual build requests; if False, raise them to
+            the caller.
+        :param logger: An optional logger.
+        :raises CannotRequestAutoBuilds: if no auto_build_archive or
+            auto_build_pocket is set.
+        :return: A sequence of `ISnapBuild` instances.
+        """
 
     @export_destructor_operation()
     @operation_for_version("devel")
@@ -468,16 +497,21 @@ class ISnapSet(Interface):
     export_as_webservice_collection(ISnap)
 
     @call_with(registrant=REQUEST_USER)
+    @operation_parameters(
+        processors=List(
+            value_type=Reference(schema=IProcessor), required=False))
     @export_factory_operation(
         ISnap, [
             "owner", "distro_series", "name", "description", "branch",
-            "git_ref", "private"])
+            "git_ref", "auto_build", "auto_build_archive", "auto_build_pocket",
+            "private"])
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
-            branch=None, git_ref=None, require_virtualized=True,
-            processors=None, date_created=None, private=False,
-            store_upload=False, store_series=None, store_name=None,
-            store_secrets=None):
+            branch=None, git_ref=None, auto_build=False,
+            auto_build_archive=None, auto_build_pocket=None,
+            require_virtualized=True, processors=None, date_created=None,
+            private=False, store_upload=False, store_series=None,
+            store_name=None, store_secrets=None):
         """Create an `ISnap`."""
 
     def exists(owner, name):
