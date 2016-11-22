@@ -366,22 +366,6 @@ class Snap(Storm, WebhookTargetMixin):
         build.queueBuild()
         return build
 
-    def _getBuilds(self, filter_term, order_by):
-        """The actual query to get the builds."""
-        query_args = [
-            SnapBuild.snap == self,
-            SnapBuild.archive_id == Archive.id,
-            Archive._enabled == True,
-            get_enabled_archive_filter(
-                getUtility(ILaunchBag).user, include_public=True,
-                include_subscribed=True)
-            ]
-        if filter_term is not None:
-            query_args.append(filter_term)
-        result = Store.of(self).find(SnapBuild, *query_args)
-        result.order_by(order_by)
-        return result
-
     def requestAutoBuilds(self, allow_failures=False, logger=None):
         """See `ISnapSet`."""
         builds = []
@@ -417,6 +401,22 @@ class Snap(Storm, WebhookTargetMixin):
                         " - %s/%s/%s: %s",
                         self.owner.name, self.name, arch.architecturetag, e)
         return builds
+
+    def _getBuilds(self, filter_term, order_by):
+        """The actual query to get the builds."""
+        query_args = [
+            SnapBuild.snap == self,
+            SnapBuild.archive_id == Archive.id,
+            Archive._enabled == True,
+            get_enabled_archive_filter(
+                getUtility(ILaunchBag).user, include_public=True,
+                include_subscribed=True)
+            ]
+        if filter_term is not None:
+            query_args.append(filter_term)
+        result = Store.of(self).find(SnapBuild, *query_args)
+        result.order_by(order_by)
+        return result
 
     def getBuildSummariesForSnapBuildIds(self, snap_build_ids):
         """See `ISnap`."""
