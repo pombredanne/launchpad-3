@@ -58,6 +58,21 @@ class TestSnappySeries(TestCaseWithFactory):
         snappy_series = self.factory.makeSnappySeries()
         self.assertProvides(snappy_series, ISnappySeries)
 
+    def test_set_preferred_distro_series(self):
+        dses = [self.factory.makeDistroSeries() for _ in range(2)]
+        snappy_series = self.factory.makeSnappySeries(
+            usable_distro_series=[dses[0]])
+        self.assertIsNone(snappy_series.preferred_distro_series)
+        snappy_series.preferred_distro_series = dses[1]
+        self.assertEqual(dses[1], snappy_series.preferred_distro_series)
+        self.assertContentEqual(dses, snappy_series.usable_distro_series)
+        snappy_series.preferred_distro_series = dses[0]
+        self.assertEqual(dses[0], snappy_series.preferred_distro_series)
+        self.assertContentEqual(dses, snappy_series.usable_distro_series)
+        snappy_series.preferred_distro_series = None
+        self.assertIsNone(snappy_series.preferred_distro_series)
+        self.assertContentEqual(dses, snappy_series.usable_distro_series)
+
     def test_new_no_usable_distro_series(self):
         snappy_series = self.factory.makeSnappySeries()
         self.assertContentEqual([], snappy_series.usable_distro_series)
@@ -69,8 +84,10 @@ class TestSnappySeries(TestCaseWithFactory):
         self.assertContentEqual([dses[0]], snappy_series.usable_distro_series)
         snappy_series.usable_distro_series = dses
         self.assertContentEqual(dses, snappy_series.usable_distro_series)
+        snappy_series.preferred_distro_series = dses[0]
         snappy_series.usable_distro_series = []
         self.assertContentEqual([], snappy_series.usable_distro_series)
+        self.assertIsNone(snappy_series.preferred_distro_series)
 
     def test_anonymous(self):
         # Anyone can view an `ISnappySeries`.

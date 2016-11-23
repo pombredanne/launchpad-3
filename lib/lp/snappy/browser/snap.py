@@ -48,7 +48,6 @@ from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.informationtype import IInformationType
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadDropdownWidget,
@@ -93,7 +92,10 @@ from lp.snappy.interfaces.snap import (
     SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
-from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
+from lp.snappy.interfaces.snappyseries import (
+    ISnappyDistroSeriesSet,
+    ISnappySeriesSet,
+    )
 from lp.snappy.interfaces.snapstoreclient import (
     BadRequestPackageUploadResponse,
     ISnapStoreClient,
@@ -458,19 +460,23 @@ class SnapAddView(
                     "Failed to extract name from Snap manifest at Git %s: %s",
                     self.context.unique_name, unicode(e))
 
-        # XXX cjwatson 2015-09-18: Hack to ensure that we don't end up
-        # accidentally selecting ubuntu-rtm/14.09 or similar.
-        # ubuntu.currentseries will always be in BuildableDistroSeries.
-        series = getUtility(ILaunchpadCelebrities).ubuntu.currentseries
+        store_series = getUtility(ISnappySeriesSet).getAll().first()
+        if store_series.preferred_distro_series is not None:
+            distro_series = store_series.preferred_distro_series
+        else:
+            distro_series = store_series.usable_distro_series.first()
         sds_set = getUtility(ISnappyDistroSeriesSet)
+        store_distro_series = sds_set.getByBothSeries(
+            store_series, distro_series)
+
         return {
             'store_name': store_name,
             'owner': self.user,
-            'store_distro_series': sds_set.getByDistroSeries(series).first(),
+            'store_distro_series': store_distro_series,
             'processors': [
                 p for p in getUtility(IProcessorSet).getAll()
                 if p.build_by_default],
-            'auto_build_archive': series.main_archive,
+            'auto_build_archive': distro_series.main_archive,
             'auto_build_pocket': PackagePublishingPocket.UPDATES,
             }
 
