@@ -155,6 +155,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.webapp.authorization import available_with_permission
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
 from lp.snappy.interfaces.snap import ISnapSet
@@ -874,6 +875,15 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             BranchMergeProposal,
             BranchMergeProposal.source_git_repository == self)
 
+    def getPrecachedLandingTargets(self, user):
+        """See `IGitRef`."""
+        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
+        return DecoratedResultSet(self.landing_targets, pre_iter_hook=loader)
+
+    @property
+    def _api_landing_targets(self):
+        return self.getPrecachedLandingTargets(getUtility(ILaunchBag).user)
+
     def getActiveLandingTargets(self, paths):
         """Merge proposals not in final states where these refs are source."""
         return Store.of(self).find(
@@ -891,6 +901,16 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             BranchMergeProposal.target_git_repository == self,
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    def getPrecachedLandingCandidates(self, user):
+        """See `IGitRef`."""
+        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
+        return DecoratedResultSet(
+            self.landing_candidates, pre_iter_hook=loader)
+
+    @property
+    def _api_landing_candidates(self):
+        return self.getPrecachedLandingCandidates(getUtility(ILaunchBag).user)
 
     def getActiveLandingCandidates(self, paths):
         """Merge proposals not in final states where these refs are target."""
