@@ -135,6 +135,13 @@ class GitRepositoryType(DBEnumeratedType):
         repository and is made available through Launchpad.
         """)
 
+    REMOTE = DBItem(4, """
+        Remote
+
+        Registered in Launchpad with an external location,
+        but is not to be mirrored, nor available through Launchpad.
+        """)
+
 
 class GitObjectType(DBEnumeratedType):
     """Git Object Type

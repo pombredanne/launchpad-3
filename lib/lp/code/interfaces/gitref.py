@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IGitRef',
     'IGitRefBatchNavigator',
+    'IGitRefRemoteSet',
     ]
 
 from lazr.restful.declarations import (
@@ -66,6 +67,9 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         # Really IGitRepository, patched in _schema_circular_imports.py.
         schema=Interface,
         description=_("The Git repository containing this reference.")))
+
+    repository_url = Attribute(
+        "The repository URL, if this is a reference in a remote repository.")
 
     path = exported(TextLine(
         title=_("Path"), required=True, readonly=True,
@@ -357,3 +361,10 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
 
 class IGitRefBatchNavigator(ITableBatchNavigator):
     pass
+
+
+class IGitRefRemoteSet(Interface):
+    """Interface allowing creation of `GitRefRemote`s."""
+
+    def new(repository_url, path):
+        """Create a new remote reference."""

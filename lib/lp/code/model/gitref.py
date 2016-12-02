@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'GitRef',
     'GitRefFrozen',
+    'GitRefRemote',
     ]
 
 from datetime import datetime
@@ -24,13 +25,18 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implementer
+from zope.interface import (
+    implementer,
+    provider,
+    )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.code.enums import (
     BranchMergeProposalStatus,
     GitObjectType,
+    GitRepositoryType,
     )
 from lp.code.errors import (
     BranchMergeProposalExists,
@@ -45,7 +51,10 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.githosting import IGitHostingClient
-from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitref import (
+    IGitRef,
+    IGitRefRemoteSet,
+    )
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
     BranchMergeProposalGetter,
@@ -67,6 +76,8 @@ class GitRefMixin:
     These can be derived solely from the repository and path, and so do not
     require a database record.
     """
+
+    repository_url = None
 
     @property
     def display_name(self):
@@ -563,3 +574,108 @@ class GitRefFrozen(GitRefMixin):
 
     def __hash__(self):
         return hash(self.repository) ^ hash(self.path) ^ hash(self.commit_sha1)
+
+
+@implementer(IGitRef)
+@provider(IGitRefRemoteSet)
+class GitRefRemote(GitRefMixin):
+    """A reference in a remotely-hosted Git repository.
+
+    We can do very little with these - for example, we don't know their tip
+    commit ID - but it's useful to be able to pass the repository URL and
+    path around as a unit.
+    """
+
+    def __init__(self, repository_url, path):
+        self.repository_url = repository_url
+        self.path = path
+
+    @classmethod
+    def new(cls, repository_url, path):
+        """See `IGitRefRemoteSet`."""
+        return cls(repository_url, path)
+
+    def _unimplemented(self, *args, **kwargs):
+        raise NotImplementedError("Not implemented for remote repositories.")
+
+    repository = None
+    commit_sha1 = property(_unimplemented)
+    object_type = property(_unimplemented)
+    author = None
+    author_date = None
+    committer = None
+    committer_date = None
+    commit_message = None
+    commit_message_first_line = property(_unimplemented)
+
+    @property
+    def identity(self):
+        """See `IGitRef`."""
+        return "%s %s" % (self.repository_url, self.name)
+
+    @property
+    def unique_name(self):
+        """See `IGitRef`."""
+        return "%s %s" % (self.repository_url, self.name)
+
+    repository_type = GitRepositoryType.REMOTE
+    owner = property(_unimplemented)
+    target = property(_unimplemented)
+    namespace = property(_unimplemented)
+    getCodebrowseUrl = _unimplemented
+    getCodebrowseUrlForRevision = _unimplemented
+    information_type = InformationType.PUBLIC
+    private = False
+
+    def visibleByUser(self, user):
+        """See `IGitRef`."""
+        return True
+
+    transitionToInformationType = _unimplemented
+    reviewer = property(_unimplemented)
+    code_reviewer = property(_unimplemented)
+    isPersonTrustedReviewer = _unimplemented
+
+    @property
+    def subscriptions(self):
+        """See `IGitRef`."""
+        return []
+
+    @property
+    def subscribers(self):
+        """See `IGitRef`."""
+        return []
+
+    subscribe = _unimplemented
+    getSubscription = _unimplemented
+    unsubscribe = _unimplemented
+    getNotificationRecipients = _unimplemented
+    landing_targets = property(_unimplemented)
+    landing_candidates = property(_unimplemented)
+    dependent_landings = property(_unimplemented)
+    addLandingTarget = _unimplemented
+    createMergeProposal = _unimplemented
+    getMergeProposals = _unimplemented
+    getDependentMergeProposals = _unimplemented
+    pending_writes = False
+
+    def getCommits(self, *args, **kwargs):
+        """See `IGitRef`."""
+        return []
+
+    def getLatestCommits(self, *args, **kwargs):
+        """See `IGitRef`."""
+        return []
+
+    @property
+    def recipes(self):
+        """See `IHasRecipes`."""
+        return []
+
+    def __eq__(self, other):
+        return (
+            self.repository_url == other.repository_url and
+            self.path == other.path)
+
+    def __ne__(self, other):
+        return not self == other

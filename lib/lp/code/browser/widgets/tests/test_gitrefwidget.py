@@ -1,10 +1,14 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from zope.formlib.interfaces import (
     IBrowserWidget,
     IInputWidget,
@@ -36,9 +40,14 @@ class Thing:
     pass
 
 
-class TestGitRefWidget(TestCaseWithFactory):
+class TestGitRefWidget(WithScenarios, TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    scenarios = [
+        ("disallow_external", {"allow_external": False}),
+        ("allow_external", {"allow_external": True}),
+        ]
 
     def setUp(self):
         super(TestGitRefWidget, self).setUp()
@@ -48,6 +57,7 @@ class TestGitRefWidget(TestCaseWithFactory):
         field = field.bind(self.context)
         request = LaunchpadTestRequest()
         self.widget = GitRefWidget(field, request)
+        self.widget.allow_external = self.allow_external
 
     def test_implements(self):
         self.assertTrue(verifyObject(IBrowserWidget, self.widget))
@@ -83,6 +93,19 @@ class TestGitRefWidget(TestCaseWithFactory):
         self.widget.setRenderedValue(ref)
         self.assertEqual(
             ref.repository, self.widget.repository_widget._getCurrentValue())
+        self.assertEqual(ref.path, self.widget.path_widget._getCurrentValue())
+
+    def test_setRenderedValue_external(self):
+        # If allow_external is True, providing a reference in an external
+        # repository works.
+        self.widget.setUpSubWidgets()
+        ref = self.factory.makeGitRefRemote()
+        self.widget.setRenderedValue(ref)
+        repository_value = self.widget.repository_widget._getCurrentValue()
+        if self.allow_external:
+            self.assertEqual(ref.repository_url, repository_value)
+        else:
+            self.assertIsNone(repository_value)
         self.assertEqual(ref.path, self.widget.path_widget._getCurrentValue())
 
     def test_hasInput_false(self):
@@ -144,6 +167,18 @@ class TestGitRefWidget(TestCaseWithFactory):
             "There is no Git repository named 'non-existent' registered in "
             "Launchpad.")
 
+    def test_getInputValue_repository_invalid_url(self):
+        # An error is raised when the repository field is set to an invalid
+        # URL.
+        form = {
+            "field.git_ref.repository": "file:///etc/shadow",
+            "field.git_ref.path": "master",
+            }
+        self.assertGetInputValueError(
+            form,
+            "There is no Git repository named 'file:///etc/shadow' "
+            "registered in Launchpad.")
+
     def test_getInputValue_path_empty(self):
         # An error is raised when the path field is empty.
         repository = self.factory.makeGitRepository()
@@ -197,6 +232,22 @@ class TestGitRefWidget(TestCaseWithFactory):
         self.widget.request = LaunchpadTestRequest(form=form)
         self.assertEqual(ref, self.widget.getInputValue())
 
+    def test_getInputValue_valid_url(self):
+        # If allow_external is True, the repository may be a URL.
+        ref = self.factory.makeGitRefRemote()
+        form = {
+            "field.git_ref.repository": ref.repository_url,
+            "field.git_ref.path": ref.path,
+            }
+        if self.allow_external:
+            self.widget.request = LaunchpadTestRequest(form=form)
+            self.assertEqual(ref, self.widget.getInputValue())
+        else:
+            self.assertGetInputValueError(
+                form,
+                "There is no Git repository named '%s' registered in "
+                "Launchpad." % ref.repository_url)
+
     def test_call(self):
         # The __call__ method sets up the widgets.
         markup = self.widget()
@@ -207,3 +258,6 @@ class TestGitRefWidget(TestCaseWithFactory):
         ids = [field["id"] for field in fields]
         self.assertContentEqual(
             ["field.git_ref.repository", "field.git_ref.path"], ids)
+
+
+load_tests = load_tests_apply_scenarios

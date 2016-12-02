@@ -24,6 +24,8 @@
                  PersonRevisionFeed ProductRevisionFeed ProjectRevisionFeed"
         />
 
+  <include package=".widgets"/>
+
   <facet facet="branches">
 
   <browser:defaultView
