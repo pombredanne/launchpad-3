@@ -11,6 +11,7 @@ from testtools.matchers import Not
 from lp.code.tests.helpers import GitHostingFixture
 from lp.services.database.constants import (
     ONE_DAY_AGO,
+    SEVEN_DAYS_AGO,
     UTC_NOW,
     )
 from lp.services.webapp import canonical_url
@@ -107,16 +108,22 @@ class TestSnapListing(BrowserTestCase):
         owner = self.factory.makePerson(displayname="Snap Owner")
         self.factory.makeSnap(
             registrant=owner, owner=owner, branch=self.factory.makeAnyBranch(),
-            date_created=ONE_DAY_AGO)
+            date_created=SEVEN_DAYS_AGO)
         [ref] = self.factory.makeGitRefs()
         self.factory.makeSnap(
-            registrant=owner, owner=owner, git_ref=ref, date_created=UTC_NOW)
+            registrant=owner, owner=owner, git_ref=ref,
+            date_created=ONE_DAY_AGO)
+        remote_ref = self.factory.makeGitRefRemote()
+        self.factory.makeSnap(
+            registrant=owner, owner=owner, git_ref=remote_ref,
+            date_created=UTC_NOW)
         text = self.getMainText(owner, "+snaps")
         self.assertTextMatchesExpressionIgnoreWhitespace("""
             Snap packages for Snap Owner
-            Name            Source          Registered
-            snap-name.*     ~.*:.*          .*
-            snap-name.*     lp:.*           .*""", text)
+            Name            Source                  Registered
+            snap-name.*     http://.* path-.*       .*
+            snap-name.*     ~.*:.*                  .*
+            snap-name.*     lp:.*                   .*""", text)
 
     def test_project_snap_listing(self):
         # We can see snap packages for a project.

@@ -85,6 +85,7 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
     PersonChoice,
     PublicPersonChoice,
+    URIField,
     )
 from lp.services.webhooks.interfaces import IWebhookTarget
 from lp.snappy.interfaces.snappyseries import (
@@ -380,6 +381,18 @@ class ISnapEditableAttributes(IHasOwner):
             "A Git repository with a branch containing a snapcraft.yaml "
             "recipe at the top level.")))
 
+    git_repository_url = exported(URIField(
+        title=_("Git repository URL"), required=False, readonly=True,
+        description=_(
+            "The URL of a Git repository with a branch containing a "
+            "snapcraft.yaml recipe at the top level."),
+        allowed_schemes=["git", "http", "https"],
+        allow_userinfo=True,
+        allow_port=True,
+        allow_query=False,
+        allow_fragment=False,
+        trailing_slash=False))
+
     git_path = exported(TextLine(
         title=_("Git branch path"), required=False, readonly=True,
         description=_(
@@ -503,11 +516,13 @@ class ISnapSet(Interface):
     @export_factory_operation(
         ISnap, [
             "owner", "distro_series", "name", "description", "branch",
-            "git_ref", "auto_build", "auto_build_archive", "auto_build_pocket",
+            "git_repository", "git_repository_url", "git_path", "git_ref",
+            "auto_build", "auto_build_archive", "auto_build_pocket",
             "private"])
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
-            branch=None, git_ref=None, auto_build=False,
+            branch=None, git_repository=None, git_repository_url=None,
+            git_path=None, git_ref=None, auto_build=False,
             auto_build_archive=None, auto_build_pocket=None,
             require_virtualized=True, processors=None, date_created=None,
             private=False, store_upload=False, store_series=None,
@@ -575,6 +590,23 @@ class ISnapSet(Interface):
         :param order_by_date: If True, order packages by descending
             modification date.
         :raises BadSnapSearchContext: if the context is not understood.
+        """
+
+    @operation_parameters(url=TextLine(title=_("The URL to search for.")))
+    @call_with(visible_by_user=REQUEST_USER)
+    @operation_returns_collection_of(ISnap)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def findByURL(url, visible_by_user=None):
+        """Return all snap packages that build from the given URL.
+
+        This currently only works for packages that build directly from a
+        URL, rather than being linked to a Bazaar branch or Git repository
+        hosted in Launchpad.
+
+        :param url: A URL.
+        :param visible_by_user: If not None, only return packages visible by
+            this user.
         """
 
     def preloadDataForSnaps(snaps, user):
