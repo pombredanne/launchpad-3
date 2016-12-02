@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -395,7 +395,8 @@ class SoupMismatch(Mismatch):
         self.soup_content = soup_content
 
     def get_details(self):
-        return {'content': self.soup_content}
+        content = unicode(self.soup_content).encode('utf8')
+        return {'content': Content(UTF8_TEXT, lambda: [content])}
 
 
 class MissingElement(SoupMismatch):
