@@ -476,22 +476,34 @@ class IGitRepositoryView(IHasRecipes):
         and their subscriptions.
         """
 
-    landing_targets = exported(CollectionField(
-        title=_("Landing targets"),
-        description=_(
-            "A collection of the merge proposals where this repository is the "
-            "source."),
-        readonly=True,
-        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
-        value_type=Reference(Interface)))
-    landing_candidates = exported(CollectionField(
-        title=_("Landing candidates"),
-        description=_(
-            "A collection of the merge proposals where this repository is the "
-            "target."),
-        readonly=True,
-        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
-        value_type=Reference(Interface)))
+    landing_targets = Attribute(
+        "A collection of the merge proposals where this repository is "
+        "the source.")
+    _api_landing_targets = exported(
+        CollectionField(
+            title=_("Landing targets"),
+            description=_(
+                "A collection of the merge proposals where this repository is "
+                "the source."),
+            readonly=True,
+            # Really IBranchMergeProposal, patched in
+            # _schema_circular_imports.py.
+            value_type=Reference(Interface)),
+        exported_as="landing_targets")
+    landing_candidates = Attribute(
+        "A collection of the merge proposals where this repository is "
+        "the target.")
+    _api_landing_candidates = exported(
+        CollectionField(
+            title=_("Landing candidates"),
+            description=_(
+                "A collection of the merge proposals where this repository is "
+                "the target."),
+            readonly=True,
+            # Really IBranchMergeProposal, patched in
+            # _schema_circular_imports.py.
+            value_type=Reference(Interface)),
+        exported_as="landing_candidates")
     dependent_landings = exported(CollectionField(
         title=_("Dependent landings"),
         description=_(
@@ -500,6 +512,18 @@ class IGitRepositoryView(IHasRecipes):
         readonly=True,
         # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
         value_type=Reference(Interface)))
+
+    def getPrecachedLandingTargets(user):
+        """Return precached landing targets.
+
+        Target and prerequisite repositories are preloaded.
+        """
+
+    def getPrecachedLandingCandidates(user):
+        """Return precached landing candidates.
+
+        Source and prerequisite repositories are preloaded.
+        """
 
     def getMergeProposalByID(id):
         """Return this repository's merge proposal with this id, or None."""

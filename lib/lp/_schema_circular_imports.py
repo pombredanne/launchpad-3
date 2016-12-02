@@ -496,8 +496,10 @@ patch_plain_parameter_type(
     IGitRef, 'createMergeProposal', 'merge_target', IGitRef)
 patch_plain_parameter_type(
     IGitRef, 'createMergeProposal', 'merge_prerequisite', IGitRef)
-patch_collection_property(IGitRef, 'landing_targets', IBranchMergeProposal)
-patch_collection_property(IGitRef, 'landing_candidates', IBranchMergeProposal)
+patch_collection_property(
+    IGitRef, '_api_landing_targets', IBranchMergeProposal)
+patch_collection_property(
+    IGitRef, '_api_landing_candidates', IBranchMergeProposal)
 patch_collection_property(IGitRef, 'dependent_landings', IBranchMergeProposal)
 patch_entry_return_type(IGitRef, 'createMergeProposal', IBranchMergeProposal)
 patch_collection_return_type(
@@ -511,9 +513,9 @@ patch_entry_return_type(IGitRepository, 'subscribe', IGitSubscription)
 patch_entry_return_type(IGitRepository, 'getSubscription', IGitSubscription)
 patch_reference_property(IGitRepository, 'code_import', ICodeImport)
 patch_collection_property(
-    IGitRepository, 'landing_targets', IBranchMergeProposal)
+    IGitRepository, '_api_landing_targets', IBranchMergeProposal)
 patch_collection_property(
-    IGitRepository, 'landing_candidates', IBranchMergeProposal)
+    IGitRepository, '_api_landing_candidates', IBranchMergeProposal)
 patch_collection_property(
     IGitRepository, 'dependent_landings', IBranchMergeProposal)
 
