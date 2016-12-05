@@ -87,7 +87,10 @@ from lp.testing.matchers import (
     DoesNotSnapshot,
     HasQueryCount,
     )
-from lp.testing.pages import webservice_for_person
+from lp.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
+    )
 
 
 class TestSnapFeatureFlag(TestCaseWithFactory):
@@ -591,6 +594,18 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertTrue(snap.require_virtualized)
         self.assertFalse(snap.private)
 
+    def test_creation_git_url(self):
+        # A Snap can be backed directly by a URL for an external Git
+        # repository, rather than a Git repository hosted in Launchpad.
+        ref = self.factory.makeGitRefRemote()
+        components = self.makeSnapComponents(git_ref=ref)
+        snap = getUtility(ISnapSet).new(**components)
+        self.assertIsNone(snap.branch)
+        self.assertIsNone(snap.git_repository)
+        self.assertEqual(ref.repository_url, snap.git_repository_url)
+        self.assertEqual(ref.path, snap.git_path)
+        self.assertEqual(ref, snap.git_ref)
+
     def test_private_snap_for_public_sources(self):
         # Creating private snaps for public sources is allowed.
         [ref] = self.factory.makeGitRefs()
@@ -802,6 +817,20 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertRaises(
             BadSnapSearchContext, snap_set.findByContext,
             self.factory.makeDistribution())
+
+    def test_findByURL(self):
+        # ISnapSet.findByURL returns visible Snaps with the given URL.
+        urls = [u"https://git.example.org/foo", u"https://git.example.org/bar"]
+        snaps = []
+        for url in urls:
+            snaps.append(self.factory.makeSnap(
+                git_ref=self.factory.makeGitRefRemote(repository_url=url)))
+        snaps.append(
+            self.factory.makeSnap(branch=self.factory.makeAnyBranch()))
+        snaps.append(
+            self.factory.makeSnap(git_ref=self.factory.makeGitRefs()[0]))
+        self.assertContentEqual(
+            [snaps[0]], getUtility(ISnapSet).findByURL(urls[0]))
 
     def test__findStaleSnaps(self):
         # Stale; not built automatically.
@@ -1251,6 +1280,52 @@ class TestSnapWebservice(TestCaseWithFactory):
         self.assertEqual(
             "No such snap package with this owner: 'nonexistent'.",
             response.body)
+
+    def test_findByURL(self):
+        # lp.snaps.findByURL returns visible Snaps with the given URL.
+        persons = [self.factory.makePerson(), self.factory.makePerson()]
+        urls = [u"https://git.example.org/foo", u"https://git.example.org/bar"]
+        snaps = []
+        for url in urls:
+            for person in persons:
+                for private in (False, True):
+                    ref = self.factory.makeGitRefRemote(repository_url=url)
+                    snaps.append(self.factory.makeSnap(
+                        registrant=person, git_ref=ref, private=private))
+        with admin_logged_in():
+            ws_snaps = [
+                self.webservice.getAbsoluteUrl(api_url(snap))
+                for snap in snaps]
+        commercial_admin = (
+            getUtility(ILaunchpadCelebrities).commercial_admin.teamowner)
+        logout()
+        # Anonymous requests can only see public snaps.
+        anon_webservice = LaunchpadWebServiceCaller("test", "")
+        response = anon_webservice.named_get(
+            "/+snaps", "findByURL", url=urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[0], ws_snaps[2]],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        # persons[0] can see both public snaps with this URL, as well as
+        # their own private snap.
+        webservice = webservice_for_person(
+            persons[0], permission=OAuthPermission.READ_PRIVATE)
+        response = webservice.named_get(
+            "/+snaps", "findByURL", url=urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            ws_snaps[:3],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        # Admins can see all snaps with this URL.
+        commercial_admin_webservice = webservice_for_person(
+            commercial_admin, permission=OAuthPermission.READ_PRIVATE)
+        response = commercial_admin_webservice.named_get(
+            "/+snaps", "findByURL", url=urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            ws_snaps[:4],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
 
     def setProcessors(self, user, snap, names):
         ws = webservice_for_person(

@@ -11,13 +11,13 @@ import uuid
 
 import fixtures
 from mock import (
-    patch,
     Mock,
+    patch,
     )
-import transaction
 from testtools import ExpectedException
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import IsInstance
+import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
@@ -238,6 +238,28 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "arch_tag": "i386",
             "git_repository": ref.repository.git_https_url,
             "git_path": ref.name,
+            "name": u"test-snap",
+            "proxy_url": self.proxy_url,
+            "revocation_endpoint": self.revocation_endpoint,
+            }, args)
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_git_url(self):
+        # _extraBuildArgs returns appropriate arguments if asked to build a
+        # job for a Git branch backed by a URL for an external repository.
+        url = u"https://git.example.org/foo"
+        ref = self.factory.makeGitRefRemote(
+            repository_url=url, path=u"refs/heads/master")
+        job = self.makeJob(git_ref=ref)
+        expected_archives = get_sources_list_for_building(
+            job.build, job.build.distro_arch_series, None)
+        args = yield job._extraBuildArgs()
+        self.assertEqual({
+            "archive_private": False,
+            "archives": expected_archives,
+            "arch_tag": "i386",
+            "git_repository": url,
+            "git_path": "master",
             "name": u"test-snap",
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,

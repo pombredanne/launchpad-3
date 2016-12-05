@@ -724,6 +724,29 @@ class TestSnapEditView(BrowserTestCase):
             "name.",
             extract_text(find_tags_by_class(browser.contents, "message")[1]))
 
+    def test_edit_snap_git_url(self):
+        series = self.factory.makeUbuntuDistroSeries()
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries(
+                usable_distro_series=[series])
+        old_ref = self.factory.makeGitRefRemote()
+        new_ref = self.factory.makeGitRefRemote()
+        new_repository_url = new_ref.repository_url
+        new_path = new_ref.path
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person, distroseries=series,
+            git_ref=old_ref, store_series=snappy_series)
+        browser = self.getViewBrowser(snap, user=self.person)
+        browser.getLink("Edit snap package").click()
+        browser.getControl("Git repository").value = new_repository_url
+        browser.getControl("Git branch").value = new_path
+        browser.getControl("Update snap package").click()
+        login_person(self.person)
+        content = find_main_content(browser.contents)
+        self.assertThat(
+            "Source:\n%s\nEdit snap package" % new_ref.display_name,
+            MatchesTagText(content, "source"))
+
     def setUpDistroSeries(self):
         """Set up a distroseries with some available processors."""
         distroseries = self.factory.makeUbuntuDistroSeries()
@@ -1247,6 +1270,33 @@ class TestSnapView(BrowserTestCase):
             Owner: Test Person
             Distribution series: Ubuntu Shiny
             Source: ~test-person/\\+git/snap-repository:master
+            Build schedule: \(\?\)
+            Built on request
+            Source archive for automatic builds:
+            Pocket for automatic builds:
+            Builds of this snap package are not automatically uploaded to
+            the store.
+            Latest builds
+            Status When complete Architecture Archive
+            Successfully built 30 minutes ago i386
+            Primary Archive for Ubuntu Linux
+            """, self.getMainText(build.snap))
+
+    def test_index_git_url(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url=u"https://git.example.org/foo",
+            path=u"refs/heads/master")
+        snap = self.makeSnap(git_ref=ref)
+        build = self.makeBuild(
+            snap=snap, status=BuildStatus.FULLYBUILT,
+            duration=timedelta(minutes=30))
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Snap packages snap-name
+            .*
+            Snap package information
+            Owner: Test Person
+            Distribution series: Ubuntu Shiny
+            Source: https://git.example.org/foo master
             Build schedule: \(\?\)
             Built on request
             Source archive for automatic builds:
