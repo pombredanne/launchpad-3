@@ -700,7 +700,7 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
     custom_widget('store_distro_series', LaunchpadRadioWidget)
     custom_widget('store_channels', LabeledMultiCheckBoxWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
-    custom_widget('git_ref', GitRefWidget)
+    custom_widget('git_ref', GitRefWidget, allow_external=True)
     custom_widget('auto_build_archive', SnapArchiveWidget)
     custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
 

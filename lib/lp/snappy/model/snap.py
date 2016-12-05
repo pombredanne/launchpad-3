@@ -17,6 +17,7 @@ from storm.expr import (
     Desc,
     LeftJoin,
     Not,
+    Or,
     )
 from storm.locals import (
     Bool,
@@ -54,7 +55,10 @@ from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
     )
-from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitref import (
+    IGitRef,
+    IGitRefRemoteSet,
+    )
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
@@ -71,6 +75,7 @@ from lp.registry.interfaces.role import (
     IHasOwner,
     IPersonRoles,
     )
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
@@ -115,6 +120,7 @@ from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.model.snapbuild import SnapBuild
 from lp.soyuz.interfaces.archive import ArchiveDisabled
+from lp.soyuz.interfaces.buildrecords import IncompatibleArguments
 from lp.soyuz.model.archive import (
     Archive,
     get_enabled_archive_filter,
@@ -162,6 +168,8 @@ class Snap(Storm, WebhookTargetMixin):
 
     git_repository_id = Int(name='git_repository', allow_none=True)
     git_repository = Reference(git_repository_id, 'GitRepository.id')
+
+    git_repository_url = Unicode(name='git_repository_url', allow_none=True)
 
     git_path = Unicode(name='git_path', allow_none=True)
 
@@ -226,6 +234,9 @@ class Snap(Storm, WebhookTargetMixin):
         """See `ISnap`."""
         if self.git_repository is not None:
             return self.git_repository.getRefByPath(self.git_path)
+        elif self.git_repository_url is not None:
+            return getUtility(IGitRefRemoteSet).new(
+                self.git_repository_url, self.git_path)
         else:
             return None
 
@@ -234,9 +245,11 @@ class Snap(Storm, WebhookTargetMixin):
         """See `ISnap`."""
         if value is not None:
             self.git_repository = value.repository
+            self.git_repository_url = value.repository_url
             self.git_path = value.path
         else:
             self.git_repository = None
+            self.git_repository_url = None
             self.git_path = None
 
     @property
@@ -549,7 +562,8 @@ class SnapSet:
     """See `ISnapSet`."""
 
     def new(self, registrant, owner, distro_series, name, description=None,
-            branch=None, git_ref=None, auto_build=False,
+            branch=None, git_repository=None, git_repository_url=None,
+            git_path=None, git_ref=None, auto_build=False,
             auto_build_archive=None, auto_build_pocket=None,
             require_virtualized=True, processors=None, date_created=DEFAULT,
             private=False, store_upload=False, store_series=None,
@@ -565,6 +579,21 @@ class SnapSet:
                     "%s cannot create snap packages owned by %s." %
                     (registrant.displayname, owner.displayname))
 
+        if sum([git_repository is not None, git_repository_url is not None,
+                git_ref is not None]) > 1:
+            raise IncompatibleArguments(
+                "You cannot specify more than one of 'git_repository', "
+                "'git_repository_url', and 'git_ref'.")
+        if ((git_repository is None and git_repository_url is None) !=
+                (git_path is None)):
+            raise IncompatibleArguments(
+                "You must specify both or neither of "
+                "'git_repository'/'git_repository_url' and 'git_path'.")
+        if git_repository is not None:
+            git_ref = git_repository.getRefByPath(git_path)
+        elif git_repository_url is not None:
+            git_ref = getUtility(IGitRefRemoteSet).new(
+                git_repository_url, git_path)
         if branch is None and git_ref is None:
             raise NoSourceForSnap
         if self.exists(owner, name):
@@ -603,8 +632,8 @@ class SnapSet:
             return True
 
         # Public snaps with private sources are not allowed.
-        source_ref = branch or git_ref
-        if source_ref.information_type in PRIVATE_INFORMATION_TYPES:
+        source = branch or git_ref
+        if source.information_type in PRIVATE_INFORMATION_TYPES:
             return False
 
         # Public snaps owned by private teams are not allowed.
@@ -653,8 +682,12 @@ class SnapSet:
             return owned.union(packaged)
 
         bzr_collection = removeSecurityProxy(getUtility(IAllBranches))
+        bzr_snaps = _getSnaps(bzr_collection)
         git_collection = removeSecurityProxy(getUtility(IAllGitRepositories))
-        return _getSnaps(bzr_collection).union(_getSnaps(git_collection))
+        git_snaps = _getSnaps(git_collection)
+        git_url_snaps = IStore(Snap).find(
+            Snap, Snap.owner == person, Snap.git_repository_url != None)
+        return bzr_snaps.union(git_snaps).union(git_url_snaps)
 
     def findByProject(self, project, visible_by_user=None):
         """See `ISnapSet`."""
@@ -704,6 +737,28 @@ class SnapSet:
         if order_by_date:
             snaps.order_by(Desc(Snap.date_last_modified))
         return snaps
+
+    def findByURL(self, url, visible_by_user=None):
+        """See `ISnapSet`."""
+        clauses = [Snap.git_repository_url == url]
+        # XXX cjwatson 2016-11-25: This is in principle a poor query, but we
+        # don't yet have the access grant infrastructure to do better, and
+        # in any case since we're querying for a single URL the numbers
+        # involved should be very small.
+        if visible_by_user is None:
+            visibility_clause = Snap.private == False
+        else:
+            roles = IPersonRoles(visible_by_user)
+            if roles.in_admin or roles.in_commercial_admin:
+                visibility_clause = True
+            else:
+                visibility_clause = Or(
+                    Snap.private == False,
+                    And(
+                        TeamParticipation.person == visible_by_user,
+                        TeamParticipation.teamID == Snap.owner_id))
+        clauses.append(visibility_clause)
+        return IStore(Snap).find(Snap, *clauses).config(distinct=True)
 
     def preloadDataForSnaps(self, snaps, user=None):
         """See `ISnapSet`."""
