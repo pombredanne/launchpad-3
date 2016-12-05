@@ -555,7 +555,7 @@ class ISnapSet(Interface):
 
         :param person: An `IPerson`.
         :param visible_by_user: If not None, only return packages visible by
-            this user.
+            this user; otherwise, only return publicly-visible packages.
         """
 
     def findByProject(project, visible_by_user=None):
@@ -563,7 +563,7 @@ class ISnapSet(Interface):
 
         :param project: An `IProduct`.
         :param visible_by_user: If not None, only return packages visible by
-            this user.
+            this user; otherwise, only return publicly-visible packages.
         """
 
     def findByBranch(branch):
@@ -586,7 +586,7 @@ class ISnapSet(Interface):
         :param context: An `IPerson`, `IProduct, `IBranch`,
             `IGitRepository`, or `IGitRef`.
         :param visible_by_user: If not None, only return packages visible by
-            this user.
+            this user; otherwise, only return publicly-visible packages.
         :param order_by_date: If True, order packages by descending
             modification date.
         :raises BadSnapSearchContext: if the context is not understood.
@@ -606,7 +606,7 @@ class ISnapSet(Interface):
 
         :param url: A URL.
         :param visible_by_user: If not None, only return packages visible by
-            this user.
+            this user; otherwise, only return publicly-visible packages.
         """
 
     def preloadDataForSnaps(snaps, user):
