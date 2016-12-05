@@ -2298,6 +2298,18 @@ class ViewGitRef(DelegatedAuthorization):
     def __init__(self, obj):
         super(ViewGitRef, self).__init__(obj, obj.repository)
 
+    def checkAuthenticated(self, user):
+        if self.obj.repository is not None:
+            return super(ViewGitRef, self).checkAuthenticated(user)
+        else:
+            return True
+
+    def checkUnauthenticated(self):
+        if self.obj.repository is not None:
+            return super(ViewGitRef, self).checkUnauthenticated()
+        else:
+            return True
+
 
 class EditGitRef(DelegatedAuthorization):
     """Anyone who can edit a Git repository can edit references within it."""

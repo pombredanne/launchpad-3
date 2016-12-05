@@ -901,6 +901,16 @@
         permission="launchpad.View"
         interface="lp.code.interfaces.gitref.IGitRef" />
   </class>
+  <class class="lp.code.model.gitref.GitRefRemote">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitref.IGitRef" />
+  </class>
+  <securedutility
+      component="lp.code.model.gitref.GitRefRemote"
+      provides="lp.code.interfaces.gitref.IGitRefRemoteSet">
+    <allow interface="lp.code.interfaces.gitref.IGitRefRemoteSet" />
+  </securedutility>
 
   <!-- GitCollection -->
 

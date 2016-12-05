@@ -1687,6 +1687,15 @@ class GitRefFormatterAPI(CustomizableFormatter):
 
     _link_summary_template = '%(display_name)s'
 
+    def url(self, view_name=None, rootsite=None):
+        """See `ObjectFormatterAPI`.
+
+        `GitRefRemote` objects have no canonical URL.
+        """
+        if self._context.repository_url is not None:
+            return None
+        return super(GitRefFormatterAPI, self).url(view_name, rootsite)
+
     def _link_summary_values(self):
         return {'display_name': self._context.display_name}
 
