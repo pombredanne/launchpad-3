@@ -124,7 +124,10 @@ from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.gitnamespace import get_git_namespace
-from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitref import (
+    IGitRef,
+    IGitRefRemoteSet,
+    )
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.revision import IRevisionSet
@@ -1808,6 +1811,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             for ref in removeSecurityProxy(repository).createOrUpdateRefs(
                 refs_info, get_objects=True)}
         return [refs_by_path[path] for path in paths]
+
+    def makeGitRefRemote(self, repository_url=None, path=None):
+        """Create an object representing a ref in a remote repository."""
+        if repository_url is None:
+            repository_url = self.getUniqueURL().decode('utf-8')
+        if path is None:
+            path = self.getUniqueString('refs/heads/path').decode('utf-8')
+        return getUtility(IGitRefRemoteSet).new(repository_url, path)
 
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,
