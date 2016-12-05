@@ -18,6 +18,7 @@ from storm.expr import (
     LeftJoin,
     Not,
     Or,
+    Select,
     )
 from storm.locals import (
     Bool,
@@ -754,9 +755,9 @@ class SnapSet:
             else:
                 visibility_clause = Or(
                     Snap.private == False,
-                    And(
-                        TeamParticipation.person == visible_by_user,
-                        TeamParticipation.teamID == Snap.owner_id))
+                    Snap.owner_id.is_in(Select(
+                        TeamParticipation.teamID,
+                        TeamParticipation.person == visible_by_user)))
         clauses.append(visibility_clause)
         return IStore(Snap).find(Snap, *clauses).config(distinct=True)
 
