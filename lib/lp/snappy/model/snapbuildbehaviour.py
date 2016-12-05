@@ -83,17 +83,18 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         """
         build = self.build
         args = {}
-        token = yield self._requestProxyToken()
-        args["proxy_url"] = (
-            "http://{username}:{password}@{host}:{port}".format(
-                username=token['username'],
-                password=token['secret'],
-                host=config.snappy.builder_proxy_host,
-                port=config.snappy.builder_proxy_port))
-        args["revocation_endpoint"] = (
-            "{endpoint}/{token}".format(
-                endpoint=config.snappy.builder_proxy_auth_api_endpoint,
-                token=token['username']))
+        if config.snappy.builder_proxy_host:
+            token = yield self._requestProxyToken()
+            args["proxy_url"] = (
+                "http://{username}:{password}@{host}:{port}".format(
+                    username=token['username'],
+                    password=token['secret'],
+                    host=config.snappy.builder_proxy_host,
+                    port=config.snappy.builder_proxy_port))
+            args["revocation_endpoint"] = (
+                "{endpoint}/{token}".format(
+                    endpoint=config.snappy.builder_proxy_auth_api_endpoint,
+                    token=token['username']))
         args["name"] = build.snap.name
         args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
