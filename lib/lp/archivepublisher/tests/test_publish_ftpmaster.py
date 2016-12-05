@@ -11,10 +11,13 @@ from textwrap import dedent
 import time
 
 from apt_pkg import TagFile
+from fixtures import MonkeyPatch
 from testtools.matchers import (
+    MatchesException,
     MatchesStructure,
     Not,
     PathExists,
+    Raises,
     StartsWith,
     )
 from zope.component import getUtility
@@ -1079,6 +1082,22 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             pass
 
         self.assertEqual(1, script.recoverArchiveWorkingDir.call_count)
+
+    def test_publish_is_not_interrupted_by_cron_control(self):
+        # If cron-control switches to the disabled state in the middle of a
+        # publisher run, all the subsidiary scripts are still run.
+        script = self.makeScript()
+        self.useFixture(MonkeyPatch(
+            "lp.services.scripts.base.cronscript_enabled", FakeMethod(False)))
+        process_accepted_fixture = self.useFixture(MonkeyPatch(
+            "lp.archivepublisher.scripts.processaccepted.ProcessAccepted.main",
+            FakeMethod()))
+        publish_distro_fixture = self.useFixture(MonkeyPatch(
+            "lp.archivepublisher.scripts.publishdistro.PublishDistro.main",
+            FakeMethod()))
+        self.assertThat(script.main, Not(Raises(MatchesException(SystemExit))))
+        self.assertEqual(1, process_accepted_fixture.new_value.call_count)
+        self.assertEqual(1, publish_distro_fixture.new_value.call_count)
 
 
 class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):

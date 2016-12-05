@@ -334,7 +334,8 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.logger.debug(
             "Processing the accepted queue into the publishing records...")
         script = ProcessAccepted(
-            test_args=["-d", distribution.name], logger=self.logger)
+            test_args=["-d", distribution.name], logger=self.logger,
+            ignore_cron_control=True)
         script.txn = self.txn
         script.main()
 
@@ -428,7 +429,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             sum([['-s', suite] for suite in suites], []))
 
         publish_distro = PublishDistro(
-            test_args=arguments, logger=self.logger)
+            test_args=arguments, logger=self.logger, ignore_cron_control=True)
         publish_distro.logger = self.logger
         publish_distro.txn = self.txn
         publish_distro.main()
