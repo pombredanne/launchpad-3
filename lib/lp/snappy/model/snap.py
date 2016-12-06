@@ -759,7 +759,7 @@ class SnapSet:
                         TeamParticipation.teamID,
                         TeamParticipation.person == visible_by_user)))
         clauses.append(visibility_clause)
-        return IStore(Snap).find(Snap, *clauses).config(distinct=True)
+        return IStore(Snap).find(Snap, *clauses)
 
     def preloadDataForSnaps(self, snaps, user=None):
         """See `ISnapSet`."""
