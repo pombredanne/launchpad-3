@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BadSnapSearchContext',
+    'CannotAuthorizeStoreUploads',
     'CannotModifySnapProcessor',
     'CannotRequestAutoBuilds',
     'DuplicateSnapName',
@@ -19,6 +20,7 @@ __all__ = [
     'SNAP_PRIVATE_FEATURE_FLAG',
     'SNAP_TESTING_FLAGS',
     'SNAP_WEBHOOKS_FEATURE_FLAG',
+    'SnapAuthorizationBadMacaroon',
     'SnapBuildAlreadyPending',
     'SnapBuildArchiveOwnerMismatch',
     'SnapBuildDisallowedArchitecture',
@@ -208,6 +210,16 @@ class CannotModifySnapProcessor(Exception):
 
 
 @error_status(httplib.BAD_REQUEST)
+class CannotAuthorizeStoreUploads(Exception):
+    """Cannot authorize uploads of a snap package to the store."""
+
+
+@error_status(httplib.INTERNAL_SERVER_ERROR)
+class SnapAuthorizationBadMacaroon(Exception):
+    """The macaroon generated to authorize store uploads is unusable."""
+
+
+@error_status(httplib.BAD_REQUEST)
 class CannotRequestAutoBuilds(Exception):
     """Snap package is not configured for automatic builds."""
 
@@ -331,6 +343,31 @@ class ISnapEdit(IWebhookTarget):
         :raises CannotRequestAutoBuilds: if no auto_build_archive or
             auto_build_pocket is set.
         :return: A sequence of `ISnapBuild` instances.
+        """
+
+    @operation_parameters(
+        success_url=URIField(
+            title=_("URL to redirect to on success"),
+            allowed_schemes=["https"]))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def beginAuthorization(success_url=None):
+        """Begin authorizing uploads of this snap package to the store.
+
+        This is intended for use by third-party sites integrating with
+        Launchpad.  Most users should visit <snap URL>/+authorize instead.
+
+        :param success_url: The URL to redirect to when authorization is
+            complete.  Defaults to the canonical URL of the snap.
+        :raises CannotAuthorizeStoreUploads: if the snap package is not
+            properly configured for store uploads.
+        :raises BadRequestPackageUploadResponse: if the store returns an
+            error or a response without a macaroon when asked to issue a
+            package_upload macaroon.
+        :raises SnapAuthorizationBadMacaroon: if the package_upload macaroon
+            returned by the store has unsuitable SSO caveats.
+        :return: A URL that the third-party site should redirect the user to
+            in order to continue authorization.
         """
 
     @export_destructor_operation()

@@ -53,7 +53,6 @@ from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.snap import (
     SnapAdminView,
-    SnapAuthorizeView,
     SnapEditView,
     SnapView,
     )
@@ -999,8 +998,20 @@ class TestSnapAuthorizeView(BrowserTestCase):
             store_series=self.snappyseries,
             store_name=self.factory.getUniqueUnicode())
 
-    def assertRequestsAuthorization(self, snap, func, *args, **kwargs):
-        owner = snap.owner
+    def test_unauthorized(self):
+        # A user without edit access cannot authorize snap package uploads.
+        self.useFixture(FakeLogger())
+        other_person = self.factory.makePerson()
+        self.assertRaises(
+            Unauthorized, self.getUserBrowser,
+            canonical_url(self.snap) + "/+authorize", user=other_person)
+
+    def test_begin_authorization(self):
+        # With no special form actions, we return a form inviting the user
+        # to begin authorization.  This allows (re-)authorizing uploads of
+        # an existing snap package without having to edit it.
+        snap_url = canonical_url(self.snap)
+        owner = self.snap.owner
         root_macaroon = Macaroon()
         root_macaroon.add_third_party_caveat(
             urlsplit(config.launchpad.openid_provider_root).netloc, '',
@@ -1017,59 +1028,23 @@ class TestSnapAuthorizeView(BrowserTestCase):
 
         self.pushConfig("snappy", store_url="http://sca.example/")
         with HTTMock(handler):
-            ret = func(*args, **kwargs)
+            browser = self.getNonRedirectingBrowser(
+                url=snap_url + "/+authorize", user=self.snap.owner)
+            redirection = self.assertRaises(
+                HTTPError, browser.getControl("Begin authorization").click)
         self.assertThat(self.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         with person_logged_in(owner):
             expected_body = {
                 "packages": [{
-                    "name": snap.store_name,
-                    "series": snap.store_series.name,
+                    "name": self.snap.store_name,
+                    "series": self.snap.store_series.name,
                     }],
                 "permissions": ["package_upload"],
                 }
             self.assertEqual(expected_body, json.loads(self.request.body))
-            self.assertEqual({"root": root_macaroon_raw}, snap.store_secrets)
-        return ret
-
-    def test_requestAuthorization(self):
-        def request_authorization():
-            with person_logged_in(self.snap.owner):
-                return SnapAuthorizeView.requestAuthorization(
-                    self.snap, LaunchpadTestRequest())
-
-        login_url = self.assertRequestsAuthorization(
-            self.snap, request_authorization)
-        self.assertEqual(
-            canonical_url(self.snap) +
-            "/+authorize/+login?macaroon_caveat_id=dummy&"
-            "discharge_macaroon_action=field.actions.complete&"
-            "discharge_macaroon_field=field.discharge_macaroon&"
-            "field.success_url=" + quote_plus(canonical_url(self.snap)),
-            login_url)
-
-    def test_unauthorized(self):
-        # A user without edit access cannot authorize snap package uploads.
-        self.useFixture(FakeLogger())
-        other_person = self.factory.makePerson()
-        self.assertRaises(
-            Unauthorized, self.getUserBrowser,
-            canonical_url(self.snap) + "/+authorize", user=other_person)
-
-    def test_begin_authorization(self):
-        # With no special form actions, we return a form inviting the user
-        # to begin authorization.  This allows (re-)authorizing uploads of
-        # an existing snap package without having to edit it.
-        snap_url = canonical_url(self.snap)
-
-        def begin_authorization():
-            browser = self.getNonRedirectingBrowser(
-                url=snap_url + "/+authorize", user=self.snap.owner)
-            return self.assertRaises(
-                HTTPError, browser.getControl("Begin authorization").click)
-
-        redirection = self.assertRequestsAuthorization(
-            self.snap, begin_authorization)
+            self.assertEqual(
+                {"root": root_macaroon_raw}, self.snap.store_secrets)
         self.assertEqual(303, redirection.code)
         self.assertEqual(
             snap_url + "/+authorize/+login?macaroon_caveat_id=dummy&"
