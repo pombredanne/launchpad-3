@@ -264,9 +264,11 @@ class ISnapView(Interface):
         :return: Sequence of `IDistroArchSeries` instances.
         """
 
-    can_upload_to_store = Attribute(
-        "Whether everything is set up to allow uploading builds of this snap "
-        "package to the store.")
+    can_upload_to_store = exported(Bool(
+        title=_("Can upload to store"), required=True, readonly=True,
+        description=_(
+            "Whether everything is set up to allow uploading builds of this "
+            "snap package to the store.")))
 
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
@@ -467,31 +469,36 @@ class ISnapEditableAttributes(IHasOwner):
         title=_("Snap package is stale and is due to be rebuilt."),
         required=True, readonly=False)
 
-    store_upload = Bool(
+    store_upload = exported(Bool(
         title=_("Automatically upload to store"),
         required=True, readonly=False,
         description=_(
             "Whether builds of this snap package are automatically uploaded "
-            "to the store."))
+            "to the store.")))
 
-    store_series = ReferenceChoice(
+    # XXX cjwatson 2016-12-08: We should limit this to series that are
+    # compatible with distro_series, but that entails validating the case
+    # where both are changed in a single PATCH request in such a way that
+    # neither is compatible with the old value of the other.  As far as I
+    # can tell lazr.restful only supports per-field validation.
+    store_series = exported(ReferenceChoice(
         title=_("Store series"),
         schema=ISnappySeries, vocabulary="SnappySeries",
         required=False, readonly=False,
         description=_(
             "The series in which this snap package should be published in the "
-            "store."))
+            "store.")))
 
     store_distro_series = ReferenceChoice(
         title=_("Store and distro series"),
         schema=ISnappyDistroSeries, vocabulary="SnappyDistroSeries",
         required=False, readonly=False)
 
-    store_name = TextLine(
+    store_name = exported(TextLine(
         title=_("Registered store package name"),
         required=False, readonly=False,
         description=_(
-            "The registered name of this snap package in the store."))
+            "The registered name of this snap package in the store.")))
 
     store_secrets = List(
         value_type=TextLine(), title=_("Store upload tokens"),
@@ -555,7 +562,7 @@ class ISnapSet(Interface):
             "owner", "distro_series", "name", "description", "branch",
             "git_repository", "git_repository_url", "git_path", "git_ref",
             "auto_build", "auto_build_archive", "auto_build_pocket",
-            "private"])
+            "private", "store_upload", "store_series", "store_name"])
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
             branch=None, git_repository=None, git_repository_url=None,
