@@ -60,6 +60,7 @@ from lp.code.interfaces.gitref import IGitRef
 from lp.registry.enums import VCSType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
+from lp.services.fields import URIField
 from lp.services.helpers import english_list
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.propertycache import cachedproperty
@@ -782,6 +783,8 @@ class SnapAuthorizeView(LaunchpadEditFormView):
 
         discharge_macaroon = TextLine(
             title=u'Serialized discharge macaroon', required=True)
+        success_url = URIField(
+            title=u'URL to redirect to on success', allowed_schemes=['https'])
 
     render_context = False
 
@@ -838,6 +841,7 @@ class SnapAuthorizeView(LaunchpadEditFormView):
             ('macaroon_caveat_id', sso_caveat.caveat_id),
             ('discharge_macaroon_action', 'field.actions.complete'),
             ('discharge_macaroon_field', 'field.discharge_macaroon'),
+            ('field.success_url', canonical_url(snap)),
             ])
         return login_url
 
@@ -854,6 +858,11 @@ class SnapAuthorizeView(LaunchpadEditFormView):
                 _(u'Uploads of %(snap)s to the store were not authorized.'),
                 snap=self.context.name))
             return
+        success_url = data.get('success_url')
+        # XXX cjwatson 2016-12-08: Drop this once all appservers have been
+        # upgraded to always pass success_url.
+        if success_url is None:
+            success_url = canonical_url(self.context)
         # We have to set a whole new dict here to avoid problems with
         # security proxies.
         new_store_secrets = dict(self.context.store_secrets)
@@ -862,7 +871,7 @@ class SnapAuthorizeView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(structured(
             _(u'Uploads of %(snap)s to the store are now authorized.'),
             snap=self.context.name))
-        self.request.response.redirect(canonical_url(self.context))
+        self.request.response.redirect(success_url)
 
     @property
     def adapters(self):
