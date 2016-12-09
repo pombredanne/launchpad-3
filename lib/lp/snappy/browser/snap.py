@@ -16,15 +16,11 @@ __all__ = [
     'SnapView',
     ]
 
-from urllib import urlencode
-from urlparse import urlsplit
-
 from lazr.restful.fields import Reference
 from lazr.restful.interface import (
     copy_field,
     use_template,
     )
-from pymacaroons import Macaroon
 import yaml
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
@@ -60,8 +56,8 @@ from lp.code.interfaces.gitref import IGitRef
 from lp.registry.enums import VCSType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
+from lp.services.fields import URIField
 from lp.services.helpers import english_list
-from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.propertycache import cachedproperty
 from lp.services.scripts import log
 from lp.services.webapp import (
@@ -74,7 +70,6 @@ from lp.services.webapp import (
     NavigationMenu,
     stepthrough,
     structured,
-    urlappend,
     )
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import (
@@ -84,6 +79,7 @@ from lp.services.webapp.breadcrumb import (
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
 from lp.snappy.interfaces.snap import (
+    CannotAuthorizeStoreUploads,
     ISnap,
     ISnapSet,
     NoSuchSnap,
@@ -98,7 +94,6 @@ from lp.snappy.interfaces.snappyseries import (
     )
 from lp.snappy.interfaces.snapstoreclient import (
     BadRequestPackageUploadResponse,
-    ISnapStoreClient,
     )
 from lp.soyuz.browser.archive import EnableProcessorsMixin
 from lp.soyuz.browser.build import get_build_by_id_str
@@ -782,6 +777,8 @@ class SnapAuthorizeView(LaunchpadEditFormView):
 
         discharge_macaroon = TextLine(
             title=u'Serialized discharge macaroon', required=True)
+        success_url = URIField(
+            title=u'URL to redirect to on success', allowed_schemes=['https'])
 
     render_context = False
 
@@ -791,55 +788,15 @@ class SnapAuthorizeView(LaunchpadEditFormView):
     def cancel_url(self):
         return canonical_url(self.context)
 
-    @staticmethod
-    def extractSSOCaveat(macaroon):
-        locations = [
-            urlsplit(root).netloc
-            for root in CurrentOpenIDEndPoint.getAllRootURLs()]
-        sso_caveats = [
-            c for c in macaroon.third_party_caveats()
-            if c.location in locations]
-        # We must have exactly one SSO caveat; more than one should never be
-        # required and could be an attempt to substitute weaker caveats.  We
-        # might as well OOPS here, even though the cause of this is probably
-        # in some other service, since the user can't do anything about it
-        # and it should show up in our OOPS reports.
-        if not sso_caveats:
-            raise SnapAuthorizationException("Macaroon has no SSO caveats")
-        elif len(sso_caveats) > 1:
-            raise SnapAuthorizationException(
-                "Macaroon has multiple SSO caveats")
-        return sso_caveats[0]
-
     @classmethod
     def requestAuthorization(cls, snap, request):
         """Begin the process of authorizing uploads of a snap package."""
-        if snap.store_series is None:
-            request.response.addInfoNotification(
-                _(u'Cannot authorize uploads of a snap package with no '
-                  u'store series.'))
+        try:
+            return snap.beginAuthorization()
+        except CannotAuthorizeStoreUploads as e:
+            request.response.addInfoNotification(unicode(e))
             request.response.redirect(canonical_url(snap))
             return
-        if snap.store_name is None:
-            request.response.addInfoNotification(
-                _(u'Cannot authorize uploads of a snap package with no '
-                  u'store name.'))
-            request.response.redirect(canonical_url(snap))
-            return
-        snap_store_client = getUtility(ISnapStoreClient)
-        root_macaroon_raw = snap_store_client.requestPackageUploadPermission(
-            snap.store_series, snap.store_name)
-        sso_caveat = cls.extractSSOCaveat(
-            Macaroon.deserialize(root_macaroon_raw))
-        snap.store_secrets = {'root': root_macaroon_raw}
-        base_url = canonical_url(snap, view_name='+authorize')
-        login_url = urlappend(base_url, '+login')
-        login_url += '?%s' % urlencode([
-            ('macaroon_caveat_id', sso_caveat.caveat_id),
-            ('discharge_macaroon_action', 'field.actions.complete'),
-            ('discharge_macaroon_field', 'field.discharge_macaroon'),
-            ])
-        return login_url
 
     @action('Begin authorization', name='begin')
     def begin_action(self, action, data):
@@ -854,6 +811,11 @@ class SnapAuthorizeView(LaunchpadEditFormView):
                 _(u'Uploads of %(snap)s to the store were not authorized.'),
                 snap=self.context.name))
             return
+        success_url = data.get('success_url')
+        # XXX cjwatson 2016-12-08: Drop this once all appservers have been
+        # upgraded to always pass success_url.
+        if success_url is None:
+            success_url = canonical_url(self.context)
         # We have to set a whole new dict here to avoid problems with
         # security proxies.
         new_store_secrets = dict(self.context.store_secrets)
@@ -862,7 +824,7 @@ class SnapAuthorizeView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(structured(
             _(u'Uploads of %(snap)s to the store are now authorized.'),
             snap=self.context.name))
-        self.request.response.redirect(canonical_url(self.context))
+        self.request.response.redirect(success_url)
 
     @property
     def adapters(self):
