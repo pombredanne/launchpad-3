@@ -9,8 +9,16 @@ from datetime import (
     datetime,
     timedelta,
     )
+import json
+from urllib import quote_plus
+from urlparse import urlsplit
 
+from httmock import (
+    all_requests,
+    HTTMock,
+    )
 from lazr.lifecycle.event import ObjectModifiedEvent
+from pymacaroons import Macaroon
 import pytz
 from storm.exceptions import LostObjectError
 from storm.locals import Store
@@ -37,6 +45,7 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
 from lp.services.database.constants import (
     ONE_DAY_AGO,
     UTC_NOW,
@@ -46,6 +55,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.publisher import canonical_url
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     CannotModifySnapProcessor,
@@ -1106,7 +1116,7 @@ class TestSnapProcessors(TestCaseWithFactory):
 
 class TestSnapWebservice(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestSnapWebservice, self).setUp()
@@ -1396,6 +1406,90 @@ class TestSnapWebservice(TestCaseWithFactory):
 
         response = self.setProcessors(self.person, snap, ["386"])
         self.assertEqual(403, response.status)
+
+    def assertBeginsAuthorization(self, snap, **kwargs):
+        snap_url = api_url(snap)
+        root_macaroon = Macaroon()
+        root_macaroon.add_third_party_caveat(
+            urlsplit(config.launchpad.openid_provider_root).netloc, '',
+            'dummy')
+        root_macaroon_raw = root_macaroon.serialize()
+
+        @all_requests
+        def handler(url, request):
+            self.request = request
+            return {
+                "status_code": 200,
+                "content": {"macaroon": root_macaroon_raw},
+                }
+
+        self.pushConfig("snappy", store_url="http://sca.example/")
+        logout()
+        with HTTMock(handler):
+            response = self.webservice.named_post(
+                snap_url, "beginAuthorization", **kwargs)
+        self.assertThat(self.request, MatchesStructure.byEquality(
+            url="http://sca.example/dev/api/acl/", method="POST"))
+        with person_logged_in(self.person):
+            expected_body = {
+                "packages": [{
+                    "name": snap.store_name,
+                    "series": snap.store_series.name,
+                    }],
+                "permissions": ["package_upload"],
+                }
+            self.assertEqual(expected_body, json.loads(self.request.body))
+            self.assertEqual({"root": root_macaroon_raw}, snap.store_secrets)
+        return response
+
+    def test_beginAuthorization(self):
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode())
+        snap_url = canonical_url(snap)
+        response = self.assertBeginsAuthorization(snap)
+        self.assertEqual(
+            snap_url + "/+authorize/+login?macaroon_caveat_id=dummy&"
+            "discharge_macaroon_action=field.actions.complete&"
+            "discharge_macaroon_field=field.discharge_macaroon&"
+            "field.success_url=" + quote_plus(snap_url),
+            response.jsonBody())
+
+    def test_beginAuthorization_with_success_url(self):
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode())
+        snap_url = canonical_url(snap)
+        response = self.assertBeginsAuthorization(
+            snap, success_url="https://example.org/")
+        self.assertEqual(
+            snap_url + "/+authorize/+login?macaroon_caveat_id=dummy&"
+            "discharge_macaroon_action=field.actions.complete&"
+            "discharge_macaroon_field=field.discharge_macaroon&"
+            "field.success_url=https%3A%2F%2Fexample.org%2F",
+            response.jsonBody())
+
+    def test_beginAuthorization_unauthorized(self):
+        # A user without edit access cannot authorize snap package uploads.
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode())
+        snap_url = api_url(snap)
+        other_person = self.factory.makePerson()
+        other_webservice = webservice_for_person(
+            other_person, permission=OAuthPermission.WRITE_PUBLIC)
+        other_webservice.default_api_version = "devel"
+        response = other_webservice.named_post(snap_url, "beginAuthorization")
+        self.assertEqual(401, response.status)
 
     def makeBuildableDistroArchSeries(self, **kwargs):
         das = self.factory.makeDistroArchSeries(**kwargs)

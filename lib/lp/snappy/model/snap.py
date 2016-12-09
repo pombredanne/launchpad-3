@@ -10,7 +10,10 @@ from datetime import (
     datetime,
     timedelta,
     )
+from urllib import urlencode
+from urlparse import urlsplit
 
+from pymacaroons import Macaroon
 import pytz
 from storm.expr import (
     And,
@@ -97,11 +100,15 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
+from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.url import urlappend
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
+    CannotAuthorizeStoreUploads,
     CannotModifySnapProcessor,
     CannotRequestAutoBuilds,
     DuplicateSnapName,
@@ -110,6 +117,7 @@ from lp.snappy.interfaces.snap import (
     NoSourceForSnap,
     NoSuchSnap,
     SNAP_PRIVATE_FEATURE_FLAG,
+    SnapAuthorizationBadMacaroon,
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
     SnapBuildDisallowedArchitecture,
@@ -119,6 +127,7 @@ from lp.snappy.interfaces.snap import (
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
+from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snapbuild import SnapBuild
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.interfaces.buildrecords import IncompatibleArguments
@@ -339,6 +348,54 @@ class Snap(Storm, WebhookTargetMixin):
     def store_distro_series(self, value):
         self.distro_series = value.distro_series
         self.store_series = value.snappy_series
+
+    @staticmethod
+    def extractSSOCaveat(macaroon):
+        locations = [
+            urlsplit(root).netloc
+            for root in CurrentOpenIDEndPoint.getAllRootURLs()]
+        sso_caveats = [
+            c for c in macaroon.third_party_caveats()
+            if c.location in locations]
+        # We must have exactly one SSO caveat; more than one should never be
+        # required and could be an attempt to substitute weaker caveats.  We
+        # might as well OOPS here, even though the cause of this is probably
+        # in some other service, since the user can't do anything about it
+        # and it should show up in our OOPS reports.
+        if not sso_caveats:
+            raise SnapAuthorizationBadMacaroon("Macaroon has no SSO caveats")
+        elif len(sso_caveats) > 1:
+            raise SnapAuthorizationBadMacaroon(
+                "Macaroon has multiple SSO caveats")
+        return sso_caveats[0]
+
+    def beginAuthorization(self, success_url=None):
+        """See `ISnap`."""
+        if self.store_series is None:
+            raise CannotAuthorizeStoreUploads(
+                "Cannot authorize uploads of a snap package with no store "
+                "series.")
+        if self.store_name is None:
+            raise CannotAuthorizeStoreUploads(
+                "Cannot authorize uploads of a snap package with no store "
+                "name.")
+        if success_url is None:
+            success_url = canonical_url(self)
+        snap_store_client = getUtility(ISnapStoreClient)
+        root_macaroon_raw = snap_store_client.requestPackageUploadPermission(
+            self.store_series, self.store_name)
+        sso_caveat = self.extractSSOCaveat(
+            Macaroon.deserialize(root_macaroon_raw))
+        self.store_secrets = {'root': root_macaroon_raw}
+        base_url = canonical_url(self, view_name='+authorize')
+        login_url = urlappend(base_url, '+login')
+        login_url += '?%s' % urlencode([
+            ('macaroon_caveat_id', sso_caveat.caveat_id),
+            ('discharge_macaroon_action', 'field.actions.complete'),
+            ('discharge_macaroon_field', 'field.discharge_macaroon'),
+            ('field.success_url', success_url),
+            ])
+        return login_url
 
     @property
     def can_upload_to_store(self):

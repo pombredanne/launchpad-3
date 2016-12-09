@@ -21,9 +21,13 @@ __all__ = [
     'UploadNotScannedYetResponse',
     ]
 
+import httplib
+
+from lazr.restful.declarations import error_status
 from zope.interface import Interface
 
 
+@error_status(httplib.INTERNAL_SERVER_ERROR)
 class BadRequestPackageUploadResponse(Exception):
     pass
 
