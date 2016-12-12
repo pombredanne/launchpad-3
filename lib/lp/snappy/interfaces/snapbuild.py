@@ -35,6 +35,7 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
+    TextLine,
     )
 
 from lp import _
@@ -94,6 +95,9 @@ class ISnapBuildView(IPackageBuild):
         IDistroArchSeries,
         title=_("The series and architecture for which to build."),
         required=True, readonly=True))
+
+    arch_tag = exported(
+        TextLine(title=_("Architecture tag"), required=True, readonly=True))
 
     pocket = exported(Choice(
         title=_("The pocket for which to build."),
