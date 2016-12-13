@@ -199,6 +199,11 @@ class SnapBuild(PackageBuildMixin, Storm):
         return self.distro_arch_series.distroseries
 
     @property
+    def arch_tag(self):
+        """See `ISnapBuild`."""
+        return self.distro_arch_series.architecturetag
+
+    @property
     def current_component(self):
         component = self.archive.default_component
         if component is not None:

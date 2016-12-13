@@ -498,6 +498,8 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
             self.assertEqual(
                 self.getURL(db_build.distro_arch_series),
                 build["distro_arch_series_link"])
+            self.assertEqual(
+                db_build.distro_arch_series.architecturetag, build["arch_tag"])
             self.assertEqual("Updates", build["pocket"])
             self.assertIsNone(build["score"])
             self.assertFalse(build["can_be_rescored"])
