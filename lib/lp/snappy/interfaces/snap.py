@@ -372,6 +372,23 @@ class ISnapEdit(IWebhookTarget):
             in order to continue authorization.
         """
 
+    @operation_parameters(
+        discharge_macaroon=TextLine(
+            title=_("Serialized discharge macaroon"), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def completeAuthorization(discharge_macaroon):
+        """Complete authorizing uploads of this snap package to the store.
+
+        This is intended for use by third-party sites integrating with
+        Launchpad.
+
+        :param discharge_macaroon: The serialized discharge macaroon
+            returned by SSO via OpenID.
+        :raises CannotAuthorizeStoreUploads: if the snap package is not
+            properly configured for store uploads.
+        """
+
     @export_destructor_operation()
     @operation_for_version("devel")
     def destroySelf():

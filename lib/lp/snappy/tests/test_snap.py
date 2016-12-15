@@ -1491,6 +1491,60 @@ class TestSnapWebservice(TestCaseWithFactory):
         response = other_webservice.named_post(snap_url, "beginAuthorization")
         self.assertEqual(401, response.status)
 
+    def test_completeAuthorization(self):
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode(),
+            store_secrets={"root": "dummy-root"})
+        snap_url = api_url(snap)
+        logout()
+        response = self.webservice.named_post(
+            snap_url, "completeAuthorization",
+            discharge_macaroon="dummy-discharge")
+        self.assertEqual(200, response.status)
+        with person_logged_in(self.person):
+            self.assertEqual(
+                {"root": "dummy-root", "discharge": "dummy-discharge"},
+                snap.store_secrets)
+
+    def test_completeAuthorization_without_beginAuthorization(self):
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode())
+        snap_url = api_url(snap)
+        logout()
+        response = self.webservice.named_post(
+            snap_url, "completeAuthorization",
+            discharge_macaroon="dummy-discharge")
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "beginAuthorization must be called before completeAuthorization.",
+            response.body)
+
+    def test_completeAuthorization_unauthorized(self):
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode(),
+            store_secrets={"root": "dummy-root"})
+        snap_url = api_url(snap)
+        other_person = self.factory.makePerson()
+        other_webservice = webservice_for_person(
+            other_person, permission=OAuthPermission.WRITE_PUBLIC)
+        other_webservice.default_api_version = "devel"
+        response = other_webservice.named_post(
+            snap_url, "completeAuthorization",
+            discharge_macaroon="dummy-discharge")
+        self.assertEqual(401, response.status)
+
     def makeBuildableDistroArchSeries(self, **kwargs):
         das = self.factory.makeDistroArchSeries(**kwargs)
         fake_chroot = self.factory.makeLibraryFileAlias(

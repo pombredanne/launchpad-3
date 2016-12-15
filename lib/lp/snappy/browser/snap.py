@@ -816,11 +816,7 @@ class SnapAuthorizeView(LaunchpadEditFormView):
         # upgraded to always pass success_url.
         if success_url is None:
             success_url = canonical_url(self.context)
-        # We have to set a whole new dict here to avoid problems with
-        # security proxies.
-        new_store_secrets = dict(self.context.store_secrets)
-        new_store_secrets['discharge'] = data['discharge_macaroon']
-        self.context.store_secrets = new_store_secrets
+        self.context.completeAuthorization(data['discharge_macaroon'])
         self.request.response.addInfoNotification(structured(
             _(u'Uploads of %(snap)s to the store are now authorized.'),
             snap=self.context.name))

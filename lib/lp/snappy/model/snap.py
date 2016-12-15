@@ -397,6 +397,14 @@ class Snap(Storm, WebhookTargetMixin):
             ])
         return login_url
 
+    def completeAuthorization(self, discharge_macaroon):
+        """See `ISnap`."""
+        if self.store_secrets is None or "root" not in self.store_secrets:
+            raise CannotAuthorizeStoreUploads(
+                "beginAuthorization must be called before "
+                "completeAuthorization.")
+        self.store_secrets["discharge"] = discharge_macaroon
+
     @property
     def can_upload_to_store(self):
         return (
