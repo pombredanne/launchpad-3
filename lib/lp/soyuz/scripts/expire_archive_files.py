@@ -12,6 +12,9 @@ from lp.soyuz.model.archive import Archive
 # PPA owners or particular PPAs that we never want to expire.
 BLACKLISTED_PPAS = """
 adobe-isv
+bzr
+bzr-beta-ppa
+bzr-nightly-ppa
 chelsea-team
 ci-train-ppa-service/stable-phone-overlay
 dennis-team
@@ -23,18 +26,16 @@ netbook-team
 oem-solutions-group
 payson
 transyl
+ubuntu-cloud-archive
 ubuntu-mobile
 wheelbarrow
-bzr
-bzr-beta-ppa
-bzr-nightly-ppa
 """.split()
 
 # Particular PPAs (not owners, unlike the whitelist) that should be
 # expired even if they're private.
 WHITELISTED_PPAS = """
-landscape/lds-trunk
 kubuntu-ninjas/ppa
+landscape/lds-trunk
 """.split()
 
 
