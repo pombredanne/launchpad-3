@@ -28,6 +28,7 @@ wheelbarrow
 bzr
 bzr-beta-ppa
 bzr-nightly-ppa
+ubuntu-cloud-archive
 """.split()
 
 # Particular PPAs (not owners, unlike the whitelist) that should be
