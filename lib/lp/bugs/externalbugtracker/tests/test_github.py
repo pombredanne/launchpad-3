@@ -165,6 +165,40 @@ class TestGitHub(TestCase):
             "content": {"resources": {"core": rate_limit}},
             }
 
+    def test__getPage_authenticated(self):
+        @urlmatch(path=r".*/test$")
+        def handler(url, request):
+            self.request = request
+            return {"status_code": 200, "content": json.dumps("success")}
+
+        self.pushConfig(
+            "checkwatches.credentials", **{"api.github.com.token": "sosekrit"})
+        tracker = GitHub("https://github.com/user/repository/issues")
+        with HTTMock(self._rate_limit_handler, handler):
+            self.assertEqual("success", tracker._getPage("test").json())
+        self.assertEqual(
+            "https://api.github.com/repos/user/repository/test",
+            self.request.url)
+        self.assertEqual(
+            "token sosekrit", self.request.headers["Authorization"])
+        self.assertEqual(
+            "token sosekrit", self.rate_limit_request.headers["Authorization"])
+
+    def test__getPage_unauthenticated(self):
+        @urlmatch(path=r".*/test$")
+        def handler(url, request):
+            self.request = request
+            return {"status_code": 200, "content": json.dumps("success")}
+
+        tracker = GitHub("https://github.com/user/repository/issues")
+        with HTTMock(self._rate_limit_handler, handler):
+            self.assertEqual("success", tracker._getPage("test").json())
+        self.assertEqual(
+            "https://api.github.com/repos/user/repository/test",
+            self.request.url)
+        self.assertNotIn("Authorization", self.request.headers)
+        self.assertNotIn("Authorization", self.rate_limit_request.headers)
+
     def test_getRemoteBug(self):
         @urlmatch(path=r".*/issues/1$")
         def handler(url, request):

@@ -234,7 +234,8 @@ class GitHub(ExternalBugTracker):
         try:
             response = getUtility(IGitHubRateLimit).makeRequest(
                 "GET", urljoin(self.baseurl + "/", page),
-                headers=self._getHeaders(last_accessed=last_accessed))
+                headers=self._getHeaders(last_accessed=last_accessed),
+                token=self.credentials["token"])
             response.raise_for_status()
             return response
         except requests.RequestException as e:
