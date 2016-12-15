@@ -347,20 +347,17 @@ class ISnapEdit(IWebhookTarget):
         :return: A sequence of `ISnapBuild` instances.
         """
 
-    @operation_parameters(
-        success_url=URIField(
-            title=_("URL to redirect to on success"),
-            allowed_schemes=["https"]))
     @export_write_operation()
     @operation_for_version("devel")
-    def beginAuthorization(success_url=None):
+    def beginAuthorization():
         """Begin authorizing uploads of this snap package to the store.
 
         This is intended for use by third-party sites integrating with
         Launchpad.  Most users should visit <snap URL>/+authorize instead.
 
         :param success_url: The URL to redirect to when authorization is
-            complete.  Defaults to the canonical URL of the snap.
+            complete.  If None (only allowed for internal use), defaults to
+            the canonical URL of the snap.
         :raises CannotAuthorizeStoreUploads: if the snap package is not
             properly configured for store uploads.
         :raises BadRequestPackageUploadResponse: if the store returns an
@@ -368,8 +365,27 @@ class ISnapEdit(IWebhookTarget):
             package_upload macaroon.
         :raises SnapAuthorizationBadMacaroon: if the package_upload macaroon
             returned by the store has unsuitable SSO caveats.
-        :return: A URL that the third-party site should redirect the user to
-            in order to continue authorization.
+        :return: The SSO caveat ID from the package_upload macaroon returned
+            by the store.  The third-party site should acquire a discharge
+            macaroon for this caveat using OpenID and then call
+            `completeAuthorization`.
+        """
+
+    @operation_parameters(
+        discharge_macaroon=TextLine(
+            title=_("Serialized discharge macaroon"), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def completeAuthorization(discharge_macaroon):
+        """Complete authorizing uploads of this snap package to the store.
+
+        This is intended for use by third-party sites integrating with
+        Launchpad.
+
+        :param discharge_macaroon: The serialized discharge macaroon
+            returned by SSO via OpenID.
+        :raises CannotAuthorizeStoreUploads: if the snap package is not
+            properly configured for store uploads.
         """
 
     @export_destructor_operation()
