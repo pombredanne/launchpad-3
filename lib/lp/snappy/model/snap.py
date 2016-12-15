@@ -10,7 +10,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from urllib import urlencode
 from urlparse import urlsplit
 
 from pymacaroons import Macaroon
@@ -102,8 +101,6 @@ from lp.services.librarian.model import (
     )
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.webapp.interfaces import ILaunchBag
-from lp.services.webapp.publisher import canonical_url
-from lp.services.webapp.url import urlappend
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
 from lp.snappy.interfaces.snap import (
@@ -369,7 +366,7 @@ class Snap(Storm, WebhookTargetMixin):
                 "Macaroon has multiple SSO caveats")
         return sso_caveats[0]
 
-    def beginAuthorization(self, success_url=None):
+    def beginAuthorization(self):
         """See `ISnap`."""
         if self.store_series is None:
             raise CannotAuthorizeStoreUploads(
@@ -379,23 +376,13 @@ class Snap(Storm, WebhookTargetMixin):
             raise CannotAuthorizeStoreUploads(
                 "Cannot authorize uploads of a snap package with no store "
                 "name.")
-        if success_url is None:
-            success_url = canonical_url(self)
         snap_store_client = getUtility(ISnapStoreClient)
         root_macaroon_raw = snap_store_client.requestPackageUploadPermission(
             self.store_series, self.store_name)
         sso_caveat = self.extractSSOCaveat(
             Macaroon.deserialize(root_macaroon_raw))
         self.store_secrets = {'root': root_macaroon_raw}
-        base_url = canonical_url(self, view_name='+authorize')
-        login_url = urlappend(base_url, '+login')
-        login_url += '?%s' % urlencode([
-            ('macaroon_caveat_id', sso_caveat.caveat_id),
-            ('discharge_macaroon_action', 'field.actions.complete'),
-            ('discharge_macaroon_field', 'field.discharge_macaroon'),
-            ('field.success_url', success_url),
-            ])
-        return login_url
+        return sso_caveat.caveat_id
 
     def completeAuthorization(self, discharge_macaroon):
         """See `ISnap`."""

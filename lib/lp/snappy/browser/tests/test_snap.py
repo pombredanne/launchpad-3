@@ -11,7 +11,6 @@ from datetime import (
     )
 import json
 import re
-from urllib import quote_plus
 from urllib2 import HTTPError
 from urlparse import (
     parse_qs,
@@ -433,7 +432,6 @@ class TestSnapAddView(BrowserTestCase):
             "discharge_macaroon_action": ["field.actions.complete"],
             "discharge_macaroon_field": ["field.discharge_macaroon"],
             "macaroon_caveat_id": ["dummy"],
-            "field.success_url": [canonical_url(snap, rootsite="code")],
             }
         self.assertEqual(expected_args, parse_qs(parsed_location[3]))
 
@@ -974,7 +972,6 @@ class TestSnapEditView(BrowserTestCase):
             "discharge_macaroon_action": ["field.actions.complete"],
             "discharge_macaroon_field": ["field.discharge_macaroon"],
             "macaroon_caveat_id": ["dummy"],
-            "field.success_url": [canonical_url(snap)],
             }
         self.assertEqual(expected_args, parse_qs(parsed_location[3]))
 
@@ -1049,8 +1046,7 @@ class TestSnapAuthorizeView(BrowserTestCase):
         self.assertEqual(
             snap_url + "/+authorize/+login?macaroon_caveat_id=dummy&"
             "discharge_macaroon_action=field.actions.complete&"
-            "discharge_macaroon_field=field.discharge_macaroon&"
-            "field.success_url=" + quote_plus(snap_url),
+            "discharge_macaroon_field=field.discharge_macaroon",
             redirection.hdrs["Location"])
 
     def test_complete_authorization_missing_discharge_macaroon(self):
@@ -1087,32 +1083,6 @@ class TestSnapAuthorizeView(BrowserTestCase):
             self.assertEqual(302, view.request.response.getStatus())
             self.assertEqual(
                 canonical_url(self.snap),
-                view.request.response.getHeader("Location"))
-            self.assertEqual(
-                "Uploads of %s to the store are now authorized." %
-                self.snap.name,
-                view.request.response.notifications[0].message)
-            self.assertEqual(
-                {"root": "root", "discharge": "discharge"},
-                self.snap.store_secrets)
-
-    def test_complete_authorization_with_success_url(self):
-        # The "complete" action honours the provided success_url.
-        with person_logged_in(self.snap.owner):
-            self.snap.store_secrets = {"root": "root"}
-            transaction.commit()
-            form = {
-                "field.actions.complete": "1",
-                "field.discharge_macaroon": "discharge",
-                "field.success_url": "https://example.org/",
-                }
-            view = create_initialized_view(
-                self.snap, "+authorize", form=form, method="POST",
-                principal=self.snap.owner)
-            self.assertEqual("", view())
-            self.assertEqual(302, view.request.response.getStatus())
-            self.assertEqual(
-                "https://example.org/",
                 view.request.response.getHeader("Location"))
             self.assertEqual(
                 "Uploads of %s to the store are now authorized." %
