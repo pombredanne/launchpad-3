@@ -77,28 +77,39 @@ class GitHubRateLimit:
     def __init__(self):
         self.clearCache()
 
-    def _update(self, host, token=None):
+    def _update(self, host, auth_header=None):
         headers = {
             "User-Agent": LP_USER_AGENT,
             "Host": host,
             "Accept": "application/vnd.github.v3+json",
             }
-        if token is not None:
-            headers["Authorization"] = "token %s" % token
+        if auth_header is not None:
+            headers["Authorization"] = auth_header
         url = "https://%s/rate_limit" % host
         try:
             response = requests.get(url, headers=headers)
             response.raise_for_status()
-            self._limits[(host, token)] = response.json()["resources"]["core"]
+            return response.json()["resources"]["core"]
         except requests.RequestException as e:
             raise BugTrackerConnectError(url, e)
 
     @ensure_no_transaction
     def makeRequest(self, method, url, token=None, **kwargs):
         """See `IGitHubRateLimit`."""
+        if token is not None:
+            auth_header = "token %s" % token
+            if "headers" in kwargs:
+                kwargs["headers"] = kwargs["headers"].copy()
+            else:
+                kwargs["headers"] = {}
+            kwargs["headers"]["Authorization"] = auth_header
+        else:
+            auth_header = None
+
         host = urlsplit(url).netloc
         if (host, token) not in self._limits:
-            self._update(host, token=token)
+            self._limits[(host, token)] = self._update(
+                host, auth_header=auth_header)
         limit = self._limits[(host, token)]
         if not limit["remaining"]:
             raise GitHubExceededRateLimit(host, limit["reset"])
@@ -216,9 +227,6 @@ class GitHub(ExternalBugTracker):
     def _getHeaders(self, last_accessed=None):
         """See `ExternalBugTracker`."""
         headers = super(GitHub, self)._getHeaders()
-        token = self.credentials["token"]
-        if token is not None:
-            headers["Authorization"] = "token %s" % token
         headers["Accept"] = "application/vnd.github.v3+json"
         if last_accessed is not None:
             headers["If-Modified-Since"] = (
