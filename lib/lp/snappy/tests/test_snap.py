@@ -1480,7 +1480,6 @@ class TestSnapWebservice(TestCaseWithFactory):
             snap_url, "completeAuthorization",
             discharge_macaroon="dummy-discharge")
         self.assertEqual(200, response.status)
-        self.assertEqual("", response.body)
         with person_logged_in(self.person):
             self.assertEqual(
                 {"root": "dummy-root", "discharge": "dummy-discharge"},
