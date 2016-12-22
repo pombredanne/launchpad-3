@@ -26,8 +26,7 @@ First, we create some bug watches to test with:
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.model.bugtracker import BugTracker
     >>> from pytz import utc
-    >>> from lp.bugs.scripts.checkwatches import (
-    ...     CheckwatchesMaster)
+    >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Layers used by Launchpad tests.
@@ -98,7 +98,6 @@ from zope.security.management import (
     endInteraction,
     getSecurityPolicy,
     )
-from zope.security.proxy import removeSecurityProxy
 from zope.server.logger.pythonlogger import PythonLogger
 
 from lp.services import pidfile

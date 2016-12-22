@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,6 +15,7 @@ from lazr.uri import (
     InvalidURIError,
     URI,
     )
+from six import reraise
 from zope.component import getUtility
 from zope.formlib.interfaces import ConversionError
 
@@ -105,4 +106,4 @@ class BranchPopupWidget(VocabularyPickerWidget):
                     LaunchpadValidationError):
                 # If it's not a URL or we can't figure out a product, then we
                 # re-raise the initial error.
-                raise exc_class, exc_obj, exc_tb
+                reraise(exc_class, exc_obj, tb=exc_tb)

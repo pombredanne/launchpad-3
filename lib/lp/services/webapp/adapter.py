@@ -27,6 +27,7 @@ from psycopg2.extensions import (
     QueryCanceledError,
     )
 import pytz
+from six import reraise
 from storm.database import register_scheme
 from storm.databases.postgres import (
     Postgres,
@@ -618,7 +619,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
             info = sys.exc_info()
             transaction.doom()
             try:
-                raise info[0], info[1], info[2]
+                reraise(info[0], info[1], tb=info[2])
             finally:
                 info = None
 
