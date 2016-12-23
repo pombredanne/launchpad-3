@@ -9,12 +9,11 @@ from testtools.matchers import (
     Contains,
     Equals,
     HasLength,
-    StartsWith,
     )
 from zope.component import getUtility
 
-from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.gpg import IGPGKeySet
+from lp.registry.interfaces.person import IPersonSet
 from lp.services.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,6 +15,7 @@ from datetime import timedelta
 import sys
 import time
 
+from six import reraise
 import transaction
 from zope.interface import (
     implementer,
@@ -215,7 +216,7 @@ class LoopTuner:
                 # failure, so log it.
                 self.log.exception("Unhandled exception in cleanUp")
             # Reraise the original exception.
-            raise exc_info[0], exc_info[1], exc_info[2]
+            reraise(exc_info[0], exc_info[1], tb=exc_info[2])
         else:
             cleanup()
 

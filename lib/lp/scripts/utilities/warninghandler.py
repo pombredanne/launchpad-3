@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Handlers for warnings, to be installed when testing."""
@@ -58,11 +58,8 @@ class ImportantInfo:
             L.append('request url: %s' % self.requesturl)
         return '\n'.join(L)
 
-# PageTemplateFile has .filename.
-from z3c.ptcompat import (
-    PageTemplateFile,
-    ViewPageTemplateFile,
-    )
+# ViewPageTemplateFile has .filename.
+from z3c.ptcompat import ViewPageTemplateFile
 
 # PythonExpr has .text, the text of the expression.
 from zope.tales.pythonexpr import PythonExpr

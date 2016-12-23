@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,7 +7,6 @@ import doctest
 import email
 from textwrap import dedent
 
-from lazr.restful.utils import get_current_browser_request
 import soupmatchers
 from storm.store import Store
 from testtools.matchers import (
@@ -47,7 +46,6 @@ from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.log.logger import FakeLogger
 from lp.services.mail import stub
 from lp.services.propertycache import clear_property_cache
-from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.tests.logintoken import get_token_url_from_email
