@@ -38,6 +38,7 @@ from requests.packages.urllib3.connectionpool import (
     )
 from requests.packages.urllib3.exceptions import ClosedPoolError
 from requests.packages.urllib3.poolmanager import PoolManager
+from six import reraise
 
 
 default_timeout_function = None
@@ -190,7 +191,7 @@ class with_timeout:
                 exc_info = t.exc_info
                 # Remove the cyclic reference for faster GC.
                 del t.exc_info
-                raise exc_info[0], exc_info[1], exc_info[2]
+                reraise(exc_info[0], exc_info[1], tb=exc_info[2])
             return t.result
 
         return call_with_timeout

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,8 +17,6 @@ from lp.registry.interfaces.gpg import (
     IGPGKey,
     IGPGKeySet,
     )
-from lp.registry.interfaces.person import IPersonSet
-from lp.services.config import config
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
@@ -29,8 +27,6 @@ from lp.services.gpg.interfaces import (
     GPGKeyAlgorithm,
     IGPGHandler,
     )
-from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
-from lp.services.openid.model.openididentifier import OpenIdIdentifier
 
 
 @implementer(IGPGKey)

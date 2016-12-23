@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # NOTE: This is a generated file.  The original is in
@@ -41,4 +41,4 @@ elif 'site' not in sys.modules:
     # This one line is to support Mailman 2, which does something unexpected
     # to set up its paths.
     sys.path[:] = [p for p in sys.path if 'site-packages' not in p]
-import site # sets up paths
+import site  # sets up paths
