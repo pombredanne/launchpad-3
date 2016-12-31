@@ -11,7 +11,6 @@ __all__ = [
 
 from datetime import datetime
 import StringIO
-import unittest
 
 from pymacaroons import Macaroon
 from pytz import UTC
@@ -1243,7 +1242,3 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         issuer = getUtility(IMacaroonIssuer, "code-import-job")
         macaroon = removeSecurityProxy(issuer).issueMacaroon(other_job)
         self.assertFalse(issuer.verifyMacaroon(macaroon, job))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
