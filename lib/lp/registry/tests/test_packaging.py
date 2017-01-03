@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectDeletedEvent,
@@ -303,7 +301,3 @@ class TestDeletePackaging(TestCaseWithFactory):
         (event,) = recorder.events
         self.assertIsInstance(event, ObjectDeletedEvent)
         self.assertIs(removeSecurityProxy(packaging), event.object)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -7,12 +7,14 @@ __metaclass__ = type
 
 import datetime
 import os
-import unittest
 
 from bzrlib import bzrdir
-from bzrlib.tests import multiply_tests
 from bzrlib.urlutils import escape
 import pytz
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -161,12 +163,55 @@ class TestRunWithLogin(TestCaseWithFactory):
         self.assertEqual(None, login_id)
 
 
-class CodehostingTest(TestCaseWithFactory):
+class LaunchpadDatabaseFrontend:
+    """A 'frontend' to Launchpad's branch services.
+
+    A 'frontend' here means something that provides access to the various
+    XML-RPC endpoints, object factories and 'database' methods needed to write
+    unit tests for XML-RPC endpoints.
+
+    All of these methods are gathered together in this class so that
+    alternative implementations can be provided, see `InMemoryFrontend`.
+    """
+
+    def getCodehostingEndpoint(self):
+        """Return the branch filesystem endpoint for testing."""
+        return CodehostingAPI(None, None)
+
+    def getLaunchpadObjectFactory(self):
+        """Return the Launchpad object factory for testing.
+
+        See `LaunchpadObjectFactory`.
+        """
+        return LaunchpadObjectFactory()
+
+    def getBranchLookup(self):
+        """Return an implementation of `IBranchLookup`.
+
+        Tests should use this to get the branch set they need, rather than
+        using 'getUtility(IBranchSet)'. This allows in-memory implementations
+        to work correctly.
+        """
+        return getUtility(IBranchLookup)
+
+    def getLastActivity(self, activity_name):
+        """Get the last script activity with 'activity_name'."""
+        return getUtility(IScriptActivitySet).getLastActivity(activity_name)
+
+
+class CodehostingTest(WithScenarios, TestCaseWithFactory):
     """Tests for the implementation of `ICodehostingAPI`.
 
     :ivar frontend: A nullary callable that returns an object that implements
         getCodehostingEndpoint, getLaunchpadObjectFactory and getBranchLookup.
     """
+
+    scenarios = [
+        ('db', {'frontend': LaunchpadDatabaseFrontend,
+                'layer': LaunchpadFunctionalLayer}),
+        ('inmemory', {'frontend': InMemoryFrontend,
+                      'layer': FunctionalLayer}),
+        ]
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -1235,9 +1280,16 @@ class CodehostingTest(TestCaseWithFactory):
             trailing_path='.bzr')
 
 
-class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
+class AcquireBranchToPullTestsViaEndpoint(WithScenarios, TestCaseWithFactory,
                                           AcquireBranchToPullTests):
     """Tests for `acquireBranchToPull` method of `ICodehostingAPI`."""
+
+    scenarios = [
+        ('db', {'frontend': LaunchpadDatabaseFrontend,
+                'layer': LaunchpadFunctionalLayer}),
+        ('inmemory', {'frontend': InMemoryFrontend,
+                      'layer': FunctionalLayer}),
+        ]
 
     def setUp(self):
         super(AcquireBranchToPullTestsViaEndpoint, self).setUp()
@@ -1321,55 +1373,4 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
             ('NO_SUCH_TYPE',))
 
 
-class LaunchpadDatabaseFrontend:
-    """A 'frontend' to Launchpad's branch services.
-
-    A 'frontend' here means something that provides access to the various
-    XML-RPC endpoints, object factories and 'database' methods needed to write
-    unit tests for XML-RPC endpoints.
-
-    All of these methods are gathered together in this class so that
-    alternative implementations can be provided, see `InMemoryFrontend`.
-    """
-
-    def getCodehostingEndpoint(self):
-        """Return the branch filesystem endpoint for testing."""
-        return CodehostingAPI(None, None)
-
-    def getLaunchpadObjectFactory(self):
-        """Return the Launchpad object factory for testing.
-
-        See `LaunchpadObjectFactory`.
-        """
-        return LaunchpadObjectFactory()
-
-    def getBranchLookup(self):
-        """Return an implementation of `IBranchLookup`.
-
-        Tests should use this to get the branch set they need, rather than
-        using 'getUtility(IBranchSet)'. This allows in-memory implementations
-        to work correctly.
-        """
-        return getUtility(IBranchLookup)
-
-    def getLastActivity(self, activity_name):
-        """Get the last script activity with 'activity_name'."""
-        return getUtility(IScriptActivitySet).getLastActivity(activity_name)
-
-
-def test_suite():
-    loader = unittest.TestLoader()
-    suite = unittest.TestSuite()
-    endpoint_tests = unittest.TestSuite(
-        [loader.loadTestsFromTestCase(AcquireBranchToPullTestsViaEndpoint),
-         loader.loadTestsFromTestCase(CodehostingTest),
-         ])
-    scenarios = [
-        ('db', {'frontend': LaunchpadDatabaseFrontend,
-                'layer': LaunchpadFunctionalLayer}),
-        ('inmemory', {'frontend': InMemoryFrontend,
-                      'layer': FunctionalLayer}),
-        ]
-    multiply_tests(endpoint_tests, scenarios, suite)
-    suite.addTests(loader.loadTestsFromTestCase(TestRunWithLogin))
-    return suite
+load_tests = load_tests_apply_scenarios
