@@ -5,9 +5,6 @@
 
 __metaclass__ = type
 
-
-import unittest
-
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.interfaces.linkedbranch import (
@@ -353,7 +350,3 @@ class TestLinkedBranchSorting(TestCaseWithFactory):
         self.assertIs(meerkat_2_devel_backports, links[5])
         self.assertIs(meerkat_1, links[6])
         self.assertIs(zebra, links[7])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

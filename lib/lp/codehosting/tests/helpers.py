@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common helpers for codehosting tests."""
@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = [
     'AvatarTestCase',
-    'adapt_suite',
-    'CodeHostingTestProviderAdapter',
     'create_branch_with_one_revision',
     'deferToThread',
     'force_stacked_on_url',
@@ -18,7 +16,6 @@ __all__ = [
 
 import os
 import threading
-import unittest
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import FileExists
@@ -113,37 +110,6 @@ def deferToThread(f):
     return mergeFunctionMetadata(f, decorated)
 
 
-def clone_test(test, new_id):
-    """Return a clone of the given test."""
-    from copy import deepcopy
-    new_test = deepcopy(test)
-
-    def make_new_test_id():
-        return lambda: new_id
-
-    new_test.id = make_new_test_id()
-    return new_test
-
-
-class CodeHostingTestProviderAdapter:
-    """Test adapter to run a single test against many codehosting servers."""
-
-    def __init__(self, schemes):
-        self._schemes = schemes
-
-    def adaptForServer(self, test, scheme):
-        new_test = clone_test(test, '%s(%s)' % (test.id(), scheme))
-        new_test.scheme = scheme
-        return new_test
-
-    def adapt(self, test):
-        result = unittest.TestSuite()
-        for scheme in self._schemes:
-            new_test = self.adaptForServer(test, scheme)
-            result.addTest(new_test)
-        return result
-
-
 def make_bazaar_branch_and_tree(db_branch):
     """Make a dummy Bazaar branch and working tree from a database Branch."""
     assert db_branch.branch_type == BranchType.HOSTED, (
@@ -153,14 +119,6 @@ def make_bazaar_branch_and_tree(db_branch):
         config.codehosting.mirrored_branches_root,
         branch_id_to_path(db_branch.id))
     return create_branch_with_one_revision(branch_dir)
-
-
-def adapt_suite(adapter, base_suite):
-    from bzrlib.tests import iter_suite_tests
-    suite = unittest.TestSuite()
-    for test in iter_suite_tests(base_suite):
-        suite.addTests(adapter.adapt(test))
-    return suite
 
 
 def create_branch_with_one_revision(branch_dir, format=None):
