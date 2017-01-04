@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap package interfaces."""
@@ -523,12 +523,12 @@ class ISnapEditableAttributes(IHasOwner):
             "Serialized secrets issued by the store and the login service to "
             "authorize uploads of this snap package."))
 
-    store_channels = List(
-        value_type=TextLine(), title=_("Store channels"),
-        required=False, readonly=False,
+    store_channels = exported(List(
+        value_type=Choice(vocabulary="SnapStoreChannel"),
+        title=_("Store channels"), required=False, readonly=False,
         description=_(
             "Channels to release this snap package to after uploading it to "
-            "the store."))
+            "the store.")))
 
 
 class ISnapAdminAttributes(Interface):
@@ -578,7 +578,8 @@ class ISnapSet(Interface):
             "owner", "distro_series", "name", "description", "branch",
             "git_repository", "git_repository_url", "git_path", "git_ref",
             "auto_build", "auto_build_archive", "auto_build_pocket",
-            "private", "store_upload", "store_series", "store_name"])
+            "private", "store_upload", "store_series", "store_name",
+            "store_channels"])
     @operation_for_version("devel")
     def new(registrant, owner, distro_series, name, description=None,
             branch=None, git_repository=None, git_repository_url=None,
@@ -586,7 +587,7 @@ class ISnapSet(Interface):
             auto_build_archive=None, auto_build_pocket=None,
             require_virtualized=True, processors=None, date_created=None,
             private=False, store_upload=False, store_series=None,
-            store_name=None, store_secrets=None):
+            store_name=None, store_secrets=None, store_channels=None):
         """Create an `ISnap`."""
 
     def exists(owner, name):
