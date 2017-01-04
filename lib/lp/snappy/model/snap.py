@@ -348,11 +348,11 @@ class Snap(Storm, WebhookTargetMixin):
 
     @property
     def store_channels(self):
-        return [] if self._store_channels is None else self._store_channels
+        return self._store_channels or []
 
     @store_channels.setter
     def store_channels(self, value):
-        self._store_channels = value if value else None
+        self._store_channels = value or None
 
     @staticmethod
     def extractSSOCaveat(macaroon):
