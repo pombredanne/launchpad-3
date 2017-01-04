@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for communication with the snap store."""
@@ -182,6 +182,10 @@ class TestSnapStoreClient(TestCaseWithFactory):
             "launchpad", openid_provider_root="http://sso.example/")
         self.client = getUtility(ISnapStoreClient)
         self.unscanned_upload_requests = []
+        self.channels = [
+            {"name": "stable", "display_name": "Stable"},
+            {"name": "edge", "display_name": "Edge"},
+            ]
 
     def _make_store_secrets(self):
         self.root_key = hashlib.sha256(
@@ -229,6 +233,14 @@ class TestSnapStoreClient(TestCaseWithFactory):
         return {
             "status_code": 200,
             "content": {"discharge_macaroon": new_macaroon.serialize()},
+            }
+
+    @urlmatch(path=r".*/api/v1/channels$")
+    def _channels_handler(self, url, request):
+        self.channels_request = request
+        return {
+            "status_code": 200,
+            "content": {"_embedded": {"clickindex:channel": self.channels}},
             }
 
     @urlmatch(path=r".*/snap-release/$")
@@ -498,35 +510,22 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 self.client.checkStatus, status_url)
 
     def test_listChannels(self):
-        expected_channels = [
-            {"name": "stable", "display_name": "Stable"},
-            {"name": "edge", "display_name": "Edge"},
-            ]
-
-        @all_requests
-        def handler(url, request):
-            self.request = request
-            return {
-                "status_code": 200,
-                "content": {
-                    "_embedded": {"clickindex:channel": expected_channels}}}
-
         memcache_key = "search.example:channels".encode("UTF-8")
         try:
-            with HTTMock(handler):
-                self.assertEqual(expected_channels, self.client.listChannels())
-            self.assertThat(self.request, RequestMatches(
+            with HTTMock(self._channels_handler):
+                self.assertEqual(self.channels, self.client.listChannels())
+            self.assertThat(self.channels_request, RequestMatches(
                 url=Equals("http://search.example/api/v1/channels"),
                 method=Equals("GET"),
                 headers=ContainsDict(
                     {"Accept": Equals("application/hal+json")})))
             self.assertEqual(
-                expected_channels,
+                self.channels,
                 json.loads(getUtility(IMemcacheClient).get(memcache_key)))
-            self.request = None
-            with HTTMock(handler):
-                self.assertEqual(expected_channels, self.client.listChannels())
-            self.assertIsNone(self.request)
+            self.channels_request = None
+            with HTTMock(self._channels_handler):
+                self.assertEqual(self.channels, self.client.listChannels())
+            self.assertIsNone(self.channels_request)
         finally:
             getUtility(IMemcacheClient).delete(memcache_key)
 
@@ -562,11 +561,13 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.assertIsNone(getUtility(IMemcacheClient).get(memcache_key))
 
     def test_release(self):
-        snap = self.factory.makeSnap(
-            store_upload=True,
-            store_series=self.factory.makeSnappySeries(name="rolling"),
-            store_name="test-snap", store_secrets=self._make_store_secrets(),
-            store_channels=["stable", "edge"])
+        with HTTMock(self._channels_handler):
+            snap = self.factory.makeSnap(
+                store_upload=True,
+                store_series=self.factory.makeSnappySeries(name="rolling"),
+                store_name="test-snap",
+                store_secrets=self._make_store_secrets(),
+                store_channels=["stable", "edge"])
         snapbuild = self.factory.makeSnapBuild(snap=snap)
         with HTTMock(self._snap_release_handler):
             self.client.release(snapbuild, 1)
@@ -588,11 +589,13 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 "content": {"success": False, "errors": "Failed to publish"},
                 }
 
-        snap = self.factory.makeSnap(
-            store_upload=True,
-            store_series=self.factory.makeSnappySeries(name="rolling"),
-            store_name="test-snap", store_secrets=self._make_store_secrets(),
-            store_channels=["stable", "edge"])
+        with HTTMock(self._channels_handler):
+            snap = self.factory.makeSnap(
+                store_upload=True,
+                store_series=self.factory.makeSnappySeries(name="rolling"),
+                store_name="test-snap",
+                store_secrets=self._make_store_secrets(),
+                store_channels=["stable", "edge"])
         snapbuild = self.factory.makeSnapBuild(snap=snap)
         with HTTMock(handler):
             self.assertRaisesWithContent(
@@ -604,11 +607,13 @@ class TestSnapStoreClient(TestCaseWithFactory):
         def handler(url, request):
             return {"status_code": 404, "reason": b"Not found"}
 
-        snap = self.factory.makeSnap(
-            store_upload=True,
-            store_series=self.factory.makeSnappySeries(name="rolling"),
-            store_name="test-snap", store_secrets=self._make_store_secrets(),
-            store_channels=["stable", "edge"])
+        with HTTMock(self._channels_handler):
+            snap = self.factory.makeSnap(
+                store_upload=True,
+                store_series=self.factory.makeSnappySeries(name="rolling"),
+                store_name="test-snap",
+                store_secrets=self._make_store_secrets(),
+                store_channels=["stable", "edge"])
         snapbuild = self.factory.makeSnapBuild(snap=snap)
         with HTTMock(handler):
             self.assertRaisesWithContent(

@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap packages."""
@@ -72,6 +72,7 @@ from lp.snappy.interfaces.snapbuild import (
     ISnapBuildSet,
     )
 from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
+from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snap import SnapSet
 from lp.snappy.model.snapbuild import SnapFile
 from lp.snappy.model.snapbuildjob import SnapBuildJob
@@ -86,6 +87,8 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -1119,6 +1122,15 @@ class TestSnapWebservice(TestCaseWithFactory):
     def setUp(self):
         super(TestSnapWebservice, self).setUp()
         self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.snap_store_client = FakeMethod()
+        self.snap_store_client.listChannels = FakeMethod(result=[
+            {"name": "stable", "display_name": "Stable"},
+            {"name": "edge", "display_name": "Edge"},
+            ])
+        self.snap_store_client.requestPackageUploadPermission = (
+            getUtility(ISnapStoreClient).requestPackageUploadPermission)
+        self.useFixture(
+            ZopeUtilityFixture(self.snap_store_client, ISnapStoreClient))
         self.person = self.factory.makePerson(displayname="Test Person")
         self.webservice = webservice_for_person(
             self.person, permission=OAuthPermission.WRITE_PUBLIC)
@@ -1131,14 +1143,13 @@ class TestSnapWebservice(TestCaseWithFactory):
     def makeSnap(self, owner=None, distroseries=None, branch=None,
                  git_ref=None, processors=None, webservice=None,
                  private=False, auto_build_archive=None,
-                 auto_build_pocket=None):
+                 auto_build_pocket=None, **kwargs):
         if owner is None:
             owner = self.person
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries(registrant=owner)
         if branch is None and git_ref is None:
             branch = self.factory.makeAnyBranch()
-        kwargs = {}
         if webservice is None:
             webservice = self.webservice
         transaction.commit()
@@ -1221,6 +1232,21 @@ class TestSnapWebservice(TestCaseWithFactory):
             webservice=private_webservice, private=True)
         with person_logged_in(self.person):
             self.assertTrue(snap["private"])
+
+    def test_new_store_options(self):
+        # Ensure store-related options in Snap.new work.
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        store_name = self.factory.getUniqueUnicode()
+        snap = self.makeSnap(
+            store_upload=True, store_series=api_url(snappy_series),
+            store_name=store_name, store_channels=["edge"])
+        with person_logged_in(self.person):
+            self.assertTrue(snap["store_upload"])
+            self.assertEqual(
+                self.getURL(snappy_series), snap["store_series_link"])
+            self.assertEqual(store_name, snap["store_name"])
+            self.assertEqual(["edge"], snap["store_channels"])
 
     def test_duplicate(self):
         # An attempt to create a duplicate Snap fails.

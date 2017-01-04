@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap views."""
@@ -190,19 +190,12 @@ class SnapView(LaunchpadView):
 
     @cachedproperty
     def store_channels(self):
-        if self.context.store_channels is not None:
-            vocabulary = getUtility(
-                IVocabularyFactory, name='SnapStoreChannel')(self.context)
-            channel_titles = []
-            for channel in self.context.store_channels:
-                try:
-                    channel_titles.append(
-                        vocabulary.getTermByToken(channel).title)
-                except LookupError:
-                    channel_titles.append(channel)
-            return ', '.join(channel_titles)
-        else:
-            return None
+        vocabulary = getUtility(
+            IVocabularyFactory, name='SnapStoreChannel')(self.context)
+        channel_titles = []
+        for channel in self.context.store_channels:
+            channel_titles.append(vocabulary.getTermByToken(channel).title)
+        return ', '.join(channel_titles)
 
 
 def builds_for_snap(snap):
@@ -356,9 +349,7 @@ class ISnapEditSchema(Interface):
     # This is only required if store_upload is True.  Later validation takes
     # care of adjusting the required attribute.
     store_name = copy_field(ISnap['store_name'], required=True)
-    store_channels = copy_field(
-        ISnap['store_channels'],
-        value_type=Choice(vocabulary='SnapStoreChannel'), required=True)
+    store_channels = copy_field(ISnap['store_channels'], required=True)
 
 
 def log_oops(error, request):

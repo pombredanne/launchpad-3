@@ -1,4 +1,4 @@
-<!-- Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -46,6 +46,11 @@
 
     <class class="lp.snappy.vocabularies.BuildableSnappyDistroSeriesVocabulary">
         <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary" />
+    </class>
+
+    <class class="lp.snappy.vocabularies.SnapStoreChannel">
+        <allow interface="zope.schema.interfaces.ITitledTokenizedTerm
+                          lazr.restful.interfaces.IJSONPublishable" />
     </class>
 
     <securedutility

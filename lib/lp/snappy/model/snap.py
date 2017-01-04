@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -202,7 +202,7 @@ class Snap(Storm, WebhookTargetMixin):
 
     store_secrets = JSON('store_secrets', allow_none=True)
 
-    store_channels = JSON('store_channels', allow_none=True)
+    _store_channels = JSON('store_channels', allow_none=True)
 
     def __init__(self, registrant, owner, distro_series, name,
                  description=None, branch=None, git_ref=None, auto_build=False,
@@ -345,6 +345,14 @@ class Snap(Storm, WebhookTargetMixin):
     def store_distro_series(self, value):
         self.distro_series = value.distro_series
         self.store_series = value.snappy_series
+
+    @property
+    def store_channels(self):
+        return [] if self._store_channels is None else self._store_channels
+
+    @store_channels.setter
+    def store_channels(self, value):
+        self._store_channels = value if value else None
 
     @staticmethod
     def extractSSOCaveat(macaroon):
