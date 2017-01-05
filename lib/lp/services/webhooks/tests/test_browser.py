@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Webhook views."""
@@ -17,12 +17,18 @@ import transaction
 
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
+from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.testing import (
     login_person,
     record_two_runs,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import extract_text
 from lp.testing.views import create_view
@@ -84,6 +90,13 @@ class SnapTestHelpers:
     expected_event_types = [
         ("snap:build:0.1", "Snap build"),
         ]
+
+    def setUp(self):
+        super(SnapTestHelpers, self).setUp()
+        snap_store_client = FakeMethod()
+        snap_store_client.listChannels = FakeMethod(result=[])
+        self.useFixture(
+            ZopeUtilityFixture(snap_store_client, ISnapStoreClient))
 
     def makeTarget(self):
         self.useFixture(FeatureFixture({
@@ -189,7 +202,7 @@ class TestWebhooksViewBranch(
 class TestWebhooksViewSnap(
     TestWebhooksViewBase, SnapTestHelpers, TestCaseWithFactory):
 
-    pass
+    layer = LaunchpadFunctionalLayer
 
 
 class TestWebhookAddViewBase(WebhookTargetViewTestHelpers):
@@ -287,7 +300,7 @@ class TestWebhookAddViewBranch(
 class TestWebhookAddViewSnap(
     TestWebhookAddViewBase, SnapTestHelpers, TestCaseWithFactory):
 
-    pass
+    layer = LaunchpadFunctionalLayer
 
 
 class WebhookViewTestHelpers:

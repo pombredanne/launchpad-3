@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the GNU
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the GNU
 # Affero General Public License version 3 (see the file LICENSE).
 
 """Snappy vocabularies."""
@@ -10,18 +10,22 @@ __all__ = [
     'SnappySeriesVocabulary',
     ]
 
+from lazr.restful.interfaces import IJSONPublishable
 from storm.locals import Desc
 from zope.component import getUtility
+from zope.interface import implementer
 from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.services.database.interfaces import IStore
 from lp.services.webapp.vocabulary import StormVocabularyBase
+from lp.snappy.interfaces.snap import ISnap
 from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snappyseries import (
     SnappyDistroSeries,
@@ -116,6 +120,15 @@ class BuildableSnappyDistroSeriesVocabulary(SnappyDistroSeriesVocabulary):
         ]
 
 
+@implementer(IJSONPublishable)
+class SnapStoreChannel(SimpleTerm):
+    """A store channel."""
+
+    def toDataForJSON(self, media_type):
+        """See `IJSONPublishable`."""
+        return self.token
+
+
 class SnapStoreChannelVocabulary(SimpleVocabulary):
     """A vocabulary for searching store channels."""
 
@@ -125,4 +138,18 @@ class SnapStoreChannelVocabulary(SimpleVocabulary):
             self.createTerm(
                 channel["name"], channel["name"], channel["display_name"])
             for channel in channels]
+        if ISnap.providedBy(context):
+            # Supplement the vocabulary with any obsolete channels still
+            # used by this context.
+            context_channels = removeSecurityProxy(context)._store_channels
+            if context_channels is not None:
+                known_names = set(channel["name"] for channel in channels)
+                for name in context_channels:
+                    if name not in known_names:
+                        terms.append(self.createTerm(name, name, name))
         super(SnapStoreChannelVocabulary, self).__init__(terms)
+
+    @classmethod
+    def createTerm(cls, *args):
+        """See `SimpleVocabulary`."""
+        return SnapStoreChannel(*args)
