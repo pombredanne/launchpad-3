@@ -191,8 +191,8 @@ dicts to demonstrate this.
 
     >>> bugzilla._bugs = {}
     >>> bugzilla._bug_aliases = {}
-    >>> bugzilla.initializeRemoteBugDB([2, 'bug-two'])
-    CALLED Bug.get({'ids': [2, 'bug-two'], 'permissive': True})
+    >>> bugzilla.initializeRemoteBugDB([2, 'bug-two', 3])
+    CALLED Bug.get({'ids': [2, 'bug-two', 3], 'permissive': True})
 
     >>> print_bugs(bugzilla._bugs)
     Bug 2:
@@ -211,14 +211,32 @@ dicts to demonstrate this.
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.
+    Bug 3:
+        alias: ['bug-three', 'bad-diodes']
+        assigned_to: marvin@heartofgold.ship
+        component: Crew
+        creation_time: 2008-06-10 09:23:12
+        id: 3
+        internals:...
+        is_open: True
+        last_change_time: 2008-06-10 09:24:29
+        priority: P1
+        product: Marvin
+        resolution:
+        see_also: []
+        severity: high
+        status: NEW
+        summary: Pain in all the diodes down my left hand side.
     <BLANKLINE>
     <BLANKLINE>
 
 Aliases are stored in a separate dict, which contains a mapping between
 the alias and the bug's actual ID.
 
-    >>> for alias, bug_id in bugzilla._bug_aliases.items():
+    >>> for alias, bug_id in sorted(bugzilla._bug_aliases.items()):
     ...     print "%s: %s" % (alias, bug_id)
+    bad-diodes: 3
+    bug-three: 3
     bug-two: 2
 
 The method _getActualBugId() returns the correct bug ID for a passed bug
@@ -229,6 +247,10 @@ ID or alias.
 
     >>> bugzilla._getActualBugId(2)
     2
+
+    >>> bugzilla._getActualBugId('bad-diodes')
+    3
+
 
 Sometimes a Bugzilla will return bug data without an alias field.
 _storeBugs() handles that, too.

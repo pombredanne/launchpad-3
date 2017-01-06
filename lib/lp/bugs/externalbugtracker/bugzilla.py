@@ -620,8 +620,13 @@ class BugzillaAPI(Bugzilla):
             # IDs. We use the aliases dict to look up the correct ID for
             # a bug. This allows us to reference a bug by either ID or
             # alias.
-            if remote_bug.get('alias', '') != '':
-                self._bug_aliases[remote_bug['alias']] = remote_bug['id']
+            # Some versions of Bugzilla return a single alias string,
+            # others return a (possibly empty) list.
+            aliases = remote_bug.get('alias', '')
+            if isinstance(aliases, basestring):
+                aliases = [] if not aliases else [aliases]
+            for alias in aliases:
+                self._bug_aliases[alias] = remote_bug['id']
 
     @ensure_no_transaction
     def getCurrentDBTime(self):
