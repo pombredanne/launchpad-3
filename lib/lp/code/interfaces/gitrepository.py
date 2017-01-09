@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository interfaces."""
@@ -265,6 +265,12 @@ class IGitRepositoryView(IHasRecipes):
         # Really ICodeImport, patched in _schema_circular_imports.py.
         schema=Interface))
 
+    @operation_parameters(
+        path=TextLine(title=_("A string to look up as a path.")))
+    # Really IGitRef, patched in _schema_circular_imports.py.
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
     def getRefByPath(path):
         """Look up a single reference in this repository by path.
 

@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repositories."""
@@ -2681,6 +2681,32 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         self.assertEqual(401, response.status)
         with person_logged_in(ANONYMOUS):
             self.assertEqual(owner_db, repository_db.owner)
+
+    def test_getRefByPath(self):
+        repository_db = self.factory.makeGitRepository()
+        ref_dbs = self.factory.makeGitRefs(
+            repository=repository_db, paths=[u"refs/heads/a", u"refs/heads/b"])
+        repository_url = api_url(repository_db)
+        ref_urls = [api_url(ref_db) for ref_db in ref_dbs]
+        webservice = webservice_for_person(
+            repository_db.owner, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        for path, expected_ref_url in (
+                ("a", ref_urls[0]),
+                ("refs/heads/a", ref_urls[0]),
+                ("b", ref_urls[1]),
+                ("refs/heads/b", ref_urls[1]),
+                ):
+            response = webservice.named_get(
+                repository_url, "getRefByPath", path=path)
+            self.assertEqual(200, response.status)
+            self.assertEqual(
+                webservice.getAbsoluteUrl(expected_ref_url),
+                response.jsonBody()["self_link"])
+        response = webservice.named_get(
+            repository_url, "getRefByPath", path="c")
+        self.assertEqual(200, response.status)
+        self.assertIsNone(response.jsonBody())
 
     def test_subscribe(self):
         # A user can subscribe to a repository.
