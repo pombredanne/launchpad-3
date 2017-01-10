@@ -96,16 +96,19 @@ if [ $? -ne 0 ]; then
   echo "Adding ~launchpad PPA repository to package source list."
   echo "$LP_PPA"  | sudo tee -a $LPDEV_SOURCES
 fi
+REQUIRED_PPA_KEYS="0A5174AF"
 
-BZR_PPA="deb http://ppa.launchpad.net/bzr/ppa/ubuntu ${DISTRIB_CODENAME} main"
-grep -q "^${BZR_PPA}" $LPDEV_SOURCES
-if [ $? -ne 0 ]; then
-  echo "Adding ~bzr PPA repository to package source list."
-  echo "$BZR_PPA" | sudo tee -a $LPDEV_SOURCES
+if [ "$DISTRIB_CODENAME" = precise ]; then
+  BZR_PPA="deb http://ppa.launchpad.net/bzr/ppa/ubuntu ${DISTRIB_CODENAME} main"
+  grep -q "^${BZR_PPA}" $LPDEV_SOURCES
+  if [ $? -ne 0 ]; then
+    echo "Adding ~bzr PPA repository to package source list."
+    echo "$BZR_PPA" | sudo tee -a $LPDEV_SOURCES
+  fi
+  REQUIRED_PPA_KEYS="$REQUIRED_PPA_KEYS 8C6C1EFD"
 fi
 
 # Get the key used to sign the launchpad-developer-dependencies in the PPA.
-REQUIRED_PPA_KEYS="0A5174AF 8C6C1EFD"
 for key in $REQUIRED_PPA_KEYS; do
    sudo apt-key list | grep -q $key
    if [ $? -ne 0 ]; then
