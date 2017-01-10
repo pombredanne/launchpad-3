@@ -139,7 +139,12 @@ do_install() {
   }
 
 sudo apt-get update
-REQUIRED_PACKAGES="launchpad-developer-dependencies apache2 apache2-mpm-worker libapache2-mod-wsgi"
+REQUIRED_PACKAGES="launchpad-developer-dependencies apache2 libapache2-mod-wsgi"
+case $DISTRIB_CODENAME in
+  precise|trusty)
+    REQUIRED_PACKAGES="$REQUIRED_PACKAGES apache2-mpm-worker"
+    ;;
+esac
 for pkg in $REQUIRED_PACKAGES; do
   do_install;
 done
