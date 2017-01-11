@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.services.osutils."""
@@ -12,6 +12,7 @@ from testtools.matchers import FileContains
 
 from lp.services.osutils import (
     ensure_directory_exists,
+    find_on_path,
     open_for_writing,
     remove_tree,
     write_file,
@@ -103,3 +104,25 @@ class TestWriteFile(TestCase):
         content = self.getUniqueString()
         write_file(filename, content)
         self.assertThat(filename, FileContains(content))
+
+
+class TestFindOnPath(TestCase):
+
+    def test_missing_environment(self):
+        os.environ.pop("PATH", None)
+        self.assertFalse(find_on_path("ls"))
+
+    def test_present_executable(self):
+        temp_dir = self.makeTemporaryDirectory()
+        bin_dir = os.path.join(temp_dir, "bin")
+        program = os.path.join(bin_dir, "program")
+        write_file(program, "")
+        os.chmod(program, 0o755)
+        os.environ["PATH"] = bin_dir
+        self.assertTrue(find_on_path("program"))
+
+    def test_present_not_executable(self):
+        bin_dir = os.path.join(self.temp_dir, "bin")
+        write_file(os.path.join(bin_dir, "program"), "")
+        os.environ["PATH"] = bin_dir
+        self.assertFalse(find_on_path("program"))
