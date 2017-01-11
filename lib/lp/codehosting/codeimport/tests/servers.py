@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Server classes that know how to create various kinds of foreign archive."""
@@ -55,6 +55,7 @@ from dulwich.web import (
     WSGIRequestHandlerLogger,
     WSGIServerLogger,
     )
+from subvertpy import SubversionException
 import subvertpy.ra
 import subvertpy.repos
 
@@ -130,14 +131,30 @@ class SubversionServer(Server):
             delay = 0.1
             for i in range(10):
                 try:
-                    self._get_ra(self.get_url())
-                except OSError as e:
-                    if e.errno == errno.ECONNREFUSED:
-                        time.sleep(delay)
-                        delay *= 1.5
-                        continue
-                else:
-                    break
+                    try:
+                        self._get_ra(self.get_url())
+                    except OSError as e:
+                        # Subversion < 1.9 just produces OSError.
+                        if e.errno == errno.ECONNREFUSED:
+                            time.sleep(delay)
+                            delay *= 1.5
+                            continue
+                        raise
+                    except SubversionException as e:
+                        # Subversion >= 1.9 turns the raw error into a
+                        # SubversionException.  The code is
+                        # SVN_ERR_RA_CANNOT_CREATE_SESSION, which is not yet
+                        # in subvertpy.
+                        if e.args[1] == 170013:
+                            time.sleep(delay)
+                            delay *= 1.5
+                            continue
+                        raise
+                    else:
+                        break
+                except Exception as e:
+                    self._kill_svnserve()
+                    raise
             else:
                 self._kill_svnserve()
                 raise AssertionError(
