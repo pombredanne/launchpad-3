@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -108,6 +108,14 @@ class GPGHandler:
 
         atexit.register(removeHome, self.home)
 
+    def _getContext(self):
+        """Return a new appropriately-configured GPGME context."""
+        context = gpgme.Context()
+        # Stick to GnuPG 1.
+        context.set_engine_info(gpgme.PROTOCOL_OpenPGP, "/usr/bin/gpg", None)
+        context.armor = True
+        return context
+
     def sanitizeFingerprint(self, fingerprint):
         """See IGPGHandler."""
         return sanitize_fingerprint(fingerprint)
@@ -152,7 +160,7 @@ class GPGHandler:
         assert not isinstance(content, unicode)
         assert not isinstance(signature, unicode)
 
-        ctx = gpgme.Context()
+        ctx = self._getContext()
 
         # from `info gpgme` about gpgme_op_verify(SIG, SIGNED_TEXT, PLAIN):
         #
@@ -226,8 +234,7 @@ class GPGHandler:
     def importPublicKey(self, content):
         """See IGPGHandler."""
         assert isinstance(content, str)
-        context = gpgme.Context()
-        context.armor = True
+        context = self._getContext()
 
         newkey = StringIO(content)
         result = context.import_(newkey)
@@ -261,8 +268,7 @@ class GPGHandler:
         if 'GPG_AGENT_INFO' in os.environ:
             del os.environ['GPG_AGENT_INFO']
 
-        context = gpgme.Context()
-        context.armor = True
+        context = self._getContext()
         newkey = StringIO(content)
         import_result = context.import_(newkey)
 
@@ -287,7 +293,7 @@ class GPGHandler:
 
     def generateKey(self, name):
         """See `IGPGHandler`."""
-        context = gpgme.Context()
+        context = self._getContext()
 
         # Make sure that gpg-agent doesn't interfere.
         if 'GPG_AGENT_INFO' in os.environ:
@@ -325,8 +331,7 @@ class GPGHandler:
             raise TypeError('Content cannot be Unicode.')
 
         # setup context
-        ctx = gpgme.Context()
-        ctx.armor = True
+        ctx = self._getContext()
 
         # setup containers
         plain = StringIO(content)
@@ -356,9 +361,7 @@ class GPGHandler:
 
         # Find the key and make it the only one allowed to sign content
         # during this session.
-        context = gpgme.Context()
-        context.armor = True
-
+        context = self._getContext()
         context.signers = [removeSecurityProxy(key.key)]
 
         # Set up containers.
@@ -385,7 +388,7 @@ class GPGHandler:
         """Get an iterator of the keys this gpg handler
         already knows about.
         """
-        ctx = gpgme.Context()
+        ctx = self._getContext()
 
         # XXX michaeln 2010-05-07 bug=576405
         # Currently gpgme.Context().keylist fails if passed a unicode
@@ -544,9 +547,17 @@ class PymeKey:
         self._buildFromGpgmeKey(key)
         return self
 
+    def _getContext(self):
+        """Return a new appropriately-configured GPGME context."""
+        context = gpgme.Context()
+        # Stick to GnuPG 1.
+        context.set_engine_info(gpgme.PROTOCOL_OpenPGP, "/usr/bin/gpg", None)
+        context.armor = True
+        return context
+
     def _buildFromFingerprint(self, fingerprint):
         """Build key information from a fingerprint."""
-        context = gpgme.Context()
+        context = self._getContext()
         # retrive additional key information
         try:
             key = context.get_key(fingerprint, False)
@@ -594,8 +605,7 @@ class PymeKey:
                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
             return p.stdout.read()
 
-        context = gpgme.Context()
-        context.armor = True
+        context = self._getContext()
         keydata = StringIO()
         context.export(self.fingerprint.encode('ascii'), keydata)
 
