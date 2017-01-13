@@ -122,7 +122,8 @@ class TestFindOnPath(TestCase):
         self.assertTrue(find_on_path("program"))
 
     def test_present_not_executable(self):
-        bin_dir = os.path.join(self.temp_dir, "bin")
+        temp_dir = self.makeTemporaryDirectory()
+        bin_dir = os.path.join(temp_dir, "bin")
         write_file(os.path.join(bin_dir, "program"), "")
         os.environ["PATH"] = bin_dir
         self.assertFalse(find_on_path("program"))
