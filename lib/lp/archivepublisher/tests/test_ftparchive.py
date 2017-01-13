@@ -687,15 +687,15 @@ class TestFTPArchive(TestCaseWithFactory):
         binary_overrides = FakeSelectResult([(
             "bin%d" % i, "main", "misc", "i386",
             PackagePublishingPriority.EXTRA, BinaryPackageFormat.DEB, None)
-            for i in range(10)])
+            for i in range(50)])
         fa.publishOverrides("hoary-test", source_overrides, binary_overrides)
         source_files = FakeSelectResult([("tiny", "tiny_0.1.dsc", "main")])
         binary_files = FakeSelectResult([(
             "bin%d" % i, "bin%d_1_i386.deb" % i, "main", "binary-i386")
-            for i in range(10)])
+            for i in range(50)])
         fa.publishFileLists("hoary-test", source_files, binary_files)
         self._addRepositoryFile("main", "tiny", "tiny_0.1.dsc")
-        for i in range(10):
+        for i in range(50):
             self._addRepositoryFile(
                 "main", "bin%d" % i, "bin%d_1_i386.deb" % i,
                 samplename="tiny_0.1_i386.deb")
@@ -704,7 +704,7 @@ class TestFTPArchive(TestCaseWithFactory):
 
         # Remove most of this repository's files so that cleanCaches has
         # something to do.
-        for i in range(9):
+        for i in range(49):
             os.unlink(
                 self._dp.pathFor("main", "bin%d" % i, "bin%d_1_i386.deb" % i))
 
