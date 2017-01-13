@@ -39,7 +39,10 @@ Now let's copy the files into separate upload directories, as if they'd
 been uploaded over FTP.
 
     >>> from lp.services.config import config
-    >>> from lp.archiveuploader.tagfiles import parse_tagfile
+    >>> from lp.archiveuploader.tagfiles import (
+    ...     parse_tagfile,
+    ...     TagFileParseError,
+    ...     )
     >>> import glob
     >>> test_files_dir = os.path.join(config.root,
     ...                               "lib/lp/soyuz/scripts/"
@@ -52,7 +55,10 @@ been uploaded over FTP.
 
     >>> seq = 1
     >>> for changes_filepath in changes:
-    ...     tf = parse_tagfile(changes_filepath)
+    ...     try:
+    ...         tf = parse_tagfile(changes_filepath)
+    ...     except TagFileParseError:
+    ...         tf = {}
     ...
     ...     if "Source" in tf:
     ...         package_names.append(tf["Source"])
