@@ -275,6 +275,7 @@ to commit the transaction here.
 The auxiliary function below will facilitate the viewing of diff results.
 
     >>> import os
+    >>> import re
     >>> import shutil
     >>> import subprocess
     >>> import tempfile
@@ -301,7 +302,9 @@ The auxiliary function below will facilitate the viewing of diff results.
     ...     p.communicate()
     ...     diffs = [filename for filename in sorted(os.listdir('.'))
     ...              if filename != 'the.diff']
-    ...     ordered_diff_contents = [open(diff).read() for diff in diffs]
+    ...     ordered_diff_contents = [
+    ...         re.sub(r'^diff .*\n', '', open(diff).read(), flags=re.M)
+    ...         for diff in diffs]
     ...     os.chdir(local)
     ...     shutil.rmtree(jail)
     ...     return "".join(ordered_diff_contents)
