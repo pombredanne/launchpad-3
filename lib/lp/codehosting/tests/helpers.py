@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common helpers for codehosting tests."""
@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase',
     'create_branch_with_one_revision',
-    'deferToThread',
     'force_stacked_on_url',
     'LoomTestMixin',
     'make_bazaar_branch_and_tree',
@@ -15,7 +14,6 @@ __all__ = [
     ]
 
 import os
-import threading
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import FileExists
@@ -25,11 +23,6 @@ from bzrlib.tests import (
     TestSkipped,
     )
 from testtools.deferredruntest import AsynchronousDeferredRunTest
-from twisted.internet import (
-    defer,
-    threads,
-    )
-from twisted.python.util import mergeFunctionMetadata
 
 from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path
@@ -92,22 +85,6 @@ class LoomTestMixin:
         loom_tree.unlock()
         loom_tree.branch.record_loom('sample loom')
         return loom_tree
-
-
-def deferToThread(f):
-    """Run the given callable in a separate thread and return a Deferred which
-    fires when the function completes.
-    """
-    def decorated(*args, **kwargs):
-        d = defer.Deferred()
-
-        def runInThread():
-            return threads._putResultInDeferred(d, f, args, kwargs)
-
-        t = threading.Thread(target=runInThread)
-        t.start()
-        return d
-    return mergeFunctionMetadata(f, decorated)
 
 
 def make_bazaar_branch_and_tree(db_branch):

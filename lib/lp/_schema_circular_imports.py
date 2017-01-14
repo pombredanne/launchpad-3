@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -512,6 +512,7 @@ patch_collection_property(IGitRepository, 'subscriptions', IGitSubscription)
 patch_entry_return_type(IGitRepository, 'subscribe', IGitSubscription)
 patch_entry_return_type(IGitRepository, 'getSubscription', IGitSubscription)
 patch_reference_property(IGitRepository, 'code_import', ICodeImport)
+patch_entry_return_type(IGitRepository, 'getRefByPath', IGitRef)
 patch_collection_property(
     IGitRepository, '_api_landing_targets', IBranchMergeProposal)
 patch_collection_property(

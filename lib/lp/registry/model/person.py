@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for a Person."""
@@ -205,11 +205,11 @@ from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.ssh import (
     ISSHKey,
     ISSHKeySet,
+    SSH_KEY_TYPE_TO_TEXT,
+    SSH_TEXT_TO_KEY_TYPE,
     SSHKeyAdditionError,
     SSHKeyCompromisedError,
     SSHKeyType,
-    SSH_KEY_TYPE_TO_TEXT,
-    SSH_TEXT_TO_KEY_TYPE,
     )
 from lp.registry.interfaces.teammembership import (
     IJoinTeamEvent,
@@ -294,6 +294,7 @@ from lp.services.oauth.model import (
     )
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.osutils import find_on_path
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -4097,13 +4098,15 @@ class SSHKeySet:
     def new(self, person, sshkey, send_notification=True, dry_run=False):
         keytype, keytext, comment = self._extract_ssh_key_components(sshkey)
 
-        process = subprocess.Popen(
-            '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = process.communicate(sshkey.encode('utf-8'))
-        if 'compromised' in out.lower():
-            raise SSHKeyCompromisedError(
-                "This key cannot be added as it is known to be compromised.")
+        if find_on_path('ssh-vulnkey'):
+            process = subprocess.Popen(
+                ['ssh-vulnkey', '-'], stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            (out, err) = process.communicate(sshkey.encode('utf-8'))
+            if 'compromised' in out.lower():
+                raise SSHKeyCompromisedError(
+                    "This key cannot be added as it is known to be "
+                    "compromised.")
 
         if send_notification:
             person.security_field_changed(

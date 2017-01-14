@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for doing the sort of thing the os module does."""
@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'ensure_directory_exists',
+    'find_on_path',
     'get_pid_from_file',
     'kill_by_pidfile',
     'get_pid_from_file',
@@ -179,3 +180,17 @@ def remove_if_exists(path):
 def write_file(path, content):
     with open_for_writing(path, 'w') as f:
         f.write(content)
+
+
+def find_on_path(command):
+    """Is 'command' on the executable search path?"""
+    if "PATH" not in os.environ:
+        return False
+    path = os.environ["PATH"]
+    for element in path.split(os.pathsep):
+        if not element:
+            continue
+        filename = os.path.join(element, command)
+        if os.path.isfile(filename) and os.access(filename, os.X_OK):
+            return True
+    return False

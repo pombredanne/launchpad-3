@@ -1,9 +1,11 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SSHKey."""
 
 __metaclass__ = type
+
+from unittest import skipUnless
 
 from testtools.matchers import StartsWith
 from zope.component import getUtility
@@ -15,6 +17,7 @@ from lp.registry.interfaces.ssh import (
     SSHKeyCompromisedError,
     SSHKeyType,
     )
+from lp.services.osutils import find_on_path
 from lp.testing import (
     admin_logged_in,
     person_logged_in,
@@ -117,6 +120,7 @@ class TestSSHKeySet(TestCaseWithFactory):
                        send_notification=False)
             self.assertEqual([], pop_notifications())
 
+    @skipUnless(find_on_path("ssh-vulnkey"), "requires ssh-vulnkey")
     def test_raises_on_vulnerable_keys(self):
         person = self.factory.makePerson()
         with person_logged_in(person):

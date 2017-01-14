@@ -1,7 +1,9 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
+
+from unittest import skipUnless
 
 from storm.store import Store
 from zope.component import getUtility
@@ -20,6 +22,7 @@ from lp.services.identity.interfaces.account import (
     IAccountSet,
     )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
+from lp.services.osutils import find_on_path
 from lp.services.webapp import snapshot
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
@@ -559,6 +562,7 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             "Invalid SSH key type: 'foo'",
             response.body)
 
+    @skipUnless(find_on_path("ssh-vulnkey"), "requires ssh-vulnkey")
     def test_addSSHKeyFromSSO_rejects_vulnerable_keys(self):
         with admin_logged_in():
             person = self.factory.makePerson()
@@ -569,6 +573,7 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
             "This key cannot be added as it is known to be compromised.",
             response.body)
 
+    @skipUnless(find_on_path("ssh-vulnkey"), "requires ssh-vulnkey")
     def test_addSSHKeyFromSSO_rejects_vulnerable_keys_dry_run(self):
         with admin_logged_in():
             person = self.factory.makePerson()
