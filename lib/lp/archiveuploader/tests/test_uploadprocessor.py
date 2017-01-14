@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -2257,6 +2257,28 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.assertEquals(None, build.builder)
         self.assertIsNot(None, build.duration)
         self.assertIs(None, build.upload_log)
+
+    def testSnapBuild_deleted_snap(self):
+        # A snap build will fail if the snap is deleted.
+        self.switchToAdmin()
+        build = self.factory.makeSnapBuild()
+        self.switchToUploader()
+        Store.of(build).flush()
+        behaviour = IBuildFarmJobBehaviour(build)
+        leaf_name = behaviour.getUploadDirLeaf(build.build_cookie)
+        os.mkdir(os.path.join(self.incoming_folder, leaf_name))
+        self.options.context = 'buildd'
+        self.options.builds = True
+        build.updateStatus(BuildStatus.UPLOADING)
+        self.switchToAdmin()
+        build.snap.destroySelf()
+        self.switchToUploader()
+        BuildUploadHandler(
+            self.uploadprocessor, self.incoming_folder, leaf_name).process()
+        self.assertFalse(
+            os.path.exists(os.path.join(self.incoming_folder, leaf_name)))
+        self.assertTrue(
+            os.path.exists(os.path.join(self.failed_folder, leaf_name)))
 
     def processUploadWithBuildStatus(self, status):
         upload_dir = self.queueUpload("bar_1.0-1")
