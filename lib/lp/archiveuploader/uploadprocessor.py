@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code for 'processing' 'uploads'. Also see nascentupload.py.
@@ -645,7 +645,12 @@ class BuildUploadHandler(UploadHandler):
         Build uploads always contain a single package per leaf.
         """
         logger = BufferLogger()
-        if self.build.status == BuildStatus.BUILDING:
+        if self.build is None:
+            self.processor.log.info(
+                "Build %s was deleted. Ignoring." % self.upload)
+            self.moveUpload(UploadStatusEnum.FAILED, logger)
+            return
+        elif self.build.status == BuildStatus.BUILDING:
             # Handoff from buildd-manager isn't complete until the
             # status is UPLOADING.
             self.processor.log.info("Build status is BUILDING. Ignoring.")

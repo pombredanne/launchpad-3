@@ -27,15 +27,6 @@
   ServerAlias answers.launchpad.dev api.launchpad.dev blueprints.launchpad.dev
   ServerAlias bugs.launchpad.dev code.launchpad.dev feeds.launchpad.dev
   ServerAlias translations.launchpad.dev xmlrpc.launchpad.dev testopenid.dev
-  <Proxy *>
-    <IfVersion >= 2.4>
-      Require ip 127.0.0.0/255.0.0.0
-    </IfVersion>
-    <IfVersion < 2.4>
-      Order deny,allow
-      Allow from 127.0.0.0/255.0.0.0
-    </IfVersion>
-  </Proxy>
   SSLEngine On
   SSLCertificateFile /etc/apache2/ssl/launchpad.crt
   SSLCertificateKeyFile /etc/apache2/ssl/launchpad.key
@@ -66,16 +57,6 @@
   LogLevel debug
 
   ProxyRequests off
-  <Proxy *>
-    <IfVersion >= 2.4>
-      Require host localhost
-      Require ip 127.0.0.0/255.0.0.0
-    </IfVersion>
-    <IfVersion < 2.4>
-      Order deny,allow
-      Allow from localhost 127.0.0.0/255.0.0.0
-    </IfVersion>
-  </Proxy>
   ProxyTimeout 20
 
   RewriteEngine On
@@ -108,16 +89,6 @@
   SSLCertificateKeyFile /etc/apache2/ssl/launchpad.key
 
   ProxyRequests off
-  <Proxy *>
-    <IfVersion >= 2.4>
-      Require host localhost
-      Require ip 127.0.0.0/255.0.0.0
-    </IfVersion>
-    <IfVersion < 2.4>
-      Order deny,allow
-      Allow from localhost 127.0.0.0/255.0.0.0
-    </IfVersion>
-  </Proxy>
   ProxyTimeout 20
 
   RewriteEngine On
