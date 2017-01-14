@@ -269,6 +269,21 @@ You can search for more than one product.
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
+    alias: ['bug-three', 'bad-diodes']
+    assigned_to: marvin@heartofgold.ship
+    component: Crew
+    creation_time: 2008-06-10 09:23:12
+    id: 3
+    internals:...
+    is_open: True
+    last_change_time: 2008-06-10 09:24:29
+    priority: P1
+    product: Marvin
+    resolution:
+    see_also: []
+    severity: high
+    status: NEW
+    summary: Pain in all the diodes down my left hand side.
 
 
 Getting the comments for a bug
