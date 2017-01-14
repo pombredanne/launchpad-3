@@ -1,13 +1,16 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for GPG key on the web."""
 
 __metaclass__ = type
 
+from unittest import skipUnless
+
 from zope.component import getUtility
 
 from lp.registry.interfaces.ssh import ISSHKeySet
+from lp.services.osutils import find_on_path
 from lp.services.webapp import canonical_url
 from lp.testing import (
     login_person,
@@ -18,6 +21,7 @@ from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import (
     extract_text,
     find_tags_by_class,
+    get_feedback_messages,
     setupBrowserFreshLogin,
     )
 from lp.testing.views import create_initialized_view
@@ -73,3 +77,33 @@ class TestSSHKeyView(TestCaseWithFactory):
         expected_url = (
             '%s/+editsshkeys/+login?reauth=1' % canonical_url(person))
         self.assertEqual(expected_url, response.getHeader('location'))
+
+    @skipUnless(find_on_path("ssh-vulnkey"), "requires ssh-vulnkey")
+    def test_blacklisted_keys(self):
+        """+editsshkeys refuses keys known to be compromised."""
+        person = self.factory.makePerson()
+        url = '%s/+editsshkeys' % canonical_url(person)
+        compromised_key = (
+            'ssh-dss AAAAB3NzaC1kc3MAAACBAMDMAwIgYxgquosN4grBbVJCuyLXODSkY2x4/'
+            'jYxUPuj0iUwVl/nTdZ2hitv7DE5dshFGUNm4sizXZoX7/u2Y68av2VHwlIkbQ52qM'
+            '3ltiPXvS7uP4RjKUEZr+6l6BjohEmnlhhnLdbNy4kj4xTQizE9QSS999PBvQ3csxk'
+            'OSZNXAAAAFQDZpXHMZqsqy8s0JxTQPg256XEjtwAAAIEAszRf/KwyKHGGTdbQUjOx'
+            'dfyngk2Fol/1fYRtSGpkooAOMTxfWyOZiEigv6Zqt4VAmXuFpSM/DU0tNrbBPvzKV'
+            'MkIXwoOfnWimf3ozGuoIxYYLao5pgGqS0dNADOOIaXo6YiVkIYi2YL/7ISq3WLdCe'
+            'qy9mSZr9z8esdNfW5SiWsAAACAdPqgY1eCyEfxWCEH+Nz4bsig1DkgdZX27QMzW27'
+            'xJdN03GPUABA5HSRHY/QwvpgD+2PlwNf44ceiWEgcPToyWd/7koPoDga8im/B+ui5'
+            'j2PQr++prQCa849UMk6Ol9kZWjvNMvk1gM9Rw732DK0FSj0qzk83iK4eqfrZIk3u1'
+            'a4= maddog39@ubuntu')
+        with person_logged_in(person):
+            browser = setupBrowserFreshLogin(person)
+            browser.open(url)
+            browser.getControl(name='sshkey').value = compromised_key
+            browser.getControl('Import Public Key').click()
+            expected_message = (
+                'This key is known to be compromised due to a security flaw '
+                'in the software used to generate it, so it will not be '
+                'accepted by Launchpad. See the full Security Notice for '
+                'further information and instructions on how to generate '
+                'another key.')
+            self.assertEqual(
+                [expected_message], get_feedback_messages(browser.contents))
