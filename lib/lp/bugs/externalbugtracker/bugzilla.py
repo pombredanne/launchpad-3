@@ -21,6 +21,7 @@ import xml.parsers.expat
 import xmlrpclib
 
 import pytz
+import six
 from zope.component import getUtility
 from zope.interface import implementer
 
@@ -623,7 +624,7 @@ class BugzillaAPI(Bugzilla):
             # Some versions of Bugzilla return a single alias string,
             # others return a (possibly empty) list.
             aliases = remote_bug.get('alias', '')
-            if isinstance(aliases, basestring):
+            if isinstance(aliases, six.string_types):
                 aliases = [] if not aliases else [aliases]
             for alias in aliases:
                 self._bug_aliases[alias] = remote_bug['id']
