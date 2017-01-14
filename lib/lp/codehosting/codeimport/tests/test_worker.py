@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the code import worker."""
@@ -837,6 +837,12 @@ class TestActualImportMixin:
             worker.source_details.target_id)
         return Branch.open(branch_url)
 
+    def clearCaches(self):
+        """Clear any caches between worker runs, if necessary.
+
+        Override this in your subclass if you need it.
+        """
+
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
         # the branch.
@@ -860,6 +866,7 @@ class TestActualImportMixin:
         self.makeForeignCommit(worker.source_details)
 
         # Run the same worker again.
+        self.clearCaches()
         worker.run()
 
         # Check that the new revisions are in the Bazaar branch.
@@ -1089,6 +1096,7 @@ class PullingImportWorkerTests:
             svn_revisions_import_limit=import_limit)
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
+        self.clearCaches()
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS, worker.run())
 
@@ -1133,6 +1141,10 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.setUpImport()
 
     def tearDown(self):
+        self.clearCaches()
+        super(TestGitImport, self).tearDown()
+
+    def clearCaches(self):
         """Clear bzr-git's cache of sqlite connections.
 
         This is rather obscure: different test runs tend to re-use the same
@@ -1142,7 +1154,6 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         """
         from bzrlib.plugins.git.cache import mapdbs
         mapdbs().clear()
-        WorkerTest.tearDown(self)
 
     def makeImportWorker(self, source_details, opener_policy):
         """Make a new `ImportWorker`."""
