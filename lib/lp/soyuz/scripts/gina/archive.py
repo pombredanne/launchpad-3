@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive pool classes.
@@ -202,17 +202,21 @@ class PackagesMap:
             # but we go over it to also cover source packages that only
             # compile for one architecture.
             sources = apt_pkg.TagFile(info_set.srcfile)
-            for section in sources:
-                try:
-                    src_tmp = dict(section)
-                    src_tmp['Component'] = info_set.component
-                    src_name = src_tmp['Package']
-                except KeyError:
-                    log.exception(
-                        "Invalid Sources stanza in %s",
-                        info_set.sources_tagfile)
-                    continue
-                self.src_map[src_name].append(src_tmp)
+            try:
+                for section in sources:
+                    try:
+                        src_tmp = dict(section)
+                        src_tmp['Component'] = info_set.component
+                        src_name = src_tmp['Package']
+                    except KeyError:
+                        log.exception(
+                            "Invalid Sources stanza in %s",
+                            info_set.sources_tagfile)
+                        continue
+                    self.src_map[src_name].append(src_tmp)
+            except SystemError:
+                log.exception(
+                    "Invalid Sources stanza in %s", info_set.sources_tagfile)
 
             # Check if it's in source-only mode.  If so, skip binary index
             # mapping.
