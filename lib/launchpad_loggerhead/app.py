@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
@@ -50,6 +50,7 @@ from lp.codehosting.safe_open import safe_open
 from lp.codehosting.vfs import get_lp_server
 from lp.services.config import config
 from lp.services.webapp.errorlog import ErrorReportingUtility
+from lp.services.webapp.openid import set_default_openid_fetcher
 from lp.services.webapp.vhosts import allvhosts
 from lp.xmlrpc import faults
 
@@ -63,6 +64,9 @@ robots_app = DataApp(robots_txt, content_type='text/plain')
 
 
 thread_locals = threading.local()
+
+
+set_default_openid_fetcher()
 
 
 def check_fault(fault, *fault_classes):
