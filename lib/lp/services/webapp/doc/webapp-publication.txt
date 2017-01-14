@@ -661,7 +661,7 @@ available as launchpad.publicationticks in the WSGI environment.
     True
 
     >>> publication.afterCall(request, None)
-    >>> request._orig_env['launchpad.publicationticks'] < 50
+    >>> request._orig_env['launchpad.publicationticks'] < 60
     True
     >>> publication.endRequest(request, None)
 

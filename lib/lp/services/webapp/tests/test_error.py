@@ -1,14 +1,16 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test error views."""
 
 
 import httplib
+import logging
 import socket
 import time
 import urllib2
 
+from fixtures import FakeLogger
 import psycopg2
 from storm.exceptions import (
     DisconnectionError,
@@ -16,6 +18,11 @@ from storm.exceptions import (
     )
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
+from testtools.matchers import (
+    Equals,
+    MatchesAny,
+    MatchesListwise,
+    )
 import transaction
 from zope.app.testing import ztapi
 
@@ -113,6 +120,7 @@ class TestDatabaseErrorViews(TestCase):
 
     def test_disconnectionerror_view_integration(self):
         # Test setup.
+        self.useFixture(FakeLogger('SiteError', level=logging.CRITICAL))
         self.useFixture(Urllib2Fixture())
         bouncer = PGBouncerFixture()
         # XXX gary bug=974617, bug=1011847, bug=504291 2011-07-03:
@@ -133,19 +141,29 @@ class TestDatabaseErrorViews(TestCase):
         # our view and several OOPSes from the retries.
         bouncer.stop()
 
+        class Disconnects(Equals):
+            def __init__(self, message):
+                super(Disconnects, self).__init__(
+                    ('DisconnectionError', message))
+
         with CaptureOops() as oopses:
             error = self.getHTTPError(url)
         self.assertEqual(503, error.code)
         self.assertThat(error.read(),
                         Contains(DisconnectionErrorView.reason))
-        self.assertEqual(
-            ([('DisconnectionError', 'error with no message from the libpq')]
-             * 2) +
-            ([('DisconnectionError',
-               'could not connect to server: Connection refused')]
-             * 6),
+        self.assertThat(
             [(oops['type'], oops['value'].split('\n')[0])
-             for oops in oopses.oopses])
+             for oops in oopses.oopses],
+            MatchesListwise(
+                [MatchesAny(
+                    # libpq < 9.5.
+                    Disconnects('error with no message from the libpq'),
+                    # libpq >= 9.5.
+                    Disconnects('server closed the connection unexpectedly'))]
+                * 2 +
+                [Disconnects(
+                    'could not connect to server: Connection refused')]
+                * 6))
 
         # We keep seeing the correct exception on subsequent requests.
         with CaptureOops() as oopses:
@@ -153,12 +171,13 @@ class TestDatabaseErrorViews(TestCase):
         self.assertEqual(503, error.code)
         self.assertThat(error.read(),
                         Contains(DisconnectionErrorView.reason))
-        self.assertEqual(
-            ([('DisconnectionError',
-               'could not connect to server: Connection refused')]
-             * 8),
+        self.assertThat(
             [(oops['type'], oops['value'].split('\n')[0])
-             for oops in oopses.oopses])
+             for oops in oopses.oopses],
+            MatchesListwise(
+                [Disconnects(
+                    'could not connect to server: Connection refused')]
+                * 8))
 
         # When the database is available again, requests succeed.
         bouncer.start()
@@ -182,10 +201,10 @@ class TestDatabaseErrorViews(TestCase):
         self.assertEqual(503, error.code)
         self.assertThat(error.read(),
                         Contains(DisconnectionErrorView.reason))
-        self.assertEqual(
-            [('DisconnectionError', 'database removed')],
+        self.assertThat(
             [(oops['type'], oops['value'].split('\n')[0])
-             for oops in oopses.oopses])
+             for oops in oopses.oopses],
+            MatchesListwise([Disconnects('database removed')]))
 
         # A second request doesn't log any OOPSes.
         with CaptureOops() as oopses:
@@ -209,6 +228,7 @@ class TestDatabaseErrorViews(TestCase):
 
     def test_operationalerror_view_integration(self):
         # Test setup.
+        self.useFixture(FakeLogger('SiteError', level=logging.CRITICAL))
         self.useFixture(Urllib2Fixture())
 
         class BrokenView(object):
