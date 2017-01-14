@@ -264,9 +264,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
             'contactdetails',
             ]
 
-        # Members of the admin team can set the bug tracker's active
-        # state.
-        if check_permission("launchpad.Admin", self.user):
+        if check_permission("launchpad.Admin", self.context):
             field_names.append('active')
 
         return field_names

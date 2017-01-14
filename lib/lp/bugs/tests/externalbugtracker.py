@@ -424,11 +424,29 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'status': 'NEW',
             'summary': 'Collect unknown persons in docking bay 2.',
             },
+        3: {'alias': ['bug-three', 'bad-diodes'],
+            'assigned_to': 'marvin@heartofgold.ship',
+            'component': 'Crew',
+            'creation_time': datetime(2008, 6, 10, 9, 23, 12),
+            'id': 3,
+            'internals': {},
+            'is_open': True,
+            'last_change_time': datetime(2008, 6, 10, 9, 24, 29),
+            'priority': 'P1',
+            'product': 'Marvin',
+            'resolution': '',
+            'see_also': [],
+            'severity': 'high',
+            'status': 'NEW',
+            'summary': "Pain in all the diodes down my left hand side.",
+            },
         }
 
     # Map aliases onto bugs.
     _bug_aliases = {
         'bug-two': 2,
+        'bug-three': 3,
+        'bad-diodes': 3,
         }
 
     # Comments are mapped to bug IDs.
