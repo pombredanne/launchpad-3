@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Errors used in the lp/code modules."""
@@ -33,6 +33,7 @@ __all__ = [
     'ClaimReviewFailed',
     'DiffNotFound',
     'GitDefaultConflict',
+    'GitRepositoryBlobNotFound',
     'GitRepositoryCreationException',
     'GitRepositoryCreationFault',
     'GitRepositoryCreationForbidden',
@@ -404,6 +405,22 @@ class GitRepositoryCreationFault(Exception):
 
 class GitRepositoryScanFault(Exception):
     """Raised when there is a fault scanning a repository."""
+
+
+class GitRepositoryBlobNotFound(GitRepositoryScanFault):
+    """Raised when a blob does not exist in a repository."""
+
+    def __init__(self, path, filename, rev=None):
+        super(GitRepositoryBlobNotFound, self).__init__()
+        self.path = path
+        self.filename = filename
+        self.rev = rev
+
+    def __str__(self):
+        message = "Repository %s has no file %s" % (self.path, self.filename)
+        if self.rev is not None:
+            message += " at revision %s" % self.rev
+        return message
 
 
 class GitRepositoryDeletionFault(Exception):
