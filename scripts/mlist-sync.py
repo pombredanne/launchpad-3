@@ -1,18 +1,11 @@
-#!${buildout:executable} -S
+#!/usr/bin/python -S
 
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sync Mailman data from one Launchpad to another."""
 
-# Initialize our paths.
-${python-relative-path-setup}
-
-import sys
-sys.path.insert(0, ${scripts:parts-directory|path-repr})
-import site
-
-# Run the script.
+import _pythonpath
 
 # XXX BarryWarsaw 2008-02-12:
 # Things this script does NOT do correctly.
@@ -32,8 +25,6 @@ import site
 #   2.5's new mailbox module.  /Then/ we'd have to regenerate the archives.
 #   Not doing this means that some of the links in staging's MHonArc archive
 #   will point to production archives.
-
-import _pythonpath
 
 import logging
 import os
