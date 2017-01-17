@@ -53,7 +53,10 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.browser.widgets.gitref import GitRefWidget
-from lp.code.errors import GitRepositoryScanFault
+from lp.code.errors import (
+    GitRepositoryBlobNotFound,
+    GitRepositoryScanFault,
+    )
 from lp.code.interfaces.gitref import IGitRef
 from lp.registry.enums import VCSType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -433,8 +436,12 @@ class SnapAddView(
         if self.has_snappy_distro_series and IGitRef.providedBy(self.context):
             # Try to extract Snap store name from snapcraft.yaml file.
             try:
-                blob = self.context.repository.getBlob(
-                    'snapcraft.yaml', self.context.name)
+                try:
+                    blob = self.context.repository.getBlob(
+                        'snapcraft.yaml', self.context.name)
+                except GitRepositoryBlobNotFound:
+                    blob = self.context.repository.getBlob(
+                        '.snapcraft.yaml', self.context.name)
                 # Beware of unsafe yaml.load()!
                 store_name = yaml.safe_load(blob).get('name')
             except GitRepositoryScanFault:

@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for `GitHostingClient`.
@@ -29,6 +29,7 @@ from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.errors import (
+    GitRepositoryBlobNotFound,
     GitRepositoryCreationFault,
     GitRepositoryDeletionFault,
     GitRepositoryScanFault,
@@ -305,6 +306,21 @@ class TestGitHostingClient(TestCase):
         self.assertEqual(blob, response)
         self.assertRequest(
             "repo/123/blob/dir/path/file/name?rev=dev", method="GET")
+
+    def test_getBlob_not_found(self):
+        with self.mockRequests(status_code=404, reason=b"Not found"):
+            self.assertRaisesWithContent(
+                GitRepositoryBlobNotFound,
+                "Repository 123 has no file dir/path/file/name",
+                self.client.getBlob, "123", "dir/path/file/name")
+
+    def test_getBlob_revision_not_found(self):
+        with self.mockRequests(status_code=404, reason=b"Not found"):
+            self.assertRaisesWithContent(
+                GitRepositoryBlobNotFound,
+                "Repository 123 has no file dir/path/file/name "
+                "at revision dev",
+                self.client.getBlob, "123", "dir/path/file/name", "dev")
 
     def test_getBlob_failure(self):
         with self.mockRequests(status_code=400, reason=b"Bad request"):
