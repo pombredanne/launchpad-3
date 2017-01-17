@@ -164,15 +164,14 @@ setup(
     entry_points=dict(
         console_scripts=[  # `console_scripts` is a magic name to setuptools
             'apiindex = lp.scripts.utilities.apiindex:main',
-            'killservice = lp.scripts.utilities.killservice:main',
-            'jsbuild = lp.scripts.utilities.js.jsbuild:main',
-            'run = lp.scripts.runlaunchpad:start_launchpad',
-            'run-testapp = '
-                'lp.scripts.runlaunchpad:start_testapp',
             'harness = lp.scripts.harness:python',
+            'jsbuild = lp.scripts.utilities.js.jsbuild:main',
+            'killservice = lp.scripts.utilities.killservice:main',
+            'run = lp.scripts.runlaunchpad:start_launchpad',
+            'run-testapp = lp.scripts.runlaunchpad:start_testapp',
+            'start_librarian = lp.scripts.runlaunchpad:start_librarian',
             'twistd = twisted.scripts.twistd:run',
-            'start_librarian = '
-                'lp.scripts.runlaunchpad:start_librarian',
+            'with-xvfb = lp.scripts.utilities.withxvfb:main',
         ]
     ),
 )

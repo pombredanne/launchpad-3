@@ -1,20 +1,14 @@
 #!/bin/bash
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # Runs pocketlint on files changed from parent branch.
 
 
-${shell-relative-path-setup}
-
-utilitiesdir=${buildout:directory/utilities|shell-path}
-[ -z "$utilitiesdir" ] && utilitiesdir=.
-
-
 if [ -z "$1" ]; then
     # No command line argument provided, lint all changed files.
-    files=$($utilitiesdir/find-changed-files.sh)
+    files=$($(dirname "$0")/find-changed-files.sh)
 else
     # Add newlines so grep filters out pyfiles correctly later.
     files=`echo $* | tr " " "\n"`
