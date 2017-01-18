@@ -8,7 +8,7 @@ from __future__ import print_function
 import sys
 
 from lp.services.config import config
-from lp.services.librarianserver.testing.server import LibrarianTestSetup
+from lp.services.librarianserver.testing.server import LibrarianServerFixture
 from lp.services.osutils import kill_by_pidfile
 from lp.testing.layers import MemcachedLayer
 
@@ -26,6 +26,8 @@ def main():
     kill_by_pidfile(MemcachedLayer.getPidFile())
     print("done.")
     print("Killing Librarian....", end="")
-    LibrarianTestSetup().tearDownRoot()
+    librarian_fixture = LibrarianServerFixture(None)
+    kill_by_pidfile(librarian_fixture.pidfile)
+    librarian_fixture.tearDownRoot()
     print("done.")
     return 0
