@@ -1,7 +1,15 @@
-#!/usr/bin/env python
+# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Automatically rebuild the JavaScript bundle when source files change."""
+
+from __future__ import absolute_import, print_function
+
 import os
 import re
+
 from jsautobuild import YUIBuilder
+
 
 # Using ionotify we watch our sources of JavaScript in order to know we should
 # build when the files change.
@@ -18,7 +26,7 @@ def lp_path_builder(changed_path, **builder_props):
     return os.path.join(JSDIR, RENAME.sub(js_dir, changed_path))
 
 
-if __name__ == "__main__":
+def main():
     build_dir = 'build/js/lp'
     meta_name = 'LP_MODULES'
     watch_dir = 'lib'
