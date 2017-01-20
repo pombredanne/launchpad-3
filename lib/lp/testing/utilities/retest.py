@@ -1,6 +1,4 @@
-#!${buildout:executable}
-#
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -24,16 +22,19 @@ report (or a part of) can be piped in, for example by pasting it:
 
 """
 
+from __future__ import print_function
+
 import fileinput
+from itertools import takewhile, imap
 import os
 import re
 import sys
-from itertools import takewhile, imap
 
-${python-relative-path-setup}
+from lp.services.config import config
+
 
 # The test script for this branch.
-TEST = "${buildout:directory/bin/test}"
+TEST = os.path.join(config.root, "bin/test")
 
 # Regular expression to match numbered stories.
 STORY_RE = re.compile("(.*)/\d{2}-.*")
@@ -66,10 +67,12 @@ def gen_test_lines(lines):
         return (
             line.startswith('Tests with failures:') or
             line.startswith('Tests with errors:'))
+
     def p_take(line):
         return not (
             line.isspace() or
             line.startswith('Total:'))
+
     lines = iter(lines)
     for line in lines:
         if p_start(line):
@@ -88,9 +91,9 @@ def extract_tests(lines):
 
 def run_tests(tests):
     """Given a set of tests, run them as one group."""
-    print "Running tests:"
+    print("Running tests:")
     for test in tests:
-        print "  %s" % test
+        print("  %s" % test)
     args = ['-vvc'] if sys.stdout.isatty() else ['-vv']
     for test in tests:
         args.append('-t')
@@ -98,7 +101,7 @@ def run_tests(tests):
     os.execl(TEST, TEST, *args)
 
 
-if __name__ == '__main__':
+def main():
     lines = imap(decolorize, fileinput.input())
     tests = extract_tests(lines)
     if len(tests) >= 1:

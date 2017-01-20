@@ -198,7 +198,7 @@
   <tal:comment replace="nothing">
     This macro loads a single css file containing all our stylesheets.
     If you need to include a new css file here, add it to
-    buildout-templates/bin/combine-css.in instead.
+    lib/lp/scripts/utilities/js/combinecss.py instead.
 
     We load the CSS from the same host that served the HTML in order to optimize
     IE caching over SSL. This is inefficient when you cross subdomains (from
