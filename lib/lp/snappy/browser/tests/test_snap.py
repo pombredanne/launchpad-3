@@ -40,7 +40,10 @@ from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
-from lp.code.errors import GitRepositoryScanFault
+from lp.code.errors import (
+    GitRepositoryBlobNotFound,
+    GitRepositoryScanFault,
+    )
 from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -489,6 +492,20 @@ class TestSnapAddView(BaseTestSnapView):
         initial_values = view.initial_values
         self.assertIn('store_name', initial_values)
         self.assertEqual('test-snap', initial_values['store_name'])
+
+    def test_initial_name_extraction_git_dot_snapcraft_yaml(self):
+        def getBlob(filename, *args, **kwargs):
+            if filename == ".snapcraft.yaml":
+                return "name: test-snap"
+            else:
+                raise GitRepositoryBlobNotFound()
+
+        [git_ref] = self.factory.makeGitRefs()
+        git_ref.repository.getBlob = getBlob
+        view = create_initialized_view(git_ref, "+new-snap")
+        initial_values = view.initial_values
+        self.assertIn('store_name', initial_values)
+        self.assertIsNone(initial_values['store_name'])
 
     def test_initial_name_extraction_git_repo_error(self):
         [git_ref] = self.factory.makeGitRefs()

@@ -15,7 +15,8 @@
       Core</a>.  Launchpad can build snap packages using <a
       href="https://developer.ubuntu.com/en/snappy/snapcraft/">snapcraft</a>,
       from any Git or Bazaar branch on Launchpad that has a
-      <tt>snapcraft.yaml</tt> file at its top level.
+      <tt>snapcraft.yaml</tt> or <tt>.snapcraft.yaml</tt> file at its top
+      level.
     </p>
   </div>
 

@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Communication with the Git hosting service."""
@@ -19,6 +19,7 @@ from six import reraise
 from zope.interface import implementer
 
 from lp.code.errors import (
+    GitRepositoryBlobNotFound,
     GitRepositoryCreationFault,
     GitRepositoryDeletionFault,
     GitRepositoryScanFault,
@@ -55,6 +56,8 @@ class GitHostingClient:
             # Re-raise this directly so that it can be handled specially by
             # callers.
             raise
+        except requests.RequestException:
+            raise
         except Exception:
             _, val, tb = sys.exc_info()
             reraise(
@@ -62,7 +65,6 @@ class GitHostingClient:
                 tb)
         finally:
             action.finish()
-        response.raise_for_status()
         if response.content:
             return response.json()
         else:
@@ -209,8 +211,11 @@ class GitHostingClient:
             url = "/repo/%s/blob/%s" % (path, quote(filename))
             response = self._get(url, params={"rev": rev})
         except requests.RequestException as e:
-            raise GitRepositoryScanFault(
-                "Failed to get file from Git repository: %s" % unicode(e))
+            if e.response.status_code == requests.codes.NOT_FOUND:
+                raise GitRepositoryBlobNotFound(path, filename, rev=rev)
+            else:
+                raise GitRepositoryScanFault(
+                    "Failed to get file from Git repository: %s" % unicode(e))
         try:
             blob = response["data"].decode("base64")
             if len(blob) != response["size"]:

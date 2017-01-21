@@ -1,20 +1,13 @@
-#!${buildout:executable} -S
-
-# Initialize our paths.
-${python-relative-path-setup}
-import sys
-sys.path.insert(0, ${scripts:parts-directory|path-repr})
-import site
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
 
 from lp.scripts.utilities.js.jsbuild import ComboFile
 from lp.scripts.utilities.js.combo import combine_files
+from lp.services.config import config
 
-root = os.path.abspath('.')
-root = os.path.normpath(${buildout:directory|path-repr})
-icing = os.path.join(root, 'lib/canonical/launchpad/icing')
-target = os.path.join(icing, 'combo.css')
+
 # It'd probably be nice to have this script find all the CSS files we might
 # need and combine them together, but if we do that we'd certainly end up
 # including lots of styles that we don't need/want, so keeping this hard-coded
@@ -58,26 +51,30 @@ names = [
     'css/layout.css',
     'css/modifiers.css']
 
-# Get all the component css files so we don't have to edit this file every
-# time a new component is added
-component_dir = 'css/components'
-component_path = os.path.abspath(os.path.join(icing, component_dir))
-for root, dirs, files in os.walk(component_path):
-    for file in files:
-        if file.endswith('.css'):
-            names.append('%s/%s' % (component_dir, file))
 
-absolute_names = []
-for name in names:
-    full_path_name = os.path.abspath(os.path.join(icing, name))
-    absolute_names.append(full_path_name)
+def main():
+    icing = os.path.join(config.root, 'lib/canonical/launchpad/icing')
+    target = os.path.join(icing, 'combo.css')
 
-combo = ComboFile(absolute_names, target)
-if combo.needs_update():
-    result = ''
-    for content in combine_files(names, icing):
-        result += content
+    # Get all the component css files so we don't have to edit this file
+    # every time a new component is added.
+    component_dir = 'css/components'
+    component_path = os.path.abspath(os.path.join(icing, component_dir))
+    for root, dirs, files in os.walk(component_path):
+        for file in files:
+            if file.endswith('.css'):
+                names.append('%s/%s' % (component_dir, file))
 
-    f = open(target, 'w')
-    f.write(result)
-    f.close()
+    absolute_names = []
+    for name in names:
+        full_path_name = os.path.abspath(os.path.join(icing, name))
+        absolute_names.append(full_path_name)
+
+    combo = ComboFile(absolute_names, target)
+    if combo.needs_update():
+        result = ''
+        for content in combine_files(names, icing):
+            result += content
+
+        with open(target, 'w') as f:
+            f.write(result)
