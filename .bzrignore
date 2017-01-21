@@ -75,7 +75,6 @@ lib/canonical/launchpad/icing/*.positioning
 lib/canonical/launchpad/icing/yui
 .emacs.desktop
 callgrind.out.*
-scripts/mlist-sync.py
 ./celerybeat-schedule
 !logs/README.txt
 ./logs
