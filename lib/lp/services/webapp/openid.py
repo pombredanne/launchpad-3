@@ -23,11 +23,9 @@ from openid.fetchers import (
 from lp.services.config import config
 
 
-# The Python OpenID package uses pycurl by default, but pycurl chokes on
-# self-signed certificates (like the ones we use when developing), so we
-# change the default to urllib2 here.  That's also a good thing because it
-# ensures we test the same thing that we run on production.
 def set_default_openid_fetcher():
+    # Make sure we're using the same fetcher that we use in production, even
+    # if pycurl is installed.
     fetcher = Urllib2Fetcher()
     if config.launchpad.enable_test_openid_provider:
         cafile = os.path.join(config.root, "configs/development/launchpad.crt")
