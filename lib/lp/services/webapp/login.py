@@ -1,6 +1,8 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Stuff to do with logging in and logging out."""
+
+from __future__ import absolute_import
 
 __metaclass__ = type
 
@@ -19,10 +21,6 @@ from openid.consumer.consumer import (
 from openid.extensions import (
     pape,
     sreg,
-    )
-from openid.fetchers import (
-    setDefaultFetcher,
-    Urllib2Fetcher,
     )
 from paste.httpexceptions import (
     HTTPBadRequest,
@@ -67,6 +65,7 @@ from lp.services.webapp.interfaces import (
     IPlacelessLoginSource,
     LoggedOutEvent,
     )
+from lp.services.webapp.openid import set_default_openid_fetcher
 from lp.services.webapp.publisher import LaunchpadView
 from lp.services.webapp.url import urlappend
 from lp.services.webapp.vhosts import allvhosts
@@ -160,11 +159,7 @@ def register_basiclogin(event):
             name='+basiclogin')
 
 
-# The Python OpenID package uses pycurl by default, but pycurl chokes on
-# self-signed certificates (like the ones we use when developing), so we
-# change the default to urllib2 here.  That's also a good thing because it
-# ensures we test the same thing that we run on production.
-setDefaultFetcher(Urllib2Fetcher())
+set_default_openid_fetcher()
 
 
 class OpenIDLogin(LaunchpadView):
