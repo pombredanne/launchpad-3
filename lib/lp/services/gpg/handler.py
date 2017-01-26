@@ -33,6 +33,7 @@ from lp.services.gpg.interfaces import (
     GPGKeyAlgorithm,
     GPGKeyDoesNotExistOnServer,
     GPGKeyExpired,
+    GPGKeyMismatchOnServer,
     GPGKeyNotFoundError,
     GPGKeyRevoked,
     GPGKeyTemporarilyNotFoundError,
@@ -411,6 +412,10 @@ class GPGHandler:
         if not key.exists_in_local_keyring:
             pubkey = self._getPubKey(fingerprint)
             key = self.importPublicKey(pubkey)
+            if fingerprint != key.fingerprint:
+                ctx = self._getContext()
+                ctx.delete(key.key)
+                raise GPGKeyMismatchOnServer(fingerprint, key.fingerprint)
         return key
 
     def retrieveActiveKey(self, fingerprint):
