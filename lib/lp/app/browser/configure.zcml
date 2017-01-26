@@ -361,7 +361,7 @@
       class="lp.services.webapp.error.NoReferrerErrorView"
       />
 
-  <!-- DeliveryFailure -->
+  <!-- DiscoveryFailure -->
   <browser:page
       for="openid.yadis.discover.DiscoveryFailure"
       name="index.html"
