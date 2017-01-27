@@ -817,7 +817,8 @@ class SnapAuthorizeView(LaunchpadEditFormView):
                 _(u'Uploads of %(snap)s to the store were not authorized.'),
                 snap=self.context.name))
             return
-        self.context.completeAuthorization(data['discharge_macaroon'])
+        self.context.completeAuthorization(
+            discharge_macaroon=data['discharge_macaroon'])
         self.request.response.addInfoNotification(structured(
             _(u'Uploads of %(snap)s to the store are now authorized.'),
             snap=self.context.name))

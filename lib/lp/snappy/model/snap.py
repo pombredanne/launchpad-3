@@ -355,24 +355,13 @@ class Snap(Storm, WebhookTargetMixin):
         self._store_channels = value or None
 
     @staticmethod
-    def extractSSOCaveat(macaroon):
+    def extractSSOCaveats(macaroon):
         locations = [
             urlsplit(root).netloc
             for root in CurrentOpenIDEndPoint.getAllRootURLs()]
-        sso_caveats = [
+        return [
             c for c in macaroon.third_party_caveats()
             if c.location in locations]
-        # We must have exactly one SSO caveat; more than one should never be
-        # required and could be an attempt to substitute weaker caveats.  We
-        # might as well OOPS here, even though the cause of this is probably
-        # in some other service, since the user can't do anything about it
-        # and it should show up in our OOPS reports.
-        if not sso_caveats:
-            raise SnapAuthorizationBadMacaroon("Macaroon has no SSO caveats")
-        elif len(sso_caveats) > 1:
-            raise SnapAuthorizationBadMacaroon(
-                "Macaroon has multiple SSO caveats")
-        return sso_caveats[0]
 
     def beginAuthorization(self):
         """See `ISnap`."""
@@ -387,28 +376,50 @@ class Snap(Storm, WebhookTargetMixin):
         snap_store_client = getUtility(ISnapStoreClient)
         root_macaroon_raw = snap_store_client.requestPackageUploadPermission(
             self.store_series, self.store_name)
-        sso_caveat = self.extractSSOCaveat(
+        sso_caveats = self.extractSSOCaveats(
             Macaroon.deserialize(root_macaroon_raw))
+        # We must have exactly one SSO caveat; more than one should never be
+        # required and could be an attempt to substitute weaker caveats.  We
+        # might as well OOPS here, even though the cause of this is probably
+        # in some other service, since the user can't do anything about it
+        # and it should show up in our OOPS reports.
+        if not sso_caveats:
+            raise SnapAuthorizationBadMacaroon("Macaroon has no SSO caveats")
+        elif len(sso_caveats) > 1:
+            raise SnapAuthorizationBadMacaroon(
+                "Macaroon has multiple SSO caveats")
         self.store_secrets = {'root': root_macaroon_raw}
-        return sso_caveat.caveat_id
+        return sso_caveats[0].caveat_id
 
-    def completeAuthorization(self, discharge_macaroon):
+    def completeAuthorization(self, root_macaroon=None,
+                              discharge_macaroon=None):
         """See `ISnap`."""
-        if self.store_secrets is None or "root" not in self.store_secrets:
-            raise CannotAuthorizeStoreUploads(
-                "beginAuthorization must be called before "
-                "completeAuthorization.")
-        self.store_secrets["discharge"] = discharge_macaroon
+        if root_macaroon is not None:
+            self.store_secrets = {"root": root_macaroon}
+        else:
+            if self.store_secrets is None or "root" not in self.store_secrets:
+                raise CannotAuthorizeStoreUploads(
+                    "beginAuthorization must be called before "
+                    "completeAuthorization.")
+        if discharge_macaroon is not None:
+            self.store_secrets["discharge"] = discharge_macaroon
+        else:
+            self.store_secrets.pop("discharge", None)
 
     @property
     def can_upload_to_store(self):
-        return (
-            config.snappy.store_upload_url is not None and
-            config.snappy.store_url is not None and
-            self.store_series is not None and
-            self.store_name is not None and
-            self.store_secrets is not None and
-            "discharge" in self.store_secrets)
+        if (config.snappy.store_upload_url is None or
+                config.snappy.store_url is None or
+                self.store_series is None or
+                self.store_name is None or
+                self.store_secrets is None or
+                "root" not in self.store_secrets):
+            return False
+        root_macaroon = Macaroon.deserialize(self.store_secrets["root"])
+        if (self.extractSSOCaveats(root_macaroon) and
+                "discharge" not in self.store_secrets):
+            return False
+        return True
 
     def requestBuild(self, requester, archive, distro_arch_series, pocket):
         """See `ISnap`."""
