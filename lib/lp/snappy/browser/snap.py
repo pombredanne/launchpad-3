@@ -438,10 +438,14 @@ class SnapAddView(
             try:
                 try:
                     blob = self.context.repository.getBlob(
-                        'snapcraft.yaml', self.context.name)
+                        'snap/snapcraft.yaml', self.context.name)
                 except GitRepositoryBlobNotFound:
-                    blob = self.context.repository.getBlob(
-                        '.snapcraft.yaml', self.context.name)
+                    try:
+                        blob = self.context.repository.getBlob(
+                            'snapcraft.yaml', self.context.name)
+                    except GitRepositoryBlobNotFound:
+                        blob = self.context.repository.getBlob(
+                            '.snapcraft.yaml', self.context.name)
                 # Beware of unsafe yaml.load()!
                 store_name = yaml.safe_load(blob).get('name')
             except GitRepositoryScanFault:
