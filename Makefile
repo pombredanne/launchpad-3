@@ -52,10 +52,10 @@ BUILDOUT_BIN = \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
     bin/harness bin/iharness bin/ipy bin/jsbuild bin/lpjsmin\
-    bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
+    bin/killservice bin/kill-test-services bin/retest \
     bin/run bin/run-testapp bin/sprite-util bin/start_librarian \
-    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache \
-    bin/watch_jsbuild
+    bin/tags bin/test bin/tracereport bin/twistd \
+    bin/watch_jsbuild bin/with-xvfb
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
@@ -109,10 +109,10 @@ check_mailman: build
 		lp.services.mailman.tests
 
 lint: ${PY}
-	@bash ./bin/lint.sh
+	@bash ./utilities/lint
 
 lint-verbose: ${PY}
-	@bash ./bin/lint.sh -v
+	@bash ./utilities/lint -v
 
 logs:
 	mkdir logs

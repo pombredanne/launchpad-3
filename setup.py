@@ -177,6 +177,7 @@ setup(
             'start_librarian = lp.scripts.runlaunchpad:start_librarian',
             'twistd = twisted.scripts.twistd:run',
             'watch_jsbuild = lp.scripts.utilities.js.watchjsbuild:main',
+            'with-xvfb = lp.scripts.utilities.withxvfb:main',
         ]
     ),
 )
