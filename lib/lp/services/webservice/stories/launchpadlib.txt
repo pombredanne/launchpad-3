@@ -5,6 +5,15 @@ Using launchpadlib in pagetests
 As an alternative to crafting HTTP requests with the 'webservice'
 object, you can write pagetests using launchpadlib.
 
+    >>> from fixtures import (
+    ...     EnvironmentVariable,
+    ...     TempDir,
+    ...     )
+    >>> tempdir_fixture = TempDir()
+    >>> tempdir_fixture.setUp()
+    >>> home_fixture = EnvironmentVariable('HOME', tempdir_fixture.path)
+    >>> home_fixture.setUp()
+
 Two helper functions make it easy to set up Launchpad objects that
 can access the web service. With launchpadlib_for() you can set up a
 Launchpad object for a given user with a single call.
@@ -147,3 +156,6 @@ clean-up functions biding their time.
     >>> import zope.testing.cleanup
     >>> zope.testing.cleanup._cleanups
     [...(<function _clean_up_cache...>, ('/.../launchpadlib-cache-...'...)...]
+
+    >>> home_fixture.cleanUp()
+    >>> tempdir_fixture.cleanUp()
