@@ -436,12 +436,18 @@ class SnapAddView(
         if self.has_snappy_distro_series and IGitRef.providedBy(self.context):
             # Try to extract Snap store name from snapcraft.yaml file.
             try:
-                try:
-                    blob = self.context.repository.getBlob(
-                        'snapcraft.yaml', self.context.name)
-                except GitRepositoryBlobNotFound:
-                    blob = self.context.repository.getBlob(
-                        '.snapcraft.yaml', self.context.name)
+                paths = (
+                    'snap/snapcraft.yaml',
+                    'snapcraft.yaml',
+                    '.snapcraft.yaml',
+                    )
+                for i, path in enumerate(paths):
+                    try:
+                        blob = self.context.repository.getBlob(
+                            path, self.context.name)
+                    except GitRepositoryBlobNotFound:
+                        if i == len(paths) - 1:
+                            raise
                 # Beware of unsafe yaml.load()!
                 store_name = yaml.safe_load(blob).get('name')
             except GitRepositoryScanFault:
