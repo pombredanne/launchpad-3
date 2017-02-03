@@ -445,6 +445,7 @@ class SnapAddView(
                     try:
                         blob = self.context.repository.getBlob(
                             path, self.context.name)
+                        break
                     except GitRepositoryBlobNotFound:
                         if i == len(paths) - 1:
                             raise
