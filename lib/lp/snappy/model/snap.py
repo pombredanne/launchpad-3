@@ -799,9 +799,11 @@ class SnapSet:
             snaps.order_by(Desc(Snap.date_last_modified))
         return snaps
 
-    def findByURL(self, url, visible_by_user=None):
+    def findByURL(self, url, owner=None, visible_by_user=None):
         """See `ISnapSet`."""
         clauses = [Snap.git_repository_url == url]
+        if owner is not None:
+            clauses.append(Snap.owner == owner)
         # XXX cjwatson 2016-11-25: This is in principle a poor query, but we
         # don't yet have the access grant infrastructure to do better, and
         # in any case since we're querying for a single URL the numbers

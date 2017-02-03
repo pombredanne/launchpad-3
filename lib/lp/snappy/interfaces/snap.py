@@ -655,12 +655,14 @@ class ISnapSet(Interface):
         :raises BadSnapSearchContext: if the context is not understood.
         """
 
-    @operation_parameters(url=TextLine(title=_("The URL to search for.")))
+    @operation_parameters(
+        url=TextLine(title=_("The URL to search for.")),
+        owner=Reference(IPerson, title=_("Owner"), required=False))
     @call_with(visible_by_user=REQUEST_USER)
     @operation_returns_collection_of(ISnap)
     @export_read_operation()
     @operation_for_version("devel")
-    def findByURL(url, visible_by_user=None):
+    def findByURL(url, owner=None, visible_by_user=None):
         """Return all snap packages that build from the given URL.
 
         This currently only works for packages that build directly from a
@@ -668,6 +670,7 @@ class ISnapSet(Interface):
         hosted in Launchpad.
 
         :param url: A URL.
+        :param owner: Only return packages owned by this user.
         :param visible_by_user: If not None, only return packages visible by
             this user; otherwise, only return publicly-visible packages.
         """
