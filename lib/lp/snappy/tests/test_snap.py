@@ -849,6 +849,32 @@ class TestSnapSet(TestCaseWithFactory):
             [snaps[0]],
             getUtility(ISnapSet).findByURL(urls[0], owner=owners[0]))
 
+    def test_findByURLPrefix(self):
+        # ISnapSet.findByURLPrefix returns visible Snaps with the given URL
+        # prefix.
+        urls = [
+            u"https://git.example.org/foo/a",
+            u"https://git.example.org/foo/b",
+            u"https://git.example.org/bar",
+            ]
+        owners = [self.factory.makePerson() for i in range(2)]
+        snaps = []
+        for url in urls:
+            for owner in owners:
+                snaps.append(self.factory.makeSnap(
+                    registrant=owner, owner=owner,
+                    git_ref=self.factory.makeGitRefRemote(repository_url=url)))
+        snaps.append(
+            self.factory.makeSnap(branch=self.factory.makeAnyBranch()))
+        snaps.append(
+            self.factory.makeSnap(git_ref=self.factory.makeGitRefs()[0]))
+        prefix = u"https://git.example.org/foo/"
+        self.assertContentEqual(
+            snaps[:4], getUtility(ISnapSet).findByURLPrefix(prefix))
+        self.assertContentEqual(
+            [snaps[0], snaps[2]],
+            getUtility(ISnapSet).findByURLPrefix(prefix, owner=owners[0]))
+
     def test__findStaleSnaps(self):
         # Stale; not built automatically.
         self.factory.makeSnap(is_stale=True)
@@ -1388,6 +1414,85 @@ class TestSnapWebservice(TestCaseWithFactory):
         self.assertEqual(200, response.status)
         self.assertContentEqual(
             ws_snaps[:2],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+
+    def test_findByURLPrefix(self):
+        # lp.snaps.findByURLPrefix returns visible Snaps with the given URL
+        # prefix.
+        self.pushConfig("launchpad", default_batch_size=10)
+        persons = [self.factory.makePerson(), self.factory.makePerson()]
+        urls = [
+            u"https://git.example.org/foo/a",
+            u"https://git.example.org/foo/b",
+            u"https://git.example.org/bar",
+            ]
+        snaps = []
+        for url in urls:
+            for person in persons:
+                for private in (False, True):
+                    ref = self.factory.makeGitRefRemote(repository_url=url)
+                    snaps.append(self.factory.makeSnap(
+                        registrant=person, owner=person, git_ref=ref,
+                        private=private))
+        with admin_logged_in():
+            person_urls = [api_url(person) for person in persons]
+            ws_snaps = [
+                self.webservice.getAbsoluteUrl(api_url(snap))
+                for snap in snaps]
+        commercial_admin = (
+            getUtility(ILaunchpadCelebrities).commercial_admin.teamowner)
+        logout()
+        prefix = u"https://git.example.org/foo/"
+        # Anonymous requests can only see public snaps.
+        anon_webservice = LaunchpadWebServiceCaller("test", "")
+        response = anon_webservice.named_get(
+            "/+snaps", "findByURLPrefix", url_prefix=prefix,
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 2, 4, 6)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = anon_webservice.named_get(
+            "/+snaps", "findByURLPrefix", url_prefix=prefix,
+            owner=person_urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 4)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        # persons[0] can see all public snaps with this URL prefix, as well
+        # as their own matching private snaps.
+        webservice = webservice_for_person(
+            persons[0], permission=OAuthPermission.READ_PRIVATE)
+        response = webservice.named_get(
+            "/+snaps", "findByURLPrefix", url_prefix=prefix,
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 1, 2, 4, 5, 6)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = webservice.named_get(
+            "/+snaps", "findByURLPrefix", url_prefix=prefix,
+            owner=person_urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 1, 4, 5)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        # Admins can see all snaps with this URL prefix.
+        commercial_admin_webservice = webservice_for_person(
+            commercial_admin, permission=OAuthPermission.READ_PRIVATE)
+        response = commercial_admin_webservice.named_get(
+            "/+snaps", "findByURLPrefix", url_prefix=prefix,
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            ws_snaps[:8],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = commercial_admin_webservice.named_get(
+            "/+snaps", "findByURLPrefix", url_prefix=prefix,
+            owner=person_urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 1, 4, 5)],
             [entry["self_link"] for entry in response.jsonBody()["entries"]])
 
     def setProcessors(self, user, snap, names):
