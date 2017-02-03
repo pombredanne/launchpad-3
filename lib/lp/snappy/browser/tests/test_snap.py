@@ -485,9 +485,15 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertContentEqual(
             ["386", "amd64"], [proc.name for proc in snap.processors])
 
-    def test_initial_name_extraction_git(self):
+    def test_initial_name_extraction_git_snap_snapcraft_yaml(self):
+        def getBlob(filename, *args, **kwargs):
+            if filename == "snap/snapcraft.yaml":
+                return "name: test-snap"
+            else:
+                raise GitRepositoryBlobNotFound("dummy", filename)
+
         [git_ref] = self.factory.makeGitRefs()
-        git_ref.repository.getBlob = FakeMethod(result='name: test-snap')
+        git_ref.repository.getBlob = getBlob
         view = create_initialized_view(git_ref, "+new-snap")
         initial_values = view.initial_values
         self.assertIn('store_name', initial_values)
@@ -498,28 +504,28 @@ class TestSnapAddView(BaseTestSnapView):
             if filename == "snapcraft.yaml":
                 return "name: test-snap"
             else:
-                raise GitRepositoryBlobNotFound()
+                raise GitRepositoryBlobNotFound("dummy", filename)
 
         [git_ref] = self.factory.makeGitRefs()
         git_ref.repository.getBlob = getBlob
         view = create_initialized_view(git_ref, "+new-snap")
         initial_values = view.initial_values
         self.assertIn('store_name', initial_values)
-        self.assertIsNone(initial_values['store_name'])
+        self.assertEqual('test-snap', initial_values['store_name'])
 
     def test_initial_name_extraction_git_dot_snapcraft_yaml(self):
         def getBlob(filename, *args, **kwargs):
             if filename == ".snapcraft.yaml":
                 return "name: test-snap"
             else:
-                raise GitRepositoryBlobNotFound()
+                raise GitRepositoryBlobNotFound("dummy", filename)
 
         [git_ref] = self.factory.makeGitRefs()
         git_ref.repository.getBlob = getBlob
         view = create_initialized_view(git_ref, "+new-snap")
         initial_values = view.initial_values
         self.assertIn('store_name', initial_values)
-        self.assertIsNone(initial_values['store_name'])
+        self.assertEqual('test-snap', initial_values['store_name'])
 
     def test_initial_name_extraction_git_repo_error(self):
         [git_ref] = self.factory.makeGitRefs()
