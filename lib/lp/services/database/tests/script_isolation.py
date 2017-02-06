@@ -10,12 +10,6 @@ __all__ = []
 
 import warnings
 
-# XXX: 2010-04-26, Salgado, bug=570246: Silence python2.6 deprecation
-# warnings.
-warnings.filterwarnings(
-    'ignore', '.*(md5|sha|sets)', DeprecationWarning,
-    )
-
 import transaction
 
 from lp.services.config import dbconfig
