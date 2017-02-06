@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build behaviour."""
@@ -14,6 +14,7 @@ from mock import (
     Mock,
     patch,
     )
+from pymacaroons import Macaroon
 from testtools import ExpectedException
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import IsInstance
@@ -328,8 +329,7 @@ class MakeSnapBuildMixin:
             distroseries=distroseries, store_upload=True,
             store_series=snappyseries,
             store_name=self.factory.getUniqueUnicode(),
-            store_secrets={
-                "root": "dummy-root", "discharge": "dummy-discharge"})
+            store_secrets={"root": Macaroon().serialize()})
 
     def makeBuild(self):
         snap = self.makeSnap()

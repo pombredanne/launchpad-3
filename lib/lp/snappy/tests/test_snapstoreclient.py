@@ -28,7 +28,6 @@ from testtools.matchers import (
     Contains,
     ContainsDict,
     Equals,
-    KeysEqual,
     Matcher,
     MatchesDict,
     MatchesListwise,
@@ -74,13 +73,17 @@ class MacaroonsVerify(Matcher):
         self.key = key
 
     def match(self, macaroons):
-        mismatch = KeysEqual("root", "discharge").match(macaroons)
+        mismatch = Contains("root").match(macaroons)
         if mismatch is not None:
             return mismatch
         root_macaroon = Macaroon.deserialize(macaroons["root"])
-        discharge_macaroon = Macaroon.deserialize(macaroons["discharge"])
+        if "discharge" in macaroons:
+            discharge_macaroons = [
+                Macaroon.deserialize(macaroons["discharge"])]
+        else:
+            discharge_macaroons = []
         try:
-            Verifier().verify(root_macaroon, self.key, [discharge_macaroon])
+            Verifier().verify(root_macaroon, self.key, discharge_macaroons)
         except Exception as e:
             return Mismatch("Macaroons do not verify: %s" % e)
 
@@ -101,6 +104,17 @@ class TestMacaroonAuth(TestCase):
         MacaroonAuth(
             root_macaroon.serialize(),
             unbound_discharge_macaroon.serialize())(r)
+        auth_value = r.headers["Authorization"]
+        self.assertThat(auth_value, StartsWith("Macaroon "))
+        self.assertThat(
+            parse_dict_header(auth_value[len("Macaroon "):]),
+            MacaroonsVerify(root_key))
+
+    def test_good_no_discharge(self):
+        r = Request()
+        root_key = hashlib.sha256("root").hexdigest()
+        root_macaroon = Macaroon(key=root_key)
+        MacaroonAuth(root_macaroon.serialize())(r)
         auth_value = r.headers["Authorization"]
         self.assertThat(auth_value, StartsWith("Macaroon "))
         self.assertThat(

@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build features."""
@@ -14,6 +14,7 @@ from urllib2 import (
     urlopen,
     )
 
+from pymacaroons import Macaroon
 import pytz
 from testtools.matchers import (
     Equals,
@@ -246,8 +247,7 @@ class TestSnapBuild(TestCaseWithFactory):
         self.build.snap.store_series = self.factory.makeSnappySeries()
         self.build.snap.store_name = self.factory.getUniqueUnicode()
         self.build.snap.store_upload = True
-        self.build.snap.store_secrets = {
-            "root": "dummy-root", "discharge": "dummy-discharge"}
+        self.build.snap.store_secrets = {"root": Macaroon().serialize()}
         with dbuser(config.builddmaster.dbuser):
             self.build.updateStatus(BuildStatus.FAILEDTOBUILD)
         self.assertContentEqual([], self.build.store_upload_jobs)
@@ -257,8 +257,7 @@ class TestSnapBuild(TestCaseWithFactory):
         self.build.snap.store_series = self.factory.makeSnappySeries()
         self.build.snap.store_name = self.factory.getUniqueUnicode()
         self.build.snap.store_upload = True
-        self.build.snap.store_secrets = {
-            "root": "dummy-root", "discharge": "dummy-discharge"}
+        self.build.snap.store_secrets = {"root": Macaroon().serialize()}
         with dbuser(config.builddmaster.dbuser):
             self.build.updateStatus(BuildStatus.FULLYBUILT)
         self.assertEqual(1, len(list(self.build.store_upload_jobs)))
@@ -360,8 +359,7 @@ class TestSnapBuild(TestCaseWithFactory):
         self.build.snap.store_series = self.factory.makeSnappySeries(
             usable_distro_series=[self.build.snap.distro_series])
         self.build.snap.store_name = self.factory.getUniqueUnicode()
-        self.build.snap.store_secrets = {
-            "root": "dummy-root", "discharge": "dummy-discharge"}
+        self.build.snap.store_secrets = {"root": Macaroon().serialize()}
 
     def test_scheduleStoreUpload(self):
         # A build not previously uploaded to the store can be uploaded

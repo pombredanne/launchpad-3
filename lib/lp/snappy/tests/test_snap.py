@@ -1680,6 +1680,44 @@ class TestSnapWebservice(TestCaseWithFactory):
             discharge_macaroon="dummy-discharge")
         self.assertEqual(401, response.status)
 
+    def test_completeAuthorization_both_macaroons(self):
+        # It is possible to do the authorization work entirely externally
+        # and send both root and discharge macaroons in one go.
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode())
+        snap_url = api_url(snap)
+        logout()
+        response = self.webservice.named_post(
+            snap_url, "completeAuthorization",
+            root_macaroon="dummy-root", discharge_macaroon="dummy-discharge")
+        self.assertEqual(200, response.status)
+        with person_logged_in(self.person):
+            self.assertEqual(
+                {"root": "dummy-root", "discharge": "dummy-discharge"},
+                snap.store_secrets)
+
+    def test_completeAuthorization_only_root_macaroon(self):
+        # It is possible to store only a root macaroon.  This may make sense
+        # if the store has some other way to determine that user consent has
+        # been acquired and thus has not added a third-party caveat.
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode())
+        snap_url = api_url(snap)
+        logout()
+        response = self.webservice.named_post(
+            snap_url, "completeAuthorization", root_macaroon="dummy-root")
+        self.assertEqual(200, response.status)
+        with person_logged_in(self.person):
+            self.assertEqual({"root": "dummy-root"}, snap.store_secrets)
+
     def makeBuildableDistroArchSeries(self, **kwargs):
         das = self.factory.makeDistroArchSeries(**kwargs)
         fake_chroot = self.factory.makeLibraryFileAlias(

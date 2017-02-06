@@ -372,18 +372,29 @@ class ISnapEdit(IWebhookTarget):
         """
 
     @operation_parameters(
+        root_macaroon=TextLine(
+            title=_("Serialized root macaroon"),
+            description=_(
+                "Only required if not already set by beginAuthorization."),
+            required=False),
         discharge_macaroon=TextLine(
-            title=_("Serialized discharge macaroon"), required=True))
+            title=_("Serialized discharge macaroon"),
+            description=_(
+                "Only required if root macaroon has SSO third-party caveat."),
+            required=False))
     @export_write_operation()
     @operation_for_version("devel")
-    def completeAuthorization(discharge_macaroon):
+    def completeAuthorization(root_macaroon=None, discharge_macaroon=None):
         """Complete authorizing uploads of this snap package to the store.
 
         This is intended for use by third-party sites integrating with
         Launchpad.
 
+        :param root_macaroon: A serialized root macaroon returned by the
+            store.  Only required if not already set by beginAuthorization.
         :param discharge_macaroon: The serialized discharge macaroon
-            returned by SSO via OpenID.
+            returned by SSO via OpenID.  Only required if the root macaroon
+            has a third-party caveat addressed to SSO.
         :raises CannotAuthorizeStoreUploads: if the snap package is not
             properly configured for store uploads.
         """
