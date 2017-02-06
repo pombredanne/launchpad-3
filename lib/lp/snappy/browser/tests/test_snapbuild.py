@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build views."""
@@ -9,6 +9,7 @@ import re
 
 from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
+from pymacaroons import Macaroon
 import soupmatchers
 from storm.locals import Store
 from testtools.matchers import StartsWith
@@ -246,8 +247,7 @@ class TestSnapBuildOperations(BrowserTestCase):
         with person_logged_in(self.requester):
             self.build.snap.store_series = snappyseries
             self.build.snap.store_name = self.factory.getUniqueUnicode()
-            self.build.snap.store_secrets = {
-                "root": "dummy-root", "discharge": "dummy-discharge"}
+            self.build.snap.store_secrets = {"root": Macaroon().serialize()}
 
     def test_store_upload(self):
         # A build not previously uploaded to the store can be uploaded

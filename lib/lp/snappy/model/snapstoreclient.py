@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Communication with the snap store."""
@@ -81,7 +81,7 @@ class MacaroonAuth(requests.auth.AuthBase):
     # The union of the base64 and URL-safe base64 alphabets.
     allowed_chars = set(string.digits + string.letters + "+/=-_")
 
-    def __init__(self, root_macaroon_raw, unbound_discharge_macaroon_raw):
+    def __init__(self, root_macaroon_raw, unbound_discharge_macaroon_raw=None):
         self.root_macaroon_raw = root_macaroon_raw
         self.unbound_discharge_macaroon_raw = unbound_discharge_macaroon_raw
 
@@ -108,8 +108,9 @@ class MacaroonAuth(requests.auth.AuthBase):
     def __call__(self, r):
         params = []
         params.append(self._makeAuthParam("root", self.root_macaroon_raw))
-        params.append(
-            self._makeAuthParam("discharge", self.discharge_macaroon_raw))
+        if self.unbound_discharge_macaroon_raw is not None:
+            params.append(
+                self._makeAuthParam("discharge", self.discharge_macaroon_raw))
         r.headers["Authorization"] = "Macaroon " + ", ".join(params)
         return r
 
@@ -206,7 +207,7 @@ class SnapStoreClient:
                 upload_url, method="POST", json=data,
                 auth=MacaroonAuth(
                     snap.store_secrets["root"],
-                    snap.store_secrets["discharge"]))
+                    snap.store_secrets.get("discharge")))
             response_data = response.json()
             return response_data["status_details_url"]
         except requests.HTTPError as e:
