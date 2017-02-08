@@ -190,6 +190,7 @@ from lp.registry.interfaces.wikiname import IWikiNameSet
 from lp.registry.mail.notification import send_direct_contact_email
 from lp.registry.model.person import get_recipients
 from lp.services.config import config
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.sqlbase import flush_database_updates
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
@@ -3348,23 +3349,24 @@ class PersonRelatedSoftwareView(LaunchpadView):
         A project dict has the following keys: title, url, is_owner,
         is_driver, is_bugsupervisor.
         """
-        projects = []
-        max_projects = self.max_results_to_display
-        pillarnames = self._related_projects[:max_projects]
-        for pillarname in pillarnames:
-            pillar = pillarname.pillar
-            project = {}
-            project['title'] = pillar.title
-            project['url'] = canonical_url(pillar)
-            person = self.context
-            project['is_owner'] = person.inTeam(pillar.owner)
-            project['is_driver'] = person.inTeam(pillar.driver)
-            project['is_bug_supervisor'] = False
-            if IHasBugSupervisor.providedBy(pillar):
-                project['is_bug_supervisor'] = (
-                    person.inTeam(pillar.bug_supervisor))
-            projects.append(project)
-        return projects
+        def decorate(pillarnames):
+            projects = []
+            for pillarname in pillarnames:
+                pillar = pillarname.pillar
+                project = {}
+                project['title'] = pillar.title
+                project['url'] = canonical_url(pillar)
+                person = self.context
+                project['is_owner'] = person.inTeam(pillar.owner)
+                project['is_driver'] = person.inTeam(pillar.driver)
+                project['is_bug_supervisor'] = False
+                if IHasBugSupervisor.providedBy(pillar):
+                    project['is_bug_supervisor'] = (
+                        person.inTeam(pillar.bug_supervisor))
+                projects.append(project)
+            return projects
+        return DecoratedResultSet(
+            self._related_projects, bulk_decorator=decorate)
 
     @cachedproperty
     def first_five_related_projects(self):
