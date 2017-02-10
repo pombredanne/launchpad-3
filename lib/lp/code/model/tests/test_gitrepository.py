@@ -1813,6 +1813,20 @@ class TestGitRepositorySetTarget(TestCaseWithFactory):
                 target=commercial_project, user=owner)
 
 
+class TestGitRepositoryRescan(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rescan(self):
+        repository = self.factory.makeGitRepository()
+        job_source = getUtility(IGitRefScanJobSource)
+        self.assertEqual([], list(job_source.iterReady()))
+        with person_logged_in(repository.owner):
+            repository.rescan()
+        [job] = list(job_source.iterReady())
+        self.assertEqual(repository, job.repository)
+
+
 class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
