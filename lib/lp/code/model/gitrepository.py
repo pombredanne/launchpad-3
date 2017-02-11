@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -92,6 +92,7 @@ from lp.code.interfaces.gitcollection import (
     IGitCollection,
     )
 from lp.code.interfaces.githosting import IGitHostingClient
+from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace,
@@ -684,6 +685,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             self.createOrUpdateRefs(refs_to_upsert, logger=logger)
         if refs_to_remove:
             self.removeRefs(refs_to_remove)
+
+    def rescan(self):
+        """See `IGitRepository`."""
+        getUtility(IGitRefScanJobSource).create(self)
 
     @cachedproperty
     def _known_viewers(self):
