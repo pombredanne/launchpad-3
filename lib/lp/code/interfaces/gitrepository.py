@@ -691,6 +691,14 @@ class IGitRepositoryEdit(IWebhookTarget):
     def setTarget(target, user):
         """Set the target of the repository."""
 
+    @export_write_operation()
+    @operation_for_version("devel")
+    def rescan():
+        """Force a rescan of this repository.
+
+        This may be helpful in cases where a previous scan crashed.
+        """
+
     @export_read_operation()
     @operation_for_version("devel")
     def canBeDeleted():
