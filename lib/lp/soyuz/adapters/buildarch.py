@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -11,6 +11,10 @@ __all__ = [
 import os
 import subprocess
 
+from lazr.restful.utils import get_current_browser_request
+
+from lp.services.timeline.requesttimeline import get_request_timeline
+
 
 class DpkgArchitectureCache:
     """Cache the results of asking questions of dpkg-architecture."""
@@ -20,10 +24,15 @@ class DpkgArchitectureCache:
 
     def match(self, arch, wildcard):
         if (arch, wildcard) not in self._matches:
+            timeline = get_request_timeline(get_current_browser_request())
             command = ["dpkg-architecture", "-i%s" % wildcard]
             env = dict(os.environ)
             env["DEB_HOST_ARCH"] = arch
-            ret = (subprocess.call(command, env=env) == 0)
+            action = timeline.start("dpkg-architecture", "-i%s" % wildcard)
+            try:
+                ret = (subprocess.call(command, env=env) == 0)
+            finally:
+                action.finish()
             self._matches[(arch, wildcard)] = ret
         return self._matches[(arch, wildcard)]
 
