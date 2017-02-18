@@ -28,7 +28,9 @@ class DpkgArchitectureCache:
             command = ["dpkg-architecture", "-i%s" % wildcard]
             env = dict(os.environ)
             env["DEB_HOST_ARCH"] = arch
-            action = timeline.start("dpkg-architecture", "-i%s" % wildcard)
+            action = timeline.start(
+                "dpkg-architecture", "-i%s" % wildcard,
+                "DEB_HOST_ARCH=%s" % arch)
             try:
                 ret = (subprocess.call(command, env=env) == 0)
             finally:
