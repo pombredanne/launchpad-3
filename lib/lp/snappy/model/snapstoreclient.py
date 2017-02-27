@@ -340,7 +340,7 @@ class SnapStoreClient:
                 release_url, method="POST", json=data,
                 auth=MacaroonAuth(
                     snap.store_secrets["root"],
-                    snap.store_secrets["discharge"]))
+                    snap.store_secrets.get("discharge")))
         except requests.HTTPError as e:
             if e.response is not None:
                 error = None

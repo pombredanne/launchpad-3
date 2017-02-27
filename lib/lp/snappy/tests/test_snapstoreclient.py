@@ -323,11 +323,13 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 self.client.requestPackageUploadPermission,
                 snappy_series, "test-snap")
 
-    def test_upload(self):
+    def makeUploadableSnapBuild(self, store_secrets=None):
+        if store_secrets is None:
+            store_secrets = self._make_store_secrets()
         snap = self.factory.makeSnap(
             store_upload=True,
             store_series=self.factory.makeSnappySeries(name="rolling"),
-            store_name="test-snap", store_secrets=self._make_store_secrets())
+            store_name="test-snap", store_secrets=store_secrets)
         snapbuild = self.factory.makeSnapBuild(snap=snap)
         snap_lfa = self.factory.makeLibraryFileAlias(
             filename="test-snap.snap", content="dummy snap content")
@@ -336,6 +338,10 @@ class TestSnapStoreClient(TestCaseWithFactory):
             filename="test-snap.manifest", content="dummy manifest content")
         self.factory.makeSnapFile(
             snapbuild=snapbuild, libraryfile=manifest_lfa)
+        return snapbuild
+
+    def test_upload(self):
+        snapbuild = self.makeUploadableSnapBuild()
         transaction.commit()
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             with HTTMock(self._unscanned_upload_handler,
@@ -362,6 +368,37 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 "name": "test-snap", "updown_id": 1, "series": "rolling",
                 }))
 
+    def test_upload_no_discharge(self):
+        root_key = hashlib.sha256(self.factory.getUniqueString()).hexdigest()
+        root_macaroon = Macaroon(key=root_key)
+        snapbuild = self.makeUploadableSnapBuild(
+            store_secrets={"root": root_macaroon.serialize()})
+        transaction.commit()
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            with HTTMock(self._unscanned_upload_handler,
+                         self._snap_push_handler):
+                self.assertEqual(
+                    "http://sca.example/dev/api/snaps/1/builds/1/status",
+                    self.client.upload(snapbuild))
+        self.assertThat(self.unscanned_upload_requests, MatchesListwise([
+            RequestMatches(
+                url=Equals("http://updown.example/unscanned-upload/"),
+                method=Equals("POST"),
+                form_data={
+                    "binary": MatchesStructure.byEquality(
+                        name="binary", filename="test-snap.snap",
+                        value="dummy snap content",
+                        type="application/octet-stream",
+                        )})]))
+        self.assertThat(self.snap_push_request, RequestMatches(
+            url=Equals("http://sca.example/dev/api/snap-push/"),
+            method=Equals("POST"),
+            headers=ContainsDict({"Content-Type": Equals("application/json")}),
+            auth=("Macaroon", MacaroonsVerify(root_key)),
+            json_data={
+                "name": "test-snap", "updown_id": 1, "series": "rolling",
+                }))
+
     def test_upload_unauthorized(self):
         @urlmatch(path=r".*/snap-push/$")
         def snap_push_handler(url, request):
@@ -372,14 +409,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 }
 
         store_secrets = self._make_store_secrets()
-        snap = self.factory.makeSnap(
-            store_upload=True,
-            store_series=self.factory.makeSnappySeries(name="rolling"),
-            store_name="test-snap", store_secrets=store_secrets)
-        snapbuild = self.factory.makeSnapBuild(snap=snap)
-        lfa = self.factory.makeLibraryFileAlias(
-            filename="test-snap.snap", content="dummy snap content")
-        self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
+        snapbuild = self.makeUploadableSnapBuild(store_secrets=store_secrets)
         transaction.commit()
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             with HTTMock(self._unscanned_upload_handler, snap_push_handler,
@@ -402,14 +432,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
         snap_push_handler.call_count = 0
 
         store_secrets = self._make_store_secrets()
-        snap = self.factory.makeSnap(
-            store_upload=True,
-            store_series=self.factory.makeSnappySeries(name="rolling"),
-            store_name="test-snap", store_secrets=store_secrets)
-        snapbuild = self.factory.makeSnapBuild(snap=snap)
-        lfa = self.factory.makeLibraryFileAlias(
-            filename="test-snap.snap", content="dummy snap content")
-        self.factory.makeSnapFile(snapbuild=snapbuild, libraryfile=lfa)
+        snapbuild = self.makeUploadableSnapBuild(store_secrets=store_secrets)
         transaction.commit()
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             with HTTMock(self._unscanned_upload_handler, snap_push_handler,
@@ -419,7 +442,8 @@ class TestSnapStoreClient(TestCaseWithFactory):
                     self.client.upload(snapbuild))
         self.assertEqual(2, snap_push_handler.call_count)
         self.assertNotEqual(
-            store_secrets["discharge"], snap.store_secrets["discharge"])
+            store_secrets["discharge"],
+            snapbuild.snap.store_secrets["discharge"])
 
     def test_refresh_discharge_macaroon(self):
         store_secrets = self._make_store_secrets()
@@ -590,6 +614,29 @@ class TestSnapStoreClient(TestCaseWithFactory):
             method=Equals("POST"),
             headers=ContainsDict({"Content-Type": Equals("application/json")}),
             auth=("Macaroon", MacaroonsVerify(self.root_key)),
+            json_data={
+                "name": "test-snap", "revision": 1,
+                "channels": ["stable", "edge"], "series": "rolling",
+                }))
+
+    def test_release_no_discharge(self):
+        root_key = hashlib.sha256(self.factory.getUniqueString()).hexdigest()
+        root_macaroon = Macaroon(key=root_key)
+        with HTTMock(self._channels_handler):
+            snap = self.factory.makeSnap(
+                store_upload=True,
+                store_series=self.factory.makeSnappySeries(name="rolling"),
+                store_name="test-snap",
+                store_secrets={"root": root_macaroon.serialize()},
+                store_channels=["stable", "edge"])
+        snapbuild = self.factory.makeSnapBuild(snap=snap)
+        with HTTMock(self._snap_release_handler):
+            self.client.release(snapbuild, 1)
+        self.assertThat(self.snap_release_request, RequestMatches(
+            url=Equals("http://sca.example/dev/api/snap-release/"),
+            method=Equals("POST"),
+            headers=ContainsDict({"Content-Type": Equals("application/json")}),
+            auth=("Macaroon", MacaroonsVerify(root_key)),
             json_data={
                 "name": "test-snap", "revision": 1,
                 "channels": ["stable", "edge"], "series": "rolling",
