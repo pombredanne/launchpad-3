@@ -43,6 +43,7 @@ from lp.snappy.interfaces.snapbuild import (
     CannotScheduleStoreUpload,
     ISnapBuild,
     ISnapBuildSet,
+    SnapBuildStoreUploadStatus,
     )
 from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
 from lp.soyuz.enums import ArchivePurpose
@@ -360,6 +361,44 @@ class TestSnapBuild(TestCaseWithFactory):
             usable_distro_series=[self.build.snap.distro_series])
         self.build.snap.store_name = self.factory.getUniqueUnicode()
         self.build.snap.store_secrets = {"root": Macaroon().serialize()}
+
+    def test_store_upload_status_unscheduled(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        self.assertEqual(
+            SnapBuildStoreUploadStatus.UNSCHEDULED, build.store_upload_status)
+
+    def test_store_upload_status_pending(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        getUtility(ISnapStoreUploadJobSource).create(build)
+        self.assertEqual(
+            SnapBuildStoreUploadStatus.PENDING, build.store_upload_status)
+
+    def test_store_upload_status_uploaded(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.COMPLETED
+        self.assertEqual(
+            SnapBuildStoreUploadStatus.UPLOADED, build.store_upload_status)
+
+    def test_store_upload_status_failed_to_upload(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.FAILED
+        self.assertEqual(
+            SnapBuildStoreUploadStatus.FAILEDTOUPLOAD,
+            build.store_upload_status)
+
+    def test_store_upload_status_failed_to_release(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.FAILED
+        naked_job.store_url = "http://sca.example/dev/click-apps/1/rev/1/"
+        self.assertEqual(
+            SnapBuildStoreUploadStatus.FAILEDTORELEASE,
+            build.store_upload_status)
 
     def test_scheduleStoreUpload(self):
         # A build not previously uploaded to the store can be uploaded

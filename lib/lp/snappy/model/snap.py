@@ -85,6 +85,7 @@ from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
     IMasterStore,
@@ -500,7 +501,12 @@ class Snap(Storm, WebhookTargetMixin):
             query_args.append(filter_term)
         result = Store.of(self).find(SnapBuild, *query_args)
         result.order_by(order_by)
-        return result
+
+        def eager_load(rows):
+            getUtility(ISnapBuildSet).preloadBuildsData(rows)
+            getUtility(IBuildQueueSet).preloadForBuildFarmJobs(result)
+
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getBuildSummariesForSnapBuildIds(self, snap_build_ids):
         """See `ISnap`."""
@@ -512,7 +518,6 @@ class Snap(Storm, WebhookTargetMixin):
         builds = self._getBuilds(filter_term, order_by)
 
         # Prefetch data to keep DB query count constant
-        getUtility(IBuildQueueSet).preloadForBuildFarmJobs(builds)
         lfas = load_related(LibraryFileAlias, builds, ["log_id"])
         load_related(LibraryFileContent, lfas, ["contentID"])
 

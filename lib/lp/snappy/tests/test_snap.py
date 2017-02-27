@@ -87,6 +87,7 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
@@ -2029,3 +2030,50 @@ class TestSnapWebservice(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             self.webservice.get(url)
         self.assertThat(recorder, HasQueryCount(Equals(15)))
+
+    def test_builds_query_count(self):
+        # The query count of Snap.builds is constant in the number of
+        # builds, even if they have store upload jobs.
+        self.pushConfig(
+            "snappy", store_url="http://sca.example/",
+            store_upload_url="http://updown.example/")
+        with admin_logged_in():
+            snappyseries = self.factory.makeSnappySeries()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet)['ubuntu'],
+            registrant=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
+        with person_logged_in(self.person):
+            snap = self.factory.makeSnap(
+                registrant=self.person, owner=self.person,
+                distroseries=distroseries, processors=[processor])
+            snap.store_series = snappyseries
+            snap.store_name = self.factory.getUniqueUnicode()
+            snap.store_upload = True
+            snap.store_secrets = {"root": Macaroon().serialize()}
+        builds_url = "%s/builds" % api_url(snap)
+        logout()
+
+        def make_build():
+            with person_logged_in(self.person):
+                build = snap.requestBuild(
+                    self.person, distroseries.main_archive, distroarchseries,
+                    PackagePublishingPocket.PROPOSED)
+                with dbuser(config.builddmaster.dbuser):
+                    build.updateStatus(
+                        BuildStatus.BUILDING, date_started=snap.date_created)
+                    build.updateStatus(
+                        BuildStatus.FULLYBUILT,
+                        date_finished=(
+                            snap.date_created + timedelta(minutes=10)))
+                return build
+
+        def get_builds():
+            response = self.webservice.get(builds_url)
+            self.assertEqual(200, response.status)
+            return response
+
+        recorder1, recorder2 = record_two_runs(get_builds, make_build, 2)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

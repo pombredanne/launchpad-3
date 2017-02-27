@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -118,7 +118,7 @@ class SnapBuildMailer(BaseMailer):
     def _getTemplateParams(self, email, recipient):
         """See `BaseMailer`."""
         build = self.build
-        upload_job = build.store_upload_jobs.first()
+        upload_job = build.last_store_upload_job
         if upload_job is None:
             error_message = ""
             store_url = ""
