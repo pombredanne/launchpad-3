@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap package build interfaces."""
@@ -11,10 +11,15 @@ __all__ = [
     'ISnapBuildSet',
     'ISnapBuildStatusChangedEvent',
     'ISnapFile',
+    'SnapBuildStoreUploadStatus',
     ]
 
 import httplib
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from lazr.restful.declarations import (
     error_status,
     export_as_webservice_entry,
@@ -71,6 +76,45 @@ class ISnapFile(Interface):
     libraryfile = Reference(
         ILibraryFileAlias, title=_("The library file alias for this file."),
         required=True, readonly=True)
+
+
+class SnapBuildStoreUploadStatus(EnumeratedType):
+    """Snap build store upload status type
+
+    Snap builds may be uploaded to the store. This represents the state of
+    that process.
+    """
+
+    UNSCHEDULED = Item("""
+        Unscheduled
+
+        No upload of this snap build to the store is scheduled.
+        """)
+
+    PENDING = Item("""
+        Pending
+
+        This snap build is queued for upload to the store.
+        """)
+
+    FAILEDTOUPLOAD = Item("""
+        Failed to upload
+
+        The last attempt to upload this snap build to the store failed.
+        """)
+
+    FAILEDTORELEASE = Item("""
+        Failed to release to channels
+
+        The last attempt to release this snap build to its intended set of
+        channels failed.
+        """)
+
+    UPLOADED = Item("""
+        Uploaded
+
+        This snap build was successfully uploaded to the store.
+        """)
 
 
 class ISnapBuildView(IPackageBuild):
@@ -136,6 +180,27 @@ class ISnapBuildView(IPackageBuild):
         # Really ISnapStoreUploadJob.
         value_type=Reference(schema=Interface),
         readonly=True)
+
+    # Really ISnapStoreUploadJob.
+    last_store_upload_job = Reference(
+        title=_("Last store upload job for this build."), schema=Interface)
+
+    store_upload_status = exported(Choice(
+        title=_("Store upload status"),
+        vocabulary=SnapBuildStoreUploadStatus, required=True, readonly=False))
+
+    store_upload_url = exported(TextLine(
+        title=_("Store URL"),
+        description=_(
+            "The URL to use for managing this package in the store."),
+        required=False, readonly=True))
+
+    store_upload_error_message = exported(TextLine(
+        title=_("Store upload error message"),
+        description=_(
+            "The error message, if any, from the last attempt to upload "
+            "this snap build to the store."),
+        required=False, readonly=True))
 
     def getFiles():
         """Retrieve the build's `ISnapFile` records.
@@ -229,3 +294,6 @@ class ISnapBuildSet(ISpecificBuildFarmJobSource):
     def new(requester, snap, archive, distro_arch_series, pocket,
             date_created=DEFAULT):
         """Create an `ISnapBuild`."""
+
+    def preloadBuildsData(builds):
+        """Load the data related to a list of snap builds."""

@@ -160,37 +160,40 @@
         (<span tal:replace="file/content/filesize/fmt:bytes" />)
       </li>
       <li id="store-upload-status"
-          tal:define="job view/last_upload_job"
+          tal:define="job context/last_store_upload_job"
           tal:condition="job">
-        <tal:job-status define="job_status job/job/status/title">
-          <a tal:condition="job/store_url" tal:attributes="href job/store_url">
-            Manage this package in the store
-          </a>
-          <tal:in-progress
-              condition="python: job_status in ('Waiting', 'Running')">
-            <br tal:condition="job/store_url" />
-            Store upload in progress
-          </tal:in-progress>
-          <tal:failed condition="python: job_status == 'Failed'">
-            <tal:failed-upload condition="not: job/store_url">
-              Store upload failed:
-            </tal:failed-upload>
-            <tal:failed-release condition="job/store_url">
-              <br />
-              Releasing package to channels failed:
-            </tal:failed-release>
-            <tal:error-message replace="job/error_message" />
-            <form action="" method="POST">
-              <input type="submit" name="field.actions.upload" value="Retry" />
-            </form>
-          </tal:failed>
-        </tal:job-status>
+        <a tal:condition="context/store_upload_url"
+           tal:attributes="href context/store_upload_url">
+          Manage this package in the store
+        </a>
+        <tal:pending
+            condition="context/store_upload_status/enumvalue:PENDING">
+          <br tal:condition="context/store_upload_url" />
+          Store upload in progress
+        </tal:pending>
+        <tal:failed-upload
+            condition="context/store_upload_status/enumvalue:FAILEDTOUPLOAD">
+          Store upload failed:
+          <tal:error-message replace="context/store_upload_error_message" />
+          <form action="" method="POST">
+            <input type="submit" name="field.actions.upload" value="Retry" />
+          </form>
+        </tal:failed-upload>
+        <tal:failed-release
+            condition="context/store_upload_status/enumvalue:FAILEDTORELEASE">
+          <br />
+          Releasing package to channels failed:
+          <tal:error-message replace="context/store_upload_error_message" />
+          <form action="" method="POST">
+            <input type="submit" name="field.actions.upload" value="Retry" />
+          </form>
+        </tal:failed-release>
       </li>
       <li id="store-upload-status"
           tal:condition="python:
             context.status.title == 'Successfully built' and
             context.snap.can_upload_to_store and
-            view.last_upload_job is None">
+            context.last_store_upload_job is None">
         <form action="" method="POST">
           <input type="submit" name="field.actions.upload"
                  value="Upload this package to the store" />

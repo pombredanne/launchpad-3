@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SnapBuild views."""
@@ -86,10 +86,6 @@ class SnapBuildView(LaunchpadFormView):
     @cachedproperty
     def has_files(self):
         return bool(self.files)
-
-    @property
-    def last_upload_job(self):
-        return self.context.store_upload_jobs.first()
 
     @property
     def next_url(self):
