@@ -75,7 +75,6 @@ from lp.services.webapp import (
     stepthrough,
     structured,
     )
-from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import (
     Breadcrumb,
     NameBreadcrumb,
@@ -211,17 +210,12 @@ def builds_for_snap(snap):
     but unfinished builds to show up in the view but be discarded as more
     recent builds become available.
 
-    Builds that the user does not have permission to see are excluded.
+    Builds that the user does not have permission to see are excluded (by
+    the model code).
     """
-    builds = [
-        build for build in snap.pending_builds
-        if check_permission('launchpad.View', build)]
-    for build in snap.completed_builds:
-        if not check_permission('launchpad.View', build):
-            continue
-        builds.append(build)
-        if len(builds) >= 10:
-            break
+    builds = list(snap.pending_builds)
+    if len(builds) < 10:
+        builds.extend(snap.completed_builds[:10 - len(builds)])
     return builds
 
 

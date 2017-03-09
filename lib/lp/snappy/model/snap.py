@@ -504,7 +504,7 @@ class Snap(Storm, WebhookTargetMixin):
 
         def eager_load(rows):
             getUtility(ISnapBuildSet).preloadBuildsData(rows)
-            getUtility(IBuildQueueSet).preloadForBuildFarmJobs(result)
+            getUtility(IBuildQueueSet).preloadForBuildFarmJobs(rows)
 
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
