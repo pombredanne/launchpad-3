@@ -3,12 +3,6 @@
 
 """Create a bot account."""
 
-import operator
-import os
-import sys
-
-from storm.locals import Join
-from storm.store import Store
 from zope.component import getUtility
 
 from lp.registry.interfaces.person import (
@@ -16,7 +10,6 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
 )
 from lp.registry.interfaces.ssh import ISSHKeySet
-from lp.registry.model.person import Person
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -30,27 +23,27 @@ class CreateBotAccountScript(LaunchpadScript):
     output = None
 
     def add_my_options(self):
-       self.parser.add_option(
-           '--name', metavar='NAME', action='store',
-           type='string', dest='name', default=None,
-           help='Username for the bot')
-       self.parser.add_option(
-           '--openid', metavar='OPENID_SUFFIX', action='store',
-           type='string', dest='openid', default=None,
-           help='OpenID identifier. Just the suffix, not the full URL')
-       self.parser.add_option(
-           '--email', metavar='ADDR', action='store',
-           type='string', dest='email', default=None,
-           help='Email address. Defaults to webops+username@canonical.com')
-       self.parser.add_option(
-           '--sshkey', metavar='TXT', action='store',
-           type='string', dest='sshkey', default=None,
-           help='SSH public key. Defaults to no ssh key.')
-       self.parser.add_option(
-           '--teams', metavar='TEAMS', action='store',
-           type='string', dest='teams',
-           default='canonical-is-devopsolution-bots',
-           help='Add bot to this comma separated list of teams')
+        self.parser.add_option(
+            '--name', metavar='NAME', action='store',
+            type='string', dest='name', default=None,
+            help='Username for the bot')
+        self.parser.add_option(
+            '--openid', metavar='OPENID_SUFFIX', action='store',
+            type='string', dest='openid', default=None,
+            help='OpenID identifier. Just the suffix, not the full URL')
+        self.parser.add_option(
+            '--email', metavar='ADDR', action='store',
+            type='string', dest='email', default=None,
+            help='Email address. Defaults to webops+username@canonical.com')
+        self.parser.add_option(
+            '--sshkey', metavar='TXT', action='store',
+            type='string', dest='sshkey', default=None,
+            help='SSH public key. Defaults to no ssh key.')
+        self.parser.add_option(
+            '--teams', metavar='TEAMS', action='store',
+            type='string', dest='teams',
+            default='canonical-is-devopsolution-bots',
+            help='Add bot to this comma separated list of teams')
 
     def main(self):
         username = unicode(self.options.name)
