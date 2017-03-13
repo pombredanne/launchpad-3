@@ -4,6 +4,7 @@
 """Create a bot account."""
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -95,9 +96,7 @@ class CreateBotAccountScript(LaunchpadScript):
             openid_identifier.identifier,
             emailaddress,
             displayname,
-            # If we want a specific rationale, we should also update
-            # existing bot accounts.
-            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD,
+            PersonCreationRationale.BOT,  # Ignored, reset below
             comment="when the create-bot-account launchpad script was run")
 
         # person.name = username
@@ -105,6 +104,8 @@ class CreateBotAccountScript(LaunchpadScript):
         person.expanded_notification_footers = True
         person.description = 'Canonical IS created bot'
         person.hide_email_addresses = True
+        removeSecurityProxy(person).creation_rationale = (
+            PersonCreationRationale.BOT)
 
         # Validate the email address
         person.validateAndEnsurePreferredEmail(person.preferredemail)
@@ -119,8 +120,9 @@ class CreateBotAccountScript(LaunchpadScript):
 
         # Add ssh key
         sshkey_set = getUtility(ISSHKeySet)
-        if sshkey_text and not sshkey_set.getByPersonAndKeyText(person,
-                                                                sshkey_text):
+        if sshkey_text and (
+                sshkey_set.getByPersonAndKeyText(person,
+                                                 sshkey_text).count() == 0):
             sshkey_set.new(person, sshkey_text, send_notification=False)
 
         self.logger.info('Created or updated {}'.format(canonical_url(person)))

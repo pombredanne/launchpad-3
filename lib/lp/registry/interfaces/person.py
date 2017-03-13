@@ -414,6 +414,13 @@ class PersonCreationRationale(DBEnumeratedType):
         placeholder Launchpad account is required.
         """)
 
+    BOT = DBItem(18, """
+        A bot account created by a Launchpad administrator.
+
+        This account was created using the create-bot-account script,
+        or similar bot creation helper.
+        """)
+
 
 class PersonNameField(BlacklistableContentNameField):
     """A `Person` team name, which is unique and performs psuedo blacklisting.
