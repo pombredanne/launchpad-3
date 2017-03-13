@@ -9,7 +9,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
-)
+    )
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.services.scripts.base import (
     LaunchpadScript,

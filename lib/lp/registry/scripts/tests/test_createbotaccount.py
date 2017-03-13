@@ -11,7 +11,7 @@ from zope.component import getUtility
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonCreationRationale,
-)
+    )
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.scripts.createbotaccount import CreateBotAccountScript
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
