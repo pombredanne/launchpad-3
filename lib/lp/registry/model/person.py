@@ -2334,6 +2334,7 @@ class Person(
             ('bugsubscription', 'person'),
             ('bugsummary', 'viewed_by'),
             ('bugtask', 'assignee'),
+            ('codereviewvote', 'reviewer'),
             ('emailaddress', 'person'),
             ('gitrepository', 'owner'),
             ('gitsubscription', 'person'),
