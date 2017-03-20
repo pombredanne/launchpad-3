@@ -231,6 +231,7 @@ class TestSnapBuild(TestCaseWithFactory):
             "snap": Equals(
                 canonical_url(self.build.snap, force_local_path=True)),
             "status": Equals("Successfully built"),
+            "store_upload_status": Equals("Unscheduled"),
             }
         delivery = hook.deliveries.one()
         self.assertThat(
@@ -470,6 +471,37 @@ class TestSnapBuild(TestCaseWithFactory):
             self.build.scheduleStoreUpload)
         self.assertEqual(
             [], list(getUtility(ISnapStoreUploadJobSource).iterReady()))
+
+    def test_scheduleStoreUpload_triggers_webhooks(self):
+        # Scheduling a store upload triggers webhooks on the corresponding
+        # snap.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        hook = self.factory.makeWebhook(
+            target=self.build.snap, event_types=["snap:build:0.1"])
+        self.build.scheduleStoreUpload()
+        expected_payload = {
+            "snap_build": Equals(
+                canonical_url(self.build, force_local_path=True)),
+            "action": Equals("status-changed"),
+            "snap": Equals(
+                canonical_url(self.build.snap, force_local_path=True)),
+            "status": Equals("Successfully built"),
+            "store_upload_status": Equals("Pending"),
+            }
+        delivery = hook.deliveries.one()
+        self.assertThat(
+            delivery, MatchesStructure(
+                event_type=Equals("snap:build:0.1"),
+                payload=MatchesDict(expected_payload)))
+        with dbuser(config.IWebhookDeliveryJobSource.dbuser):
+            self.assertEqual(
+                "<WebhookDeliveryJob for webhook %d on %r>" % (
+                    hook.id, hook.target),
+                repr(delivery))
 
 
 class TestSnapBuildSet(TestCaseWithFactory):

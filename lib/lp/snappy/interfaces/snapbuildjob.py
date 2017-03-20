@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap build job interfaces."""
@@ -8,11 +8,13 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 __all__ = [
     'ISnapBuildJob',
+    'ISnapBuildStoreUploadStatusChangedEvent',
     'ISnapStoreUploadJob',
     'ISnapStoreUploadJobSource',
     ]
 
 from lazr.restful.fields import Reference
+from zope.component.interfaces import IObjectEvent
 from zope.interface import (
     Attribute,
     Interface,
@@ -40,6 +42,10 @@ class ISnapBuildJob(Interface):
         schema=ISnapBuild, required=True, readonly=True)
 
     metadata = Attribute(_("A dict of data about the job."))
+
+
+class ISnapBuildStoreUploadStatusChangedEvent(IObjectEvent):
+    """The store upload status of a snap package build changed."""
 
 
 class ISnapStoreUploadJob(IRunnableJob):

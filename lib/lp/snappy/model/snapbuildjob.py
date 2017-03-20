@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap build jobs."""
@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'SnapBuildJob',
     'SnapBuildJobType',
+    'SnapBuildStoreUploadStatusChangedEvent',
     'SnapStoreUploadJob',
     ]
 
@@ -26,6 +27,8 @@ from storm.locals import (
     )
 import transaction
 from zope.component import getUtility
+from zope.component.interfaces import ObjectEvent
+from zope.event import notify
 from zope.interface import (
     implementer,
     provider,
@@ -44,8 +47,10 @@ from lp.services.job.model.job import (
     Job,
     )
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.propertycache import get_property_cache
 from lp.snappy.interfaces.snapbuildjob import (
     ISnapBuildJob,
+    ISnapBuildStoreUploadStatusChangedEvent,
     ISnapStoreUploadJob,
     ISnapStoreUploadJobSource,
     )
@@ -164,6 +169,11 @@ class ManualReview(Exception):
     pass
 
 
+@implementer(ISnapBuildStoreUploadStatusChangedEvent)
+class SnapBuildStoreUploadStatusChangedEvent(ObjectEvent):
+    """See `ISnapBuildStoreUploadStatusChangedEvent`."""
+
+
 @implementer(ISnapStoreUploadJob)
 @provider(ISnapStoreUploadJobSource)
 class SnapStoreUploadJob(SnapBuildJobDerived):
@@ -191,6 +201,8 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         snap_build_job = SnapBuildJob(snapbuild, cls.class_job_type, {})
         job = cls(snap_build_job)
         job.celeryRunOnCommit()
+        del get_property_cache(snapbuild).last_store_upload_job
+        notify(SnapBuildStoreUploadStatusChangedEvent(snapbuild))
         return job
 
     @property
@@ -212,6 +224,33 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
     def store_url(self, url):
         """See `ISnapStoreUploadJob`."""
         self.metadata["store_url"] = url
+
+    # Ideally we'd just override Job._set_status or similar, but
+    # lazr.delegates makes that difficult, so we use this to override all
+    # the individual Job lifecycle methods instead.
+    def _do_lifecycle(self, method, *args, **kwargs):
+        old_store_upload_status = self.snapbuild.store_upload_status
+        method(*args, **kwargs)
+        if self.snapbuild.store_upload_status != old_store_upload_status:
+            notify(SnapBuildStoreUploadStatusChangedEvent(self.snapbuild))
+
+    def start(self, *args, **kwargs):
+        self._do_lifecycle(self.job.start, *args, **kwargs)
+
+    def complete(self, *args, **kwargs):
+        self._do_lifecycle(self.job.complete, *args, **kwargs)
+
+    def fail(self, *args, **kwargs):
+        self._do_lifecycle(self.job.fail, *args, **kwargs)
+
+    def queue(self, *args, **kwargs):
+        self._do_lifecycle(self.job.queue, *args, **kwargs)
+
+    def suspend(self, *args, **kwargs):
+        self._do_lifecycle(self.job.suspend, *args, **kwargs)
+
+    def resume(self, *args, **kwargs):
+        self._do_lifecycle(self.job.resume, *args, **kwargs)
 
     def run(self):
         """See `IRunnableJob`."""
