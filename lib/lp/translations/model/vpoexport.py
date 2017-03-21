@@ -16,7 +16,7 @@ from storm.expr import (
     )
 from zope.interface import implementer
 
-from lp.services.database.interfaces import ISlaveStore
+from lp.services.database.interfaces import IStore
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.translations.interfaces.vpoexport import (
@@ -75,8 +75,9 @@ class VPOExportSet:
         # Use the slave store.  We may want to write to the distroseries
         # to register a language pack, but not to the translation data
         # we retrieve for it.
-        query = ISlaveStore(POFile).using(*tables).find(
-            POFile, And(*conditions))
+        # XXX wgrant 2017-03-21: Moved to master to avoid termination
+        # due to long transactions.
+        query = IStore(POFile).using(*tables).find(POFile, And(*conditions))
 
         # Order by POTemplate.  Caching in the export scripts can be
         # much more effective when consecutive POFiles belong to the
