@@ -8,10 +8,7 @@ __metaclass__ = type
 
 from mock import MagicMock
 from zope.component import getUtility
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonCreationRationale,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.scripts.createbotaccount import CreateBotAccountScript
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -49,8 +46,6 @@ class CreateBotAccountTests(TestCase):
         self.assertTrue(person.hide_email_addresses)
         # Bots tend to flood email, so filtering is important.
         self.assertTrue(person.expanded_notification_footers)
-        self.assertEqual(person.creation_rationale,
-                         PersonCreationRationale.BOT)
 
         account = person.account
         openid = account.openid_identifiers.one()

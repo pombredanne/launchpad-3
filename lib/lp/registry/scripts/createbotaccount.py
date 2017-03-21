@@ -4,12 +4,8 @@
 """Create a bot account."""
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonCreationRationale,
-    )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.services.scripts.base import (
     LaunchpadScript,
@@ -56,7 +52,7 @@ class CreateBotAccountScript(LaunchpadScript):
             raise LaunchpadScriptFailure(
                 'Invalid OpenID suffix {}'.format(openid_suffix))
 
-        displayname = u'{} McBotface'.format(username)
+        displayname = u'\U0001f916 {}'.format(username)  # U+1f916==ROBOT FACE
 
         if self.options.email:
             emailaddress = unicode(self.options.email)
@@ -96,19 +92,17 @@ class CreateBotAccountScript(LaunchpadScript):
             openid_identifier.identifier,
             emailaddress,
             displayname,
-            PersonCreationRationale.BOT,  # Ignored, reset below
-            comment="when the create-bot-account launchpad script was run")
+            None,
+            'when the create-bot-account launchpad script was run')
 
         # person.name = username
         person.selfgenerated_bugnotifications = True
         person.expanded_notification_footers = True
         person.description = 'Canonical IS created bot'
         person.hide_email_addresses = True
-        removeSecurityProxy(person).creation_rationale = (
-            PersonCreationRationale.BOT)
 
-        # Validate the email address
-        person.validateAndEnsurePreferredEmail(person.preferredemail)
+        # The email address must be fully validated.
+        assert person.preferredemail is not None
 
         # Add team memberships
         for teamname in teamnames:
