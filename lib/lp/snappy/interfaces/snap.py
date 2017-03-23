@@ -541,7 +541,8 @@ class ISnapEditableAttributes(IHasOwner):
         required=False, readonly=False,
         description=_(
             "Channels to release this snap package to after uploading it to "
-            "the store.")))
+            "the store. If track is not specified, the default track will be "
+            "assumed.")))
 
 
 class ISnapAdminAttributes(Interface):
