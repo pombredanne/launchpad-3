@@ -49,7 +49,7 @@ class StoreChannelsWidget(BrowserWidget, InputWidget):
             return
         fields = [
             TextLine(__name__="track", title=u"Track", required=False),
-            List(__name__="risks", title=u"Risks", required=False,
+            List(__name__="risks", title=u"Risk", required=False,
                  value_type=Choice(vocabulary="SnapStoreChannel")),
             ]
 
@@ -57,6 +57,7 @@ class StoreChannelsWidget(BrowserWidget, InputWidget):
         for field in fields:
             setUpWidget(
                 self, field.__name__, field, IInputWidget, prefix=self.name)
+        self.risks_widget.orientation = 'horizontal'
         self._widgets_set_up = True
 
     def buildChannelName(self, track, risk):
