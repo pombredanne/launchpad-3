@@ -537,8 +537,8 @@ class ISnapEditableAttributes(IHasOwner):
             "authorize uploads of this snap package."))
 
     store_channels = exported(List(
-        value_type=Choice(vocabulary="SnapStoreChannel"),
-        title=_("Store channels"), required=False, readonly=False,
+        title=_("Store channels"),
+        required=False, readonly=False,
         description=_(
             "Channels to release this snap package to after uploading it to "
             "the store.")))
