@@ -68,6 +68,7 @@ class TestStoreChannelsWidget(TestCaseWithFactory):
         self.assertIsNotNone(getattr(self.widget, "track_widget", None))
         self.assertIsInstance(
             self.widget.risks_widget.vocabulary, SnapStoreChannelVocabulary)
+        self.assertTrue(self.widget.has_risks_vocabulary)
 
     def test_setUpSubWidgets_second_call(self):
         # The setUpSubWidgets method exits early if a flag is set to
@@ -76,20 +77,21 @@ class TestStoreChannelsWidget(TestCaseWithFactory):
         self.widget.setUpSubWidgets()
         self.assertIsNone(getattr(self.widget, "track_widget", None))
         self.assertIsNone(getattr(self.widget, "risks_widget", None))
+        self.assertIsNone(self.widget.has_risks_vocabulary)
 
     def test_buildChannelName_no_track(self):
-        self.assertEqual(self.widget.buildChannelName(None, "edge"), "edge")
+        self.assertEqual("edge", self.widget.buildChannelName(None, "edge"))
 
     def test_buildChannelName_with_track(self):
         self.assertEqual(
-            self.widget.buildChannelName("track", "edge"), "track/edge")
+            "track/edge", self.widget.buildChannelName("track", "edge"))
 
     def test_splitChannelName_no_track(self):
-        self.assertEqual(self.widget.splitChannelName("edge"), (None, "edge"))
+        self.assertEqual((None, "edge"), self.widget.splitChannelName("edge"))
 
     def test_splitChannelName_with_track(self):
         self.assertEqual(
-            self.widget.splitChannelName("track/edge"), ("track", "edge"))
+            ("track", "edge"), self.widget.splitChannelName("track/edge"))
 
     def test_splitChannelName_invalid(self):
         self.assertRaises(
@@ -105,15 +107,15 @@ class TestStoreChannelsWidget(TestCaseWithFactory):
         risks = ['candidate', 'edge']
         self.widget.setRenderedValue(risks)
         self.assertIsNone(self.widget.track_widget._getCurrentValue())
-        self.assertEqual(self.widget.risks_widget._getCurrentValue(), risks)
+        self.assertEqual(risks, self.widget.risks_widget._getCurrentValue())
 
     def test_setRenderedValue_with_track(self):
         # Channels including a track
         channels = ['2.2/candidate', '2.2/edge']
         self.widget.setRenderedValue(channels)
-        self.assertEqual(self.widget.track_widget._getCurrentValue(), '2.2')
+        self.assertEqual('2.2', self.widget.track_widget._getCurrentValue())
         self.assertEqual(
-            self.widget.risks_widget._getCurrentValue(), ['candidate', 'edge'])
+            ['candidate', 'edge'], self.widget.risks_widget._getCurrentValue())
 
     def test_setRenderedValue_invalid_value(self):
         # Multiple channels, different tracks, unsupported
@@ -169,14 +171,14 @@ class TestStoreChannelsWidget(TestCaseWithFactory):
             form={"field.channels.track": "",
                   "field.channels.risks": ["beta", "edge"]})
         expected = ["beta", "edge"]
-        self.assertEqual(self.widget.getInputValue(), expected)
+        self.assertEqual(expected, self.widget.getInputValue())
 
     def test_getInputValue_with_track(self):
         self.widget.request = LaunchpadTestRequest(
             form={"field.channels.track": "track",
                   "field.channels.risks": ["beta", "edge"]})
         expected = ["track/beta", "track/edge"]
-        self.assertEqual(self.widget.getInputValue(), expected)
+        self.assertEqual(expected, self.widget.getInputValue())
 
     def test_call(self):
         # The __call__ method sets up the widgets.

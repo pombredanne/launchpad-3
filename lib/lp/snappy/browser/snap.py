@@ -61,7 +61,6 @@ from lp.registry.enums import VCSType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
-from lp.services.propertycache import cachedproperty
 from lp.services.scripts import log
 from lp.services.webapp import (
     canonical_url,
@@ -190,7 +189,7 @@ class SnapView(LaunchpadView):
         else:
             return 'Built on request'
 
-    @cachedproperty
+    @property
     def store_channels(self):
         return ', '.join(self.context.store_channels)
 

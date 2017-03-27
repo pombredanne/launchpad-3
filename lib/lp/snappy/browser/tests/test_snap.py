@@ -951,7 +951,7 @@ class TestSnapEditView(BaseTestSnapView):
         view_url = canonical_url(snap, view_name="+edit")
         browser = self.getNonRedirectingBrowser(url=view_url, user=self.person)
         browser.getControl("Registered store package name").value = "two"
-        self.assertEqual(browser.getControl("Track").value, "track")
+        self.assertEqual("track", browser.getControl("Track").value)
         self.assertTrue(browser.getControl("Edge").selected)
         browser.getControl("Track").value = ""
         browser.getControl("Stable").selected = True

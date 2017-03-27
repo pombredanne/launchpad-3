@@ -23,12 +23,17 @@ from zope.schema import (
     TextLine,
     )
 
+from lp import _
 from lp.app.errors import UnexpectedFormData
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     ISingleLineWidgetLayout,
+    )
+from lp.snappy.validators.channels import (
+    channel_components_delimiter,
+    split_channel_name,
     )
 
 
@@ -37,20 +42,28 @@ class StoreChannelsWidget(BrowserWidget, InputWidget):
 
     template = ViewPageTemplateFile("templates/storechannels.pt")
     display_label = False
-    _separator = '/'
+    _separator = channel_components_delimiter
     _default_track = 'latest'
     _widgets_set_up = False
 
     def __init__(self, field, value_type, request):
+        # We don't use value_type.
         super(StoreChannelsWidget, self).__init__(field, request)
 
     def setUpSubWidgets(self):
         if self._widgets_set_up:
             return
         fields = [
-            TextLine(__name__="track", title=u"Track", required=False),
+            TextLine(__name__="track", title=u"Track", required=False,
+                     description=_(
+                         "Track defines a series for your software. "
+                         "If not specified, the default track is assumed. "
+                         "Tracks should be requested to the store admins.")
+                     ),
             List(__name__="risks", title=u"Risk", required=False,
-                 value_type=Choice(vocabulary="SnapStoreChannel")),
+                 value_type=Choice(vocabulary="SnapStoreChannel"),
+                 description=_(
+                     "Risks denote the stability of your software.")),
             ]
 
         self.risks_widget = CustomWidgetFactory(LabeledMultiCheckBoxWidget)
@@ -59,6 +72,11 @@ class StoreChannelsWidget(BrowserWidget, InputWidget):
                 self, field.__name__, field, IInputWidget, prefix=self.name)
         self.risks_widget.orientation = 'horizontal'
         self._widgets_set_up = True
+
+    @property
+    def has_risks_vocabulary(self):
+        risks_widget = getattr(self, 'risks_widget', None)
+        return risks_widget and bool(risks_widget.vocabulary)
 
     def buildChannelName(self, track, risk):
         """Return channel name composed from given track and risk."""
@@ -69,13 +87,9 @@ class StoreChannelsWidget(BrowserWidget, InputWidget):
 
     def splitChannelName(self, channel):
         """Return extracted track and risk from given channel name."""
-        components = channel.split(self._separator)
-        if len(components) == 2:
-            track, risk = components
-        elif len(components) == 1:
-            track = None
-            risk = components[0]
-        else:
+        try:
+            track, risk = split_channel_name(channel)
+        except ValueError:
             raise AssertionError("Not a valid value: %r" % channel)
         return track, risk
 
@@ -83,6 +97,7 @@ class StoreChannelsWidget(BrowserWidget, InputWidget):
         """See `IWidget`."""
         self.setUpSubWidgets()
         if value:
+            # NOTE: atm target channels must belong to the same track
             tracks = set()
             risks = []
             for channel in value:
