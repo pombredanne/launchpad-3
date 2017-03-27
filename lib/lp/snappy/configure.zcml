@@ -1,4 +1,4 @@
-<!-- Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -139,6 +139,10 @@
         <allow interface="lp.snappy.interfaces.snapbuildjob.ISnapBuildJob" />
         <allow interface="lp.snappy.interfaces.snapbuildjob.ISnapStoreUploadJob" />
     </class>
+    <subscriber
+        for="lp.snappy.interfaces.snapbuild.ISnapBuild
+             lp.snappy.interfaces.snapbuildjob.ISnapBuildStoreUploadStatusChangedEvent"
+        handler="lp.snappy.subscribers.snapbuild.snap_build_store_upload_status_changed" />
 
     <webservice:register module="lp.snappy.interfaces.webservice" />
 
