@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `WebhookJob`s."""
@@ -332,6 +332,15 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
         job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
         self.assertEqual(
             "<WebhookDeliveryJob for webhook %d on %r>" % (hook.id, branch),
+            repr(job))
+
+    def test_snap__repr__(self):
+        # `WebhookDeliveryJob` objects for snaps have an informative __repr__.
+        snap = self.factory.makeSnap()
+        hook = self.factory.makeWebhook(target=snap)
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
+        self.assertEqual(
+            "<WebhookDeliveryJob for webhook %d on %r>" % (hook.id, snap),
             repr(job))
 
     def test_short_lease_and_timeout(self):
