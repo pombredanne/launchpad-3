@@ -38,6 +38,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app import versioninfo
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
@@ -357,6 +358,16 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 LessThan(timedelta(seconds=60))))
         self.assertEqual(
             timedelta(seconds=45), removeSecurityProxy(job).soft_time_limit)
+
+    def test_iterReady_orders_by_job_id(self):
+        # Older jobs are run first.
+        hook = self.factory.makeWebhook()
+        jobs = [
+            WebhookJob(hook, WebhookJobType.DELIVERY, {}) for _ in range(3)]
+        IStore(WebhookJob).flush()
+        self.assertEqual(
+            [job.job_id for job in jobs],
+            [job.job_id for job in WebhookDeliveryJob.iterReady()])
 
     def test_run_200(self):
         # A request that returns 200 is a success.

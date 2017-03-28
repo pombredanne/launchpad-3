@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -366,7 +366,7 @@ class WebhookJobDerived(BaseRunnableJob):
             WebhookJob,
             WebhookJob.job_type == cls.class_job_type,
             WebhookJob.job == Job.id,
-            Job.id.is_in(Job.ready_jobs))
+            Job.id.is_in(Job.ready_jobs)).order_by(Job.id)
         return (cls(job) for job in jobs)
 
 
