@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """BinaryPackageBuild interfaces."""
@@ -145,6 +145,10 @@ class IBinaryPackageBuildView(IPackageBuild):
             description=_("The URL for the changes file for this build. "
                           "Will be None if the build was imported by Gina.")))
 
+    buildinfo = Attribute(
+        "The `LibraryFileAlias` object containing build information for "
+        "this build, if any.")
+
     package_upload = Attribute(
         "The `PackageUpload` record corresponding to the original upload "
         "of the binaries resulted from this build. It's 'None' if it is "
@@ -156,6 +160,15 @@ class IBinaryPackageBuildView(IPackageBuild):
             readonly=True,
             ),
         exported_as="score")
+
+    def updateStatus(status, builder=None, slave_status=None,
+                     date_started=None, date_finished=None,
+                     force_invalid_transition=False, buildinfo=None):
+        """See `IBuildFarmJob.updateStatus`.
+
+        This version also accepts a `buildinfo` parameter which sets the
+        build's buildinfo file if it has not already been set.
+        """
 
     def updateDependencies():
         """Update the build-dependencies line within the targeted context."""
@@ -265,6 +278,12 @@ class IBinaryPackageBuildEdit(Interface):
         If the build is not in a cancellable state, this method is a no-op.
         """
 
+    def addBuildInfo(buildinfo):
+        """Add a buildinfo file to this build.
+
+        :param buildinfo: An `ILibraryFileAlias`.
+        """
+
 
 class IBinaryPackageBuildRestricted(Interface):
     """Restricted `IBinaryPackageBuild` attributes.
@@ -337,7 +356,8 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     """Interface for BinaryPackageBuildSet"""
 
     def new(source_package_release, archive, distro_arch_series, pocket,
-            arch_indep=False, status=BuildStatus.NEEDSBUILD, builder=None):
+            arch_indep=False, status=BuildStatus.NEEDSBUILD, builder=None,
+            buildinfo=None):
         """Create a new `IBinaryPackageBuild`.
 
         :param source_package_release: An `ISourcePackageRelease`.
@@ -348,6 +368,7 @@ class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
             addition to architecture specific ones.
         :param status: A `BuildStatus` item indicating the builds status.
         :param builder: An optional `IBuilder`.
+        :param buildinfo: An optional `ILibraryFileAlias`.
         """
 
     def getBySourceAndLocation(source_package_release, archive,

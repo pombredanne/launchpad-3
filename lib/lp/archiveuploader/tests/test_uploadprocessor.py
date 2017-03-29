@@ -119,6 +119,7 @@ class BrokenUploadPolicy(AbstractUploadPolicy):
         self.name = "broken"
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
+        self.unsigned_buildinfo_ok = True
 
     def checkUpload(self, upload):
         """Raise an exception upload processing is not expecting."""
@@ -2016,6 +2017,47 @@ class TestUploadProcessor(TestUploadProcessorBase):
             status=PackageUploadStatus.DONE, name=u"bar",
             version=u"1.0-2", exact_match=True)
         self.assertEqual(PackagePublishingPocket.PROPOSED, queue_item.pocket)
+
+    def test_source_buildinfo(self):
+        # A buildinfo file is attached to the SPR.
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1_buildinfo")
+        with open(os.path.join(upload_dir, "bar_1.0-1_source.buildinfo")) as f:
+            buildinfo_contents = f.read()
+        self.processUpload(uploadprocessor, upload_dir)
+        source_pub = self.publishPackage("bar", "1.0-1")
+        self.assertEqual(
+            buildinfo_contents,
+            source_pub.sourcepackagerelease.buildinfo.read())
+
+    def test_binary_buildinfo(self):
+        # A buildinfo file is attached to the BPB.
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        source_pub = self.publishPackage("bar", "1.0-1")
+        [build] = source_pub.createMissingBuilds()
+        self.switchToAdmin()
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED,
+            version=u"1.0-1", name=u"bar")
+        queue_item.setDone()
+        build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
+        build.updateStatus(BuildStatus.UPLOADING)
+        self.switchToUploader()
+        shutil.rmtree(upload_dir)
+        self.layer.txn.commit()
+        behaviour = IBuildFarmJobBehaviour(build)
+        leaf_name = behaviour.getUploadDirLeaf(build.build_cookie)
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_binary_buildinfo", queue_entry=leaf_name)
+        with open(os.path.join(upload_dir, "bar_1.0-1_i386.buildinfo")) as f:
+            buildinfo_contents = f.read()
+        self.options.context = "buildd"
+        self.options.builds = True
+        BuildUploadHandler(
+            uploadprocessor, self.incoming_folder, leaf_name).process()
+        self.assertEqual(buildinfo_contents, build.buildinfo.read())
 
 
 class TestUploadHandler(TestUploadProcessorBase):

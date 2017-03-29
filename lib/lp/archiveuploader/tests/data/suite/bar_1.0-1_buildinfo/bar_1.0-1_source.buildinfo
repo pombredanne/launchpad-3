@@ -1,0 +1,20 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.0
+Source: bar
+Binary: bar
+Architecture: source
+Version: 1.0-1
+Checksums-Md5:
+ 5d533778b698edc1a122098a98c8490e 512 devel optional bar_1.0-1.dsc
+Build-Origin: Ubuntu
+Build-Architecture: amd64
+Build-Date: Tue, 28 Mar 2017 23:51:59 +0100
+
+-----BEGIN PGP SIGNATURE-----
+
+iF0EARECAB0WIQQ0DKO7Jw4nFsnuC3aOfrcIbGSoxQUCWNrrcQAKCRCOfrcIbGSo
+xZc8AKCTbuZAnDyUdoBEsKy3QFxo+2BAEgCgiTklyo2HZuTBJyag1ayw/65bfoM=
+=mB68
+-----END PGP SIGNATURE-----

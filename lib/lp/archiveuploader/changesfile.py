@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ ChangesFile class
@@ -17,6 +17,7 @@ __all__ = [
 
 import os
 
+from lp.archiveuploader.buildinfofile import BuildInfoFile
 from lp.archiveuploader.dscfile import (
     DSCFile,
     SignableTagFile,
@@ -36,6 +37,7 @@ from lp.archiveuploader.utils import (
     parse_and_merge_file_lists,
     re_changes_file_name,
     re_isadeb,
+    re_isbuildinfo,
     re_issource,
     rfc822_encode_address,
     UploadError,
@@ -75,6 +77,7 @@ class ChangesFile(SignableTagFile):
         }
 
     dsc = None
+    buildinfo = None
     maintainer = None
     changed_by = None
     filename_archtag = None
@@ -209,6 +212,8 @@ class ChangesFile(SignableTagFile):
 
                     if cls == DSCFile:
                         self.dsc = file_instance
+                    elif cls == BuildInfoFile:
+                        self.buildinfo = file_instance
             except UploadError as error:
                 yield error
             else:
@@ -366,6 +371,7 @@ def determine_file_class_and_name(filename):
     """Determine the name and PackageUploadFile subclass for the filename."""
     source_match = re_issource.match(filename)
     binary_match = re_isadeb.match(filename)
+    buildinfo_match = re_isbuildinfo.match(filename)
     if source_match:
         package = source_match.group(1)
         if (determine_source_file_type(filename) ==
@@ -380,6 +386,9 @@ def determine_file_class_and_name(filename):
             BinaryPackageFileType.DDEB: DdebBinaryUploadFile,
             BinaryPackageFileType.UDEB: UdebBinaryUploadFile,
             }[determine_binary_file_type(filename)]
+    elif buildinfo_match:
+        package = buildinfo_match.group(1)
+        cls = BuildInfoFile
     else:
         raise CannotDetermineFileTypeError(
             "Could not determine the type of %r" % filename)
