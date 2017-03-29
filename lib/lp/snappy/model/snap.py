@@ -233,6 +233,9 @@ class Snap(Storm, WebhookTargetMixin):
         self.store_secrets = store_secrets
         self.store_channels = store_channels
 
+    def __repr__(self):
+        return "<Snap ~%s/+snap/%s>" % (self.owner.name, self.name)
+
     @property
     def valid_webhook_event_types(self):
         return ["snap:build:0.1"]

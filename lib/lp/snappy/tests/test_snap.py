@@ -132,6 +132,12 @@ class TestSnap(TestCaseWithFactory):
         with admin_logged_in():
             self.assertProvides(snap, ISnap)
 
+    def test___repr__(self):
+        # `Snap` objects have an informative __repr__.
+        snap = self.factory.makeSnap()
+        self.assertEqual(
+            "<Snap ~%s/+snap/%s>" % (snap.owner.name, snap.name), repr(snap))
+
     def test_avoids_problematic_snapshots(self):
         self.assertThat(
             self.factory.makeSnap(),
