@@ -26,7 +26,7 @@ class TestBuildInfoFile(PackageUploadFileTestCase):
         # ever start doing non-trivial buildinfo parsing.
         # A Changes object is close enough.
         buildinfo = Changes()
-        buildinfo["Format"] = "0.1"
+        buildinfo["Format"] = "1.0"
         return buildinfo
 
     def makeBuildInfoFile(self, filename, buildinfo, component_and_section,
