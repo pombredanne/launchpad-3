@@ -393,6 +393,7 @@ class TestSnapAddView(BaseTestSnapView):
         browser.getControl("Registered store package name").value = (
             "store-name")
         self.assertFalse(browser.getControl("Stable").selected)
+        browser.getControl(name="field.store_channels.track").value = "track"
         browser.getControl("Edge").selected = True
         root_macaroon = Macaroon()
         root_macaroon.add_third_party_caveat(
@@ -419,7 +420,7 @@ class TestSnapAddView(BaseTestSnapView):
             name=u"snap-name", source=branch, store_upload=True,
             store_series=self.snappyseries, store_name=u"store-name",
             store_secrets={"root": root_macaroon_raw},
-            store_channels=["edge"]))
+            store_channels=["track/edge"]))
         self.assertThat(self.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         expected_body = {
@@ -946,12 +947,14 @@ class TestSnapEditView(BaseTestSnapView):
             registrant=self.person, owner=self.person,
             distroseries=self.distroseries, store_upload=True,
             store_series=self.snappyseries, store_name=u"one",
-            store_channels=["edge"])
+            store_channels=["track/edge"])
         view_url = canonical_url(snap, view_name="+edit")
         browser = self.getNonRedirectingBrowser(url=view_url, user=self.person)
         browser.getControl("Registered store package name").value = "two"
-        browser.getControl("Stable").selected = True
+        self.assertEqual("track", browser.getControl("Track").value)
         self.assertTrue(browser.getControl("Edge").selected)
+        browser.getControl("Track").value = ""
+        browser.getControl("Stable").selected = True
         root_macaroon = Macaroon()
         root_macaroon.add_third_party_caveat(
             urlsplit(config.launchpad.openid_provider_root).netloc, "",
@@ -1373,24 +1376,11 @@ class TestSnapView(BaseTestSnapView):
         view = create_initialized_view(snap, "+index")
         self.assertEqual("", view.store_channels)
 
-    def test_store_channels_uses_titles(self):
-        snap_store_client = FakeMethod()
-        snap_store_client.listChannels = FakeMethod(result=[
-            {"name": "stable", "display_name": "Stable"},
-            {"name": "edge", "display_name": "Edge"},
-            {"name": "old", "display_name": "Old channel"},
-            ])
-        self.useFixture(
-            ZopeUtilityFixture(snap_store_client, ISnapStoreClient))
-        snap = self.factory.makeSnap(store_channels=["stable", "old"])
+    def test_store_channels_display(self):
+        snap = self.factory.makeSnap(
+            store_channels=["track/stable", "track/edge"])
         view = create_initialized_view(snap, "+index")
-        self.assertEqual("Stable, Old channel", view.store_channels)
-        snap_store_client.listChannels.result = [
-            {"name": "stable", "display_name": "Stable"},
-            {"name": "edge", "display_name": "Edge"},
-            ]
-        view = create_initialized_view(snap, "+index")
-        self.assertEqual("Stable, old", view.store_channels)
+        self.assertEqual("track/stable, track/edge", view.store_channels)
 
 
 class TestSnapRequestBuildsView(BaseTestSnapView):
