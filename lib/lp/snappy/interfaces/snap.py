@@ -543,7 +543,7 @@ class ISnapEditableAttributes(IHasOwner):
         description=_(
             "Channels to release this snap package to after uploading it to "
             "the store. A channel is defined by a combination of an optional "
-            " track and and a risk, e.g. '2.1/stable', or 'stable'.")))
+            " track and a risk, e.g. '2.1/stable', or 'stable'.")))
 
 
 class ISnapAdminAttributes(Interface):

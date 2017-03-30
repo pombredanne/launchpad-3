@@ -5,6 +5,9 @@
         <metal:block
             use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
       </tal:widget>
+      <p class="formHelp">
+         To open a new track, <a href="https://snapcraft.io/community">ask the store admins</a>.
+      </p>
     </td>
   </tr>
   <tr>

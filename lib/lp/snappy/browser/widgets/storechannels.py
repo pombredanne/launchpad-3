@@ -57,8 +57,8 @@ class StoreChannelsWidget(BrowserWidget, InputWidget):
             TextLine(__name__="track", title=u"Track", required=False,
                      description=_(
                          "Track defines a series for your software. "
-                         "If not specified, the default track is assumed. "
-                         "Tracks should be requested to the store admins.")
+                         "If not specified, the default track ('latest') is "
+                         "assumed.")
                      ),
             List(__name__="risks", title=u"Risk", required=False,
                  value_type=Choice(vocabulary="SnapStoreChannel"),
