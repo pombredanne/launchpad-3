@@ -32,7 +32,6 @@ from zope.schema import (
     List,
     TextLine,
     )
-from zope.schema.interfaces import IVocabularyFactory
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -62,7 +61,6 @@ from lp.registry.enums import VCSType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
-from lp.services.propertycache import cachedproperty
 from lp.services.scripts import log
 from lp.services.webapp import (
     canonical_url,
@@ -82,6 +80,7 @@ from lp.services.webapp.breadcrumb import (
 from lp.services.webapp.url import urlappend
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
+from lp.snappy.browser.widgets.storechannels import StoreChannelsWidget
 from lp.snappy.interfaces.snap import (
     CannotAuthorizeStoreUploads,
     ISnap,
@@ -190,14 +189,9 @@ class SnapView(LaunchpadView):
         else:
             return 'Built on request'
 
-    @cachedproperty
+    @property
     def store_channels(self):
-        vocabulary = getUtility(
-            IVocabularyFactory, name='SnapStoreChannel')(self.context)
-        channel_titles = []
-        for channel in self.context.store_channels:
-            channel_titles.append(vocabulary.getTermByToken(channel).title)
-        return ', '.join(channel_titles)
+        return ', '.join(self.context.store_channels)
 
 
 def builds_for_snap(snap):
@@ -388,7 +382,7 @@ class SnapAddView(
         ]
     custom_widget('store_distro_series', LaunchpadRadioWidget)
     custom_widget('auto_build_archive', SnapArchiveWidget)
-    custom_widget('store_channels', LabeledMultiCheckBoxWidget)
+    custom_widget('store_channels', StoreChannelsWidget)
     custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
 
     help_links = {
@@ -694,7 +688,7 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
         'store_channels',
         ]
     custom_widget('store_distro_series', LaunchpadRadioWidget)
-    custom_widget('store_channels', LabeledMultiCheckBoxWidget)
+    custom_widget('store_channels', StoreChannelsWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
     custom_widget('git_ref', GitRefWidget, allow_external=True)
     custom_widget('auto_build_archive', SnapArchiveWidget)

@@ -94,6 +94,7 @@ from lp.snappy.interfaces.snappyseries import (
     ISnappyDistroSeries,
     ISnappySeries,
     )
+from lp.snappy.validators.channels import channels_validator
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
@@ -537,11 +538,12 @@ class ISnapEditableAttributes(IHasOwner):
             "authorize uploads of this snap package."))
 
     store_channels = exported(List(
-        value_type=Choice(vocabulary="SnapStoreChannel"),
-        title=_("Store channels"), required=False, readonly=False,
+        title=_("Store channels"),
+        required=False, readonly=False, constraint=channels_validator,
         description=_(
             "Channels to release this snap package to after uploading it to "
-            "the store.")))
+            "the store. A channel is defined by a combination of an optional "
+            " track and a risk, e.g. '2.1/stable', or 'stable'.")))
 
 
 class ISnapAdminAttributes(Interface):
