@@ -133,6 +133,8 @@ def delete_expired_blobs(con):
 
        We also delete any linked ApportJob and Job records here.
     """
+    log.info("Expiring blobs.")
+
     cur = con.cursor()
 
     # Generate the list of expired blobs.
@@ -199,6 +201,7 @@ def merge_duplicates(con):
     database.
     """
 
+    log.info("Finding duplicate LibraryFileContents.")
     # Get a list of all (sha1, filesize) that are duplicated in
     # LibraryFileContent
     cur = con.cursor()
@@ -209,8 +212,12 @@ def merge_duplicates(con):
         HAVING COUNT(*) > 1
         """)
     rows = list(cur.fetchall())
+    log.info("Found %d sets to deduplicate.", len(rows))
 
     # Merge the duplicate entries, each one in a separate transaction
+    prime_count = 0
+    dupe_count = 0
+    dupe_size = 0
     for sha1, filesize in rows:
         cur = con.cursor()
 
@@ -229,7 +236,7 @@ def merge_duplicates(con):
         dupes = cur.fetchall()
 
         if debug:
-            log.debug("Found duplicate LibraryFileContents")
+            log.debug3("Found duplicate LibraryFileContents")
             # Spit out more info in case it helps work out where
             # dupes are coming from.
             for dupe_id, _, _ in dupes:
@@ -238,7 +245,7 @@ def merge_duplicates(con):
                     WHERE content = %(dupe_id)s
                     """, vars())
                 for id, filename, mimetype in cur.fetchall():
-                    log.debug("> %d %s %s" % (id, filename, mimetype))
+                    log.debug3("> %d %s %s" % (id, filename, mimetype))
 
         # Make sure the first file exists on disk. Don't merge if it
         # doesn't. This shouldn't happen on production, so we don't try
@@ -248,7 +255,7 @@ def merge_duplicates(con):
         dupe1_id = dupes[0][0]
         if not file_exists(dupe1_id):
             if config.instance_name == 'staging':
-                log.debug(
+                log.debug3(
                         "LibraryFileContent %d data is missing", dupe1_id)
             else:
                 log.warning(
@@ -269,7 +276,7 @@ def merge_duplicates(con):
         # LibraryFileContent
         prime_id = dupes[0][0]
         other_ids = ', '.join(str(dupe) for dupe, _, _ in dupes[1:])
-        log.debug(
+        log.debug3(
             "Making LibraryFileAliases referencing %s reference %s instead",
             other_ids, prime_id
             )
@@ -278,9 +285,15 @@ def merge_duplicates(con):
                 UPDATE LibraryFileAlias SET content=%(prime_id)s
                 WHERE content = %(other_id)s
                 """, vars())
+        prime_count += 1
+        dupe_count += len(dupes)
+        dupe_size += filesize * (len(dupes) - 1)
 
-        log.debug("Committing")
+        log.debug3("Committing")
         con.commit()
+    log.info(
+        "Deduplicated %d LibraryFileContents into %d, saving %d bytes.",
+        dupe_count, prime_count, dupe_size)
 
 
 @implementer(ITunableLoop)
@@ -295,11 +308,12 @@ class ExpireAliases:
         self.con = con
         self.total_expired = 0
         self._done = False
+        log.info("Expiring LibraryFileAliases.")
 
     def isDone(self):
         if self._done:
             log.info(
-                "Expired %d LibraryFileAlias records." % self.total_expired)
+                "Expired %d LibraryFileAliases." % self.total_expired)
             return True
         else:
             return False
@@ -322,8 +336,6 @@ class ExpireAliases:
         self.total_expired += cur.rowcount
         if cur.rowcount == 0:
             self._done = True
-        else:
-            log.debug("Expired %d LibraryFileAlias records." % cur.rowcount)
         self.con.commit()
 
 
@@ -351,7 +363,7 @@ class UnreferencedLibraryFileAliasPruner:
         self.total_deleted = 0  # Running total
         self.index = 1
 
-        log.info("Deleting unreferenced LibraryFileAliases")
+        log.info("Deleting unreferenced LibraryFileAliases.")
 
         cur = con.cursor()
 
@@ -371,7 +383,7 @@ class UnreferencedLibraryFileAliasPruner:
         assert len(references) > 10, (
             'Database introspection returned nonsense')
         log.debug(
-            "Found %d columns referencing LibraryFileAlias", len(references))
+            "Found %d columns referencing LibraryFileAlias.", len(references))
 
         # Find all relevant LibraryFileAlias references and fill in
         # ReferencedLibraryFileAlias
@@ -384,7 +396,7 @@ class UnreferencedLibraryFileAliasPruner:
                 """ % {
                     'table': quoteIdentifier(table),
                     'column': quoteIdentifier(column)})
-            log.debug("%s.%s references %d LibraryFileContent rows." % (
+            log.debug("%s.%s references %d LibraryFileAlias rows." % (
                 table, column, cur.rowcount))
             con.commit()
 
@@ -426,14 +438,14 @@ class UnreferencedLibraryFileAliasPruner:
         cur.execute(
             "SELECT COALESCE(max(id),0) FROM UnreferencedLibraryFileAlias")
         self.max_id = cur.fetchone()[0]
-        log.debug(
-            "%d unreferenced LibraryFileAlias to remove." % self.max_id)
+        log.info(
+            "%d unreferenced LibraryFileAliases to remove." % self.max_id)
         con.commit()
 
     def isDone(self):
         if self.index > self.max_id:
             log.info(
-                "Deleted %d LibraryFileAlias records." % self.total_deleted)
+                "Deleted %d LibraryFileAliases." % self.total_deleted)
             return True
         else:
             return False
@@ -449,7 +461,6 @@ class UnreferencedLibraryFileAliasPruner:
             """, (self.index, self.index + chunksize - 1))
         deleted_rows = cur.rowcount
         self.total_deleted += deleted_rows
-        log.debug("Deleted %d LibraryFileAlias records." % deleted_rows)
         self.con.commit()
         self.index += chunksize
 
@@ -476,6 +487,7 @@ class UnreferencedContentPruner:
         self.con = con
         self.index = 1
         self.total_deleted = 0
+        log.info("Deleting unreferenced LibraryFileContents.")
         cur = con.cursor()
         drop_tables(cur, "UnreferencedLibraryFileContent")
         cur.execute("""
@@ -495,13 +507,15 @@ class UnreferencedContentPruner:
             SELECT COALESCE(max(id), 0) FROM UnreferencedLibraryFileContent
             """)
         self.max_id = cur.fetchone()[0]
-        log.debug(
-            "%d unreferenced LibraryFileContent rows to remove."
+        log.info(
+            "%d unreferenced LibraryFileContents to remove."
             % self.max_id)
 
     def isDone(self):
         if self.index > self.max_id:
-            log.info("Deleted %d unreferenced files." % self.total_deleted)
+            log.info(
+                "Deleted %d unreferenced LibraryFileContents and files.",
+                self.total_deleted)
             return True
         else:
             return False
@@ -555,7 +569,7 @@ class UnreferencedContentPruner:
                             raise
 
             if removed:
-                log.debug(
+                log.debug3(
                     "Deleted %s from %s", content_id, ' & '.join(removed))
 
             elif config.librarian_server.upstream_host is None:
@@ -590,6 +604,9 @@ def delete_unwanted_disk_files(con):
     to avoid deleting files that have just been uploaded but have yet to have
     the database records committed.
     """
+
+    log.info("Deleting unwanted files from disk.")
+
     swift_enabled = getFeatureFlag('librarian.swift.enabled') or False
 
     cur = con.cursor()
@@ -680,13 +697,13 @@ def delete_unwanted_disk_files(con):
 
             if not file_wanted:
                 if time() - os.path.getctime(path) < ONE_DAY:
-                    log.debug(
+                    log.debug3(
                         "File %d not removed - created too recently"
                         % content_id)
                 else:
                     # File uploaded a while ago but no longer wanted.
                     os.unlink(path)
-                    log.debug("Deleted %s" % path)
+                    log.debug3("Deleted %s" % path)
                     removed_count += 1
 
     # Report any remaining LibraryFileContent that the database says
@@ -737,6 +754,8 @@ def swift_files(max_lfc_id):
 def delete_unwanted_swift_files(con):
     """Delete files found in Swift that have no corresponding db record."""
     assert getFeatureFlag('librarian.swift.enabled')
+
+    log.info("Deleting unwanted files from Swift.")
 
     cur = con.cursor()
 
@@ -793,12 +812,12 @@ def delete_unwanted_swift_files(con):
             mod_time = iso8601.parse_date(
                 obj['last_modified']).replace(tzinfo=None)
             if mod_time > _utcnow() - timedelta(days=1):
-                log.debug(
+                log.debug3(
                     "File %d not removed - created too recently", content_id)
             else:
                 with swift.connection() as swift_connection:
                     swift_connection.delete_object(container, name)
-                log.debug(
+                log.debug3(
                     'Deleted ({0}, {1}) from Swift'.format(container, name))
                 removed_count += 1
 
