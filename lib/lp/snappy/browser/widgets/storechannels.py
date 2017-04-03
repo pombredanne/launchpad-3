@@ -41,7 +41,6 @@ from lp.snappy.validators.channels import (
 class StoreChannelsWidget(BrowserWidget, InputWidget):
 
     template = ViewPageTemplateFile("templates/storechannels.pt")
-    display_label = False
     _separator = channel_components_delimiter
     _default_track = 'latest'
     _widgets_set_up = False
@@ -49,6 +48,8 @@ class StoreChannelsWidget(BrowserWidget, InputWidget):
     def __init__(self, field, value_type, request):
         # We don't use value_type.
         super(StoreChannelsWidget, self).__init__(field, request)
+        # disable help_text for the global widget
+        self.hint = None
 
     def setUpSubWidgets(self):
         if self._widgets_set_up:
