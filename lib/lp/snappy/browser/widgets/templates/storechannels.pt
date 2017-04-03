@@ -1,22 +1,35 @@
 <table>
   <tr>
     <td>
-      <tal:widget define="widget nocall:view/track_widget">
-        <metal:block
-            use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-      </tal:widget>
-      <p class="formHelp">
-         To open a new track, <a href="https://snapcraft.io/community">ask the store admins</a>.
+      <p class="formHelp">Channels to release this snap package to after uploading it to the store.
+        A channel is defined by a combination of an optional track and a risk, e.g. '2.1/stable', or 'stable'.
       </p>
     </td>
   </tr>
   <tr>
     <td>
-      <tal:widget define="widget nocall:view/risks_widget"
-                  condition="widget/context/value_type/vocabulary">
-        <metal:block
-            use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
-      </tal:widget>
+      <table class="subordinate">
+        <tr>
+          <td>
+            <tal:widget define="widget nocall:view/risks_widget"
+                        condition="widget/context/value_type/vocabulary">
+              <metal:block
+                use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
+            </tal:widget>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <tal:widget define="widget nocall:view/track_widget">
+              <metal:block
+                  use-macro="context/@@launchpad_widget_macros/launchpad_widget_row" />
+            </tal:widget>
+            <p class="formHelp">
+                To open a new track, <a href="https://snapcraft.io/community">ask the store admins</a>.
+            </p>
+          </td>
+        </tr>
+      </table>
     </td>
   </tr>
 </table>
