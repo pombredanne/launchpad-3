@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -179,6 +179,17 @@ class BuildQueue(SQLBase):
         self.specific_build.updateStatus(BuildStatus.BUILDING)
         if builder is not None:
             del get_property_cache(builder).currentjob
+
+    def collectStatus(self, slave_status):
+        """See `IBuildQueue`."""
+        builder_status = slave_status["builder_status"]
+        if builder_status == "BuilderStatus.ABORTING":
+            self.logtail = "Waiting for slave process to be terminated"
+        elif slave_status.get("logtail") is not None:
+            self.logtail = str(
+                slave_status.get("logtail")).decode("UTF-8", errors="replace")
+        self.specific_build.updateStatus(
+            self.specific_build.status, slave_status=slave_status)
 
     def suspend(self):
         """See `IBuildQueue`."""

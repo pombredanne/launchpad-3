@@ -175,6 +175,12 @@ class ISnapBuildView(IPackageBuild):
         title=_("The date when the build completed or is estimated to "
             "complete."), readonly=True)
 
+    revision_id = exported(TextLine(
+        title=_("Revision ID"), required=False, readonly=True,
+        description=_(
+            "The revision ID of the branch used for this build, if "
+            "available.")))
+
     store_upload_jobs = CollectionField(
         title=_("Store upload jobs for this build."),
         # Really ISnapStoreUploadJob.

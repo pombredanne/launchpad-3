@@ -112,6 +112,9 @@
     </p>
 
     <ul>
+      <li id="revision-id" tal:condition="context/revision_id">
+        Revision: <span tal:replace="context/revision_id" />
+      </li>
       <li tal:condition="context/dependencies">
         Missing build dependencies: <em tal:content="context/dependencies"/>
      </li>

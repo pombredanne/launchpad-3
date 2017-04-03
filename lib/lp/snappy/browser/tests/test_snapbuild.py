@@ -77,6 +77,16 @@ class TestSnapBuildView(TestCaseWithFactory):
         build_view = create_initialized_view(build, "+index")
         self.assertEqual([], build_view.files)
 
+    def test_revision_id(self):
+        build = self.factory.makeSnapBuild()
+        build.updateStatus(
+            BuildStatus.FULLYBUILT, slave_status={"revision_id": "dummy"})
+        build_view = create_initialized_view(build, "+index")
+        self.assertThat(build_view(), soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "revision ID", "li", attrs={"id": "revision-id"},
+                text=re.compile(r"^\s*Revision: dummy\s*$"))))
+
     def test_store_upload_status_in_progress(self):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
         getUtility(ISnapStoreUploadJobSource).create(build)

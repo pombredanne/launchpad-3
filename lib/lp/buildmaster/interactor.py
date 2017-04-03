@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -536,15 +536,9 @@ class BuilderInteractor(object):
         # matches the DB, and this method isn't called unless the DB
         # says there's a job.
         builder_status = slave_status['builder_status']
-        if builder_status == 'BuilderStatus.BUILDING':
-            # Build still building, collect the logtail.
-            vitals.build_queue.logtail = str(
-                slave_status.get('logtail')).decode('UTF-8', errors='replace')
-            transaction.commit()
-        elif builder_status == 'BuilderStatus.ABORTING':
-            # Build is being aborted.
-            vitals.build_queue.logtail = (
-                "Waiting for slave process to be terminated")
+        if builder_status in (
+                'BuilderStatus.BUILDING', 'BuilderStatus.ABORTING'):
+            vitals.build_queue.collectStatus(slave_status)
             transaction.commit()
         elif builder_status == 'BuilderStatus.WAITING':
             # Build has finished. Delegate handling to the build itself.
