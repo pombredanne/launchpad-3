@@ -195,6 +195,11 @@ class ISnapBuildView(IPackageBuild):
             "The URL to use for managing this package in the store."),
         required=False, readonly=True))
 
+    store_upload_revision = exported(Int(
+        title=_("Store revision"),
+        description=_("The revision assigned to this package by the store."),
+        required=False, readonly=True))
+
     store_upload_error_message = exported(TextLine(
         title=_("Store upload error message"),
         description=_(

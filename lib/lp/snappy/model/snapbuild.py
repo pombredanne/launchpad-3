@@ -439,6 +439,11 @@ class SnapBuild(PackageBuildMixin, Storm):
         return job and job.store_url
 
     @property
+    def store_upload_revision(self):
+        job = self.last_store_upload_job
+        return job and job.store_revision
+
+    @property
     def store_upload_error_message(self):
         job = self.last_store_upload_job
         return job and job.error_message
