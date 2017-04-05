@@ -225,6 +225,16 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         """See `ISnapStoreUploadJob`."""
         self.metadata["store_url"] = url
 
+    @property
+    def store_revision(self):
+        """See `ISnapStoreUploadJob`."""
+        return self.metadata.get("store_revision")
+
+    @store_revision.setter
+    def store_revision(self, revision):
+        """See `ISnapStoreUploadJob`."""
+        self.metadata["store_revision"] = revision
+
     # Ideally we'd just override Job._set_status or similar, but
     # lazr.delegates makes that difficult, so we use this to override all
     # the individual Job lifecycle methods instead.
@@ -259,14 +269,14 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
             if "status_url" not in self.metadata:
                 self.metadata["status_url"] = client.upload(self.snapbuild)
             if self.store_url is None:
-                self.store_url, self.metadata["store_revision"] = (
+                self.store_url, self.store_revision = (
                     client.checkStatus(self.metadata["status_url"]))
             if self.snapbuild.snap.store_channels:
-                if self.metadata["store_revision"] is None:
+                if self.store_revision is None:
                     raise ManualReview(
                         "Package held for manual review on the store; "
                         "cannot release it automatically.")
-                client.release(self.snapbuild, self.metadata["store_revision"])
+                client.release(self.snapbuild, self.store_revision)
             self.error_message = None
         except self.retry_error_types:
             raise

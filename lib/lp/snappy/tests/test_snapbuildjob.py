@@ -137,7 +137,8 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
                     repr(delivery))
 
     def test_run(self):
-        # The job uploads the build to the store and records the store URL.
+        # The job uploads the build to the store and records the store URL
+        # and revision.
         snapbuild = self.makeSnapBuild()
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
@@ -152,6 +153,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([], client.release.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertEqual(self.store_url, job.store_url)
+        self.assertEqual(1, job.store_revision)
         self.assertIsNone(job.error_message)
         self.assertEqual([], pop_notifications())
         self.assertWebhookDeliveries(snapbuild, ["Pending", "Uploaded"])
@@ -171,6 +173,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([], client.release.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertIsNone(job.store_url)
+        self.assertIsNone(job.store_revision)
         self.assertEqual("An upload failure", job.error_message)
         self.assertEqual([], pop_notifications())
         self.assertWebhookDeliveries(
@@ -196,6 +199,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([], client.release.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertIsNone(job.store_url)
+        self.assertIsNone(job.store_revision)
         self.assertEqual("Authorization failed.", job.error_message)
         [notification] = pop_notifications()
         self.assertEqual(
@@ -244,6 +248,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([], client.release.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertIsNone(job.store_url)
+        self.assertIsNone(job.store_revision)
         self.assertEqual("Failed to upload", job.error_message)
         [notification] = pop_notifications()
         self.assertEqual(
@@ -291,6 +296,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([], client.release.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertIsNone(job.store_url)
+        self.assertIsNone(job.store_revision)
         self.assertIsNone(job.error_message)
         self.assertEqual([], pop_notifications())
         self.assertEqual(JobStatus.WAITING, job.job.status)
@@ -310,6 +316,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([], client.release.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertEqual(self.store_url, job.store_url)
+        self.assertEqual(1, job.store_revision)
         self.assertIsNone(job.error_message)
         self.assertEqual([], pop_notifications())
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
@@ -335,6 +342,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([], client.release.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertIsNone(job.store_url)
+        self.assertIsNone(job.store_revision)
         self.assertEqual("Scan failed.", job.error_message)
         [notification] = pop_notifications()
         self.assertEqual(
@@ -378,6 +386,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([((snapbuild, 1), {})], client.release.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertEqual(self.store_url, job.store_url)
+        self.assertEqual(1, job.store_revision)
         self.assertIsNone(job.error_message)
         self.assertEqual([], pop_notifications())
         self.assertWebhookDeliveries(snapbuild, ["Pending", "Uploaded"])
@@ -405,6 +414,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([], client.release.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertEqual(self.store_url, job.store_url)
+        self.assertIsNone(job.store_revision)
         self.assertEqual(
             "Package held for manual review on the store; "
             "cannot release it automatically.",
@@ -457,6 +467,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([((snapbuild, 1), {})], client.release.calls)
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertEqual(self.store_url, job.store_url)
+        self.assertEqual(1, job.store_revision)
         self.assertEqual("Failed to publish", job.error_message)
         [notification] = pop_notifications()
         self.assertEqual(
