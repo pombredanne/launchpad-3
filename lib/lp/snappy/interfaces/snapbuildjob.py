@@ -19,7 +19,10 @@ from zope.interface import (
     Attribute,
     Interface,
     )
-from zope.schema import TextLine
+from zope.schema import (
+    Int,
+    TextLine,
+    )
 
 from lp import _
 from lp.services.job.interfaces.job import (
@@ -56,6 +59,10 @@ class ISnapStoreUploadJob(IRunnableJob):
 
     store_url = TextLine(
         title=_("The URL on the store corresponding to this build"),
+        required=False, readonly=True)
+
+    store_revision = Int(
+        title=_("The revision assigned to this build by the store"),
         required=False, readonly=True)
 
 
