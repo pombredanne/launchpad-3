@@ -5,6 +5,7 @@ __metaclass__ = type
 
 import doctest
 import email
+import re
 from textwrap import dedent
 
 import soupmatchers
@@ -1189,15 +1190,26 @@ class TestPersonRelatedProjectsView(TestCaseWithFactory):
     def setUp(self):
         super(TestPersonRelatedProjectsView, self).setUp()
         self.user = self.factory.makePerson()
-        self.view = create_initialized_view(self.user, '+related-projects')
 
     def test_view_helper_attributes(self):
         # Verify view helper attributes.
-        self.assertEqual('Related projects', self.view.page_title)
-        self.assertEqual('default_batch_size', self.view._max_results_key)
+        view = create_initialized_view(self.user, '+related-projects')
+        self.assertEqual('Related projects', view.page_title)
+        self.assertEqual('default_batch_size', view._max_results_key)
         self.assertEqual(
-            config.launchpad.default_batch_size,
-            self.view.max_results_to_display)
+            config.launchpad.default_batch_size, view.max_results_to_display)
+
+    def test_batching(self):
+        for i in range(10):
+            self.factory.makeProduct(owner=self.user)
+        view = create_initialized_view(self.user, '+related-projects')
+        next_match = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Next link', 'a',
+                attrs={'href': re.compile(re.escape(
+                    '?batch=5&memo=5&start=5'))},
+                text='Next'))
+        self.assertThat(view(), next_match)
 
 
 class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
