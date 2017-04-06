@@ -166,13 +166,6 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IHeadingContext):
     def removeAttendance(person):
         """Remove the person's attendance record."""
 
-    # bug linking
-    def linkSpecification(spec):
-        """Link this sprint to the given specification."""
-
-    def unlinkSpecification(spec):
-        """Remove this specification from the sprint spec list."""
-
     def isDriver(user):
         """Returns True if and only if the specified user
         is a driver of this sprint.
