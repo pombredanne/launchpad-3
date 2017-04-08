@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -297,6 +297,15 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
         return (user.inTeam(self.owner) or
                 user.inTeam(self.driver) or
                 user.inTeam(admins))
+
+    def destroySelf(self):
+        Store.of(self).find(
+            SprintSpecification,
+            SprintSpecification.sprint == self).remove()
+        Store.of(self).find(
+            SprintAttendance,
+            SprintAttendance.sprint == self).remove()
+        Store.of(self).remove(self)
 
 
 @implementer(ISprintSet)
