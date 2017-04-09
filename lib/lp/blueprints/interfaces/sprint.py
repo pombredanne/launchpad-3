@@ -183,10 +183,7 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IHeadingContext):
         """
 
     def destroySelf():
-        """Remove this sprint.
-
-        :raises CannotDeleteSprint: if the sprint cannot be deleted.
-        """
+        """Remove this sprint."""
 
 
 class IHasSprints(Interface):
