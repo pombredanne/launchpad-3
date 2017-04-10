@@ -109,13 +109,6 @@ class ISprintAnyPerson(Interface):
         """Remove the person's attendance record."""
 
 
-class ISprintEdit(Interface):
-    """`ISprint` methods that require launchpad.Edit permission."""
-
-    def destroySelf():
-        """Remove this sprint."""
-
-
 class ISprintEditableAttributes(Interface):
     """`ISprint` attributes that can be edited.
 
@@ -187,6 +180,13 @@ class ISprintEditableAttributes(Interface):
         required=True, readonly=False, default=True)
 
 
+class ISprintModerate(Interface):
+    """`ISprint` methods that can be called by more than one community."""
+
+    def destroySelf():
+        """Remove this sprint."""
+
+
 class ISprintDriver(Interface):
     """`ISprint` methods that require launchpad.Driver permission."""
 
@@ -208,8 +208,8 @@ class ISprintDriver(Interface):
         """Remove this specification from the sprint spec list."""
 
 
-class ISprint(ISprintPublic, ISprintAnyPerson, ISprintEdit,
-              ISprintEditableAttributes, ISprintDriver):
+class ISprint(ISprintPublic, ISprintAnyPerson, ISprintEditableAttributes,
+              ISprintModerate, ISprintDriver):
     """A sprint, or conference, or meeting."""
 
 

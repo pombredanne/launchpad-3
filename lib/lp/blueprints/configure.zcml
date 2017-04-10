@@ -40,8 +40,10 @@
         interface="lp.blueprints.interfaces.sprint.ISprintAnyPerson"/>
     <require
         permission="launchpad.Edit"
-        interface="lp.blueprints.interfaces.sprint.ISprintEdit"
         set_schema="lp.blueprints.interfaces.sprint.ISprintEditableAttributes"/>
+    <require
+        permission="launchpad.Moderate"
+        interface="lp.blueprints.interfaces.sprint.ISprintModerate"/>
     <require
         permission="launchpad.Driver"
         interface="lp.blueprints.interfaces.sprint.ISprintDriver"/>

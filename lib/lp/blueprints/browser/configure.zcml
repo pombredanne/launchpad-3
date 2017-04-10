@@ -81,7 +81,7 @@
         name="+delete"
         for="lp.blueprints.interfaces.sprint.ISprint"
         class="lp.blueprints.browser.sprint.SprintDeleteView"
-        permission="launchpad.Edit"
+        permission="launchpad.Moderate"
         facet="overview"
         template="../templates/sprint-delete.pt"/>
     <browser:page

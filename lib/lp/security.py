@@ -679,6 +679,17 @@ class EditSprint(EditByOwnersOrAdmins):
     usedfor = ISprint
 
 
+class ModerateSprint(ModerateByRegistryExpertsOrAdmins):
+    """The sprint owner, registry experts, and admins can moderate sprints."""
+    permission = 'launchpad.Moderate'
+    usedfor = ISprint
+
+    def checkAuthenticated(self, user):
+        return (
+            super(ModerateSprint, self).checkAuthenticated(user) or
+            user.isOwner(self.obj))
+
+
 class EditSpecificationSubscription(AuthorizationBase):
     """The subscriber, and people related to the spec or the target of the
     spec can determine who is essential."""
