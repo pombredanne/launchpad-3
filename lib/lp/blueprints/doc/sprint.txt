@@ -268,3 +268,10 @@ objects.
     mustard
 
 
+Sprint deletion
+---------------
+
+The sprint destroySelf() method deletes a sprint.
+
+    >>> ubz.destroySelf()
+    >>> sprintset["ubz"]
