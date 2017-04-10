@@ -16,6 +16,7 @@ from lp.app.enums import InformationType
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     BrowserTestCase,
+    person_logged_in,
     RequestTimelineCollector,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
@@ -31,10 +32,11 @@ class TestSprintIndex(BrowserTestCase):
 
     def test_query_count(self):
         sprint = self.factory.makeSprint()
-        for x in range(30):
-            sprint.attend(
-                self.factory.makePerson(),
-                sprint.time_starts, sprint.time_ends, True)
+        with person_logged_in(sprint.owner):
+            for x in range(30):
+                sprint.attend(
+                    self.factory.makePerson(),
+                    sprint.time_starts, sprint.time_ends, True)
         self.assertThat(sprint, BrowsesWithQueryLimit(18, sprint.owner))
 
     def test_blueprint_listing_query_count(self):
@@ -84,9 +86,10 @@ class TestSprintDeleteView(BrowserTestCase):
         sprint = self.factory.makeSprint()
         sprint_url = canonical_url(sprint)
         owner_url = canonical_url(sprint.owner)
-        sprint.attend(
-            self.factory.makePerson(), sprint.time_starts, sprint.time_ends,
-            True)
+        with person_logged_in(sprint.owner):
+            sprint.attend(
+                self.factory.makePerson(),
+                sprint.time_starts, sprint.time_ends, True)
         blueprint = self.factory.makeSpecification()
         blueprint.linkSprint(sprint, blueprint.owner).acceptBy(sprint.owner)
         browser = self.getViewBrowser(sprint, user=sprint.owner)

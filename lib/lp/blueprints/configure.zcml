@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -33,10 +33,18 @@
   <class
       class="lp.blueprints.model.sprint.Sprint">
     <allow
-        interface="lp.blueprints.interfaces.sprint.ISprint"/>
+        interface="lp.blueprints.interfaces.sprint.ISprintPublic
+                   lp.blueprints.interfaces.sprint.ISprintEditableAttributes"/>
     <require
         permission="launchpad.AnyPerson"
-        set_schema="lp.blueprints.interfaces.sprint.ISprint"/>
+        interface="lp.blueprints.interfaces.sprint.ISprintAnyPerson"/>
+    <require
+        permission="launchpad.Edit"
+        interface="lp.blueprints.interfaces.sprint.ISprintEdit"
+        set_schema="lp.blueprints.interfaces.sprint.ISprintEditableAttributes"/>
+    <require
+        permission="launchpad.Driver"
+        interface="lp.blueprints.interfaces.sprint.ISprintDriver"/>
   </class>
   <adapter
       provides="lp.services.webapp.interfaces.IBreadcrumb"
