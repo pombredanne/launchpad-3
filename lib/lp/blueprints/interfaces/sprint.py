@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for a Sprint (a meeting, conference or hack session).
@@ -30,8 +30,8 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.app.validators.name import name_validator
 from lp.app.interfaces.launchpad import IHeadingContext
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.registry.interfaces.role import (
     IHasDrivers,
@@ -181,6 +181,9 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IHeadingContext):
         `driver` attribute, a person who is memeber of a team
         in the `driver` attribute or an administrator.
         """
+
+    def destroySelf():
+        """Remove this sprint."""
 
 
 class IHasSprints(Interface):

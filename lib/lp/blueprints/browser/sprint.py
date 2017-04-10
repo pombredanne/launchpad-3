@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sprint views."""
@@ -9,6 +9,7 @@ __all__ = [
     'SprintAddView',
     'SprintAttendeesCsvExportView',
     'SprintBrandingView',
+    'SprintDeleteView',
     'SprintEditView',
     'SprintFacets',
     'SprintMeetingExportView',
@@ -113,7 +114,7 @@ class SprintOverviewMenu(NavigationMenu):
     usedfor = ISprint
     facet = 'overview'
     links = ['attendance', 'registration', 'attendee_export', 'edit',
-             'branding']
+             'branding', 'delete']
 
     def attendance(self):
         text = 'Register yourself'
@@ -142,6 +143,10 @@ class SprintOverviewMenu(NavigationMenu):
         text = 'Change branding'
         summary = 'Modify the imagery used to represent this meeting'
         return Link('+branding', text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        return Link('+delete', 'Delete sprint', icon='trash-icon')
 
 
 class SprintSpecificationsMenu(NavigationMenu,
@@ -363,6 +368,25 @@ class SprintEditView(LaunchpadEditFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+class SprintDeleteView(LaunchpadFormView):
+    """Form for deleting sprints."""
+
+    schema = ISprint
+    field_names = []
+
+    @property
+    def label(self):
+        return smartquote('Delete "%s" sprint' % self.context.displayname)
+
+    page_title = label
+
+    @action("Delete sprint", name="delete")
+    def delete_action(self, action, data):
+        owner = self.context.owner
+        self.context.destroySelf()
+        self.next_url = canonical_url(owner)
 
 
 class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
