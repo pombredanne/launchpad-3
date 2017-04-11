@@ -2331,6 +2331,7 @@ class Person(
             ('archivesubscriber', 'subscriber'),
             ('branch', 'owner'),
             ('branchsubscription', 'person'),
+            ('bugnotificationrecipient', 'person'),
             ('bugsubscription', 'person'),
             ('bugsummary', 'viewed_by'),
             ('bugtask', 'assignee'),
