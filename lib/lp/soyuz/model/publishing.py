@@ -1688,9 +1688,8 @@ class PublishingSet:
         # Append the sources' related binaries to our condemned list,
         # and mark them all deleted.
         bpph_ids = [bpph.id for bpph in binaries]
-        bpph_ids.extend(
-            bpph.id for source, bpph, bin, bin_name, arch
-            in self.getBinaryPublicationsForSources(sources))
+        bpph_ids.extend(self.getBinaryPublicationsForSources(sources).values(
+            BinaryPackagePublishingHistory.id))
         if len(bpph_ids) > 0:
             self.setMultipleDeleted(
                 BinaryPackagePublishingHistory, bpph_ids, removed_by,
