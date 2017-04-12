@@ -144,7 +144,7 @@ class SprintOverviewMenu(NavigationMenu):
         summary = 'Modify the imagery used to represent this meeting'
         return Link('+branding', text, summary, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Moderate')
     def delete(self):
         return Link('+delete', 'Delete sprint', icon='trash-icon')
 
