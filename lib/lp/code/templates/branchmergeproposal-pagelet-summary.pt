@@ -147,7 +147,7 @@
 
               if (logged_in) {
                 var config = {
-                  picker_activator: '#linkbug'
+                  picker_activator = '#linkbug'
                 };
                 var linked_bug_picker = new
                   Y.lp.code.branch.bugspeclinks.LinkedBugPicker(config);
