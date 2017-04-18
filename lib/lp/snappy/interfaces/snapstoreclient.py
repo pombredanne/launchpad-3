@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for communication with the snap store."""
@@ -17,6 +17,7 @@ __all__ = [
     'NeedsRefreshResponse',
     'ReleaseFailedResponse',
     'ScanFailedResponse',
+    'SnapStoreError',
     'UnauthorizedUploadResponse',
     'UploadNotScannedYetResponse',
     ]
@@ -27,48 +28,56 @@ from lazr.restful.declarations import error_status
 from zope.interface import Interface
 
 
+class SnapStoreError(Exception):
+
+    def __init__(self, message="", detail=None):
+        super(SnapStoreError, self).__init__(message)
+        self.message = message
+        self.detail = detail
+
+
 @error_status(httplib.INTERNAL_SERVER_ERROR)
-class BadRequestPackageUploadResponse(Exception):
+class BadRequestPackageUploadResponse(SnapStoreError):
     pass
 
 
-class BadUploadResponse(Exception):
+class BadUploadResponse(SnapStoreError):
     pass
 
 
-class BadRefreshResponse(Exception):
+class BadRefreshResponse(SnapStoreError):
     pass
 
 
-class NeedsRefreshResponse(Exception):
+class NeedsRefreshResponse(SnapStoreError):
     pass
 
 
-class UnauthorizedUploadResponse(Exception):
+class UnauthorizedUploadResponse(SnapStoreError):
     pass
 
 
-class BadScanStatusResponse(Exception):
+class BadScanStatusResponse(SnapStoreError):
     pass
 
 
-class UploadNotScannedYetResponse(Exception):
+class UploadNotScannedYetResponse(SnapStoreError):
     pass
 
 
-class ScanFailedResponse(Exception):
+class ScanFailedResponse(SnapStoreError):
     pass
 
 
-class BadSearchResponse(Exception):
+class BadSearchResponse(SnapStoreError):
     pass
 
 
-class BadReleaseResponse(Exception):
+class BadReleaseResponse(SnapStoreError):
     pass
 
 
-class ReleaseFailedResponse(Exception):
+class ReleaseFailedResponse(SnapStoreError):
     pass
 
 

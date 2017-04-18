@@ -188,7 +188,13 @@ class SnapStoreClient:
                     raise BadUploadResponse(response.text)
                 return {"upload_id": response_data["upload_id"]}
             except requests.HTTPError as e:
-                raise BadUploadResponse(e.args[0])
+                if e.response is not None:
+                    detail = e.response.content
+                    if isinstance(detail, bytes):
+                        detail = detail.decode("UTF-8", errors="replace")
+                else:
+                    detail = None
+                raise BadUploadResponse(e.args[0], detail=detail)
         finally:
             lfa.close()
 

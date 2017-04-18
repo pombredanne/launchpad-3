@@ -48,6 +48,7 @@ from lp.snappy.interfaces.snapstoreclient import (
     BadRequestPackageUploadResponse,
     BadScanStatusResponse,
     BadSearchResponse,
+    BadUploadResponse,
     ISnapStoreClient,
     ReleaseFailedResponse,
     ScanFailedResponse,
@@ -444,6 +445,25 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.assertNotEqual(
             store_secrets["discharge"],
             snapbuild.snap.store_secrets["discharge"])
+
+    def test_upload_file_error(self):
+        @urlmatch(path=r".*/unscanned-upload/$")
+        def unscanned_upload_handler(url, request):
+            return {
+                "status_code": 502,
+                "reason": "Proxy Error",
+                "content": b"The proxy exploded.\n",
+                }
+
+        store_secrets = self._make_store_secrets()
+        snapbuild = self.makeUploadableSnapBuild(store_secrets=store_secrets)
+        transaction.commit()
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            with HTTMock(unscanned_upload_handler):
+                err = self.assertRaises(
+                    BadUploadResponse, self.client.upload, snapbuild)
+                self.assertEqual("502 Server Error: Proxy Error", str(err))
+                self.assertEqual(b"The proxy exploded.\n", err.detail)
 
     def test_refresh_discharge_macaroon(self):
         store_secrets = self._make_store_secrets()
