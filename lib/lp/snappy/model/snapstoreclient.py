@@ -179,7 +179,10 @@ class SnapStoreClient:
             try:
                 response = urlfetch(
                     unscanned_upload_url, method="POST", data=encoder,
-                    headers={"Content-Type": encoder.content_type})
+                    headers={
+                        "Content-Type": encoder.content_type,
+                        "Accept": "application/json",
+                        })
                 response_data = response.json()
                 if not response_data.get("successful", False):
                     raise BadUploadResponse(response.text)
