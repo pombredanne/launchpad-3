@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposals."""
@@ -2043,7 +2043,7 @@ class TestBranchMergeProposalLinkBugViewMixin:
         self.assertEqual(
             expected_text,
             [extract_text(tag) for tag in find_tags_by_class(
-                 browser.contents, "bug-mp-summary")])
+                 browser.contents, "buglink-summary")])
 
     def test_link(self):
         # A user can enter a bug number to link from an MP to a bug.
@@ -2092,7 +2092,7 @@ class TestBranchMergeProposalLinkBugViewGit(
                 flags=doctest.ELLIPSIS))
         self.assertThat(
             [extract_text(tag) for tag in find_tags_by_class(
-                 browser.contents, "bug-mp-summary")],
+                 browser.contents, "buglink-summary")],
             MatchesListwise(matchers))
 
     def test_bug_page_shows_link(self):

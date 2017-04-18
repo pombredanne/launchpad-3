@@ -77,7 +77,7 @@
     lib/lp/bugs/templates/bug-branch.pt has similar code for Bazaar.
   </tal:comment>
 
-  <div class="bug-mp-summary"
+  <div class="buglink-summary"
        tal:define="show_edit bug/required:launchpad.Edit"
        tal:condition="proposal/required:launchpad.View">
     <a tal:attributes="href proposal/merge_source/fmt:url"
@@ -107,7 +107,7 @@
     <tal:bug-tasks repeat="bugtask view/linked_bugtasks">
       <tr tal:condition="bugtask/bug/required:launchpad.View"
            tal:attributes="id string:buglink-${bugtask/bug/id}"
-           class="bug-mp-summary">
+           class="buglink-summary">
         <td tal:content="structure bugtask/fmt:link:bugs" class="first"/>
         <td>
           <span tal:content="bugtask/importance/title"

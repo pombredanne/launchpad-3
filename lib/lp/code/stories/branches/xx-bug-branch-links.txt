@@ -24,7 +24,7 @@ if the user is not logged in, they will be asked to log in.
     Unauthorized: (...launchpad.AnyPerson')
 
     >>> def printBugBranchLinks(browser):
-    ...     tags = find_tags_by_class(browser.contents, 'bug-branch-summary')
+    ...     tags = find_tags_by_class(browser.contents, 'buglink-summary')
     ...     if len(tags) == 0:
     ...         print 'No bug branch links'
     ...     else:

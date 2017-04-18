@@ -733,10 +733,10 @@ tr.ict-header {
 
 /* === Bugs === */
 
-tr.bug-branch-summary td {
+tr.buglink-summary td {
     padding: 0px 6px;
     }
-tr.bug-branch-summary td.first {
+tr.buglink-summary td.first {
     padding-left: 0px;
     }
 

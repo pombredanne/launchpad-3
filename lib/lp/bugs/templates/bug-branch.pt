@@ -9,7 +9,7 @@
    Git.
  </tal:comment>
 
- <div class="bug-branch-summary"
+ <div class="buglink-summary"
       tal:define="bug_branch context;
                   branch bug_branch/branch;
                   bug bug_branch/bug;

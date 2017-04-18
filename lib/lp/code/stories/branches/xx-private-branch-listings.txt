@@ -218,7 +218,7 @@ visible to those that would be able to see the branch.
 There are no branches linked to this bug.
 
     >>> def printBugBranchLinks(browser):
-    ...     tags = find_tags_by_class(browser.contents, 'bug-branch-summary')
+    ...     tags = find_tags_by_class(browser.contents, 'buglink-summary')
     ...     if len(tags) == 0:
     ...         print 'No bug branch links'
     ...     else:
