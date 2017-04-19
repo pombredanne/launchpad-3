@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from datetime import timedelta
@@ -313,7 +313,8 @@ class ITranslationImportQueue(Interface):
         """Return a new or updated entry of the import queue.
 
         :arg path: is the path, with the filename, of the uploaded file.
-        :arg content: is the file content.
+        :arg content: is the file content, or a seekable file object open on
+            the file content.
         :arg by_maintainer: indicates if the file was uploaded by the
             maintainer of the project or package.
         :arg importer: is the person that did the import.
@@ -336,7 +337,8 @@ class ITranslationImportQueue(Interface):
         only_templates=False):
         """Add all .po or .pot files from the tarball at :content:.
 
-        :arg content: is a tarball stream.
+        :arg content: is the tarball content, or a seekable file object open
+            on the tarball.
         :arg by_maintainer: indicates if the file was uploaded by the
             maintainer of the project or package.
         :arg importer: is the person that did the import.

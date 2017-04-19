@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces to handle translation files imports."""
@@ -141,7 +141,7 @@ class ITranslationImporter(Interface):
         """Return the translation file format for the given file extension.
 
         :param file_extension: File extension including the dot.
-        :param file_contents: File contents.
+        :param file_contents: File contents (a seekable file object).
         :return: A `TranslationFileFormat` for the given file extension
             and file contents or None if it's not supported format.
         """
@@ -182,10 +182,11 @@ class ITranslationFormatImporter(Interface):
     def getFormat(file_contents):
         """The file format of the import.
 
-        :param file_contents: A unicode string with the contents of the file
-            being imported.  A returned format may sometimes be different
-            from the base format of the `ITranslationFormatImporter`, and
-            that is determined based on the `contents`.
+        :param file_contents: A seekable file object with the contents of
+            the file being imported.  A returned format may sometimes be
+            different from the base format of the
+            `ITranslationFormatImporter`, and that is determined based on
+            the `contents`.
         :return: A `TranslationFileFormat` value.
         """
 

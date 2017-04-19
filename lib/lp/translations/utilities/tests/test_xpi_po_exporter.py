@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -82,7 +82,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
         translation_import_queue = getUtility(ITranslationImportQueue)
         by_maintainer = True
         entry = translation_import_queue.addOrUpdateEntry(
-            self.firefox_template.path, en_US_xpi.read(), by_maintainer,
+            self.firefox_template.path, en_US_xpi, by_maintainer,
             self.importer, productseries=self.firefox_template.productseries,
             potemplate=self.firefox_template)
 
