@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for a Sprint (a meeting, conference or hack session).
@@ -30,8 +30,8 @@ from zope.schema import (
     )
 
 from lp import _
-from lp.app.validators.name import name_validator
 from lp.app.interfaces.launchpad import IHeadingContext
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 from lp.registry.interfaces.role import (
     IHasDrivers,
@@ -58,17 +58,69 @@ class SprintNameField(ContentNameField):
         return getUtility(ISprintSet)[name]
 
 
-class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IHeadingContext):
-    """A sprint, or conference, or meeting."""
+class ISprintPublic(IHasOwner, IHasDrivers, IHasSpecifications,
+                    IHeadingContext):
+    """`ISprint` attributes that anyone can view."""
 
     id = Int(title=_('The Sprint ID'))
+
+    displayname = Attribute('A pseudonym for the title.')
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=True, readonly=True,
+        vocabulary='ValidPersonOrTeam')
+    datecreated = Datetime(
+        title=_('Date Created'), required=True, readonly=True)
+
+    # joins
+    attendees = Attribute('The set of attendees at this sprint.')
+    attendances = Attribute('The set of SprintAttendance records.')
+
+    def specificationLinks(status=None):
+        """Return the SprintSpecification records matching the filter,
+        quantity and sort given. The rules for filtering and sorting etc are
+        the same as those for IHasSpecifications.specifications()
+        """
+
+    def getSpecificationLink(id):
+        """Return the specification link for this sprint that has the given
+        ID. We use the naked ID because there is no unique name for a spec
+        outside of a single product or distro, and a sprint can cover
+        multiple products and distros.
+        """
+
+    def isDriver(user):
+        """Returns True if and only if the specified user
+        is a driver of this sprint.
+
+        A driver for a sprint is either the person in the
+        `driver` attribute, a person who is a member of a team
+        in the `driver` attribute, or an administrator.
+        """
+
+
+class ISprintAnyPerson(Interface):
+    """`ISprint` methods that any logged-in user can call."""
+
+    # subscription-related methods
+    def attend(person, time_starts, time_ends, is_physical):
+        """Record that this person will be attending the Sprint."""
+
+    def removeAttendance(person):
+        """Remove the person's attendance record."""
+
+
+class ISprintEditableAttributes(Interface):
+    """`ISprint` attributes that can be edited.
+
+    Anyone can view these attributes, but changing them requires
+    launchpad.Edit.
+    """
 
     name = SprintNameField(
         title=_('Name'), required=True, description=_('A unique name '
         'for this sprint, or conference, or meeting. This will part of '
         'the URL so pick something short. A single word is all you get.'),
         constraint=name_validator)
-    displayname = Attribute('A pseudonym for the title.')
     title = TextLine(
         title=_('Title'), required=True, description=_("Please provide "
         "a title for this meeting. This will be shown in listings of "
@@ -115,9 +167,6 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IHeadingContext):
             "The content of this meeting's home page. Edit this and it "
             "will be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
     time_zone = Choice(
         title=_('Timezone'), required=True, description=_('The time '
         'zone in which this sprint, or conference, takes place. '),
@@ -126,28 +175,20 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IHeadingContext):
         title=_('Starting Date and Time'), required=True)
     time_ends = Datetime(
         title=_('Finishing Date and Time'), required=True)
-    datecreated = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
     is_physical = Bool(
         title=_("Is the sprint being held in a physical location?"),
         required=True, readonly=False, default=True)
 
-    # joins
-    attendees = Attribute('The set of attendees at this sprint.')
-    attendances = Attribute('The set of SprintAttendance records.')
 
-    def specificationLinks(status=None):
-        """Return the SprintSpecification records matching the filter,
-        quantity and sort given. The rules for filtering and sorting etc are
-        the same as those for IHasSpecifications.specifications()
-        """
+class ISprintModerate(Interface):
+    """`ISprint` methods that can be called by more than one community."""
 
-    def getSpecificationLink(id):
-        """Return the specification link for this sprint that has the given
-        ID. We use the naked ID because there is no unique name for a spec
-        outside of a single product or distro, and a sprint can cover
-        multiple products and distros.
-        """
+    def destroySelf():
+        """Remove this sprint."""
+
+
+class ISprintDriver(Interface):
+    """`ISprint` methods that require launchpad.Driver permission."""
 
     def acceptSpecificationLinks(idlist, decider):
         """Accept the given sprintspec items, and return the number of
@@ -159,21 +200,10 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IHeadingContext):
         sprintspec items that remain proposed.
         """
 
-    # subscription-related methods
-    def attend(person, time_starts, time_ends, is_physical):
-        """Record that this person will be attending the Sprint."""
 
-    def removeAttendance(person):
-        """Remove the person's attendance record."""
-
-    def isDriver(user):
-        """Returns True if and only if the specified user
-        is a driver of this sprint.
-
-        A driver for a sprint is either the person in the
-        `driver` attribute, a person who is memeber of a team
-        in the `driver` attribute or an administrator.
-        """
+class ISprint(ISprintPublic, ISprintAnyPerson, ISprintEditableAttributes,
+              ISprintModerate, ISprintDriver):
+    """A sprint, or conference, or meeting."""
 
 
 class IHasSprints(Interface):

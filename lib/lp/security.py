@@ -662,7 +662,7 @@ class DriveSprint(AuthorizationBase):
                 user.in_admin)
 
 
-class Sprint(AuthorizationBase):
+class ViewSprint(AuthorizationBase):
     """An attendee, owner, or driver of a sprint."""
     permission = 'launchpad.View'
     usedfor = ISprint
@@ -673,6 +673,21 @@ class Sprint(AuthorizationBase):
                 user.person in [attendance.attendee
                             for attendance in self.obj.attendances] or
                 user.in_admin)
+
+
+class EditSprint(EditByOwnersOrAdmins):
+    usedfor = ISprint
+
+
+class ModerateSprint(ModerateByRegistryExpertsOrAdmins):
+    """The sprint owner, registry experts, and admins can moderate sprints."""
+    permission = 'launchpad.Moderate'
+    usedfor = ISprint
+
+    def checkAuthenticated(self, user):
+        return (
+            super(ModerateSprint, self).checkAuthenticated(user) or
+            user.isOwner(self.obj))
 
 
 class EditSpecificationSubscription(AuthorizationBase):

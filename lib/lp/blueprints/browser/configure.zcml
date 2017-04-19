@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -77,6 +77,13 @@
         permission="launchpad.Edit"
         facet="overview"
         template="../../../lp/registry/templates/object-branding.pt"/>
+    <browser:page
+        name="+delete"
+        for="lp.blueprints.interfaces.sprint.ISprint"
+        class="lp.blueprints.browser.sprint.SprintDeleteView"
+        permission="launchpad.Moderate"
+        facet="overview"
+        template="../templates/sprint-delete.pt"/>
     <browser:page
         name="+attend"
         for="lp.blueprints.interfaces.sprint.ISprint"
