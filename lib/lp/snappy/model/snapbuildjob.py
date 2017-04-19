@@ -124,7 +124,10 @@ class SnapBuildJobDerived(BaseRunnableJob):
 
     def __repr__(self):
         """An informative representation of the job."""
-        return "<%s for %s>" % (self.__class__.__name__, self.snapbuild.title)
+        snap = self.snapbuild.snap
+        return "<%s for ~%s/+snap/%s/+build/%d>" % (
+            self.__class__.__name__, snap.owner.name, snap.name,
+            self.snapbuild.id)
 
     @classmethod
     def get(cls, job_id):

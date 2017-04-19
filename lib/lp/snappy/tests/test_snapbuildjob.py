@@ -98,7 +98,9 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         snapbuild = self.factory.makeSnapBuild()
         job = SnapStoreUploadJob.create(snapbuild)
         self.assertEqual(
-            "<SnapStoreUploadJob for %s>" % snapbuild.title, repr(job))
+            "<SnapStoreUploadJob for ~%s/+snap/%s/+build/%d>" % (
+                snapbuild.snap.owner.name, snapbuild.snap.name, snapbuild.id),
+            repr(job))
 
     def makeSnapBuild(self, **kwargs):
         # Make a build with a builder and a webhook.
