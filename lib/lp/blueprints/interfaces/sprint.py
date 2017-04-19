@@ -200,13 +200,6 @@ class ISprintDriver(Interface):
         sprintspec items that remain proposed.
         """
 
-    # bug linking
-    def linkSpecification(spec):
-        """Link this sprint to the given specification."""
-
-    def unlinkSpecification(spec):
-        """Remove this specification from the sprint spec list."""
-
 
 class ISprint(ISprintPublic, ISprintAnyPerson, ISprintEditableAttributes,
               ISprintModerate, ISprintDriver):
