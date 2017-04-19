@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposals."""
@@ -24,6 +24,7 @@ from soupmatchers import (
     Tag,
     )
 from testtools.matchers import (
+    ContainsDict,
     DocTestMatches,
     Equals,
     Is,
@@ -1592,6 +1593,32 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertEqual(
             "%.7s...\nby\nExample Person &lt;person@example.org&gt;\n"
             "on 2015-01-01" % sha1, extract_text(tag))
+
+    def test_client_cache_bzr(self):
+        # For Bazaar, the client cache contains the branch name and a
+        # loggerhead-based diff link.
+        bmp = self.factory.makeBranchMergeProposal()
+        view = create_initialized_view(bmp, '+index')
+        cache = IJSONRequestCache(view.request)
+        self.assertThat(cache.objects, ContainsDict({
+            'branch_name': Equals(bmp.source_branch.name),
+            'branch_diff_link': Equals(
+                'https://code.launchpad.dev/+loggerhead/%s/diff/' %
+                bmp.source_branch.unique_name),
+            }))
+
+    def test_client_cache_git(self):
+        # For Git, the client cache contains the ref name and a webapp-based
+        # diff link.
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        view = create_initialized_view(bmp, '+index')
+        cache = IJSONRequestCache(view.request)
+        self.assertThat(cache.objects, ContainsDict({
+            'branch_name': Equals(bmp.source_git_ref.name),
+            'branch_diff_link': Equals(
+                'http://code.launchpad.dev/%s/+diff/' %
+                bmp.source_git_repository.unique_name),
+            }))
 
 
 class TestBranchMergeProposalBrowserView(BrowserTestCase):
