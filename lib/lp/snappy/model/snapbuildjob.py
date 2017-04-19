@@ -61,6 +61,7 @@ from lp.snappy.interfaces.snapstoreclient import (
     ISnapStoreClient,
     ReleaseFailedResponse,
     ScanFailedResponse,
+    SnapStoreError,
     UnauthorizedUploadResponse,
     UploadNotScannedYetResponse,
     )
@@ -168,7 +169,7 @@ class SnapBuildJobDerived(BaseRunnableJob):
         return oops_vars
 
 
-class ManualReview(Exception):
+class ManualReview(SnapStoreError):
     pass
 
 
@@ -219,6 +220,16 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         self.metadata["error_message"] = message
 
     @property
+    def error_detail(self):
+        """See `ISnapStoreUploadJob`."""
+        return self.metadata.get("error_detail")
+
+    @error_detail.setter
+    def error_detail(self, detail):
+        """See `ISnapStoreUploadJob`."""
+        self.metadata["error_detail"] = detail
+
+    @property
     def store_url(self):
         """See `ISnapStoreUploadJob`."""
         return self.metadata.get("store_url")
@@ -265,6 +276,12 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
     def resume(self, *args, **kwargs):
         self._do_lifecycle(self.job.resume, *args, **kwargs)
 
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        oops_vars = super(SnapStoreUploadJob, self).getOopsVars()
+        oops_vars.append(('error_detail', self.error_detail))
+        return oops_vars
+
     def run(self):
         """See `IRunnableJob`."""
         client = getUtility(ISnapStoreClient)
@@ -285,6 +302,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
             raise
         except Exception as e:
             self.error_message = str(e)
+            self.error_detail = getattr(e, "detail", None)
             if isinstance(e, UnauthorizedUploadResponse):
                 mailer = SnapBuildMailer.forUnauthorizedUpload(self.snapbuild)
                 mailer.sendAll()
