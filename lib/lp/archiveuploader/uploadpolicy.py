@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Policy management for the upload handler."""
@@ -87,6 +87,7 @@ class AbstractUploadPolicy:
         self.archive = None
         self.unsigned_changes_ok = False
         self.unsigned_dsc_ok = False
+        self.unsigned_buildinfo_ok = False
         self.create_people = True
         # future_time_grace is in seconds
         self.future_time_grace = 24 * HOURS
@@ -290,6 +291,7 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         # We permit unsigned uploads because we trust our build daemons
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
+        self.unsigned_buildinfo_ok = True
 
     def setOptions(self, options):
         """Store the options for later."""
@@ -330,9 +332,10 @@ class SyncUploadPolicy(AbstractUploadPolicy):
 
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
-        # We don't require changes or dsc to be signed for syncs
+        # We don't require changes/dsc/buildinfo to be signed for syncs
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
+        self.unsigned_buildinfo_ok = True
 
     def policySpecificChecks(self, upload):
         """Perform sync specific checks."""

@@ -1,0 +1,23 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.0
+Source: bar
+Binary: bar
+Architecture: i386
+Version: 1.0-1
+Checksums-Md5:
+ 39a6dde58f0b84139e9877892f6ac56a 644 bar_1.0-1_i386.deb
+Build-Origin: Ubuntu
+Build-Architecture: i386
+Build-Date: Wed, 29 Mar 2017 00:01:21 +0100
+Installed-Build-Depends:
+ dpkg (= 1.18.22),
+ dpkg-dev (= 1.18.22)
+
+-----BEGIN PGP SIGNATURE-----
+
+iF0EARECAB0WIQQ0DKO7Jw4nFsnuC3aOfrcIbGSoxQUCWNwqmQAKCRCOfrcIbGSo
+xc7HAJ9JMKX0NRHSvhaY11jKITVazztw6QCfdQAKsVEzM6tIRNUIwfJnOi7N2Pg=
+=aQ0x
+-----END PGP SIGNATURE-----
