@@ -161,15 +161,6 @@ class IBinaryPackageBuildView(IPackageBuild):
             ),
         exported_as="score")
 
-    def updateStatus(status, builder=None, slave_status=None,
-                     date_started=None, date_finished=None,
-                     force_invalid_transition=False, buildinfo=None):
-        """See `IBuildFarmJob.updateStatus`.
-
-        This version also accepts a `buildinfo` parameter which sets the
-        build's buildinfo file if it has not already been set.
-        """
-
     def updateDependencies():
         """Update the build-dependencies line within the targeted context."""
 
