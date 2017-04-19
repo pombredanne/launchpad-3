@@ -24,6 +24,7 @@ import apt_pkg
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
+from lp.archiveuploader.buildinfofile import BuildInfoFile
 from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
@@ -267,6 +268,15 @@ class NascentUpload:
                     files_archdep or not uploaded_file.is_archindep)
             elif isinstance(uploaded_file, SourceUploadFile):
                 files_sourceful = True
+            elif isinstance(uploaded_file, BuildInfoFile):
+                files_sourceful = (
+                    files_sourceful or uploaded_file.is_sourceful)
+                if uploaded_file.is_binaryful:
+                    files_binaryful = files_binaryful or True
+                    files_archindep = (
+                        files_archindep or uploaded_file.is_archindep)
+                    files_archdep = (
+                        files_archdep or not uploaded_file.is_archindep)
             else:
                 # This is already caught in ChangesFile.__init__
                 raise AssertionError("Unknown uploaded file type.")
@@ -857,6 +867,10 @@ class NascentUpload:
                 assert self.queue_root.pocket == bpf_build.pocket, (
                     "Binary was not build for the claimed pocket.")
                 binary_package_file.storeInDatabase(bpf_build)
+                if self.changes.buildinfo is not None:
+                    self.changes.buildinfo.checkBuild(bpf_build)
+                    bpf_build.addBuildInfo(
+                        self.changes.buildinfo.storeInDatabase())
                 processed_builds.append(bpf_build)
 
             # Store the related builds after verifying they were built

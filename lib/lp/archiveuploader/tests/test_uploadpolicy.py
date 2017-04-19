@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from zope.component import getUtility
@@ -174,6 +174,8 @@ class TestUploadPolicy(TestCaseWithFactory):
         self.assertTrue(buildd_policy.unsigned_changes_ok)
         self.assertFalse(insecure_policy.unsigned_dsc_ok)
         self.assertTrue(buildd_policy.unsigned_dsc_ok)
+        self.assertFalse(insecure_policy.unsigned_buildinfo_ok)
+        self.assertTrue(buildd_policy.unsigned_buildinfo_ok)
 
     def test_setOptions_distro_name(self):
         # Policies pick up the distribution name from options.

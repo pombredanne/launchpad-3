@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive uploader utilities."""
@@ -17,6 +17,7 @@ __all__ = [
     'prefix_multi_line_string',
     're_taint_free',
     're_isadeb',
+    're_isbuildinfo',
     're_issource',
     're_is_component_orig_tar_ext',
     're_is_component_orig_tar_ext_sig',
@@ -66,6 +67,7 @@ class DpkgSourceError(Exception):
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 
 re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
+re_isbuildinfo = re.compile(r"(.+?)_(.+?)_(.+)\.buildinfo$")
 
 source_file_exts = [
     'orig(?:-.+)?\.tar\.(?:gz|bz2|xz)(?:\.asc)?', 'diff.gz',

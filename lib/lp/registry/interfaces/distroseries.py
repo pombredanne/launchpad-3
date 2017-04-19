@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IDistroSeries."""
@@ -686,7 +686,7 @@ class IDistroSeriesPublic(
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=None,
         source_package_recipe_build=None, user_defined_fields=None,
-        homepage=None):
+        homepage=None, buildinfo=None):
         """Create an uploads `SourcePackageRelease`.
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -726,6 +726,7 @@ class IDistroSeriesPublic(
                                      user defined fields.
          :param homepage: optional string with (unchecked) upstream homepage
                           URL
+         :param buildinfo: optional LFA with build information file
          :return: the just creates `SourcePackageRelease`
         """
 
