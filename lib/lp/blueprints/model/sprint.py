@@ -276,21 +276,6 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
                 people, need_validity=True))
         return sorted(result, key=lambda a: a.attendee.displayname.lower())
 
-    # linking to specifications
-    def linkSpecification(self, spec):
-        """See `ISprint`."""
-        for speclink in self.spec_links:
-            if speclink.spec.id == spec.id:
-                return speclink
-        return SprintSpecification(sprint=self, specification=spec)
-
-    def unlinkSpecification(self, spec):
-        """See `ISprint`."""
-        for speclink in self.spec_links:
-            if speclink.spec.id == spec.id:
-                SprintSpecification.delete(speclink.id)
-                return speclink
-
     def isDriver(self, user):
         """See `ISprint`."""
         admins = getUtility(ILaunchpadCelebrities).admin

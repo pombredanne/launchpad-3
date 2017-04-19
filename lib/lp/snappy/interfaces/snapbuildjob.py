@@ -57,6 +57,9 @@ class ISnapStoreUploadJob(IRunnableJob):
     error_message = TextLine(
         title=_("Error message"), required=False, readonly=True)
 
+    error_detail = TextLine(
+        title=_("Error message detail"), required=False, readonly=True)
+
     store_url = TextLine(
         title=_("The URL on the store corresponding to this build"),
         required=False, readonly=True)

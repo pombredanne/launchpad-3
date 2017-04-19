@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views, navigation and actions for BranchMergeProposals."""
@@ -605,6 +605,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def initialize(self):
         super(BranchMergeProposalView, self).initialize()
         cache = IJSONRequestCache(self.request)
+        cache.objects['branch_name'] = self.context.merge_source.name
         if IBranch.providedBy(self.context.merge_source):
             cache.objects.update({
                 'branch_diff_link':

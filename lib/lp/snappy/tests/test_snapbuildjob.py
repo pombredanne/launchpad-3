@@ -98,7 +98,9 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         snapbuild = self.factory.makeSnapBuild()
         job = SnapStoreUploadJob.create(snapbuild)
         self.assertEqual(
-            "<SnapStoreUploadJob for %s>" % snapbuild.title, repr(job))
+            "<SnapStoreUploadJob for ~%s/+snap/%s/+build/%d>" % (
+                snapbuild.snap.owner.name, snapbuild.snap.name, snapbuild.id),
+            repr(job))
 
     def makeSnapBuild(self, **kwargs):
         # Make a build with a builder and a webhook.
@@ -239,7 +241,8 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
         client = FakeSnapStoreClient()
-        client.upload.failure = BadUploadResponse("Failed to upload")
+        client.upload.failure = BadUploadResponse(
+            "Failed to upload", detail="The proxy exploded.\n")
         self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             JobRunner([job]).runAll()
@@ -277,6 +280,8 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
             build_url, footer)
         self.assertWebhookDeliveries(
             snapbuild, ["Pending", "Failed to upload"])
+        self.assertIn(
+            ("error_detail", "The proxy exploded.\n"), job.getOopsVars())
 
     def test_run_scan_pending_retries(self):
         # A run that finds that the store has not yet finished scanning the
