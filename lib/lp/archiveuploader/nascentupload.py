@@ -273,10 +273,6 @@ class NascentUpload:
                     files_sourceful or uploaded_file.is_sourceful)
                 if uploaded_file.is_binaryful:
                     files_binaryful = files_binaryful or True
-                    files_archindep = (
-                        files_archindep or uploaded_file.is_archindep)
-                    files_archdep = (
-                        files_archdep or not uploaded_file.is_archindep)
             else:
                 # This is already caught in ChangesFile.__init__
                 raise AssertionError("Unknown uploaded file type.")
