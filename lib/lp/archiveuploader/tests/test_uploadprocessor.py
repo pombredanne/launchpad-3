@@ -2043,7 +2043,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             version=u"1.0-1", name=u"bar")
         queue_item.setDone()
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
-        build.updateStatus(BuildStatus.UPLOADING)
+        build.updateStatus(
+            BuildStatus.UPLOADING, builder=build.buildqueue_record.builder)
         self.switchToUploader()
         shutil.rmtree(upload_dir)
         self.layer.txn.commit()
@@ -2057,6 +2058,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.options.builds = True
         BuildUploadHandler(
             uploadprocessor, self.incoming_folder, leaf_name).process()
+        self.assertEqual(BuildStatus.FULLYBUILT, build.status)
         self.assertEqual(buildinfo_contents, build.buildinfo.read())
 
 
