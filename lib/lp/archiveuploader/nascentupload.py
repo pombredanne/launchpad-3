@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of nascent uploads.
@@ -867,7 +867,8 @@ class NascentUpload:
                 assert self.queue_root.pocket == bpf_build.pocket, (
                     "Binary was not build for the claimed pocket.")
                 binary_package_file.storeInDatabase(bpf_build)
-                if self.changes.buildinfo is not None:
+                if (self.changes.buildinfo is not None and
+                        bpf_build.buildinfo is None):
                     self.changes.buildinfo.checkBuild(bpf_build)
                     bpf_build.addBuildInfo(
                         self.changes.buildinfo.storeInDatabase())
