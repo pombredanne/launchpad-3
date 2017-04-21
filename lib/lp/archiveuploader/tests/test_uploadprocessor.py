@@ -2061,6 +2061,37 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(BuildStatus.FULLYBUILT, build.status)
         self.assertEqual(buildinfo_contents, build.buildinfo.read())
 
+    def test_binary_buildinfo_arch_indep(self):
+        # A buildinfo file for an arch-indep build is attached to the BPB.
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        source_pub = self.publishPackage("bar", "1.0-1")
+        [build] = source_pub.createMissingBuilds()
+        self.switchToAdmin()
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED,
+            version=u"1.0-1", name=u"bar")
+        queue_item.setDone()
+        build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
+        build.updateStatus(
+            BuildStatus.UPLOADING, builder=build.buildqueue_record.builder)
+        self.switchToUploader()
+        shutil.rmtree(upload_dir)
+        self.layer.txn.commit()
+        behaviour = IBuildFarmJobBehaviour(build)
+        leaf_name = behaviour.getUploadDirLeaf(build.build_cookie)
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_binary_buildinfo_indep", queue_entry=leaf_name)
+        with open(os.path.join(upload_dir, "bar_1.0-1_i386.buildinfo")) as f:
+            buildinfo_contents = f.read()
+        self.options.context = "buildd"
+        self.options.builds = True
+        BuildUploadHandler(
+            uploadprocessor, self.incoming_folder, leaf_name).process()
+        self.assertEqual(BuildStatus.FULLYBUILT, build.status)
+        self.assertEqual(buildinfo_contents, build.buildinfo.read())
+
 
 class TestUploadHandler(TestUploadProcessorBase):
 
