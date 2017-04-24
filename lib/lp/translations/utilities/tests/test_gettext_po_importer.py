@@ -1,10 +1,11 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Gettext PO importer tests."""
 
 __metaclass__ = type
 
+from io import BytesIO
 import unittest
 
 import transaction
@@ -89,7 +90,7 @@ class GettextPOImporterTestCase(unittest.TestCase):
 
     def testFormat(self):
         # GettextPOImporter reports that it handles the PO file format.
-        format = self.template_importer.getFormat(test_template)
+        format = self.template_importer.getFormat(BytesIO(test_template))
         self.failUnless(
             format == TranslationFileFormat.PO,
             'GettextPOImporter format expected PO but got %s' % format.name)

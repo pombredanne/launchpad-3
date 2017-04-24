@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for XPI file format"""
@@ -61,7 +61,7 @@ class XpiTestCase(unittest.TestCase):
         # Get the file to import.
         en_US_xpi = get_en_US_xpi_file_to_import(subdir)
         return import_pofile_or_potemplate(
-            file_contents=en_US_xpi.read(),
+            file_contents=en_US_xpi,
             person=self.importer,
             potemplate=self.firefox_template)
 
@@ -74,7 +74,7 @@ class XpiTestCase(unittest.TestCase):
         # just use the same template file like a translation one.
         es_xpi = get_en_US_xpi_file_to_import(subdir)
         return import_pofile_or_potemplate(
-            file_contents=es_xpi.read(),
+            file_contents=es_xpi,
             person=self.importer,
             pofile=self.spanish_firefox,
             by_maintainer=True)
