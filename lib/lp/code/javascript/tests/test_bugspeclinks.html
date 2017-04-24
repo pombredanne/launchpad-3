@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-Copyright 2012 Canonical Ltd.  This software is licensed under the
+Copyright 2012-2017 Canonical Ltd.  This software is licensed under the
 GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -61,13 +61,15 @@ GNU Affero General Public License version 3 (see the file LICENSE).
         <div id="fixture">
         </div>
         <script type="text/x-template" id="bugspec-links">
-            <div id="buglinks" class="actions">
+            <div id="buglinks">
                 <a href="#" id="linkbug" class="pick-bug js-action">
                     Link to bug report</a>
                 <div id="buglink-list">
-                    <a id="delete-buglink-6"
-                       href="+bug/6/+delete"
-                       class="delete-buglink" title="Remove link"></a>
+                    <tr id="buglink-6" class="buglink-summary">
+                        <a id="delete-buglink-6"
+                           href="+bug/6/+delete"
+                           class="delete-buglink" title="Remove link" />
+                    </tr>
                 </div>
             </div>
         </script>

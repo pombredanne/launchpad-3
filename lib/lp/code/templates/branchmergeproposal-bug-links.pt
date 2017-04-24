@@ -1,0 +1,8 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n">
+
+  <metal:bug-links use-macro="context/@@+bmp-macros/bug-links"/>
+
+</div>
