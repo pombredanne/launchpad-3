@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -409,7 +409,7 @@ class TestTranslationImportQueue(TestCaseWithFactory):
             self._makeFile('po'),
             self._makeFile('xpi'),
             ))
-        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        tarfile_content = LaunchpadWriteTarFile.files_to_stream(files)
         self.import_queue.addOrUpdateEntriesFromTarball(
             tarfile_content, True, self.importer,
             productseries=self.productseries)
@@ -420,7 +420,7 @@ class TestTranslationImportQueue(TestCaseWithFactory):
         files = dict((
             self._makeFile(),
             ))
-        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        tarfile_content = LaunchpadWriteTarFile.files_to_stream(files)
         self.import_queue.addOrUpdateEntriesFromTarball(
             tarfile_content, True, self.importer,
             productseries=self.productseries)
@@ -431,7 +431,7 @@ class TestTranslationImportQueue(TestCaseWithFactory):
         files = dict((
             self._makeFile('pot', 'directory'),
             ))
-        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        tarfile_content = LaunchpadWriteTarFile.files_to_stream(files)
         self.import_queue.addOrUpdateEntriesFromTarball(
             tarfile_content, True, self.importer,
             productseries=self.productseries)
@@ -441,7 +441,7 @@ class TestTranslationImportQueue(TestCaseWithFactory):
         # Leading slashes are stripped from path names.
         path, content = self._makeFile('pot', '/directory')
         files = dict(((path, content),))
-        tarfile_content = LaunchpadWriteTarFile.files_to_string(files)
+        tarfile_content = LaunchpadWriteTarFile.files_to_stream(files)
         self.import_queue.addOrUpdateEntriesFromTarball(
             tarfile_content, True, self.importer,
             productseries=self.productseries)

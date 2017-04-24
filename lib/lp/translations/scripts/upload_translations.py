@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -55,11 +55,11 @@ class UploadPackageTranslations(LaunchpadScript):
                 raise LaunchpadScriptFailure(
                     "File not readable: %s" % filename)
             self.logger.info("Uploading: %s." % filename)
-            content = open(filename).read()
-            queue.addOrUpdateEntry(
-                filename, content, True, rosetta_team,
-                sourcepackagename=self.sourcepackagename,
-                distroseries=self.distroseries)
+            with open(filename) as content:
+                queue.addOrUpdateEntry(
+                    filename, content, True, rosetta_team,
+                    sourcepackagename=self.sourcepackagename,
+                    distroseries=self.distroseries)
             self._commit()
 
         self.logger.info("Done.")

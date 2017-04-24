@@ -1,10 +1,11 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mozilla XPI importer tests."""
 
 __metaclass__ = type
 
+from io import BytesIO
 import unittest
 
 from zope.interface.verify import verifyObject
@@ -34,7 +35,7 @@ class MozillaXpiImporterTestCase(unittest.TestCase):
 
     def testFormat(self):
         """Check that MozillaXpiImporter handles the XPI file format."""
-        format = self.importer.getFormat(u'')
+        format = self.importer.getFormat(BytesIO(b''))
         self.failUnless(
             format == TranslationFileFormat.XPI,
             'MozillaXpiImporter format expected XPI but got %s' % format.name)
