@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -193,6 +193,9 @@
         <browser:page
             name="+pagelet-summary"
             template="../templates/branchmergeproposal-pagelet-summary.pt"/>
+        <browser:page
+            name="++bug-links"
+            template="../templates/branchmergeproposal-bug-links.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"

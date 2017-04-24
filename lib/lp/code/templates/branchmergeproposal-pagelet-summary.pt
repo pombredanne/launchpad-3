@@ -130,15 +130,19 @@
       <td>bzr merge <span class="branch-url" tal:content="context/source_branch/bzr_identity" /></td>
     </tr>
     <tr id="related-bugs">
-      <th>Related bugs:</th>
+      <th style="vertical-align: top;">Related bugs:</th>
       <td>
-        <metal:bug-links use-macro="context/@@+bmp-macros/bug-links"/>
-        <div tal:define="link context_menu/link_bug"
-             tal:condition="link/enabled">
-          <a id="linkbug"
-             class="sprite add"
-             tal:attributes="href link/url"
-             tal:content="link/text" />
+        <div id="buglinks">
+          <div id="buglink-list">
+            <metal:bug-links use-macro="context/@@+bmp-macros/bug-links"/>
+          </div>
+          <div tal:define="link context_menu/link_bug"
+               tal:condition="link/enabled">
+            <a id="linkbug"
+               class="sprite add"
+               tal:attributes="href link/url"
+               tal:content="link/text" />
+          </div>
         </div>
         <script type="text/javascript">
           LPJS.use('io-base', 'lp.code.branch.bugspeclinks', function(Y) {
@@ -147,7 +151,7 @@
 
               if (logged_in) {
                 var config = {
-                  picker_activator = '#linkbug'
+                  picker_activator: '#linkbug'
                 };
                 var linked_bug_picker = new
                   Y.lp.code.branch.bugspeclinks.LinkedBugPicker(config);

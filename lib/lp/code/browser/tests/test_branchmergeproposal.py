@@ -2070,7 +2070,7 @@ class TestBranchMergeProposalLinkBugViewMixin:
         self.assertEqual(
             expected_text,
             [extract_text(tag) for tag in find_tags_by_class(
-                 browser.contents, "bug-mp-summary")])
+                 browser.contents, "buglink-summary")])
 
     def test_link(self):
         # A user can enter a bug number to link from an MP to a bug.
@@ -2119,7 +2119,7 @@ class TestBranchMergeProposalLinkBugViewGit(
                 flags=doctest.ELLIPSIS))
         self.assertThat(
             [extract_text(tag) for tag in find_tags_by_class(
-                 browser.contents, "bug-mp-summary")],
+                 browser.contents, "buglink-summary")],
             MatchesListwise(matchers))
 
     def test_bug_page_shows_link(self):

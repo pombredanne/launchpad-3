@@ -34,7 +34,7 @@
         #add-comment-form textarea { width: 100%; }
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
         #add-comment-form .actions {float: right;}
-        .bug-branch-summary dd { font-size: 10px; }
+        .buglink-summary dd { font-size: 10px; }
         a#privacy-link:link:hover, a#privacy-link:visited:hover {text-decoration:none;}
       </style>
       <style type="text/css">

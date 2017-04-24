@@ -109,7 +109,7 @@
       <tr tal:condition="bugtask/bug/required:launchpad.View"
            tal:define="show_edit show_edit|nothing;"
            tal:attributes="id string:buglink-${bugtask/bug/id}"
-           class="bug-branch-summary">
+           class="buglink-summary">
         <td tal:content="structure bugtask/fmt:link:bugs" class="first"/>
         <td>
           <span tal:content="bugtask/importance/title"
