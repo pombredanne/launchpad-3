@@ -1032,8 +1032,7 @@ class TranslationImportQueue:
 
     def _getFileObjectAndSize(self, file_or_data):
         """Get the size of a seekable file object."""
-        if (isinstance(file_or_data, bytes) or
-                isinstance(file_or_data, unicode)):
+        if (isinstance(file_or_data, basestring)):
             file_obj = BytesIO(file_or_data)
             file_size = len(file_or_data)
         else:
