@@ -845,7 +845,16 @@ class SnapSet:
 
     def findByURLPrefix(self, url_prefix, owner=None, visible_by_user=None):
         """See `ISnapSet`."""
-        clauses = [Snap.git_repository_url.startswith(url_prefix)]
+        return self.findByURLPrefixes(
+            [url_prefix], owner=owner, visible_by_user=visible_by_user)
+
+    def findByURLPrefixes(self, url_prefixes, owner=None,
+                          visible_by_user=None):
+        """See `ISnapSet`."""
+        prefix_clauses = [
+            Snap.git_repository_url.startswith(url_prefix)
+            for url_prefix in url_prefixes]
+        clauses = [Or(*prefix_clauses)]
         if owner is not None:
             clauses.append(Snap.owner == owner)
         clauses.append(self._findByURLVisibilityClause(visible_by_user))
