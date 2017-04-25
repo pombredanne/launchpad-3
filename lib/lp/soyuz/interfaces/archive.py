@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive interfaces."""
@@ -306,7 +306,7 @@ class InvalidExternalDependencies(Exception):
 
     def __init__(self, errors):
         error_msg = 'Invalid external dependencies:\n%s\n' % '\n'.join(errors)
-        super(Exception, self).__init__(self, error_msg)
+        super(Exception, self).__init__(error_msg)
         self.errors = errors
 
 

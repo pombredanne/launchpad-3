@@ -317,10 +317,9 @@ What when we supply invalid dependencies, an exception is raised.
     >>> cprov.archive.external_dependencies = (
     ...     "Malformed format string here --> %(series)")
     Traceback (most recent call last):
-    InvalidExternalDependencies: (InvalidExternalDependencies(...),
-    "Invalid external dependencies:\nMalformed format string here
-    --> %(series): Must start with 'deb'\nMalformed format string here
-    --> %(series): Invalid URL\n")
+    InvalidExternalDependencies: Invalid external dependencies:
+    Malformed format string here --> %(series): Must start with 'deb'
+    Malformed format string here --> %(series): Invalid URL
 
 
 == Overriding default primary archive dependencies ==
