@@ -218,6 +218,15 @@ class TestSnapBuild(TestCaseWithFactory):
         self.factory.makeSnapFile(snapbuild=self.build)
         self.assertTrue(self.build.verifySuccessfulUpload())
 
+    def test_updateStatus_stores_revision_id(self):
+        # If the builder reports a revision_id, updateStatus saves it.
+        self.assertIsNone(self.build.revision_id)
+        self.build.updateStatus(BuildStatus.BUILDING, slave_status={})
+        self.assertIsNone(self.build.revision_id)
+        self.build.updateStatus(
+            BuildStatus.BUILDING, slave_status={"revision_id": "dummy"})
+        self.assertEqual("dummy", self.build.revision_id)
+
     def test_updateStatus_triggers_webhooks(self):
         # Updating the status of a SnapBuild triggers webhooks on the
         # corresponding Snap.
