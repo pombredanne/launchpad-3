@@ -192,8 +192,6 @@ class BuildQueue(SQLBase):
             # it into Unicode as best we can.
             self.logtail = str(
                 slave_status.get("logtail")).decode("UTF-8", errors="replace")
-        self.specific_build.updateStatus(
-            self.specific_build.status, slave_status=slave_status)
 
     def suspend(self):
         """See `IBuildQueue`."""

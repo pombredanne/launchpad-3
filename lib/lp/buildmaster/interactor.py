@@ -539,6 +539,9 @@ class BuilderInteractor(object):
         if builder_status in (
                 'BuilderStatus.BUILDING', 'BuilderStatus.ABORTING'):
             vitals.build_queue.collectStatus(slave_status)
+            vitals.build_queue.specific_build.updateStatus(
+                vitals.build_queue.specific_build.status,
+                slave_status=slave_status)
             transaction.commit()
         elif builder_status == 'BuilderStatus.WAITING':
             # Build has finished. Delegate handling to the build itself.
