@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `SnapBuild`.
@@ -99,7 +99,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
         # some more fine-grained level.
-        args["archives"] = get_sources_list_for_building(
+        args["archives"] = yield get_sources_list_for_building(
             build, build.distro_arch_series, None,
             tools_source=config.snappy.tools_source, logger=logger)
         args["archive_private"] = build.archive.private
