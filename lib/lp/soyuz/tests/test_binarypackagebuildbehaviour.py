@@ -12,6 +12,7 @@ import tempfile
 
 from storm.store import Store
 from testtools.deferredruntest import AsynchronousDeferredRunTest
+from testtools.matchers import MatchesListwise
 import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -19,6 +20,9 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.archivepublisher.diskpool import poolify
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
 from lp.buildmaster.enums import (
     BuilderCleanStatus,
     BuildStatus,
@@ -55,9 +59,15 @@ from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.tests.soyuz import Base64KeyMatches
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
+from lp.testing.gpgkeys import gpgkeysdir
+from lp.testing.keyserver import InProcessKeyServerFixture
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -107,7 +117,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         das = build.distro_arch_series
         ds_name = das.distroseries.name
         suite = ds_name + pocketsuffix[build.pocket]
-        archives = yield get_sources_list_for_building(
+        archives, trusted_keys = yield get_sources_list_for_building(
             build, das, build.source_package_release.name)
         arch_indep = das.isNominatedArchIndep
         if component is None:
@@ -131,6 +141,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             'ogrecomponent': component,
             'distribution': das.distroseries.distribution.name,
             'suite': suite,
+            'trusted_keys': trusted_keys,
             }
         build_log = [
             ('build', build.build_cookie, 'binarypackage',
@@ -323,6 +334,23 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild(arch_indep=True)
         extra_args = yield IBuildFarmJobBehaviour(build)._extraBuildArgs(build)
         self.assertTrue(extra_args['arch_indep'])
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_archive_trusted_keys(self):
+        # If the archive has a signing key, _extraBuildArgs sends it.
+        yield self.useFixture(InProcessKeyServerFixture()).start()
+        archive = self.factory.makeArchive()
+        key_path = os.path.join(gpgkeysdir, "ppa-sample@canonical.com.sec")
+        yield IArchiveSigningKey(archive).setSigningKey(
+            key_path, async_keyserver=True)
+        build = self.factory.makeBinaryPackageBuild(archive=archive)
+        self.factory.makeBinaryPackagePublishingHistory(
+            distroarchseries=build.distro_arch_series, pocket=build.pocket,
+            archive=archive, status=PackagePublishingStatus.PUBLISHED)
+        args = yield IBuildFarmJobBehaviour(build)._extraBuildArgs(build)
+        self.assertThat(args["trusted_keys"], MatchesListwise([
+            Base64KeyMatches("0D57E99656BEFB0897606EE9A022DD1F5001B46D"),
+            ]))
 
     def test_verifyBuildRequest(self):
         # Don't allow a virtual build on a non-virtual builder.

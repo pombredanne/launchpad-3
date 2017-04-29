@@ -99,9 +99,10 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
         # some more fine-grained level.
-        args["archives"] = yield get_sources_list_for_building(
-            build, build.distro_arch_series, None,
-            tools_source=config.snappy.tools_source, logger=logger)
+        args["archives"], args["trusted_keys"] = (
+            yield get_sources_list_for_building(
+                build, build.distro_arch_series, None,
+                tools_source=config.snappy.tools_source, logger=logger))
         args["archive_private"] = build.archive.private
         if build.snap.branch is not None:
             args["branch"] = build.snap.branch.bzr_identity

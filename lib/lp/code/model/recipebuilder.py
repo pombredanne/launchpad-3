@@ -67,10 +67,11 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
         args["ogrecomponent"] = get_primary_current_component(
             self.build.archive, self.build.distroseries,
             None).name
-        args['archives'] = yield get_sources_list_for_building(
-            self.build, distroarchseries, None,
-            tools_source=config.builddmaster.bzr_builder_sources_list,
-            logger=logger)
+        args['archives'], args['trusted_keys'] = (
+            yield get_sources_list_for_building(
+                self.build, distroarchseries, None,
+                tools_source=config.builddmaster.bzr_builder_sources_list,
+                logger=logger))
         args['archive_private'] = self.build.archive.private
         args['distroseries_name'] = self.build.distroseries.name
         if self.build.recipe.base_git_repository is not None:
