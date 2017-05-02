@@ -197,6 +197,9 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         Distribution.redirect_release_uploads is set.
         """
         super(InsecureUploadPolicy, self).setDistroSeriesAndPocket(dr_name)
+        # Signatures on source buildinfo files aren't a big deal, and older
+        # versions of debsign didn't produce them.
+        self.unsigned_buildinfo_ok = True
         if (self.archive.purpose == ArchivePurpose.PRIMARY and
             self.distro.redirect_release_uploads and
             self.pocket == PackagePublishingPocket.RELEASE):

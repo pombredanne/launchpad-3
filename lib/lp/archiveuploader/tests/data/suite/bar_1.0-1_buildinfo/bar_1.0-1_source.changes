@@ -21,11 +21,12 @@ Files:
  5d533778b698edc1a122098a98c8490e 512 devel optional bar_1.0-1.dsc
  fc1464e5985b962a042d5354452f361d 164 devel optional bar_1.0.orig.tar.gz
  1e35b810764f140af9616de8274e6e73 537 devel optional bar_1.0-1.diff.gz
- 0b66a844c11fa81df970ac8d4edd1ed7 539 devel optional bar_1.0-1_source.buildinfo
+ 4fe26a2e0dcb2e7c194adfa1a6efb627 296 devel optional bar_1.0-1_source.buildinfo
 
 -----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-iF0EARECAB0WIQQ0DKO7Jw4nFsnuC3aOfrcIbGSoxQUCWNwqhQAKCRCOfrcIbGSo
-xfGGAKCBdw76SkJc8Fx6CCE2dmqJEkuSXwCfX6YlZRv+8dmu5nb5JAUcBzDxQ60=
-=m/R9
+iD8DBQFZCQJ3jn63CGxkqMURAn/cAJsEK2hbOACmvSz3hETU15iPv8HwtACeM9Vu
+hgq1uiiOzYJeFuBRYhvNrM4=
+=4BZe
 -----END PGP SIGNATURE-----
