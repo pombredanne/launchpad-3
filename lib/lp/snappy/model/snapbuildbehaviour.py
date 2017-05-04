@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `SnapBuild`.
@@ -114,7 +114,8 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             # "git clone -b" doesn't accept full ref names.  If this becomes
             # a problem then we could change launchpad-buildd to do "git
             # clone" followed by "git checkout" instead.
-            args["git_path"] = build.snap.git_ref.name
+            if build.snap.git_path != u"HEAD":
+                args["git_path"] = build.snap.git_ref.name
         else:
             raise CannotBuild(
                 "Source branch/repository for ~%s/%s has been deleted." %
