@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for accessing the external Salesforce proxy."""
@@ -11,7 +11,7 @@ __all__ = [
     'Voucher',
     ]
 
-
+import ssl
 from xmlrpclib import (
     Fault,
     ServerProxy,
@@ -91,8 +91,17 @@ class Voucher:
 class SalesforceVoucherProxy:
 
     def __init__(self):
+        # XXX cjwatson 2017-05-05: The proxy currently only has a
+        # self-signed certificate.  Until that's fixed, don't bother
+        # checking it.  This can be simplified once everything is on Python
+        # >= 2.7.9 so that ssl.SSLContext is always available.
+        kwargs = {}
+        if hasattr(ssl, "SSLContext"):
+            context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+            context.options |= ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3
+            kwargs["context"] = context
         self.xmlrpc_transport = SafeTransportWithTimeout(
-            config.commercial.voucher_proxy_timeout / 1000.0)
+            timeout=config.commercial.voucher_proxy_timeout / 1000.0, **kwargs)
 
     @cachedproperty
     def url(self):
