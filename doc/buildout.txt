@@ -549,7 +549,7 @@ copies them into the Launchpad source tree.
 To add a file using the recipe, simply create mirrors of the source tree
 directories that you need under ``buildout-templates/``, and create a .in file
 template at the desired location.  Take a look at
-``buildout-templates/bin/`` for examples of what is possible.
+``buildout-templates/_pythonpath.py.in`` for an example of what is possible.
 
 .. _`z3c.recipe.filetemplate`: http://pypi.python.org/pypi/z3c.recipe.filetemplate
 
