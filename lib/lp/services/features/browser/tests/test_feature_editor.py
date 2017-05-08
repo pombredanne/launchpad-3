@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for feature rule editor"""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from textwrap import dedent
 
+from fixtures import FakeLogger
 from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -38,6 +39,10 @@ class FauxForm:
 class TestFeatureControlPage(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestFeatureControlPage, self).setUp()
+        self.useFixture(FakeLogger())
 
     def getUserBrowserAsTeamMember(self, teams):
         """Make a TestBrowser authenticated as a team member.

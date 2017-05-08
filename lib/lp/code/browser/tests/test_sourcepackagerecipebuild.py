@@ -1,9 +1,10 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Tests for the source package recipe view classes and templates."""
 
 __metaclass__ = type
 
+from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
 from storm.locals import Store
 from testtools.matchers import StartsWith
@@ -112,6 +113,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_cancel_build_not_owner(self):
         """A normal user can't cancel a build."""
+        self.useFixture(FakeLogger())
         queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
         build = queue.specific_build
         transaction.commit()
@@ -195,6 +197,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build_not_admin(self):
         """No one but admin can rescore a build."""
+        self.useFixture(FakeLogger())
         queue = self.factory.makeSourcePackageRecipeBuild().queueBuild()
         build = queue.specific_build
         transaction.commit()

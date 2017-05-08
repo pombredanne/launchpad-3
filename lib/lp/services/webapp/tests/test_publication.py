@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests publication.py"""
@@ -13,6 +13,7 @@ from contrib.oauth import (
     OAuthSignatureMethod_PLAINTEXT,
     OAuthToken,
     )
+from fixtures import FakeLogger
 from storm.database import (
     STATE_DISCONNECTED,
     STATE_RECONNECT,
@@ -282,6 +283,7 @@ class TestEncodedReferer(TestCaseWithFactory):
     def test_not_found(self):
         # No oopses are reported when accessing the referer while rendering
         # the page.
+        self.useFixture(FakeLogger())
         browser = self.getUserBrowser()
         browser.addHeader('Referer', '/whut\xe7foo')
         self.assertRaises(
@@ -298,6 +300,7 @@ class TestUnicodePath(TestCaseWithFactory):
     def test_non_ascii_url(self):
         # No oopses are reported when accessing the URL while rendering the
         # page.
+        self.useFixture(FakeLogger())
         browser = self.getUserBrowser()
         self.assertRaises(
             NotFound,

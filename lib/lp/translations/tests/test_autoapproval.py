@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for translation import queue auto-approval.
@@ -14,6 +14,7 @@ from datetime import (
     timedelta,
     )
 
+from fixtures import FakeLogger
 from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -308,6 +309,7 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
 
     def setUp(self):
         super(TestTemplateGuess, self).setUp()
+        self.useFixture(FakeLogger())
         self.templateset = POTemplateSet()
 
     def _setUpProduct(self):
