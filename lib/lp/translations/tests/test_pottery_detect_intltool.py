@@ -17,7 +17,6 @@ from lpbuildd.pottery.intltool import (
     get_translation_domain,
     )
 
-from lp.services.scripts.tests import run_script
 from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
 from lp.translations.pottery.detect_intltool import is_intltool_structure
@@ -341,18 +340,6 @@ class TestGenerateTemplates(TestCase, SetupTestPackageMixin):
             self.assertTrue(
                 os.access(expected_path, os.F_OK),
                 "Generated PO template '%s' not found." % expected_path)
-
-    def test_pottery_generate_intltool_script(self):
-        # Let the script run to see it works fine.
-        self.prepare_package("intltool_full_ok")
-
-        return_code, stdout, stderr = run_script(
-            'scripts/rosetta/pottery-generate-intltool.py', [])
-
-        self.assertEqual(dedent("""\
-            ./po-module1/packagename-module1.pot
-            ./po-module2/packagename-module2.pot
-            """), stdout)
 
 
 class TestDetectIntltoolInBzrTree(TestCase, SetupTestPackageMixin):
