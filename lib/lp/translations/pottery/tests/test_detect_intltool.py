@@ -1,6 +1,9 @@
 # Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+__metaclass__ = type
+
+import errno
 import os
 import tarfile
 
@@ -10,7 +13,7 @@ from lp.testing import TestCase
 from lp.translations.pottery.detect_intltool import is_intltool_structure
 
 
-class SetupTestPackageMixin(object):
+class SetupTestPackageMixin:
 
     test_data_dir = "pottery_test_data"
 
@@ -29,9 +32,8 @@ class SetupTestPackageMixin(object):
             self.test_data_dir, packagename + ".tar.bz2")
         # Then change into the temporary directory and unpack it.
         self.useTempDir()
-        tar = tarfile.open(packagepath, "r|bz2")
-        tar.extractall()
-        tar.close()
+        with tarfile.open(packagepath, "r|bz2") as tar:
+            tar.extractall()
         os.chdir(packagename)
 
         if buildfiles is None:
@@ -45,7 +47,7 @@ class SetupTestPackageMixin(object):
                     os.makedirs(directory)
                 except OSError as e:
                     # Doesn't matter if it already exists.
-                    if e.errno != 17:
+                    if e.errno != errno.EEXIST:
                         raise
             with open(path, 'w') as the_file:
                 the_file.write(content)
