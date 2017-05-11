@@ -3,6 +3,8 @@
 # Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import print_function
+
 import errno
 import grp
 import os
@@ -69,12 +71,12 @@ def build_mailman():
     try:
         uid = pwd.getpwnam(user).pw_uid
     except KeyError:
-        print >> sys.stderr, 'No user found:', user
+        print('No user found:', user, file=sys.stderr)
         sys.exit(1)
     try:
         gid = grp.getgrnam(group).gr_gid
     except KeyError:
-        print >> sys.stderr, 'No group found:', group
+        print('No group found:', group, file=sys.stderr)
         sys.exit(1)
 
     # Ensure that the var_dir exists, is owned by the user:group, and has
@@ -90,7 +92,7 @@ def build_mailman():
         # Just created the var directory, will need to install mailmain bits.
         need_install = True
     os.chown(var_dir, uid, gid)
-    os.chmod(var_dir, 02775)
+    os.chmod(var_dir, 0o2775)
 
     # Skip mailman setup if nothing so far has shown a reinstall needed.
     if not need_install:
@@ -120,22 +122,22 @@ def build_mailman():
         # Configure.
         retcode = subprocess.call(configure_args, cwd=mailman_source)
         if retcode:
-            print >> sys.stderr, 'Could not configure Mailman:'
+            print('Could not configure Mailman:', file=sys.stderr)
             sys.exit(retcode)
         # Make.
         retcode = subprocess.call(('make', ), cwd=mailman_source)
         if retcode:
-            print >> sys.stderr, 'Could not make Mailman.'
+            print('Could not make Mailman.', file=sys.stderr)
             sys.exit(retcode)
     retcode = subprocess.call(('make', 'install'), cwd=mailman_source)
     if retcode:
-        print >> sys.stderr, 'Could not install Mailman.'
+        print('Could not install Mailman.', file=sys.stderr)
         sys.exit(retcode)
     # Try again to import the package.
     try:
         import Mailman
     except ImportError:
-        print >> sys.stderr, 'Could not import the Mailman package'
+        print('Could not import the Mailman package', file=sys.stderr)
         return 1
 
     # Check to see if the site list exists.  The output can go to /dev/null
@@ -164,13 +166,13 @@ def build_mailman():
              addr, password),
             cwd=mailman_bin)
         if retcode:
-            print >> sys.stderr, 'Could not create site list'
+            print('Could not create site list', file=sys.stderr)
             return retcode
 
     retcode = configure_site_list(
         mailman_bin, Mailman.mm_cfg.MAILMAN_SITE_LIST)
     if retcode:
-        print >> sys.stderr, 'Could not configure site list'
+        print('Could not configure site list', file=sys.stderr)
         return retcode
 
     # Create a directory to hold the gzip'd tarballs for the directories of
@@ -195,7 +197,7 @@ def configure_site_list(mailman_bin, site_list_name):
         os.close(fd)
         config_file = open(config_file_name, 'w')
         try:
-            print >> config_file, 'advertised = False'
+            print('advertised = False', file=config_file)
         finally:
             config_file.close()
         return subprocess.call(
