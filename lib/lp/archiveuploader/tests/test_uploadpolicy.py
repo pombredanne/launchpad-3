@@ -174,7 +174,7 @@ class TestUploadPolicy(TestCaseWithFactory):
         self.assertTrue(buildd_policy.unsigned_changes_ok)
         self.assertFalse(insecure_policy.unsigned_dsc_ok)
         self.assertTrue(buildd_policy.unsigned_dsc_ok)
-        self.assertFalse(insecure_policy.unsigned_buildinfo_ok)
+        self.assertTrue(insecure_policy.unsigned_buildinfo_ok)
         self.assertTrue(buildd_policy.unsigned_buildinfo_ok)
 
     def test_setOptions_distro_name(self):
