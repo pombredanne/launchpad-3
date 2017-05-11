@@ -40,7 +40,6 @@ setup(
         'fixtures',
         'FeedParser',
         'feedvalidator',
-        'funkload',
         'html5browser',
         'httmock',
         'pygpgme',
