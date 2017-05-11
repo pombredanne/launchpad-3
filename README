@@ -89,9 +89,6 @@ You can spend years hacking on Launchpad full-time and not know what all of
 the files in the top-level directory are for.  However, here's a guide to some
 of the ones that come up from time to time.
 
-  buildout-templates/
-    Templates that are generated into actual files when buildout is run.
-
   bzrplugins/
     Bazaar plugins used in running Launchpad.
 

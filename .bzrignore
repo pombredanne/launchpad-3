@@ -41,7 +41,6 @@ build
 dist
 ./eggs
 ./download-cache
-./_pythonpath.py
 ./production-configs
 bzr.dev
 _trial_temp
