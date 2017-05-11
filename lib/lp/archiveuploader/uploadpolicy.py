@@ -190,6 +190,12 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
     name = 'insecure'
     accepted_type = ArchiveUploadType.SOURCE_ONLY
 
+    def __init__(self):
+        super(InsecureUploadPolicy, self).__init__()
+        # Signatures on source buildinfo files aren't a big deal, and older
+        # versions of debsign didn't produce them.
+        self.unsigned_buildinfo_ok = True
+
     def setDistroSeriesAndPocket(self, dr_name):
         """Set the distroseries and pocket from the provided name.
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related view classes."""
@@ -245,7 +245,10 @@ from lp.services.webapp import (
     stepto,
     structured,
     )
-from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import DisplaynameBreadcrumb
 from lp.services.webapp.interfaces import (
@@ -2017,7 +2020,9 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
 
     @cachedproperty
     def visible_ppas(self):
-        return self.context.getVisiblePPAs(self.user)
+        ppas = self.context.getVisiblePPAs(self.user)
+        precache_permission_for_objects(self.request, 'launchpad.View', ppas)
+        return ppas
 
     @property
     def time_zone_offset(self):

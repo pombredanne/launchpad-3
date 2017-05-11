@@ -80,11 +80,11 @@ file for that upload.
 
     >>> print anon_browser.getLink("netapplet-1.0.0.tar.gz")
     <Link text='netapplet-1.0.0.tar.gz'
-	  url='http://.../1/netapplet-1.0.0.tar.gz'>
+	  url='http://.../+upload/7/+files/netapplet-1.0.0.tar.gz'>
 
     >>> print anon_browser.getLink("alsa-utils")
     <Link text='alsa-utils'
-	  url='http://.../1/netapplet-1.0.0.tar.gz'>
+	  url='http://.../+upload/4/+files/netapplet-1.0.0.tar.gz'>
 
 (This link for alsa-utils is pointing at the librarian URL for
 netapplet, because we have used its changes file for all the
@@ -227,16 +227,17 @@ by its size, one file per line. Expired files have no size.
     alsa-utils_1.0.9a-4ubuntu1.diff.gz
     diff from 1.0.9a-4 to 1.0.9a-4ubuntu1 (11 bytes)
 
-Each unexpired filename links to its respective librarian URL. Expired
-files have no link, so we just get None.
+Each unexpired filename links to its respective proxied librarian URL.
+Expired files have no link, so we just get None.
 
     >>> for row in filelist:
     ...     print row.find('a')
-    <a href="http://.../alsa-utils_1.0.9a-4ubuntu1.dsc">
+    <a href="http://.../+upload/4/+files/alsa-utils_1.0.9a-4ubuntu1.dsc">
       alsa-utils_1.0.9a-4ubuntu1.dsc
     </a>
     None
-    <a href="http://.../alsa-utils.diff.gz">diff from 1.0.9a-4 to 1.0.9a-4ubuntu1</a>
+    <a href="http://.../alsa-utils.diff.gz">diff from 1.0.9a-4 to
+    1.0.9a-4ubuntu1</a>
 
 On binary queue items we also present the stamp 'NEW' for files never
 published in the archive (it helps archive admins when reviewing

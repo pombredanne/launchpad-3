@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for package queue."""
@@ -27,7 +27,10 @@ from lp.services.database.bulk import (
     load_related,
     )
 from lp.services.job.model.job import Job
-from lp.services.librarian.browser import FileNavigationMixin
+from lp.services.librarian.browser import (
+    FileNavigationMixin,
+    ProxiedLibraryFileAlias,
+    )
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -588,7 +591,7 @@ class CompletePackageUpload:
         else:
             return structured(
                 '<a href="%s" title="Changes file for %s">%s</a>',
-                self.changesfile.http_url, self.displayname,
+                self.proxiedFile(self.changesfile).http_url, self.displayname,
                 self.displayname)
 
     @property
@@ -601,3 +604,7 @@ class CompletePackageUpload:
         return structured(
             """<div id="%s"> %s %s (%s)</div>""",
             iconlist_id, icon_string, link, self.displayarchs).escapedtext
+
+    def proxiedFile(self, libraryfile):
+        """Return a librarian file proxied in the context of this upload."""
+        return ProxiedLibraryFileAlias(libraryfile, self.context)

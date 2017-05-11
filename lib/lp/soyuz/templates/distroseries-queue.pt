@@ -312,18 +312,22 @@
 <metal:macro define-macro="package-file">
   <tal:comment replace="nothing">
     This macro expects the following variables defined:
+    :packageupload: A PackageUpload record for which we display files.
     :libraryfilealias: A LibraryFileAlias to link to. If it is expired,
       no link will be created.
   </tal:comment>
-  <tal:unexpired tal:condition="libraryfilealias/content">
-    <a tal:attributes="href libraryfilealias/http_url">
-      <tal:filename replace="libraryfilealias/filename"/>
-    </a>
-    (<span tal:replace="libraryfilealias/content/filesize/fmt:bytes" />)
-  </tal:unexpired>
-  <tal:expired tal:condition="not:libraryfilealias/content">
-    <span tal:content="libraryfilealias/filename"/>
-  </tal:expired>
+  <tal:proxy
+      define="proxiedfile python:packageupload.proxiedFile(libraryfilealias)">
+    <tal:unexpired condition="proxiedfile/content">
+      <a tal:attributes="href proxiedfile/http_url">
+        <tal:filename replace="proxiedfile/filename"/>
+      </a>
+      (<span tal:replace="proxiedfile/content/filesize/fmt:bytes" />)
+    </tal:unexpired>
+    <tal:expired condition="not:proxiedfile/content">
+      <span tal:content="proxiedfile/filename"/>
+    </tal:expired>
+  </tal:proxy>
 </metal:macro>
 
 </metal:macros>
