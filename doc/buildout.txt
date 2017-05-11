@@ -19,8 +19,7 @@ sections about the `Set Up`_ and the `Everyday Usage`_.
 Developers who manage source dependencies probably should read the general
 information about `Managing Dependencies and Scripts`_, but will also find
 detailed instructions to `Add a Package`_, to `Upgrade a Package`_, to `Add a
-Script`_, to `Add a File Modified By Buildout`_, and to `Work with Unreleased
-or Forked Packages`_.
+Script`_, and to `Work with Unreleased or Forked Packages`_.
 
 .. _buildout: http://www.buildout.org/
 
