@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for QueueItemsView."""
@@ -17,6 +17,7 @@ from zope.component import (
 
 from lp.archiveuploader.tests import datadir
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -588,7 +589,9 @@ class TestCompletePackageUpload(TestCaseWithFactory):
         link = html.fromstring(
             html_escape(complete_upload.composeNameAndChangesLink()))
         self.assertEqual(
-            complete_upload.changesfile.http_url, link.get("href"))
+            ProxiedLibraryFileAlias(
+                complete_upload.changesfile, complete_upload.context).http_url,
+            link.get("href"))
 
     def test_composeNameAndChangesLink_escapes_nonlinked_display_name(self):
         filename = 'name"&name'
