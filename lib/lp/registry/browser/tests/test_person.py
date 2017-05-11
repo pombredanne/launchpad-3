@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -348,6 +348,21 @@ class TestPersonIndexView(BrowserTestCase):
         self.factory.makeGPGKey(person)
         view = create_initialized_view(person, '+index')
         self.assertTrue(view.should_show_gpgkeys_section)
+
+    def test_ppas_query_count(self):
+        owner = self.factory.makePerson()
+
+        def create_ppa_and_permission():
+            ppa = self.factory.makeArchive(
+                owner=owner, purpose=ArchivePurpose.PPA, private=True)
+            ppa.newComponentUploader(self.user, 'main')
+
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getMainText(owner, '+index'),
+            create_ppa_and_permission, 5,
+            login_method=lambda: login_person(owner),
+            record_request=True)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestPersonViewKarma(TestCaseWithFactory):

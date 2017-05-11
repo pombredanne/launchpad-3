@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -109,7 +109,10 @@ from lp.services.webapp import (
     Navigation,
     stepthrough,
     )
-from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
@@ -1885,7 +1888,9 @@ class ArchiveActivateView(LaunchpadFormView):
 
     @cachedproperty
     def visible_ppas(self):
-        return self.context.getVisiblePPAs(self.user)
+        ppas = self.context.getVisiblePPAs(self.user)
+        precache_permission_for_objects(self.request, 'launchpad.View', ppas)
+        return ppas
 
     @property
     def initial_values(self):
