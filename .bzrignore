@@ -12,6 +12,7 @@ database/schema/diagrams/*.ps
 database/schema/diagrams/*.dot
 thread*.request
 ./TAGS
+lib/Mailman
 lib/mailman
 TAGS
 cover.txt

@@ -39,18 +39,9 @@ def build_mailman():
     # If we can import the package, we assume Mailman is properly built at
     # the least.  This does not catch re-installs that might be necessary
     # should our copy in sourcecode be updated.  Do that manually.
-    sys.path.append(mailman_path)
     try:
         import Mailman
     except ImportError:
-        # sys.path_importer_cache is a mapping of elements of sys.path to
-        # importer objects used to handle them. In Python2.5+ when an element
-        # of sys.path is found to not exist on disk, a NullImporter is created
-        # and cached - this causes Python to never bother re-inspecting the
-        # disk for that path element. We must clear that cache element so that
-        # our second attempt to import MailMan after building it will actually
-        # check the disk.
-        del sys.path_importer_cache[mailman_path]
         need_build = need_install = True
     else:
         need_build = need_install = False
@@ -133,6 +124,14 @@ def build_mailman():
     if retcode:
         print('Could not install Mailman.', file=sys.stderr)
         sys.exit(retcode)
+    # Symlink Mailman's Python modules into the import path.
+    try:
+        os.unlink(os.path.join('lib', 'Mailman'))
+    except OSError as e:
+        if e.errno != errno.ENOENT:
+            raise
+    os.symlink(
+        os.path.join('mailman', 'Mailman'), os.path.join('lib', 'Mailman'))
     # Try again to import the package.
     try:
         import Mailman
