@@ -46,8 +46,7 @@ these important top-level folders:
   bin/, utilities/
     Where you will find scripts intended for developers and admins.  There's
     no rhyme or reason to what goes in bin/ and what goes in utilities/, so
-    take a look in both. bin/ will be empty in a fresh checkout, the actual
-    content lives in 'buildout-templates'.
+    take a look in both.
 
   configs/
     Configuration files for various kinds of Launchpad instances.
@@ -89,11 +88,6 @@ these important top-level folders:
 You can spend years hacking on Launchpad full-time and not know what all of
 the files in the top-level directory are for.  However, here's a guide to some
 of the ones that come up from time to time.
-
-  buildout-templates/
-    Templates that are generated into actual files, normally bin/ scripts,
-    when buildout is run. If you want to change the behaviour of bin/test,
-    look here.
 
   bzrplugins/
     Bazaar plugins used in running Launchpad.

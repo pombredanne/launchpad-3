@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -11,6 +11,7 @@ from datetime import (
 import doctest
 
 from pytz import UTC
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     AllMatch,
     DocTestMatches,
@@ -21,6 +22,7 @@ from testtools.matchers import (
     )
 from testtools.testcase import ExpectedException
 import transaction
+from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -78,6 +80,7 @@ from lp.soyuz.interfaces.archive import (
     DuplicateTokenName,
     IArchiveSet,
     InsufficientUploadRights,
+    InvalidExternalDependencies,
     InvalidPocketForPartnerArchive,
     InvalidPocketForPPA,
     NAMED_AUTH_TOKEN_FEATURE_FLAG,
@@ -1745,7 +1748,9 @@ class TestAddArchiveDependencies(TestCaseWithFactory):
 class TestArchiveDependencies(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=30)
 
+    @defer.inlineCallbacks
     def test_private_sources_list(self):
         """Entries for private dependencies include credentials."""
         p3a = self.factory.makeArchive(name='p3a', private=True)
@@ -1759,13 +1764,25 @@ class TestArchiveDependencies(TestCaseWithFactory):
                 PackagePublishingPocket.RELEASE)
             build = self.factory.makeBinaryPackageBuild(archive=p3a,
                 distroarchseries=bpph.distroarchseries)
-            sources_list = get_sources_list_for_building(
+            sources_list = yield get_sources_list_for_building(
                 build, build.distro_arch_series,
                 build.source_package_release.name)
             matches = MatchesRegex(
                 "deb http://buildd:sekrit@private-ppa.launchpad.dev/"
                 "person-name-.*/dependency/ubuntu distroseries-.* main")
             self.assertThat(sources_list[0], matches)
+
+    def test_invalid_external_dependencies(self):
+        """Trying to set invalid external dependencies raises an exception."""
+        ppa = self.factory.makeArchive()
+        self.assertRaisesWithContent(
+            InvalidExternalDependencies,
+            "Invalid external dependencies:\n"
+            "Malformed format string here --> %(series): "
+            "Must start with 'deb'\n"
+            "Malformed format string here --> %(series): Invalid URL\n",
+            setattr, ppa, "external_dependencies",
+            "Malformed format string here --> %(series)")
 
 
 class TestFindDepCandidates(TestCaseWithFactory):
@@ -1932,6 +1949,7 @@ class TestFindDepCandidates(TestCaseWithFactory):
 class TestOverlays(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=30)
 
     def _createDep(self, test_publisher, derived_series, parent_series,
                    parent_distro, component_name=None, pocket=None,
@@ -1965,6 +1983,7 @@ class TestOverlays(TestCaseWithFactory):
             component=component)
         return depseries, depdistro
 
+    @defer.inlineCallbacks
     def test_overlay_dependencies(self):
         # sources.list is properly generated for a complex overlay structure.
         # Pocket dependencies and component dependencies are taken into
@@ -1999,8 +2018,8 @@ class TestOverlays(TestCaseWithFactory):
         self._createDep(
             test_publisher, series11, 'series12', 'depdistro4', 'multiverse',
             PackagePublishingPocket.UPDATES)
-        sources_list = get_sources_list_for_building(build,
-            build.distro_arch_series, build.source_package_release.name)
+        sources_list = yield get_sources_list_for_building(
+            build, build.distro_arch_series, build.source_package_release.name)
 
         self.assertThat(
             "\n".join(sources_list),

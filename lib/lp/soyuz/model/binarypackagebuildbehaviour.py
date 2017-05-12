@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Builder behaviour for binary package builds."""
@@ -9,6 +9,7 @@ __all__ = [
     'BinaryPackageBuildBehaviour',
     ]
 
+from twisted.internet import defer
 from zope.interface import implementer
 
 from lp.buildmaster.interfaces.builder import CannotBuild
@@ -81,10 +82,12 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
                     'password': self.build.archive.buildd_secret}
         return filemap
 
+    @defer.inlineCallbacks
     def composeBuildRequest(self, logger):
-        return (
-            "binarypackage", self.build.distro_arch_series,
-            self.determineFilesToSend(), self._extraBuildArgs(self.build))
+        args = yield self._extraBuildArgs(self.build, logger=logger)
+        defer.returnValue(
+            ("binarypackage", self.build.distro_arch_series,
+             self.determineFilesToSend(), args))
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.
@@ -130,7 +133,8 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
                     (build.title, build.id, build.pocket.name,
                      build.distro_series.name))
 
-    def _extraBuildArgs(self, build):
+    @defer.inlineCallbacks
+    def _extraBuildArgs(self, build, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
@@ -160,9 +164,9 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             args["ogrecomponent"] = (
                 build.current_component.name)
 
-        args['archives'] = get_sources_list_for_building(
-            build, das, build.source_package_release.name)
+        args['archives'] = yield get_sources_list_for_building(
+            build, das, build.source_package_release.name, logger=logger)
         args['archive_private'] = build.archive.private
         args['build_debug_symbols'] = build.archive.build_debug_symbols
 
-        return args
+        defer.returnValue(args)

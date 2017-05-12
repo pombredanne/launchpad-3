@@ -168,7 +168,7 @@ class TestSnapBuildBehaviour(TestSnapBuildBehaviourBase):
 
 
 class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
-    run_tests_with = AsynchronousDeferredRunTest
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=30)
 
     def setUp(self):
         super(TestAsyncSnapBuildBehaviour, self).setUp()
@@ -211,7 +211,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         # job for a Bazaar branch.
         branch = self.factory.makeBranch()
         job = self.makeJob(branch=branch)
-        expected_archives = get_sources_list_for_building(
+        expected_archives = yield get_sources_list_for_building(
             job.build, job.build.distro_arch_series, None)
         args = yield job._extraBuildArgs()
         self.assertEqual({
@@ -230,7 +230,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         # job for a Git branch.
         [ref] = self.factory.makeGitRefs()
         job = self.makeJob(git_ref=ref)
-        expected_archives = get_sources_list_for_building(
+        expected_archives = yield get_sources_list_for_building(
             job.build, job.build.distro_arch_series, None)
         args = yield job._extraBuildArgs()
         self.assertEqual({
@@ -252,7 +252,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         ref = self.factory.makeGitRefRemote(
             repository_url=url, path=u"refs/heads/master")
         job = self.makeJob(git_ref=ref)
-        expected_archives = get_sources_list_for_building(
+        expected_archives = yield get_sources_list_for_building(
             job.build, job.build.distro_arch_series, None)
         args = yield job._extraBuildArgs()
         self.assertEqual({

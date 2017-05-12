@@ -175,6 +175,7 @@ setup(
             'run-testapp = lp.scripts.runlaunchpad:start_testapp',
             'sprite-util = lp.scripts.utilities.spriteutil:main',
             'start_librarian = lp.scripts.runlaunchpad:start_librarian',
+            'test = lp.scripts.utilities.test:main',
             'twistd = twisted.scripts.twistd:run',
             'watch_jsbuild = lp.scripts.utilities.js.watchjsbuild:main',
             'with-xvfb = lp.scripts.utilities.withxvfb:main',

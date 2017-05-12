@@ -1,4 +1,4 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `LiveFSBuild`.
@@ -11,6 +11,7 @@ __all__ = [
     'LiveFSBuildBehaviour',
     ]
 
+from twisted.internet import defer
 from zope.component import adapter
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
@@ -73,7 +74,8 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
             raise CannotBuild(
                 "Missing chroot for %s" % build.distro_arch_series.displayname)
 
-    def _extraBuildArgs(self):
+    @defer.inlineCallbacks
+    def _extraBuildArgs(self, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
@@ -88,15 +90,15 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         args["pocket"] = build.pocket.name.lower()
         args["arch_tag"] = build.distro_arch_series.architecturetag
         args["datestamp"] = build.version
-        args["archives"] = get_sources_list_for_building(
-            build, build.distro_arch_series, None)
+        args["archives"] = yield get_sources_list_for_building(
+            build, build.distro_arch_series, None, logger=logger)
         args["archive_private"] = build.archive.private
-        return args
+        defer.returnValue(args)
 
+    @defer.inlineCallbacks
     def composeBuildRequest(self, logger):
-        return (
-            "livefs", self.build.distro_arch_series, {},
-            self._extraBuildArgs())
+        args = yield self._extraBuildArgs(logger=logger)
+        defer.returnValue(("livefs", self.build.distro_arch_series, {}, args))
 
     def verifySuccessfulBuild(self):
         """See `IBuildFarmJobBehaviour`."""
