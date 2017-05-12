@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BinaryPackageBuildBehaviour."""
@@ -55,9 +55,6 @@ from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
-from lp.soyuz.model.binarypackagebuildbehaviour import (
-    BinaryPackageBuildBehaviour,
-    )
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import switch_dbuser
@@ -75,21 +72,22 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
     """
 
     layer = LaunchpadZopelessLayer
-    run_tests_with = AsynchronousDeferredRunTest
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=30)
 
     def setUp(self):
         super(TestBinaryBuildPackageBehaviour, self).setUp()
         switch_dbuser('testadmin')
 
-    def assertExpectedInteraction(self, ignored, call_log, builder, build,
-                                  chroot, archive, archive_purpose,
-                                  component=None, extra_uploads=None,
-                                  filemap_names=None):
-        expected = self.makeExpectedInteraction(
+    @defer.inlineCallbacks
+    def assertExpectedInteraction(self, call_log, builder, build, chroot,
+                                  archive, archive_purpose, component=None,
+                                  extra_uploads=None, filemap_names=None):
+        expected = yield self.makeExpectedInteraction(
             builder, build, chroot, archive, archive_purpose, component,
             extra_uploads, filemap_names)
         self.assertEqual(expected, call_log)
 
+    @defer.inlineCallbacks
     def makeExpectedInteraction(self, builder, build, chroot, archive,
                                 archive_purpose, component=None,
                                 extra_uploads=None, filemap_names=None):
@@ -109,7 +107,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         das = build.distro_arch_series
         ds_name = das.distroseries.name
         suite = ds_name + pocketsuffix[build.pocket]
-        archives = get_sources_list_for_building(
+        archives = yield get_sources_list_for_building(
             build, das, build.source_package_release.name)
         arch_indep = das.isNominatedArchIndep
         if component is None:
@@ -138,8 +136,9 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             ('build', build.build_cookie, 'binarypackage',
              chroot.content.sha1, filemap_names, extra_args)]
         result = upload_logs + build_log
-        return result
+        defer.returnValue(result)
 
+    @defer.inlineCallbacks
     def test_non_virtual_ppa_dispatch(self):
         # When the BinaryPackageBuildBehaviour dispatches PPA builds to
         # non-virtual builders, it stores the chroot on the server and
@@ -159,14 +158,14 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
         interactor = BuilderInteractor()
-        d = interactor._startBuild(
+        yield interactor._startBuild(
             bq, vitals, builder, slave,
             interactor.getBuildBehaviour(bq, builder, slave), BufferLogger())
-        d.addCallback(
-            self.assertExpectedInteraction, slave.call_log, builder, build,
-            lf, archive, ArchivePurpose.PRIMARY, 'universe')
-        return d
+        yield self.assertExpectedInteraction(
+            slave.call_log, builder, build, lf, archive,
+            ArchivePurpose.PRIMARY, 'universe')
 
+    @defer.inlineCallbacks
     def test_non_virtual_ppa_dispatch_with_primary_ancestry(self):
         # If there is a primary component override, it is honoured for
         # non-virtual PPA builds too.
@@ -188,14 +187,14 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
         interactor = BuilderInteractor()
-        d = interactor._startBuild(
+        yield interactor._startBuild(
             bq, vitals, builder, slave,
             interactor.getBuildBehaviour(bq, builder, slave), BufferLogger())
-        d.addCallback(
-            self.assertExpectedInteraction, slave.call_log, builder, build,
-            lf, archive, ArchivePurpose.PRIMARY, 'main')
-        return d
+        yield self.assertExpectedInteraction(
+            slave.call_log, builder, build, lf, archive,
+            ArchivePurpose.PRIMARY, 'main')
 
+    @defer.inlineCallbacks
     def test_virtual_ppa_dispatch(self):
         archive = self.factory.makeArchive(virtualized=True)
         slave = OkSlave()
@@ -211,14 +210,13 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
         interactor = BuilderInteractor()
-        d = interactor._startBuild(
+        yield interactor._startBuild(
             bq, vitals, builder, slave,
             interactor.getBuildBehaviour(bq, builder, slave), BufferLogger())
-        d.addCallback(
-            self.assertExpectedInteraction, slave.call_log, builder, build,
-            lf, archive, ArchivePurpose.PPA)
-        return d
+        yield self.assertExpectedInteraction(
+            slave.call_log, builder, build, lf, archive, ArchivePurpose.PPA)
 
+    @defer.inlineCallbacks
     def test_private_source_dispatch(self):
         archive = self.factory.makeArchive(private=True)
         slave = OkSlave()
@@ -243,16 +241,15 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
         interactor = BuilderInteractor()
-        d = interactor._startBuild(
+        yield interactor._startBuild(
             bq, vitals, builder, slave,
             interactor.getBuildBehaviour(bq, builder, slave), BufferLogger())
-        d.addCallback(
-            self.assertExpectedInteraction, slave.call_log, builder, build,
-            lf, archive, ArchivePurpose.PPA,
+        yield self.assertExpectedInteraction(
+            slave.call_log, builder, build, lf, archive, ArchivePurpose.PPA,
             extra_uploads=[(sprf_url, 'buildd', u'sekrit')],
             filemap_names=[sprf.libraryfile.filename])
-        return d
 
+    @defer.inlineCallbacks
     def test_partner_dispatch_no_publishing_history(self):
         archive = self.factory.makeArchive(
             virtualized=False, purpose=ArchivePurpose.PARTNER)
@@ -268,13 +265,12 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         bq = build.queueBuild()
         bq.markAsBuilding(builder)
         interactor = BuilderInteractor()
-        d = interactor._startBuild(
+        yield interactor._startBuild(
             bq, vitals, builder, slave,
             interactor.getBuildBehaviour(bq, builder, slave), BufferLogger())
-        d.addCallback(
-            self.assertExpectedInteraction, slave.call_log, builder, build,
-            lf, archive, ArchivePurpose.PARTNER)
-        return d
+        yield self.assertExpectedInteraction(
+            slave.call_log, builder, build, lf, archive,
+            ArchivePurpose.PARTNER)
 
     def test_dont_dispatch_release_builds(self):
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
@@ -318,18 +314,15 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             'Soyuz is not yet capable of building SECURITY uploads.',
             str(e))
 
+    @defer.inlineCallbacks
     def test_arch_indep(self):
         # BinaryPackageBuild.arch_indep is passed through to the slave.
         build = self.factory.makeBinaryPackageBuild(arch_indep=False)
-        self.assertIs(
-            False,
-            BinaryPackageBuildBehaviour(build)._extraBuildArgs(build)[
-                'arch_indep'])
+        extra_args = yield IBuildFarmJobBehaviour(build)._extraBuildArgs(build)
+        self.assertFalse(extra_args['arch_indep'])
         build = self.factory.makeBinaryPackageBuild(arch_indep=True)
-        self.assertIs(
-            True,
-            BinaryPackageBuildBehaviour(build)._extraBuildArgs(build)[
-                'arch_indep'])
+        extra_args = yield IBuildFarmJobBehaviour(build)._extraBuildArgs(build)
+        self.assertTrue(extra_args['arch_indep'])
 
     def test_verifyBuildRequest(self):
         # Don't allow a virtual build on a non-virtual builder.
