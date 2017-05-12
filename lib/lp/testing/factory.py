@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -268,7 +268,10 @@ from lp.services.messages.model.message import (
     )
 from lp.services.oauth.interfaces import IOAuthConsumerSet
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.propertycache import clear_property_cache
+from lp.services.propertycache import (
+    clear_property_cache,
+    get_property_cache,
+    )
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
@@ -2832,8 +2835,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if not IComponent.providedBy(component):
             component = self.makeComponent(component)
 
-        return ComponentSelection(
+        selection = ComponentSelection(
             distroseries=distroseries, component=component)
+        del get_property_cache(distroseries).components
+        return selection
 
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,

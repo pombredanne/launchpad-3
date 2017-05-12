@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -78,6 +78,7 @@ from lp.soyuz.interfaces.archive import (
     DuplicateTokenName,
     IArchiveSet,
     InsufficientUploadRights,
+    InvalidExternalDependencies,
     InvalidPocketForPartnerArchive,
     InvalidPocketForPPA,
     NAMED_AUTH_TOKEN_FEATURE_FLAG,
@@ -1766,6 +1767,18 @@ class TestArchiveDependencies(TestCaseWithFactory):
                 "deb http://buildd:sekrit@private-ppa.launchpad.dev/"
                 "person-name-.*/dependency/ubuntu distroseries-.* main")
             self.assertThat(sources_list[0], matches)
+
+    def test_invalid_external_dependencies(self):
+        """Trying to set invalid external dependencies raises an exception."""
+        ppa = self.factory.makeArchive()
+        self.assertRaisesWithContent(
+            InvalidExternalDependencies,
+            "Invalid external dependencies:\n"
+            "Malformed format string here --> %(series): "
+            "Must start with 'deb'\n"
+            "Malformed format string here --> %(series): Invalid URL\n",
+            setattr, ppa, "external_dependencies",
+            "Malformed format string here --> %(series)")
 
 
 class TestFindDepCandidates(TestCaseWithFactory):
