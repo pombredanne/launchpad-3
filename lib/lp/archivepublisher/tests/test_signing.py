@@ -1,4 +1,4 @@
-# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test UEFI custom uploads."""
@@ -10,6 +10,8 @@ import stat
 import tarfile
 
 from fixtures import MonkeyPatch
+from testtools.deferredruntest import AsynchronousDeferredRunTest
+from twisted.internet import defer
 from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
@@ -31,7 +33,7 @@ from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import gpgkeysdir
-from lp.testing.keyserver import KeyServerTac
+from lp.testing.keyserver import InProcessKeyServerFixture
 from lp.testing.layers import ZopelessDatabaseLayer
 
 
@@ -87,6 +89,7 @@ class FakeMethodCallLog(FakeMethod):
 class TestSigningHelpers(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
     def setUp(self):
         super(TestSigningHelpers, self).setUp()
@@ -122,10 +125,13 @@ class TestSigningHelpers(TestCaseWithFactory):
         if not os.path.exists(pubconf.temproot):
             os.makedirs(pubconf.temproot)
 
+    @defer.inlineCallbacks
     def setUpArchiveKey(self):
-        with KeyServerTac():
+        with InProcessKeyServerFixture() as keyserver:
+            yield keyserver.start()
             key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
-            IArchiveSigningKey(self.archive).setSigningKey(key_path)
+            yield IArchiveSigningKey(self.archive).setSigningKey(
+                key_path, async_keyserver=True)
 
     def setUpUefiKeys(self, create=True):
         self.key = os.path.join(self.signing_dir, "uefi.key")
@@ -648,11 +654,12 @@ class TestSigning(TestSigningHelpers):
              "1.0", "SHA256SUMS")
         self.assertTrue(os.path.exists(sha256file))
 
+    @defer.inlineCallbacks
     def test_checksumming_tree_signed(self):
         # Specifying no options should leave us with an open tree,
         # confirm it is checksummed.  Supply an archive signing key
         # which should trigger signing of the checksum file.
-        self.setUpArchiveKey()
+        yield self.setUpArchiveKey()
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
