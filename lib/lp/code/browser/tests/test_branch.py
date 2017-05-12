@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
@@ -9,6 +9,7 @@ from datetime import datetime
 from textwrap import dedent
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 import pytz
 from storm.store import Store
 from testtools.matchers import Equals
@@ -664,6 +665,7 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
 
     def test_anonymous_view_branch_with_private_owner(self):
         # A branch with a private owner is not rendered for anon users.
+        self.useFixture(FakeLogger())
         private_owner = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE)
         with person_logged_in(private_owner):

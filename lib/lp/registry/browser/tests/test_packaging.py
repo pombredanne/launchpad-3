@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser tests for Packaging actions."""
@@ -25,10 +25,7 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
-from lp.testing.layers import (
-    DatabaseFunctionalLayer,
-    PageTestLayer,
-    )
+from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import setupBrowser
 from lp.testing.views import create_initialized_view
 
@@ -152,7 +149,7 @@ class TestProductSeriesUbuntuPackagingView(WithScenarios, TestCaseWithFactory):
 class TestBrowserDeletePackaging(TestCaseWithFactory):
     """Browser tests for deletion of Packaging objects."""
 
-    layer = PageTestLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBrowserDeletePackaging, self).setUp()

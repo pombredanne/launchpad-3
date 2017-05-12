@@ -1,10 +1,11 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the translations views on a distroseries."""
 
 __metaclass__ = type
 
+from fixtures import FakeLogger
 from zope.security.interfaces import Unauthorized
 
 from lp.services.webapp import canonical_url
@@ -38,6 +39,7 @@ class TestDistributionSettingsView(TestCaseWithFactory):
     def test_unprivileged_users(self):
         # Unprivileged users cannot access distribution translation settings
         # page Distribution:+configure-translations.
+        self.useFixture(FakeLogger())
         unprivileged = self.factory.makePerson()
         distribution = self.factory.makeDistribution()
         browser = self.getUserBrowser(user=unprivileged)
