@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for publish-distro.py script."""
@@ -11,10 +11,12 @@ import shutil
 import subprocess
 import sys
 
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     Not,
     PathExists,
     )
+from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -47,12 +49,14 @@ from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.faketransaction import FakeTransaction
 from lp.testing.gpgkeys import gpgkeysdir
-from lp.testing.keyserver import KeyServerTac
+from lp.testing.keyserver import InProcessKeyServerFixture
 from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class TestPublishDistro(TestNativePublishingBase):
     """Test the publish-distro.py script works properly."""
+
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
     def runPublishDistro(self, extra_args=None, distribution="ubuntutest"):
         """Run publish-distro without invoking the script.
@@ -222,6 +226,7 @@ class TestPublishDistro(TestNativePublishingBase):
         pub_source.sync()
         self.assertEqual(PackagePublishingStatus.PENDING, pub_source.status)
 
+    @defer.inlineCallbacks
     def testForPPA(self):
         """Try to run publish-distro in PPA mode.
 
@@ -247,11 +252,10 @@ class TestPublishDistro(TestNativePublishingBase):
         naked_archive.distribution = self.ubuntutest
 
         self.setUpRequireSigningKeys()
-        tac = KeyServerTac()
-        tac.setUp()
-        self.addCleanup(tac.tearDown)
+        yield self.useFixture(InProcessKeyServerFixture()).start()
         key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
-        IArchiveSigningKey(cprov.archive).setSigningKey(key_path)
+        yield IArchiveSigningKey(cprov.archive).setSigningKey(
+            key_path, async_keyserver=True)
         name16.archive.signing_key_owner = cprov.archive.signing_key_owner
         name16.archive.signing_key_fingerprint = (
             cprov.archive.signing_key_fingerprint)
@@ -282,6 +286,7 @@ class TestPublishDistro(TestNativePublishingBase):
             'ppa/ubuntutest/pool/main/b/bar/bar_666.dsc')
         self.assertEqual('bar', open(bar_path).read().strip())
 
+    @defer.inlineCallbacks
     def testForPrivatePPA(self):
         """Run publish-distro in private PPA mode.
 
@@ -299,11 +304,10 @@ class TestPublishDistro(TestNativePublishingBase):
         self.layer.txn.commit()
 
         self.setUpRequireSigningKeys()
-        tac = KeyServerTac()
-        tac.setUp()
-        self.addCleanup(tac.tearDown)
+        yield self.useFixture(InProcessKeyServerFixture()).start()
         key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
-        IArchiveSigningKey(private_ppa).setSigningKey(key_path)
+        yield IArchiveSigningKey(private_ppa).setSigningKey(
+            key_path, async_keyserver=True)
 
         # Try a plain PPA run, to ensure the private one is NOT published.
         self.runPublishDistro(['--ppa'])
@@ -398,17 +402,17 @@ class TestPublishDistro(TestNativePublishingBase):
             self.config.distsroot)
         self.assertNotExists(index_path)
 
+    @defer.inlineCallbacks
     def testCarefulRelease(self):
         """publish-distro can be asked to just rewrite Release files."""
         archive = self.factory.makeArchive(distribution=self.ubuntutest)
         pub_source = self.getPubSource(filecontent='foo', archive=archive)
 
         self.setUpRequireSigningKeys()
-        tac = KeyServerTac()
-        tac.setUp()
-        self.addCleanup(tac.tearDown)
+        yield self.useFixture(InProcessKeyServerFixture()).start()
         key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
-        IArchiveSigningKey(archive).setSigningKey(key_path)
+        yield IArchiveSigningKey(archive).setSigningKey(
+            key_path, async_keyserver=True)
 
         self.layer.txn.commit()
 

@@ -5,7 +5,7 @@ PYTHON:=python2.7
 
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
-PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
+PYTHONPATH:=$(WD)/lib:${PYTHONPATH}
 BUILDOUT_CFG=buildout.cfg
 VERBOSITY=-vv
 
@@ -358,6 +358,7 @@ clean_mailman:
 ifdef LP_MAKE_KEEP_MAILMAN
 	@echo "Keeping previously built mailman."
 else
+	$(RM) lib/Mailman
 	$(RM) -r lib/mailman
 endif
 

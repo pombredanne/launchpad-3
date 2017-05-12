@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ArchiveSigningKey interface."""
@@ -70,9 +70,12 @@ class IArchiveSigningKey(Interface):
             upload to the keyserver.
         """
 
-    def setSigningKey(key_path):
+    def setSigningKey(key_path, async_keyserver=False):
         """Set a given secret key export as the context archive signing key.
 
+        :param key_path: full path to the secret key.
+        :param async_keyserver: true if the keyserver is running
+            asynchronously in the current thread.
         :raises AssertionError: if the context archive already has a
             `signing_key`.
         :raises AssertionError: if the given 'key_path' does not exist.
