@@ -114,7 +114,8 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             # "git clone -b" doesn't accept full ref names.  If this becomes
             # a problem then we could change launchpad-buildd to do "git
             # clone" followed by "git checkout" instead.
-            args["git_path"] = build.snap.git_ref.name
+            if build.snap.git_path != u"HEAD":
+                args["git_path"] = build.snap.git_ref.name
         else:
             raise CannotBuild(
                 "Source branch/repository for ~%s/%s has been deleted." %

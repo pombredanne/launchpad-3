@@ -107,7 +107,10 @@ from lp.code.interfaces.gitrepository import (
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
 from lp.code.model.branchmergeproposal import BranchMergeProposal
-from lp.code.model.gitref import GitRef
+from lp.code.model.gitref import (
+    GitRef,
+    GitRefDefault,
+    )
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
@@ -515,6 +518,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 self.getInternalPath(), default_branch=ref.path)
 
     def getRefByPath(self, path):
+        if path == u"HEAD":
+            return GitRefDefault(self)
         paths = [path]
         if not path.startswith(u"refs/heads/"):
             paths.append(u"refs/heads/%s" % path)
