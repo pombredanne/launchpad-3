@@ -1182,6 +1182,20 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         self.assertEqual(ref, ref.repository.getRefByPath(u"master"))
         self.assertIsNone(ref.repository.getRefByPath(u"other"))
 
+    def test_getRefByPath_HEAD(self):
+        # The special ref path "HEAD" always refers to the current default
+        # branch.
+        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/master"])
+        ref_HEAD = ref.repository.getRefByPath(u"HEAD")
+        self.assertEqual(ref.repository, ref_HEAD.repository)
+        self.assertEqual(u"HEAD", ref_HEAD.path)
+        self.assertRaises(NotFoundError, getattr, ref_HEAD, "commit_sha1")
+        removeSecurityProxy(ref.repository)._default_branch = (
+            u"refs/heads/missing")
+        self.assertRaises(NotFoundError, getattr, ref_HEAD, "commit_sha1")
+        removeSecurityProxy(ref.repository)._default_branch = ref.path
+        self.assertEqual(ref.commit_sha1, ref_HEAD.commit_sha1)
+
     def test_planRefChanges(self):
         # planRefChanges copes with planning changes to refs in a repository
         # where some refs have been created, some deleted, and some changed.
@@ -2700,6 +2714,7 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         repository_db = self.factory.makeGitRepository()
         ref_dbs = self.factory.makeGitRefs(
             repository=repository_db, paths=[u"refs/heads/a", u"refs/heads/b"])
+        removeSecurityProxy(repository_db)._default_branch = u"refs/heads/a"
         repository_url = api_url(repository_db)
         ref_urls = [api_url(ref_db) for ref_db in ref_dbs]
         webservice = webservice_for_person(
@@ -2710,6 +2725,7 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
                 ("refs/heads/a", ref_urls[0]),
                 ("b", ref_urls[1]),
                 ("refs/heads/b", ref_urls[1]),
+                ("HEAD", "%s/+ref/HEAD" % repository_url),
                 ):
             response = webservice.named_get(
                 repository_url, "getRefByPath", path=path)
