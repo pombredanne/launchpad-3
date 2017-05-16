@@ -1103,6 +1103,8 @@ class GitToGitImportWorker(ImportWorker):
         self._logger.info("Fetching remote repository.")
         try:
             self._runGit("config", "gc.auto", "0", cwd="repository")
+            # Remove any stray remote-tracking refs from the last time round.
+            self._deleteRefs("repository", "refs/remotes/source/**")
             self._runGit(
                 "remote", "add", "source", self.source_details.url,
                 cwd="repository")
@@ -1117,7 +1119,7 @@ class GitToGitImportWorker(ImportWorker):
             self._runGit("remote", "rm", "source", cwd="repository")
             # XXX cjwatson 2016-11-03: For some reason "git remote rm"
             # doesn't actually remove the refs.
-            self._deleteRefs("repository", "refs/remotes/source/*")
+            self._deleteRefs("repository", "refs/remotes/source/**")
         except subprocess.CalledProcessError as e:
             self._logger.info("Unable to fetch remote repository: %s" % e)
             return CodeImportWorkerExitCode.FAILURE_INVALID
