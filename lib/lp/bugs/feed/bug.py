@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug feed (syndication) views."""
@@ -228,7 +228,10 @@ class BugTargetBugsFeed(BugsFeedBase):
     @property
     def title(self):
         """See `IFeed`."""
-        return "Bugs in %s" % self.context.displayname
+        if IMaloneApplication.providedBy(self.context):
+            return "Launchpad bugs"
+        else:
+            return "Bugs in %s" % self.context.displayname
 
     @property
     def feed_id(self):
@@ -240,7 +243,10 @@ class BugTargetBugsFeed(BugsFeedBase):
             datecreated = self.context.datecreated.date().isoformat()
         else:
             datecreated = '2008'
-        url_path = urlparse(self.link_alternate)[2]
+        if IMaloneApplication.providedBy(self.context):
+            url_path = ''
+        else:
+            url_path = urlparse(self.link_alternate)[2]
         id_ = 'tag:launchpad.net,%s:/%s%s' % (
             datecreated,
             self.rootsite,

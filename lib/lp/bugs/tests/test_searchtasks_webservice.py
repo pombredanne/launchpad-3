@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webservice unit tests related to Launchpad Bugs."""
@@ -122,6 +122,29 @@ class TestProductSearchTasks(TestCaseWithFactory):
                 status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
         response = self.search("devel", status="Incomplete")
         self.assertEqual(response['total_size'], 2)
+
+
+class TestMaloneApplicationSearchTasks(TestCaseWithFactory):
+    """Test the searchTasks operation on the top-level /bugs collection."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_global_search_by_tag(self):
+        project1 = self.factory.makeProduct()
+        project2 = self.factory.makeProduct()
+        bug1 = self.factory.makeBug(target=project1, tags=["foo"])
+        self.factory.makeBug(target=project1, tags=["bar"])
+        bug3 = self.factory.makeBug(target=project2, tags=["foo"])
+        self.factory.makeBug(target=project2, tags=["baz"])
+        webservice = LaunchpadWebServiceCaller(
+            "launchpad-library", "salgado-change-anything")
+        response = webservice.named_get(
+            "/bugs", "searchTasks", api_version="devel", tags="foo").jsonBody()
+        self.assertEqual(2, response["total_size"])
+        self.assertContentEqual(
+            [bug1.id, bug3.id],
+            [int(entry["bug_link"].split("/")[-1])
+             for entry in response["entries"]])
 
 
 class TestGetBugData(TestCaseWithFactory):
