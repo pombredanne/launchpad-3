@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces pertaining to the launchpad Malone application."""
@@ -20,7 +20,10 @@ from lazr.restful.interface import copy_field
 from zope.interface import Attribute
 
 from lp.bugs.interfaces.bug import IBug
-from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.bugs.interfaces.bugtarget import (
+    IBugTarget,
+    IHasBugs,
+    )
 from lp.services.webapp.interfaces import ILaunchpadApplication
 
 
@@ -30,12 +33,9 @@ __all__ = [
     ]
 
 
-class IMaloneApplication(ILaunchpadApplication):
+class IMaloneApplication(ILaunchpadApplication, IHasBugs):
     """Application root for malone."""
     export_as_webservice_collection(IBug)
-
-    def searchTasks(search_params):
-        """Search IBugTasks with the given search parameters."""
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(
