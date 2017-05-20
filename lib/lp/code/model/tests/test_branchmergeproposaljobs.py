@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch merge proposal jobs."""
@@ -284,6 +284,15 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.assertEqual([bug], bmp.bugs)
         self.assertEqual([bmp], bug.linked_merge_proposals)
         self.assertEqual(patch, bmp.preview_diff.text)
+        # If somebody rewrites history to remove the bug reference, then the
+        # bug link is removed from the merge proposal.
+        self.hosting_fixture.getLog.result = []
+        self.hosting_fixture.memcache_fixture.clear()
+        job = UpdatePreviewDiffJob.create(bmp)
+        with dbuser("merge-proposal-jobs"):
+            JobRunner([job]).runAll()
+        self.assertEqual([], bmp.bugs)
+        self.assertEqual([], bug.linked_merge_proposals)
 
     def test_run_object_events(self):
         # While the job runs a single IObjectModifiedEvent is issued when the
