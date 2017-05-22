@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for branch merge proposals."""
@@ -683,7 +683,8 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         elif status == BranchMergeProposalStatus.REJECTED:
             self.rejectBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.MERGED:
-            self.markAsMerged(merge_reporter=user)
+            self.markAsMerged(
+                merge_reporter=user, merged_revision_id=revision_id)
         else:
             raise AssertionError('Unexpected queue status: %s' % status)
 

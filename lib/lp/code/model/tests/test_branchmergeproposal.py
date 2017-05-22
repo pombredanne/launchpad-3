@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposals."""
@@ -453,9 +453,12 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal.setStatus(BranchMergeProposalStatus.MERGED)
+        proposal.setStatus(
+            BranchMergeProposalStatus.MERGED, user=self.target_branch.owner,
+            revision_id='1000')
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.MERGED)
+        self.assertEqual(proposal.merged_revision_id, '1000')
 
     def test_set_status_invalid_status(self):
         # IBranchMergeProposal.setStatus doesn't work in the case of
