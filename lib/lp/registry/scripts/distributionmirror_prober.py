@@ -681,12 +681,15 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger):
     publishing time are available on that mirror, giving us an idea of when it
     was last synced to the main archive.
     """
+    base_url = mirror.base_url
+    if not base_url.endswith('/'):
+        base_url += '/'
     packages_paths = mirror.getExpectedPackagesPaths()
     sources_paths = mirror.getExpectedSourcesPaths()
     all_paths = itertools.chain(packages_paths, sources_paths)
     request_manager = RequestManager()
     for series, pocket, component, path in all_paths:
-        url = urlparse.urljoin(mirror.base_url, path)
+        url = urlparse.urljoin(base_url, path)
         callbacks = ArchiveMirrorProberCallbacks(
             mirror, series, pocket, component, url, logfile)
         unchecked_keys.append(url)
@@ -710,6 +713,10 @@ def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger):
     files for a given series and flavour, then we consider that mirror is
     actually mirroring that series and flavour.
     """
+    base_url = mirror.base_url
+    if not base_url.endswith('/'):
+        base_url += '/'
+
     # The list of files a mirror should contain will change over time and we
     # don't want to keep records for files a mirror doesn't need to have
     # anymore, so we delete all records before start probing. This also fixes
@@ -730,7 +737,7 @@ def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger):
         deferredList = []
         request_manager = RequestManager()
         for path in paths:
-            url = urlparse.urljoin(mirror.base_url, path)
+            url = urlparse.urljoin(base_url, path)
             # Use a RedirectAwareProberFactory because CD mirrors are allowed
             # to redirect, and we need to cope with that.
             prober = RedirectAwareProberFactory(url)
