@@ -4,6 +4,7 @@
 __metaclass__ = type
 __all__ = [
     'GitRef',
+    'GitRefDefault',
     'GitRefFrozen',
     'GitRefRemote',
     ]
