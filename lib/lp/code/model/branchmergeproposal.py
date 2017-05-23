@@ -685,7 +685,8 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         elif status == BranchMergeProposalStatus.REJECTED:
             self.rejectBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.MERGED:
-            self.markAsMerged(merge_reporter=user)
+            self.markAsMerged(
+                merge_reporter=user, merged_revision_id=revision_id)
         else:
             raise AssertionError('Unexpected queue status: %s' % status)
 
