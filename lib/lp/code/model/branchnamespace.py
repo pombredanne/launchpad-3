@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchNamespace`."""
@@ -199,10 +199,10 @@ class _BaseBranchNamespace:
             raise BranchExists(existing_branch)
 
         # Not all code paths that lead to branch creation go via a
-        # schema-validated form (e.g. the register_branch XML-RPC call or
-        # pushing a new branch to codehosting), so we validate the branch name
-        # here to give a nicer error message than 'ERROR: new row for relation
-        # "branch" violates check constraint "valid_name"...'.
+        # schema-validated form (e.g. pushing a new branch to codehosting),
+        # so we validate the branch name here to give a nicer error message
+        # than 'ERROR: new row for relation "branch" violates check
+        # constraint "valid_name"...'.
         IBranch['name'].validate(unicode(name))
 
     def validateMove(self, branch, mover, name=None):

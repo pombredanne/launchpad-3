@@ -1,12 +1,10 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch XMLRPC API."""
 
 __metaclass__ = type
 __all__ = [
-    'BranchSetAPI',
-    'IBranchSetAPI',
     'IPublicCodehostingAPI',
     'PublicCodehostingAPI',
     ]
@@ -21,21 +19,14 @@ from zope.interface import (
     Interface,
     )
 
-from lp.app.errors import NotFoundError
-from lp.app.validators import LaunchpadValidationError
-from lp.bugs.interfaces.bug import IBugSet
 from lp.code.enums import BranchType
 from lp.code.errors import (
-    BranchCreationException,
-    BranchCreationForbidden,
     CannotHaveLinkedBranch,
     InvalidNamespace,
     NoLinkedBranch,
     NoSuchBranch,
     )
-from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.code.interfaces.branchnamespace import get_branch_namespace
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
     compose_public_url,
@@ -45,132 +36,16 @@ from lp.registry.errors import (
     NoSuchDistroSeries,
     NoSuchSourcePackageName,
     )
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    NoSuchPerson,
-    )
+from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.product import (
     InvalidProductName,
-    IProductSet,
     NoSuchProduct,
     )
 from lp.registry.interfaces.productseries import NoSuchProductSeries
 from lp.services.config import config
-from lp.services.webapp import (
-    canonical_url,
-    LaunchpadXMLRPCView,
-    )
-from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp import LaunchpadXMLRPCView
 from lp.xmlrpc import faults
 from lp.xmlrpc.helpers import return_fault
-
-
-class IBranchSetAPI(Interface):
-    """An XMLRPC interface for dealing with branches.
-
-    This XML-RPC interface was introduced to support Bazaar 0.8-2, which is
-    included in Ubuntu 6.06. This interface cannot be removed until Ubuntu
-    6.06 is end-of-lifed.
-    """
-
-    def register_branch(branch_url, branch_name, branch_title,
-                        branch_description, author_email, product_name,
-                        owner_name=''):
-        """Register a new branch in Launchpad."""
-
-    def link_branch_to_bug(branch_url, bug_id):
-        """Link the branch to the bug."""
-
-
-@implementer(IBranchSetAPI)
-class BranchSetAPI(LaunchpadXMLRPCView):
-
-    def register_branch(self, branch_url, branch_name, branch_title,
-                        branch_description, author_email, product_name,
-                        owner_name=''):
-        """See IBranchSetAPI."""
-        registrant = getUtility(ILaunchBag).user
-        assert registrant is not None, (
-            "register_branch shouldn't be accessible to unauthenicated"
-            " requests.")
-
-        person_set = getUtility(IPersonSet)
-        if owner_name:
-            owner = person_set.getByName(owner_name)
-            if owner is None:
-                return faults.NoSuchPersonWithName(owner_name)
-            if not registrant.inTeam(owner):
-                return faults.NotInTeam(registrant.name, owner_name)
-        else:
-            owner = registrant
-
-        if product_name:
-            product = getUtility(IProductSet).getByName(product_name)
-            if product is None:
-                return faults.NoSuchProduct(product_name)
-        else:
-            product = None
-
-        # Branch URLs in Launchpad do not end in a slash, so strip any
-        # slashes from the end of the URL.
-        branch_url = branch_url.rstrip('/')
-
-        branch_lookup = getUtility(IBranchLookup)
-        existing_branch = branch_lookup.getByUrl(branch_url)
-        if existing_branch is not None:
-            return faults.BranchAlreadyRegistered(branch_url)
-
-        try:
-            unicode_branch_url = branch_url.decode('utf-8')
-            IBranch['url'].validate(unicode_branch_url)
-        except LaunchpadValidationError as exc:
-            return faults.InvalidBranchUrl(branch_url, exc)
-
-        # We want it to be None in the database, not ''.
-        if not branch_description:
-            branch_description = None
-        if not branch_title:
-            branch_title = None
-
-        if not branch_name:
-            branch_name = unicode_branch_url.split('/')[-1]
-
-        try:
-            if branch_url:
-                branch_type = BranchType.MIRRORED
-            else:
-                branch_type = BranchType.HOSTED
-            namespace = get_branch_namespace(owner, product)
-            branch = namespace.createBranch(
-                branch_type=branch_type,
-                name=branch_name, registrant=registrant,
-                url=branch_url, title=branch_title,
-                summary=branch_description)
-            if branch_type == BranchType.MIRRORED:
-                branch.requestMirror()
-        except BranchCreationForbidden:
-            return faults.BranchCreationForbidden(product.displayname)
-        except BranchCreationException as err:
-            return faults.BranchNameInUse(err)
-        except LaunchpadValidationError as err:
-            return faults.InvalidBranchName(err)
-
-        return canonical_url(branch)
-
-    def link_branch_to_bug(self, branch_url, bug_id):
-        """See IBranchSetAPI."""
-        branch = getUtility(IBranchLookup).getByUrl(url=branch_url)
-        if branch is None:
-            return faults.NoSuchBranch(branch_url)
-        try:
-            bug = getUtility(IBugSet).get(bug_id)
-        except NotFoundError:
-            return faults.NoSuchBug(bug_id)
-        # Since this API is controlled using launchpad.AnyPerson there must be
-        # an authenticated person, so use this person as the registrant.
-        registrant = getUtility(ILaunchBag).user
-        bug.linkBranch(branch, registrant=registrant)
-        return canonical_url(bug)
 
 
 class IPublicCodehostingAPI(Interface):
