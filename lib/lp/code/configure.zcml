@@ -182,11 +182,6 @@
 
   <xmlrpc:view
       for="lp.code.interfaces.codehosting.IBazaarApplication"
-      interface="lp.code.xmlrpc.branch.IBranchSetAPI"
-      class="lp.code.xmlrpc.branch.BranchSetAPI"
-      permission="launchpad.AnyPerson"/>
-  <xmlrpc:view
-      for="lp.code.interfaces.codehosting.IBazaarApplication"
       interface="lp.code.xmlrpc.branch.IPublicCodehostingAPI"
       class="lp.code.xmlrpc.branch.PublicCodehostingAPI"
       permission="zope.Public"/>
