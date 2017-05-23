@@ -31,15 +31,6 @@ if the user is not logged in, they will be asked to log in.
     ...         for tag in tags:
     ...             print extract_text(tag)
 
-    >>> def print_notifications(browser):
-    ...     tags = find_tags_by_class(
-    ...         browser.contents, 'informational message')
-    ...     if len(tags) == 0:
-    ...         print 'No messages.'
-    ...     else:
-    ...         for tag in tags:
-    ...             print extract_text(tag)
-
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
