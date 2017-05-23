@@ -138,60 +138,6 @@ links to a page restricted with the launchpad.AnyPerson permission.
     Undecided New
 
 
-Quick branch registration
-=========================
-
-You can also register a branch at the same time as registering a bug-branch
-link. Instead of entering the unique name of a branch, you can enter a URL:
-
-    >>> browser.open('http://bugs.launchpad.dev/thunderbird/+bug/15')
-    >>> printBugBranchLinks(browser)
-    No bug branch links
-
-If we go to register a branch and change our mind, there is a cancel
-link that points back to the bug page:
-
-    >>> browser.getLink('Link a related branch').click()
-    >>> cancel_link = browser.getLink('Cancel')
-    >>> cancel_link.url
-    'http://bugs.launchpad.dev/thunderbird/+bug/15'
-
-But we're here to register a branch:
-
-    >>> browser.getControl('Branch').value = (
-    ...     "http://example.org/branch")
-    >>> browser.getControl('Continue').click()
-
-This registers a branch and links it to the bug:
-
-    >>> print_notifications(browser)
-    Registered lp://dev/~name12/thunderbird/branch
-    ...
-    >>> printBugBranchLinks(browser)
-    lp://dev/~name12/thunderbird/branch
-
-However, if the bug isn't on a project, we don't (can't!) register a branch.
-
-    >>> browser.open('http://launchpad.dev/bugs/10')
-    >>> printBugBranchLinks(browser)
-    No bug branch links
-
-Here we use 'http://example.org/branch2' as the URL. We have to use a
-different URL, since using an already-registered URL will just find that
-branch.
-
-    >>> browser.getLink('Link a related branch').click()
-    >>> browser.getControl('Branch').value = (
-    ...     "http://example.org/branch2")
-    >>> browser.getControl('Continue').click()
-
-No bug-branch link is registered:
-
-    >>> browser.open('http://launchpad.dev/bugs/10')
-    >>> printBugBranchLinks(browser)
-    No bug branch links
-
-
 Deleting bug branch links
 =========================
 
