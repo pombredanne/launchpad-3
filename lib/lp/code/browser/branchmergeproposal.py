@@ -156,6 +156,10 @@ class BranchMergeProposalBreadcrumb(Breadcrumb):
     def text(self):
         return 'Merge into %s' % self.context.merge_target.name
 
+    @property
+    def inside(self):
+        return self.context.merge_source
+
 
 def notify(func):
     """Decorate a view method to send a notification."""

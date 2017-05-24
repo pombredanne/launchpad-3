@@ -22,6 +22,7 @@ import simplejson
 from soupmatchers import (
     HTMLContains,
     Tag,
+    Within,
     )
 from testtools.matchers import (
     ContainsDict,
@@ -109,7 +110,10 @@ from lp.testing.pages import (
     first_tag_by_class,
     get_feedback_messages,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class GitHostingClientMixin:
@@ -1619,6 +1623,74 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                 'http://code.launchpad.dev/%s/+diff/' %
                 bmp.source_git_repository.unique_name),
             }))
+
+    def test_breadcrumbs_bzr(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        view = create_view(bmp, '+index', principal=self.user)
+        # To test the breadcrumbs we need a correct traversal stack.
+        view.request.traversed_objects = [bmp.source_branch, bmp, view]
+        view.initialize()
+        breadcrumbs_tag = Tag(
+            'breadcrumbs', 'ol', attrs={'class': 'breadcrumbs'})
+        self.assertThat(
+            view(),
+            HTMLContains(
+                Within(
+                    breadcrumbs_tag,
+                    Tag(
+                        'branch breadcrumb', 'a', text=bmp.source_branch.name,
+                        attrs={
+                            'href': 'http://code.launchpad.dev/%s' % (
+                                bmp.source_branch.unique_name)})),
+                Within(
+                    breadcrumbs_tag,
+                    Tag(
+                        'merge proposal breadcrumb', 'li',
+                        text=re.compile(
+                            '\sMerge into %s\s' %
+                            re.escape(bmp.target_branch.name))))))
+
+    def test_breadcrumbs_git(self):
+        self.useFixture(GitHostingFixture())
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        view = create_view(bmp, '+index', principal=self.user)
+        # To test the breadcrumbs we need a correct traversal stack.
+        view.request.traversed_objects = [bmp.source_git_repository, bmp, view]
+        view.initialize()
+        breadcrumbs_tag = Tag(
+            'breadcrumbs', 'ol', attrs={'class': 'breadcrumbs'})
+        self.assertThat(
+            view(),
+            HTMLContains(
+                Within(
+                    breadcrumbs_tag,
+                    Tag(
+                        'git collection breadcrumb', 'a', text='Git',
+                        attrs={'href': re.compile(r'/\+git$')})),
+                Within(
+                    breadcrumbs_tag,
+                    Tag(
+                        'git repository breadcrumb', 'a',
+                        text=bmp.source_git_repository.git_identity,
+                        attrs={
+                            'href': 'http://code.launchpad.dev/%s' % (
+                                bmp.source_git_repository.unique_name)})),
+                Within(
+                    breadcrumbs_tag,
+                    Tag(
+                        'git ref breadcrumb', 'a',
+                        text=bmp.source_git_ref.name,
+                        attrs={
+                            'href': 'http://code.launchpad.dev/%s/+ref/%s' % (
+                                bmp.source_git_repository.unique_name,
+                                bmp.source_git_ref.name)})),
+                Within(
+                    breadcrumbs_tag,
+                    Tag(
+                        'merge proposal breadcrumb', 'li',
+                        text=re.compile(
+                            '\sMerge into %s\s' %
+                            re.escape(bmp.target_git_ref.name))))))
 
 
 class TestBranchMergeProposalBrowserView(BrowserTestCase):
