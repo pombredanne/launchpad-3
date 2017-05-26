@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A person's view on a product."""
@@ -45,3 +45,11 @@ class PersonProduct(HasMergeProposalsMixin):
 
     def __ne__(self, other):
         return not self == other
+
+    @property
+    def private(self):
+        return self.person.private or self.product.private
+
+    @property
+    def information_type(self):
+        return self.product.information_type
