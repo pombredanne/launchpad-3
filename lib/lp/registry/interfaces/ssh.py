@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SSH key interfaces."""
@@ -11,11 +11,11 @@ __all__ = [
     'SSH_KEY_TYPE_TO_TEXT',
     'SSH_TEXT_TO_KEY_TYPE',
     'SSHKeyAdditionError',
-    'SSHKeyCompromisedError',
     'SSHKeyType',
     ]
 
 import httplib
+
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
@@ -122,8 +122,3 @@ class ISSHKeySet(Interface):
 @error_status(httplib.BAD_REQUEST)
 class SSHKeyAdditionError(Exception):
     """Raised when the SSH public key is invalid."""
-
-
-@error_status(httplib.BAD_REQUEST)
-class SSHKeyCompromisedError(Exception):
-    """Raised when the SSH public key is known to be easily compromisable."""

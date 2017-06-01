@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person interfaces."""
@@ -2311,8 +2311,6 @@ class IPersonSet(Interface):
         :raises NoSuchAccount: If the openid_identifier specified does not
             match any account.
         :raises SSHKeyAdditionError: If the ssh key_text is invalid.
-        :raises SSHKeyCompromisedError: If the ssh key_text is a known
-            compromised key.
         """
 
     @call_with(user=REQUEST_USER)
