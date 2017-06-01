@@ -272,10 +272,15 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         subscriber = self.factory.makePerson()
         bug.default_bugtask.target.addSubscription(subscriber, subscriber)
         bmp, _, _, patch = self.createExampleGitMerge()
+        committer = self.factory.makePerson()
         self.hosting_fixture.getLog.result = [
             {
                 u"sha1": unicode(hashlib.sha1("tip").hexdigest()),
                 u"message": u"Fix upside-down messages\n\nLP: #%d" % bug.id,
+                u"committer": {
+                    u"name": committer.display_name,
+                    u"email": committer.preferredemail.email,
+                    },
                 },
             ]
         job = UpdatePreviewDiffJob.create(bmp)

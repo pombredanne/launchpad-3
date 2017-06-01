@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for recording changes done to a bug."""
@@ -789,7 +789,7 @@ class TestBugChanges(TestCaseWithFactory):
 
         cve_linked_notification = {
             'text': (
-                '** CVE added: http://www.cve.mitre.org/'
+                '** CVE added: https://cve.mitre.org/'
                 'cgi-bin/cvename.cgi?name=1999-8979'),
             'person': self.user,
             }
@@ -820,7 +820,7 @@ class TestBugChanges(TestCaseWithFactory):
 
         cve_unlinked_notification = {
             'text': (
-                '** CVE removed: http://www.cve.mitre.org/'
+                '** CVE removed: https://cve.mitre.org/'
                 'cgi-bin/cvename.cgi?name=1999-8979'),
             'person': self.user,
             }
