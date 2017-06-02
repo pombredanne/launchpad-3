@@ -512,13 +512,13 @@ getPublishedBinaries(), it considers both PENDING and PUBLISHED status
 as active, SUPERSEDED, DELETED and OBSOLETE are excluded. Differently,
 getBuiltBinaries() follows binaries in any state.
 
-    >>> len(source.getPublishedBinaries())
+    >>> source.getPublishedBinaries().count()
     2
 
     >>> len(source.getBuiltBinaries())
     2
 
-Note that getPublishedBinaries() returns a SelectResult and
+Note that getPublishedBinaries() returns a DecoratedResultSet and
 getBuiltBinaries() returns a list.
 
 When we supersede one of the original binary publications, it gets
@@ -528,7 +528,7 @@ getBuiltBinaries() result.
     >>> a_binary = source.getPublishedBinaries()[0]
     >>> a_binary.supersede()
 
-    >>> len(source.getPublishedBinaries())
+    >>> source.getPublishedBinaries().count()
     1
 
     >>> len(source.getBuiltBinaries())
@@ -541,7 +541,7 @@ published in the original location.
     >>> deletable.requestDeletion(mark, "go")
     >>> deleted = deletable
 
-    >>> len(source.getPublishedBinaries())
+    >>> source.getPublishedBinaries().count()
     0
 
     >>> len(source.getBuiltBinaries())
@@ -550,13 +550,13 @@ published in the original location.
 Finally we will mark both copied binary publication as obsolete and
 verify that the getPublishedBinaries() result is also empty after that.
 
-    >>> len(copied_source.getPublishedBinaries())
+    >>> copied_source.getPublishedBinaries().count()
     2
 
     >>> for bin in copied_source.getPublishedBinaries():
     ...     obsoleted = bin.requestObsolescence()
 
-    >>> len(copied_source.getPublishedBinaries())
+    >>> copied_source.getPublishedBinaries().count()
     0
 
     >>> len(copied_source.getBuiltBinaries())
