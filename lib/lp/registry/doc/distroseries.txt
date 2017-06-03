@@ -570,7 +570,7 @@ publication in question:
     u'web'
 
     >>> warty_mozilla_pub_binaries = warty_pub_source.getPublishedBinaries()
-    >>> len(warty_mozilla_pub_binaries)
+    >>> warty_mozilla_pub_binaries.count()
     4
     >>> warty_mozilla_pub_bin = warty_mozilla_pub_binaries[0]
 
