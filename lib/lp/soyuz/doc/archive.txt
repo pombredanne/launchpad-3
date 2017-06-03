@@ -623,7 +623,7 @@ it continues to be considered 'available for deletion'.
 
     >>> removal_candidate = cprov_archive.getPublishedSources(
     ...     name=u'ice').first()
-    >>> len(removal_candidate.getPublishedBinaries())
+    >>> removal_candidate.getPublishedBinaries().count()
     1
 
     >>> login("celso.providelo@canonical.com")
@@ -2023,7 +2023,7 @@ PPA like this:
 Now, Mark's PPA has 'built-source' source and it's 2 binaries.
 
     >>> copy = mark.archive.getPublishedSources(name=u"built-source").one()
-    >>> len(copy.getPublishedBinaries())
+    >>> copy.getPublishedBinaries().count()
     2
 
 If copying packages into a PPA, you can only copy into the "release" pocket,
