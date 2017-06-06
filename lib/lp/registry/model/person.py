@@ -1433,7 +1433,6 @@ class Person(
         from lp.registry.model.product import Product
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
-        WorkItem = SpecificationWorkItem
 
         # Since a workitem's assignee defaults to its specification's
         # assignee, the PostgreSQL planner isn't always able to work out
@@ -1465,19 +1464,20 @@ class Person(
         origin.extend(productjoin)
         query.extend(get_specification_privacy_filter(user))
         origin.extend([
-            Join(WorkItem, WorkItem.specification == Specification.id),
+            Join(SpecificationWorkItem,
+                 SpecificationWorkItem.specification == Specification.id),
             # WorkItems may not have a milestone and in that case they inherit
             # the one from the spec.
             Join(Milestone,
-                 Coalesce(WorkItem.milestone_id,
+                 Coalesce(SpecificationWorkItem.milestone_id,
                           Specification.milestoneID) == Milestone.id)])
         today = datetime.today().date()
         query.extend([
             Milestone.dateexpected <= date, Milestone.dateexpected >= today,
-            WorkItem.id.is_in(Select(
+            SpecificationWorkItem.id.is_in(Select(
                 SQL('id'), tables='assigned_specificationworkitem'))])
         result = store.with_(assigned_specificationworkitem).using(
-            *origin).find(WorkItem, *query)
+            *origin).find(SpecificationWorkItem, *query)
         result.config(distinct=True)
 
         def eager_load(workitems):
