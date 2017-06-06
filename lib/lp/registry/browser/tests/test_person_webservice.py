@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-from unittest import skipUnless
-
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.management import endInteraction
@@ -16,13 +14,11 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.ssh import SSHKeyType
 from lp.registry.interfaces.teammembership import ITeamMembershipSet
-from lp.registry.tests.test_ssh import VULNERABLE_RSA_KEY
 from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccountSet,
     )
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.osutils import find_on_path
 from lp.services.webapp import snapshot
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
@@ -560,28 +556,6 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
         self.assertEqual(400, response.status)
         self.assertEqual(
             "Invalid SSH key type: 'foo'",
-            response.body)
-
-    @skipUnless(find_on_path("ssh-vulnkey"), "requires ssh-vulnkey")
-    def test_addSSHKeyFromSSO_rejects_vulnerable_keys(self):
-        with admin_logged_in():
-            person = self.factory.makePerson()
-            openid_id = person.account.openid_identifiers.any().identifier
-        response = self.addSSHKeyForPerson(openid_id, VULNERABLE_RSA_KEY)
-        self.assertEqual(400, response.status)
-        self.assertEqual(
-            "This key cannot be added as it is known to be compromised.",
-            response.body)
-
-    @skipUnless(find_on_path("ssh-vulnkey"), "requires ssh-vulnkey")
-    def test_addSSHKeyFromSSO_rejects_vulnerable_keys_dry_run(self):
-        with admin_logged_in():
-            person = self.factory.makePerson()
-            openid_id = person.account.openid_identifiers.any().identifier
-        response = self.addSSHKeyForPerson(openid_id, VULNERABLE_RSA_KEY, True)
-        self.assertEqual(400, response.status)
-        self.assertEqual(
-            "This key cannot be added as it is known to be compromised.",
             response.body)
 
     def test_addSSHKeyFromSSO_works(self):
