@@ -403,16 +403,6 @@
       permission="zope.Public"
       />
 
-    <!-- Define the widget used by fields that use BranchVocabulary. -->
-    <view
-      type="zope.publisher.interfaces.browser.IBrowserRequest"
-      for="zope.schema.interfaces.IChoice
-        lp.code.vocabularies.branch.BranchVocabulary"
-      provides="zope.formlib.interfaces.IInputWidget"
-      factory="lp.code.browser.widgets.branch.BranchPopupWidget"
-      permission="zope.Public"
-      />
-
     <!-- Define the widget used by fields that use
          DistributionSourcePackageVocabulary. -->
     <view
