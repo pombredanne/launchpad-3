@@ -36,7 +36,6 @@ from datetime import (
 from operator import attrgetter
 import random
 import re
-import subprocess
 import weakref
 
 from lazr.delegates import delegate_to
@@ -208,7 +207,6 @@ from lp.registry.interfaces.ssh import (
     SSH_KEY_TYPE_TO_TEXT,
     SSH_TEXT_TO_KEY_TYPE,
     SSHKeyAdditionError,
-    SSHKeyCompromisedError,
     SSHKeyType,
     )
 from lp.registry.interfaces.teammembership import (
@@ -294,7 +292,6 @@ from lp.services.oauth.model import (
     )
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.osutils import find_on_path
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -1433,25 +1430,51 @@ class Person(
         from lp.registry.model.product import Product
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
-        WorkItem = SpecificationWorkItem
+
+        # Since a workitem's assignee defaults to its specification's
+        # assignee, the PostgreSQL planner isn't always able to work out
+        # the selectivity of the filter. Put that in a CTE to force it
+        # to calculate the workitems up front, rather than doing a hash
+        # join over all of Specification and SpecificationWorkItem.
+        assigned_specificationworkitem = With(
+            'assigned_specificationworkitem',
+            Union(
+                Select(
+                    SpecificationWorkItem.id,
+                    where=And(
+                        SpecificationWorkItem.assignee_id.is_in(
+                            self.participant_ids),
+                        Not(SpecificationWorkItem.deleted))),
+                Select(
+                    SpecificationWorkItem.id,
+                    where=And(
+                        SpecificationWorkItem.specification_id.is_in(
+                            Select(
+                                Specification.id,
+                                where=Specification._assigneeID.is_in(
+                                    self.participant_ids))),
+                        Not(SpecificationWorkItem.deleted))),
+                all=True))
+
         origin = [Specification]
         productjoin, query = get_specification_active_product_filter(self)
         origin.extend(productjoin)
         query.extend(get_specification_privacy_filter(user))
         origin.extend([
-            Join(WorkItem, WorkItem.specification == Specification.id),
+            Join(SpecificationWorkItem,
+                 SpecificationWorkItem.specification == Specification.id),
             # WorkItems may not have a milestone and in that case they inherit
             # the one from the spec.
             Join(Milestone,
-                 Coalesce(WorkItem.milestone_id,
+                 Coalesce(SpecificationWorkItem.milestone_id,
                           Specification.milestoneID) == Milestone.id)])
         today = datetime.today().date()
         query.extend([
             Milestone.dateexpected <= date, Milestone.dateexpected >= today,
-            WorkItem.deleted == False,
-            Or(WorkItem.assignee_id.is_in(self.participant_ids),
-               Specification._assigneeID.is_in(self.participant_ids))])
-        result = store.using(*origin).find(WorkItem, *query)
+            SpecificationWorkItem.id.is_in(Select(
+                SQL('id'), tables='assigned_specificationworkitem'))])
+        result = store.with_(assigned_specificationworkitem).using(
+            *origin).find(SpecificationWorkItem, *query)
         result.config(distinct=True)
 
         def eager_load(workitems):
@@ -4098,16 +4121,6 @@ class SSHKeySet:
 
     def new(self, person, sshkey, send_notification=True, dry_run=False):
         keytype, keytext, comment = self._extract_ssh_key_components(sshkey)
-
-        if find_on_path('ssh-vulnkey'):
-            process = subprocess.Popen(
-                ['ssh-vulnkey', '-'], stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            (out, err) = process.communicate(sshkey.encode('utf-8'))
-            if 'compromised' in out.lower():
-                raise SSHKeyCompromisedError(
-                    "This key cannot be added as it is known to be "
-                    "compromised.")
 
         if send_notification:
             person.security_field_changed(
