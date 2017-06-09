@@ -1459,7 +1459,11 @@ class Person(
         origin = [Specification]
         productjoin, query = get_specification_active_product_filter(self)
         origin.extend(productjoin)
-        query.extend(get_specification_privacy_filter(user))
+        query.append(Exists(Select(
+            1, tables=[Specification],
+            where=And(
+                Specification.id == SpecificationWorkItem.specification_id,
+                *get_specification_privacy_filter(user)))))
         origin.extend([
             Join(SpecificationWorkItem,
                  SpecificationWorkItem.specification == Specification.id),
