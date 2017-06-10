@@ -10,6 +10,7 @@ __all__ = [
     'SnapStoreClient',
     ]
 
+import base64
 import json
 try:
     from json.decoder import JSONDecodeError
@@ -81,19 +82,44 @@ class MacaroonAuth(requests.auth.AuthBase):
     # The union of the base64 and URL-safe base64 alphabets.
     allowed_chars = set(string.digits + string.letters + "+/=-_")
 
-    def __init__(self, root_macaroon_raw, unbound_discharge_macaroon_raw=None):
+    def __init__(self, root_macaroon_raw, unbound_discharge_macaroon_raw=None,
+                 logger=log):
         self.root_macaroon_raw = root_macaroon_raw
         self.unbound_discharge_macaroon_raw = unbound_discharge_macaroon_raw
+        self.logger = logger
 
-    @classmethod
-    def _makeAuthParam(cls, key, value):
+    def _logMacaroon(self, macaroon_name, macaroon_raw):
+        """Log relevant information from the authorising macaroons.
+
+        This shouldn't be trusted for anything since we can't verify the
+        macaroons here, but it's helpful when debugging.
+        """
+        macaroon = Macaroon.deserialize(macaroon_raw)
+        for caveat in macaroon.first_party_caveats():
+            try:
+                _, key, value = caveat.caveat_id.split("|")
+                if key == "account":
+                    account = json.loads(
+                        base64.b64decode(value).decode("UTF-8"))
+                    if "openid" in account:
+                        self.logger.debug(
+                            "%s macaroon: OpenID identifier: %s" %
+                            (macaroon_name, account["openid"]))
+                elif key == "package_id":
+                    self.logger.debug(
+                        "%s macaroon: snap-ids: %s" % (macaroon_name, value))
+            except ValueError:
+                pass
+
+    def _makeAuthParam(self, key, value):
         # Check framing.
-        if not set(key).issubset(cls.allowed_chars):
+        if not set(key).issubset(self.allowed_chars):
             raise InvalidStoreSecretsError(
                 "Key contains unsafe characters: %r" % key)
-        if not set(value).issubset(cls.allowed_chars):
+        if not set(value).issubset(self.allowed_chars):
             # Don't include secrets in exception arguments.
             raise InvalidStoreSecretsError("Value contains unsafe characters")
+        self._logMacaroon(key, value)
         return '%s="%s"' % (key, value)
 
     @property
