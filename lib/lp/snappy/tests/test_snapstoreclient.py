@@ -44,15 +44,14 @@ from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
 from lp.snappy.interfaces.snapstoreclient import (
-    BadReleaseResponse,
     BadRequestPackageUploadResponse,
     BadScanStatusResponse,
     BadSearchResponse,
-    BadUploadResponse,
     ISnapStoreClient,
     ReleaseFailedResponse,
     ScanFailedResponse,
     UnauthorizedUploadResponse,
+    UploadFailedResponse,
     UploadNotScannedYetResponse,
     )
 from lp.snappy.model.snapstoreclient import (
@@ -311,6 +310,21 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 self.client.requestPackageUploadPermission,
                 snappy_series, "test-snap")
 
+    def test_requestPackageUploadPermission_error(self):
+        @all_requests
+        def handler(url, request):
+            return {
+                "status_code": 503,
+                "content": {"error_list": [{"message": "Failed"}]},
+                }
+
+        snappy_series = self.factory.makeSnappySeries()
+        with HTTMock(handler):
+            self.assertRaisesWithContent(
+                BadRequestPackageUploadResponse, "Failed",
+                self.client.requestPackageUploadPermission,
+                snappy_series, "test-snap")
+
     def test_requestPackageUploadPermission_404(self):
         @all_requests
         def handler(url, request):
@@ -446,6 +460,30 @@ class TestSnapStoreClient(TestCaseWithFactory):
             store_secrets["discharge"],
             snapbuild.snap.store_secrets["discharge"])
 
+    def test_upload_unsigned_agreement(self):
+        @urlmatch(path=r".*/snap-push/$")
+        def snap_push_handler(url, request):
+            self.snap_push_request = request
+            return {
+                "status_code": 403,
+                "content": {
+                    "error_list": [
+                        {"message": "Developer has not signed agreement."},
+                        ],
+                    },
+                }
+
+        store_secrets = self._make_store_secrets()
+        snapbuild = self.makeUploadableSnapBuild(store_secrets=store_secrets)
+        transaction.commit()
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            with HTTMock(self._unscanned_upload_handler, snap_push_handler,
+                         self._macaroon_refresh_handler):
+                err = self.assertRaises(
+                    UploadFailedResponse, self.client.upload, snapbuild)
+                self.assertEqual(
+                    "Developer has not signed agreement.", str(err))
+
     def test_upload_file_error(self):
         @urlmatch(path=r".*/unscanned-upload/$")
         def unscanned_upload_handler(url, request):
@@ -461,7 +499,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             with HTTMock(unscanned_upload_handler):
                 err = self.assertRaises(
-                    BadUploadResponse, self.client.upload, snapbuild)
+                    UploadFailedResponse, self.client.upload, snapbuild)
                 self.assertEqual("502 Server Error: Proxy Error", str(err))
                 self.assertEqual(b"The proxy exploded.\n", err.detail)
 
@@ -667,7 +705,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
         def handler(url, request):
             return {
                 "status_code": 503,
-                "content": {"success": False, "errors": "Failed to publish"},
+                "content": {"error_list": [{"message": "Failed to publish"}]},
                 }
 
         with HTTMock(self._channels_handler):
@@ -698,5 +736,5 @@ class TestSnapStoreClient(TestCaseWithFactory):
         snapbuild = self.factory.makeSnapBuild(snap=snap)
         with HTTMock(handler):
             self.assertRaisesWithContent(
-                BadReleaseResponse, b"404 Client Error: Not found",
+                ReleaseFailedResponse, b"404 Client Error: Not found",
                 self.client.release, snapbuild, 1)
