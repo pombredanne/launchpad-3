@@ -172,6 +172,10 @@ class ManualReview(SnapStoreError):
     pass
 
 
+class RetryableSnapStoreError(SnapStoreError):
+    pass
+
+
 @implementer(ISnapBuildStoreUploadStatusChangedEvent)
 class SnapBuildStoreUploadStatusChangedEvent(ObjectEvent):
     """See `ISnapBuildStoreUploadStatusChangedEvent`."""
@@ -191,8 +195,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         ReleaseFailedResponse,
         )
 
-    # XXX cjwatson 2016-05-04: identify transient upload failures and retry
-    retry_error_types = (UploadNotScannedYetResponse,)
+    retry_error_types = (UploadNotScannedYetResponse, RetryableSnapStoreError)
     retry_delay = timedelta(minutes=1)
     max_retries = 20
 
@@ -300,6 +303,9 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         except self.retry_error_types:
             raise
         except Exception as e:
+            if (isinstance(e, SnapStoreError) and e.can_retry and
+                    self.attempt_count <= self.max_retries):
+                raise RetryableSnapStoreError(e.message, detail=e.detail)
             self.error_message = str(e)
             self.error_detail = getattr(e, "detail", None)
             if isinstance(e, UnauthorizedUploadResponse):

@@ -483,6 +483,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
                     UploadFailedResponse, self.client.upload, snapbuild)
                 self.assertEqual(
                     "Developer has not signed agreement.", str(err))
+                self.assertFalse(err.can_retry)
 
     def test_upload_file_error(self):
         @urlmatch(path=r".*/unscanned-upload/$")
@@ -502,6 +503,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
                     UploadFailedResponse, self.client.upload, snapbuild)
                 self.assertEqual("502 Server Error: Proxy Error", str(err))
                 self.assertEqual(b"The proxy exploded.\n", err.detail)
+                self.assertTrue(err.can_retry)
 
     def test_refresh_discharge_macaroon(self):
         store_secrets = self._make_store_secrets()
