@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -302,6 +302,12 @@ class PackageUpload(SQLBase):
         if self.sourcepackagerelease is not None:
             try:
                 return self.sourcepackagerelease.getFileByName(filename)
+            except NotFoundError:
+                pass
+
+        for build in self.builds:
+            try:
+                return build.build.getFileByName(filename)
             except NotFoundError:
                 pass
 
