@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive dependencies helper function.
@@ -36,11 +36,15 @@ __all__ = [
     'pocket_dependencies',
     ]
 
+import base64
 import logging
 import traceback
 
 from lazr.uri import URI
+from twisted.internet import defer
+from twisted.internet.threads import deferToThread
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
@@ -48,6 +52,11 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
+from lp.services.gpg.interfaces import (
+    GPGKeyNotFoundError,
+    IGPGHandler,
+    )
+from lp.services.timeout import default_timeout
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -229,15 +238,18 @@ def expand_dependencies(archive, distro_arch_series, pocket, component,
     return deps
 
 
+@defer.inlineCallbacks
 def get_sources_list_for_building(build, distroarchseries, sourcepackagename,
                                   tools_source=None, logger=None):
-    """Return the sources_list entries required to build the given item.
+    """Return sources.list entries and keys required to build the given item.
 
-    The entries are returned in the order that is most useful;
+    The sources.list entries are returned in the order that is most useful:
      1. the context archive itself
      2. external dependencies
      3. user-selected archive dependencies
      4. the default primary archive
+
+    The keys are in an arbitrary order.
 
     :param build: a context `IBuild`.
     :param distroarchseries: A `IDistroArchSeries`
@@ -246,14 +258,16 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename,
         additional dependency for build tools, just before the default
         primary archive.
     :param logger: an optional logger.
-    :return: a deb sources_list entries (lines).
+    :return: a Deferred resolving to a tuple containing a list of deb
+        sources.list entries (lines) and a list of base64-encoded public
+        keys.
     """
     deps = expand_dependencies(
         build.archive, distroarchseries, build.pocket,
         build.current_component, sourcepackagename,
         tools_source=tools_source, logger=logger)
-    sources_list_lines = \
-        _get_sources_list_for_dependencies(deps)
+    sources_list_lines, trusted_keys = (
+        yield _get_sources_list_for_dependencies(deps, logger=logger))
 
     external_dep_lines = []
     # Append external sources.list lines for this build if specified.  No
@@ -289,8 +303,9 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename,
     # binaries that need to override primary binaries of the same
     # version), we want the external dependency lines to show up second:
     # after the archive itself, but before any other dependencies.
-    return [sources_list_lines[0]] + external_dep_lines + \
-           sources_list_lines[1:]
+    defer.returnValue(
+        ([sources_list_lines[0]] + external_dep_lines + sources_list_lines[1:],
+         trusted_keys))
 
 
 def _has_published_binaries(archive, distroarchseries, pocket):
@@ -323,8 +338,9 @@ def _get_binary_sources_list_line(archive, distroarchseries, pocket,
     return 'deb %s %s %s' % (url, suite, ' '.join(components))
 
 
-def _get_sources_list_for_dependencies(dependencies):
-    """Return a list of sources_list lines.
+@defer.inlineCallbacks
+def _get_sources_list_for_dependencies(dependencies, logger=None):
+    """Return sources.list entries and keys.
 
     Process the given list of dependency tuples for the given
     `DistroArchseries`.
@@ -334,9 +350,15 @@ def _get_sources_list_for_dependencies(dependencies):
          list of `IComponent` names)
     :param distroarchseries: target `IDistroArchSeries`;
 
-    :return: a list of sources_list formatted lines.
+    :return: a tuple containing a list of sources.list formatted lines and a
+        list of base64-encoded public keys.
     """
     sources_list_lines = []
+    trusted_keys = {}
+    # The handler's security proxying doesn't protect anything useful here,
+    # and the thread that we defer key retrieval to doesn't have an
+    # interaction.
+    gpghandler = removeSecurityProxy(getUtility(IGPGHandler))
     for dep in dependencies:
         if isinstance(dep, basestring):
             sources_list_lines.append(dep)
@@ -356,8 +378,27 @@ def _get_sources_list_for_dependencies(dependencies):
             sources_list_line = _get_binary_sources_list_line(
                 archive, distro_arch_series, pocket, components)
             sources_list_lines.append(sources_list_line)
+            fingerprint = archive.signing_key_fingerprint
+            if fingerprint is not None and fingerprint not in trusted_keys:
+                def get_key():
+                    with default_timeout(15.0):
+                        try:
+                            return gpghandler.retrieveKey(fingerprint)
+                        except GPGKeyNotFoundError as e:
+                            # For now, just log this and proceed without the
+                            # key.  We'll have to fix any outstanding cases
+                            # of this before we can switch to requiring
+                            # authentication across the board.
+                            if logger is not None:
+                                logger.warning(str(e))
+                            return None
 
-    return sources_list_lines
+                key = yield deferToThread(get_key)
+                if key is not None:
+                    trusted_keys[fingerprint] = base64.b64encode(key.export())
+
+    defer.returnValue(
+        (sources_list_lines, [v for k, v in sorted(trusted_keys.items())]))
 
 
 def _get_default_primary_dependencies(archive, distro_arch_series, component,
