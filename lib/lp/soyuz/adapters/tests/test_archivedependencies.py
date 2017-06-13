@@ -23,6 +23,7 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
     )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
@@ -135,7 +136,6 @@ class TestSourcesList(TestCaseWithFactory):
             "B7B1966662BA8D3F5A6ED89BD640F4A593B2CF67"),
         }
 
-    @defer.inlineCallbacks
     def setUp(self):
         super(TestSourcesList, self).setUp()
         self.publisher = SoyuzTestPublisher()
@@ -147,7 +147,6 @@ class TestSourcesList(TestCaseWithFactory):
             component = getUtility(IComponentSet)[component_name]
             if component not in self.hoary.components:
                 self.factory.makeComponentSelection(self.hoary, component)
-        yield self.useFixture(InProcessKeyServerFixture()).start()
 
     def test_defaults(self):
         # Non-primary archives by default use the Release, Security and
@@ -165,6 +164,10 @@ class TestSourcesList(TestCaseWithFactory):
     @defer.inlineCallbacks
     def makeArchive(self, signing_key_name="ppa-sample@canonical.com",
                     publish_binary=False, **kwargs):
+        try:
+            getattr(config, "in-process-key-server-fixture")
+        except AttributeError:
+            yield self.useFixture(InProcessKeyServerFixture()).start()
         archive = self.factory.makeArchive(distribution=self.ubuntu, **kwargs)
         if signing_key_name is not None:
             key_path = os.path.join(gpgkeysdir, "%s.sec" % signing_key_name)
