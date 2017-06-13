@@ -164,8 +164,9 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             args["ogrecomponent"] = (
                 build.current_component.name)
 
-        args['archives'] = yield get_sources_list_for_building(
-            build, das, build.source_package_release.name, logger=logger)
+        args['archives'], args['trusted_keys'] = (
+            yield get_sources_list_for_building(
+                build, das, build.source_package_release.name, logger=logger))
         args['archive_private'] = build.archive.private
         args['build_debug_symbols'] = build.archive.build_debug_symbols
 
