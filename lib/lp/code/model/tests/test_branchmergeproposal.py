@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposals."""
@@ -80,7 +80,6 @@ from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
-from lp.services.memcache.testing import MemcacheFixture
 from lp.services.webapp import canonical_url
 from lp.services.xref.interfaces import IXRefSet
 from lp.testing import (
@@ -453,9 +452,12 @@ class TestBranchMergeProposalSetStatus(TestCaseWithFactory):
         proposal = self.factory.makeBranchMergeProposal(
             target_branch=self.target_branch,
             set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        proposal.setStatus(BranchMergeProposalStatus.MERGED)
+        proposal.setStatus(
+            BranchMergeProposalStatus.MERGED, user=self.target_branch.owner,
+            revision_id='1000')
         self.assertEqual(proposal.queue_status,
             BranchMergeProposalStatus.MERGED)
+        self.assertEqual(proposal.merged_revision_id, '1000')
 
     def test_set_status_invalid_status(self):
         # IBranchMergeProposal.setStatus doesn't work in the case of
@@ -1486,9 +1488,7 @@ class TestBranchMergeProposalBugsGit(
 
     def setUp(self):
         super(TestBranchMergeProposalBugsGit, self).setUp()
-        self.hosting_fixture = self.useFixture(GitHostingFixture(
-            disable_memcache=False))
-        self.memcache_fixture = self.useFixture(MemcacheFixture())
+        self.hosting_fixture = self.useFixture(GitHostingFixture())
 
     def _makeBranchMergeProposal(self):
         return self.factory.makeBranchMergeProposalForGit()
@@ -1537,7 +1537,7 @@ class TestBranchMergeProposalBugsGit(
                 u"message": u"LP: #%d" % bug.id,
                 }
             for i, bug in enumerate(bugs)]
-        self.memcache_fixture.clear()
+        self.hosting_fixture.memcache_fixture.clear()
 
     def test_updateRelatedBugsFromSource_no_links(self):
         # updateRelatedBugsFromSource does nothing if there are no related

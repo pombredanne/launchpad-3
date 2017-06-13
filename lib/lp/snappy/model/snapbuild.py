@@ -158,6 +158,8 @@ class SnapBuild(PackageBuildMixin, Storm):
 
     status = DBEnum(name='status', enum=BuildStatus, allow_none=False)
 
+    revision_id = Unicode(name='revision_id')
+
     log_id = Int(name='log')
     log = Reference(log_id, 'LibraryFileAlias.id')
 
@@ -337,6 +339,10 @@ class SnapBuild(PackageBuildMixin, Storm):
             status, builder=builder, slave_status=slave_status,
             date_started=date_started, date_finished=date_finished,
             force_invalid_transition=force_invalid_transition)
+        if slave_status is not None:
+            revision_id = slave_status.get("revision_id")
+            if revision_id is not None:
+                self.revision_id = unicode(revision_id)
         notify(SnapBuildStatusChangedEvent(self))
 
     def notify(self, extra_info=None):

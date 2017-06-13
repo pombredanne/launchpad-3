@@ -19,8 +19,7 @@ sections about the `Set Up`_ and the `Everyday Usage`_.
 Developers who manage source dependencies probably should read the general
 information about `Managing Dependencies and Scripts`_, but will also find
 detailed instructions to `Add a Package`_, to `Upgrade a Package`_, to `Add a
-Script`_, to `Add a File Modified By Buildout`_, and to `Work with Unreleased
-or Forked Packages`_.
+Script`_, and to `Work with Unreleased or Forked Packages`_.
 
 .. _buildout: http://www.buildout.org/
 
@@ -317,8 +316,7 @@ you might notice seven new items in the checkout.
     Sections other than ``[buildout]`` that are specified as parts always must
     specify a ``recipe``: an identifier that determines what code should
     process that section.  You'll see a variety of recipes in Launchpad's
-    buildout.cfg, including ``z3c.recipe.filetemplate``, ``zc.recipe.egg``, and
-    others.
+    buildout.cfg, including ``zc.recipe.egg`` and others.
 
 ``versions.cfg``
     As mentioned above, ``buildout.cfg`` extends ``versions.cfg``  by
@@ -367,13 +365,6 @@ you might notice seven new items in the checkout.
 
     The downside is that adding and upgrading packages takes a small additional
     step, as we'll see below.
-
-``buildout-templates``
-    The last additional item in the checkout is the ``buildout-templates``
-    directory.  This is used to hold templates that are used by the
-    section in buildout.cfg that uses the ``z3c.recipe.filetemplate`` recipe.
-    This can be used for many things, but we are using it as an alternate way
-    for producing scripts when the zc.recipe.egg approach is insufficient.
 
 In addition to these seven listings, after you have run the Makefile (or
 ``bin/buildout``), you will see an additional listing:
@@ -531,27 +522,6 @@ See the `zc.recipe.egg documentation`_ for more information on how to add
 scripts using this method.
 
 .. _`zc.recipe.egg documentation`: http://pypi.python.org/pypi/zc.recipe.egg
-
-Add a File Modified By Buildout
-===============================
-
-Sometimes we need more control for the way our scripts are generated, or we
-need other files processed during a buildout.  Writing a custom zc.buildout
-recipe is one way, but well out of the scope of this document.  Read the
-zc.buildout documentation for direction.
-
-A much easier, and more limited approach is to use `z3c.recipe.filetemplate`_
-to build the file.  The recipe uses the ``buildout-templates`` directory,
-which is a mirror of the Launchpad source tree.  The recipe searches the tree
-for files ending in '.in', performs variable substitution on them, and then be
-copies them into the Launchpad source tree.
-
-To add a file using the recipe, simply create mirrors of the source tree
-directories that you need under ``buildout-templates/``, and create a .in file
-template at the desired location.  Take a look at
-``buildout-templates/bin/`` for examples of what is possible.
-
-.. _`z3c.recipe.filetemplate`: http://pypi.python.org/pypi/z3c.recipe.filetemplate
 
 Work with Unreleased or Forked Packages
 =======================================

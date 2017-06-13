@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for code testing live here."""
@@ -331,4 +331,4 @@ class GitHostingFixture(fixtures.Fixture):
             # makes it awkward to repeat the same call with different log
             # responses.  For convenience, we make it easy to disable that
             # here.
-            self.useFixture(MemcacheFixture())
+            self.memcache_fixture = self.useFixture(MemcacheFixture())

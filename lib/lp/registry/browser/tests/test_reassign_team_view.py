@@ -1,10 +1,11 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for TeamReassignmentView view code."""
 
 __metaclass__ = type
 
+from fixtures import FakeLogger
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -31,6 +32,7 @@ class TestTeamReassignmentView(TestCaseWithFactory):
 
     def test_non_owner_unauthorised(self):
         # Only team owners can reassign team ownership.
+        self.useFixture(FakeLogger())
         team = self.factory.makeTeam()
         any_person = self.factory.makePerson()
         reassign_url = canonical_url(team, view_name='+reassign')

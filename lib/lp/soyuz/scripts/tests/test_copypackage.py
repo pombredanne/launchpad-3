@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1741,7 +1741,7 @@ class TestCopyBuildRecords(TestCaseWithFactory):
         self.assertEqual(
             "%s %s in %s" % (spr.name, spr.version, self.series.name),
             copied[0].displayname)
-        self.assertEqual(0, len(copied[0].getPublishedBinaries()))
+        self.assertEqual(0, copied[0].getPublishedBinaries().count())
         self.assertEqual(1, len(copied[0].getBuilds()))
 
     def test_copy_source_and_binaries_from_ppa_does_not_create_builds(self):
@@ -1762,7 +1762,7 @@ class TestCopyBuildRecords(TestCaseWithFactory):
         self.assertEqual(
             "%s %s in %s" % (spr.name, spr.version, self.series.name),
             copied[0].displayname)
-        self.assertEqual(2, len(copied[0].getPublishedBinaries()))
+        self.assertEqual(2, copied[0].getPublishedBinaries().count())
         self.assertEqual(initial_builds, copied[0].getBuilds())
 
     def makeSeriesWithExtraArchitecture(self):

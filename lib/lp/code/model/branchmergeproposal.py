@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for branch merge proposals."""
@@ -500,19 +500,21 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         remove_bugs = load(Bug, set(
             bug_id for bug_id in current_bug_ids - new_bug_ids
             if current_bug_ids_from_source[bug_id]))
-        for bug in remove_bugs:
-            self.unlinkBug(bug, check_permissions=False)
         add_bugs = load(Bug, new_bug_ids - current_bug_ids)
-        # XXX cjwatson 2016-06-11: We could perhaps set creator and
-        # date_created based on commit information, but then we'd have to
-        # work out what to do in the case of multiple commits referring to
-        # the same bug, updating properties if more such commits arrive
-        # later, etc.  This is simple and does the job for now.
-        for bug in add_bugs:
-            self.linkBug(
-                bug, user=getUtility(ILaunchpadCelebrities).janitor,
-                check_permissions=False,
-                props={'metadata': {'from_source': True}})
+        if remove_bugs or add_bugs:
+            janitor = getUtility(ILaunchpadCelebrities).janitor
+            for bug in remove_bugs:
+                self.unlinkBug(bug, user=janitor, check_permissions=False)
+            # XXX cjwatson 2016-06-11: We could perhaps set creator and
+            # date_created based on commit information, but then we'd have
+            # to work out what to do in the case of multiple commits
+            # referring to the same bug, updating properties if more such
+            # commits arrive later, etc.  This is simple and does the job
+            # for now.
+            for bug in add_bugs:
+                self.linkBug(
+                    bug, user=janitor, check_permissions=False,
+                    props={'metadata': {'from_source': True}})
 
     @property
     def address(self):
@@ -683,7 +685,8 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         elif status == BranchMergeProposalStatus.REJECTED:
             self.rejectBranch(user, revision_id)
         elif status == BranchMergeProposalStatus.MERGED:
-            self.markAsMerged(merge_reporter=user)
+            self.markAsMerged(
+                merge_reporter=user, merged_revision_id=revision_id)
         else:
             raise AssertionError('Unexpected queue status: %s' % status)
 

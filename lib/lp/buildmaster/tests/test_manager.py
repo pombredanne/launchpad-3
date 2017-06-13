@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the renovated slave scanner aka BuilddManager."""
@@ -113,11 +113,11 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         """
         super(TestSlaveScannerScan, self).setUp()
         # Creating the required chroots needed for dispatching.
-        test_publisher = make_publisher()
+        self.test_publisher = make_publisher()
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
-        test_publisher.setUpDefaultDistroSeries(hoary)
-        test_publisher.addFakeChroots(db_only=True)
+        self.test_publisher.setUpDefaultDistroSeries(hoary)
+        self.test_publisher.addFakeChroots(db_only=True)
 
     def _resetBuilder(self, builder):
         """Reset the given builder and its job."""
@@ -139,8 +139,7 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         self.assertEqual(job.builder, builder)
         self.assertTrue(job.date_started is not None)
         self.assertEqual(job.status, BuildQueueStatus.RUNNING)
-        build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
-        self.assertEqual(build.status, BuildStatus.BUILDING)
+        self.assertEqual(job.specific_build.status, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
 
     def _getScanner(self, builder_name=None, clock=None, builder_factory=None):
@@ -395,6 +394,38 @@ class TestSlaveScannerScan(TestCaseWithFactory):
         pbf.update()
         yield scanner.singleCycle()
         self.assertEqual(2, fake_scan.call_count)
+
+    @defer.inlineCallbacks
+    def test_scan_of_snap_build(self):
+        # Snap builds return additional status information, which the scan
+        # collects.
+        class SnapBuildingSlave(BuildingSlave):
+            revision_id = None
+
+            @defer.inlineCallbacks
+            def status(self):
+                status = yield super(SnapBuildingSlave, self).status()
+                status["revision_id"] = self.revision_id
+                defer.returnValue(status)
+
+        build = self.factory.makeSnapBuild(
+            distroarchseries=self.test_publisher.distroseries.architectures[0])
+        job = build.queueBuild()
+        builder = self.factory.makeBuilder(
+            processors=[job.processor], vm_host="fake_vm_host")
+        job.markAsBuilding(builder)
+        slave = SnapBuildingSlave(build_id="SNAPBUILD-%d" % build.id)
+        self.patch(BuilderSlave, "makeBuilderSlave", FakeMethod(slave))
+        transaction.commit()
+        scanner = self._getScanner(builder_name=builder.name)
+        yield scanner.scan()
+        self.assertBuildingJob(job, builder, logtail="This is a build log: 0")
+        self.assertIsNone(build.revision_id)
+        slave.revision_id = "dummy"
+        scanner = self._getScanner(builder_name=builder.name)
+        yield scanner.scan()
+        self.assertBuildingJob(job, builder, logtail="This is a build log: 1")
+        self.assertEqual("dummy", build.revision_id)
 
     @defer.inlineCallbacks
     def _assertFailureCounting(self, builder_count, job_count,

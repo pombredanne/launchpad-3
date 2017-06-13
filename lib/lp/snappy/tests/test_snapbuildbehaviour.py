@@ -26,6 +26,7 @@ import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
@@ -264,6 +265,28 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             }, args)
 
     @defer.inlineCallbacks
+    def test_extraBuildArgs_git_HEAD(self):
+        # _extraBuildArgs returns appropriate arguments if asked to build a
+        # job for the default branch in a Launchpad-hosted Git repository.
+        [ref] = self.factory.makeGitRefs()
+        removeSecurityProxy(ref.repository)._default_branch = ref.path
+        job = self.makeJob(git_ref=ref.repository.getRefByPath(u"HEAD"))
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
+        args = yield job._extraBuildArgs()
+        self.assertEqual({
+            "archive_private": False,
+            "archives": expected_archives,
+            "arch_tag": "i386",
+            "git_repository": ref.repository.git_https_url,
+            "name": u"test-snap",
+            "proxy_url": self.proxy_url,
+            "revocation_endpoint": self.revocation_endpoint,
+            "trusted_keys": expected_trusted_keys,
+            }, args)
+
+    @defer.inlineCallbacks
     def test_extraBuildArgs_git_url(self):
         # _extraBuildArgs returns appropriate arguments if asked to build a
         # job for a Git branch backed by a URL for an external repository.
@@ -281,6 +304,28 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "arch_tag": "i386",
             "git_repository": url,
             "git_path": "master",
+            "name": u"test-snap",
+            "proxy_url": self.proxy_url,
+            "revocation_endpoint": self.revocation_endpoint,
+            "trusted_keys": expected_trusted_keys,
+            }, args)
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_git_url_HEAD(self):
+        # _extraBuildArgs returns appropriate arguments if asked to build a
+        # job for the default branch in an external Git repository.
+        url = u"https://git.example.org/foo"
+        ref = self.factory.makeGitRefRemote(repository_url=url, path=u"HEAD")
+        job = self.makeJob(git_ref=ref)
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
+        args = yield job._extraBuildArgs()
+        self.assertEqual({
+            "archive_private": False,
+            "archives": expected_archives,
+            "arch_tag": "i386",
+            "git_repository": url,
             "name": u"test-snap",
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,

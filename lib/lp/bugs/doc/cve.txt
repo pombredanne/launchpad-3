@@ -1,7 +1,7 @@
 = Common Vulnerabilities and Exposures (CVE) =
 
 Malone supports attaching CVE references to bugs. From
-http://www.cve.mitre.org/about/ CVE is:
+https://cve.mitre.org/about/ CVE is:
 
     A list of standardized names for vulnerabilities and other
     information security exposures - CVE aims to standardize the names
@@ -9,7 +9,7 @@ http://www.cve.mitre.org/about/ CVE is:
 
 For more information, consult the CVE website:
 
-    http://www.cve.mitre.org/
+    https://cve.mitre.org/
 
 == CveSet ==
 

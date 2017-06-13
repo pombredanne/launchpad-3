@@ -146,6 +146,33 @@ This feed gets the latest bugs for a person.
     [15, 15, 12, 11, 10, 9, 9, 7, 7, 3, 3, 3]
 
 
+== Latest bugs for any target ==
+
+This feed gets the latest bugs reported against any target.
+
+    >>> browser.open('http://feeds.launchpad.dev/bugs/latest-bugs.html?'
+    ...              'show_column=bugtargetdisplayname')
+    >>> browser.title
+    'Launchpad bugs'
+    >>> browser.url
+    'http://feeds.launchpad.dev/bugs/latest-bugs.html?show_column=bugtargetdisplayname'
+
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    27
+
+    >>> print_entry(entries[1])
+    number: 15
+    href: http://bugs.launchpad.dev/redfish/+bug/15
+    title: Nonsensical bugs are useless
+    importance: Undecided
+    status: New
+
+    >>> get_bug_numbers(entries)
+    [15, 15, 13, 12, 11, 10, 9, 9, 8, 7, 7, 5, 5, 5, 4, 3, 3, 3, 2, 2, 2, 2,
+     2, 1, 1, 1]
+
+
 == General bug search ==
 
 This feed is the most useful of them all. Any bug search can be turned into

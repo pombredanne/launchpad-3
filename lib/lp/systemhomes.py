@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Content classes for the 'home pages' of the subsystems of Launchpad."""
@@ -40,6 +40,7 @@ from lp.bugs.interfaces.malone import (
     IPrivateMaloneApplication,
     )
 from lp.bugs.model.bug import Bug
+from lp.bugs.model.bugtarget import HasBugsBase
 from lp.code.interfaces.codehosting import (
     IBazaarApplication,
     ICodehostingApplication,
@@ -117,14 +118,18 @@ class FeedsApplication:
 
 
 @implementer(IMaloneApplication)
-class MaloneApplication:
+class MaloneApplication(HasBugsBase):
 
     def __init__(self):
         self.title = 'Malone: the Launchpad bug tracker'
 
-    def searchTasks(self, search_params):
-        """See `IMaloneApplication`."""
-        return getUtility(IBugTaskSet).search(search_params)
+    def _customizeSearchParams(self, search_params):
+        """See `HasBugsBase`."""
+        pass
+
+    def getBugSummaryContextWhereClause(self):
+        """See `HasBugsBase`."""
+        return True
 
     def getBugData(self, user, bug_id, related_bug=None):
         """See `IMaloneApplication`."""

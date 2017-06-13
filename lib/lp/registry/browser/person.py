@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related view classes."""
@@ -180,7 +180,6 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
     SSHKeyAdditionError,
-    SSHKeyCompromisedError,
     )
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
@@ -245,7 +244,10 @@ from lp.services.webapp import (
     stepto,
     structured,
     )
-from lp.services.webapp.authorization import check_permission
+from lp.services.webapp.authorization import (
+    check_permission,
+    precache_permission_for_objects,
+    )
 from lp.services.webapp.batching import BatchNavigator
 from lp.services.webapp.breadcrumb import DisplaynameBreadcrumb
 from lp.services.webapp.interfaces import (
@@ -2017,7 +2019,9 @@ class PersonView(LaunchpadView, FeedsMixin, ContactViaWebLinksMixin):
 
     @cachedproperty
     def visible_ppas(self):
-        return self.context.getVisiblePPAs(self.user)
+        ppas = self.context.getVisiblePPAs(self.user)
+        precache_permission_for_objects(self.request, 'launchpad.View', ppas)
+        return ppas
 
     @property
     def time_zone_offset(self):
@@ -2445,14 +2449,6 @@ class PersonEditSSHKeysView(LaunchpadView):
             getUtility(ISSHKeySet).new(self.user, sshkey)
         except SSHKeyAdditionError:
             self.error_message = structured('Invalid public key')
-        except SSHKeyCompromisedError:
-            self.error_message = structured(
-                'This key is known to be compromised due to a security flaw '
-                'in the software used to generate it, so it will not be '
-                'accepted by Launchpad. See the full '
-                '<a href="http://www.ubuntu.com/usn/usn-612-2">Security '
-                'Notice</a> for further information and instructions on how '
-                'to generate another key.')
         else:
             self.info_message = structured('SSH public key added.')
 

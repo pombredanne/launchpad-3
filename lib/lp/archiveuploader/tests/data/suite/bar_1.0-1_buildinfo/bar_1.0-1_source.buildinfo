@@ -1,6 +1,3 @@
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
-
 Format: 1.0
 Source: bar
 Binary: bar
@@ -14,10 +11,3 @@ Build-Date: Tue, 28 Mar 2017 23:51:59 +0100
 Installed-Build-Depends:
  dpkg (= 1.18.22),
  dpkg-dev (= 1.18.22)
-
------BEGIN PGP SIGNATURE-----
-
-iF0EARECAB0WIQQ0DKO7Jw4nFsnuC3aOfrcIbGSoxQUCWNwqgQAKCRCOfrcIbGSo
-xee9AJwK4AIvXCWE409SBvALeq9/6PoR5QCfREHF/gdmZmvsI3hDunrSi3EzA0o=
-=Zgxq
------END PGP SIGNATURE-----

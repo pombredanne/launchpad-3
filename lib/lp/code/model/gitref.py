@@ -1,9 +1,10 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
     'GitRef',
+    'GitRefDefault',
     'GitRefFrozen',
     'GitRefRemote',
     ]
@@ -536,8 +537,72 @@ class GitRef(StormBase, GitRefMixin):
             commit_message=commit_message, review_requests=review_requests)
 
 
+class GitRefDatabaseBackedMixin(GitRefMixin):
+    """A mixin for virtual Git references backed by a database record."""
+
+    @property
+    def _non_database_attributes(self):
+        """A sequence of attributes not backed by the database."""
+        raise NotImplementedError()
+
+    @property
+    def _self_in_database(self):
+        """Return the equivalent database-backed record of self."""
+        raise NotImplementedError()
+
+    def __getattr__(self, name):
+        return getattr(self._self_in_database, name)
+
+    def __setattr__(self, name, value):
+        if name in self._non_database_attributes:
+            self.__dict__[name] = value
+        else:
+            setattr(self._self_in_database, name, value)
+
+    def __eq__(self, other):
+        return (
+            self.repository == other.repository and
+            self.path == other.path and
+            self.commit_sha1 == other.commit_sha1)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash(self.repository) ^ hash(self.path) ^ hash(self.commit_sha1)
+
+
 @implementer(IGitRef)
-class GitRefFrozen(GitRefMixin):
+class GitRefDefault(GitRefDatabaseBackedMixin):
+    """A reference to the default branch in a Git repository.
+
+    This always refers to whatever the default branch currently is, even if
+    it changes later.
+    """
+
+    def __init__(self, repository):
+        self.repository_id = repository.id
+        self.repository = repository
+        self.path = u"HEAD"
+
+    _non_database_attributes = ("repository_id", "repository", "path")
+
+    @property
+    def _self_in_database(self):
+        """See `GitRefDatabaseBackedMixin`."""
+        path = self.repository.default_branch
+        if path is None:
+            raise NotFoundError("Repository '%s' has no default branch")
+        ref = IStore(GitRef).get(GitRef, (self.repository_id, path))
+        if ref is None:
+            raise NotFoundError(
+                "Repository '%s' has default branch '%s', but there is no "
+                "such reference" % (self.repository, path))
+        return ref
+
+
+@implementer(IGitRef)
+class GitRefFrozen(GitRefDatabaseBackedMixin):
     """A frozen Git reference.
 
     This is like a GitRef, but is frozen at a particular commit, even if the
@@ -554,36 +619,18 @@ class GitRefFrozen(GitRefMixin):
         self.path = path
         self.commit_sha1 = commit_sha1
 
+    _non_database_attributes = (
+        "repository_id", "repository", "path", "commit_sha1")
+
     @property
     def _self_in_database(self):
-        """Return the equivalent database-backed record of self."""
+        """See `GitRefDatabaseBackedMixin`."""
         ref = IStore(GitRef).get(GitRef, (self.repository_id, self.path))
         if ref is None:
             raise NotFoundError(
                 "Repository '%s' does not currently contain a reference named "
                 "'%s'" % (self.repository, self.path))
         return ref
-
-    def __getattr__(self, name):
-        return getattr(self._self_in_database, name)
-
-    def __setattr__(self, name, value):
-        if name in ("repository_id", "repository", "path", "commit_sha1"):
-            self.__dict__[name] = value
-        else:
-            setattr(self._self_in_database, name, value)
-
-    def __eq__(self, other):
-        return (
-            self.repository == other.repository and
-            self.path == other.path and
-            self.commit_sha1 == other.commit_sha1)
-
-    def __ne__(self, other):
-        return not self == other
-
-    def __hash__(self):
-        return hash(self.repository) ^ hash(self.path) ^ hash(self.commit_sha1)
 
 
 @implementer(IGitRef)

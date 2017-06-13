@@ -1,20 +1,25 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
-# NOTE: This is a generated file.  The original is in
-# buildout-templates/_pythonpath.py.in
 
 # This file works if the Python has been started with -S, or if bin/py
 # has been used.
 
-# Auto-generated code to handle relative paths
-${python-relative-path-setup}
-
-import os
+import imp
+import os.path
 import sys
-import warnings
 
-site_dir = ${scripts:parts-directory|path-repr}
+# Get path to this file.
+if __name__ == '__main__':
+    filename = __file__
+else:
+    # If this is an imported module, we want the location of the .py
+    # file, not the .pyc, because the .py file may have been symlinked.
+    filename = imp.find_module(__name__)[1]
+# Get the full, non-symbolic-link directory for this file.  This is the
+# project root.
+top = os.path.dirname(os.path.abspath(os.path.realpath(filename)))
+
+site_dir = os.path.join(top, 'parts', 'scripts')
 
 if ('site' in sys.modules and
     not sys.modules['site'].__file__.startswith(

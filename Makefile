@@ -5,7 +5,7 @@ PYTHON:=python2.7
 
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
-PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
+PYTHONPATH:=$(WD)/lib:${PYTHONPATH}
 BUILDOUT_CFG=buildout.cfg
 VERBOSITY=-vv
 
@@ -56,8 +56,6 @@ BUILDOUT_BIN = \
     bin/run bin/run-testapp bin/sprite-util bin/start_librarian \
     bin/tags bin/test bin/tracereport bin/twistd \
     bin/watch_jsbuild bin/with-xvfb
-
-BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
 # DO NOT ALTER : this should just build by default
 default: inplace
@@ -229,8 +227,7 @@ buildout_bin: $(BUILDOUT_BIN)
 # If we listed every target on the left-hand side, a parallel make would try
 # multiple copies of this rule to build them all.  Instead, we nominally build
 # just $(PY), and everything else is implicitly updated by that.
-$(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
-		$(BUILDOUT_TEMPLATES)
+$(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 	touch $@
@@ -351,7 +348,6 @@ clean_buildout:
 	$(RM) -r parts
 	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
-	$(RM) _pythonpath.py
 	$(RM) -r yui/*
 
 clean_logs:
@@ -362,6 +358,7 @@ clean_mailman:
 ifdef LP_MAKE_KEEP_MAILMAN
 	@echo "Keeping previously built mailman."
 else
+	$(RM) lib/Mailman
 	$(RM) -r lib/mailman
 endif
 

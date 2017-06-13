@@ -361,9 +361,9 @@ class SafeTransportWithTimeout(SafeTransport):
 
     timeout = None
 
-    def __init__(self, timeout=None):
+    def __init__(self, timeout=None, **kwargs):
         # Old style class call to super required.
-        SafeTransport.__init__(self)
+        SafeTransport.__init__(self, **kwargs)
         self.timeout = timeout
 
     def make_connection(self, host):

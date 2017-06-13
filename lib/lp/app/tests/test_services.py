@@ -1,8 +1,9 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for core services infrastructure."""
 
+from fixtures import FakeLogger
 from lazr.restful.interfaces._rest import IHTTPResource
 from zope.component import getUtility
 from zope.interface import implementer
@@ -49,12 +50,14 @@ class TestServiceFactory(TestCaseWithFactory, FakeAdapterMixin):
 
     def test_invalid_traversal(self):
         # Test that traversal to +services without a service specified fails.
+        self.useFixture(FakeLogger())
         self.assertRaises(
             NotFound, self.getUserBrowser,
             'https://launchpad.dev/api/devel/+services')
 
     def test_invalid_service(self):
         # Test that traversal an invalid service name fails.
+        self.useFixture(FakeLogger())
         self.assertRaises(
             NotFound, self.getUserBrowser,
             'https://launchpad.dev/api/devel/+services/invalid')

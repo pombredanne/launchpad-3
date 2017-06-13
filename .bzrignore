@@ -12,6 +12,7 @@ database/schema/diagrams/*.ps
 database/schema/diagrams/*.dot
 thread*.request
 ./TAGS
+lib/Mailman
 lib/mailman
 TAGS
 cover.txt
@@ -41,7 +42,6 @@ build
 dist
 ./eggs
 ./download-cache
-./_pythonpath.py
 ./production-configs
 bzr.dev
 _trial_temp

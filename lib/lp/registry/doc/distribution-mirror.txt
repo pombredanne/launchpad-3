@@ -494,22 +494,22 @@ config.distributionmirrorprober.releases_file_list_url option)
     >>> for (series, flavour, paths) in get_expected_cdimage_paths():
     ...     for path in paths:
     ...         print series.name, flavour, path
-    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-install-amd64.iso
-    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-install-i386.iso
-    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-install-powerpc.iso
-    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-live-amd64.iso
-    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-live-i386.iso
-    hoary kubuntu /kubuntu/hoary/kubuntu-5.04-live-powerpc.iso
-    hoary ubuntu /hoary/ubuntu-5.04-install-amd64.iso
-    hoary ubuntu /hoary/ubuntu-5.04-install-i386.iso
-    hoary ubuntu /hoary/ubuntu-5.04-install-powerpc.iso
-    hoary ubuntu /hoary/ubuntu-5.04-live-amd64.iso
-    hoary ubuntu /hoary/ubuntu-5.04-live-i386.iso
-    hoary ubuntu /hoary/ubuntu-5.04-live-powerpc.iso
-    warty ubuntu /warty/warty-release-install-amd64.iso
-    warty ubuntu /warty/warty-release-install-i386.iso
-    warty ubuntu /warty/warty-release-install-powerpc.iso
-    warty ubuntu /warty/warty-release-live-i386.iso
+    hoary kubuntu kubuntu/hoary/kubuntu-5.04-install-amd64.iso
+    hoary kubuntu kubuntu/hoary/kubuntu-5.04-install-i386.iso
+    hoary kubuntu kubuntu/hoary/kubuntu-5.04-install-powerpc.iso
+    hoary kubuntu kubuntu/hoary/kubuntu-5.04-live-amd64.iso
+    hoary kubuntu kubuntu/hoary/kubuntu-5.04-live-i386.iso
+    hoary kubuntu kubuntu/hoary/kubuntu-5.04-live-powerpc.iso
+    hoary ubuntu hoary/ubuntu-5.04-install-amd64.iso
+    hoary ubuntu hoary/ubuntu-5.04-install-i386.iso
+    hoary ubuntu hoary/ubuntu-5.04-install-powerpc.iso
+    hoary ubuntu hoary/ubuntu-5.04-live-amd64.iso
+    hoary ubuntu hoary/ubuntu-5.04-live-i386.iso
+    hoary ubuntu hoary/ubuntu-5.04-live-powerpc.iso
+    warty ubuntu warty/warty-release-install-amd64.iso
+    warty ubuntu warty/warty-release-install-i386.iso
+    warty ubuntu warty/warty-release-install-powerpc.iso
+    warty ubuntu warty/warty-release-live-i386.iso
 
 
 === Checking how up-to-date the content is ===
