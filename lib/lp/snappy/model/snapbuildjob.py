@@ -55,14 +55,13 @@ from lp.snappy.interfaces.snapbuildjob import (
     ISnapStoreUploadJobSource,
     )
 from lp.snappy.interfaces.snapstoreclient import (
-    BadReleaseResponse,
     BadScanStatusResponse,
-    BadUploadResponse,
     ISnapStoreClient,
     ReleaseFailedResponse,
     ScanFailedResponse,
     SnapStoreError,
     UnauthorizedUploadResponse,
+    UploadFailedResponse,
     UploadNotScannedYetResponse,
     )
 from lp.snappy.mail.snapbuild import SnapBuildMailer
@@ -306,7 +305,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
             if isinstance(e, UnauthorizedUploadResponse):
                 mailer = SnapBuildMailer.forUnauthorizedUpload(self.snapbuild)
                 mailer.sendAll()
-            elif isinstance(e, BadUploadResponse):
+            elif isinstance(e, UploadFailedResponse):
                 mailer = SnapBuildMailer.forUploadFailure(self.snapbuild)
                 mailer.sendAll()
             elif isinstance(e, (BadScanStatusResponse, ScanFailedResponse)):
@@ -315,7 +314,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
             elif isinstance(e, ManualReview):
                 mailer = SnapBuildMailer.forManualReview(self.snapbuild)
                 mailer.sendAll()
-            elif isinstance(e, (BadReleaseResponse, ReleaseFailedResponse)):
+            elif isinstance(e, ReleaseFailedResponse):
                 mailer = SnapBuildMailer.forReleaseFailure(self.snapbuild)
                 mailer.sendAll()
             # The normal job infrastructure will abort the transaction, but

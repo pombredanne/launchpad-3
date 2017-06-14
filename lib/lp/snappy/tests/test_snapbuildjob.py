@@ -28,11 +28,11 @@ from lp.snappy.interfaces.snapbuildjob import (
     ISnapStoreUploadJob,
     )
 from lp.snappy.interfaces.snapstoreclient import (
-    BadReleaseResponse,
     BadScanStatusResponse,
-    BadUploadResponse,
     ISnapStoreClient,
+    ReleaseFailedResponse,
     UnauthorizedUploadResponse,
+    UploadFailedResponse,
     UploadNotScannedYetResponse,
     )
 from lp.snappy.model.snapbuildjob import (
@@ -241,7 +241,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
         client = FakeSnapStoreClient()
-        client.upload.failure = BadUploadResponse(
+        client.upload.failure = UploadFailedResponse(
             "Failed to upload", detail="The proxy exploded.\n")
         self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
@@ -463,7 +463,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         client = FakeSnapStoreClient()
         client.upload.result = self.status_url
         client.checkStatus.result = (self.store_url, 1)
-        client.release.failure = BadReleaseResponse("Failed to publish")
+        client.release.failure = ReleaseFailedResponse("Failed to publish")
         self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             JobRunner([job]).runAll()

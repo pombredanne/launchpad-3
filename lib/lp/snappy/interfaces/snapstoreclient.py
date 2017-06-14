@@ -8,17 +8,16 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 __all__ = [
     'BadRefreshResponse',
-    'BadReleaseResponse',
     'BadRequestPackageUploadResponse',
     'BadScanStatusResponse',
     'BadSearchResponse',
-    'BadUploadResponse',
     'ISnapStoreClient',
     'NeedsRefreshResponse',
     'ReleaseFailedResponse',
     'ScanFailedResponse',
     'SnapStoreError',
     'UnauthorizedUploadResponse',
+    'UploadFailedResponse',
     'UploadNotScannedYetResponse',
     ]
 
@@ -41,7 +40,7 @@ class BadRequestPackageUploadResponse(SnapStoreError):
     pass
 
 
-class BadUploadResponse(SnapStoreError):
+class UploadFailedResponse(SnapStoreError):
     pass
 
 
@@ -73,10 +72,6 @@ class BadSearchResponse(SnapStoreError):
     pass
 
 
-class BadReleaseResponse(SnapStoreError):
-    pass
-
-
 class ReleaseFailedResponse(SnapStoreError):
     pass
 
@@ -103,6 +98,8 @@ class ISnapStoreClient(Interface):
 
         :param snapbuild: The `ISnapBuild` to upload.
         :return: A URL to poll for upload processing status.
+        :raises UploadFailedResponse: if uploading the build to the store
+            failed.
         """
 
     def refreshDischargeMacaroon(snap):
@@ -139,6 +136,6 @@ class ISnapStoreClient(Interface):
         :param snapbuild: The `ISnapBuild` to release.
         :param revision: The revision returned by the store when uploading
             the build.
-        :raises BadReleaseResponse: if the store failed to release the
+        :raises ReleaseFailedResponse: if the store failed to release the
             build.
         """
