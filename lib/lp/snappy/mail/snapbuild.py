@@ -47,6 +47,20 @@ class SnapBuildMailer(BaseMailer):
             "snap-build-upload-unauthorized", build)
 
     @classmethod
+    def forRefreshFailure(cls, build):
+        """Create a mailer for notifying about macaroon refresh failures.
+
+        :param build: The relevant build.
+        """
+        requester = build.requester
+        recipients = {requester: RecipientReason.forBuildRequester(requester)}
+        return cls(
+            "Refreshing store authorization failed for %(snap_name)s",
+            "snapbuild-refreshfailed.txt", recipients,
+            config.canonical.noreply_from_address,
+            "snap-build-upload-refresh-failed", build)
+
+    @classmethod
     def forUploadFailure(cls, build):
         """Create a mailer for notifying about store upload failures.
 

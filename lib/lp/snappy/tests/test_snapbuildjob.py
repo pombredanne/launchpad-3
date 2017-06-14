@@ -28,11 +28,12 @@ from lp.snappy.interfaces.snapbuildjob import (
     ISnapStoreUploadJob,
     )
 from lp.snappy.interfaces.snapstoreclient import (
-    BadReleaseResponse,
+    BadRefreshResponse,
     BadScanStatusResponse,
-    BadUploadResponse,
     ISnapStoreClient,
+    ReleaseFailedResponse,
     UnauthorizedUploadResponse,
+    UploadFailedResponse,
     UploadNotScannedYetResponse,
     )
 from lp.snappy.model.snapbuildjob import (
@@ -230,6 +231,100 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertWebhookDeliveries(
             snapbuild, ["Pending", "Failed to upload"])
 
+    def test_run_502_retries(self):
+        # A run that gets a 502 error from the store schedules itself to be
+        # retried.
+        self.useFixture(FakeLogger())
+        snapbuild = self.makeSnapBuild()
+        self.assertContentEqual([], snapbuild.store_upload_jobs)
+        job = SnapStoreUploadJob.create(snapbuild)
+        client = FakeSnapStoreClient()
+        client.upload.failure = UploadFailedResponse(
+            "Proxy error", can_retry=True)
+        self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertEqual([], client.checkStatus.calls)
+        self.assertEqual([], client.release.calls)
+        self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertIsNone(job.store_url)
+        self.assertIsNone(job.store_revision)
+        self.assertIsNone(job.error_message)
+        self.assertEqual([], pop_notifications())
+        self.assertEqual(JobStatus.WAITING, job.job.status)
+        self.assertWebhookDeliveries(snapbuild, ["Pending"])
+        # Try again.  The upload part of the job is retried, and this time
+        # it succeeds.
+        job.lease_expires = None
+        job.scheduled_start = None
+        client.upload.calls = []
+        client.upload.failure = None
+        client.upload.result = self.status_url
+        client.checkStatus.result = (self.store_url, 1)
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertEqual([((self.status_url,), {})], client.checkStatus.calls)
+        self.assertEqual([], client.release.calls)
+        self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertEqual(self.store_url, job.store_url)
+        self.assertEqual(1, job.store_revision)
+        self.assertIsNone(job.error_message)
+        self.assertEqual([], pop_notifications())
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
+        self.assertWebhookDeliveries(snapbuild, ["Pending", "Uploaded"])
+
+    def test_run_refresh_failure_notifies(self):
+        # A run that gets a failure when trying to refresh macaroons sends
+        # mail.
+        requester = self.factory.makePerson(name="requester")
+        requester_team = self.factory.makeTeam(
+            owner=requester, name="requester-team", members=[requester])
+        snapbuild = self.makeSnapBuild(
+            requester=requester_team, name="test-snap", owner=requester_team)
+        self.assertContentEqual([], snapbuild.store_upload_jobs)
+        job = SnapStoreUploadJob.create(snapbuild)
+        client = FakeSnapStoreClient()
+        client.upload.failure = BadRefreshResponse("SSO melted.")
+        self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertEqual([], client.checkStatus.calls)
+        self.assertEqual([], client.release.calls)
+        self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertIsNone(job.store_url)
+        self.assertIsNone(job.store_revision)
+        self.assertEqual("SSO melted.", job.error_message)
+        [notification] = pop_notifications()
+        self.assertEqual(
+            config.canonical.noreply_from_address, notification["From"])
+        self.assertEqual(
+            "Requester <%s>" % requester.preferredemail.email,
+            notification["To"])
+        subject = notification["Subject"].replace("\n ", " ")
+        self.assertEqual(
+            "Refreshing store authorization failed for test-snap", subject)
+        self.assertEqual(
+            "Requester @requester-team",
+            notification["X-Launchpad-Message-Rationale"])
+        self.assertEqual(
+            requester_team.name, notification["X-Launchpad-Message-For"])
+        self.assertEqual(
+            "snap-build-upload-refresh-failed",
+            notification["X-Launchpad-Notification-Type"])
+        body, footer = notification.get_payload(decode=True).split("\n-- \n")
+        self.assertIn(
+            "http://launchpad.dev/~requester-team/+snap/test-snap/+authorize",
+            body)
+        self.assertEqual(
+            "http://launchpad.dev/~requester-team/+snap/test-snap/+build/%d\n"
+            "Your team Requester Team is the requester of the build.\n" %
+            snapbuild.id, footer)
+        self.assertWebhookDeliveries(
+            snapbuild, ["Pending", "Failed to upload"])
+
     def test_run_upload_failure_notifies(self):
         # A run that gets some other upload failure from the store sends
         # mail.
@@ -241,7 +336,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertContentEqual([], snapbuild.store_upload_jobs)
         job = SnapStoreUploadJob.create(snapbuild)
         client = FakeSnapStoreClient()
-        client.upload.failure = BadUploadResponse(
+        client.upload.failure = UploadFailedResponse(
             "Failed to upload", detail="The proxy exploded.\n")
         self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
@@ -463,7 +558,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         client = FakeSnapStoreClient()
         client.upload.result = self.status_url
         client.checkStatus.result = (self.store_url, 1)
-        client.release.failure = BadReleaseResponse("Failed to publish")
+        client.release.failure = ReleaseFailedResponse("Failed to publish")
         self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             JobRunner([job]).runAll()

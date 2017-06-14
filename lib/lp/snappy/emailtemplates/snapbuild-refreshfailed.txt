@@ -1,0 +1,10 @@
+Launchpad failed to refresh the authorization tokens used to upload this
+snap package to the store:
+
+  %(store_error_message)s
+
+Depending on the error message above, this may indicate a bug.  If so, you
+may be able to work around it by reauthorizing Launchpad to upload the
+package in question:
+
+  %(snap_authorize_url)s
