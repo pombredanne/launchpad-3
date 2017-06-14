@@ -69,7 +69,7 @@ class TestSnapBuildBehaviourBase(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnapBuildBehaviourBase, self).setUp()
-        self.pushConfig("snappy", tools_source=None)
+        self.pushConfig("snappy", tools_source=None, tools_fingerprint=None)
 
     def makeJob(self, archive=None, pocket=PackagePublishingPocket.UPDATES,
                 **kwargs):

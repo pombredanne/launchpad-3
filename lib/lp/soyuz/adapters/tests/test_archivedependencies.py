@@ -16,7 +16,9 @@ from testtools.matchers import (
     )
 import transaction
 from twisted.internet import defer
+from twisted.internet.threads import deferToThread
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
@@ -24,6 +26,7 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
@@ -522,6 +525,18 @@ class TestSourcesList(TestCaseWithFactory):
         # sources.list, which is useful for specialised build types.
         ppa = yield self.makeArchive(publish_binary=True)
         build = self.makeBuild(archive=ppa)
+
+        # Upload the tools archive key to the keyserver.
+        tools_key_name = "ppa-sample-4096@canonical.com"
+        tools_key_path = os.path.join(gpgkeysdir, "%s.sec" % tools_key_name)
+        with open(tools_key_path) as tools_key_file:
+            secret_key_export = tools_key_file.read()
+        # Remove security proxy to avoid problems with running in a thread.
+        gpghandler = removeSecurityProxy(getUtility(IGPGHandler))
+        gpghandler.importSecretKey(secret_key_export)
+        yield deferToThread(
+            gpghandler.uploadPublicKey, self.fingerprints[tools_key_name])
+
         yield self.assertSourcesListAndKeys(
             [(ppa, ["hoary main"]),
              ("deb http://example.org", ["hoary main"]),
@@ -531,8 +546,9 @@ class TestSourcesList(TestCaseWithFactory):
                  "hoary-updates main restricted universe multiverse",
                  ]),
              ],
-            ["ppa-sample@canonical.com"], build,
-            tools_source="deb http://example.org %(series)s main")
+            ["ppa-sample@canonical.com", tools_key_name], build,
+            tools_source="deb http://example.org %(series)s main",
+            tools_fingerprint=self.fingerprints[tools_key_name])
 
     @defer.inlineCallbacks
     def test_build_tools_bad_formatting(self):
