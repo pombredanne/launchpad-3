@@ -153,7 +153,8 @@ def get_primary_current_component(archive, distroseries, sourcepackagename):
 
 
 def expand_dependencies(archive, distro_arch_series, pocket, component,
-                        source_package_name, tools_source=None, logger=None):
+                        source_package_name, tools_source=None,
+                        tools_fingerprint=None, logger=None):
     """Return the set of dependency archives, pockets and components.
 
     :param archive: the context `IArchive`.
@@ -164,6 +165,8 @@ def expand_dependencies(archive, distro_arch_series, pocket, component,
     :param tools_source: if not None, a sources.list entry to use as an
         additional dependency for build tools, just before the default
         primary archive.
+    :param tools_fingerprint: if not None, the OpenPGP signing key
+        fingerprint for the archive given in `tools_source`.
     :param logger: an optional logger.
     :return: a list of (archive, distro_arch_series, pocket, [component]),
         representing the dependencies defined by the given build context.
@@ -201,7 +204,9 @@ def expand_dependencies(archive, distro_arch_series, pocket, component,
     # Consider build tools archive dependencies.
     if tools_source is not None:
         try:
-            deps.append(tools_source % {'series': distro_series.name})
+            deps.append(
+                (tools_source % {'series': distro_series.name},
+                 tools_fingerprint))
         except Exception:
             # Someone messed up the configuration; don't add it.
             if logger is not None:
@@ -240,7 +245,8 @@ def expand_dependencies(archive, distro_arch_series, pocket, component,
 
 @defer.inlineCallbacks
 def get_sources_list_for_building(build, distroarchseries, sourcepackagename,
-                                  tools_source=None, logger=None):
+                                  tools_source=None, tools_fingerprint=None,
+                                  logger=None):
     """Return sources.list entries and keys required to build the given item.
 
     The sources.list entries are returned in the order that is most useful:
@@ -257,6 +263,8 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename,
     :param tools_source: if not None, a sources.list entry to use as an
         additional dependency for build tools, just before the default
         primary archive.
+    :param tools_fingerprint: if not None, the OpenPGP signing key
+        fingerprint for the archive given in `tools_source`.
     :param logger: an optional logger.
     :return: a Deferred resolving to a tuple containing a list of deb
         sources.list entries (lines) and a list of base64-encoded public
@@ -265,7 +273,8 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename,
     deps = expand_dependencies(
         build.archive, distroarchseries, build.pocket,
         build.current_component, sourcepackagename,
-        tools_source=tools_source, logger=logger)
+        tools_source=tools_source, tools_fingerprint=tools_fingerprint,
+        logger=logger)
     sources_list_lines, trusted_keys = (
         yield _get_sources_list_for_dependencies(deps, logger=logger))
 
@@ -360,8 +369,9 @@ def _get_sources_list_for_dependencies(dependencies, logger=None):
     # interaction.
     gpghandler = removeSecurityProxy(getUtility(IGPGHandler))
     for dep in dependencies:
-        if isinstance(dep, basestring):
-            sources_list_lines.append(dep)
+        if len(dep) == 2:
+            sources_list_line, fingerprint = dep
+            sources_list_lines.append(sources_list_line)
         else:
             archive, distro_arch_series, pocket, components = dep
             has_published_binaries = _has_published_binaries(
@@ -379,23 +389,23 @@ def _get_sources_list_for_dependencies(dependencies, logger=None):
                 archive, distro_arch_series, pocket, components)
             sources_list_lines.append(sources_list_line)
             fingerprint = archive.signing_key_fingerprint
-            if fingerprint is not None and fingerprint not in trusted_keys:
-                def get_key():
-                    with default_timeout(15.0):
-                        try:
-                            return gpghandler.retrieveKey(fingerprint)
-                        except GPGKeyNotFoundError as e:
-                            # For now, just log this and proceed without the
-                            # key.  We'll have to fix any outstanding cases
-                            # of this before we can switch to requiring
-                            # authentication across the board.
-                            if logger is not None:
-                                logger.warning(str(e))
-                            return None
+        if fingerprint is not None and fingerprint not in trusted_keys:
+            def get_key():
+                with default_timeout(15.0):
+                    try:
+                        return gpghandler.retrieveKey(fingerprint)
+                    except GPGKeyNotFoundError as e:
+                        # For now, just log this and proceed without the
+                        # key.  We'll have to fix any outstanding cases of
+                        # this before we can switch to requiring
+                        # authentication across the board.
+                        if logger is not None:
+                            logger.warning(str(e))
+                        return None
 
-                key = yield deferToThread(get_key)
-                if key is not None:
-                    trusted_keys[fingerprint] = base64.b64encode(key.export())
+            key = yield deferToThread(get_key)
+            if key is not None:
+                trusted_keys[fingerprint] = base64.b64encode(key.export())
 
     defer.returnValue(
         (sources_list_lines, [v for k, v in sorted(trusted_keys.items())]))
