@@ -102,7 +102,9 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         args["archives"], args["trusted_keys"] = (
             yield get_sources_list_for_building(
                 build, build.distro_arch_series, None,
-                tools_source=config.snappy.tools_source, logger=logger))
+                tools_source=config.snappy.tools_source,
+                tools_fingerprint=config.snappy.tools_fingerprint,
+                logger=logger))
         args["archive_private"] = build.archive.private
         if build.snap.branch is not None:
             args["branch"] = build.snap.branch.bzr_identity
