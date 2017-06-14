@@ -114,3 +114,6 @@ class Base64KeyMatches(Matcher):
         key = base64.b64decode(encoded_key)
         return Equals(self.fingerprint).match(
             getUtility(IGPGHandler).importPublicKey(key).fingerprint)
+
+    def __str__(self):
+        return "Base64KeyMatches(%s)" % self.fingerprint
