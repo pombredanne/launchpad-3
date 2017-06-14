@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -107,7 +107,6 @@ from lp.bugs.interfaces.bugtasksearch import (
     )
 from lp.bugs.interfaces.bugtracker import IHasExternalBugTracker
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.model.bugtasksearch import orderby_expression
 from lp.layers import FeedsLayer
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -863,7 +862,7 @@ class BugTaskSearchListingMenu(NavigationMenu):
 
 
 # All sort orders supported by BugTaskSet.search() and a title for
-# them.
+# them.  Keep in sync with lp.bugs.model.bugtasksearch.orderby_expression.
 SORT_KEYS = [
     ('importance', 'Importance', 'desc'),
     ('status', 'Status', 'asc'),
@@ -1155,14 +1154,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
                     "are out of date or you changed the URL by hand?" %
                     field_name)
 
+        sort_column_names = set(sort_key[0] for sort_key in SORT_KEYS)
         orderby = get_sortorder_from_request(self.request)
         for orderby_col in orderby:
             if orderby_col.startswith("-"):
                 orderby_col = orderby_col[1:]
 
-            try:
-                orderby_expression[orderby_col]
-            except KeyError:
+            if orderby_col not in sort_column_names:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
 
