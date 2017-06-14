@@ -231,6 +231,50 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertWebhookDeliveries(
             snapbuild, ["Pending", "Failed to upload"])
 
+    def test_run_502_retries(self):
+        # A run that gets a 502 error from the store schedules itself to be
+        # retried.
+        self.useFixture(FakeLogger())
+        snapbuild = self.makeSnapBuild()
+        self.assertContentEqual([], snapbuild.store_upload_jobs)
+        job = SnapStoreUploadJob.create(snapbuild)
+        client = FakeSnapStoreClient()
+        client.upload.failure = UploadFailedResponse(
+            "Proxy error", can_retry=True)
+        self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertEqual([], client.checkStatus.calls)
+        self.assertEqual([], client.release.calls)
+        self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertIsNone(job.store_url)
+        self.assertIsNone(job.store_revision)
+        self.assertIsNone(job.error_message)
+        self.assertEqual([], pop_notifications())
+        self.assertEqual(JobStatus.WAITING, job.job.status)
+        self.assertWebhookDeliveries(snapbuild, ["Pending"])
+        # Try again.  The upload part of the job is retried, and this time
+        # it succeeds.
+        job.lease_expires = None
+        job.scheduled_start = None
+        client.upload.calls = []
+        client.upload.failure = None
+        client.upload.result = self.status_url
+        client.checkStatus.result = (self.store_url, 1)
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertEqual([((self.status_url,), {})], client.checkStatus.calls)
+        self.assertEqual([], client.release.calls)
+        self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertEqual(self.store_url, job.store_url)
+        self.assertEqual(1, job.store_revision)
+        self.assertIsNone(job.error_message)
+        self.assertEqual([], pop_notifications())
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
+        self.assertWebhookDeliveries(snapbuild, ["Pending", "Uploaded"])
+
     def test_run_refresh_failure_notifies(self):
         # A run that gets a failure when trying to refresh macaroons sends
         # mail.

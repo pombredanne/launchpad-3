@@ -178,7 +178,8 @@ class SnapStoreClient:
         detail = requests_error.response.content
         if isinstance(detail, bytes):
             detail = detail.decode("UTF-8", errors="replace")
-        return error_class(error_message, detail=detail)
+        can_retry = requests_error.response.status_code in (502, 503)
+        return error_class(error_message, detail=detail, can_retry=can_retry)
 
     @classmethod
     def requestPackageUploadPermission(cls, snappy_series, snap_name):

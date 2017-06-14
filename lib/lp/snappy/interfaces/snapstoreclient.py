@@ -29,10 +29,11 @@ from zope.interface import Interface
 
 class SnapStoreError(Exception):
 
-    def __init__(self, message="", detail=None):
+    def __init__(self, message="", detail=None, can_retry=False):
         super(SnapStoreError, self).__init__(message)
         self.message = message
         self.detail = detail
+        self.can_retry = can_retry
 
 
 @error_status(httplib.INTERNAL_SERVER_ERROR)
