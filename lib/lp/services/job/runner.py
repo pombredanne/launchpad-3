@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Facilities for running Jobs."""
@@ -488,21 +488,22 @@ class TwistedJobRunner(BaseJobRunner):
         self.logger.info(
             'Running %s.' % self.job_str(job))
         self.logger.debug(
-            'Running %r, lease expires %s', job, job.lease_expires)
+            'Running %s, lease expires %s',
+            self.job_str(job), job.lease_expires)
         deferred = self.pool.doWork(
             RunJobCommand, job_id=job_id, _deadline=deadline)
 
         def update(response):
             if response is None:
                 self.incomplete_jobs.append(job)
-                self.logger.debug('No response for %r', job)
+                self.logger.debug('No response for %s', self.job_str(job))
                 return
             if response['success']:
                 self.completed_jobs.append(job)
-                self.logger.debug('Finished %r', job)
+                self.logger.debug('Finished %s', self.job_str(job))
             else:
                 self.incomplete_jobs.append(job)
-                self.logger.debug('Incomplete %r', job)
+                self.logger.debug('Incomplete %s', self.job_str(job))
                 # Kill the worker that experienced a failure; this only
                 # works because there's a single worker.
                 self.pool.stopAWorker()
