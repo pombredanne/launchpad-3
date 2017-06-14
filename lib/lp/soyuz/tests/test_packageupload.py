@@ -374,6 +374,18 @@ class PackageUploadTestCase(TestCaseWithFactory):
             'Rejected:\nRejected by %s: Because.' % person.displayname,
             str(msg))
 
+    def test_getFileByName_source(self):
+        self.test_publisher.prepareBreezyAutotest()
+        upload, _ = self.makeSourcePackageUpload()
+        spr = upload.sourcepackagerelease
+        upload.getFileByName("%s_%s.dsc" % (spr.name, spr.version))
+
+    def test_getFileByName_binary(self):
+        self.test_publisher.prepareBreezyAutotest()
+        upload, _ = self.makeBuildPackageUpload()
+        bpr = upload.builds[0].build.binarypackages[0]
+        upload.getFileByName("%s_%s_i386.deb" % (bpr.name, bpr.version))
+
 
 class TestPackageUploadSecurity(TestCaseWithFactory):
     """Test PackageUpload security."""

@@ -90,8 +90,9 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         args["pocket"] = build.pocket.name.lower()
         args["arch_tag"] = build.distro_arch_series.architecturetag
         args["datestamp"] = build.version
-        args["archives"] = yield get_sources_list_for_building(
-            build, build.distro_arch_series, None, logger=logger)
+        args["archives"], args["trusted_keys"] = (
+            yield get_sources_list_for_building(
+                build, build.distro_arch_series, None, logger=logger))
         args["archive_private"] = build.archive.private
         defer.returnValue(args)
 

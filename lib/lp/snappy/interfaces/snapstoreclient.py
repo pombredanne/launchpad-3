@@ -99,6 +99,11 @@ class ISnapStoreClient(Interface):
 
         :param snapbuild: The `ISnapBuild` to upload.
         :return: A URL to poll for upload processing status.
+        :raises BadRefreshResponse: if the authorising macaroons need to be
+            refreshed, but attempting to do so fails.
+        :raises UnauthorizedUploadResponse: if the user who authorised this
+            upload is not themselves authorised to upload the snap in
+            question.
         :raises UploadFailedResponse: if uploading the build to the store
             failed.
         """

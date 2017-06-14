@@ -55,6 +55,7 @@ from lp.snappy.interfaces.snapbuildjob import (
     ISnapStoreUploadJobSource,
     )
 from lp.snappy.interfaces.snapstoreclient import (
+    BadRefreshResponse,
     BadScanStatusResponse,
     ISnapStoreClient,
     ReleaseFailedResponse,
@@ -310,6 +311,9 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
             self.error_detail = getattr(e, "detail", None)
             if isinstance(e, UnauthorizedUploadResponse):
                 mailer = SnapBuildMailer.forUnauthorizedUpload(self.snapbuild)
+                mailer.sendAll()
+            elif isinstance(e, BadRefreshResponse):
+                mailer = SnapBuildMailer.forRefreshFailure(self.snapbuild)
                 mailer.sendAll()
             elif isinstance(e, UploadFailedResponse):
                 mailer = SnapBuildMailer.forUploadFailure(self.snapbuild)

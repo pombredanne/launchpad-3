@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    "default_timeout",
     "get_default_timeout_function",
     "reduced_timeout",
     "SafeTransportWithTimeout",
@@ -54,6 +55,23 @@ def set_default_timeout_function(timeout_function):
     """Change the function returning the default timeout value to use."""
     global default_timeout_function
     default_timeout_function = timeout_function
+
+
+@contextmanager
+def default_timeout(default):
+    """A context manager that sets the default timeout if none is set.
+
+    :param default: The default timeout to use if none is set.
+    """
+    original_timeout_function = get_default_timeout_function()
+
+    if original_timeout_function is None:
+        set_default_timeout_function(lambda: default)
+    try:
+        yield
+    finally:
+        if original_timeout_function is None:
+            set_default_timeout_function(None)
 
 
 @contextmanager

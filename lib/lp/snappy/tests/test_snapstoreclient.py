@@ -7,6 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
+import base64
 from cgi import FieldStorage
 import hashlib
 import io
@@ -40,6 +41,7 @@ from zope.component import getUtility
 
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
+from lp.services.log.logger import BufferLogger
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.snappy.interfaces.snap import SNAP_TESTING_FLAGS
@@ -128,11 +130,40 @@ class TestMacaroonAuth(TestCase):
         # Test _makeAuthParam's behaviour directly in case somebody somehow
         # convinces Macaroon.serialize to emit data that breaks framing.
         self.assertRaises(
-            InvalidStoreSecretsError, MacaroonAuth._makeAuthParam,
+            InvalidStoreSecretsError, MacaroonAuth(None)._makeAuthParam,
             'ev"il', 'good')
         self.assertRaises(
-            InvalidStoreSecretsError, MacaroonAuth._makeAuthParam,
+            InvalidStoreSecretsError, MacaroonAuth(None)._makeAuthParam,
             'good', 'ev"il')
+
+    def test_logging(self):
+        r = Request()
+        root_key = hashlib.sha256("root").hexdigest()
+        root_macaroon = Macaroon(key=root_key)
+        discharge_key = hashlib.sha256("discharge").hexdigest()
+        discharge_caveat_id = '{"secret": "thing"}'
+        root_macaroon.add_third_party_caveat(
+            "sso.example", discharge_key, discharge_caveat_id)
+        root_macaroon.add_first_party_caveat(
+            "store.example|package_id|{}".format(
+                json.dumps(["example-package"])))
+        unbound_discharge_macaroon = Macaroon(
+            location="sso.example", key=discharge_key,
+            identifier=discharge_caveat_id)
+        unbound_discharge_macaroon.add_first_party_caveat(
+            "sso.example|account|{}".format(
+                base64.b64encode(json.dumps({
+                    "openid": "1234567",
+                    "email": "user@example.org",
+                    }))))
+        logger = BufferLogger()
+        MacaroonAuth(
+            root_macaroon.serialize(),
+            unbound_discharge_macaroon.serialize(), logger=logger)(r)
+        self.assertEqual(
+            ['DEBUG root macaroon: snap-ids: ["example-package"]',
+             'DEBUG discharge macaroon: OpenID identifier: 1234567'],
+            logger.getLogBuffer().splitlines())
 
 
 class RequestMatches(Matcher):

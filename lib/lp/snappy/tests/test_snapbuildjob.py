@@ -28,6 +28,7 @@ from lp.snappy.interfaces.snapbuildjob import (
     ISnapStoreUploadJob,
     )
 from lp.snappy.interfaces.snapstoreclient import (
+    BadRefreshResponse,
     BadScanStatusResponse,
     ISnapStoreClient,
     ReleaseFailedResponse,
@@ -273,6 +274,56 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual([], pop_notifications())
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
         self.assertWebhookDeliveries(snapbuild, ["Pending", "Uploaded"])
+
+    def test_run_refresh_failure_notifies(self):
+        # A run that gets a failure when trying to refresh macaroons sends
+        # mail.
+        requester = self.factory.makePerson(name="requester")
+        requester_team = self.factory.makeTeam(
+            owner=requester, name="requester-team", members=[requester])
+        snapbuild = self.makeSnapBuild(
+            requester=requester_team, name="test-snap", owner=requester_team)
+        self.assertContentEqual([], snapbuild.store_upload_jobs)
+        job = SnapStoreUploadJob.create(snapbuild)
+        client = FakeSnapStoreClient()
+        client.upload.failure = BadRefreshResponse("SSO melted.")
+        self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertEqual([((snapbuild,), {})], client.upload.calls)
+        self.assertEqual([], client.checkStatus.calls)
+        self.assertEqual([], client.release.calls)
+        self.assertContentEqual([job], snapbuild.store_upload_jobs)
+        self.assertIsNone(job.store_url)
+        self.assertIsNone(job.store_revision)
+        self.assertEqual("SSO melted.", job.error_message)
+        [notification] = pop_notifications()
+        self.assertEqual(
+            config.canonical.noreply_from_address, notification["From"])
+        self.assertEqual(
+            "Requester <%s>" % requester.preferredemail.email,
+            notification["To"])
+        subject = notification["Subject"].replace("\n ", " ")
+        self.assertEqual(
+            "Refreshing store authorization failed for test-snap", subject)
+        self.assertEqual(
+            "Requester @requester-team",
+            notification["X-Launchpad-Message-Rationale"])
+        self.assertEqual(
+            requester_team.name, notification["X-Launchpad-Message-For"])
+        self.assertEqual(
+            "snap-build-upload-refresh-failed",
+            notification["X-Launchpad-Notification-Type"])
+        body, footer = notification.get_payload(decode=True).split("\n-- \n")
+        self.assertIn(
+            "http://launchpad.dev/~requester-team/+snap/test-snap/+authorize",
+            body)
+        self.assertEqual(
+            "http://launchpad.dev/~requester-team/+snap/test-snap/+build/%d\n"
+            "Your team Requester Team is the requester of the build.\n" %
+            snapbuild.id, footer)
+        self.assertWebhookDeliveries(
+            snapbuild, ["Pending", "Failed to upload"])
 
     def test_run_upload_failure_notifies(self):
         # A run that gets some other upload failure from the store sends
