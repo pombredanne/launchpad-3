@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from lp.app.enums import InformationType
-from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.registry.enums import PersonVisibility
 from lp.registry.model.personproduct import PersonProduct
@@ -42,10 +41,6 @@ class TestPersonProduct(TestCaseWithFactory):
         breadcrumb = IBreadcrumb(pp, None)
         self.assertEqual(canonical_url(pp.product), breadcrumb.url)
 
-    def test_implements_IInformationType(self):
-        pp = self._makePersonProduct()
-        verifyObject(IInformationType, pp)
-
     def test_implements_IPrivacy(self):
         pp = self._makePersonProduct()
         verifyObject(IPrivacy, pp)
@@ -56,7 +51,6 @@ class TestPersonProduct(TestCaseWithFactory):
         product = self.factory.makeProduct()
         pp = PersonProduct(team, product)
         self.assertTrue(pp.private)
-        self.assertEqual(InformationType.PUBLIC, pp.information_type)
 
     def test_private_product(self):
         # A person product is private if its product is.
@@ -65,10 +59,8 @@ class TestPersonProduct(TestCaseWithFactory):
             information_type=InformationType.PROPRIETARY)
         pp = PersonProduct(person, product)
         self.assertTrue(pp.private)
-        self.assertEqual(InformationType.PROPRIETARY, pp.information_type)
 
     def test_public(self):
         # A person product is public if both its person and product are.
         pp = self._makePersonProduct()
         self.assertFalse(pp.private)
-        self.assertEqual(InformationType.PUBLIC, pp.information_type)

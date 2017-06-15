@@ -49,7 +49,3 @@ class PersonProduct(HasMergeProposalsMixin):
     @property
     def private(self):
         return self.person.private or self.product.private
-
-    @property
-    def information_type(self):
-        return self.product.information_type

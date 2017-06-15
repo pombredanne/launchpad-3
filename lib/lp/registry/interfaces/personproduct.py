@@ -13,7 +13,6 @@ from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import TextLine
 
-from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
@@ -23,8 +22,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 
 
-class IPersonProduct(IHasMergeProposals, IHasBranches, IPrivacy,
-                     IInformationType):
+class IPersonProduct(IHasMergeProposals, IHasBranches, IPrivacy):
     """A person's view on a product."""
 
     person = Reference(IPerson)
