@@ -1281,7 +1281,7 @@
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeDeleteView"
-            permission="launchpad.Edit"
+            permission="launchpad.Delete"
             name="+delete"
             template="../../app/templates/generic-edit.pt"/>
 

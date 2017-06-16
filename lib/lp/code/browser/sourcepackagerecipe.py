@@ -147,7 +147,7 @@ class SourcePackageRecipeNavigationMenu(NavigationMenu):
     def edit(self):
         return Link('+edit', 'Edit recipe', icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Delete')
     def delete(self):
         return Link('+delete', 'Delete recipe', icon='trash-icon')
 

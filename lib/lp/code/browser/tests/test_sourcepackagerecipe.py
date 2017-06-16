@@ -1929,6 +1929,21 @@ class TestSourcePackageRecipeDeleteViewMixin:
             'http://code.launchpad.dev/~chef',
             browser.url)
 
+    def test_delete_recipe_registry_expert(self):
+        branch = self.makeBranch()
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, branches=[branch])
+
+        browser = self.getUserBrowser(
+            canonical_url(recipe), user=self.factory.makeRegistryExpert())
+
+        browser.getLink('Delete recipe').click()
+        browser.getControl('Delete recipe').click()
+
+        self.assertEqual(
+            'http://code.launchpad.dev/~chef',
+            browser.url)
+
     def test_delete_recipe_no_permissions(self):
         self.useFixture(FakeLogger())
         branch = self.makeBranch()

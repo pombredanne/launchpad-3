@@ -1105,6 +1105,10 @@
        set_schema="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeEditableAttributes"
        set_attributes="builder_recipe date_last_modified"
         />
+    <require
+       permission="launchpad.Delete"
+       interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeDelete"
+       />
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">
