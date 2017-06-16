@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface of the `SourcePackageRecipe` content type."""
@@ -284,6 +284,10 @@ class ISourcePackageRecipeEdit(Interface):
     @operation_for_version("devel")
     def updateSeries(distroseries):
         """Replace this recipe's distro series."""
+
+
+class ISourcePackageRecipeDelete(Interface):
+    """ISourcePackageRecipe methods that require launchpad.Delete."""
 
     def destroySelf():
         """Remove this SourcePackageRecipe from the database.

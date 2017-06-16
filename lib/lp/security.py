@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -2831,6 +2831,17 @@ class ViewSourcePackageRecipe(DelegatedAuthorization):
 
     def iter_objects(self):
         return self.obj.getReferencedBranches()
+
+
+class DeleteSourcePackageRecipe(AuthorizationBase):
+
+    permission = "launchpad.Delete"
+    usedfor = ISourcePackageRecipe
+
+    def checkAuthenticated(self, user):
+        return (
+            user.isOwner(self.obj) or
+            user.in_registry_experts or user.in_admin)
 
 
 class ViewSourcePackageRecipeBuild(DelegatedAuthorization):
