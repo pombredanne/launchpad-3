@@ -68,6 +68,7 @@ from lp.soyuz.interfaces.archive import (
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
+    celebrity_logged_in,
     launchpadlib_for,
     login,
     login_person,
@@ -648,6 +649,22 @@ class TestSourcePackageRecipeMixin:
         self.assertIsNot(None, build)
         self.assertIs(None, build.recipe)
         transaction.commit()
+
+    def test_destroySelf_permissions(self):
+        # Only the owner, registry experts, or admins can delete recipes.
+        owner = self.factory.makePerson()
+        recipe = self.makeSourcePackageRecipe(owner=owner)
+        self.assertRaises(Unauthorized, getattr, recipe, "destroySelf")
+        with person_logged_in(self.factory.makePerson()):
+            self.assertRaises(Unauthorized, getattr, recipe, "destroySelf")
+        with person_logged_in(owner):
+            recipe.destroySelf()
+        recipe = self.makeSourcePackageRecipe(owner=owner)
+        with celebrity_logged_in("registry_experts"):
+            recipe.destroySelf()
+        recipe = self.makeSourcePackageRecipe(owner=owner)
+        with admin_logged_in():
+            recipe.destroySelf()
 
     def test_findStaleDailyBuilds(self):
         # Stale recipe not built daily.
