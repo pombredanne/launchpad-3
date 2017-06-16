@@ -21,16 +21,11 @@ from lp.registry.interfaces.personproduct import (
 
 
 @implementer(IPersonProduct)
-@provider(IPersonProductFactory)
 class PersonProduct(HasMergeProposalsMixin):
 
     def __init__(self, person, product):
         self.person = person
         self.product = product
-
-    @staticmethod
-    def create(person, product):
-        return PersonProduct(person, product)
 
     @property
     def displayname(self):
@@ -49,3 +44,11 @@ class PersonProduct(HasMergeProposalsMixin):
     @property
     def private(self):
         return self.person.private or self.product.private
+
+
+@provider(IPersonProductFactory)
+class PersonProductFactory:
+
+    @staticmethod
+    def create(person, product):
+        return PersonProduct(person, product)
