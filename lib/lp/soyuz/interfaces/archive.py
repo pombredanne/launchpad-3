@@ -502,7 +502,10 @@ class IArchiveSubscriberView(Interface):
             title=_("Order by creation date"),
             description=_("Return newest results first. This is recommended "
                           "for applications that need to catch up with "
-                          "publications since their last run."),
+                          "publications since their last run. If not "
+                          "specified, results are ordered by source "
+                          "package name (lexicographically), then by "
+                          "descending version and then descending ID.",
             required=False),
         )
     # Really returns ISourcePackagePublishingHistory, see below for
@@ -541,6 +544,9 @@ class IArchiveSubscriberView(Interface):
         :param order_by_date: Order publications by descending creation date
             and then by descending ID.  This is suitable for applications
             that need to catch up with publications since their last run.
+            If not specified, publications are ordered by source
+            package name (lexicographically), then by descending version
+            and then descending ID.
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`,
             ordered by name. If there are multiple results for the same
