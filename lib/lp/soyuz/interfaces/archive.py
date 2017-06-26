@@ -505,7 +505,7 @@ class IArchiveSubscriberView(Interface):
                           "publications since their last run. If not "
                           "specified, results are ordered by source "
                           "package name (lexicographically), then by "
-                          "descending version and then descending ID.",
+                          "descending version and then descending ID."),
             required=False),
         )
     # Really returns ISourcePackagePublishingHistory, see below for
