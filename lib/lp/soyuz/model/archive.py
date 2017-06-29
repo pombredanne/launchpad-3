@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table Archive."""
@@ -53,7 +53,10 @@ from zope.interface import (
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.errors import NotFoundError
+from lp.app.errors import (
+    IncompatibleArguments,
+    NotFoundError,
+    )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.security import IAuthorization
 from lp.app.validators.name import valid_name
@@ -182,10 +185,7 @@ from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.buildrecords import (
-    IHasBuildRecords,
-    IncompatibleArguments,
-    )
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import (
     IComponent,
     IComponentSet,

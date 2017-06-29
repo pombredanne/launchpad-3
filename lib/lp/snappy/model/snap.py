@@ -42,6 +42,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.errors import IncompatibleArguments
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -128,7 +129,6 @@ from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snapbuild import SnapBuild
 from lp.soyuz.interfaces.archive import ArchiveDisabled
-from lp.soyuz.interfaces.buildrecords import IncompatibleArguments
 from lp.soyuz.model.archive import (
     Archive,
     get_enabled_archive_filter,

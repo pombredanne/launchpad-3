@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IHasBuildRecords interface.
@@ -10,13 +10,10 @@ __metaclass__ = type
 
 __all__ = [
     'IHasBuildRecords',
-    'IncompatibleArguments',
     ]
-import httplib
 
 from lazr.restful.declarations import (
     call_with,
-    error_status,
     export_read_operation,
     operation_for_version,
     operation_parameters,
@@ -33,11 +30,6 @@ from zope.schema import (
 from lp import _
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-
-
-@error_status(httplib.BAD_REQUEST)
-class IncompatibleArguments(Exception):
-    """Raised when incompatible arguments are passed to a method."""
 
 
 class IHasBuildRecords(Interface):
