@@ -258,7 +258,6 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertWebhookDeliveries(snapbuild, ["Pending"])
         # Try again.  The upload part of the job is retried, and this time
         # it succeeds.
-        job.lease_expires = None
         job.scheduled_start = None
         client.upload.calls = []
         client.upload.failure = None
@@ -405,7 +404,6 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertWebhookDeliveries(snapbuild, ["Pending"])
         # Try again.  The upload part of the job is not retried, and this
         # time the scan completes.
-        job.lease_expires = None
         job.scheduled_start = None
         client.upload.calls = []
         client.checkStatus.calls = []
@@ -612,7 +610,6 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
             JobRunner([job]).runAll()
         self.assertNotIn("status_url", job.metadata)
         self.assertEqual(timedelta(seconds=60), job.retry_delay)
-        job.lease_expires = None
         job.scheduled_start = None
         client.upload.failure = None
         client.upload.result = self.status_url
@@ -624,7 +621,6 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
             self.assertIsNone(job.store_url)
             self.assertEqual(
                 timedelta(seconds=expected_delay), job.retry_delay)
-            job.lease_expires = None
             job.scheduled_start = None
         client.checkStatus.failure = None
         client.checkStatus.result = (self.store_url, 1)
