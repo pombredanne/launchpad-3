@@ -197,7 +197,6 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         )
 
     retry_error_types = (UploadNotScannedYetResponse, RetryableSnapStoreError)
-    retry_delay = timedelta(minutes=1)
     max_retries = 20
 
     config = config.ISnapStoreUploadJobSource
@@ -285,15 +284,34 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         oops_vars.append(('error_detail', self.error_detail))
         return oops_vars
 
+    @property
+    def retry_delay(self):
+        """See `BaseRunnableJob`."""
+        if "status_url" in self.metadata and self.store_url is None:
+            # At the moment we have to poll the status endpoint to find out
+            # if the store has finished scanning.  Try to deal with easy
+            # cases quickly without hammering our job runners or the store
+            # too badly.
+            delays = (15, 15, 30, 30)
+            try:
+                return timedelta(seconds=delays[self.attempt_count - 1])
+            except IndexError:
+                pass
+        return timedelta(minutes=1)
+
     def run(self):
         """See `IRunnableJob`."""
         client = getUtility(ISnapStoreClient)
         try:
             if "status_url" not in self.metadata:
                 self.metadata["status_url"] = client.upload(self.snapbuild)
+                # We made progress, so reset attempt_count.
+                self.attempt_count = 1
             if self.store_url is None:
                 self.store_url, self.store_revision = (
                     client.checkStatus(self.metadata["status_url"]))
+                # We made progress, so reset attempt_count.
+                self.attempt_count = 1
             if self.snapbuild.snap.store_channels:
                 if self.store_revision is None:
                     raise ManualReview(

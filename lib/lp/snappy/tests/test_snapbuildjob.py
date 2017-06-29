@@ -7,6 +7,8 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
+from datetime import timedelta
+
 from fixtures import FakeLogger
 from testtools.matchers import (
     Equals,
@@ -594,3 +596,41 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
             snapbuild.id, footer)
         self.assertWebhookDeliveries(
             snapbuild, ["Pending", "Failed to release to channels"])
+
+    def test_retry_delay(self):
+        # The job is retried every minute, unless it just made one of its
+        # first four attempts to poll the status endpoint, in which case the
+        # delays are 15/15/30/30 seconds.
+        self.useFixture(FakeLogger())
+        snapbuild = self.makeSnapBuild()
+        job = SnapStoreUploadJob.create(snapbuild)
+        client = FakeSnapStoreClient()
+        client.upload.failure = UploadFailedResponse(
+            "Proxy error", can_retry=True)
+        self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertNotIn("status_url", job.metadata)
+        self.assertEqual(timedelta(seconds=60), job.retry_delay)
+        job.lease_expires = None
+        job.scheduled_start = None
+        client.upload.failure = None
+        client.upload.result = self.status_url
+        client.checkStatus.failure = UploadNotScannedYetResponse()
+        for expected_delay in (15, 15, 30, 30, 60):
+            with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+                JobRunner([job]).runAll()
+            self.assertIn("status_url", job.metadata)
+            self.assertIsNone(job.store_url)
+            self.assertEqual(
+                timedelta(seconds=expected_delay), job.retry_delay)
+            job.lease_expires = None
+            job.scheduled_start = None
+        client.checkStatus.failure = None
+        client.checkStatus.result = (self.store_url, 1)
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+        self.assertEqual(self.store_url, job.store_url)
+        self.assertIsNone(job.error_message)
+        self.assertEqual([], pop_notifications())
+        self.assertEqual(JobStatus.COMPLETED, job.job.status)
