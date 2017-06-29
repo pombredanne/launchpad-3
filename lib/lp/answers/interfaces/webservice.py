@@ -13,8 +13,10 @@ __all__ = [
     'IFAQ',
     'IFAQTarget',
     'IQuestion',
+    'IQuestionMessage',
     'IQuestionSet',
     'IQuestionSubscription',
+    'IQuestionTarget',
     ]
 
 from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
