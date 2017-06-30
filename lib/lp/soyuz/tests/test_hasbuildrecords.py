@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test implementations of the IHasBuildRecords interface."""
@@ -6,6 +6,7 @@
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.errors import IncompatibleArguments
 from lp.buildmaster.enums import (
     BuildFarmJobType,
     BuildStatus,
@@ -20,10 +21,7 @@ from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.database.interfaces import IStore
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
-from lp.soyuz.interfaces.buildrecords import (
-    IHasBuildRecords,
-    IncompatibleArguments,
-    )
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
