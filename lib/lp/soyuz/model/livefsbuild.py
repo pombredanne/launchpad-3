@@ -1,4 +1,4 @@
-# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -250,7 +250,9 @@ class LiveFSBuild(PackageBuildMixin, Storm):
         self.buildqueue_record.cancel()
 
     def calculateScore(self):
-        return 2510 + self.archive.relative_build_score
+        return (
+            2510 + self.archive.relative_build_score +
+            self.livefs.relative_build_score)
 
     def getMedianBuildDuration(self):
         """Return the median duration of our successful builds."""
