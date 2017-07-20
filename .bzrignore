@@ -78,4 +78,3 @@ callgrind.out.*
 !logs/README.txt
 ./logs
 ./node_modules
-./yarn.lock

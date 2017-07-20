@@ -165,13 +165,13 @@ $(YARN_BUILD): | $(JS_BUILD_DIR)
 	mv $@/tmp/dist/* $@
 	$(RM) -r $@/tmp
 
-yarn.lock: package.json | $(YARN_BUILD)
-	$(YARN) install --offline
+node_modules/yui: package.json | $(YARN_BUILD)
+	$(YARN) install --offline --frozen-lockfile
 	# We don't use YUI's Flash components and they have a bad security
 	# record. Kill them.
 	find node_modules/yui -name '*.swf' -delete
 
-$(YUI_SYMLINK): yarn.lock
+$(YUI_SYMLINK): node_modules/yui
 	ln -sfn ../../node_modules/yui $@
 
 $(LP_JS_BUILD): | $(JS_BUILD_DIR)
@@ -342,7 +342,7 @@ rebuildfti:
 
 clean_js:
 	$(RM) -r $(JS_BUILD_DIR)
-	$(RM) -r node_modules .yarn.lock
+	$(RM) -r node_modules
 
 clean_buildout:
 	$(RM) -r build
