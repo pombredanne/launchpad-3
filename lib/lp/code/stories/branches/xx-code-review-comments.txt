@@ -263,8 +263,6 @@ rendered with the following 'data-' attributes:
     >>> transaction.commit()
     >>> previewdiff_id = previewdiff.id
     >>> new_previewdiff_id = new_previewdiff.id
-    >>> comment1_id = comment1.id
-    >>> comment2_id = comment2.id
     >>> logout()
 
     >>> def get_comment_attributes(contents):
@@ -275,27 +273,25 @@ rendered with the following 'data-' attributes:
     ...         if len(tds) == 0:
     ...            continue
     ...         td = tds[0]
-    ...         result[td['data-comment-id']] = (
-    ...              td.get('data-previewdiff-id', '-'),
-    ...              td.get('data-from-superseded', '-'))
+    ...         if td.get('data-previewdiff-id'):
+    ...             result[td['data-previewdiff-id']] = (
+    ...                 td.get('data-from-superseded', '-'))
     ...     return result
 
 The 'data-' attributes:
 
- * 'comment-id': The review comment ID, used to highlight related
- *               inline comments.
  * 'previewdiff-id': used to load the corresponding `PreviewDiff`.
  * 'from_superseded': 'True' or 'False' whether the context MP is
-                      superseded by another. Used to supress context
+                      superseded by another. Used to suppress context
                       handlers on superseded comments.
 
 They are always available in `BranchMergeProposal` pages.
 
     >>> anon_browser.open(merge_proposal_url)
     >>> comments = get_comment_attributes(anon_browser.contents)
-    >>> comments[str(comment1_id)] == (str(previewdiff_id), 'False')
+    >>> comments[str(previewdiff_id)] == 'False'
     True
-    >>> str(comment2_id) in comments
+    >>> str(new_previewdiff_id) in comments
     False
 
 When visualized in the new merge proposal the comments from the original
@@ -304,7 +300,7 @@ non-superseded local comment.
 
     >>> anon_browser.open(new_merge_proposal_url)
     >>> comments = get_comment_attributes(anon_browser.contents)
-    >>> comments[str(comment1_id)] == (str(previewdiff_id), 'True')
+    >>> comments[str(previewdiff_id)] == 'True'
     True
-    >>> comments[str(comment2_id)] == (str(new_previewdiff_id), 'False')
+    >>> comments[str(new_previewdiff_id)] == 'False'
     True
