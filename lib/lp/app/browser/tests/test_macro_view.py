@@ -37,7 +37,6 @@ class TestMacroNontraversability(TestCaseWithFactory):
         '+bugtask-macros-tableview',
         'bugtask-macros-cve',
         '+bmp-macros',
-        'branch-form-macros',
         '+announcement-macros',
         '+person-macros',
         '+milestone-macros',
