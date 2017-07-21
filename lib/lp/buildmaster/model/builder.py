@@ -37,7 +37,10 @@ from zope.component import getUtility
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.errors import NotFoundError
+from lp.app.errors import (
+    IncompatibleArguments,
+    NotFoundError,
+    )
 from lp.buildmaster.enums import (
     BuilderCleanStatus,
     BuilderResetProtocol,
@@ -78,10 +81,7 @@ from lp.services.propertycache import (
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved.
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.buildrecords import (
-    IHasBuildRecords,
-    IncompatibleArguments,
-    )
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 
 
 @implementer(IBuilder, IHasBuildRecords)
