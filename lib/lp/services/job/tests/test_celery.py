@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for running jobs via Celery."""
@@ -93,9 +93,10 @@ class TestJobWithRetryError(TestJob):
             self.job.lease_expires = datetime.now(UTC)
             raise RetryException
         elif self.job.attempt_count == 2:
-            # The retry delay is 5 seconds, but the lease is for nearly
-            # 10 seconds, so the job will be rescheduled 10 seconds in
-            # the future.
+            # The retry delay is 5 seconds, but the lease is for nearly 10
+            # seconds. However, the job releases the lease when it's
+            # requeued, so the job will again be rescheduled for 5 seconds
+            # (retry_delay) in the future.
             raise RetryException
 
 
@@ -185,10 +186,9 @@ class TestJobsViaCelery(TestCaseWithFactory):
             iso8601.parse_date(d)
             for d in job.job.base_json_data['dates_started']]
 
-        # The first attempt's lease is set to the end of the job, so
-        # the second attempt should start roughly 5 seconds after the
-        # first. The third attempt has to wait out the full 10 second
-        # lease, so it should start roughly 10 seconds after the second.
+        # The first attempt's lease is set to the end of the job, so the
+        # second attempt should start roughly 5 seconds after the first. The
+        # third attempt should start roughly 5 seconds after the second.
         self.assertThat(dates_started, HasLength(3))
         self.assertThat(dates_started,
             MatchesListwise([
@@ -197,8 +197,8 @@ class TestJobsViaCelery(TestCaseWithFactory):
                     GreaterThan(dates_started[0] + timedelta(seconds=4)),
                     LessThan(dates_started[0] + timedelta(seconds=8))),
                 MatchesAll(
-                    GreaterThan(dates_started[1] + timedelta(seconds=8)),
-                    LessThan(dates_started[1] + timedelta(seconds=13))),
+                    GreaterThan(dates_started[1] + timedelta(seconds=4)),
+                    LessThan(dates_started[1] + timedelta(seconds=8))),
                 ]))
         self.assertEqual(3, job.attempt_count)
         self.assertEqual(JobStatus.COMPLETED, job.status)

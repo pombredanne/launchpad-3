@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ORM object representing jobs."""
@@ -206,6 +206,8 @@ class Job(SQLBase):
         if self.status != JobStatus.WAITING:
             self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
+        # Release the lease to allow short retry delays to be effective.
+        self.lease_expires = None
         if add_commit_hook is not None:
             add_commit_hook()
         if manage_transaction:

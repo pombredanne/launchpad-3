@@ -559,6 +559,40 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         jobs = self.job_source.iterReady()
         self.assertEqual(0, len(jobs))
 
+    def test_iterReady_new_merge_proposal_update_diff_leased(self):
+        # If either the diff or the email job has an acquired lease, then
+        # iterReady skips it.
+        self.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        [update_diff_job] = self.job_source.iterReady()
+        self.assertIsInstance(update_diff_job, UpdatePreviewDiffJob)
+        update_diff_job.acquireLease()
+        self.assertEqual(0, len(self.job_source.iterReady()))
+        update_diff_job.start()
+        update_diff_job.complete()
+        [email_job] = self.job_source.iterReady()
+        self.assertIsInstance(email_job, MergeProposalNeedsReviewEmailJob)
+        email_job.acquireLease()
+        self.assertEqual(0, len(self.job_source.iterReady()))
+
+    def test_iterReady_new_merge_proposal_update_diff_scheduled(self):
+        # If either the diff or the email job has a scheduled start time in
+        # the future, then iterReady skips it.
+        self.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        [update_diff_job] = self.job_source.iterReady()
+        self.assertIsInstance(update_diff_job, UpdatePreviewDiffJob)
+        update_diff_job.start()
+        update_diff_job.queue()
+        self.assertEqual(0, len(self.job_source.iterReady()))
+        update_diff_job.start()
+        update_diff_job.complete()
+        [email_job] = self.job_source.iterReady()
+        self.assertIsInstance(email_job, MergeProposalNeedsReviewEmailJob)
+        email_job.start()
+        email_job.queue()
+        self.assertEqual(0, len(self.job_source.iterReady()))
+
     def makeBranchMergeProposal(self, set_state=None):
         # Make a merge proposal that would have a ready update diff job.
         bmp = self.factory.makeBranchMergeProposal(set_state=set_state)

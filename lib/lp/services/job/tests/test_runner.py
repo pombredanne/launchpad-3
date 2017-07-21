@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for job-running facilities."""
@@ -349,6 +349,7 @@ class TestJobRunner(TestCaseWithFactory):
             MatchesAll(
                 GreaterThan(expected_delay - timedelta(minutes=1)),
                 LessThan(expected_delay + timedelta(minutes=1))))
+        self.assertIsNone(job.lease_expires)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
 
