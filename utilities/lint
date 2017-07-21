@@ -31,10 +31,21 @@ else
 fi
 
 # Sample data contains auto generated files with long lines.
-pocketlint_files=`echo "$files" | env -i grep -v ".sql$"`
+pocketlint_files=`echo "$files" | env -i grep -v '\.sql$'`
 if [ -z "$pocketlint_files" ]; then
     exit 0
 fi
+pocketlint_files=`echo "$pocketlint_files" | tr " " "\n"`
 
-echo ""
-pocketlint $pocketlint_files 2>&1
+non_js_files=`echo "$pocketlint_files" | env -i grep -v '\.js$'`
+js_files=`echo "$pocketlint_files" | env -i grep '\.js$'`
+
+ret=0
+if [ "$non_js_files" ]; then
+    echo ""
+    pocketlint $non_js_files 2>&1 || ret=$?
+fi
+if [ "$js_files" ]; then
+    nodejs node_modules/.bin/eslint $js_files 2>&1 || ret=$?
+fi
+exit $ret

@@ -1,0 +1,6 @@
+# Third-party module, albeit modified somewhat for Launchpad.
+lib/lp/app/javascript/sorttable/sorttable.js
+
+# Minified third-party files.
+lib/lp/app/tour/jquery-*.pack.js
+lib/lp/app/tour/selector.js

@@ -1,0 +1,28 @@
+{
+    "env": {
+        "browser": true
+    },
+    "extends": "eslint:recommended",
+    "globals": {
+        "$": false,
+        "LP": true,
+        "YUI": false,
+        "YUI_config": true
+    },
+    "rules": {
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
+        "no-unused-vars": [
+            "error",
+            {
+                "args": "none"
+            }
+        ],
+        "semi": [
+            "error",
+            "always"
+        ]
+    }
+}
