@@ -705,15 +705,6 @@ class FileBugViewBase(LaunchpadFormView):
         raise NotImplementedError
 
     @property
-    def inline_filebug_base_url(self):
-        """Return the base URL for the current request.
-
-        This allows us to build URLs in Javascript without guessing at
-        domains.
-        """
-        return self.request.getRootURL(None)
-
-    @property
     def inline_filebug_form_url(self):
         """Return the URL to the inline filebug form.
 
