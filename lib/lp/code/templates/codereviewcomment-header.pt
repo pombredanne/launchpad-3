@@ -7,8 +7,7 @@
   <tbody>
     <tr>
     <td tal:attributes="data-previewdiff-id context/previewdiff_id;
-                        data-from-superseded context/from_superseded;
-                        data-comment-id context/id">
+                        data-from-superseded context/from_superseded">
       <span
         itemprop="creator"
         tal:content="structure context/comment_author/fmt:link-display-name-id"/>
