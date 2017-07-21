@@ -102,7 +102,7 @@
       // we need this to create a single YUI instance all events and code
       // talks across. All instances of YUI().use should be based off of
       // LPJS instead.
-      LPJS = new YUI();
+      var LPJS = new YUI();
   </script>
 
 </metal:load-javascript>
