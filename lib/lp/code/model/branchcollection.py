@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IBranchCollection`."""
@@ -18,6 +18,7 @@ from lazr.uri import (
     )
 from storm.expr import (
     And,
+    Asc,
     Count,
     Desc,
     In,
@@ -38,7 +39,10 @@ from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.bugs.interfaces.bugtasksearch import BugTaskSearchParams
 from lp.bugs.model.bugbranch import BugBranch
 from lp.bugs.model.bugtask import BugTask
-from lp.code.enums import BranchMergeProposalStatus
+from lp.code.enums import (
+    BranchListingSort,
+    BranchMergeProposalStatus,
+    )
 from lp.code.interfaces.branch import user_has_special_branch_access
 from lp.code.interfaces.branchcollection import (
     IBranchCollection,
@@ -271,13 +275,52 @@ class GenericBranchCollection:
             cache = caches[code_import.branchID]
             cache.code_import = code_import
 
-    def getBranches(self, find_expr=Branch, eager_load=False):
+    @staticmethod
+    def _convertListingSortToOrderBy(sort_by):
+        """Compute a value to pass to `order_by` on a collection of branches.
+
+        :param sort_by: an item from the `BranchListingSort` enumeration.
+        """
+        DEFAULT_BRANCH_LISTING_SORT = [
+            BranchListingSort.PRODUCT,
+            BranchListingSort.LIFECYCLE,
+            BranchListingSort.OWNER,
+            BranchListingSort.NAME,
+            ]
+
+        LISTING_SORT_TO_COLUMN = {
+            BranchListingSort.PRODUCT: (Asc, Branch.target_suffix),
+            BranchListingSort.LIFECYCLE: (Desc, Branch.lifecycle_status),
+            BranchListingSort.NAME: (Asc, Branch.name),
+            BranchListingSort.OWNER: (Asc, Branch.owner_name),
+            BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: (
+                Desc, Branch.date_last_modified),
+            BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: (
+                Asc, Branch.date_last_modified),
+            BranchListingSort.NEWEST_FIRST: (Desc, Branch.date_created),
+            BranchListingSort.OLDEST_FIRST: (Asc, Branch.date_created),
+            }
+
+        order_by = map(
+            LISTING_SORT_TO_COLUMN.get, DEFAULT_BRANCH_LISTING_SORT)
+
+        if sort_by is not None and sort_by != BranchListingSort.DEFAULT:
+            direction, column = LISTING_SORT_TO_COLUMN[sort_by]
+            order_by = (
+                [(direction, column)] +
+                [sort for sort in order_by if sort[1] is not column])
+        return [direction(column) for direction, column in order_by]
+
+    def getBranches(self, find_expr=Branch, eager_load=False, sort_by=None):
         """See `IBranchCollection`."""
         all_tables = set(
             self._tables.values() + self._asymmetric_tables.values())
         tables = [Branch] + list(all_tables)
         expressions = self._getBranchExpressions()
         resultset = self.store.using(*tables).find(find_expr, *expressions)
+        if sort_by is not None:
+            resultset = resultset.order_by(
+                *self._convertListingSortToOrderBy(sort_by))
 
         def do_eager_load(rows):
             branch_ids = set(branch.id for branch in rows)

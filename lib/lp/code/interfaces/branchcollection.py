@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A collection of branches.
@@ -58,16 +58,18 @@ class IBranchCollection(Interface):
             of individuals and teams that own branches in this collection.
         """
 
-    def getBranches(eager_load=False):
+    def getBranches(eager_load=False, sort_by=None):
         """Return a result set of all branches in this collection.
 
         The returned result set will also join across the specified tables as
         defined by the arguments to this function.  These extra tables are
-        joined specificly to allow the caller to sort on values not in the
+        joined specifically to allow the caller to sort on values not in the
         Branch table itself.
 
         :param eager_load: If True trigger eager loading of all the related
             objects in the collection.
+        :param sort_by: an item from the `BranchListingSort` enumeration, or
+            None to return an unordered result set.
         """
 
     def getBranchIds():

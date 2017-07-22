@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch listings."""
@@ -34,10 +34,7 @@ from lazr.enum import (
     EnumeratedType,
     Item,
     )
-from storm.expr import (
-    Asc,
-    Desc,
-    )
+from storm.expr import Desc
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
@@ -71,6 +68,7 @@ from lp.code.browser.summary import BranchCountSummaryView
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchLifecycleStatusFilter,
+    BranchListingSort,
     BranchType,
     )
 from lp.code.interfaces.branch import (
@@ -213,69 +211,6 @@ class BranchListingItem(BzrIdentityMixin, BranchBadges):
     def __repr__(self):
         # For testing purposes.
         return '<BranchListingItem %r (%d)>' % (self.unique_name, self.id)
-
-
-class BranchListingSort(EnumeratedType):
-    """Choices for how to sort branch listings."""
-
-    # XXX: MichaelHudson 2007-10-17 bug=153891: We allow sorting on quantities
-    # that are not visible in the listing!
-
-    DEFAULT = Item("""
-        by most interesting
-
-        Sort branches by the default ordering for the view.
-        """)
-
-    PRODUCT = Item("""
-        by project name
-
-        Sort branches by name of the project the branch is for.
-        """)
-
-    LIFECYCLE = Item("""
-        by status
-
-        Sort branches by their status.
-        """)
-
-    NAME = Item("""
-        by branch name
-
-        Sort branches by the name of the branch.
-        """)
-
-    OWNER = Item("""
-        by owner name
-
-        Sort branches by the name of the owner.
-        """)
-
-    MOST_RECENTLY_CHANGED_FIRST = Item("""
-        most recently changed first
-
-        Sort branches from the most recently to the least recently
-        changed.
-        """)
-
-    LEAST_RECENTLY_CHANGED_FIRST = Item("""
-        most neglected first
-
-        Sort branches from the least recently to the most recently
-        changed.
-        """)
-
-    NEWEST_FIRST = Item("""
-        newest first
-
-        Sort branches from newest to oldest.
-        """)
-
-    OLDEST_FIRST = Item("""
-        oldest first
-
-        Sort branches from oldest to newest.
-        """)
 
 
 class PersonBranchCategory(EnumeratedType):
@@ -627,7 +562,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             len(self.branches().visible_branches_for_view) == 0 and
             not self.branch_count)
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, sort_by=None):
         """Return a sequence of branches.
 
         This method is overridden in the derived classes to perform the
@@ -639,8 +574,11 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         if lifecycle_status is not None:
             collection = collection.withLifecycleStatus(*lifecycle_status)
         collection = collection.visibleByUser(self.user)
-        return collection.getBranches(eager_load=False).order_by(
-            self._listingSortToOrderBy(self.sort_by))
+        if sort_by is None:
+            sort_by = self.sort_by
+        if sort_by is None:
+            sort_by = BranchListingSort.DEFAULT
+        return collection.getBranches(eager_load=False, sort_by=sort_by)
 
     @property
     def no_branch_message(self):
@@ -713,44 +651,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         else:
             # If a derived view has specified a default sort_by, use that.
             return self.initial_values.get('sort_by')
-
-    @staticmethod
-    def _listingSortToOrderBy(sort_by):
-        """Compute a value to pass as orderBy to Branch.select().
-
-        :param sort_by: an item from the BranchListingSort enumeration.
-        """
-        from lp.code.model.branch import Branch
-
-        DEFAULT_BRANCH_LISTING_SORT = [
-            BranchListingSort.PRODUCT,
-            BranchListingSort.LIFECYCLE,
-            BranchListingSort.OWNER,
-            BranchListingSort.NAME,
-            ]
-
-        LISTING_SORT_TO_COLUMN = {
-            BranchListingSort.PRODUCT: (Asc, Branch.target_suffix),
-            BranchListingSort.LIFECYCLE: (Desc, Branch.lifecycle_status),
-            BranchListingSort.NAME: (Asc, Branch.name),
-            BranchListingSort.OWNER: (Asc, Branch.owner_name),
-            BranchListingSort.MOST_RECENTLY_CHANGED_FIRST: (
-                Desc, Branch.date_last_modified),
-            BranchListingSort.LEAST_RECENTLY_CHANGED_FIRST: (
-                Asc, Branch.date_last_modified),
-            BranchListingSort.NEWEST_FIRST: (Desc, Branch.date_created),
-            BranchListingSort.OLDEST_FIRST: (Asc, Branch.date_created),
-            }
-
-        order_by = map(
-            LISTING_SORT_TO_COLUMN.get, DEFAULT_BRANCH_LISTING_SORT)
-
-        if sort_by is not None and sort_by != BranchListingSort.DEFAULT:
-            direction, column = LISTING_SORT_TO_COLUMN[sort_by]
-            order_by = (
-                [(direction, column)] +
-                [sort for sort in order_by if sort[1] is not column])
-        return [direction(column) for direction, column in order_by]
 
     def setUpWidgets(self, context=None):
         """Set up the 'sort_by' widget with only the applicable choices."""
@@ -1267,9 +1167,8 @@ class ProductBranchesView(ProductBranchListingView, SortSeriesMixin,
         """Return the series branches, followed by most recently changed."""
         series_branches = self._getSeriesBranches()
         branch_query = super(ProductBranchesView, self)._branches(
-            self.selected_lifecycle_status)
-        branch_query.order_by(self._listingSortToOrderBy(
-            BranchListingSort.MOST_RECENTLY_CHANGED_FIRST))
+            self.selected_lifecycle_status,
+            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
         # We don't want the initial branch listing to be batched, so only get
         # the batch size - the number of series_branches.
         batch_size = config.launchpad.branchlisting_batch_size
