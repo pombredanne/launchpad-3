@@ -10,10 +10,24 @@
         "YUI_config": true
     },
     "rules": {
+        "eqeqeq": [
+            "error",
+            "smart"
+        ],
+        "guard-for-in": "error",
         "linebreak-style": [
             "error",
             "unix"
         ],
+        "max-len": [
+            "error",
+            {
+                "ignoreRegExpLiterals": true
+            }
+        ],
+        "no-new": "error",
+        "no-tabs": "error",
+        "no-trailing-spaces": "error",
         "no-unused-vars": [
             "error",
             {
