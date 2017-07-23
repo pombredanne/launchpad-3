@@ -27,6 +27,7 @@
                 "ignoreRegExpLiterals": true
             }
         ],
+        "no-caller": "error",
         "no-eval": "error",
         "no-implied-eval": "error",
         "no-invalid-this": "error",
