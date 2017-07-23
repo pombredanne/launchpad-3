@@ -10,6 +10,8 @@
         "YUI_config": true
     },
     "rules": {
+        "comma-dangle": "error",
+        "curly": "error",
         "eqeqeq": [
             "error",
             "smart"
@@ -25,6 +27,8 @@
                 "ignoreRegExpLiterals": true
             }
         ],
+        "no-eval": "error",
+        "no-implied-eval": "error",
         "no-new": "error",
         "no-tabs": "error",
         "no-trailing-spaces": "error",
