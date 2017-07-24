@@ -77,4 +77,4 @@ callgrind.out.*
 ./celerybeat-schedule
 !logs/README.txt
 ./logs
-./node_modules
+yarn/node_modules

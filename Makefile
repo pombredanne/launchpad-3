@@ -24,7 +24,7 @@ LP_BUILT_JS_ROOT=${ICING}/build
 JS_BUILD_DIR := build/js
 YARN_VERSION := 0.27.5
 YARN_BUILD := $(JS_BUILD_DIR)/yarn
-YARN := $(YARN_BUILD)/bin/yarn
+YARN := utilities/yarn
 YUI_SYMLINK := $(JS_BUILD_DIR)/yui
 LP_JS_BUILD := $(JS_BUILD_DIR)/lp
 
@@ -145,7 +145,7 @@ endif
 css_combine: jsbuild_widget_css
 	${SHHH} bin/sprite-util create-image
 	${SHHH} bin/sprite-util create-css
-	ln -sfn ../../../../node_modules/yui $(ICING)/yui
+	ln -sfn ../../../../yarn/node_modules/yui $(ICING)/yui
 	${SHHH} bin/combine-css
 
 jsbuild_widget_css: bin/jsbuild
@@ -165,14 +165,14 @@ $(YARN_BUILD): | $(JS_BUILD_DIR)
 	mv $@/tmp/dist/* $@
 	$(RM) -r $@/tmp
 
-node_modules/yui: package.json | $(YARN_BUILD)
+yarn/node_modules/yui: yarn/package.json | $(YARN_BUILD)
 	$(YARN) install --offline --frozen-lockfile
 	# We don't use YUI's Flash components and they have a bad security
 	# record. Kill them.
-	find node_modules/yui -name '*.swf' -delete
+	find yarn/node_modules/yui -name '*.swf' -delete
 
-$(YUI_SYMLINK): node_modules/yui
-	ln -sfn ../../node_modules/yui $@
+$(YUI_SYMLINK): yarn/node_modules/yui
+	ln -sfn ../../yarn/node_modules/yui $@
 
 $(LP_JS_BUILD): | $(JS_BUILD_DIR)
 	-mkdir $@
@@ -342,7 +342,7 @@ rebuildfti:
 
 clean_js:
 	$(RM) -r $(JS_BUILD_DIR)
-	$(RM) -r node_modules
+	$(RM) -r yarn/node_modules
 
 clean_buildout:
 	$(RM) -r build
