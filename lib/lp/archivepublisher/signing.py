@@ -193,20 +193,30 @@ class SigningUpload(CustomUpload):
             return [None for k in keynames]
         return keynames
 
+    def generateKeyCommonName(self, owner, archive, suffix=''):
+        # PPA <owner> <archive> <suffix>
+        # truncate <owner> <archive> to ensure the overall form is shorter
+        # than 64 characters but the suffix is maintained
+        if suffix:
+            suffix = " " + suffix
+        common_name = "PPA %s %s" % (owner, archive)
+        return common_name[0:64 - len(suffix)] + suffix
+
     def generateUefiKeys(self):
         """Generate new UEFI Keys for this archive."""
         directory = os.path.dirname(self.uefi_key)
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        common_name = '/CN=PPA %s %s/' % (
+        common_name = self.generateKeyCommonName(
             self.archive.owner.name, self.archive.name)
+        subject = '/CN=' + common_name + '/'
 
         old_mask = os.umask(0o077)
         try:
             new_key_cmd = [
                 'openssl', 'req', '-new', '-x509', '-newkey', 'rsa:2048',
-                '-subj', common_name, '-keyout', self.uefi_key,
+                '-subj', subject, '-keyout', self.uefi_key,
                 '-out', self.uefi_cert, '-days', '3650', '-nodes', '-sha256',
                 ]
             self.callLog("UEFI keygen", new_key_cmd)
@@ -233,6 +243,10 @@ class SigningUpload(CustomUpload):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
+        # Truncate name to 64 character maximum.
+        common_name = self.generateKeyCommonName(
+            self.archive.owner.name, self.archive.name, "kmod")
+
         old_mask = os.umask(0o077)
         try:
             with tempfile.NamedTemporaryFile(suffix='.keygen') as tf:
@@ -245,14 +259,14 @@ class SigningUpload(CustomUpload):
                     x509_extensions = myexts
 
                     [ req_distinguished_name ]
-                    CN = /CN=PPA %s %s kmod/
+                    CN = %s
 
                     [ myexts ]
                     basicConstraints=critical,CA:FALSE
                     keyUsage=digitalSignature
                     subjectKeyIdentifier=hash
                     authorityKeyIdentifier=keyid
-                    """ % (self.archive.owner.name, self.archive.name))
+                    """ % common_name)
 
                 print(genkey_text, file=tf)
 
