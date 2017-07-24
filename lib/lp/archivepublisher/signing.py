@@ -94,12 +94,16 @@ class SigningUpload(CustomUpload):
             self.uefi_cert = None
             self.kmod_pem = None
             self.kmod_x509 = None
+            self.opal_pem = None
+            self.opal_x509 = None
             self.autokey = False
         else:
             self.uefi_key = os.path.join(pubconf.signingroot, "uefi.key")
             self.uefi_cert = os.path.join(pubconf.signingroot, "uefi.crt")
             self.kmod_pem = os.path.join(pubconf.signingroot, "kmod.pem")
             self.kmod_x509 = os.path.join(pubconf.signingroot, "kmod.x509")
+            self.opal_pem = os.path.join(pubconf.signingroot, "opal.pem")
+            self.opal_x509 = os.path.join(pubconf.signingroot, "opal.x509")
             self.autokey = pubconf.signingautokey
 
         self.setComponents(tarfile_path)
@@ -171,6 +175,8 @@ class SigningUpload(CustomUpload):
                     yield (os.path.join(dirpath, filename), self.signUefi)
                 elif filename.endswith(".ko"):
                     yield (os.path.join(dirpath, filename), self.signKmod)
+                elif filename.endswith(".opal"):
+                    yield (os.path.join(dirpath, filename), self.signOpal)
 
     def getKeys(self, which, generate, *keynames):
         """Validate and return the uefi key and cert for encryption."""
@@ -307,6 +313,21 @@ class SigningUpload(CustomUpload):
         self.publishPublicKey(cert)
         cmdl = ["kmodsign", "-D", "sha512", pem, cert, image, image + ".sig"]
         return self.callLog("Kmod signing", cmdl)
+
+    def generateOpalKeys(self):
+        """Generate new Opal Signing Keys for this archive."""
+        self.generatePemX509Pair("Opal", self.opal_pem, self.opal_x509)
+
+    def signOpal(self, image):
+        """Attempt to sign a kernel image for Opal."""
+        remove_if_exists("%s.sig" % image)
+        (pem, cert) = self.getKeys('Opal Kernel', self.generateOpalKeys,
+            self.opal_pem, self.opal_x509)
+        if not pem or not cert:
+            return
+        self.publishPublicKey(cert)
+        cmdl = ["kmodsign", "-D", "sha512", pem, cert, image, image + ".sig"]
+        return self.callLog("Opal signing", cmdl)
 
     def convertToTarball(self):
         """Convert unpacked output to signing tarball."""
