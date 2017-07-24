@@ -260,21 +260,21 @@ class TestSigning(TestSigningHelpers):
         common_name = upload.generateKeyCommonName('t' * 30, 'p' * 29)
         expected_name = 'PPA ' + 't' * 30 + ' ' + 'p' * 29
         self.assertEqual(expected_name, common_name)
-        self.assertTrue(len(common_name) == 64)
+        self.assertEqual(64, len(common_name))
 
     def test_common_name_suffix_just_short(self):
         upload = SigningUpload()
         common_name = upload.generateKeyCommonName('t' * 30, 'p' * 24, 'kmod')
         expected_name = 'PPA ' + 't' * 30 + ' ' + 'p' * 24 + ' kmod'
         self.assertEqual(expected_name, common_name)
-        self.assertTrue(len(common_name) == 64)
+        self.assertEqual(64, len(common_name))
 
     def test_common_name_plain_long(self):
         upload = SigningUpload()
         common_name = upload.generateKeyCommonName('t' * 40, 'p' * 40)
         expected_name = 'PPA ' + 't' * 40 + ' ' + 'p' * 19
         self.assertEqual(expected_name, common_name)
-        self.assertTrue(len(common_name) == 64)
+        self.assertEqual(64, len(common_name))
 
     def test_common_name_suffix_long(self):
         upload = SigningUpload()
@@ -282,7 +282,7 @@ class TestSigning(TestSigningHelpers):
             't' * 40, 'p' * 40, 'kmod-plus')
         expected_name = 'PPA ' + 't' * 40 + ' ' + 'p' * 9 + ' kmod-plus'
         self.assertEqual(expected_name, common_name)
-        self.assertTrue(len(common_name) == 64)
+        self.assertEqual(64, len(common_name))
 
     def test_options_handling_none(self):
         # If the configured key/cert are missing, processing succeeds but
