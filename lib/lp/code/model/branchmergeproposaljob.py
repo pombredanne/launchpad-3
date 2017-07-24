@@ -675,8 +675,13 @@ class BranchMergeProposalJobSource(BaseRunnableJobSource):
                 continue
             # We have now seen this merge proposal.
             seen_merge_proposals.add(bmp.id)
-            # If the job is running, then skip it
-            if job.status == JobStatus.RUNNING:
+            # If the job is running or can't currently be run due to its
+            # lease or its start time, then skip it.
+            if (job.status == JobStatus.RUNNING or
+                (job.lease_expires is not None and
+                 job.lease_expires >= datetime.now(pytz.UTC)) or
+                (job.scheduled_start is not None and
+                 job.scheduled_start > datetime.now(pytz.UTC))):
                 continue
             derived_job = bmp_job.makeDerived()
             # If the job is an update preview diff, then check that it is

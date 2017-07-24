@@ -7,13 +7,6 @@
   i18n:domain="launchpad"
 >
   <body>
-  <metal:block fill-slot="head_epilogue">
-    <link rel="stylesheet" type="text/css"
-      tal:attributes="href string:${icingroot}/lazr/build/overlay/assets/pretty-overlay-core.css" />
-    <link rel="stylesheet" type="text/css"
-          tal:attributes="href string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay-skin.css" />
-  </metal:block>
-
   <div metal:fill-slot="main">
     <div class="yui-g">
       <div class="yui-u first">

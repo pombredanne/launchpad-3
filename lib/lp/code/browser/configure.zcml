@@ -401,12 +401,6 @@
         permission="zope.Public"
         template="../templates/branch-macros.pt"/>
     <browser:page
-        for="*"
-        name="branch-form-macros"
-        permission="zope.Public"
-        template="../templates/branch-form-macros.pt"
-        class="lp.app.browser.launchpad.Macro"/>
-    <browser:page
         name="+whiteboard"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchEditWhiteboardView"

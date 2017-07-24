@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch listing."""
@@ -13,22 +13,15 @@ import re
 from lazr.uri import URI
 from lxml import html
 import soupmatchers
-from storm.expr import (
-    Asc,
-    Desc,
-    )
 from testtools.matchers import Not
 from zope.component import getUtility
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.services import IService
 from lp.code.browser.branchlisting import (
-    BranchListingSort,
-    BranchListingView,
     GroupedDistributionSourcePackageBranchesView,
     SourcePackageBranchesView,
     )
-from lp.code.model.branch import Branch
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
@@ -39,8 +32,6 @@ from lp.registry.enums import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.model.person import Owner
-from lp.registry.model.product import Product
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -50,7 +41,6 @@ from lp.testing import (
     login_person,
     normalize_whitespace,
     person_logged_in,
-    TestCase,
     TestCaseWithFactory,
     time_counter,
     )
@@ -69,60 +59,6 @@ from lp.testing.views import (
     create_initialized_view,
     create_view,
     )
-
-
-class TestListingToSortOrder(TestCase):
-    """Tests for the BranchSet._listingSortToOrderBy static method.
-
-    This method translates values from the BranchListingSort enumeration into
-    values suitable to pass to orderBy in queries against BranchWithSortKeys.
-    """
-
-    DEFAULT_BRANCH_LISTING_SORT = [
-        Asc(Product.name),
-        Desc(Branch.lifecycle_status),
-        Asc(Owner.name),
-        Asc(Branch.name),
-        ]
-
-    def assertSortsEqual(self, sort_one, sort_two):
-        """Assert that one list of sort specs is equal to another."""
-
-        def sort_data(sort):
-            return sort.suffix, sort.expr
-        self.assertEqual(map(sort_data, sort_one), map(sort_data, sort_two))
-
-    def test_default(self):
-        """Test that passing None results in the default list."""
-        self.assertSortsEqual(
-            self.DEFAULT_BRANCH_LISTING_SORT,
-            BranchListingView._listingSortToOrderBy(None))
-
-    def test_lifecycle(self):
-        """Test with an option that's part of the default sort.
-
-        Sorting on LIFECYCYLE moves the lifecycle reference to the
-        first element of the output."""
-        # Check that this isn't a no-op.
-        lifecycle_order = BranchListingView._listingSortToOrderBy(
-            BranchListingSort.LIFECYCLE)
-        self.assertSortsEqual(
-            [Desc(Branch.lifecycle_status),
-             Asc(Product.name),
-             Asc(Owner.name),
-             Asc(Branch.name)], lifecycle_order)
-
-    def test_sortOnColumNotInDefaultSortOrder(self):
-        """Test with an option that's not part of the default sort.
-
-        This should put the passed option first in the list, but leave
-        the rest the same.
-        """
-        registrant_order = BranchListingView._listingSortToOrderBy(
-            BranchListingSort.OLDEST_FIRST)
-        self.assertSortsEqual(
-            [Asc(Branch.date_created)] + self.DEFAULT_BRANCH_LISTING_SORT,
-            registrant_order)
 
 
 class AjaxBatchNavigationMixin:

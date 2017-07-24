@@ -14,7 +14,7 @@
 .yui3-pretty-overlay #yui3-pretty-overlay-modal {
     margin: 7px 0px;
     padding: 0;
-    font: normal normal 12px/normal;
+    font-size: 12px;
     color: #484848;
     background: #fff;
 }
@@ -22,7 +22,7 @@
 .yui3-pretty-overlay .close {
     margin: 0;
     padding: 0 5px;
-    font: normal normal 10px/normal;
+    font-size: 10px;
     color: #484848;
     background: #fff;
 }
@@ -44,7 +44,7 @@
 
 .yui3-pretty-overlay #yui3-pretty-overlay-modal h1,
 .yui3-pretty-overlay #yui3-pretty-overlay-modal h2 {
-    font: normal normal 18px/normal;
+    font-size: 18px;
     color: #000;
     text-indent: 15px;
     margin: 0;
@@ -53,13 +53,14 @@
 
 .yui3-pretty-overlay #yui3-pretty-overlay-modal h2 {
     height: 30px;
-    font: normal normal 18px;
+    font-size: 18px;
     color: #000;
 }
 
 .yui3-pretty-overlay #yui3-pretty-overlay-modal .steps h2 {
     height: 30px;
-    font: normal normal 14px/30px;
+    font-size: 14px;
+    line-height: 30px;
     color: #666;
 }
 
