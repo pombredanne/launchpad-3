@@ -237,15 +237,15 @@ class SigningUpload(CustomUpload):
         cmdl = ["sbsign", "--key", key, "--cert", cert, image]
         return self.callLog("UEFI signing", cmdl)
 
-    def generateKmodKeys(self):
-        """Generate new Kernel Signing Keys for this archive."""
-        directory = os.path.dirname(self.kmod_pem)
+    def generatePemX509Pair(self, key_type, pem_filename, x509_filename):
+        """Generate new pem/x509 key pairs."""
+        directory = os.path.dirname(pem_filename)
         if not os.path.exists(directory):
             os.makedirs(directory)
 
         # Truncate name to 64 character maximum.
         common_name = self.generateKeyCommonName(
-            self.archive.owner.name, self.archive.name, "kmod")
+            self.archive.owner.name, self.archive.name, key_type)
 
         old_mask = os.umask(0o077)
         try:
@@ -276,21 +276,26 @@ class SigningUpload(CustomUpload):
                 new_key_cmd = [
                     'openssl', 'req', '-new', '-nodes', '-utf8', '-sha512',
                     '-days', '3650', '-batch', '-x509', '-config', tf.name,
-                    '-outform', 'PEM', '-out', self.kmod_pem,
-                    '-keyout', self.kmod_pem
+                    '-outform', 'PEM', '-out', pem_filename,
+                    '-keyout', pem_filename
                     ]
-                if self.callLog("Kmod keygen key", new_key_cmd) == 0:
+                if self.callLog(key_type + " keygen key", new_key_cmd) == 0:
                     new_x509_cmd = [
-                        'openssl', 'x509', '-in', self.kmod_pem,
-                        '-outform', 'DER', '-out', self.kmod_x509
+                        'openssl', 'x509', '-in', pem_filename,
+                        '-outform', 'DER', '-out', x509_filename
                         ]
-                    if self.callLog("Kmod keygen cert", new_x509_cmd) != 0:
-                        os.unlink(self.kmod_pem)
+                    if self.callLog(key_type + " keygen cert",
+                                    new_x509_cmd) != 0:
+                        os.unlink(pem_filename)
         finally:
             os.umask(old_mask)
 
-        if os.path.exists(self.kmod_x509):
-            os.chmod(self.kmod_x509, 0o644)
+        if os.path.exists(x509_filename):
+            os.chmod(x509_filename, 0o644)
+
+    def generateKmodKeys(self):
+        """Generate new Kernel Signing Keys for this archive."""
+        self.generatePemX509Pair("Kmod", self.kmod_pem, self.kmod_x509)
 
     def signKmod(self, image):
         """Attempt to sign a kernel module."""
