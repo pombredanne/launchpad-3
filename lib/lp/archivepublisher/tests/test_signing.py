@@ -11,6 +11,7 @@ import tarfile
 
 from fixtures import MonkeyPatch
 from testtools.deferredruntest import AsynchronousDeferredRunTest
+from testtools.matchers import FileExists, Not, MatchesListwise
 from twisted.internet import defer
 from zope.component import getUtility
 
@@ -159,6 +160,10 @@ class TestSigningHelpers(TestCaseWithFactory):
     def getDistsPath(self):
         pubconf = getPubConfig(self.archive)
         return os.path.join(pubconf.archiveroot, "dists", self.suite, "main")
+
+    def assertFilesIn(self, file_matches, base):
+        files = [ os.path.join(base, f) for f in file_matches[0::2] ]
+        self.assertThat(files, MatchesListwise(file_matches[1::2]))
 
 
 class TestSigning(TestSigningHelpers):
@@ -321,14 +326,13 @@ class TestSigning(TestSigningHelpers):
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
         self.process_emulate()
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getSignedPath("test", "amd64"), "1.0", "empty.efi.signed")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getSignedPath("test", "amd64"), "1.0", "empty.ko")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getSignedPath("test", "amd64"), "1.0", "empty.ko.sig")))
+        files = [
+            "1.0/empty.efi", FileExists(),
+            "1.0/empty.efi.signed", FileExists(),
+            "1.0/empty.ko", FileExists(),
+            "1.0/empty.ko.sig", FileExists(),
+            ]
+        self.assertFilesIn(files, self.getSignedPath("test", "amd64"))
 
     def test_options_tarball(self):
         # Specifying the "tarball" option should create an tarball in
@@ -340,13 +344,14 @@ class TestSigning(TestSigningHelpers):
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
         self.process_emulate()
-        self.assertFalse(os.path.exists(os.path.join(
-            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertFalse(os.path.exists(os.path.join(
-            self.getSignedPath("test", "amd64"), "1.0", "empty.ko")))
+        files = [
+            "1.0/empty.efi", Not(FileExists()),
+            "1.0/empty.ko", Not(FileExists()),
+            "1.0/signed.tar.gz", FileExists(),
+        ]
+        self.assertFilesIn(files, self.getSignedPath("test", "amd64"))
         tarfilename = os.path.join(self.getSignedPath("test", "amd64"),
             "1.0", "signed.tar.gz")
-        self.assertTrue(os.path.exists(tarfilename))
         with tarfile.open(tarfilename) as tarball:
             self.assertContentEqual([
                 '1.0', '1.0/control', '1.0/control/kmod.x509',
@@ -365,14 +370,13 @@ class TestSigning(TestSigningHelpers):
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
         self.process_emulate()
-        self.assertFalse(os.path.exists(os.path.join(
-            self.getSignedPath("test", "amd64"), "1.0", "empty.efi")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getSignedPath("test", "amd64"), "1.0", "empty.efi.signed")))
-        self.assertFalse(os.path.exists(os.path.join(
-            self.getSignedPath("test", "amd64"), "1.0", "empty.ko")))
-        self.assertTrue(os.path.exists(os.path.join(
-            self.getSignedPath("test", "amd64"), "1.0", "empty.ko.sig")))
+        files = [
+            "1.0/empty.efi", Not(FileExists()),
+            "1.0/empty.ko", Not(FileExists()),
+            "1.0/empty.efi.signed", FileExists(),
+            "1.0/empty.ko.sig", FileExists(),
+        ]
+        self.assertFilesIn(files, self.getSignedPath("test", "amd64"))
 
     def test_options_tarball_signed_only(self):
         # Specifying the "tarball" option should create an tarball in
