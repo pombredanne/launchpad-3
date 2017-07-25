@@ -45,10 +45,13 @@ class FakeMethodCallLog(FakeMethod):
         self.upload = upload
         self.callers = {
             "UEFI signing": 0,
-            "Kmod signing": 0,
             "UEFI keygen": 0,
+            "Kmod signing": 0,
             "Kmod keygen key": 0,
             "Kmod keygen cert": 0,
+            "Opal signing": 0,
+            "Opal keygen key": 0,
+            "Opal keygen cert": 0,
             }
 
     def __call__(self, *args, **kwargs):
@@ -62,6 +65,10 @@ class FakeMethodCallLog(FakeMethod):
             if filename.endswith(".efi"):
                 write_file(filename + ".signed", "")
 
+        elif description == "UEFI keygen":
+            write_file(self.upload.uefi_key, "")
+            write_file(self.upload.uefi_cert, "")
+
         elif description == "Kmod signing":
             filename = cmdl[-1]
             if filename.endswith(".ko.sig"):
@@ -73,9 +80,16 @@ class FakeMethodCallLog(FakeMethod):
         elif description == "Kmod keygen key":
             write_file(self.upload.kmod_pem, "")
 
-        elif description == "UEFI keygen":
-            write_file(self.upload.uefi_key, "")
-            write_file(self.upload.uefi_cert, "")
+        elif description == "Opal signing":
+            filename = cmdl[-1]
+            if filename.endswith(".opal.sig"):
+                write_file(filename, "")
+
+        elif description == "Opal keygen cert":
+            write_file(self.upload.opal_x509, "")
+
+        elif description == "Opal keygen key":
+            write_file(self.upload.opal_pem, "")
 
         else:
             raise AssertionError("unknown command executed cmd=(%s)" %
@@ -151,6 +165,13 @@ class TestSigningHelpers(TestCaseWithFactory):
             write_file(self.kmod_pem, "")
             write_file(self.kmod_x509, "")
 
+    def setUpOpalKeys(self, create=True):
+        self.opal_pem = os.path.join(self.signing_dir, "opal.pem")
+        self.opal_x509 = os.path.join(self.signing_dir, "opal.x509")
+        if create:
+            write_file(self.opal_pem, "")
+            write_file(self.opal_x509, "")
+
     def openArchive(self, loader_type, version, arch):
         self.path = os.path.join(
             self.temp_dir, "%s_%s_%s.tar.gz" % (loader_type, version, arch))
@@ -190,6 +211,7 @@ class TestSigning(TestSigningHelpers):
         upload = SigningUpload()
         upload.signUefi = FakeMethod()
         upload.signKmod = FakeMethod()
+        upload.signOpal = FakeMethod()
         # Under no circumstances is it safe to execute actual commands.
         fake_call = FakeMethod(result=0)
         self.useFixture(MonkeyPatch("subprocess.call", fake_call))
@@ -209,6 +231,7 @@ class TestSigning(TestSigningHelpers):
         self.openArchive("test", "1.0", "amd64")
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
         upload = self.process_emulate()
         self.assertContentEqual([], upload.callLog.caller_list())
 
@@ -218,6 +241,7 @@ class TestSigning(TestSigningHelpers):
         self.openArchive("test", "1.0", "amd64")
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
         upload = self.process_emulate()
         self.assertContentEqual([], upload.callLog.caller_list())
 
@@ -229,6 +253,7 @@ class TestSigning(TestSigningHelpers):
         self.openArchive("test", "1.0", "amd64")
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
         upload = self.process_emulate()
         expected_callers = [
             ('UEFI signing', 1),
@@ -243,13 +268,17 @@ class TestSigning(TestSigningHelpers):
         self.openArchive("test", "1.0", "amd64")
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
         upload = self.process_emulate()
         expected_callers = [
             ('UEFI keygen', 1),
             ('Kmod keygen key', 1),
             ('Kmod keygen cert', 1),
+            ('Opal keygen key', 1),
+            ('Opal keygen cert', 1),
             ('UEFI signing', 1),
             ('Kmod signing', 1),
+            ('Opal signing', 1),
         ]
         self.assertContentEqual(expected_callers, upload.callLog.caller_list())
 
@@ -322,15 +351,19 @@ class TestSigning(TestSigningHelpers):
         # Specifying no options should leave us with an open tree.
         self.setUpUefiKeys()
         self.setUpKmodKeys()
+        self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
         self.process_emulate()
         files = [
             "1.0/empty.efi", FileExists(),
             "1.0/empty.efi.signed", FileExists(),
             "1.0/empty.ko", FileExists(),
             "1.0/empty.ko.sig", FileExists(),
+            "1.0/empty.opal", FileExists(),
+            "1.0/empty.opal.sig", FileExists(),
             ]
         self.assertFilesIn(files, self.getSignedPath("test", "amd64"))
 
@@ -339,14 +372,17 @@ class TestSigning(TestSigningHelpers):
         # the tmpdir.
         self.setUpUefiKeys()
         self.setUpKmodKeys()
+        self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
         self.tarfile.add_file("1.0/control/options", "tarball")
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
         self.process_emulate()
         files = [
             "1.0/empty.efi", Not(FileExists()),
             "1.0/empty.ko", Not(FileExists()),
+            "1.0/empty.opal", Not(FileExists()),
             "1.0/signed.tar.gz", FileExists(),
         ]
         self.assertFilesIn(files, self.getSignedPath("test", "amd64"))
@@ -354,10 +390,12 @@ class TestSigning(TestSigningHelpers):
             "1.0", "signed.tar.gz")
         with tarfile.open(tarfilename) as tarball:
             self.assertContentEqual([
-                '1.0', '1.0/control', '1.0/control/kmod.x509',
-                '1.0/control/uefi.crt', '1.0/empty.efi',
-                '1.0/empty.efi.signed', '1.0/empty.ko', '1.0/empty.ko.sig',
-                '1.0/control/options',
+                '1.0', '1.0/control', '1.0/control/options',
+                '1.0/control/kmod.x509', '1.0/control/uefi.crt',
+                '1.0/control/opal.x509',
+                '1.0/empty.efi', '1.0/empty.efi.signed',
+                '1.0/empty.ko', '1.0/empty.ko.sig',
+                '1.0/empty.opal', '1.0/empty.opal.sig',
                 ], tarball.getnames())
 
     def test_options_signed_only(self):
@@ -365,16 +403,20 @@ class TestSigning(TestSigningHelpers):
         # the source files leaving signatures only.
         self.setUpUefiKeys()
         self.setUpKmodKeys()
+        self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
         self.tarfile.add_file("1.0/control/options", "signed-only")
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
         self.process_emulate()
         files = [
             "1.0/empty.efi", Not(FileExists()),
             "1.0/empty.ko", Not(FileExists()),
+            "1.0/empty.opal", Not(FileExists()),
             "1.0/empty.efi.signed", FileExists(),
             "1.0/empty.ko.sig", FileExists(),
+            "1.0/empty.opal.sig", FileExists(),
         ]
         self.assertFilesIn(files, self.getSignedPath("test", "amd64"))
 
@@ -384,20 +426,24 @@ class TestSigning(TestSigningHelpers):
         # original files.
         self.setUpUefiKeys()
         self.setUpKmodKeys()
+        self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
         self.tarfile.add_file("1.0/control/options",
             "tarball\nsigned-only")
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
         self.process_emulate()
         tarfilename = os.path.join(self.getSignedPath("test", "amd64"),
             "1.0", "signed.tar.gz")
         self.assertTrue(os.path.exists(tarfilename))
         with tarfile.open(tarfilename) as tarball:
             self.assertContentEqual([
-                '1.0', '1.0/control', '1.0/control/kmod.x509',
-                '1.0/control/uefi.crt', '1.0/empty.efi.signed',
-                '1.0/empty.ko.sig', '1.0/control/options',
+                '1.0', '1.0/control', '1.0/control/options',
+                '1.0/control/uefi.crt', '1.0/control/kmod.x509',
+                '1.0/control/opal.x509',
+                '1.0/empty.efi.signed', '1.0/empty.ko.sig',
+                '1.0/empty.opal.sig',
                 ], tarball.getnames())
 
     def test_no_signed_files(self):
@@ -514,7 +560,7 @@ class TestSigning(TestSigningHelpers):
         upload.generateKmodKeys = FakeMethod()
         upload.setTargetDirectory(
             self.archive, "test_1.0_amd64.tar.gz", "distroseries")
-        upload.signUefi('t.ko')
+        upload.signKmod('t.ko')
         self.assertEqual(0, fake_call.call_count)
         self.assertEqual(0, upload.generateKmodKeys.call_count)
 
@@ -549,6 +595,72 @@ class TestSigning(TestSigningHelpers):
             ]
         self.assertEqual(expected_cmd, args)
 
+    def test_correct_opal_signing_command_executed(self):
+        # Check that calling signKmod() will generate the expected command
+        # when appropriate keys are present.
+        self.setUpOpalKeys()
+        fake_call = FakeMethod(result=0)
+        self.useFixture(MonkeyPatch("subprocess.call", fake_call))
+        upload = SigningUpload()
+        upload.generateOpalKeys = FakeMethod()
+        upload.setTargetDirectory(
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
+        upload.signOpal('t.opal')
+        self.assertEqual(1, fake_call.call_count)
+        # Assert command form.
+        args = fake_call.calls[0][0][0]
+        expected_cmd = [
+            'kmodsign', '-D', 'sha512', self.opal_pem, self.opal_x509,
+            't.opal', 't.opal.sig'
+            ]
+        self.assertEqual(expected_cmd, args)
+        self.assertEqual(0, upload.generateOpalKeys.call_count)
+
+    def test_correct_opal_signing_command_executed_no_keys(self):
+        # Check that calling signKmod() will generate no commands when
+        # no keys are present.
+        self.setUpOpalKeys(create=False)
+        fake_call = FakeMethod(result=0)
+        self.useFixture(MonkeyPatch("subprocess.call", fake_call))
+        upload = SigningUpload()
+        upload.generateOpalKeys = FakeMethod()
+        upload.setTargetDirectory(
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
+        upload.signOpal('t.opal')
+        self.assertEqual(0, fake_call.call_count)
+        self.assertEqual(0, upload.generateOpalKeys.call_count)
+
+    def test_correct_opal_keygen_command_executed(self):
+        # Check that calling generateUefiKeys() will generate the
+        # expected command.
+        self.setUpPPA()
+        self.setUpOpalKeys(create=False)
+        fake_call = FakeMethod(result=0)
+        self.useFixture(MonkeyPatch("subprocess.call", fake_call))
+        upload = SigningUpload()
+        upload.setTargetDirectory(
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
+        upload.generateOpalKeys()
+        self.assertEqual(2, fake_call.call_count)
+        # Assert the actual command matches.
+        args = fake_call.calls[0][0][0]
+        # Sanitise the keygen tmp file.
+        if args[11].endswith('.keygen'):
+            args[11] = 'XXX.keygen'
+        expected_cmd = [
+            'openssl', 'req', '-new', '-nodes', '-utf8', '-sha512',
+            '-days', '3650', '-batch', '-x509',
+            '-config', 'XXX.keygen', '-outform', 'PEM',
+            '-out', self.opal_pem, '-keyout', self.opal_pem
+            ]
+        self.assertEqual(expected_cmd, args)
+        args = fake_call.calls[1][0][0]
+        expected_cmd = [
+            'openssl', 'x509', '-in', self.opal_pem, '-outform', 'DER',
+            '-out', self.opal_x509
+            ]
+        self.assertEqual(expected_cmd, args)
+
     def test_signs_uefi_image(self):
         # Each image in the tarball is signed.
         self.setUpUefiKeys()
@@ -565,6 +677,14 @@ class TestSigning(TestSigningHelpers):
         upload = self.process()
         self.assertEqual(1, upload.signKmod.call_count)
 
+    def test_signs_opal_image(self):
+        # Each image in the tarball is signed.
+        self.setUpOpalKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.tarfile.add_file("1.0/empty.opal", "")
+        upload = self.process()
+        self.assertEqual(1, upload.signOpal.call_count)
+
     def test_signs_combo_image(self):
         # Each image in the tarball is signed.
         self.setUpKmodKeys()
@@ -572,9 +692,13 @@ class TestSigning(TestSigningHelpers):
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
         self.tarfile.add_file("1.0/empty2.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/empty2.opal", "")
+        self.tarfile.add_file("1.0/empty3.opal", "")
         upload = self.process()
         self.assertEqual(1, upload.signUefi.call_count)
         self.assertEqual(2, upload.signKmod.call_count)
+        self.assertEqual(3, upload.signOpal.call_count)
 
     def test_installed(self):
         # Files in the tarball are installed correctly.
@@ -683,14 +807,53 @@ class TestSigning(TestSigningHelpers):
         self.assertEqual(stat.S_IMODE(os.stat(self.kmod_pem).st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(os.stat(self.kmod_x509).st_mode), 0o644)
 
+    def test_create_opal_keys_autokey_off(self):
+        # Keys are not created.
+        self.setUpOpalKeys(create=False)
+        self.assertFalse(os.path.exists(self.opal_pem))
+        self.assertFalse(os.path.exists(self.opal_x509))
+        fake_call = FakeMethod(result=0)
+        self.useFixture(MonkeyPatch("subprocess.call", fake_call))
+        upload = SigningUpload()
+        upload.callLog = FakeMethodCallLog(upload=upload)
+        upload.setTargetDirectory(
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
+        upload.signOpal(os.path.join(self.makeTemporaryDirectory(), 't.opal'))
+        self.assertEqual(0, upload.callLog.caller_count('Opal keygen key'))
+        self.assertEqual(0, upload.callLog.caller_count('Opal keygen cert'))
+        self.assertFalse(os.path.exists(self.opal_pem))
+        self.assertFalse(os.path.exists(self.opal_x509))
+
+    def test_create_opal_keys_autokey_on(self):
+        # Keys are created on demand.
+        self.setUpPPA()
+        self.setUpOpalKeys(create=False)
+        self.assertFalse(os.path.exists(self.opal_pem))
+        self.assertFalse(os.path.exists(self.opal_x509))
+        fake_call = FakeMethod(result=0)
+        self.useFixture(MonkeyPatch("subprocess.call", fake_call))
+        upload = SigningUpload()
+        upload.callLog = FakeMethodCallLog(upload=upload)
+        upload.setTargetDirectory(
+            self.archive, "test_1.0_amd64.tar.gz", "distroseries")
+        upload.signOpal(os.path.join(self.makeTemporaryDirectory(), 't.opal'))
+        self.assertEqual(1, upload.callLog.caller_count('Opal keygen key'))
+        self.assertEqual(1, upload.callLog.caller_count('Opal keygen cert'))
+        self.assertTrue(os.path.exists(self.opal_pem))
+        self.assertTrue(os.path.exists(self.opal_x509))
+        self.assertEqual(stat.S_IMODE(os.stat(self.opal_pem).st_mode), 0o600)
+        self.assertEqual(stat.S_IMODE(os.stat(self.opal_x509).st_mode), 0o644)
+
     def test_checksumming_tree(self):
         # Specifying no options should leave us with an open tree,
         # confirm it is checksummed.
         self.setUpUefiKeys()
         self.setUpKmodKeys()
+        self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
         self.process_emulate()
         sha256file = os.path.join(self.getSignedPath("test", "amd64"),
              "1.0", "SHA256SUMS")
@@ -704,9 +867,11 @@ class TestSigning(TestSigningHelpers):
         yield self.setUpArchiveKey()
         self.setUpUefiKeys()
         self.setUpKmodKeys()
+        self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
         self.tarfile.add_file("1.0/empty.efi", "")
         self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
         self.process_emulate()
         sha256file = os.path.join(self.getSignedPath("test", "amd64"),
              "1.0", "SHA256SUMS")
