@@ -1,4 +1,4 @@
-# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Live filesystem interfaces."""
@@ -9,6 +9,7 @@ __all__ = [
     'CannotDeleteLiveFS',
     'DuplicateLiveFSName',
     'ILiveFS',
+    'ILiveFSEditableAttributes',
     'ILiveFSEditableAttributes',
     'ILiveFSSet',
     'ILiveFSView',
@@ -249,6 +250,19 @@ class ILiveFSEditableAttributes(IHasOwner):
         key_type=TextLine(), required=True, readonly=False))
 
 
+class ILiveFSModerateAttributes(Interface):
+    """Restricted `ILiveFS` attributes.
+
+    These attributes need launchpad.View to see, and launchpad.Moderate to
+    change.
+    """
+    relative_build_score = exported(Int(
+        title=_("Relative build score"), required=True, readonly=False,
+        description=_(
+            "A delta to apply to all build scores for the live filesystem.  "
+            "Builds with a higher score will build sooner.")))
+
+
 class ILiveFSAdminAttributes(Interface):
     """`ILiveFS` attributes that can be edited by admins.
 
@@ -262,7 +276,7 @@ class ILiveFSAdminAttributes(Interface):
 
 class ILiveFS(
     ILiveFSView, ILiveFSEdit, ILiveFSEditableAttributes,
-    ILiveFSAdminAttributes):
+    ILiveFSModerateAttributes, ILiveFSAdminAttributes):
     """A buildable live filesystem image."""
 
     # XXX cjwatson 2014-05-06 bug=760849: "beta" is a lie to get WADL
