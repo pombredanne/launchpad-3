@@ -5,22 +5,25 @@
 
 __metaclass__ = type
 
+import base64
 from datetime import datetime
+import json
 import os.path
 from textwrap import dedent
 import uuid
 
 import fixtures
-from mock import (
-    Mock,
-    patch,
-    )
+from mock import patch
 from pymacaroons import Macaroon
 from testtools import ExpectedException
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
+    AfterPreprocessing,
+    Equals,
     IsInstance,
+    MatchesDict,
     MatchesListwise,
+    StartsWith,
     )
 import transaction
 from twisted.internet import defer
@@ -59,6 +62,7 @@ from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.tests.soyuz import Base64KeyMatches
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import gpgkeysdir
 from lp.testing.keyserver import InProcessKeyServerFixture
 from lp.testing.layers import LaunchpadZopelessLayer
@@ -201,16 +205,16 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         self.revocation_endpoint = "{endpoint}/{username}".format(
             endpoint=config.snappy.builder_proxy_auth_api_endpoint,
             username=build_username)
-        self.patcher = patch.object(
-            SnapBuildBehaviour, '_requestProxyToken',
-            Mock(return_value=self.mockRequestProxyToken())).start()
-
-    def tearDown(self):
-        super(TestAsyncSnapBuildBehaviour, self).tearDown()
-        self.patcher.stop()
-
-    def mockRequestProxyToken(self):
-        return defer.succeed(self.token)
+        self.api_admin_secret = "admin-secret"
+        self.pushConfig(
+            "snappy",
+            builder_proxy_auth_api_admin_secret=self.api_admin_secret)
+        self.mock_proxy_api = FakeMethod(
+            result=defer.succeed(json.dumps(self.token)))
+        patcher = patch(
+            "lp.snappy.model.snapbuildbehaviour.getPage", self.mock_proxy_api)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     @defer.inlineCallbacks
     def test_composeBuildRequest(self):
@@ -220,6 +224,40 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         build_request = yield job.composeBuildRequest(None)
         self.assertEqual(build_request[1], job.build.distro_arch_series)
         self.assertThat(build_request[3], IsInstance(dict))
+
+    @defer.inlineCallbacks
+    def test_requestProxyToken_unconfigured(self):
+        self.pushConfig("snappy", builder_proxy_auth_api_admin_secret=None)
+        branch = self.factory.makeBranch()
+        job = self.makeJob(branch=branch)
+        expected_exception_msg = (
+            "builder_proxy_auth_api_admin_secret is not configured.")
+        with ExpectedException(CannotBuild, expected_exception_msg):
+            yield job._extraBuildArgs()
+
+    @defer.inlineCallbacks
+    def test_requestProxyToken(self):
+        branch = self.factory.makeBranch()
+        job = self.makeJob(branch=branch)
+        yield job._extraBuildArgs()
+        self.assertThat(self.mock_proxy_api.calls, MatchesListwise([
+            MatchesListwise([
+                MatchesListwise([
+                    Equals(config.snappy.builder_proxy_auth_api_endpoint),
+                    ]),
+                MatchesDict({
+                    "method": Equals("POST"),
+                    "postdata": AfterPreprocessing(json.loads, MatchesDict({
+                        "username": StartsWith(job.build.build_cookie + "-"),
+                        })),
+                    "headers": MatchesDict({
+                        "Authorization": Equals("Basic " + base64.b64encode(
+                            "admin-launchpad.dev:admin-secret")),
+                        "Content-Type": Equals("application/json"),
+                        }),
+                    }),
+                ]),
+            ]))
 
     @defer.inlineCallbacks
     def test_extraBuildArgs_bzr(self):

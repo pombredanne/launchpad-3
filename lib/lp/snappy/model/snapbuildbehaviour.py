@@ -128,8 +128,17 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
     @defer.inlineCallbacks
     def _requestProxyToken(self):
         admin_username = config.snappy.builder_proxy_auth_api_admin_username
+        if not admin_username:
+            raise CannotBuild(
+                "builder_proxy_auth_api_admin_username is not configured.")
         secret = config.snappy.builder_proxy_auth_api_admin_secret
+        if not secret:
+            raise CannotBuild(
+                "builder_proxy_auth_api_admin_secret is not configured.")
         url = config.snappy.builder_proxy_auth_api_endpoint
+        if not secret:
+            raise CannotBuild(
+                "builder_proxy_auth_api_endpoint is not configured.")
         timestamp = int(time.time())
         proxy_username = '{build_id}-{timestamp}'.format(
             build_id=self.build.build_cookie,
