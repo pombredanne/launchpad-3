@@ -3095,6 +3095,11 @@ class EditLiveFS(AuthorizationBase):
             user.in_commercial_admin or user.in_admin)
 
 
+class ModerateLiveFS(ModerateArchive):
+    """Restrict changing the build score on live filesystems."""
+    usedfor = ILiveFS
+
+
 class AdminLiveFS(AuthorizationBase):
     """Restrict changing build settings on live filesystems.
 

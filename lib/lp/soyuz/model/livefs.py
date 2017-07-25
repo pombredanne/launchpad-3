@@ -1,4 +1,4 @@
-# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -111,6 +111,8 @@ class LiveFS(Storm):
 
     require_virtualized = Bool(name='require_virtualized')
 
+    relative_build_score = Int(name='relative_build_score', allow_none=False)
+
     def __init__(self, registrant, owner, distro_series, name,
                  metadata, require_virtualized, date_created):
         """Construct a `LiveFS`."""
@@ -123,6 +125,7 @@ class LiveFS(Storm):
         self.name = name
         self.metadata = metadata
         self.require_virtualized = require_virtualized
+        self.relative_build_score = 0
         self.date_created = date_created
         self.date_last_modified = date_created
 
