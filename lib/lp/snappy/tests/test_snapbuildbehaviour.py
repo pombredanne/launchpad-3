@@ -277,6 +277,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "name": u"test-snap",
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
+            "series": "unstable",
             "trusted_keys": expected_trusted_keys,
             }, args)
 
@@ -299,6 +300,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "name": u"test-snap",
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
+            "series": "unstable",
             "trusted_keys": expected_trusted_keys,
             }, args)
 
@@ -321,6 +323,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "name": u"test-snap",
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
+            "series": "unstable",
             "trusted_keys": expected_trusted_keys,
             }, args)
 
@@ -345,6 +348,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "name": u"test-snap",
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
+            "series": "unstable",
             "trusted_keys": expected_trusted_keys,
             }, args)
 
@@ -367,6 +371,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "name": u"test-snap",
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
+            "series": "unstable",
             "trusted_keys": expected_trusted_keys,
             }, args)
 
