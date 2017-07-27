@@ -48,6 +48,7 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
         """
         # Build extra arguments.
         args = {}
+        args['series'] = self.build.distroseries.name
         args['suite'] = self.build.distroseries.getSuite(self.build.pocket)
         args['arch_tag'] = distroarchseries.architecturetag
         requester = self.build.requester
@@ -73,6 +74,9 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
                 tools_source=config.builddmaster.bzr_builder_sources_list,
                 logger=logger))
         args['archive_private'] = self.build.archive.private
+        # XXX cjwatson 2017-07-26: This duplicates "series", which is common
+        # to all build types; this name for it is deprecated and should be
+        # removed once launchpad-buildd no longer requires it.
         args['distroseries_name'] = self.build.distroseries.name
         if self.build.recipe.base_git_repository is not None:
             args['git'] = True
