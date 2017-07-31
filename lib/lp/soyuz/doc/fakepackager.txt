@@ -20,8 +20,8 @@ directory we call 'sandbox'. It's where the packages will get created.
     >>> os.path.exists(packager.sandbox_path)
     True
 
-Source 'name' and 'version' and 'gpg_key_id' are set according to the
-give arguments passed in the initialization.
+Source 'name' and 'version' and 'gpg_key_fingerprint' are set according to
+the arguments passed in the initialization.
 
     >>> print packager.name
     biscuit
@@ -29,7 +29,7 @@ give arguments passed in the initialization.
     >>> print packager.version
     1.0
 
-    >>> print packager.gpg_key_id
+    >>> print packager.gpg_key_fingerprint
     None
 
 The upstream directory is known but not yet created.
@@ -124,7 +124,7 @@ now signing the DSC and the changesfile.
 
 The error was raised because no signing key was set.
 
-    >>> print packager.gpg_key_id
+    >>> print packager.gpg_key_fingerprint
     None
 
 A GPG key can only be set on initialization so we will have to create a
@@ -137,8 +137,8 @@ new packager passing a filename available in our test_keys directory.
 
 GPG key set, now we are able to build a signed version.
 
-    >>> print packager.gpg_key_id
-    0x5D147547
+    >>> print packager.gpg_key_fingerprint
+    0xFD311613D941C6DE55737D310E3498675D147547
 
 FakePackager also allows us to include as many versions it needs
 before building the package. It helps when the content of the
@@ -163,7 +163,7 @@ basically checking we pass the right arguments to it.
     >>> gpghandler = getUtility(IGPGHandler)
     >>> sig = gpghandler.verifySignature(content)
 
-    >>> sig.fingerprint[-8:] == packager.gpg_key_id[2:]
+    >>> sig.fingerprint == packager.gpg_key_fingerprint[2:]
     True
 
 Continuing in the same 'sandbox', we can generate subsequent packages

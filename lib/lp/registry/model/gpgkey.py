@@ -56,7 +56,8 @@ class GPGKey(SQLBase):
 
     @property
     def displayname(self):
-        return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
+        return '%s%s/%s' % (
+            self.keysize, self.algorithm.title, self.fingerprint)
 
 
 @implementer(IGPGKeySet)

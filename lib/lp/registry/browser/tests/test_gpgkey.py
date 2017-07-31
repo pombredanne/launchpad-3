@@ -24,7 +24,7 @@ class TestCanonicalUrl(TestCaseWithFactory):
         gpgkey = self.factory.makeGPGKey(person)
         self.assertEqual(
             '%s/+gpg-keys/%s' % (
-                canonical_url(person, rootsite='api'), gpgkey.keyid),
+                canonical_url(person, rootsite='api'), gpgkey.fingerprint),
             canonical_url(gpgkey))
 
 
