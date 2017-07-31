@@ -205,7 +205,7 @@ encrypt.
     >>> print new_key.secret
     True
 
-    >>> print new_key.algorithm
+    >>> print new_key.algorithm.title
     R
 
     >>> print new_key.keysize
@@ -244,7 +244,7 @@ The public key is also available.
     >>> print pub_key.secret
     False
 
-    >>> print pub_key.algorithm
+    >>> print pub_key.algorithm.title
     R
 
     >>> print pub_key.keysize

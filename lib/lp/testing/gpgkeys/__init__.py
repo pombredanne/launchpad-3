@@ -70,7 +70,7 @@ def import_public_key(email_addr):
         keyid=key.keyid,
         fingerprint=key.fingerprint,
         keysize=key.keysize,
-        algorithm=GPGKeyAlgorithm.items[key.algorithm],
+        algorithm=key.algorithm,
         active=(not key.revoked))
 
 
