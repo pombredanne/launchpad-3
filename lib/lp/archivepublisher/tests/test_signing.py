@@ -53,7 +53,7 @@ class SignedMatches(Matcher):
     def match(self, signed):
         content = []
         for root, dirs, files in os.walk(signed):
-            content += [ os.path.join(root, f)[len(signed)+1:] for f in files]
+            content += [os.path.join(root, f)[len(signed) + 1:] for f in files]
 
         left_over = list(set(content) - set(self.expected))
         missing = list(set(self.expected) - set(content))
@@ -63,7 +63,7 @@ class SignedMatches(Matcher):
                 missmatch += " unexpected files: " + str(left_over)
             if missing:
                 missmatch += " missing files: " + str(missing)
-            return Mismatch("SignedMatches:"+ missmatch)
+            return Mismatch("SignedMatches:" + missmatch)
         return None
 
 
@@ -130,7 +130,7 @@ class FakeMethodCallLog(FakeMethod):
         return self.callers.get(caller, 0)
 
     def caller_list(self):
-        return [ (c,n) for (c,n) in self.callers.items() if n != 0 ]
+        return [(c, n) for (c, n) in self.callers.items() if n != 0]
 
 
 class TestSigningHelpers(TestCaseWithFactory):
