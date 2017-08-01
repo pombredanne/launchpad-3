@@ -13,8 +13,10 @@ import tarfile
 from fixtures import MonkeyPatch
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
+    Contains,
     Matcher,
     Mismatch,
+    Not,
     )
 from twisted.internet import defer
 from zope.component import getUtility
@@ -893,6 +895,34 @@ class TestSigning(TestSigningHelpers):
              "1.0", "SHA256SUMS")
         self.assertTrue(os.path.exists(sha256file))
         self.assertTrue(os.path.exists(sha256file + '.gpg'))
+
+    @defer.inlineCallbacks
+    def test_checksumming_tree_signed_options_tarball(self):
+        # Specifying no options should leave us with an open tree,
+        # confirm it is checksummed.  Supply an archive signing key
+        # which should trigger signing of the checksum file.
+        yield self.setUpArchiveKey()
+        self.setUpUefiKeys()
+        self.setUpKmodKeys()
+        self.setUpOpalKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.tarfile.add_file("1.0/control/options", "tarball")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
+        self.process_emulate()
+        sha256file = os.path.join(self.getSignedPath("test", "amd64"),
+             "1.0", "SHA256SUMS")
+        self.assertTrue(os.path.exists(sha256file))
+        self.assertTrue(os.path.exists(sha256file + '.gpg'))
+
+        tarfilename = os.path.join(self.getSignedPath("test", "amd64"),
+            "1.0", "signed.tar.gz")
+        with tarfile.open(tarfilename) as tarball:
+            self.assertThat(tarball.getnames(), Not(Contains([
+                "1.0/SHA256SUMS", "1.0/SHA256SUMS.gpg",
+                '1.0/empty.ko',
+                ])))
 
 
 class TestUefi(TestSigningHelpers):
