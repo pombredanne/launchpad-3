@@ -15,9 +15,6 @@ from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     Matcher,
     Mismatch,
-    FileExists,
-    Not,
-    MatchesListwise,
     )
 from twisted.internet import defer
 from zope.component import getUtility
