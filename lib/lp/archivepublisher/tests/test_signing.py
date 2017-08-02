@@ -14,6 +14,7 @@ from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     Contains,
     Matcher,
+    MatchesAll,
     Mismatch,
     Not,
     )
@@ -49,20 +50,21 @@ class SignedMatches(Matcher):
     def __init__(self, expected):
         self.expected = expected
 
-    def match(self, signed):
+    def match(self, base):
         content = []
-        for root, dirs, files in os.walk(signed):
-            content += [os.path.join(root, f)[len(signed) + 1:] for f in files]
+        for root, dirs, files in os.walk(base):
+            content.extend(
+                [os.path.relpath(os.path.join(root, f), base) for f in files])
 
-        left_over = list(set(content) - set(self.expected))
-        missing = list(set(self.expected) - set(content))
+        left_over = sorted(set(content) - set(self.expected))
+        missing = sorted(set(self.expected) - set(content))
         if left_over != [] or missing != []:
-            missmatch = ''
+            mismatch = ''
             if left_over:
-                missmatch += " unexpected files: " + str(left_over)
+                mismatch += " unexpected files: " + str(left_over)
             if missing:
-                missmatch += " missing files: " + str(missing)
-            return Mismatch("SignedMatches:" + missmatch)
+                mismatch += " missing files: " + str(missing)
+            return Mismatch("SignedMatches:" + mismatch)
         return None
 
 
@@ -129,7 +131,7 @@ class FakeMethodCallLog(FakeMethod):
         return self.callers.get(caller, 0)
 
     def caller_list(self):
-        return [(c, n) for (c, n) in self.callers.items() if n != 0]
+        return [(caller, n) for (caller, n) in self.callers.items() if n != 0]
 
 
 class TestSigningHelpers(TestCaseWithFactory):
@@ -613,7 +615,7 @@ class TestSigning(TestSigningHelpers):
         self.assertEqual(expected_cmd, args)
 
     def test_correct_opal_signing_command_executed(self):
-        # Check that calling signKmod() will generate the expected command
+        # Check that calling signOpal() will generate the expected command
         # when appropriate keys are present.
         self.setUpOpalKeys()
         fake_call = FakeMethod(result=0)
@@ -634,7 +636,7 @@ class TestSigning(TestSigningHelpers):
         self.assertEqual(0, upload.generateOpalKeys.call_count)
 
     def test_correct_opal_signing_command_executed_no_keys(self):
-        # Check that calling signKmod() will generate no commands when
+        # Check that calling signOpal() will generate no commands when
         # no keys are present.
         self.setUpOpalKeys(create=False)
         fake_call = FakeMethod(result=0)
@@ -648,7 +650,7 @@ class TestSigning(TestSigningHelpers):
         self.assertEqual(0, upload.generateOpalKeys.call_count)
 
     def test_correct_opal_keygen_command_executed(self):
-        # Check that calling generateUefiKeys() will generate the
+        # Check that calling generateOpalKeys() will generate the
         # expected command.
         self.setUpPPA()
         self.setUpOpalKeys(create=False)
@@ -918,10 +920,11 @@ class TestSigning(TestSigningHelpers):
         tarfilename = os.path.join(self.getSignedPath("test", "amd64"),
             "1.0", "signed.tar.gz")
         with tarfile.open(tarfilename) as tarball:
-            self.assertThat(tarball.getnames(), Not(Contains([
-                "1.0/SHA256SUMS", "1.0/SHA256SUMS.gpg",
-                '1.0/empty.ko',
-                ])))
+            self.assertThat(tarball.getnames(), MatchesAll(*[
+              Not(Contains(name)) for name in [
+                  "1.0/SHA256SUMS", "1.0/SHA256SUMS.gpg",
+                  "1.0/signed.tar.gz",
+                  ]]))
 
 
 class TestUefi(TestSigningHelpers):
