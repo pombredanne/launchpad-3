@@ -89,9 +89,9 @@ class FakePackager:
         self.version = version
 
         if key_path is not None:
-            self.gpg_key_id = self._importGPGKey(key_path)
+            self.gpg_key_fingerprint = self._importGPGKey(key_path)
         else:
-            self.gpg_key_id = None
+            self.gpg_key_fingerprint = None
 
         self.upstream_directory = os.path.join(
             self.sandbox_path, '%s-%s' % (self.name, self.version))
@@ -119,19 +119,19 @@ class FakePackager:
     def _importGPGKey(self, key_path):
         """Import the given secret GPG key to sign packages.
 
-        Return the key ID import as '0xAABBCCDD'
+        Return the fingerprint of the imported key, prefixed with '0x'.
         """
         gpghandler = getUtility(IGPGHandler)
 
         if key_path is None:
-            self.gpg_key_id = None
+            self.gpg_key_fingerprint = None
             return
 
         gpghandler.resetLocalState()
         import_secret_test_key(key_path)
         key = list(gpghandler.localKeys())[0]
 
-        return '0x%s' % key.keyid
+        return '0x%s' % key.fingerprint
 
     def _appendContents(self, content):
         """Append a given content in the upstream 'contents' file.
@@ -360,9 +360,9 @@ class FakePackager:
         if not signed:
             debuild_options.extend(['-uc', '-us'])
         else:
-            assert self.gpg_key_id is not None, (
+            assert self.gpg_key_fingerprint is not None, (
                 'Cannot build signed packages because the key is not set.')
-            debuild_options.append('-k%s' % self.gpg_key_id)
+            debuild_options.append('-k%s' % self.gpg_key_fingerprint)
 
         if include_orig:
             debuild_options.append('-sa')

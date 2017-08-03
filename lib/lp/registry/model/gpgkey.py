@@ -56,7 +56,8 @@ class GPGKey(SQLBase):
 
     @property
     def displayname(self):
-        return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
+        return '%s%s/%s' % (
+            self.keysize, self.algorithm.title, self.fingerprint)
 
 
 @implementer(IGPGKeySet)
@@ -85,7 +86,7 @@ class GPGKeySet:
             ownerID = requester.id
             keyid = key.keyid
             keysize = key.keysize
-            algorithm = GPGKeyAlgorithm.items[key.algorithm]
+            algorithm = key.algorithm
             lp_key = self.new(
                 ownerID, keyid, fingerprint, keysize, algorithm,
                 can_encrypt=can_encrypt)

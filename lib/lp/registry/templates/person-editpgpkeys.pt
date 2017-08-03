@@ -52,14 +52,14 @@
 
     <tal:has_key condition="view/key">
       <p tal:condition="view/key/revoked" class="error message">
-        The key <span tal:replace="view/key/keyid" /> cannot be validated
+        The key <span tal:replace="view/key/fingerprint" /> cannot be validated
         because it has been publicly revoked. You will need to generate a
         new key (using <kbd>gpg --genkey</kbd>) and repeat the process
         to import it.
       </p>
 
       <p tal:condition="view/key/expired" class="error message">
-        The key <span tal:replace="view/key/keyid" /> cannot be validated
+        The key <span tal:replace="view/key/fingerprint" /> cannot be validated
         because it has expired. Change the expiry date (in a terminal, enter
         <kbd>gpg --edit-key <var>your@email.address</var></kbd> then enter
         <kbd>expire</kbd>), and try again.

@@ -144,7 +144,7 @@ class GPGKeyRevoked(Exception):
     def __init__(self, key):
         self.key = key
         super(GPGKeyRevoked, self).__init__(
-            "%s has been publicly revoked" % (key.keyid, ))
+            "%s has been publicly revoked" % (key.fingerprint, ))
 
 
 class GPGKeyExpired(Exception):
@@ -152,7 +152,8 @@ class GPGKeyExpired(Exception):
 
     def __init__(self, key):
         self.key = key
-        super(GPGKeyExpired, self).__init__("%s has expired" % (key.keyid, ))
+        super(GPGKeyExpired, self).__init__(
+            "%s has expired" % (key.fingerprint, ))
 
 
 class GPGKeyMismatchOnServer(Exception):

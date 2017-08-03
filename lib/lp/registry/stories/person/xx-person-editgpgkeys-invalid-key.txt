@@ -40,7 +40,8 @@ Attempts to claim a revoked OpenPGP key fail:
     >>> for tag in find_tags_by_class(browser.contents, 'error message'):
     ...     print tag.renderContents()
     <BLANKLINE>
-    The key AACCD97C cannot be validated because it has been publicly revoked.
+    The key 84D205F03E1E67096CB54E262BE83793AACCD97C cannot be validated
+    because it has been publicly revoked.
     You will need to generate a new key (using <kbd>gpg --genkey</kbd>) and
     repeat the process to import it.
     <BLANKLINE>
@@ -55,10 +56,10 @@ Attempts to claim an expired OpenPGP key also fail:
     >>> for tag in find_tags_by_class(browser.contents, 'error message'):
     ...     print tag.renderContents()
     <BLANKLINE>
-    The key 046C6D63 cannot be validated because it has expired. Change the
-    expiry date (in a terminal,  enter <kbd>gpg --edit-key
-    <var>your@email.address</var></kbd> then enter <kbd>expire</kbd>),
-    and try again.
+    The key ECA5B797586F2E27381A16CFDE6C9167046C6D63 cannot be validated
+    because it has expired. Change the expiry date (in a terminal, enter
+    <kbd>gpg --edit-key <var>your@email.address</var></kbd> then enter
+    <kbd>expire</kbd>), and try again.
     <BLANKLINE>
 
 
@@ -90,7 +91,8 @@ Try to validate the revoked OpenPGP key:
     >>> for tag in find_tags_by_class(browser.contents, 'error message'):
     ...     print tag.renderContents()
     There is 1 error.
-    The key AACCD97C cannot be validated because it has been publicly revoked.
+    The key 84D205F03E1E67096CB54E262BE83793AACCD97C cannot be validated
+    because it has been publicly revoked.
     You will need to generate a new key (using <kbd>gpg --genkey</kbd>) and
     repeat the previous process to
     <a href="http://launchpad.dev/~name12/+editpgpkeys">find and import</a>
@@ -105,10 +107,10 @@ Try to validate the revoked OpenPGP key:
     >>> for tag in find_tags_by_class(browser.contents, 'error message'):
     ...     print tag.renderContents()
     There is 1 error.
-    The key 046C6D63 cannot be validated because it has expired. Change the
-    expiry date (in a terminal,  enter <kbd>gpg --edit-key
-    <var>your@email.address</var></kbd> then enter <kbd>expire</kbd>),
-    and try again.
+    The key ECA5B797586F2E27381A16CFDE6C9167046C6D63 cannot be validated
+    because it has expired. Change the expiry date (in a terminal, enter
+    <kbd>gpg --edit-key <var>your@email.address</var></kbd> then enter
+    <kbd>expire</kbd>), and try again.
 
 The login tokens are only consumed if they're successfully processed.
 Otherwise they're kept around so the user can try again after fixing their

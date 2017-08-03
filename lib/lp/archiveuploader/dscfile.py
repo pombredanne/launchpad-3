@@ -181,7 +181,7 @@ class SignableTagFile:
 
         if key.active == False:
             raise UploadError("File %s is signed with a deactivated key %s"
-                              % (filename, key.keyid))
+                              % (filename, key.fingerprint))
 
         return (key, sig.plain_data)
 

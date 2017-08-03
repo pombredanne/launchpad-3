@@ -43,7 +43,7 @@ Claim OpenPGP key:
     >>> browser.getControl(name='import').click()
     >>> print_feedback_messages(browser.contents)
     A message has been sent to test@canonical.com, encrypted
-    with the key 1024D/DFD20543.
+    with the key 1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543.
     To confirm the key is yours, decrypt the message and follow the
     link inside.
 
@@ -103,8 +103,9 @@ Import the secret keys needed for this test:
     >>> key = import_secret_test_key('test@canonical.com.sec')
 
 'cipher_body' is a message encrypted with the just-imported
-1024D/DFD20543 OpenPGP key, we need to access the current IGpghandler
-instance to access this key and decrypt the message.
+1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543 OpenPGP key, we need to
+access the current IGpghandler instance to access this key and decrypt the
+message.
 
     >>> body = decrypt_content(cipher_body, 'test')
 
@@ -130,13 +131,14 @@ Get redirected to the user's homepage with a greeting:
     >>> browser.url
     'http://launchpad.dev/~name12'
     >>> print_feedback_messages(browser.contents)
-    The key 1024D/DFD20543 was successfully validated.
+    The key 1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543 was successfully
+    validated.
 
 Certify the key is imported:
 
     >>> browser.open("http://launchpad.dev/~name12/+editpgpkeys")
     >>> browser.getControl(name='DEACTIVATE_GPGKEY').displayOptions
-    ['1024D/DFD20543']
+    ['1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543']
 
 Verify that the key was imported with the "can encrypt" flag set:
 
@@ -165,8 +167,8 @@ their Launchpad account.
     >>> browser.getControl(name='import').click()
     >>> print_feedback_messages(browser.contents)
     A message has been sent to test@canonical.com. To
-    confirm the key 1024D/17B05A8F is yours, follow
-    the link inside.
+    confirm the key 1024D/447DBF38C4F9C4ED752246B77D88913717B05A8F is yours,
+    follow the link inside.
 
 Sample Person checks their email.
 
@@ -192,8 +194,8 @@ Sample Person should visit to verify their ownership of the key.
         User name    : Sample Person
         Email address: test@canonical.com
     ...
+        Key type    : 1024D
         Fingerprint : 447DBF38C4F9C4ED752246B77D88913717B05A8F
-      Key type/ID : 1024D/17B05A8F
     <BLANKLINE>
     UIDs:
         sign.only@canonical.com
@@ -256,7 +258,8 @@ If they sign a different text, they get an error message.
     The signed content does not match the message found in the email.
 
 If they sign the text with a different key, they get an error
-message. The following text was signed with the key DFD20543:
+message. The following text was signed with the key
+A419AE861E88BC9E04B9C26FBA2B9389DFD20543:
 
     >>> signed_content = """
     ... -----BEGIN PGP SIGNED MESSAGE-----
@@ -290,7 +293,8 @@ If they sign the text correctly, they are redirected to their home page.
     >>> browser.url
     'http://launchpad.dev/~name12'
     >>> print_feedback_messages(browser.contents)
-    The key 1024D/17B05A8F was successfully validated.
+    The key 1024D/447DBF38C4F9C4ED752246B77D88913717B05A8F was successfully
+    validated.
 
 Now that the key has been validated, the login token is consumed:
 
@@ -306,16 +310,16 @@ verify this:
 
     >>> content = find_main_content(browser.contents)
     >>> browser.getControl(name='DEACTIVATE_GPGKEY').displayOptions
-    [...'1024D/17B05A8F (sign only)']
+    [...'1024D/447DBF38C4F9C4ED752246B77D88913717B05A8F (sign only)']
 
 On a mad whim they decide to de-activate the key they just imported.
 
     >>> browser.getControl(name="DEACTIVATE_GPGKEY").displayValue = [
-    ...     '1024D/17B05A8F (sign only)']
+    ...     '1024D/447DBF38C4F9C4ED752246B77D88913717B05A8F (sign only)']
     >>> browser.getControl('Deactivate Key').click()
 
     >>> print_feedback_messages(browser.contents)
-    Deactivated key(s): 1024D/17B05A8F
+    Deactivated key(s): 1024D/447DBF38C4F9C4ED752246B77D88913717B05A8F
 
 Coming to their senses, they ask for a re-validation of the key.
 
@@ -324,7 +328,7 @@ Coming to their senses, they ask for a re-validation of the key.
 
     >>> print_feedback_messages(browser.contents)
     A message has been sent to test@canonical.com with instructions
-    to reactivate these key(s): 1024D/17B05A8F
+    to reactivate these key(s): 1024D/447DBF38C4F9C4ED752246B77D88913717B05A8F
 
 They open the page and checks that the key is displayed as pending
 revalidation.
@@ -427,8 +431,8 @@ And now Sample Person's Codes of Conduct page shows that they've signed it.
     Active signatures
     If you change your mind about agreeing to a code of conduct,
     you can deactivate your signature.
-    ...: digitally signed by Sample Person (1024D/DFD20543)
-    ...
+    ...: digitally signed by Sample Person
+    (1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543) ...
 
 
 Now Sample Person will deactivate their key...
@@ -441,7 +445,7 @@ Now Sample Person will deactivate their key...
     >>> print browser.contents
     <...
     ...Your active keys...
-    ...1024D/DFD20543...
+    ...1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543...
 
 
 ... but they forgot to select the checkbox of the key they want to remove.
@@ -454,12 +458,13 @@ Now Sample Person will deactivate their key...
 
 Now they select the checkbox and deactivate it.
 
-    >>> browser.getControl('1024D/DFD20543').selected = True
+    >>> browser.getControl(
+    ...     '1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543').selected = True
     >>> browser.getControl('Deactivate Key').click()
     >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('p', 'informational message'):
     ...     print tag.renderContents()
-    Deactivated key(s): 1024D/DFD20543
+    Deactivated key(s): 1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543
 
 
 Sample Person already has a deactivated key.
@@ -471,7 +476,7 @@ Sample Person already has a deactivated key.
     >>> print browser.contents
     <...
     ...Deactivated keys...
-    ...1024D/DFD20543...
+    ...1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543...
 
 
 Now they'll request their key to be reactivated.
@@ -482,7 +487,8 @@ Now they'll request their key to be reactivated.
     ...     print tag.renderContents()
     No key(s) selected for reactivation.
 
-    >>> browser.getControl('1024D/DFD20543').selected = True
+    >>> browser.getControl(
+    ...     '1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543').selected = True
     >>> browser.getControl('Reactivate Key').click()
     >>> soup = find_main_content(browser.contents)
     >>> for tag in soup('p', 'informational message'):
@@ -524,7 +530,8 @@ Now Sample Person confirms the reactivation.
 
     >>> print browser.contents
     <...
-    ...Key 1024D/DFD20543 successfully reactivated...
+    ...Key 1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543 successfully
+    reactivated...
 
 
 And now we can see the key listed as one of Sample Person's active keys.
@@ -533,7 +540,7 @@ And now we can see the key listed as one of Sample Person's active keys.
     >>> print browser.contents
     <...
     ...Your active keys...
-    ...1024D/DFD20543...
+    ...1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543...
 
 This test verifies that we correctly handle keys which are in some way
 special: either invalid, broken, revoked, expired, or already imported.
