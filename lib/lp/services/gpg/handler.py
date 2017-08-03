@@ -580,7 +580,7 @@ class PymeKey:
         self.revoked = subkey.revoked
         self.keysize = subkey.length
 
-        self.algorithm = GPGKeyAlgorithm.items[subkey.pubkey_algo].title
+        self.algorithm = GPGKeyAlgorithm.items[subkey.pubkey_algo]
         self.keyid = self.fingerprint[-8:]
         self.expired = key.expired
         self.secret = key.secret
@@ -598,7 +598,8 @@ class PymeKey:
 
     @property
     def displayname(self):
-        return '%s%s/%s' % (self.keysize, self.algorithm, self.keyid)
+        return '%s%s/%s' % (
+            self.keysize, self.algorithm.title, self.fingerprint)
 
     def export(self):
         """See `PymeKey`."""

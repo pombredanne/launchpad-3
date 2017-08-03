@@ -47,7 +47,8 @@
                 </tal:multiple_keys>
 
                 <tal:single_key condition="python: len(gpg_keys) == 1">
-                The key <code tal:content="python: gpg_keys[0].keyid" /> is
+                The key <code tal:content="python: gpg_keys[0].fingerprint" />
+                is
                 </tal:single_key>
 
                 registered on your account. You can skip to the next step if

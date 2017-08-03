@@ -371,7 +371,7 @@
                 <xsl:text>/</xsl:text>
                 <var>&lt;person.name&gt;</var>
                 <xsl:text>/+gpg-keys/</xsl:text>
-                <var>&lt;keyid&gt;</var>
+                <var>&lt;fingerprint&gt;</var>
             </xsl:when>
             <xsl:when test="@id = 'hwdb'">
                 <xsl:text>/+hwdb</xsl:text>
