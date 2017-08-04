@@ -94,12 +94,16 @@ class SigningUpload(CustomUpload):
             self.uefi_cert = None
             self.kmod_pem = None
             self.kmod_x509 = None
+            self.opal_pem = None
+            self.opal_x509 = None
             self.autokey = False
         else:
             self.uefi_key = os.path.join(pubconf.signingroot, "uefi.key")
             self.uefi_cert = os.path.join(pubconf.signingroot, "uefi.crt")
             self.kmod_pem = os.path.join(pubconf.signingroot, "kmod.pem")
             self.kmod_x509 = os.path.join(pubconf.signingroot, "kmod.x509")
+            self.opal_pem = os.path.join(pubconf.signingroot, "opal.pem")
+            self.opal_x509 = os.path.join(pubconf.signingroot, "opal.x509")
             self.autokey = pubconf.signingautokey
 
         self.setComponents(tarfile_path)
@@ -171,6 +175,8 @@ class SigningUpload(CustomUpload):
                     yield (os.path.join(dirpath, filename), self.signUefi)
                 elif filename.endswith(".ko"):
                     yield (os.path.join(dirpath, filename), self.signKmod)
+                elif filename.endswith(".opal"):
+                    yield (os.path.join(dirpath, filename), self.signOpal)
 
     def getKeys(self, which, generate, *keynames):
         """Validate and return the uefi key and cert for encryption."""
@@ -237,15 +243,15 @@ class SigningUpload(CustomUpload):
         cmdl = ["sbsign", "--key", key, "--cert", cert, image]
         return self.callLog("UEFI signing", cmdl)
 
-    def generateKmodKeys(self):
-        """Generate new Kernel Signing Keys for this archive."""
-        directory = os.path.dirname(self.kmod_pem)
+    def generatePemX509Pair(self, key_type, pem_filename, x509_filename):
+        """Generate new pem/x509 key pairs."""
+        directory = os.path.dirname(pem_filename)
         if not os.path.exists(directory):
             os.makedirs(directory)
 
         # Truncate name to 64 character maximum.
         common_name = self.generateKeyCommonName(
-            self.archive.owner.name, self.archive.name, "kmod")
+            self.archive.owner.name, self.archive.name, key_type)
 
         old_mask = os.umask(0o077)
         try:
@@ -276,21 +282,26 @@ class SigningUpload(CustomUpload):
                 new_key_cmd = [
                     'openssl', 'req', '-new', '-nodes', '-utf8', '-sha512',
                     '-days', '3650', '-batch', '-x509', '-config', tf.name,
-                    '-outform', 'PEM', '-out', self.kmod_pem,
-                    '-keyout', self.kmod_pem
+                    '-outform', 'PEM', '-out', pem_filename,
+                    '-keyout', pem_filename
                     ]
-                if self.callLog("Kmod keygen key", new_key_cmd) == 0:
+                if self.callLog(key_type + " keygen key", new_key_cmd) == 0:
                     new_x509_cmd = [
-                        'openssl', 'x509', '-in', self.kmod_pem,
-                        '-outform', 'DER', '-out', self.kmod_x509
+                        'openssl', 'x509', '-in', pem_filename,
+                        '-outform', 'DER', '-out', x509_filename
                         ]
-                    if self.callLog("Kmod keygen cert", new_x509_cmd) != 0:
-                        os.unlink(self.kmod_pem)
+                    if self.callLog(key_type + " keygen cert",
+                                    new_x509_cmd) != 0:
+                        os.unlink(pem_filename)
         finally:
             os.umask(old_mask)
 
-        if os.path.exists(self.kmod_x509):
-            os.chmod(self.kmod_x509, 0o644)
+        if os.path.exists(x509_filename):
+            os.chmod(x509_filename, 0o644)
+
+    def generateKmodKeys(self):
+        """Generate new Kernel Signing Keys for this archive."""
+        self.generatePemX509Pair("Kmod", self.kmod_pem, self.kmod_x509)
 
     def signKmod(self, image):
         """Attempt to sign a kernel module."""
@@ -302,6 +313,21 @@ class SigningUpload(CustomUpload):
         self.publishPublicKey(cert)
         cmdl = ["kmodsign", "-D", "sha512", pem, cert, image, image + ".sig"]
         return self.callLog("Kmod signing", cmdl)
+
+    def generateOpalKeys(self):
+        """Generate new Opal Signing Keys for this archive."""
+        self.generatePemX509Pair("Opal", self.opal_pem, self.opal_x509)
+
+    def signOpal(self, image):
+        """Attempt to sign a kernel image for Opal."""
+        remove_if_exists("%s.sig" % image)
+        (pem, cert) = self.getKeys('Opal Kernel', self.generateOpalKeys,
+            self.opal_pem, self.opal_x509)
+        if not pem or not cert:
+            return
+        self.publishPublicKey(cert)
+        cmdl = ["kmodsign", "-D", "sha512", pem, cert, image, image + ".sig"]
+        return self.callLog("Opal signing", cmdl)
 
     def convertToTarball(self):
         """Convert unpacked output to signing tarball."""
