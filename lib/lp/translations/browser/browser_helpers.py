@@ -54,7 +54,7 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
     if text is None:
         return None
 
-    lines = []
+    markup_lines = []
     # Replace leading and trailing spaces on each line with special markup.
     if u'\r\n' in text:
         newline_chars = u'\r\n'
@@ -62,7 +62,7 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
         newline_chars = u'\r'
     else:
         newline_chars = u'\n'
-    for line in html_escape(text).split(newline_chars):
+    for line in text.split(newline_chars):
         # Pattern:
         # - group 1: zero or more spaces: leading whitespace
         # - group 2: zero or more groups of (zero or
@@ -72,37 +72,32 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
         match = re.match(u'^( *)((?: *[^ ]+)*)( *)$', line)
 
         if match:
-            lines.append(
-                space * len(match.group(1)) +
-                match.group(2) +
-                space * len(match.group(3)))
+            format_segments = None
+            if 'c-format' in flags:
+                try:
+                    format_segments = parse_cformat_string(match.group(2))
+                except UnrecognisedCFormatString:
+                    pass
+            if format_segments is not None:
+                markup = ''
+                for segment in format_segments:
+                    type, content = segment
+
+                    if type == 'interpolation':
+                        markup += (u'<code>%s</code>' % html_escape(content))
+                    elif type == 'string':
+                        markup += html_escape(content)
+            else:
+                markup = html_escape(match.group(2))
+            markup_lines.append(
+                space * len(match.group(1))
+                + markup
+                + space * len(match.group(3)))
         else:
             raise AssertionError(
                 "A regular expression that should always match didn't.")
 
-    if 'c-format' in flags:
-        # Replace c-format sequences with marked-up versions. If there is a
-        # problem parsing the c-format sequences on a particular line, that
-        # line is left unformatted.
-        for i in range(len(lines)):
-            formatted_line = ''
-
-            try:
-                segments = parse_cformat_string(lines[i])
-            except UnrecognisedCFormatString:
-                continue
-
-            for segment in segments:
-                type, content = segment
-
-                if type == 'interpolation':
-                    formatted_line += (u'<code>%s</code>' % content)
-                elif type == 'string':
-                    formatted_line += content
-
-            lines[i] = formatted_line
-
-    return expand_rosetta_escapes(newline.join(lines))
+    return expand_rosetta_escapes(newline.join(markup_lines))
 
 
 def convert_newlines_to_web_form(unicode_text):

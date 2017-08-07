@@ -206,6 +206,19 @@ And '\r' should be also handled:
     >>> text_to_html(u'foo\rbar', [])
     u'foo<img alt="" src="/@@/translation-newline" /><br/>\nbar'
 
+HTML in the input string is escaped.
+
+    >>> text_to_html(u'<b>Test %d</b>', [])
+    u'&lt;b&gt;Test %d&lt;/b&gt;'
+    >>> text_to_html(u'<b>Test %d</b>', ['c-format'])
+    u'&lt;b&gt;Test <code>%d</code>&lt;/b&gt;'
+
+Format strings are parsed before markup is generated (the %q is invalid
+as it has no conversion specifier until the <samp> is injected):
+
+    >>> text_to_html(u'Test %q: ', ['c-format'])
+    u'Test %q:<samp> </samp>'
+
 
 convert_newlines_to_web_form
 ----------------------------
