@@ -54,7 +54,7 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
     if text is None:
         return None
 
-    lines = []
+    markup_lines = []
     # Replace leading and trailing spaces on each line with special markup.
     if u'\r\n' in text:
         newline_chars = u'\r\n'
@@ -73,7 +73,7 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
 
         if match:
             s = html_escape(match.group(2))
-            lines.append(
+            markup_lines.append(
                 space * len(match.group(1)) + s + space * len(match.group(3)))
         else:
             raise AssertionError(
@@ -83,11 +83,11 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
         # Replace c-format sequences with marked-up versions. If there is a
         # problem parsing the c-format sequences on a particular line, that
         # line is left unformatted.
-        for i in range(len(lines)):
+        for i in range(len(markup_lines)):
             formatted_line = ''
 
             try:
-                segments = parse_cformat_string(lines[i])
+                segments = parse_cformat_string(markup_lines[i])
             except UnrecognisedCFormatString:
                 continue
 
@@ -99,9 +99,9 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                 elif type == 'string':
                     formatted_line += content
 
-            lines[i] = formatted_line
+            markup_lines[i] = formatted_line
 
-    return expand_rosetta_escapes(newline.join(lines))
+    return expand_rosetta_escapes(newline.join(markup_lines))
 
 
 def convert_newlines_to_web_form(unicode_text):
