@@ -62,7 +62,7 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
         newline_chars = u'\r'
     else:
         newline_chars = u'\n'
-    for line in html_escape(text).split(newline_chars):
+    for line in text.split(newline_chars):
         # Pattern:
         # - group 1: zero or more spaces: leading whitespace
         # - group 2: zero or more groups of (zero or
@@ -72,10 +72,9 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
         match = re.match(u'^( *)((?: *[^ ]+)*)( *)$', line)
 
         if match:
+            s = html_escape(match.group(2))
             lines.append(
-                space * len(match.group(1)) +
-                match.group(2) +
-                space * len(match.group(3)))
+                space * len(match.group(1)) + s + space * len(match.group(3)))
         else:
             raise AssertionError(
                 "A regular expression that should always match didn't.")
