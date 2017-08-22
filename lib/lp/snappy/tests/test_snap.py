@@ -22,6 +22,7 @@ import pytz
 from storm.exceptions import LostObjectError
 from storm.locals import Store
 from testtools.matchers import (
+    ContainsDict,
     Equals,
     MatchesSetwise,
     MatchesStructure,
@@ -1360,6 +1361,53 @@ class TestSnapWebservice(TestCaseWithFactory):
         self.assertEqual(401, response.status)
         self.assertEqual(
             "Test Person is not a member of Other Team.", response.body)
+
+    def test_cannot_set_git_path_for_bzr(self):
+        # Setting git_path on a Bazaar-based Snap fails.
+        snap = self.makeSnap(branch=self.factory.makeAnyBranch())
+        response = self.webservice.patch(
+            snap["self_link"], "application/json",
+            json.dumps({"git_path": "HEAD"}))
+        self.assertEqual(400, response.status)
+
+    def test_cannot_set_git_path_to_None(self):
+        # Setting git_path to None fails.
+        snap = self.makeSnap(git_ref=self.factory.makeGitRefs()[0])
+        response = self.webservice.patch(
+            snap["self_link"], "application/json",
+            json.dumps({"git_path": None}))
+        self.assertEqual(400, response.status)
+
+    def test_set_git_path(self):
+        # Setting git_path on a Git-based Snap works.
+        ref_master, ref_next = self.factory.makeGitRefs(
+            paths=[u"refs/heads/master", u"refs/heads/next"])
+        snap = self.makeSnap(git_ref=ref_master)
+        response = self.webservice.patch(
+            snap["self_link"], "application/json",
+            json.dumps({"git_path": ref_next.path}))
+        self.assertEqual(209, response.status)
+        self.assertThat(response.jsonBody(), ContainsDict({
+            "git_repository_link": Equals(snap["git_repository_link"]),
+            "git_path": Equals(ref_next.path),
+            }))
+
+    def test_set_git_path_external(self):
+        # Setting git_path on a Snap backed by an external Git repository
+        # works.
+        ref = self.factory.makeGitRefRemote()
+        repository_url = ref.repository_url
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person, git_ref=ref)
+        snap_url = api_url(snap)
+        logout()
+        response = self.webservice.patch(
+            snap_url, "application/json", json.dumps({"git_path": "HEAD"}))
+        self.assertEqual(209, response.status)
+        self.assertThat(response.jsonBody(), ContainsDict({
+            "git_repository_url": Equals(repository_url),
+            "git_path": Equals("HEAD"),
+            }))
 
     def test_getByName(self):
         # lp.snaps.getByName returns a matching Snap.

@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BadSnapSearchContext',
+    'BadSnapSource',
     'CannotAuthorizeStoreUploads',
     'CannotModifySnapProcessor',
     'CannotRequestAutoBuilds',
@@ -182,6 +183,11 @@ class NoSourceForSnap(Exception):
         super(NoSourceForSnap, self).__init__(
             "New snap packages must have either a Bazaar branch or a Git "
             "branch.")
+
+
+@error_status(httplib.BAD_REQUEST)
+class BadSnapSource(Exception):
+    """The elements of the source for a snap package are inconsistent."""
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -461,11 +467,19 @@ class ISnapEditableAttributes(IHasOwner):
         allow_fragment=False,
         trailing_slash=False))
 
-    git_path = exported(TextLine(
-        title=_("Git branch path"), required=False, readonly=True,
+    git_path = TextLine(
+        title=_("Git branch path"), required=False, readonly=False,
         description=_(
             "The path of the Git branch containing a snap/snapcraft.yaml, "
-            "snapcraft.yaml, or .snapcraft.yaml recipe at the top level.")))
+            "snapcraft.yaml, or .snapcraft.yaml recipe at the top level."))
+    _api_git_path = exported(
+        TextLine(
+            title=_("Git branch path"), required=False, readonly=False,
+            description=_(
+                "The path of the Git branch containing a snap/snapcraft.yaml, "
+                "snapcraft.yaml, or .snapcraft.yaml recipe at the top "
+                "level.")),
+        exported_as="git_path")
 
     git_ref = exported(Reference(
         IGitRef, title=_("Git branch"), required=False, readonly=False,
