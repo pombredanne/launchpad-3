@@ -1097,6 +1097,7 @@ class MilestoneImageDisplayAPI(ObjectImageDisplayAPI):
         return '<img height="14" width="14" alt="" src="/@@/milestone" />'
 
 
+# Keep this in sync with lib/lp/buildmaster/javascript/build_statuses.js.
 class BuildImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IBuild objects to an image.
 
