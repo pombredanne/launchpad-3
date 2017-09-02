@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad test fixtures that have no better home."""
@@ -298,7 +298,7 @@ class CaptureOops(Fixture):
             self.channel = self.connection.channel()
             self.addCleanup(self.channel.close)
             self.oops_config = oops.Config()
-            self.oops_config.publishers.append(self._add_oops)
+            self.oops_config.publisher = self._add_oops
             self.setUpQueue()
 
     def setUpQueue(self):
@@ -325,6 +325,7 @@ class CaptureOops(Fixture):
         if report['id'] not in self.oops_ids:
             self.oopses.append(report)
             self.oops_ids.add(report['id'])
+        return [report['id']]
 
     @adapter(ErrorReportEvent)
     def _recordOops(self, event):

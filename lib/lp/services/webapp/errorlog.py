@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Error logging facilities."""
@@ -89,7 +89,7 @@ def notify_publisher(report):
     if not report.get('id'):
         report['id'] = str(id(report))
     notify(ErrorReportEvent(report))
-    return report['id']
+    return [report['id']]
 
 
 def attach_adapter_duration(report, context):
@@ -268,7 +268,7 @@ class ErrorReportingUtility:
             index for index, _ignored in enumerate(repeat(None)))
 
     def configure(self, section_name=None, config_factory=oops.Config,
-            publisher_adapter=None):
+                  publisher_adapter=None, publisher_helpers=oops.publishers):
         """Configure the utility using the named section from the config.
 
         The 'error_reports' section is used if section_name is None.
@@ -312,26 +312,37 @@ class ErrorReportingUtility:
         # And any active feature flags.
         self._oops_config.on_create.append(attach_feature_info)
 
-        def add_publisher(publisher):
+        def adapted_publisher(publisher):
             if publisher_adapter is not None:
-                publisher = publisher_adapter(publisher)
-            self._oops_config.publishers.append(publisher)
+                return publisher_adapter(publisher)
+            else:
+                return publisher
 
+        # Exposed for introspection by tests.  Don't expect modifying these
+        # to be useful.
+        self._main_publishers = []
+        self._all_publishers = []
         # If amqp is configured we want to publish over amqp.
         if (config.error_reports.error_exchange and rabbit.is_configured()):
             exchange = config.error_reports.error_exchange
             routing_key = config.error_reports.error_queue_key
-            amqp_publisher = oops_amqp.Publisher(
-                rabbit.connect, exchange, routing_key)
-            add_publisher(amqp_publisher)
+            # Exposed for tests.
+            self._main_publishers.append(adapted_publisher(oops_amqp.Publisher(
+                rabbit.connect, exchange, routing_key)))
         # We want to publish reports to disk for gathering to the central
         # analysis server, but only if we haven't already published to rabbit.
         self._oops_datedir_repo = DateDirRepo(
             config[self._default_config_section].error_dir)
-        add_publisher(oops.publish_new_only(self._oops_datedir_repo.publish))
+        self._main_publishers.append(
+            adapted_publisher(self._oops_datedir_repo.publish))
+        self._all_publishers.append(
+            publisher_helpers.publish_with_fallback(*self._main_publishers))
         # And send everything within the zope application server (only for
         # testing).
-        add_publisher(notify_publisher)
+        self._all_publishers.append(adapted_publisher(notify_publisher))
+        self._oops_config.publisher = publisher_helpers.publish_to_many(
+            *self._all_publishers)
+
         #
         # Reports are filtered if:
         #  - There is a key 'ignore':True in the report. This is set during

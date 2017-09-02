@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Integration between the normal Launchpad logging and Twisted's."""
@@ -55,7 +55,8 @@ def set_up_oops_reporting(name, configuration, logfile):
     errorlog.globalErrorUtility.configure(
         configuration,
         config_factory=oops_twisted.Config,
-        publisher_adapter=oops_twisted.defer_publisher)
+        publisher_adapter=oops_twisted.defer_publisher,
+        publisher_helpers=oops_twisted.publishers)
     log_observer = RotatableFileLogObserver(logfile)
     oops_observer = OOPSObserver(errorlog.globalErrorUtility._oops_config,
         log_observer)
