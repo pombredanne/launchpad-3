@@ -326,7 +326,6 @@ class ErrorReportingUtility:
         if (config.error_reports.error_exchange and rabbit.is_configured()):
             exchange = config.error_reports.error_exchange
             routing_key = config.error_reports.error_queue_key
-            # Exposed for tests.
             self._main_publishers.append(adapted_publisher(oops_amqp.Publisher(
                 rabbit.connect, exchange, routing_key)))
         # We want to publish reports to disk for gathering to the central
