@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for error logging & OOPS reporting."""
@@ -92,22 +92,21 @@ class TestErrorReportingUtility(testtools.TestCase):
         self.assertEqual(config.error_reports.oops_prefix,
             utility.oops_prefix)
 
-        # We should have had three publishers setup:
-        oops_config = utility._oops_config
-        self.assertEqual(3, len(oops_config.publishers))
-        # - a rabbit publisher
-        self.assertIsInstance(oops_config.publishers[0], oops_amqp.Publisher)
-        # - a datedir publisher wrapped in a publish_new_only wrapper
-        datedir_repo = utility._oops_datedir_repo
-        publisher = oops_config.publishers[1].func_closure[0].cell_contents
-        self.assertEqual(publisher, datedir_repo.publish)
+        # We should have had two publishers set up:
+        self.assertEqual(2, len(utility._all_publishers))
+        # - a fallback publisher chaining a rabbit publisher and a datedir
+        #   publisher
+        self.assertIsInstance(
+            utility._main_publishers[0], oops_amqp.Publisher)
+        self.assertEqual(
+            utility._main_publishers[1], utility._oops_datedir_repo.publish)
         # - a notify publisher
-        self.assertEqual(oops_config.publishers[2], notify_publisher)
+        self.assertEqual(utility._all_publishers[1], notify_publisher)
 
     def test_multiple_raises_in_request(self):
         """An OOPS links to the previous OOPS in the request, if any."""
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[0]
+        utility._main_publishers[0].__call__ = lambda report: []
 
         request = TestRequestWithPrincipal()
         try:
@@ -128,7 +127,7 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test_raising_with_request(self):
         """Test ErrorReportingUtility.raising() with a request"""
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[0]
+        utility._main_publishers[0].__call__ = lambda report: []
 
         request = TestRequestWithPrincipal(
                 environ={
@@ -174,7 +173,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         directlyProvides(request, IXMLRPCRequest)
         request.getPositionalArguments = lambda: (1, 2)
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         try:
             raise ArbitraryException('xyz\nabc')
         except ArbitraryException:
@@ -186,7 +185,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         # still be unicode (or utf8).
         request = TestRequest(form={'foo\x85': 'bar'})
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         try:
             raise ArbitraryException('foo')
         except ArbitraryException:
@@ -203,7 +202,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         request = TestRequest()
         directlyProvides(request, WebServiceLayer)
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
 
         # Exceptions that don't use error_status result in OOPSes.
         try:
@@ -236,7 +235,7 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test_raising_for_script(self):
         """Test ErrorReportingUtility.raising with a ScriptRequest."""
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
 
         # A list because code using ScriptRequest expects that - ScriptRequest
         # translates it to a dict for now.
@@ -264,7 +263,7 @@ class TestErrorReportingUtility(testtools.TestCase):
             __repr__ = __str__
 
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         try:
             raise UnprintableException()
         except UnprintableException:
@@ -278,7 +277,7 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test_raising_unauthorized_without_request(self):
         """Unauthorized exceptions are logged when there's no request."""
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         try:
             raise Unauthorized('xyz')
         except Unauthorized:
@@ -289,7 +288,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         """Unauthorized exceptions are logged when the request has no
         principal."""
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         request = ScriptRequest([('name2', 'value2')])
         try:
             raise Unauthorized('xyz')
@@ -301,7 +300,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         """Unauthorized exceptions are not logged when the request has an
         unauthenticated principal."""
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         request = TestRequestWithUnauthenticatedPrincipal()
         try:
             raise Unauthorized('xyz')
@@ -312,7 +311,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         """Unauthorized exceptions are logged when the request has an
         authenticated principal."""
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         request = TestRequestWithPrincipal()
         try:
             raise Unauthorized('xyz')
@@ -328,7 +327,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         raised.
         """
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         self.assertTrue(
             TranslationUnavailable.__name__ in utility._ignored_exceptions,
             'TranslationUnavailable is not in _ignored_exceptions.')
@@ -340,7 +339,7 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test_ignored_exceptions_for_offsite_referer(self):
         # Exceptions caused by bad URLs that may not be an Lp code issue.
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         errors = set([
             GoneError.__name__, InvalidBatchSizeError.__name__,
             NotFound.__name__])
@@ -351,7 +350,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         # Oopses are reported when Launchpad is the referer for a URL
         # that caused an exception.
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         request = TestRequest(
             environ={
                 'SERVER_URL': 'http://launchpad.dev/fnord',
@@ -366,7 +365,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         # Oopses are reported when a Launchpad  vhost is the referer for a URL
         # that caused an exception.
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         request = TestRequest(
             environ={
                 'SERVER_URL': 'http://launchpad.dev/fnord',
@@ -381,7 +380,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         # Oopses are reported when a Launchpad referer for a bad URL on a
         # vhost that caused an exception.
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         request = TestRequest(
             environ={
                 'SERVER_URL': 'http://bazaar.launchpad.dev/fnord',
@@ -395,7 +394,7 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test_ignored_exceptions_for_offsite_referer_not_reported(self):
         # Oopses are not reported when Launchpad is not the referer.
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         # There is no HTTP_REFERER header in this request
         request = TestRequest(
             environ={'SERVER_URL': 'http://launchpad.dev/fnord'})
@@ -412,7 +411,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         raised.
         """
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         try:
             raise NoReferrerError('xyz')
         except NoReferrerError:
@@ -434,7 +433,7 @@ class TestErrorReportingUtility(testtools.TestCase):
             exc_tb = traceback.format_exc()
 
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         report = utility.raising((exc_type, exc_value, exc_tb))
         # traceback is what we supplied.
         self.assertEqual(exc_tb, report['tb_text'])
@@ -442,7 +441,7 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test_oopsMessage(self):
         """oopsMessage pushes and pops the messages."""
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         with utility.oopsMessage({'a': 'b', 'c': 'd'}):
             self.assertEqual(
                 {0: {'a': 'b', 'c': 'd'}}, utility._oops_messages)
@@ -460,7 +459,7 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test__makeErrorReport_includes_oops_messages(self):
         """The error report should include the oops messages."""
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         with utility.oopsMessage(dict(a='b', c='d')):
             try:
                 raise ArbitraryException('foo')
@@ -474,7 +473,7 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test__makeErrorReport_combines_request_and_error_vars(self):
         """The oops messages should be distinct from real request vars."""
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         request = ScriptRequest([('c', 'd')])
         with utility.oopsMessage(dict(a='b')):
             try:
@@ -504,7 +503,7 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test_session_queries_filtered(self):
         """Test that session queries are filtered."""
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         timeline = Timeline()
         timeline.start("SQL-session", "SELECT 'gone'").finish()
         try:
@@ -567,7 +566,7 @@ class TestOopsIgnoring(testtools.TestCase):
         # A request originating from another site that generates a NotFound
         # (404) is ignored (i.e., no OOPS is logged).
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         report = {'type': 'NotFound',
                 'url': 'http://example.com',
                 'req_vars': {'HTTP_REFERER': 'example.com'}}
@@ -577,7 +576,7 @@ class TestOopsIgnoring(testtools.TestCase):
         # A request originating from a local site that generates a NotFound
         # (404) produces an OOPS.
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         report = {'type': 'NotFound',
                 'url': 'http://example.com',
                 'req_vars': {'HTTP_REFERER': 'http://launchpad.dev/'}}
@@ -587,7 +586,7 @@ class TestOopsIgnoring(testtools.TestCase):
         # If a 404 is generated and there is no HTTP referer, we don't produce
         # an OOPS.
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         report = {'type': 'NotFound',
                 'url': 'http://example.com',
                 'req_vars': {}}
@@ -595,7 +594,7 @@ class TestOopsIgnoring(testtools.TestCase):
 
     def test_ignored_report_filtered(self):
         utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
+        utility._oops_config.publisher = None
         report = {'ignore': True}
         self.assertEqual(None, utility._oops_config.publish(report))
 
