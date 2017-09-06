@@ -592,7 +592,8 @@ class GitRefDefault(GitRefDatabaseBackedMixin):
         """See `GitRefDatabaseBackedMixin`."""
         path = self.repository.default_branch
         if path is None:
-            raise NotFoundError("Repository '%s' has no default branch")
+            raise NotFoundError(
+                "Repository '%s' has no default branch" % self.repository)
         ref = IStore(GitRef).get(GitRef, (self.repository_id, path))
         if ref is None:
             raise NotFoundError(
