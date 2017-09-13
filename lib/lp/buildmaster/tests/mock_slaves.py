@@ -338,6 +338,7 @@ class SlaveTestHelpers(fixtures.Fixture):
         self.makeCacheFile(tachandler, dsc_file)
         extra_args = {
             'distribution': 'ubuntu',
+            'series': 'precise',
             'suite': 'precise',
             'ogrecomponent': 'main',
             }
