@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test BuilderInteractor features."""
@@ -14,6 +14,7 @@ import tempfile
 import xmlrpclib
 
 from lpbuildd.slave import BuilderStatus
+from lpbuildd.tests.harness import BuilddSlaveTestSetup
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
@@ -769,7 +770,7 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             'HelloWorld.txt', content=content)
         self.layer.txn.commit()
         expected_url = '%s/filecache/%s' % (
-            self.slave_helper.BASE_URL, lf.content.sha1)
+            self.slave_helper.base_url, lf.content.sha1)
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
         d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
@@ -839,9 +840,10 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
                 with open(local_file) as f:
                     self.assertEqual(content_map[sha1], f.read())
             # Only two connections were used.
+            port = BuilddSlaveTestSetup().daemon_port
             self.assertThat(
                 slave.pool._connections,
-                MatchesDict({("http", "localhost", 8221): HasLength(2)}))
+                MatchesDict({("http", "localhost", port): HasLength(2)}))
             return slave.pool.closeCachedConnections()
 
         def finished_uploading(ignored):
