@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -2172,7 +2172,12 @@ class DateTimeFormatterAPI:
     """Adapter from datetime objects to a formatted string."""
 
     def __init__(self, datetimeobject):
-        self._datetime = datetimeobject
+        if isinstance(datetimeobject, datetime):
+            self._datetime = datetimeobject
+        else:
+            self._datetime = datetime(
+                datetimeobject.year, datetimeobject.month, datetimeobject.day,
+                tzinfo=pytz.timezone('UTC'))
 
     def time(self):
         if self._datetime.tzinfo:
