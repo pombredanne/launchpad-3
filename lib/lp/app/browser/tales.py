@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from bisect import bisect
 from datetime import (
+    date,
     datetime,
     timedelta,
     )
@@ -2172,7 +2173,12 @@ class DateTimeFormatterAPI:
     """Adapter from datetime objects to a formatted string."""
 
     def __init__(self, datetimeobject):
-        self._datetime = datetimeobject
+        if isinstance(datetimeobject, date):
+            self._datetime = datetime(
+                datetimeobject.year, datetimeobject.month, datetimeobject.day,
+                tzinfo=pytz.timezone('UTC'))
+        else:
+            self._datetime = datetimeobject
 
     def time(self):
         if self._datetime.tzinfo:

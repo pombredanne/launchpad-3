@@ -630,6 +630,13 @@
       />
 
   <adapter
+      for="datetime.date"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.DateTimeFormatterAPI"
+      name="fmt"
+      />
+
+  <adapter
       for="lp.registry.interfaces.irc.IIrcID"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.IRCNicknameFormatterAPI"

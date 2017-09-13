@@ -64,7 +64,7 @@ The driver can see a link to set the expected date.
     >>> for row in driver_rows[0:2]:
     ...     print extract_text(row)
     Version                          Expected             Released    Summary
-    Mozilla Firefox 0.9.2 "One ...   Set date Chang...    2004-10-16  ...
+    Mozilla Firefox 0.9.2 "One ...   Set date Chang...    2004-10-15  ...
 
     >>> driver_browser.getLink('Set', index=0)
     <Link ... url='http://launchpad.dev/firefox/+milestone/0.9.2/+edit'>
