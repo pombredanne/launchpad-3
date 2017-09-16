@@ -397,7 +397,7 @@ class VirtualHostRequestPublicationFactory:
         else:
             request_factory = ProtocolErrorRequest
             publication_factory = ProtocolErrorPublicationFactory(
-                405, headers={'Allow': " ".join(self.methods)})
+                405, headers={'Allow': ", ".join(self.methods)})
             factories = (request_factory, publication_factory)
 
         return factories
