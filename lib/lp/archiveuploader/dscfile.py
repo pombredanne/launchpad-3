@@ -144,7 +144,7 @@ class SignableTagFile:
         if verify_signature:
             self.signingkey, self.parsed_content = self.verifySignature(
                 self.raw_content, self.filepath)
-            if self.signingkey.active == False:
+            if not self.signingkey.active:
                 raise UploadError("File %s is signed with a deactivated key %s"
                                   % (self.filepath,
                                      self.signingkey.fingerprint))
