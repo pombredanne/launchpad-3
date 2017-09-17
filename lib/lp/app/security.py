@@ -119,6 +119,17 @@ class AnonymousAuthorization(AuthorizationBase):
         return True
 
 
+class non_boolean_izip(izip):
+
+    def __nonzero__(self):
+        # XXX wgrant 2016-11-15: Guard against security adapters
+        # accidentally using a delegation as a boolean authentication
+        # result.
+        raise Exception(
+            "DelegatedAuthorization results can't be used in boolean "
+            "expressions.")
+
+
 class DelegatedAuthorization(AuthorizationBase):
 
     def __init__(self, obj, forwarded_object=None, permission=None):
@@ -141,8 +152,8 @@ class DelegatedAuthorization(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """See `IAuthorization`."""
-        return izip(self.iter_objects(), repeat(self.permission))
+        return non_boolean_izip(self.iter_objects(), repeat(self.permission))
 
     def checkUnauthenticated(self):
         """See `IAuthorization`."""
-        return izip(self.iter_objects(), repeat(self.permission))
+        return non_boolean_izip(self.iter_objects(), repeat(self.permission))

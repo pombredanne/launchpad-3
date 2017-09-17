@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for a Person."""
@@ -36,7 +36,6 @@ from datetime import (
 from operator import attrgetter
 import random
 import re
-import subprocess
 import weakref
 
 from lazr.delegates import delegate_to
@@ -205,11 +204,10 @@ from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.ssh import (
     ISSHKey,
     ISSHKeySet,
-    SSHKeyAdditionError,
-    SSHKeyCompromisedError,
-    SSHKeyType,
     SSH_KEY_TYPE_TO_TEXT,
     SSH_TEXT_TO_KEY_TYPE,
+    SSHKeyAdditionError,
+    SSHKeyType,
     )
 from lp.registry.interfaces.teammembership import (
     IJoinTeamEvent,
@@ -1432,25 +1430,55 @@ class Person(
         from lp.registry.model.product import Product
         from lp.registry.model.distribution import Distribution
         store = Store.of(self)
-        WorkItem = SpecificationWorkItem
+
+        # Since a workitem's assignee defaults to its specification's
+        # assignee, the PostgreSQL planner isn't always able to work out
+        # the selectivity of the filter. Put that in a CTE to force it
+        # to calculate the workitems up front, rather than doing a hash
+        # join over all of Specification and SpecificationWorkItem.
+        assigned_specificationworkitem = With(
+            'assigned_specificationworkitem',
+            Union(
+                Select(
+                    SpecificationWorkItem.id,
+                    where=And(
+                        SpecificationWorkItem.assignee_id.is_in(
+                            self.participant_ids),
+                        Not(SpecificationWorkItem.deleted))),
+                Select(
+                    SpecificationWorkItem.id,
+                    where=And(
+                        SpecificationWorkItem.specification_id.is_in(
+                            Select(
+                                Specification.id,
+                                where=Specification._assigneeID.is_in(
+                                    self.participant_ids))),
+                        Not(SpecificationWorkItem.deleted))),
+                all=True))
+
         origin = [Specification]
         productjoin, query = get_specification_active_product_filter(self)
         origin.extend(productjoin)
-        query.extend(get_specification_privacy_filter(user))
+        query.append(Exists(Select(
+            1, tables=[Specification],
+            where=And(
+                Specification.id == SpecificationWorkItem.specification_id,
+                *get_specification_privacy_filter(user)))))
         origin.extend([
-            Join(WorkItem, WorkItem.specification == Specification.id),
+            Join(SpecificationWorkItem,
+                 SpecificationWorkItem.specification == Specification.id),
             # WorkItems may not have a milestone and in that case they inherit
             # the one from the spec.
             Join(Milestone,
-                 Coalesce(WorkItem.milestone_id,
+                 Coalesce(SpecificationWorkItem.milestone_id,
                           Specification.milestoneID) == Milestone.id)])
         today = datetime.today().date()
         query.extend([
             Milestone.dateexpected <= date, Milestone.dateexpected >= today,
-            WorkItem.deleted == False,
-            Or(WorkItem.assignee_id.is_in(self.participant_ids),
-               Specification._assigneeID.is_in(self.participant_ids))])
-        result = store.using(*origin).find(WorkItem, *query)
+            SpecificationWorkItem.id.is_in(Select(
+                SQL('id'), tables='assigned_specificationworkitem'))])
+        result = store.with_(assigned_specificationworkitem).using(
+            *origin).find(SpecificationWorkItem, *query)
         result.config(distinct=True)
 
         def eager_load(workitems):
@@ -2330,9 +2358,11 @@ class Person(
             ('archivesubscriber', 'subscriber'),
             ('branch', 'owner'),
             ('branchsubscription', 'person'),
+            ('bugnotificationrecipient', 'person'),
             ('bugsubscription', 'person'),
             ('bugsummary', 'viewed_by'),
             ('bugtask', 'assignee'),
+            ('codereviewvote', 'reviewer'),
             ('emailaddress', 'person'),
             ('gitrepository', 'owner'),
             ('gitsubscription', 'person'),
@@ -3047,8 +3077,7 @@ class Person(
         from lp.soyuz.model.archive import get_enabled_archive_filter
 
         filter = get_enabled_archive_filter(
-            user, purpose=ArchivePurpose.PPA,
-            include_public=True, include_subscribed=True)
+            user, purpose=ArchivePurpose.PPA, include_public=True)
         return Store.of(self).find(
             Archive,
             Archive.owner == self,
@@ -4096,14 +4125,6 @@ class SSHKeySet:
 
     def new(self, person, sshkey, send_notification=True, dry_run=False):
         keytype, keytext, comment = self._extract_ssh_key_components(sshkey)
-
-        process = subprocess.Popen(
-            '/usr/bin/ssh-vulnkey -', shell=True, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        (out, err) = process.communicate(sshkey.encode('utf-8'))
-        if 'compromised' in out.lower():
-            raise SSHKeyCompromisedError(
-                "This key cannot be added as it is known to be compromised.")
 
         if send_notification:
             person.security_field_changed(

@@ -1,0 +1,13 @@
+Format: 1.0
+Source: bar
+Binary: bar
+Architecture: source
+Version: 1.0-1
+Checksums-Md5:
+ 5d533778b698edc1a122098a98c8490e 512 bar_1.0-1.dsc
+Build-Origin: Ubuntu
+Build-Architecture: amd64
+Build-Date: Tue, 28 Mar 2017 23:51:59 +0100
+Installed-Build-Depends:
+ dpkg (= 1.18.22),
+ dpkg-dev (= 1.18.22)

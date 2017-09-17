@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -111,6 +111,7 @@ Reporter = ClassAlias(Person)
 bug_join = (Bug, Join(Bug, Bug.id == BugTaskFlat.bug_id))
 bugtask_join = (
     BugTask, Join(BugTask, BugTask.id == BugTaskFlat.bugtask_id))
+# Keep in sync with lp.bugs.browser.buglisting.SORT_KEYS.
 orderby_expression = {
     "task": (BugTaskFlat.bugtask_id, []),
     "id": (BugTaskFlat.bug_id, []),

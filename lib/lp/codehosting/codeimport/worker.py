@@ -402,16 +402,8 @@ class CodeImportSourceDetails:
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
         """
-        result = [str(self.target_id)]
-        if self.target_rcstype == 'bzr':
-            # XXX cjwatson 2016-10-12: Remove this special case once the
-            # worker always accepts the combined form.
-            result.append(self.rcstype)
-        elif self.target_rcstype == 'git':
-            result.append('%s:%s' % (self.rcstype, self.target_rcstype))
-        else:
-            raise AssertionError(
-                "Unknown target_rcstype %r." % self.target_rcstype)
+        result = [
+            str(self.target_id), '%s:%s' % (self.rcstype, self.target_rcstype)]
         if self.rcstype in ['bzr-svn', 'git', 'bzr']:
             result.append(self.url)
             if self.stacked_on_url is not None:
@@ -1058,14 +1050,16 @@ class GitToGitImportWorker(ImportWorker):
                 "Invalid Content-Type from server: %s" % content_type)
         content = io.BytesIO(response.content)
         proto = Protocol(content.read, None)
-        pkts = list(proto.read_pkt_seq())
-        if len(pkts) == 1 and pkts[0].rstrip(b"\n") == b"ACK HEAD":
+        pkt = proto.read_pkt_line()
+        if pkt is None:
+            raise GitProtocolError("Unexpected flush-pkt from server")
+        elif pkt.rstrip(b"\n") == b"ACK HEAD":
             pass
-        elif pkts and pkts[0].startswith(b"ERR "):
+        elif pkt.startswith(b"ERR "):
             raise GitProtocolError(
-                pkts[0][len(b"ERR "):].rstrip(b"\n").decode("UTF-8"))
+                pkt[len(b"ERR "):].rstrip(b"\n").decode("UTF-8"))
         else:
-            raise GitProtocolError("Unexpected packets %r from server" % pkts)
+            raise GitProtocolError("Unexpected packet %r from server" % pkt)
 
     def _deleteRefs(self, repository, pattern):
         """Delete all refs in `repository` matching `pattern`."""
@@ -1109,6 +1103,8 @@ class GitToGitImportWorker(ImportWorker):
         self._logger.info("Fetching remote repository.")
         try:
             self._runGit("config", "gc.auto", "0", cwd="repository")
+            # Remove any stray remote-tracking refs from the last time round.
+            self._deleteRefs("repository", "refs/remotes/source/**")
             self._runGit(
                 "remote", "add", "source", self.source_details.url,
                 cwd="repository")
@@ -1123,7 +1119,7 @@ class GitToGitImportWorker(ImportWorker):
             self._runGit("remote", "rm", "source", cwd="repository")
             # XXX cjwatson 2016-11-03: For some reason "git remote rm"
             # doesn't actually remove the refs.
-            self._deleteRefs("repository", "refs/remotes/source/*")
+            self._deleteRefs("repository", "refs/remotes/source/**")
         except subprocess.CalledProcessError as e:
             self._logger.info("Unable to fetch remote repository: %s" % e)
             return CodeImportWorkerExitCode.FAILURE_INVALID

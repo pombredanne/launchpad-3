@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -45,6 +45,20 @@ class SnapBuildMailer(BaseMailer):
             "snapbuild-unauthorized.txt", recipients,
             config.canonical.noreply_from_address,
             "snap-build-upload-unauthorized", build)
+
+    @classmethod
+    def forRefreshFailure(cls, build):
+        """Create a mailer for notifying about macaroon refresh failures.
+
+        :param build: The relevant build.
+        """
+        requester = build.requester
+        recipients = {requester: RecipientReason.forBuildRequester(requester)}
+        return cls(
+            "Refreshing store authorization failed for %(snap_name)s",
+            "snapbuild-refreshfailed.txt", recipients,
+            config.canonical.noreply_from_address,
+            "snap-build-upload-refresh-failed", build)
 
     @classmethod
     def forUploadFailure(cls, build):
@@ -118,7 +132,7 @@ class SnapBuildMailer(BaseMailer):
     def _getTemplateParams(self, email, recipient):
         """See `BaseMailer`."""
         build = self.build
-        upload_job = build.store_upload_jobs.first()
+        upload_job = build.last_store_upload_job
         if upload_job is None:
             error_message = ""
             store_url = ""

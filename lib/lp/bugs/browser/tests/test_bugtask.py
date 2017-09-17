@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -797,7 +797,7 @@ class TestBugTasksTableView(TestCaseWithFactory):
     def test_bugtask_sorting(self):
         # Product tasks come first, sorted by product then series.
         # Distro tasks follow, sorted by package, distribution, then
-        # series.
+        # series (by version in the case of distribution series).
         foo = self.factory.makeProduct(displayname='Foo')
         self.factory.makeProductSeries(product=foo, name='2.0')
         self.factory.makeProductSeries(product=foo, name='1.0')
@@ -805,8 +805,12 @@ class TestBugTasksTableView(TestCaseWithFactory):
         self.factory.makeProductSeries(product=bar, name='0.0')
 
         barix = self.factory.makeDistribution(displayname='Barix')
-        self.factory.makeDistroSeries(distribution=barix, name='beta')
-        self.factory.makeDistroSeries(distribution=barix, name='alpha')
+        self.factory.makeDistroSeries(
+            distribution=barix, name='aaa-release', version='1.0')
+        self.factory.makeDistroSeries(
+            distribution=barix, name='beta', version='0.10')
+        self.factory.makeDistroSeries(
+            distribution=barix, name='alpha', version='0.9')
         fooix = self.factory.makeDistribution(displayname='Fooix')
         self.factory.makeDistroSeries(distribution=fooix, name='beta')
 
@@ -818,6 +822,7 @@ class TestBugTasksTableView(TestCaseWithFactory):
             foo, foo.getSeries('1.0'), foo.getSeries('2.0'),
             barix.getSourcePackage(bar_spn),
             barix.getSeries('beta').getSourcePackage(bar_spn),
+            barix.getSeries('aaa-release').getSourcePackage(bar_spn),
             fooix.getSourcePackage(bar_spn),
             fooix.getSeries('beta').getSourcePackage(bar_spn),
             barix.getSourcePackage(foo_spn),

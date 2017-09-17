@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ArchiveSigningKey implementation."""
@@ -13,8 +13,13 @@ __all__ = [
 import os
 
 import gpgme
+from twisted.internet.threads import deferToThread
 from zope.component import getUtility
 from zope.interface import implementer
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
@@ -78,7 +83,7 @@ class ArchiveSigningKey:
         secret_key = getUtility(IGPGHandler).generateKey(key_displayname)
         self._setupSigningKey(secret_key)
 
-    def setSigningKey(self, key_path):
+    def setSigningKey(self, key_path, async_keyserver=False):
         """See `IArchiveSigningKey`."""
         assert self.archive.signing_key is None, (
             "Cannot override signing_keys.")
@@ -88,9 +93,29 @@ class ArchiveSigningKey:
         with open(key_path) as key_file:
             secret_key_export = key_file.read()
         secret_key = getUtility(IGPGHandler).importSecretKey(secret_key_export)
-        self._setupSigningKey(secret_key)
+        return self._setupSigningKey(
+            secret_key, async_keyserver=async_keyserver)
 
-    def _setupSigningKey(self, secret_key):
+    def _uploadPublicSigningKey(self, secret_key):
+        """Upload the public half of a signing key to the keyserver."""
+        # The handler's security proxying doesn't protect anything useful
+        # here, and when we're running in a thread we don't have an
+        # interaction.
+        gpghandler = removeSecurityProxy(getUtility(IGPGHandler))
+        pub_key = gpghandler.retrieveKey(secret_key.fingerprint)
+        gpghandler.uploadPublicKey(pub_key.fingerprint)
+        return pub_key
+
+    def _storeSigningKey(self, pub_key):
+        """Store signing key reference in the database."""
+        key_owner = getUtility(ILaunchpadCelebrities).ppa_key_guard
+        key, _ = getUtility(IGPGKeySet).activate(
+            key_owner, pub_key, pub_key.can_encrypt)
+        self.archive.signing_key_owner = key.owner
+        self.archive.signing_key_fingerprint = key.fingerprint
+        del get_property_cache(self.archive).signing_key
+
+    def _setupSigningKey(self, secret_key, async_keyserver=False):
         """Mandatory setup for signing keys.
 
         * Export the secret key into the protected disk location.
@@ -99,17 +124,21 @@ class ArchiveSigningKey:
           the context archive.signing_key.
         """
         self.exportSecretKey(secret_key)
-
-        gpghandler = getUtility(IGPGHandler)
-        pub_key = gpghandler.retrieveKey(secret_key.fingerprint)
-        gpghandler.uploadPublicKey(pub_key.fingerprint)
-
-        key_owner = getUtility(ILaunchpadCelebrities).ppa_key_guard
-        key, _ = getUtility(IGPGKeySet).activate(
-            key_owner, pub_key, pub_key.can_encrypt)
-        self.archive.signing_key_owner = key.owner
-        self.archive.signing_key_fingerprint = key.fingerprint
-        del get_property_cache(self.archive).signing_key
+        if async_keyserver:
+            # If we have an asynchronous keyserver running in the current
+            # thread using Twisted, then we need some contortions to ensure
+            # that the GPG handler doesn't deadlock.  This is most easily
+            # done by deferring the GPG handler work to another thread.
+            # Since that thread won't have a Zope interaction, we need to
+            # unwrap the security proxy for it.
+            d = deferToThread(
+                self._uploadPublicSigningKey, removeSecurityProxy(secret_key))
+            d.addCallback(ProxyFactory)
+            d.addCallback(self._storeSigningKey)
+            return d
+        else:
+            pub_key = self._uploadPublicSigningKey(secret_key)
+            self._storeSigningKey(pub_key)
 
     def signRepository(self, suite):
         """See `IArchiveSigningKey`."""

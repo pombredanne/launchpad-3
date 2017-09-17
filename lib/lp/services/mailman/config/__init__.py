@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ZConfig datatypes for <mailman> and <mailman-build> configuration keys."""
@@ -88,6 +88,6 @@ def configure_siteowner(value):
         addr, password = value.split(':', 1)
     else:
         localpart = random_characters()
-        password  = random_characters()
+        password = random_characters()
         addr = localpart + '@example.com'
     return addr, password

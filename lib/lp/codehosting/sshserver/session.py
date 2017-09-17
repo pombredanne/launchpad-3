@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SSH session implementations for the codehosting SSH server."""
@@ -16,6 +16,7 @@ import urlparse
 
 from lazr.sshserver.events import AvatarEvent
 from lazr.sshserver.session import DoNothingSession
+from six import reraise
 from twisted.internet import (
     error,
     interfaces,
@@ -208,7 +209,7 @@ class ForkedProcessTransport(process.BaseProcess):
                     # all cleanups get called so we don't get leaks. We know
                     # there is an active exception, or we wouldn't be here.
                     log.err()
-            raise exc_class, exc_value, exc_tb
+            reraise(exc_class, exc_value, tb=exc_tb)
         self.pipes['exit'] = self._exiter
 
     def _getReason(self, status):

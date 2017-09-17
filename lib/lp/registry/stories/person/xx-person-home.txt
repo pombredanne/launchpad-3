@@ -106,7 +106,7 @@ OpenPGP keys
 
 In order to avoid email harvesters to find a person's email addresses
 just by following the link to that person's OpenPGP keys, only
-authenticated users can see the key ID with a link to the keyserver.
+authenticated users can see the key fingerprint with a link to the keyserver.
 
     >>> user_browser.open('http://launchpad.dev/~name16')
     >>> print find_tag_by_id(user_browser.contents, 'pgp-keys')
@@ -116,7 +116,7 @@ authenticated users can see the key ID with a link to the keyserver.
     >>> anon_browser.open('http://launchpad.dev/~name16')
     >>> print find_tag_by_id(anon_browser.contents, 'pgp-keys')
     <dl...
-    <dd> 12345678...
+    <dd> ABCDEF0123456789ABCDDCBA0000111112345678...
 
 
 Languages

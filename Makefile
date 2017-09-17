@@ -5,7 +5,7 @@ PYTHON:=python2.7
 
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
-PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
+PYTHONPATH:=$(WD)/lib:${PYTHONPATH}
 BUILDOUT_CFG=buildout.cfg
 VERBOSITY=-vv
 
@@ -47,17 +47,14 @@ API_INDEX = $(APIDOC_DIR)/index.html
 # NB: It's important BUILDOUT_BIN only mentions things genuinely produced by
 # buildout.
 BUILDOUT_BIN = \
-    $(PY) bin/apiindex bin/combine-css bin/fl-build-report \
+    $(PY) bin/apiindex bin/bzr bin/combine-css bin/fl-build-report \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
-    bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
     bin/harness bin/iharness bin/ipy bin/jsbuild bin/lpjsmin\
-    bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
+    bin/killservice bin/kill-test-services bin/retest \
     bin/run bin/run-testapp bin/sprite-util bin/start_librarian \
-    bin/tags bin/test bin/tracereport bin/twistd bin/update-download-cache \
-    bin/watch_jsbuild
-
-BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
+    bin/tags bin/test bin/tracereport bin/twistd \
+    bin/watch_jsbuild bin/with-xvfb
 
 # DO NOT ALTER : this should just build by default
 default: inplace
@@ -109,10 +106,10 @@ check_mailman: build
 		lp.services.mailman.tests
 
 lint: ${PY}
-	@bash ./bin/lint.sh
+	@bash ./utilities/lint
 
 lint-verbose: ${PY}
-	@bash ./bin/lint.sh -v
+	@bash ./utilities/lint -v
 
 logs:
 	mkdir logs
@@ -229,8 +226,7 @@ buildout_bin: $(BUILDOUT_BIN)
 # If we listed every target on the left-hand side, a parallel make would try
 # multiple copies of this rule to build them all.  Instead, we nominally build
 # just $(PY), and everything else is implicitly updated by that.
-$(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
-		$(BUILDOUT_TEMPLATES)
+$(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
 	$(SHHH) PYTHONPATH= ./bin/buildout \
                 configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 	touch $@
@@ -351,9 +347,7 @@ clean_buildout:
 	$(RM) -r parts
 	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
-	$(RM) _pythonpath.py
 	$(RM) -r yui/*
-	$(RM) scripts/mlist-sync.py
 
 clean_logs:
 	$(RM) logs/thread*.request
@@ -363,6 +357,7 @@ clean_mailman:
 ifdef LP_MAKE_KEEP_MAILMAN
 	@echo "Keeping previously built mailman."
 else
+	$(RM) lib/Mailman
 	$(RM) -r lib/mailman
 endif
 
@@ -421,8 +416,12 @@ realclean: clean
 potemplates: launchpad.pot
 
 # Generate launchpad.pot by extracting message ids from the source
+# XXX cjwatson 2017-09-04: This was previously done using i18nextract from
+# z3c.recipe.i18n, but has been broken for some time.  The place to start in
+# putting this together again is probably zope.app.locales.
 launchpad.pot:
-	bin/i18nextract.py
+	echo "POT generation not currently supported; help us fix this!" >&2
+	exit 1
 
 # Called by the rocketfuel-setup script. You probably don't want to run this
 # on its own.

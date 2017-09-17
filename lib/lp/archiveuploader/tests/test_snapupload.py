@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test uploads of SnapBuilds."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import os
 
+from pymacaroons import Macaroon
 from storm.store import Store
 from zope.component import getUtility
 
@@ -89,8 +90,7 @@ class TestSnapBuildUploads(TestUploadProcessorBase):
             usable_distro_series=[self.snap.distro_series])
         self.snap.store_name = self.snap.name
         self.snap.store_upload = True
-        self.snap.store_secrets = {
-            "root": "dummy-root", "discharge": "dummy-discharge"}
+        self.snap.store_secrets = {"root": Macaroon().serialize()}
         Store.of(self.snap).flush()
         self.switchToUploader()
         self.assertFalse(self.build.verifySuccessfulUpload())

@@ -1,27 +1,39 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build behaviour."""
 
 __metaclass__ = type
 
+import base64
 from datetime import datetime
+import json
+import os.path
 from textwrap import dedent
 import uuid
 
 import fixtures
-from mock import (
-    patch,
-    Mock,
-    )
-import transaction
+from mock import patch
+from pymacaroons import Macaroon
 from testtools import ExpectedException
 from testtools.deferredruntest import AsynchronousDeferredRunTest
-from testtools.matchers import IsInstance
+from testtools.matchers import (
+    AfterPreprocessing,
+    Equals,
+    IsInstance,
+    MatchesDict,
+    MatchesListwise,
+    StartsWith,
+    )
+import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
@@ -46,8 +58,13 @@ from lp.snappy.model.snapbuildbehaviour import SnapBuildBehaviour
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archive import ArchiveDisabled
+from lp.soyuz.tests.soyuz import Base64KeyMatches
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.gpgkeys import gpgkeysdir
+from lp.testing.keyserver import InProcessKeyServerFixture
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
@@ -56,11 +73,15 @@ class TestSnapBuildBehaviourBase(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSnapBuildBehaviourBase, self).setUp()
-        self.pushConfig("snappy", tools_source=None)
+        self.pushConfig("snappy", tools_source=None, tools_fingerprint=None)
 
-    def makeJob(self, pocket=PackagePublishingPocket.UPDATES, **kwargs):
+    def makeJob(self, archive=None, pocket=PackagePublishingPocket.UPDATES,
+                **kwargs):
         """Create a sample `ISnapBuildBehaviour`."""
-        distribution = self.factory.makeDistribution(name="distro")
+        if archive is None:
+            distribution = self.factory.makeDistribution(name="distro")
+        else:
+            distribution = archive.distribution
         distroseries = self.factory.makeDistroSeries(
             distribution=distribution, name="unstable")
         processor = getUtility(IProcessorSet).getByName("386")
@@ -68,7 +89,7 @@ class TestSnapBuildBehaviourBase(TestCaseWithFactory):
             distroseries=distroseries, architecturetag="i386",
             processor=processor)
         build = self.factory.makeSnapBuild(
-            distroarchseries=distroarchseries, pocket=pocket,
+            archive=archive, distroarchseries=distroarchseries, pocket=pocket,
             name=u"test-snap", **kwargs)
         return IBuildFarmJobBehaviour(build)
 
@@ -167,7 +188,7 @@ class TestSnapBuildBehaviour(TestSnapBuildBehaviourBase):
 
 
 class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
-    run_tests_with = AsynchronousDeferredRunTest
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
     def setUp(self):
         super(TestAsyncSnapBuildBehaviour, self).setUp()
@@ -184,16 +205,16 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         self.revocation_endpoint = "{endpoint}/{username}".format(
             endpoint=config.snappy.builder_proxy_auth_api_endpoint,
             username=build_username)
-        self.patcher = patch.object(
-            SnapBuildBehaviour, '_requestProxyToken',
-            Mock(return_value=self.mockRequestProxyToken())).start()
-
-    def tearDown(self):
-        super(TestAsyncSnapBuildBehaviour, self).tearDown()
-        self.patcher.stop()
-
-    def mockRequestProxyToken(self):
-        return defer.succeed(self.token)
+        self.api_admin_secret = "admin-secret"
+        self.pushConfig(
+            "snappy",
+            builder_proxy_auth_api_admin_secret=self.api_admin_secret)
+        self.mock_proxy_api = FakeMethod(
+            result=defer.succeed(json.dumps(self.token)))
+        patcher = patch(
+            "lp.snappy.model.snapbuildbehaviour.getPage", self.mock_proxy_api)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     @defer.inlineCallbacks
     def test_composeBuildRequest(self):
@@ -205,13 +226,48 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         self.assertThat(build_request[3], IsInstance(dict))
 
     @defer.inlineCallbacks
+    def test_requestProxyToken_unconfigured(self):
+        self.pushConfig("snappy", builder_proxy_auth_api_admin_secret=None)
+        branch = self.factory.makeBranch()
+        job = self.makeJob(branch=branch)
+        expected_exception_msg = (
+            "builder_proxy_auth_api_admin_secret is not configured.")
+        with ExpectedException(CannotBuild, expected_exception_msg):
+            yield job._extraBuildArgs()
+
+    @defer.inlineCallbacks
+    def test_requestProxyToken(self):
+        branch = self.factory.makeBranch()
+        job = self.makeJob(branch=branch)
+        yield job._extraBuildArgs()
+        self.assertThat(self.mock_proxy_api.calls, MatchesListwise([
+            MatchesListwise([
+                MatchesListwise([
+                    Equals(config.snappy.builder_proxy_auth_api_endpoint),
+                    ]),
+                MatchesDict({
+                    "method": Equals("POST"),
+                    "postdata": AfterPreprocessing(json.loads, MatchesDict({
+                        "username": StartsWith(job.build.build_cookie + "-"),
+                        })),
+                    "headers": MatchesDict({
+                        "Authorization": Equals("Basic " + base64.b64encode(
+                            "admin-launchpad.dev:admin-secret")),
+                        "Content-Type": Equals("application/json"),
+                        }),
+                    }),
+                ]),
+            ]))
+
+    @defer.inlineCallbacks
     def test_extraBuildArgs_bzr(self):
         # _extraBuildArgs returns appropriate arguments if asked to build a
         # job for a Bazaar branch.
         branch = self.factory.makeBranch()
         job = self.makeJob(branch=branch)
-        expected_archives = get_sources_list_for_building(
-            job.build, job.build.distro_arch_series, None)
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
         args = yield job._extraBuildArgs()
         self.assertEqual({
             "archive_private": False,
@@ -221,6 +277,8 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "name": u"test-snap",
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
+            "series": "unstable",
+            "trusted_keys": expected_trusted_keys,
             }, args)
 
     @defer.inlineCallbacks
@@ -229,8 +287,9 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         # job for a Git branch.
         [ref] = self.factory.makeGitRefs()
         job = self.makeJob(git_ref=ref)
-        expected_archives = get_sources_list_for_building(
-            job.build, job.build.distro_arch_series, None)
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
         args = yield job._extraBuildArgs()
         self.assertEqual({
             "archive_private": False,
@@ -241,10 +300,101 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "name": u"test-snap",
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
+            "series": "unstable",
+            "trusted_keys": expected_trusted_keys,
             }, args)
 
     @defer.inlineCallbacks
-    def test_extraBuildArgs_proxy_url_set(self):
+    def test_extraBuildArgs_git_HEAD(self):
+        # _extraBuildArgs returns appropriate arguments if asked to build a
+        # job for the default branch in a Launchpad-hosted Git repository.
+        [ref] = self.factory.makeGitRefs()
+        removeSecurityProxy(ref.repository)._default_branch = ref.path
+        job = self.makeJob(git_ref=ref.repository.getRefByPath(u"HEAD"))
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
+        args = yield job._extraBuildArgs()
+        self.assertEqual({
+            "archive_private": False,
+            "archives": expected_archives,
+            "arch_tag": "i386",
+            "git_repository": ref.repository.git_https_url,
+            "name": u"test-snap",
+            "proxy_url": self.proxy_url,
+            "revocation_endpoint": self.revocation_endpoint,
+            "series": "unstable",
+            "trusted_keys": expected_trusted_keys,
+            }, args)
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_git_url(self):
+        # _extraBuildArgs returns appropriate arguments if asked to build a
+        # job for a Git branch backed by a URL for an external repository.
+        url = u"https://git.example.org/foo"
+        ref = self.factory.makeGitRefRemote(
+            repository_url=url, path=u"refs/heads/master")
+        job = self.makeJob(git_ref=ref)
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
+        args = yield job._extraBuildArgs()
+        self.assertEqual({
+            "archive_private": False,
+            "archives": expected_archives,
+            "arch_tag": "i386",
+            "git_repository": url,
+            "git_path": "master",
+            "name": u"test-snap",
+            "proxy_url": self.proxy_url,
+            "revocation_endpoint": self.revocation_endpoint,
+            "series": "unstable",
+            "trusted_keys": expected_trusted_keys,
+            }, args)
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_git_url_HEAD(self):
+        # _extraBuildArgs returns appropriate arguments if asked to build a
+        # job for the default branch in an external Git repository.
+        url = u"https://git.example.org/foo"
+        ref = self.factory.makeGitRefRemote(repository_url=url, path=u"HEAD")
+        job = self.makeJob(git_ref=ref)
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
+        args = yield job._extraBuildArgs()
+        self.assertEqual({
+            "archive_private": False,
+            "archives": expected_archives,
+            "arch_tag": "i386",
+            "git_repository": url,
+            "name": u"test-snap",
+            "proxy_url": self.proxy_url,
+            "revocation_endpoint": self.revocation_endpoint,
+            "series": "unstable",
+            "trusted_keys": expected_trusted_keys,
+            }, args)
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_archive_trusted_keys(self):
+        # If the archive has a signing key, _extraBuildArgs sends it.
+        yield self.useFixture(InProcessKeyServerFixture()).start()
+        archive = self.factory.makeArchive()
+        key_path = os.path.join(gpgkeysdir, "ppa-sample@canonical.com.sec")
+        yield IArchiveSigningKey(archive).setSigningKey(
+            key_path, async_keyserver=True)
+        job = self.makeJob(archive=archive)
+        self.factory.makeBinaryPackagePublishingHistory(
+            distroarchseries=job.build.distro_arch_series,
+            pocket=job.build.pocket, archive=archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        args = yield job._extraBuildArgs()
+        self.assertThat(args["trusted_keys"], MatchesListwise([
+            Base64KeyMatches("0D57E99656BEFB0897606EE9A022DD1F5001B46D"),
+            ]))
+
+    @defer.inlineCallbacks
+    def test_composeBuildRequest_proxy_url_set(self):
         job = self.makeJob()
         build_request = yield job.composeBuildRequest(None)
         proxy_url = ("http://{username}:{password}"
@@ -306,8 +456,7 @@ class MakeSnapBuildMixin:
             distroseries=distroseries, store_upload=True,
             store_series=snappyseries,
             store_name=self.factory.getUniqueUnicode(),
-            store_secrets={
-                "root": "dummy-root", "discharge": "dummy-discharge"})
+            store_secrets={"root": Macaroon().serialize()})
 
     def makeBuild(self):
         snap = self.makeSnap()

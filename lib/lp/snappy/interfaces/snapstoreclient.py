@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for communication with the snap store."""
@@ -8,63 +8,72 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 __all__ = [
     'BadRefreshResponse',
-    'BadReleaseResponse',
     'BadRequestPackageUploadResponse',
     'BadScanStatusResponse',
     'BadSearchResponse',
-    'BadUploadResponse',
     'ISnapStoreClient',
     'NeedsRefreshResponse',
     'ReleaseFailedResponse',
     'ScanFailedResponse',
+    'SnapStoreError',
     'UnauthorizedUploadResponse',
+    'UploadFailedResponse',
     'UploadNotScannedYetResponse',
     ]
 
+import httplib
+
+from lazr.restful.declarations import error_status
 from zope.interface import Interface
 
 
-class BadRequestPackageUploadResponse(Exception):
+class SnapStoreError(Exception):
+
+    def __init__(self, message="", detail=None, can_retry=False):
+        super(SnapStoreError, self).__init__(message)
+        self.message = message
+        self.detail = detail
+        self.can_retry = can_retry
+
+
+@error_status(httplib.INTERNAL_SERVER_ERROR)
+class BadRequestPackageUploadResponse(SnapStoreError):
     pass
 
 
-class BadUploadResponse(Exception):
+class UploadFailedResponse(SnapStoreError):
     pass
 
 
-class BadRefreshResponse(Exception):
+class BadRefreshResponse(SnapStoreError):
     pass
 
 
-class NeedsRefreshResponse(Exception):
+class NeedsRefreshResponse(SnapStoreError):
     pass
 
 
-class UnauthorizedUploadResponse(Exception):
+class UnauthorizedUploadResponse(SnapStoreError):
     pass
 
 
-class BadScanStatusResponse(Exception):
+class BadScanStatusResponse(SnapStoreError):
     pass
 
 
-class UploadNotScannedYetResponse(Exception):
+class UploadNotScannedYetResponse(SnapStoreError):
     pass
 
 
-class ScanFailedResponse(Exception):
+class ScanFailedResponse(SnapStoreError):
     pass
 
 
-class BadSearchResponse(Exception):
+class BadSearchResponse(SnapStoreError):
     pass
 
 
-class BadReleaseResponse(Exception):
-    pass
-
-
-class ReleaseFailedResponse(Exception):
+class ReleaseFailedResponse(SnapStoreError):
     pass
 
 
@@ -90,6 +99,13 @@ class ISnapStoreClient(Interface):
 
         :param snapbuild: The `ISnapBuild` to upload.
         :return: A URL to poll for upload processing status.
+        :raises BadRefreshResponse: if the authorising macaroons need to be
+            refreshed, but attempting to do so fails.
+        :raises UnauthorizedUploadResponse: if the user who authorised this
+            upload is not themselves authorised to upload the snap in
+            question.
+        :raises UploadFailedResponse: if uploading the build to the store
+            failed.
         """
 
     def refreshDischargeMacaroon(snap):
@@ -126,6 +142,6 @@ class ISnapStoreClient(Interface):
         :param snapbuild: The `ISnapBuild` to release.
         :param revision: The revision returned by the store when uploading
             the build.
-        :raises BadReleaseResponse: if the store failed to release the
+        :raises ReleaseFailedResponse: if the store failed to release the
             build.
         """

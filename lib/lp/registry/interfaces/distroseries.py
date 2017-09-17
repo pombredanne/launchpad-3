@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IDistroSeries."""
@@ -16,7 +16,6 @@ __all__ = [
 
 import httplib
 
-from lazr.enum import DBEnumeratedType
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -68,12 +67,17 @@ from lp.bugs.interfaces.bugtarget import (
 from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget,
     )
+from lp.registry.enums import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.milestone import (
     IHasMilestones,
     IMilestone,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import (
     IHasAppointedDriver,
     IHasOwner,
@@ -91,7 +95,11 @@ from lp.services.fields import (
     UniqueField,
     )
 from lp.services.webservice.apihelpers import patch_plain_parameter_type
-from lp.soyuz.enums import IndexCompressionType
+from lp.soyuz.enums import (
+    IndexCompressionType,
+    PackageUploadCustomFormat,
+    PackageUploadStatus,
+    )
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
@@ -533,9 +541,7 @@ class IDistroSeriesPublic(
                 "Return items that are more recent than this timestamp."),
             required=False),
         status=Choice(
-            # Really PackageUploadCustomFormat, patched in
-            # _schema_circular_imports.py
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackageUploadStatus,
             title=_("Package Upload Status"),
             description=_("Return only items that have this status."),
             required=False),
@@ -546,16 +552,12 @@ class IDistroSeriesPublic(
             description=_("Return only items for this archive."),
             required=False),
         pocket=Choice(
-            # Really PackagePublishingPocket, patched in
-            # _schema_circular_imports.py
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             title=_("Pocket"),
             description=_("Return only items targeted to this pocket"),
             required=False),
         custom_type=Choice(
-            # Really PackageUploadCustomFormat, patched in
-            # _schema_circular_imports.py
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackageUploadCustomFormat,
             title=_("Custom Type"),
             description=_("Return only items with custom files of this "
                           "type."),
@@ -684,7 +686,7 @@ class IDistroSeriesPublic(
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=None,
         source_package_recipe_build=None, user_defined_fields=None,
-        homepage=None):
+        homepage=None, buildinfo=None):
         """Create an uploads `SourcePackageRelease`.
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -724,6 +726,7 @@ class IDistroSeriesPublic(
                                      user defined fields.
          :param homepage: optional string with (unchecked) upstream homepage
                           URL
+         :param buildinfo: optional LFA with build information file
          :return: the just creates `SourcePackageRelease`
         """
 
@@ -838,14 +841,14 @@ class IDistroSeriesPublic(
             title=_("The parent series to consider."),
             required=False),
         difference_type=Choice(
-            vocabulary=DBEnumeratedType,  # DistroSeriesDifferenceType
+            vocabulary=DistroSeriesDifferenceType,
             title=_("Only return differences of this type."), required=False),
         source_package_name_filter=TextLine(
             title=_("Only return differences for packages matching this "
                     "name."),
             required=False),
         status=Choice(
-            vocabulary=DBEnumeratedType,  # DistroSeriesDifferenceStatus
+            vocabulary=DistroSeriesDifferenceStatus,
             title=_("Only return differences of this status."),
             required=False),
         child_version_higher=Bool(

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -7,6 +7,7 @@ __all__ = [
     'GPGKeyExpired',
     'GPGKeyNotFoundError',
     'GPGKeyRevoked',
+    'GPGKeyMismatchOnServer',
     'GPGKeyTemporarilyNotFoundError',
     'GPGUploadFailure',
     'GPGVerificationError',
@@ -143,7 +144,7 @@ class GPGKeyRevoked(Exception):
     def __init__(self, key):
         self.key = key
         super(GPGKeyRevoked, self).__init__(
-            "%s has been publicly revoked" % (key.keyid, ))
+            "%s has been publicly revoked" % (key.fingerprint, ))
 
 
 class GPGKeyExpired(Exception):
@@ -151,7 +152,22 @@ class GPGKeyExpired(Exception):
 
     def __init__(self, key):
         self.key = key
-        super(GPGKeyExpired, self).__init__("%s has expired" % (key.keyid, ))
+        super(GPGKeyExpired, self).__init__(
+            "%s has expired" % (key.fingerprint, ))
+
+
+class GPGKeyMismatchOnServer(Exception):
+    """The keyserver returned the wrong key for a given fingerprint.
+
+    This may indicate a keyserver compromise.
+    """
+    def __init__(self, expected_fingerprint, keyserver_fingerprint):
+        self.expected_fingerprint = expected_fingerprint
+        self.keyserver_fingerprint = keyserver_fingerprint
+        message = (
+            "The keyserver returned the wrong key: expected %s, got %s." %
+            (expected_fingerprint, keyserver_fingerprint))
+        super(GPGKeyMismatchOnServer, self).__init__(message)
 
 
 class SecretGPGKeyImportDetected(Exception):

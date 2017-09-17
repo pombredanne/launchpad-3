@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -84,7 +84,7 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.tests import block_on_job
-from lp.services.log.logger import FakeLogger
+from lp.services.log.logger import DevNullLogger
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
 from lp.services.webapp.authorization import check_permission
@@ -3154,7 +3154,7 @@ class TestTargetNameCache(TestCase):
             "/var/lock/launchpad-launchpad-targetnamecacheupdater.lock")))
         self.assertTrue('INFO    Updating targetname cache of bugtasks' in err)
         self.assertTrue('INFO    Calculating targets.' in err)
-        self.assertTrue('INFO    Will check ', err)
+        self.assertTrue('INFO    Will check ' in err)
         self.assertTrue("INFO    Updating (u'Mozilla Thunderbird',)" in err)
         self.assertTrue('INFO    Updated 1 target names.' in err)
         self.assertTrue('INFO    Finished updating targetname cache' in err)
@@ -3218,7 +3218,7 @@ class TestTargetNameCache(TestCase):
         self.assertEqual(upstream_task.bugtargetdisplayname,
             u'Mozilla Thunderbird NG')
 
-        logger = FakeLogger()
+        logger = DevNullLogger()
         updater = BugTaskTargetNameCacheUpdater(transaction, logger)
         updater.run()
 

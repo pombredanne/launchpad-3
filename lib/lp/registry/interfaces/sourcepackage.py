@@ -54,6 +54,7 @@ from lp.code.interfaces.hasbranches import (
     IHasCodeImports,
     IHasMergeProposals,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.role import (
     IHasDrivers,
@@ -244,13 +245,10 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
         :return: A string.
         """
 
-    # 'pocket' should actually be a PackagePublishingPocket, but we say
-    # DBEnumeratedType to avoid circular imports. Correct interface specific
-    # in _schema_circular_imports.
     @operation_parameters(
         pocket=Choice(
             title=_("Pocket"), required=True,
-            vocabulary=DBEnumeratedType))
+            vocabulary=PackagePublishingPocket))
     # Actually returns an IBranch, but we say Interface here to avoid circular
     # imports. Correct interface specified in _schema_circular_imports.
     @operation_returns_entry(Interface)
@@ -305,13 +303,13 @@ class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
 class ISourcePackageEdit(Interface):
     """SourcePackage attributes requiring launchpad.Edit."""
 
-    # 'pocket' should actually be a PackagePublishingPocket, and 'branch'
-    # should be IBranch, but we use the base classes to avoid circular
-    # imports. Correct interface specific in _schema_circular_imports.
+    # 'branch' should be IBranch, but we use the base class to avoid
+    # circular imports. Correct interface specific in
+    # _schema_circular_imports.
     @operation_parameters(
         pocket=Choice(
             title=_("Pocket"), required=True,
-            vocabulary=DBEnumeratedType),
+            vocabulary=PackagePublishingPocket),
         branch=Reference(Interface, title=_("Branch"), required=False))
     @call_with(registrant=REQUEST_USER)
     @export_write_operation()

@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Source package release interfaces."""
@@ -44,6 +44,9 @@ class ISourcePackageRelease(Interface):
     change_summary = Attribute(
         "The message on the latest change in this release. This is usually "
         "a snippet from the changelog")
+    buildinfo = Attribute(
+        "LibraryFileAlias containing build information for this source "
+        "upload, if any.")
     builddepends = TextLine(
         title=_("DSC build depends"),
         description=_("A comma-separated list of packages on which this "

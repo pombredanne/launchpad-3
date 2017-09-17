@@ -1,13 +1,14 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import doctest
 import email
+import re
 from textwrap import dedent
 
-from lazr.restful.utils import get_current_browser_request
+from fixtures import FakeLogger
 import soupmatchers
 from storm.store import Store
 from testtools.matchers import (
@@ -44,10 +45,9 @@ from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
 from lp.services.config import config
 from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
-from lp.services.log.logger import FakeLogger
+from lp.services.log.logger import DevNullLogger
 from lp.services.mail import stub
 from lp.services.propertycache import clear_property_cache
-from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.verification.interfaces.authtoken import LoginTokenType
 from lp.services.verification.interfaces.logintoken import ILoginTokenSet
 from lp.services.verification.tests.logintoken import get_token_url_from_email
@@ -349,6 +349,21 @@ class TestPersonIndexView(BrowserTestCase):
         self.factory.makeGPGKey(person)
         view = create_initialized_view(person, '+index')
         self.assertTrue(view.should_show_gpgkeys_section)
+
+    def test_ppas_query_count(self):
+        owner = self.factory.makePerson()
+
+        def create_ppa_and_permission():
+            ppa = self.factory.makeArchive(
+                owner=owner, purpose=ArchivePurpose.PPA, private=True)
+            ppa.newComponentUploader(self.user, 'main')
+
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getMainText(owner, '+index'),
+            create_ppa_and_permission, 5,
+            login_method=lambda: login_person(owner),
+            record_request=True)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -733,6 +748,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
 
     def test_team_editemails_not_found(self):
         """Teams should not have a +editemails page."""
+        self.useFixture(FakeLogger())
         team = self.factory.makeTeam(owner=self.person, members=[self.person])
         url = '%s/+editemails' % canonical_url(team)
         browser = setupBrowserForUser(user=self.person)
@@ -740,6 +756,7 @@ class TestPersonEditView(TestPersonRenameFormMixin, TestCaseWithFactory):
 
     def test_team_editmailinglists_not_found(self):
         """Teams should not have a +editmailinglists page."""
+        self.useFixture(FakeLogger())
         team = self.factory.makeTeam(owner=self.person, members=[self.person])
         url = '%s/+editmailinglists' % canonical_url(team)
         browser = setupBrowserForUser(user=self.person)
@@ -984,7 +1001,7 @@ class TestPersonRelatedPackagesView(TestCaseWithFactory):
             spphs.append(spph)
         # Update the releases cache table.
         switch_dbuser('garbo_frequently')
-        job = PopulateLatestPersonSourcePackageReleaseCache(FakeLogger())
+        job = PopulateLatestPersonSourcePackageReleaseCache(DevNullLogger())
         while not job.isDone():
             job(chunk_size=100)
         switch_dbuser('launchpad')
@@ -1191,15 +1208,26 @@ class TestPersonRelatedProjectsView(TestCaseWithFactory):
     def setUp(self):
         super(TestPersonRelatedProjectsView, self).setUp()
         self.user = self.factory.makePerson()
-        self.view = create_initialized_view(self.user, '+related-projects')
 
     def test_view_helper_attributes(self):
         # Verify view helper attributes.
-        self.assertEqual('Related projects', self.view.page_title)
-        self.assertEqual('default_batch_size', self.view._max_results_key)
+        view = create_initialized_view(self.user, '+related-projects')
+        self.assertEqual('Related projects', view.page_title)
+        self.assertEqual('default_batch_size', view._max_results_key)
         self.assertEqual(
-            config.launchpad.default_batch_size,
-            self.view.max_results_to_display)
+            config.launchpad.default_batch_size, view.max_results_to_display)
+
+    def test_batching(self):
+        for i in range(10):
+            self.factory.makeProduct(owner=self.user)
+        view = create_initialized_view(self.user, '+related-projects')
+        next_match = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Next link', 'a',
+                attrs={'href': re.compile(re.escape(
+                    '?batch=5&memo=5&start=5'))},
+                text='Next'))
+        self.assertThat(view(), next_match)
 
 
 class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
@@ -1233,7 +1261,7 @@ class TestPersonRelatedPackagesFailedBuild(TestCaseWithFactory):
         self.build.updateStatus(BuildStatus.FAILEDTOBUILD)
         # Update the releases cache table.
         switch_dbuser('garbo_frequently')
-        job = PopulateLatestPersonSourcePackageReleaseCache(FakeLogger())
+        job = PopulateLatestPersonSourcePackageReleaseCache(DevNullLogger())
         while not job.isDone():
             job(chunk_size=100)
         switch_dbuser('launchpad')

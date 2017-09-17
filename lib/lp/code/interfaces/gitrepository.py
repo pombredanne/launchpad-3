@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository interfaces."""
@@ -265,6 +265,12 @@ class IGitRepositoryView(IHasRecipes):
         # Really ICodeImport, patched in _schema_circular_imports.py.
         schema=Interface))
 
+    @operation_parameters(
+        path=TextLine(title=_("A string to look up as a path.")))
+    # Really IGitRef, patched in _schema_circular_imports.py.
+    @operation_returns_entry(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
     def getRefByPath(path):
         """Look up a single reference in this repository by path.
 
@@ -476,22 +482,34 @@ class IGitRepositoryView(IHasRecipes):
         and their subscriptions.
         """
 
-    landing_targets = exported(CollectionField(
-        title=_("Landing targets"),
-        description=_(
-            "A collection of the merge proposals where this repository is the "
-            "source."),
-        readonly=True,
-        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
-        value_type=Reference(Interface)))
-    landing_candidates = exported(CollectionField(
-        title=_("Landing candidates"),
-        description=_(
-            "A collection of the merge proposals where this repository is the "
-            "target."),
-        readonly=True,
-        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
-        value_type=Reference(Interface)))
+    landing_targets = Attribute(
+        "A collection of the merge proposals where this repository is "
+        "the source.")
+    _api_landing_targets = exported(
+        CollectionField(
+            title=_("Landing targets"),
+            description=_(
+                "A collection of the merge proposals where this repository is "
+                "the source."),
+            readonly=True,
+            # Really IBranchMergeProposal, patched in
+            # _schema_circular_imports.py.
+            value_type=Reference(Interface)),
+        exported_as="landing_targets")
+    landing_candidates = Attribute(
+        "A collection of the merge proposals where this repository is "
+        "the target.")
+    _api_landing_candidates = exported(
+        CollectionField(
+            title=_("Landing candidates"),
+            description=_(
+                "A collection of the merge proposals where this repository is "
+                "the target."),
+            readonly=True,
+            # Really IBranchMergeProposal, patched in
+            # _schema_circular_imports.py.
+            value_type=Reference(Interface)),
+        exported_as="landing_candidates")
     dependent_landings = exported(CollectionField(
         title=_("Dependent landings"),
         description=_(
@@ -500,6 +518,18 @@ class IGitRepositoryView(IHasRecipes):
         readonly=True,
         # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
         value_type=Reference(Interface)))
+
+    def getPrecachedLandingTargets(user):
+        """Return precached landing targets.
+
+        Target and prerequisite repositories are preloaded.
+        """
+
+    def getPrecachedLandingCandidates(user):
+        """Return precached landing candidates.
+
+        Source and prerequisite repositories are preloaded.
+        """
 
     def getMergeProposalByID(id):
         """Return this repository's merge proposal with this id, or None."""
@@ -660,6 +690,14 @@ class IGitRepositoryEdit(IWebhookTarget):
     @operation_for_version("devel")
     def setTarget(target, user):
         """Set the target of the repository."""
+
+    @export_write_operation()
+    @operation_for_version("devel")
+    def rescan():
+        """Force a rescan of this repository.
+
+        This may be helpful in cases where a previous scan crashed.
+        """
 
     @export_read_operation()
     @operation_for_version("devel")

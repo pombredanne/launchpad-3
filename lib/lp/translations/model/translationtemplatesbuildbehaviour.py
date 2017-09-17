@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `TranslationTemplatesBuild`.
@@ -110,26 +110,17 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
         filename = yield self._readTarball(
             self.build.buildqueue_record, filemap, logger)
 
-        # XXX 2010-11-12 bug=674575
-        # Please make addOrUpdateEntriesFromTarball() take files on
-        # disk; reading arbitrarily sized files into memory is
-        # dangerous.
         if filename is None:
             logger.error("Build produced no tarball.")
         else:
             tarball_file = open(filename)
             try:
-                tarball = tarball_file.read()
-                if tarball is None:
-                    logger.error("Build produced empty tarball.")
-                else:
-                    logger.debug(
-                        "Uploading translation templates tarball.")
-                    self._uploadTarball(
-                        self.build.buildqueue_record.specific_build.branch,
-                        tarball, logger)
-                    transaction.commit()
-                    logger.debug("Upload complete.")
+                logger.debug("Uploading translation templates tarball.")
+                self._uploadTarball(
+                    self.build.buildqueue_record.specific_build.branch,
+                    tarball_file, logger)
+                transaction.commit()
+                logger.debug("Upload complete.")
             finally:
                 tarball_file.close()
                 os.remove(filename)

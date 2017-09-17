@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -14,7 +14,10 @@ __all__ = [
 
 from collections import defaultdict
 from datetime import datetime
-from operator import attrgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 import os
 import sys
 
@@ -51,6 +54,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database import bulk
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.datetimecol import UtcDateTimeCol
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
     IMasterStore,
@@ -288,10 +292,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
         result_set = publishing_set.getBinaryPublicationsForSources(self)
-
-        return [binary_pub
-                for source, binary_pub, binary, binary_name, arch
-                in result_set]
+        return DecoratedResultSet(result_set, result_decorator=itemgetter(1))
 
     def getBuiltBinaries(self, want_files=False):
         """See `ISourcePackagePublishingHistory`."""
@@ -1688,9 +1689,8 @@ class PublishingSet:
         # Append the sources' related binaries to our condemned list,
         # and mark them all deleted.
         bpph_ids = [bpph.id for bpph in binaries]
-        bpph_ids.extend(
-            bpph.id for source, bpph, bin, bin_name, arch
-            in self.getBinaryPublicationsForSources(sources))
+        bpph_ids.extend(self.getBinaryPublicationsForSources(sources).values(
+            BinaryPackagePublishingHistory.id))
         if len(bpph_ids) > 0:
             self.setMultipleDeleted(
                 BinaryPackagePublishingHistory, bpph_ids, removed_by,

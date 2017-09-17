@@ -25,7 +25,6 @@ __all__ = [
 
 import httplib
 
-from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
     error_status,
@@ -54,6 +53,7 @@ from zope.schema import (
 from zope.security.interfaces import Unauthorized
 
 from lp import _
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJob
 
@@ -139,9 +139,7 @@ class IPackageUpload(Interface):
 
     pocket = exported(
         Choice(
-            # Really PackagePublishingPocket, patched in
-            # _schema_circular_imports.py
-            vocabulary=DBEnumeratedType,
+            vocabulary=PackagePublishingPocket,
             description=_("The pocket targeted by this upload."),
             title=_("The pocket"), required=True, readonly=False,
             ))

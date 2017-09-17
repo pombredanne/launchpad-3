@@ -39,7 +39,10 @@ Now let's copy the files into separate upload directories, as if they'd
 been uploaded over FTP.
 
     >>> from lp.services.config import config
-    >>> from lp.archiveuploader.tagfiles import parse_tagfile
+    >>> from lp.archiveuploader.tagfiles import (
+    ...     parse_tagfile,
+    ...     TagFileParseError,
+    ...     )
     >>> import glob
     >>> test_files_dir = os.path.join(config.root,
     ...                               "lib/lp/soyuz/scripts/"
@@ -52,7 +55,10 @@ been uploaded over FTP.
 
     >>> seq = 1
     >>> for changes_filepath in changes:
-    ...     tf = parse_tagfile(changes_filepath)
+    ...     try:
+    ...         tf = parse_tagfile(changes_filepath)
+    ...     except TagFileParseError:
+    ...         tf = {}
     ...
     ...     if "Source" in tf:
     ...         package_names.append(tf["Source"])
@@ -199,8 +205,8 @@ Assign the loaded GPG key to the katie user.
     >>> key_set = getUtility(IGPGKeySet)
     >>> user_key = key_set.new(
     ...     ownerID=user.id, keyid=key.keyid, fingerprint=key.fingerprint,
-    ...     algorithm=GPGKeyAlgorithm.items[key.algorithm],
-    ...       keysize=key.keysize, can_encrypt=key.can_encrypt, active=True)
+    ...     algorithm=key.algorithm,
+    ...     keysize=key.keysize, can_encrypt=key.can_encrypt, active=True)
 
 
 Now we want to turn on the test key server to provide the key we
@@ -460,30 +466,34 @@ original source and the gzipped package diff:
     ...     "/var/tmp/archive/ubuntutest/pool/universe/e/etherwake"))
     3
 
+Define a helper for pretty-printing Deb822 objects, based on Deb822.dump but
+with sorted output.
+
+    >>> def pprint_deb822(deb822):
+    ...     for key in sorted(deb822):
+    ...         value = deb822.get_as_string(key)
+    ...         if not value or value[0] == '\n':
+    ...             print '%s:%s' % (key, value)
+    ...         else:
+    ...             print '%s: %s' % (key, value)
+    ...     print
+
 Check the generation of a correct Sources tag file for the main
 component of ubuntutest/breezy-autotest, containing the only the
 required entry for 'etherwake':
 
     >>> import gzip
+    >>> from debian.deb822 import Sources
 
-    >>> sources = gzip.open(
-    ...    "/var/tmp/archive/ubuntutest/dists/breezy-autotest/universe/source"
-    ...    "/Sources.gz").read()
-    >>> print sources + '\nEND'
-    Package: etherwake
-    Binary: etherwake
-    Version: 1.08-1
-    Section: universe/net
-    Maintainer: Alain Schroeder <...@...org>
-    Build-Depends: debhelper (>> 2.0)
+    >>> with gzip.open(
+    ...        "/var/tmp/archive/ubuntutest/dists/breezy-autotest/universe/"
+    ...        "source/Sources.gz") as sources_file:
+    ...     for source in Sources.iter_paragraphs(sources_file):
+    ...         pprint_deb822(source)
+    ...     print 'END'
     Architecture: any
-    Standards-Version: 3.5.10.0
-    Format: 1.0
-    Directory: pool/universe/e/etherwake
-    Files:
-     f13711c5b8261fbb77b43ae0e8ba9360 566 etherwake_1.08-1.dsc
-     c2dc10f98bac012b900fd0b46721fc80 4455 etherwake_1.08.orig.tar.gz
-     95c1e89e3ad7bc8740793bdf7aeb7334 4145 etherwake_1.08-1.diff.gz
+    Binary: etherwake
+    Build-Depends: debhelper (>> 2.0)
     Checksums-Sha1:
      2ddcdc87ab3dc35d5ce8232b0cc76bad8242725f 566 etherwake_1.08-1.dsc
      4d8aa805cf262a613a48597e3638054dae421048 4455 etherwake_1.08.orig.tar.gz
@@ -496,7 +506,17 @@ required entry for 'etherwake':
      51216a36b2ab6fde6ae04d5bcb0b7cefa9a18eb4b2b11552ca8f3abde928159e93729f30c6079e913078e966817368a6095de2cb4239676a3d6ed5d49d9de699 566 etherwake_1.08-1.dsc
      6ab88a579ae3fdbbe0f1904712a3a42fab98fa586c3718243d2380f3cb021158c228312001b0685a77dc7171b0307d591ad971a82cd1ccd3511135b23d95ee21 4455 etherwake_1.08.orig.tar.gz
      814074aa8349936fbec84b3ee703788159a085f0ce4a5e35d2dbef617e1c3c6e60818d155772d47b58e0823ed4bc9af29136f64eac8d643a833660e537145cb1 4145 etherwake_1.08-1.diff.gz
-    <BLANKLINE>
+    Directory: pool/universe/e/etherwake
+    Files:
+     f13711c5b8261fbb77b43ae0e8ba9360 566 etherwake_1.08-1.dsc
+     c2dc10f98bac012b900fd0b46721fc80 4455 etherwake_1.08.orig.tar.gz
+     95c1e89e3ad7bc8740793bdf7aeb7334 4145 etherwake_1.08-1.diff.gz
+    Format: 1.0
+    Maintainer: Alain Schroeder <...@...org>
+    Package: etherwake
+    Section: universe/net
+    Standards-Version: 3.5.10.0
+    Version: 1.08-1
     <BLANKLINE>
     END
 

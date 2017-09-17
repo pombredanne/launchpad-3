@@ -1,9 +1,11 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Translation Importer tests."""
 
 __metaclass__ = type
+
+from io import BytesIO
 
 import transaction
 
@@ -84,17 +86,17 @@ class TranslationImporterTestCase(TestCaseWithFactory):
         self.assertEqual(
             TranslationFileFormat.PO,
             importer.getTranslationFileFormat(
-                ".po", u'msgid "message"\nmsgstr ""'))
+                ".po", BytesIO(b'msgid "message"\nmsgstr ""')))
 
         # And PO file with KDE-style messages is recognised as KDEPO file.
         self.assertEqual(
             TranslationFileFormat.KDEPO,
             importer.getTranslationFileFormat(
-                ".po", u'msgid "_: kde context\nmessage"\nmsgstr ""'))
+                ".po", BytesIO(b'msgid "_: kde context\nmessage"\nmsgstr ""')))
 
         self.assertEqual(
             TranslationFileFormat.XPI,
-            importer.getTranslationFileFormat(".xpi", u""))
+            importer.getTranslationFileFormat(".xpi", BytesIO(b"")))
 
     def testNoConflictingPriorities(self):
         """Check that no two importers for the same file extension have

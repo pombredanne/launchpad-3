@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mock Build objects for tests soyuz buildd-system."""
@@ -279,8 +279,10 @@ class DeadProxy(xmlrpc.Proxy):
 
 class SlaveTestHelpers(fixtures.Fixture):
 
-    # The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`.
-    BASE_URL = 'http://localhost:8221'
+    @property
+    def base_url(self):
+        """The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`."""
+        return 'http://localhost:%d' % BuilddSlaveTestSetup().daemon_port
 
     def getServerSlave(self):
         """Set up a test build slave server.
@@ -301,7 +303,7 @@ class SlaveTestHelpers(fixtures.Fixture):
         Points to a fixed URL that is also used by `BuilddSlaveTestSetup`.
         """
         return BuilderSlave.makeBuilderSlave(
-            self.BASE_URL, 'vmhost', config.builddmaster.socket_timeout,
+            self.base_url, 'vmhost', config.builddmaster.socket_timeout,
             reactor=reactor, proxy=proxy, pool=pool)
 
     def makeCacheFile(self, tachandler, filename):
@@ -336,6 +338,7 @@ class SlaveTestHelpers(fixtures.Fixture):
         self.makeCacheFile(tachandler, dsc_file)
         extra_args = {
             'distribution': 'ubuntu',
+            'series': 'precise',
             'suite': 'precise',
             'ogrecomponent': 'main',
             }

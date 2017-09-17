@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch merge proposal jobs."""
@@ -272,10 +272,15 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         subscriber = self.factory.makePerson()
         bug.default_bugtask.target.addSubscription(subscriber, subscriber)
         bmp, _, _, patch = self.createExampleGitMerge()
+        committer = self.factory.makePerson()
         self.hosting_fixture.getLog.result = [
             {
                 u"sha1": unicode(hashlib.sha1("tip").hexdigest()),
                 u"message": u"Fix upside-down messages\n\nLP: #%d" % bug.id,
+                u"committer": {
+                    u"name": committer.display_name,
+                    u"email": committer.preferredemail.email,
+                    },
                 },
             ]
         job = UpdatePreviewDiffJob.create(bmp)
@@ -284,6 +289,15 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.assertEqual([bug], bmp.bugs)
         self.assertEqual([bmp], bug.linked_merge_proposals)
         self.assertEqual(patch, bmp.preview_diff.text)
+        # If somebody rewrites history to remove the bug reference, then the
+        # bug link is removed from the merge proposal.
+        self.hosting_fixture.getLog.result = []
+        self.hosting_fixture.memcache_fixture.clear()
+        job = UpdatePreviewDiffJob.create(bmp)
+        with dbuser("merge-proposal-jobs"):
+            JobRunner([job]).runAll()
+        self.assertEqual([], bmp.bugs)
+        self.assertEqual([], bug.linked_merge_proposals)
 
     def test_run_object_events(self):
         # While the job runs a single IObjectModifiedEvent is issued when the
@@ -544,6 +558,40 @@ class TestBranchMergeProposalJobSource(TestCaseWithFactory):
         job.start()
         jobs = self.job_source.iterReady()
         self.assertEqual(0, len(jobs))
+
+    def test_iterReady_new_merge_proposal_update_diff_leased(self):
+        # If either the diff or the email job has an acquired lease, then
+        # iterReady skips it.
+        self.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        [update_diff_job] = self.job_source.iterReady()
+        self.assertIsInstance(update_diff_job, UpdatePreviewDiffJob)
+        update_diff_job.acquireLease()
+        self.assertEqual(0, len(self.job_source.iterReady()))
+        update_diff_job.start()
+        update_diff_job.complete()
+        [email_job] = self.job_source.iterReady()
+        self.assertIsInstance(email_job, MergeProposalNeedsReviewEmailJob)
+        email_job.acquireLease()
+        self.assertEqual(0, len(self.job_source.iterReady()))
+
+    def test_iterReady_new_merge_proposal_update_diff_scheduled(self):
+        # If either the diff or the email job has a scheduled start time in
+        # the future, then iterReady skips it.
+        self.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        [update_diff_job] = self.job_source.iterReady()
+        self.assertIsInstance(update_diff_job, UpdatePreviewDiffJob)
+        update_diff_job.start()
+        update_diff_job.queue()
+        self.assertEqual(0, len(self.job_source.iterReady()))
+        update_diff_job.start()
+        update_diff_job.complete()
+        [email_job] = self.job_source.iterReady()
+        self.assertIsInstance(email_job, MergeProposalNeedsReviewEmailJob)
+        email_job.start()
+        email_job.queue()
+        self.assertEqual(0, len(self.job_source.iterReady()))
 
     def makeBranchMergeProposal(self, set_state=None):
         # Make a merge proposal that would have a ready update diff job.

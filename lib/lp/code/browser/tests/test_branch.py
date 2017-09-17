@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
@@ -9,6 +9,7 @@ from datetime import datetime
 from textwrap import dedent
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 import pytz
 from storm.store import Store
 from testtools.matchers import Equals
@@ -561,7 +562,25 @@ class TestBranchView(BrowserTestCase):
         view = create_view(branch, '+index')
         with StormStatementRecorder() as recorder:
             view.landing_candidates
-        self.assertThat(recorder, HasQueryCount(Equals(5)))
+        self.assertThat(recorder, HasQueryCount(Equals(13)))
+
+    def test_query_count_landing_targets(self):
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(product=product)
+        for i in range(10):
+            self.factory.makeBranchMergeProposal(source_branch=branch)
+        stacked = self.factory.makeBranch(product=product)
+        target = self.factory.makeBranch(stacked_on=stacked, product=product)
+        prereq = self.factory.makeBranch(product=product)
+        self.factory.makeBranchMergeProposal(
+            source_branch=branch, target_branch=target,
+            prerequisite_branch=prereq)
+        Store.of(branch).flush()
+        Store.of(branch).invalidate()
+        view = create_view(branch, '+index')
+        with StormStatementRecorder() as recorder:
+            view.landing_targets
+        self.assertThat(recorder, HasQueryCount(Equals(12)))
 
     def test_query_count_subscriber_content(self):
         branch = self.factory.makeBranch()
@@ -646,6 +665,7 @@ class TestBranchViewPrivateArtifacts(BrowserTestCase):
 
     def test_anonymous_view_branch_with_private_owner(self):
         # A branch with a private owner is not rendered for anon users.
+        self.useFixture(FakeLogger())
         private_owner = self.factory.makeTeam(
             visibility=PersonVisibility.PRIVATE)
         with person_logged_in(private_owner):

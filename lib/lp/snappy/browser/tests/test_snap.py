@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package views."""
@@ -40,7 +40,10 @@ from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
-from lp.code.errors import GitRepositoryScanFault
+from lp.code.errors import (
+    GitRepositoryBlobNotFound,
+    GitRepositoryScanFault,
+    )
 from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -52,7 +55,6 @@ from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.snap import (
     SnapAdminView,
-    SnapAuthorizeView,
     SnapEditView,
     SnapView,
     )
@@ -140,21 +142,14 @@ class TestSnapViewsFeatureFlag(TestCaseWithFactory):
                 branch, "+new-snap")
 
 
-class TestSnapAddView(BrowserTestCase):
+class BaseTestSnapView(BrowserTestCase):
 
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestSnapAddView, self).setUp()
+        super(BaseTestSnapView, self).setUp()
         self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.useFixture(FakeLogger())
-        self.person = self.factory.makePerson(
-            name="test-person", displayname="Test Person")
-        self.distroseries = self.factory.makeUbuntuDistroSeries(
-            version="13.10")
-        with admin_logged_in():
-            self.snappyseries = self.factory.makeSnappySeries(
-                usable_distro_series=[self.distroseries])
         self.snap_store_client = FakeMethod()
         self.snap_store_client.listChannels = FakeMethod(result=[
             {"name": "stable", "display_name": "Stable"},
@@ -164,6 +159,19 @@ class TestSnapAddView(BrowserTestCase):
             getUtility(ISnapStoreClient).requestPackageUploadPermission)
         self.useFixture(
             ZopeUtilityFixture(self.snap_store_client, ISnapStoreClient))
+        self.person = self.factory.makePerson(
+            name="test-person", displayname="Test Person")
+
+
+class TestSnapAddView(BaseTestSnapView):
+
+    def setUp(self):
+        super(TestSnapAddView, self).setUp()
+        self.distroseries = self.factory.makeUbuntuDistroSeries(
+            version="13.10")
+        with admin_logged_in():
+            self.snappyseries = self.factory.makeSnappySeries(
+                preferred_distro_series=self.distroseries)
 
     def setUpDistroSeries(self):
         """Set up a distroseries with some available processors."""
@@ -175,7 +183,7 @@ class TestSnapAddView(BrowserTestCase):
                 distroseries=distroseries, architecturetag=name,
                 processor=processor)
         with admin_logged_in():
-            self.factory.makeSnappySeries(usable_distro_series=[distroseries])
+            self.factory.makeSnappySeries(preferred_distro_series=distroseries)
         return distroseries
 
     def assertProcessorControls(self, processors_control, enabled, disabled):
@@ -187,29 +195,25 @@ class TestSnapAddView(BrowserTestCase):
             for name in disabled])
         self.assertThat(processors_control.controls, MatchesSetwise(*matchers))
 
-    def test_initial_distroseries(self):
-        # The initial distroseries is the newest that is current or in
-        # development.
-        old = self.factory.makeUbuntuDistroSeries(
-            version="14.04", status=SeriesStatus.DEVELOPMENT)
-        development = self.factory.makeUbuntuDistroSeries(
-            version="14.10", status=SeriesStatus.DEVELOPMENT)
-        experimental = self.factory.makeUbuntuDistroSeries(
-            version="15.04", status=SeriesStatus.EXPERIMENTAL)
+    def test_initial_store_distro_series(self):
+        # The initial store_distro_series uses the preferred distribution
+        # series for the latest snappy series.
+        lts = self.factory.makeUbuntuDistroSeries(
+            version="16.04", status=SeriesStatus.CURRENT)
+        current = self.factory.makeUbuntuDistroSeries(
+            version="16.10", status=SeriesStatus.CURRENT)
         with admin_logged_in():
-            self.factory.makeSnappySeries(
-                usable_distro_series=[old, development, experimental])
+            self.factory.makeSnappySeries(usable_distro_series=[lts, current])
             newest = self.factory.makeSnappySeries(
-                usable_distro_series=[development, experimental])
-            self.factory.makeSnappySeries(
-                usable_distro_series=[old, experimental])
+                preferred_distro_series=lts,
+                usable_distro_series=[lts, current])
         branch = self.factory.makeAnyBranch()
         with person_logged_in(self.person):
             view = create_initialized_view(branch, "+new-snap")
         self.assertThat(
             view.initial_values["store_distro_series"],
             MatchesStructure.byEquality(
-                snappy_series=newest, distro_series=development))
+                snappy_series=newest, distro_series=lts))
 
     def test_create_new_snap_not_logged_in(self):
         branch = self.factory.makeAnyBranch()
@@ -389,6 +393,7 @@ class TestSnapAddView(BrowserTestCase):
         browser.getControl("Registered store package name").value = (
             "store-name")
         self.assertFalse(browser.getControl("Stable").selected)
+        browser.getControl(name="field.store_channels.track").value = "track"
         browser.getControl("Edge").selected = True
         root_macaroon = Macaroon()
         root_macaroon.add_third_party_caveat(
@@ -415,7 +420,7 @@ class TestSnapAddView(BrowserTestCase):
             name=u"snap-name", source=branch, store_upload=True,
             store_series=self.snappyseries, store_name=u"store-name",
             store_secrets={"root": root_macaroon_raw},
-            store_channels=["edge"]))
+            store_channels=["track/edge"]))
         self.assertThat(self.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         expected_body = {
@@ -481,9 +486,43 @@ class TestSnapAddView(BrowserTestCase):
         self.assertContentEqual(
             ["386", "amd64"], [proc.name for proc in snap.processors])
 
-    def test_initial_name_extraction_git(self):
+    def test_initial_name_extraction_git_snap_snapcraft_yaml(self):
+        def getBlob(filename, *args, **kwargs):
+            if filename == "snap/snapcraft.yaml":
+                return "name: test-snap"
+            else:
+                raise GitRepositoryBlobNotFound("dummy", filename)
+
         [git_ref] = self.factory.makeGitRefs()
-        git_ref.repository.getBlob = FakeMethod(result='name: test-snap')
+        git_ref.repository.getBlob = getBlob
+        view = create_initialized_view(git_ref, "+new-snap")
+        initial_values = view.initial_values
+        self.assertIn('store_name', initial_values)
+        self.assertEqual('test-snap', initial_values['store_name'])
+
+    def test_initial_name_extraction_git_plain_snapcraft_yaml(self):
+        def getBlob(filename, *args, **kwargs):
+            if filename == "snapcraft.yaml":
+                return "name: test-snap"
+            else:
+                raise GitRepositoryBlobNotFound("dummy", filename)
+
+        [git_ref] = self.factory.makeGitRefs()
+        git_ref.repository.getBlob = getBlob
+        view = create_initialized_view(git_ref, "+new-snap")
+        initial_values = view.initial_values
+        self.assertIn('store_name', initial_values)
+        self.assertEqual('test-snap', initial_values['store_name'])
+
+    def test_initial_name_extraction_git_dot_snapcraft_yaml(self):
+        def getBlob(filename, *args, **kwargs):
+            if filename == ".snapcraft.yaml":
+                return "name: test-snap"
+            else:
+                raise GitRepositoryBlobNotFound("dummy", filename)
+
+        [git_ref] = self.factory.makeGitRefs()
+        git_ref.repository.getBlob = getBlob
         view = create_initialized_view(git_ref, "+new-snap")
         initial_values = view.initial_values
         self.assertIn('store_name', initial_values)
@@ -517,16 +556,7 @@ class TestSnapAddView(BrowserTestCase):
         self.assertEqual(1, safe_load.call_count)
 
 
-class TestSnapAdminView(BrowserTestCase):
-
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestSnapAdminView, self).setUp()
-        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
-        self.useFixture(FakeLogger())
-        self.person = self.factory.makePerson(
-            name="test-person", displayname="Test Person")
+class TestSnapAdminView(BaseTestSnapView):
 
     def test_unauthorized(self):
         # A non-admin user cannot administer a snap package.
@@ -595,30 +625,15 @@ class TestSnapAdminView(BrowserTestCase):
         self.assertSqlAttributeEqualsDate(snap, "date_last_modified", UTC_NOW)
 
 
-class TestSnapEditView(BrowserTestCase):
-
-    layer = LaunchpadFunctionalLayer
+class TestSnapEditView(BaseTestSnapView):
 
     def setUp(self):
         super(TestSnapEditView, self).setUp()
-        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
-        self.useFixture(FakeLogger())
-        self.person = self.factory.makePerson(
-            name="test-person", displayname="Test Person")
         self.distroseries = self.factory.makeUbuntuDistroSeries(
             version="13.10")
         with admin_logged_in():
             self.snappyseries = self.factory.makeSnappySeries(
                 usable_distro_series=[self.distroseries])
-        self.snap_store_client = FakeMethod()
-        self.snap_store_client.listChannels = FakeMethod(result=[
-            {"name": "stable", "display_name": "Stable"},
-            {"name": "edge", "display_name": "Edge"},
-            ])
-        self.snap_store_client.requestPackageUploadPermission = (
-            getUtility(ISnapStoreClient).requestPackageUploadPermission)
-        self.useFixture(
-            ZopeUtilityFixture(self.snap_store_client, ISnapStoreClient))
 
     def test_initial_store_series(self):
         # The initial store_series is the newest that is usable for the
@@ -728,6 +743,29 @@ class TestSnapEditView(BrowserTestCase):
             "name.",
             extract_text(find_tags_by_class(browser.contents, "message")[1]))
 
+    def test_edit_snap_git_url(self):
+        series = self.factory.makeUbuntuDistroSeries()
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries(
+                usable_distro_series=[series])
+        old_ref = self.factory.makeGitRefRemote()
+        new_ref = self.factory.makeGitRefRemote()
+        new_repository_url = new_ref.repository_url
+        new_path = new_ref.path
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person, distroseries=series,
+            git_ref=old_ref, store_series=snappy_series)
+        browser = self.getViewBrowser(snap, user=self.person)
+        browser.getLink("Edit snap package").click()
+        browser.getControl("Git repository").value = new_repository_url
+        browser.getControl("Git branch").value = new_path
+        browser.getControl("Update snap package").click()
+        login_person(self.person)
+        content = find_main_content(browser.contents)
+        self.assertThat(
+            "Source:\n%s\nEdit snap package" % new_ref.display_name,
+            MatchesTagText(content, "source"))
+
     def setUpDistroSeries(self):
         """Set up a distroseries with some available processors."""
         distroseries = self.factory.makeUbuntuDistroSeries()
@@ -807,7 +845,6 @@ class TestSnapEditView(BrowserTestCase):
     def test_edit_processors_restricted(self):
         # A restricted processor is shown disabled in the UI and cannot be
         # enabled.
-        self.useFixture(FakeLogger())
         distroseries = self.setUpDistroSeries()
         proc_armhf = self.factory.makeProcessor(
             name="armhf", restricted=True, build_by_default=False)
@@ -910,12 +947,14 @@ class TestSnapEditView(BrowserTestCase):
             registrant=self.person, owner=self.person,
             distroseries=self.distroseries, store_upload=True,
             store_series=self.snappyseries, store_name=u"one",
-            store_channels=["edge"])
+            store_channels=["track/edge"])
         view_url = canonical_url(snap, view_name="+edit")
         browser = self.getNonRedirectingBrowser(url=view_url, user=self.person)
         browser.getControl("Registered store package name").value = "two"
-        browser.getControl("Stable").selected = True
+        self.assertEqual("track", browser.getControl("Track").value)
         self.assertTrue(browser.getControl("Edge").selected)
+        browser.getControl("Track").value = ""
+        browser.getControl("Stable").selected = True
         root_macaroon = Macaroon()
         root_macaroon.add_third_party_caveat(
             urlsplit(config.launchpad.openid_provider_root).netloc, "",
@@ -958,15 +997,10 @@ class TestSnapEditView(BrowserTestCase):
         self.assertEqual(expected_args, parse_qs(parsed_location[3]))
 
 
-class TestSnapAuthorizeView(BrowserTestCase):
-
-    layer = LaunchpadFunctionalLayer
+class TestSnapAuthorizeView(BaseTestSnapView):
 
     def setUp(self):
         super(TestSnapAuthorizeView, self).setUp()
-        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
-        self.person = self.factory.makePerson(
-            name="test-person", displayname="Test Person")
         self.distroseries = self.factory.makeUbuntuDistroSeries()
         with admin_logged_in():
             self.snappyseries = self.factory.makeSnappySeries(
@@ -977,8 +1011,19 @@ class TestSnapAuthorizeView(BrowserTestCase):
             store_series=self.snappyseries,
             store_name=self.factory.getUniqueUnicode())
 
-    def assertRequestsAuthorization(self, snap, func, *args, **kwargs):
-        owner = snap.owner
+    def test_unauthorized(self):
+        # A user without edit access cannot authorize snap package uploads.
+        other_person = self.factory.makePerson()
+        self.assertRaises(
+            Unauthorized, self.getUserBrowser,
+            canonical_url(self.snap) + "/+authorize", user=other_person)
+
+    def test_begin_authorization(self):
+        # With no special form actions, we return a form inviting the user
+        # to begin authorization.  This allows (re-)authorizing uploads of
+        # an existing snap package without having to edit it.
+        snap_url = canonical_url(self.snap)
+        owner = self.snap.owner
         root_macaroon = Macaroon()
         root_macaroon.add_third_party_caveat(
             urlsplit(config.launchpad.openid_provider_root).netloc, '',
@@ -995,58 +1040,23 @@ class TestSnapAuthorizeView(BrowserTestCase):
 
         self.pushConfig("snappy", store_url="http://sca.example/")
         with HTTMock(handler):
-            ret = func(*args, **kwargs)
+            browser = self.getNonRedirectingBrowser(
+                url=snap_url + "/+authorize", user=self.snap.owner)
+            redirection = self.assertRaises(
+                HTTPError, browser.getControl("Begin authorization").click)
         self.assertThat(self.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         with person_logged_in(owner):
             expected_body = {
                 "packages": [{
-                    "name": snap.store_name,
-                    "series": snap.store_series.name,
+                    "name": self.snap.store_name,
+                    "series": self.snap.store_series.name,
                     }],
                 "permissions": ["package_upload"],
                 }
             self.assertEqual(expected_body, json.loads(self.request.body))
-            self.assertEqual({"root": root_macaroon_raw}, snap.store_secrets)
-        return ret
-
-    def test_requestAuthorization(self):
-        def request_authorization():
-            with person_logged_in(self.snap.owner):
-                return SnapAuthorizeView.requestAuthorization(
-                    self.snap, LaunchpadTestRequest())
-
-        login_url = self.assertRequestsAuthorization(
-            self.snap, request_authorization)
-        self.assertEqual(
-            canonical_url(self.snap) +
-            "/+authorize/+login?macaroon_caveat_id=dummy&"
-            "discharge_macaroon_action=field.actions.complete&"
-            "discharge_macaroon_field=field.discharge_macaroon",
-            login_url)
-
-    def test_unauthorized(self):
-        # A user without edit access cannot authorize snap package uploads.
-        self.useFixture(FakeLogger())
-        other_person = self.factory.makePerson()
-        self.assertRaises(
-            Unauthorized, self.getUserBrowser,
-            canonical_url(self.snap) + "/+authorize", user=other_person)
-
-    def test_begin_authorization(self):
-        # With no special form actions, we return a form inviting the user
-        # to begin authorization.  This allows (re-)authorizing uploads of
-        # an existing snap package without having to edit it.
-        snap_url = canonical_url(self.snap)
-
-        def begin_authorization():
-            browser = self.getNonRedirectingBrowser(
-                url=snap_url + "/+authorize", user=self.snap.owner)
-            return self.assertRaises(
-                HTTPError, browser.getControl("Begin authorization").click)
-
-        redirection = self.assertRequestsAuthorization(
-            self.snap, begin_authorization)
+            self.assertEqual(
+                {"root": root_macaroon_raw}, self.snap.store_secrets)
         self.assertEqual(303, redirection.code)
         self.assertEqual(
             snap_url + "/+authorize/+login?macaroon_caveat_id=dummy&"
@@ -1098,19 +1108,10 @@ class TestSnapAuthorizeView(BrowserTestCase):
                 self.snap.store_secrets)
 
 
-class TestSnapDeleteView(BrowserTestCase):
-
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(TestSnapDeleteView, self).setUp()
-        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
-        self.person = self.factory.makePerson(
-            name="test-person", displayname="Test Person")
+class TestSnapDeleteView(BaseTestSnapView):
 
     def test_unauthorized(self):
         # A user without edit access cannot delete a snap package.
-        self.useFixture(FakeLogger())
         snap = self.factory.makeSnap(registrant=self.person, owner=self.person)
         snap_url = canonical_url(snap)
         other_person = self.factory.makePerson()
@@ -1123,7 +1124,6 @@ class TestSnapDeleteView(BrowserTestCase):
 
     def test_delete_snap_without_builds(self):
         # A snap package without builds can be deleted.
-        self.useFixture(FakeLogger())
         snap = self.factory.makeSnap(registrant=self.person, owner=self.person)
         snap_url = canonical_url(snap)
         owner_url = canonical_url(self.person)
@@ -1135,7 +1135,6 @@ class TestSnapDeleteView(BrowserTestCase):
 
     def test_delete_snap_with_builds(self):
         # A snap package with builds can be deleted.
-        self.useFixture(FakeLogger())
         snap = self.factory.makeSnap(registrant=self.person, owner=self.person)
         build = self.factory.makeSnapBuild(snap=snap)
         self.factory.makeSnapFile(snapbuild=build)
@@ -1148,13 +1147,10 @@ class TestSnapDeleteView(BrowserTestCase):
         self.assertRaises(NotFound, browser.open, snap_url)
 
 
-class TestSnapView(BrowserTestCase):
-
-    layer = LaunchpadFunctionalLayer
+class TestSnapView(BaseTestSnapView):
 
     def setUp(self):
         super(TestSnapView, self).setUp()
-        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.distroseries = self.factory.makeDistroSeries(
             distribution=self.ubuntu, name="shiny", displayname="Shiny")
@@ -1162,8 +1158,6 @@ class TestSnapView(BrowserTestCase):
         self.distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=self.distroseries, architecturetag="i386",
             processor=processor)
-        self.person = self.factory.makePerson(
-            name="test-person", displayname="Test Person")
         self.factory.makeBuilder(virtualized=True)
 
     def makeSnap(self, **kwargs):
@@ -1263,6 +1257,33 @@ class TestSnapView(BrowserTestCase):
             Primary Archive for Ubuntu Linux
             """, self.getMainText(build.snap))
 
+    def test_index_git_url(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url=u"https://git.example.org/foo",
+            path=u"refs/heads/master")
+        snap = self.makeSnap(git_ref=ref)
+        build = self.makeBuild(
+            snap=snap, status=BuildStatus.FULLYBUILT,
+            duration=timedelta(minutes=30))
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Snap packages snap-name
+            .*
+            Snap package information
+            Owner: Test Person
+            Distribution series: Ubuntu Shiny
+            Source: https://git.example.org/foo master
+            Build schedule: \(\?\)
+            Built on request
+            Source archive for automatic builds:
+            Pocket for automatic builds:
+            Builds of this snap package are not automatically uploaded to
+            the store.
+            Latest builds
+            Status When complete Architecture Archive
+            Successfully built 30 minutes ago i386
+            Primary Archive for Ubuntu Linux
+            """, self.getMainText(build.snap))
+
     def test_index_success_with_buildlog(self):
         # The build log is shown if it is there.
         build = self.makeBuild(
@@ -1350,32 +1371,22 @@ class TestSnapView(BrowserTestCase):
             self.setStatus(build, BuildStatus.FULLYBUILT)
         self.assertEqual(list(reversed(builds[1:])), view.builds)
 
-    def test_store_channels_none(self):
+    def test_store_channels_empty(self):
         snap = self.factory.makeSnap()
         view = create_initialized_view(snap, "+index")
-        self.assertIsNone(view.store_channels)
+        self.assertEqual("", view.store_channels)
 
-    def test_store_channels_uses_titles(self):
-        snap_store_client = FakeMethod()
-        snap_store_client.listChannels = FakeMethod(result=[
-            {"name": "stable", "display_name": "Stable"},
-            {"name": "edge", "display_name": "Edge"},
-            ])
-        self.useFixture(
-            ZopeUtilityFixture(snap_store_client, ISnapStoreClient))
-        snap = self.factory.makeSnap(store_channels=["stable", "nonexistent"])
+    def test_store_channels_display(self):
+        snap = self.factory.makeSnap(
+            store_channels=["track/stable", "track/edge"])
         view = create_initialized_view(snap, "+index")
-        self.assertEqual("Stable, nonexistent", view.store_channels)
+        self.assertEqual("track/stable, track/edge", view.store_channels)
 
 
-class TestSnapRequestBuildsView(BrowserTestCase):
-
-    layer = LaunchpadFunctionalLayer
+class TestSnapRequestBuildsView(BaseTestSnapView):
 
     def setUp(self):
         super(TestSnapRequestBuildsView, self).setUp()
-        self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
-        self.useFixture(FakeLogger())
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.distroseries = self.factory.makeDistroSeries(
             distribution=self.ubuntu, name="shiny", displayname="Shiny")
@@ -1386,7 +1397,6 @@ class TestSnapRequestBuildsView(BrowserTestCase):
                 processor=getUtility(IProcessorSet).getByName(processor))
             das.addOrUpdateChroot(self.factory.makeLibraryFileAlias())
             self.architectures.append(das)
-        self.person = self.factory.makePerson()
         self.snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
             distroseries=self.distroseries, name=u"snap-name")

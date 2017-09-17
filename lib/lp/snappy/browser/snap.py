@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap views."""
@@ -17,14 +17,12 @@ __all__ = [
     ]
 
 from urllib import urlencode
-from urlparse import urlsplit
 
 from lazr.restful.fields import Reference
 from lazr.restful.interface import (
     copy_field,
     use_template,
     )
-from pymacaroons import Macaroon
 import yaml
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
@@ -34,7 +32,6 @@ from zope.schema import (
     List,
     TextLine,
     )
-from zope.schema.interfaces import IVocabularyFactory
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -48,7 +45,6 @@ from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.informationtype import IInformationType
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadDropdownWidget,
@@ -56,14 +52,15 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.browser.widgets.gitref import GitRefWidget
-from lp.code.errors import GitRepositoryScanFault
+from lp.code.errors import (
+    GitRepositoryBlobNotFound,
+    GitRepositoryScanFault,
+    )
 from lp.code.interfaces.gitref import IGitRef
 from lp.registry.enums import VCSType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
-from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
-from lp.services.propertycache import cachedproperty
 from lp.services.scripts import log
 from lp.services.webapp import (
     canonical_url,
@@ -75,16 +72,17 @@ from lp.services.webapp import (
     NavigationMenu,
     stepthrough,
     structured,
-    urlappend,
     )
-from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import (
     Breadcrumb,
     NameBreadcrumb,
     )
+from lp.services.webapp.url import urlappend
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
+from lp.snappy.browser.widgets.storechannels import StoreChannelsWidget
 from lp.snappy.interfaces.snap import (
+    CannotAuthorizeStoreUploads,
     ISnap,
     ISnapSet,
     NoSuchSnap,
@@ -93,10 +91,12 @@ from lp.snappy.interfaces.snap import (
     SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
-from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
+from lp.snappy.interfaces.snappyseries import (
+    ISnappyDistroSeriesSet,
+    ISnappySeriesSet,
+    )
 from lp.snappy.interfaces.snapstoreclient import (
     BadRequestPackageUploadResponse,
-    ISnapStoreClient,
     )
 from lp.soyuz.browser.archive import EnableProcessorsMixin
 from lp.soyuz.browser.build import get_build_by_id_str
@@ -189,21 +189,9 @@ class SnapView(LaunchpadView):
         else:
             return 'Built on request'
 
-    @cachedproperty
+    @property
     def store_channels(self):
-        if self.context.store_channels is not None:
-            vocabulary = getUtility(
-                IVocabularyFactory, name='SnapStoreChannel')(self.context)
-            channel_titles = []
-            for channel in self.context.store_channels:
-                try:
-                    channel_titles.append(
-                        vocabulary.getTermByToken(channel).title)
-                except LookupError:
-                    channel_titles.append(channel)
-            return ', '.join(channel_titles)
-        else:
-            return None
+        return ', '.join(self.context.store_channels)
 
 
 def builds_for_snap(snap):
@@ -216,17 +204,12 @@ def builds_for_snap(snap):
     but unfinished builds to show up in the view but be discarded as more
     recent builds become available.
 
-    Builds that the user does not have permission to see are excluded.
+    Builds that the user does not have permission to see are excluded (by
+    the model code).
     """
-    builds = [
-        build for build in snap.pending_builds
-        if check_permission('launchpad.View', build)]
-    for build in snap.completed_builds:
-        if not check_permission('launchpad.View', build):
-            continue
-        builds.append(build)
-        if len(builds) >= 10:
-            break
+    builds = list(snap.pending_builds)
+    if len(builds) < 10:
+        builds.extend(snap.completed_builds[:10 - len(builds)])
     return builds
 
 
@@ -357,9 +340,7 @@ class ISnapEditSchema(Interface):
     # This is only required if store_upload is True.  Later validation takes
     # care of adjusting the required attribute.
     store_name = copy_field(ISnap['store_name'], required=True)
-    store_channels = copy_field(
-        ISnap['store_channels'],
-        value_type=Choice(vocabulary='SnapStoreChannel'), required=True)
+    store_channels = copy_field(ISnap['store_channels'], required=True)
 
 
 def log_oops(error, request):
@@ -401,7 +382,7 @@ class SnapAddView(
         ]
     custom_widget('store_distro_series', LaunchpadRadioWidget)
     custom_widget('auto_build_archive', SnapArchiveWidget)
-    custom_widget('store_channels', LabeledMultiCheckBoxWidget)
+    custom_widget('store_channels', StoreChannelsWidget)
     custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
 
     help_links = {
@@ -443,8 +424,19 @@ class SnapAddView(
         if self.has_snappy_distro_series and IGitRef.providedBy(self.context):
             # Try to extract Snap store name from snapcraft.yaml file.
             try:
-                blob = self.context.repository.getBlob(
-                    'snapcraft.yaml', self.context.name)
+                paths = (
+                    'snap/snapcraft.yaml',
+                    'snapcraft.yaml',
+                    '.snapcraft.yaml',
+                    )
+                for i, path in enumerate(paths):
+                    try:
+                        blob = self.context.repository.getBlob(
+                            path, self.context.name)
+                        break
+                    except GitRepositoryBlobNotFound:
+                        if i == len(paths) - 1:
+                            raise
                 # Beware of unsafe yaml.load()!
                 store_name = yaml.safe_load(blob).get('name')
             except GitRepositoryScanFault:
@@ -458,19 +450,23 @@ class SnapAddView(
                     "Failed to extract name from Snap manifest at Git %s: %s",
                     self.context.unique_name, unicode(e))
 
-        # XXX cjwatson 2015-09-18: Hack to ensure that we don't end up
-        # accidentally selecting ubuntu-rtm/14.09 or similar.
-        # ubuntu.currentseries will always be in BuildableDistroSeries.
-        series = getUtility(ILaunchpadCelebrities).ubuntu.currentseries
+        store_series = getUtility(ISnappySeriesSet).getAll().first()
+        if store_series.preferred_distro_series is not None:
+            distro_series = store_series.preferred_distro_series
+        else:
+            distro_series = store_series.usable_distro_series.first()
         sds_set = getUtility(ISnappyDistroSeriesSet)
+        store_distro_series = sds_set.getByBothSeries(
+            store_series, distro_series)
+
         return {
             'store_name': store_name,
             'owner': self.user,
-            'store_distro_series': sds_set.getByDistroSeries(series).first(),
+            'store_distro_series': store_distro_series,
             'processors': [
                 p for p in getUtility(IProcessorSet).getAll()
                 if p.build_by_default],
-            'auto_build_archive': series.main_archive,
+            'auto_build_archive': distro_series.main_archive,
             'auto_build_pocket': PackagePublishingPocket.UPDATES,
             }
 
@@ -692,9 +688,9 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
         'store_channels',
         ]
     custom_widget('store_distro_series', LaunchpadRadioWidget)
-    custom_widget('store_channels', LabeledMultiCheckBoxWidget)
+    custom_widget('store_channels', StoreChannelsWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
-    custom_widget('git_ref', GitRefWidget)
+    custom_widget('git_ref', GitRefWidget, allow_external=True)
     custom_widget('auto_build_archive', SnapArchiveWidget)
     custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
 
@@ -785,55 +781,23 @@ class SnapAuthorizeView(LaunchpadEditFormView):
     def cancel_url(self):
         return canonical_url(self.context)
 
-    @staticmethod
-    def extractSSOCaveat(macaroon):
-        locations = [
-            urlsplit(root).netloc
-            for root in CurrentOpenIDEndPoint.getAllRootURLs()]
-        sso_caveats = [
-            c for c in macaroon.third_party_caveats()
-            if c.location in locations]
-        # We must have exactly one SSO caveat; more than one should never be
-        # required and could be an attempt to substitute weaker caveats.  We
-        # might as well OOPS here, even though the cause of this is probably
-        # in some other service, since the user can't do anything about it
-        # and it should show up in our OOPS reports.
-        if not sso_caveats:
-            raise SnapAuthorizationException("Macaroon has no SSO caveats")
-        elif len(sso_caveats) > 1:
-            raise SnapAuthorizationException(
-                "Macaroon has multiple SSO caveats")
-        return sso_caveats[0]
-
     @classmethod
     def requestAuthorization(cls, snap, request):
         """Begin the process of authorizing uploads of a snap package."""
-        if snap.store_series is None:
-            request.response.addInfoNotification(
-                _(u'Cannot authorize uploads of a snap package with no '
-                  u'store series.'))
+        try:
+            sso_caveat_id = snap.beginAuthorization()
+            base_url = canonical_url(snap, view_name='+authorize')
+            login_url = urlappend(base_url, '+login')
+            login_url += '?%s' % urlencode([
+                ('macaroon_caveat_id', sso_caveat_id),
+                ('discharge_macaroon_action', 'field.actions.complete'),
+                ('discharge_macaroon_field', 'field.discharge_macaroon'),
+                ])
+            return login_url
+        except CannotAuthorizeStoreUploads as e:
+            request.response.addInfoNotification(unicode(e))
             request.response.redirect(canonical_url(snap))
             return
-        if snap.store_name is None:
-            request.response.addInfoNotification(
-                _(u'Cannot authorize uploads of a snap package with no '
-                  u'store name.'))
-            request.response.redirect(canonical_url(snap))
-            return
-        snap_store_client = getUtility(ISnapStoreClient)
-        root_macaroon_raw = snap_store_client.requestPackageUploadPermission(
-            snap.store_series, snap.store_name)
-        sso_caveat = cls.extractSSOCaveat(
-            Macaroon.deserialize(root_macaroon_raw))
-        snap.store_secrets = {'root': root_macaroon_raw}
-        base_url = canonical_url(snap, view_name='+authorize')
-        login_url = urlappend(base_url, '+login')
-        login_url += '?%s' % urlencode([
-            ('macaroon_caveat_id', sso_caveat.caveat_id),
-            ('discharge_macaroon_action', 'field.actions.complete'),
-            ('discharge_macaroon_field', 'field.discharge_macaroon'),
-            ])
-        return login_url
 
     @action('Begin authorization', name='begin')
     def begin_action(self, action, data):
@@ -848,11 +812,8 @@ class SnapAuthorizeView(LaunchpadEditFormView):
                 _(u'Uploads of %(snap)s to the store were not authorized.'),
                 snap=self.context.name))
             return
-        # We have to set a whole new dict here to avoid problems with
-        # security proxies.
-        new_store_secrets = dict(self.context.store_secrets)
-        new_store_secrets['discharge'] = data['discharge_macaroon']
-        self.context.store_secrets = new_store_secrets
+        self.context.completeAuthorization(
+            discharge_macaroon=data['discharge_macaroon'])
         self.request.response.addInfoNotification(structured(
             _(u'Uploads of %(snap)s to the store are now authorized.'),
             snap=self.context.name))

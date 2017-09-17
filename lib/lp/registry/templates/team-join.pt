@@ -12,9 +12,9 @@
 
     <p>Are you sure you want to join this team?</p>
 
-    <p tal:condition="view/team_is_moderated">
-      Since this is a moderated team, one of its administrators will have to
-      approve your membership before you actually become a member.
+    <p tal:condition="view/direct_team_membership_requires_approval">
+      One of this team's administrators will have to approve your membership
+      before you actually become a member.
     </p>
 
     <div metal:use-macro="context/@@launchpad_form/form" />

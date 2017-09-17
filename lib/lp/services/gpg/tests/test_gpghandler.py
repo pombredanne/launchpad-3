@@ -1,8 +1,9 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import base64
 import os
+import shutil
 import subprocess
 
 import gpgme
@@ -11,6 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.services.gpg.interfaces import (
     GPGKeyDoesNotExistOnServer,
+    GPGKeyMismatchOnServer,
     GPGKeyTemporarilyNotFoundError,
     IGPGHandler,
     )
@@ -29,6 +31,7 @@ from lp.testing.gpgkeys import (
     import_secret_test_key,
     iter_test_key_emails,
     test_keyrings,
+    test_pubkey_file_from_email,
     test_pubkey_from_email,
     )
 from lp.testing.keyserver import KeyServerTac
@@ -175,6 +178,20 @@ class TestGPGHandler(TestCase):
             self.assertEqual('timeout exceeded.', error_report['value'])
         finally:
             set_default_timeout_function(old_timeout_function)
+
+    def test_retrieveKey_checks_fingerprint(self):
+        # retrieveKey ensures that the key fetched from the keyserver has
+        # the correct fingerprint.
+        keyserver = self.useFixture(KeyServerTac())
+        fingerprint = "340CA3BB270E2716C9EE0B768E7EB7086C64A8C5"
+        # Associate a different key with this fingerprint.
+        shutil.copy2(
+            test_pubkey_file_from_email("test@canonical.com"),
+            os.path.join(keyserver.root, "0x%s.get" % fingerprint))
+        gpghandler = getUtility(IGPGHandler)
+        self.assertRaises(
+            GPGKeyMismatchOnServer, gpghandler.retrieveKey, fingerprint)
+        self.assertEqual([], list(gpghandler.localKeys()))
 
     def test_uploadPublicKey_suppress_in_config(self):
         self.useFixture(KeyServerTac())

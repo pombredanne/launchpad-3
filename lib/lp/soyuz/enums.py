@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/soyuz modules."""
@@ -195,6 +195,13 @@ class BinaryPackageFileType(DBEnumeratedType):
 
         This format is the standard package format used on Ubuntu and other
         similar operating systems for distributing debug symbols.
+        """)
+
+    BUILDINFO = DBItem(5, """
+        Build information
+
+        A file used by Debian-based systems to record information about the
+        build environment.
         """)
 
 

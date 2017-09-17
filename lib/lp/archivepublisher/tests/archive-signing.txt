@@ -100,7 +100,7 @@ We will select the only available IGPGKey from the sampledata.
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
     >>> [a_key] = foo_bar.gpg_keys
     >>> print a_key.displayname
-    1024D/12345678
+    1024D/ABCDEF0123456789ABCDDCBA0000111112345678
 
 And use it as the Mark's PPA signing key.
 

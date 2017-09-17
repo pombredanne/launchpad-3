@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -124,7 +124,10 @@ from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.codeimportresult import ICodeImportResultSet
 from lp.code.interfaces.gitnamespace import get_git_namespace
-from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitref import (
+    IGitRef,
+    IGitRefRemoteSet,
+    )
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.revision import IRevisionSet
@@ -265,7 +268,10 @@ from lp.services.messages.model.message import (
     )
 from lp.services.oauth.interfaces import IOAuthConsumerSet
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
-from lp.services.propertycache import clear_property_cache
+from lp.services.propertycache import (
+    clear_property_cache,
+    get_property_cache,
+    )
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
     )
@@ -1809,6 +1815,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 refs_info, get_objects=True)}
         return [refs_by_path[path] for path in paths]
 
+    def makeGitRefRemote(self, repository_url=None, path=None):
+        """Create an object representing a ref in a remote repository."""
+        if repository_url is None:
+            repository_url = self.getUniqueURL().decode('utf-8')
+        if path is None:
+            path = self.getUniqueString('refs/heads/path').decode('utf-8')
+        return getUtility(IGitRefRemoteSet).new(repository_url, path)
+
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,
                 date_created=None, description=None, comment=None,
@@ -2821,8 +2835,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if not IComponent.providedBy(component):
             component = self.makeComponent(component)
 
-        return ComponentSelection(
+        selection = ComponentSelection(
             distroseries=distroseries, component=component)
+        del get_property_cache(distroseries).components
+        return selection
 
     def makeArchive(self, distribution=None, owner=None, name=None,
                     purpose=None, enabled=True, private=False,
@@ -4723,7 +4739,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSnappySeries(self, registrant=None, name=None, display_name=None,
                          status=SeriesStatus.DEVELOPMENT,
-                         date_created=DEFAULT, usable_distro_series=None):
+                         preferred_distro_series=None, date_created=DEFAULT,
+                         usable_distro_series=None):
         """Make a new SnappySeries."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4733,9 +4750,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             display_name = SPACE.join(
                 word.capitalize() for word in name.split('-'))
         snappy_series = getUtility(ISnappySeriesSet).new(
-            registrant, name, display_name, status, date_created=date_created)
+            registrant, name, display_name, status,
+            preferred_distro_series=preferred_distro_series,
+            date_created=date_created)
         if usable_distro_series is not None:
             snappy_series.usable_distro_series = usable_distro_series
+        elif preferred_distro_series is not None:
+            snappy_series.usable_distro_series = [preferred_distro_series]
         IStore(snappy_series).flush()
         return snappy_series
 

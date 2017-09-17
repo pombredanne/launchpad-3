@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test ChangesFile functionality."""
@@ -15,6 +15,7 @@ from testtools.matchers import (
     )
 from zope.component import getUtility
 
+from lp.archiveuploader.buildinfofile import BuildInfoFile
 from lp.archiveuploader.changesfile import (
     CannotDetermineFileTypeError,
     ChangesFile,
@@ -70,6 +71,12 @@ class TestDetermineFileClassAndName(TestCase):
         self.assertEquals(
             ('foo', UdebBinaryUploadFile),
             determine_file_class_and_name('foo_1.0_all.udeb'))
+
+    def testBuildInfoFile(self):
+        # A buildinfo file is a BuildInfoFile.
+        self.assertEqual(
+            ('foo', BuildInfoFile),
+            determine_file_class_and_name('foo_1.0_all.buildinfo'))
 
     def testUnmatchingFile(self):
         # Files with unknown extensions or none at all are not

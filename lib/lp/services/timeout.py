@@ -1,10 +1,11 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers to time out external operations."""
 
 __metaclass__ = type
 __all__ = [
+    "default_timeout",
     "get_default_timeout_function",
     "reduced_timeout",
     "SafeTransportWithTimeout",
@@ -38,6 +39,7 @@ from requests.packages.urllib3.connectionpool import (
     )
 from requests.packages.urllib3.exceptions import ClosedPoolError
 from requests.packages.urllib3.poolmanager import PoolManager
+from six import reraise
 
 
 default_timeout_function = None
@@ -53,6 +55,23 @@ def set_default_timeout_function(timeout_function):
     """Change the function returning the default timeout value to use."""
     global default_timeout_function
     default_timeout_function = timeout_function
+
+
+@contextmanager
+def default_timeout(default):
+    """A context manager that sets the default timeout if none is set.
+
+    :param default: The default timeout to use if none is set.
+    """
+    original_timeout_function = get_default_timeout_function()
+
+    if original_timeout_function is None:
+        set_default_timeout_function(lambda: default)
+    try:
+        yield
+    finally:
+        if original_timeout_function is None:
+            set_default_timeout_function(None)
 
 
 @contextmanager
@@ -190,7 +209,7 @@ class with_timeout:
                 exc_info = t.exc_info
                 # Remove the cyclic reference for faster GC.
                 del t.exc_info
-                raise exc_info[0], exc_info[1], exc_info[2]
+                reraise(exc_info[0], exc_info[1], tb=exc_info[2])
             return t.result
 
         return call_with_timeout
@@ -342,9 +361,9 @@ class SafeTransportWithTimeout(SafeTransport):
 
     timeout = None
 
-    def __init__(self, timeout=None):
+    def __init__(self, timeout=None, **kwargs):
         # Old style class call to super required.
-        SafeTransport.__init__(self)
+        SafeTransport.__init__(self, **kwargs)
         self.timeout = timeout
 
     def make_connection(self, host):

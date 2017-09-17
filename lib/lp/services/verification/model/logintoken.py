@@ -152,9 +152,10 @@ class LoginToken(SQLBase):
 
         # Here are the instructions that need to be encrypted.
         template = get_email_template('validate-gpg.txt', app=MAIL_APP)
+        key_type = '%s%s' % (key.keysize, key.algorithm.title)
         replacements = {'requester': self.requester.displayname,
                         'requesteremail': self.requesteremail,
-                        'displayname': key.displayname,
+                        'key_type': key_type,
                         'fingerprint': key.fingerprint,
                         'uids': formatted_uids,
                         'token_url': canonical_url(self)}

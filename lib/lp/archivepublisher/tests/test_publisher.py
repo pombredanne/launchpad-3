@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
@@ -32,6 +32,7 @@ try:
 except ImportError:
     from backports import lzma
 import pytz
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     ContainsAll,
     DirContains,
@@ -49,6 +50,7 @@ from testtools.matchers import (
     SamePath,
     )
 import transaction
+from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -101,7 +103,7 @@ from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.gpgkeys import gpgkeysdir
-from lp.testing.keyserver import KeyServerTac
+from lp.testing.keyserver import InProcessKeyServerFixture
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -1316,6 +1318,16 @@ class TestPublisher(TestPublisherBase):
         self.assertNotIn(archive, ubuntu.getPendingPublicationPPAs())
         removeSecurityProxy(archive_file).scheduled_deletion_date = (
             now - timedelta(hours=12))
+        self.assertIn(archive, ubuntu.getPendingPublicationPPAs())
+
+    def testDirtySuitesArchive(self):
+        # getPendingPublicationPPAs returns archives that have dirty_suites
+        # set.
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        archive = self.factory.makeArchive()
+        self.assertNotIn(archive, ubuntu.getPendingPublicationPPAs())
+        archive.markSuiteDirty(
+            ubuntu.currentseries, PackagePublishingPocket.RELEASE)
         self.assertIn(archive, ubuntu.getPendingPublicationPPAs())
 
     def _checkCompressedFiles(self, archive_publisher, base_file_path,
@@ -2917,6 +2929,8 @@ class TestUpdateByHashOverriddenDistsroot(TestUpdateByHash):
 class TestPublisherRepositorySignatures(TestPublisherBase):
     """Testing `Publisher` signature behaviour."""
 
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
+
     archive_publisher = None
 
     def tearDown(self):
@@ -2995,6 +3009,7 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         self.assertNotIn('Release.gpg', sync_args[1])
         self.assertNotIn('InRelease', sync_args[1])
 
+    @defer.inlineCallbacks
     def testRepositorySignatureWithSigningKey(self):
         """Check publisher behaviour when signing repositories.
 
@@ -3006,12 +3021,12 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         self.assertTrue(cprov.archive.signing_key is None)
 
         # Start the test keyserver, so the signing_key can be uploaded.
-        tac = KeyServerTac()
-        tac.setUp()
+        yield self.useFixture(InProcessKeyServerFixture()).start()
 
         # Set a signing key for Celso's PPA.
         key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
-        IArchiveSigningKey(cprov.archive).setSigningKey(key_path)
+        yield IArchiveSigningKey(cprov.archive).setSigningKey(
+            key_path, async_keyserver=True)
         self.assertTrue(cprov.archive.signing_key is not None)
 
         self.setupPublisher(cprov.archive)
@@ -3050,9 +3065,6 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
         self.assertEqual(self.distroseries.name, sync_args[0])
         self.assertThat(
             sync_args[1], ContainsAll(['Release', 'Release.gpg', 'InRelease']))
-
-        # All done, turn test-keyserver off.
-        tac.tearDown()
 
 
 class TestPublisherLite(TestCaseWithFactory):
@@ -3289,7 +3301,9 @@ class TestDirectoryHashSigning(TestDirectoryHashHelpers):
     """Unit tests for DirectoryHash object, signing functionality."""
 
     layer = ZopelessDatabaseLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
+    @defer.inlineCallbacks
     def setUp(self):
         super(TestDirectoryHashSigning, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
@@ -3303,13 +3317,11 @@ class TestDirectoryHashSigning(TestDirectoryHashHelpers):
         self.suite = "distroseries"
 
         # Setup a keyserver so we can install the archive key.
-        tac = KeyServerTac()
-        tac.setUp()
-
-        key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
-        IArchiveSigningKey(self.archive).setSigningKey(key_path)
-
-        tac.tearDown()
+        with InProcessKeyServerFixture() as keyserver:
+            yield keyserver.start()
+            key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+            yield IArchiveSigningKey(self.archive).setSigningKey(
+                key_path, async_keyserver=True)
 
     def test_basic_directory_add_signed(self):
         tmpdir = unicode(self.makeTemporaryDirectory())

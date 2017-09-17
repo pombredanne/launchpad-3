@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repositories."""
@@ -20,6 +20,7 @@ from storm.exceptions import LostObjectError
 from storm.store import Store
 from testtools.matchers import (
     EndsWith,
+    LessThan,
     MatchesSetwise,
     MatchesStructure,
     )
@@ -1181,6 +1182,20 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         self.assertEqual(ref, ref.repository.getRefByPath(u"master"))
         self.assertIsNone(ref.repository.getRefByPath(u"other"))
 
+    def test_getRefByPath_HEAD(self):
+        # The special ref path "HEAD" always refers to the current default
+        # branch.
+        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/master"])
+        ref_HEAD = ref.repository.getRefByPath(u"HEAD")
+        self.assertEqual(ref.repository, ref_HEAD.repository)
+        self.assertEqual(u"HEAD", ref_HEAD.path)
+        self.assertRaises(NotFoundError, getattr, ref_HEAD, "commit_sha1")
+        removeSecurityProxy(ref.repository)._default_branch = (
+            u"refs/heads/missing")
+        self.assertRaises(NotFoundError, getattr, ref_HEAD, "commit_sha1")
+        removeSecurityProxy(ref.repository)._default_branch = ref.path
+        self.assertEqual(ref.commit_sha1, ref_HEAD.commit_sha1)
+
     def test_planRefChanges(self):
         # planRefChanges copes with planning changes to refs in a repository
         # where some refs have been created, some deleted, and some changed.
@@ -1810,6 +1825,20 @@ class TestGitRepositorySetTarget(TestCaseWithFactory):
             self.assertRaises(
                 GitTargetError, repository.setTarget,
                 target=commercial_project, user=owner)
+
+
+class TestGitRepositoryRescan(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rescan(self):
+        repository = self.factory.makeGitRepository()
+        job_source = getUtility(IGitRefScanJobSource)
+        self.assertEqual([], list(job_source.iterReady()))
+        with person_logged_in(repository.owner):
+            repository.rescan()
+        [job] = list(job_source.iterReady())
+        self.assertEqual(repository, job.repository)
 
 
 class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
@@ -2681,6 +2710,34 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         with person_logged_in(ANONYMOUS):
             self.assertEqual(owner_db, repository_db.owner)
 
+    def test_getRefByPath(self):
+        repository_db = self.factory.makeGitRepository()
+        ref_dbs = self.factory.makeGitRefs(
+            repository=repository_db, paths=[u"refs/heads/a", u"refs/heads/b"])
+        removeSecurityProxy(repository_db)._default_branch = u"refs/heads/a"
+        repository_url = api_url(repository_db)
+        ref_urls = [api_url(ref_db) for ref_db in ref_dbs]
+        webservice = webservice_for_person(
+            repository_db.owner, permission=OAuthPermission.READ_PUBLIC)
+        webservice.default_api_version = "devel"
+        for path, expected_ref_url in (
+                ("a", ref_urls[0]),
+                ("refs/heads/a", ref_urls[0]),
+                ("b", ref_urls[1]),
+                ("refs/heads/b", ref_urls[1]),
+                ("HEAD", "%s/+ref/HEAD" % repository_url),
+                ):
+            response = webservice.named_get(
+                repository_url, "getRefByPath", path=path)
+            self.assertEqual(200, response.status)
+            self.assertEqual(
+                webservice.getAbsoluteUrl(expected_ref_url),
+                response.jsonBody()["self_link"])
+        response = webservice.named_get(
+            repository_url, "getRefByPath", path="c")
+        self.assertEqual(200, response.status)
+        self.assertIsNone(response.jsonBody())
+
     def test_subscribe(self):
         # A user can subscribe to a repository.
         repository_db = self.factory.makeGitRepository()
@@ -2800,6 +2857,31 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         self.assertThat(
             landing_candidates["entries"][0]["self_link"], EndsWith(bmp_url))
 
+    def test_landing_candidates_constant_queries(self):
+        project = self.factory.makeProduct()
+        with person_logged_in(project.owner):
+            repository = self.factory.makeGitRepository(target=project)
+            repository_url = api_url(repository)
+            webservice = webservice_for_person(
+                project.owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+        def create_mp():
+            with admin_logged_in():
+                [target] = self.factory.makeGitRefs(repository=repository)
+                [source] = self.factory.makeGitRefs(
+                    target=project,
+                    information_type=InformationType.PRIVATESECURITY)
+                self.factory.makeBranchMergeProposalForGit(
+                    source_ref=source, target_ref=target)
+
+        def list_mps():
+            webservice.get(repository_url + "/landing_candidates")
+
+        list_mps()
+        recorder1, recorder2 = record_two_runs(list_mps, create_mp, 2)
+        self.assertThat(recorder1, HasQueryCount(LessThan(40)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
     def test_landing_targets(self):
         bmp_db = self.factory.makeBranchMergeProposalForGit()
         with person_logged_in(bmp_db.registrant):
@@ -2814,6 +2896,31 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         self.assertEqual(1, len(landing_targets["entries"]))
         self.assertThat(
             landing_targets["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_landing_targets_constant_queries(self):
+        project = self.factory.makeProduct()
+        with person_logged_in(project.owner):
+            repository = self.factory.makeGitRepository(target=project)
+            repository_url = api_url(repository)
+            webservice = webservice_for_person(
+                project.owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+        def create_mp():
+            with admin_logged_in():
+                [source] = self.factory.makeGitRefs(repository=repository)
+                [target] = self.factory.makeGitRefs(
+                    target=project,
+                    information_type=InformationType.PRIVATESECURITY)
+                self.factory.makeBranchMergeProposalForGit(
+                    source_ref=source, target_ref=target)
+
+        def list_mps():
+            webservice.get(repository_url + "/landing_targets")
+
+        list_mps()
+        recorder1, recorder2 = record_two_runs(list_mps, create_mp, 2)
+        self.assertThat(recorder1, HasQueryCount(LessThan(30)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_dependent_landings(self):
         [ref] = self.factory.makeGitRefs()

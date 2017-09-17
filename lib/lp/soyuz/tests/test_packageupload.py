@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -294,13 +294,17 @@ class PackageUploadTestCase(TestCaseWithFactory):
         # Duplicate queue entries are handled sensibly.
         self.test_publisher.prepareBreezyAutotest()
         distroseries = self.test_publisher.distroseries
+        uploader = self.factory.makePerson()
+        changes = Changes({"Changed-By": uploader.preferredemail.email})
         upload_one = self.factory.makePackageUpload(
-            archive=distroseries.main_archive, distroseries=distroseries)
+            archive=distroseries.main_archive, distroseries=distroseries,
+            changes_file_content=changes.dump().encode("UTF-8"))
         upload_one.addSource(self.factory.makeSourcePackageRelease(
             sourcepackagename="cnews", distroseries=distroseries,
             component="main", version="1.0"))
         upload_two = self.factory.makePackageUpload(
-            archive=distroseries.main_archive, distroseries=distroseries)
+            archive=distroseries.main_archive, distroseries=distroseries,
+            changes_file_content=changes.dump().encode("UTF-8"))
         upload_two.addSource(self.factory.makeSourcePackageRelease(
             sourcepackagename="cnews", distroseries=distroseries,
             component="main", version="1.0"))
@@ -369,6 +373,18 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.assertIn(
             'Rejected:\nRejected by %s: Because.' % person.displayname,
             str(msg))
+
+    def test_getFileByName_source(self):
+        self.test_publisher.prepareBreezyAutotest()
+        upload, _ = self.makeSourcePackageUpload()
+        spr = upload.sourcepackagerelease
+        upload.getFileByName("%s_%s.dsc" % (spr.name, spr.version))
+
+    def test_getFileByName_binary(self):
+        self.test_publisher.prepareBreezyAutotest()
+        upload, _ = self.makeBuildPackageUpload()
+        bpr = upload.builds[0].build.binarypackages[0]
+        upload.getFileByName("%s_%s_i386.deb" % (bpr.name, bpr.version))
 
 
 class TestPackageUploadSecurity(TestCaseWithFactory):
@@ -947,10 +963,14 @@ class TestPackageUploadWebservice(TestCaseWithFactory):
 
     def makeSourcePackageUpload(self, person, **kwargs):
         with person_logged_in(person):
-            upload = self.factory.makeSourcePackageUpload(
-                distroseries=self.distroseries, **kwargs)
-            transaction.commit()
-            spr = upload.sourcepackagerelease
+            uploader = self.factory.makePerson()
+            changes = Changes({"Changed-By": uploader.preferredemail.email})
+            upload = self.factory.makePackageUpload(
+                distroseries=self.distroseries,
+                archive=self.distroseries.main_archive,
+                changes_file_content=changes.dump().encode("UTF-8"))
+            spr = self.factory.makeSourcePackageRelease(**kwargs)
+            upload.addSource(spr)
             for extension in ("dsc", "tar.gz"):
                 filename = "%s_%s.%s" % (spr.name, spr.version, extension)
                 lfa = self.factory.makeLibraryFileAlias(filename=filename)

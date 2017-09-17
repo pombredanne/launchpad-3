@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap build jobs."""
@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = [
     'SnapBuildJob',
     'SnapBuildJobType',
+    'SnapBuildStoreUploadStatusChangedEvent',
     'SnapStoreUploadJob',
     ]
 
@@ -26,6 +27,8 @@ from storm.locals import (
     )
 import transaction
 from zope.component import getUtility
+from zope.component.interfaces import ObjectEvent
+from zope.event import notify
 from zope.interface import (
     implementer,
     provider,
@@ -44,19 +47,22 @@ from lp.services.job.model.job import (
     Job,
     )
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.propertycache import get_property_cache
 from lp.snappy.interfaces.snapbuildjob import (
     ISnapBuildJob,
+    ISnapBuildStoreUploadStatusChangedEvent,
     ISnapStoreUploadJob,
     ISnapStoreUploadJobSource,
     )
 from lp.snappy.interfaces.snapstoreclient import (
-    BadReleaseResponse,
+    BadRefreshResponse,
     BadScanStatusResponse,
-    BadUploadResponse,
     ISnapStoreClient,
     ReleaseFailedResponse,
     ScanFailedResponse,
+    SnapStoreError,
     UnauthorizedUploadResponse,
+    UploadFailedResponse,
     UploadNotScannedYetResponse,
     )
 from lp.snappy.mail.snapbuild import SnapBuildMailer
@@ -119,7 +125,10 @@ class SnapBuildJobDerived(BaseRunnableJob):
 
     def __repr__(self):
         """An informative representation of the job."""
-        return "<%s for %s>" % (self.__class__.__name__, self.snapbuild.title)
+        snap = self.snapbuild.snap
+        return "<%s for ~%s/+snap/%s/+build/%d>" % (
+            self.__class__.__name__, snap.owner.name, snap.name,
+            self.snapbuild.id)
 
     @classmethod
     def get(cls, job_id):
@@ -160,8 +169,17 @@ class SnapBuildJobDerived(BaseRunnableJob):
         return oops_vars
 
 
-class ManualReview(Exception):
+class ManualReview(SnapStoreError):
     pass
+
+
+class RetryableSnapStoreError(SnapStoreError):
+    pass
+
+
+@implementer(ISnapBuildStoreUploadStatusChangedEvent)
+class SnapBuildStoreUploadStatusChangedEvent(ObjectEvent):
+    """See `ISnapBuildStoreUploadStatusChangedEvent`."""
 
 
 @implementer(ISnapStoreUploadJob)
@@ -178,9 +196,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         ReleaseFailedResponse,
         )
 
-    # XXX cjwatson 2016-05-04: identify transient upload failures and retry
-    retry_error_types = (UploadNotScannedYetResponse,)
-    retry_delay = timedelta(minutes=1)
+    retry_error_types = (UploadNotScannedYetResponse, RetryableSnapStoreError)
     max_retries = 20
 
     config = config.ISnapStoreUploadJobSource
@@ -191,6 +207,8 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         snap_build_job = SnapBuildJob(snapbuild, cls.class_job_type, {})
         job = cls(snap_build_job)
         job.celeryRunOnCommit()
+        del get_property_cache(snapbuild).last_store_upload_job
+        notify(SnapBuildStoreUploadStatusChangedEvent(snapbuild))
         return job
 
     @property
@@ -204,6 +222,16 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         self.metadata["error_message"] = message
 
     @property
+    def error_detail(self):
+        """See `ISnapStoreUploadJob`."""
+        return self.metadata.get("error_detail")
+
+    @error_detail.setter
+    def error_detail(self, detail):
+        """See `ISnapStoreUploadJob`."""
+        self.metadata["error_detail"] = detail
+
+    @property
     def store_url(self):
         """See `ISnapStoreUploadJob`."""
         return self.metadata.get("store_url")
@@ -213,30 +241,99 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         """See `ISnapStoreUploadJob`."""
         self.metadata["store_url"] = url
 
+    @property
+    def store_revision(self):
+        """See `ISnapStoreUploadJob`."""
+        return self.metadata.get("store_revision")
+
+    @store_revision.setter
+    def store_revision(self, revision):
+        """See `ISnapStoreUploadJob`."""
+        self.metadata["store_revision"] = revision
+
+    # Ideally we'd just override Job._set_status or similar, but
+    # lazr.delegates makes that difficult, so we use this to override all
+    # the individual Job lifecycle methods instead.
+    def _do_lifecycle(self, method_name, *args, **kwargs):
+        old_store_upload_status = self.snapbuild.store_upload_status
+        getattr(super(SnapStoreUploadJob, self), method_name)(*args, **kwargs)
+        if self.snapbuild.store_upload_status != old_store_upload_status:
+            notify(SnapBuildStoreUploadStatusChangedEvent(self.snapbuild))
+
+    def start(self, *args, **kwargs):
+        self._do_lifecycle("start", *args, **kwargs)
+
+    def complete(self, *args, **kwargs):
+        self._do_lifecycle("complete", *args, **kwargs)
+
+    def fail(self, *args, **kwargs):
+        self._do_lifecycle("fail", *args, **kwargs)
+
+    def queue(self, *args, **kwargs):
+        self._do_lifecycle("queue", *args, **kwargs)
+
+    def suspend(self, *args, **kwargs):
+        self._do_lifecycle("suspend", *args, **kwargs)
+
+    def resume(self, *args, **kwargs):
+        self._do_lifecycle("resume", *args, **kwargs)
+
+    def getOopsVars(self):
+        """See `IRunnableJob`."""
+        oops_vars = super(SnapStoreUploadJob, self).getOopsVars()
+        oops_vars.append(('error_detail', self.error_detail))
+        return oops_vars
+
+    @property
+    def retry_delay(self):
+        """See `BaseRunnableJob`."""
+        if "status_url" in self.metadata and self.store_url is None:
+            # At the moment we have to poll the status endpoint to find out
+            # if the store has finished scanning.  Try to deal with easy
+            # cases quickly without hammering our job runners or the store
+            # too badly.
+            delays = (15, 15, 30, 30)
+            try:
+                return timedelta(seconds=delays[self.attempt_count - 1])
+            except IndexError:
+                pass
+        return timedelta(minutes=1)
+
     def run(self):
         """See `IRunnableJob`."""
         client = getUtility(ISnapStoreClient)
         try:
             if "status_url" not in self.metadata:
                 self.metadata["status_url"] = client.upload(self.snapbuild)
+                # We made progress, so reset attempt_count.
+                self.attempt_count = 1
             if self.store_url is None:
-                self.store_url, self.metadata["store_revision"] = (
+                self.store_url, self.store_revision = (
                     client.checkStatus(self.metadata["status_url"]))
+                # We made progress, so reset attempt_count.
+                self.attempt_count = 1
             if self.snapbuild.snap.store_channels:
-                if self.metadata["store_revision"] is None:
+                if self.store_revision is None:
                     raise ManualReview(
                         "Package held for manual review on the store; "
                         "cannot release it automatically.")
-                client.release(self.snapbuild, self.metadata["store_revision"])
+                client.release(self.snapbuild, self.store_revision)
             self.error_message = None
         except self.retry_error_types:
             raise
         except Exception as e:
+            if (isinstance(e, SnapStoreError) and e.can_retry and
+                    self.attempt_count <= self.max_retries):
+                raise RetryableSnapStoreError(e.message, detail=e.detail)
             self.error_message = str(e)
+            self.error_detail = getattr(e, "detail", None)
             if isinstance(e, UnauthorizedUploadResponse):
                 mailer = SnapBuildMailer.forUnauthorizedUpload(self.snapbuild)
                 mailer.sendAll()
-            elif isinstance(e, BadUploadResponse):
+            elif isinstance(e, BadRefreshResponse):
+                mailer = SnapBuildMailer.forRefreshFailure(self.snapbuild)
+                mailer.sendAll()
+            elif isinstance(e, UploadFailedResponse):
                 mailer = SnapBuildMailer.forUploadFailure(self.snapbuild)
                 mailer.sendAll()
             elif isinstance(e, (BadScanStatusResponse, ScanFailedResponse)):
@@ -245,7 +342,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
             elif isinstance(e, ManualReview):
                 mailer = SnapBuildMailer.forManualReview(self.snapbuild)
                 mailer.sendAll()
-            elif isinstance(e, (BadReleaseResponse, ReleaseFailedResponse)):
+            elif isinstance(e, ReleaseFailedResponse):
                 mailer = SnapBuildMailer.forReleaseFailure(self.snapbuild)
                 mailer.sendAll()
             # The normal job infrastructure will abort the transaction, but

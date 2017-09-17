@@ -107,7 +107,7 @@
         <br/>To authenticate with the Launchpad branch upload service,
         you need to
         <a tal:attributes="href string:${view/user/fmt:url}/+editsshkeys">
-          register a SSH key</a>.
+          register an SSH key</a>.
       </tal:no-keys>
     </p>
   </tal:has-user>

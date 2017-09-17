@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap packages."""
@@ -9,13 +9,22 @@ from datetime import (
     datetime,
     timedelta,
     )
+import json
+from urlparse import urlsplit
 
+from httmock import (
+    all_requests,
+    HTTMock,
+    )
 from lazr.lifecycle.event import ObjectModifiedEvent
+from pymacaroons import Macaroon
 import pytz
 from storm.exceptions import LostObjectError
 from storm.locals import Store
 from testtools.matchers import (
+    ContainsDict,
     Equals,
+    MatchesSetwise,
     MatchesStructure,
     )
 import transaction
@@ -36,6 +45,7 @@ from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.config import config
 from lp.services.database.constants import (
     ONE_DAY_AGO,
     UTC_NOW,
@@ -63,6 +73,7 @@ from lp.snappy.interfaces.snapbuild import (
     ISnapBuildSet,
     )
 from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
+from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snap import SnapSet
 from lp.snappy.model.snapbuild import SnapFile
 from lp.snappy.model.snapbuildjob import SnapBuildJob
@@ -77,6 +88,9 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.fixture import ZopeUtilityFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -86,7 +100,10 @@ from lp.testing.matchers import (
     DoesNotSnapshot,
     HasQueryCount,
     )
-from lp.testing.pages import webservice_for_person
+from lp.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
+    )
 
 
 class TestSnapFeatureFlag(TestCaseWithFactory):
@@ -115,6 +132,12 @@ class TestSnap(TestCaseWithFactory):
         snap = self.factory.makeSnap()
         with admin_logged_in():
             self.assertProvides(snap, ISnap)
+
+    def test___repr__(self):
+        # `Snap` objects have an informative __repr__.
+        snap = self.factory.makeSnap()
+        self.assertEqual(
+            "<Snap ~%s/+snap/%s>" % (snap.owner.name, snap.name), repr(snap))
 
     def test_avoids_problematic_snapshots(self):
         self.assertThat(
@@ -306,6 +329,30 @@ class TestSnap(TestCaseWithFactory):
         snap.requestBuild(
             snap.owner, snap.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.UPDATES)
+
+    def test_requestAutoBuilds(self):
+        # requestAutoBuilds creates new builds for all configured
+        # architectures with appropriate parameters.
+        distroseries = self.factory.makeDistroSeries()
+        dases = []
+        for _ in range(3):
+            processor = self.factory.makeProcessor(supports_virtualized=True)
+            dases.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=processor))
+        archive = self.factory.makeArchive()
+        snap = self.factory.makeSnap(
+            distroseries=distroseries,
+            processors=[das.processor for das in dases[:2]],
+            auto_build_archive=archive,
+            auto_build_pocket=PackagePublishingPocket.PROPOSED)
+        with person_logged_in(snap.owner):
+            builds = snap.requestAutoBuilds()
+        self.assertThat(builds, MatchesSetwise(
+            *(MatchesStructure.byEquality(
+                requester=snap.owner, snap=snap, archive=archive,
+                distro_arch_series=das,
+                pocket=PackagePublishingPocket.PROPOSED)
+              for das in dases[:2])))
 
     def test_getBuilds(self):
         # Test the various getBuilds methods.
@@ -566,6 +613,18 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertTrue(snap.require_virtualized)
         self.assertFalse(snap.private)
 
+    def test_creation_git_url(self):
+        # A Snap can be backed directly by a URL for an external Git
+        # repository, rather than a Git repository hosted in Launchpad.
+        ref = self.factory.makeGitRefRemote()
+        components = self.makeSnapComponents(git_ref=ref)
+        snap = getUtility(ISnapSet).new(**components)
+        self.assertIsNone(snap.branch)
+        self.assertIsNone(snap.git_repository)
+        self.assertEqual(ref.repository_url, snap.git_repository_url)
+        self.assertEqual(ref.path, snap.git_path)
+        self.assertEqual(ref, snap.git_ref)
+
     def test_private_snap_for_public_sources(self):
         # Creating private snaps for public sources is allowed.
         [ref] = self.factory.makeGitRefs()
@@ -777,6 +836,81 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertRaises(
             BadSnapSearchContext, snap_set.findByContext,
             self.factory.makeDistribution())
+
+    def test_findByURL(self):
+        # ISnapSet.findByURL returns visible Snaps with the given URL.
+        urls = [u"https://git.example.org/foo", u"https://git.example.org/bar"]
+        owners = [self.factory.makePerson() for i in range(2)]
+        snaps = []
+        for url in urls:
+            for owner in owners:
+                snaps.append(self.factory.makeSnap(
+                    registrant=owner, owner=owner,
+                    git_ref=self.factory.makeGitRefRemote(repository_url=url)))
+        snaps.append(
+            self.factory.makeSnap(branch=self.factory.makeAnyBranch()))
+        snaps.append(
+            self.factory.makeSnap(git_ref=self.factory.makeGitRefs()[0]))
+        self.assertContentEqual(
+            snaps[:2], getUtility(ISnapSet).findByURL(urls[0]))
+        self.assertContentEqual(
+            [snaps[0]],
+            getUtility(ISnapSet).findByURL(urls[0], owner=owners[0]))
+
+    def test_findByURLPrefix(self):
+        # ISnapSet.findByURLPrefix returns visible Snaps with the given URL
+        # prefix.
+        urls = [
+            u"https://git.example.org/foo/a",
+            u"https://git.example.org/foo/b",
+            u"https://git.example.org/bar",
+            ]
+        owners = [self.factory.makePerson() for i in range(2)]
+        snaps = []
+        for url in urls:
+            for owner in owners:
+                snaps.append(self.factory.makeSnap(
+                    registrant=owner, owner=owner,
+                    git_ref=self.factory.makeGitRefRemote(repository_url=url)))
+        snaps.append(
+            self.factory.makeSnap(branch=self.factory.makeAnyBranch()))
+        snaps.append(
+            self.factory.makeSnap(git_ref=self.factory.makeGitRefs()[0]))
+        prefix = u"https://git.example.org/foo/"
+        self.assertContentEqual(
+            snaps[:4], getUtility(ISnapSet).findByURLPrefix(prefix))
+        self.assertContentEqual(
+            [snaps[0], snaps[2]],
+            getUtility(ISnapSet).findByURLPrefix(prefix, owner=owners[0]))
+
+    def test_findByURLPrefixes(self):
+        # ISnapSet.findByURLPrefixes returns visible Snaps with any of the
+        # given URL prefixes.
+        urls = [
+            u"https://git.example.org/foo/a",
+            u"https://git.example.org/foo/b",
+            u"https://git.example.org/bar/a",
+            u"https://git.example.org/bar/b",
+            u"https://git.example.org/baz",
+            ]
+        owners = [self.factory.makePerson() for i in range(2)]
+        snaps = []
+        for url in urls:
+            for owner in owners:
+                snaps.append(self.factory.makeSnap(
+                    registrant=owner, owner=owner,
+                    git_ref=self.factory.makeGitRefRemote(repository_url=url)))
+        snaps.append(
+            self.factory.makeSnap(branch=self.factory.makeAnyBranch()))
+        snaps.append(
+            self.factory.makeSnap(git_ref=self.factory.makeGitRefs()[0]))
+        prefixes = [
+            u"https://git.example.org/foo/", u"https://git.example.org/bar/"]
+        self.assertContentEqual(
+            snaps[:8], getUtility(ISnapSet).findByURLPrefixes(prefixes))
+        self.assertContentEqual(
+            [snaps[0], snaps[2], snaps[4], snaps[6]],
+            getUtility(ISnapSet).findByURLPrefixes(prefixes, owner=owners[0]))
 
     def test__findStaleSnaps(self):
         # Stale; not built automatically.
@@ -1052,11 +1186,20 @@ class TestSnapProcessors(TestCaseWithFactory):
 
 class TestSnapWebservice(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(TestSnapWebservice, self).setUp()
         self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
+        self.snap_store_client = FakeMethod()
+        self.snap_store_client.listChannels = FakeMethod(result=[
+            {"name": "stable", "display_name": "Stable"},
+            {"name": "edge", "display_name": "Edge"},
+            ])
+        self.snap_store_client.requestPackageUploadPermission = (
+            getUtility(ISnapStoreClient).requestPackageUploadPermission)
+        self.useFixture(
+            ZopeUtilityFixture(self.snap_store_client, ISnapStoreClient))
         self.person = self.factory.makePerson(displayname="Test Person")
         self.webservice = webservice_for_person(
             self.person, permission=OAuthPermission.WRITE_PUBLIC)
@@ -1068,14 +1211,14 @@ class TestSnapWebservice(TestCaseWithFactory):
 
     def makeSnap(self, owner=None, distroseries=None, branch=None,
                  git_ref=None, processors=None, webservice=None,
-                 private=False):
+                 private=False, auto_build_archive=None,
+                 auto_build_pocket=None, **kwargs):
         if owner is None:
             owner = self.person
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries(registrant=owner)
         if branch is None and git_ref is None:
             branch = self.factory.makeAnyBranch()
-        kwargs = {}
         if webservice is None:
             webservice = self.webservice
         transaction.commit()
@@ -1088,6 +1231,10 @@ class TestSnapWebservice(TestCaseWithFactory):
         if processors is not None:
             kwargs["processors"] = [
                 api_url(processor) for processor in processors]
+        if auto_build_archive is not None:
+            kwargs["auto_build_archive"] = api_url(auto_build_archive)
+        if auto_build_pocket is not None:
+            kwargs["auto_build_pocket"] = auto_build_pocket.title
         logout()
         response = webservice.named_post(
             "/+snaps", "new", owner=owner_url, distro_series=distroseries_url,
@@ -1155,6 +1302,21 @@ class TestSnapWebservice(TestCaseWithFactory):
         with person_logged_in(self.person):
             self.assertTrue(snap["private"])
 
+    def test_new_store_options(self):
+        # Ensure store-related options in Snap.new work.
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        store_name = self.factory.getUniqueUnicode()
+        snap = self.makeSnap(
+            store_upload=True, store_series=api_url(snappy_series),
+            store_name=store_name, store_channels=["edge"])
+        with person_logged_in(self.person):
+            self.assertTrue(snap["store_upload"])
+            self.assertEqual(
+                self.getURL(snappy_series), snap["store_series_link"])
+            self.assertEqual(store_name, snap["store_name"])
+            self.assertEqual(["edge"], snap["store_channels"])
+
     def test_duplicate(self):
         # An attempt to create a duplicate Snap fails.
         team = self.factory.makeTeam(owner=self.person)
@@ -1200,6 +1362,53 @@ class TestSnapWebservice(TestCaseWithFactory):
         self.assertEqual(
             "Test Person is not a member of Other Team.", response.body)
 
+    def test_cannot_set_git_path_for_bzr(self):
+        # Setting git_path on a Bazaar-based Snap fails.
+        snap = self.makeSnap(branch=self.factory.makeAnyBranch())
+        response = self.webservice.patch(
+            snap["self_link"], "application/json",
+            json.dumps({"git_path": "HEAD"}))
+        self.assertEqual(400, response.status)
+
+    def test_cannot_set_git_path_to_None(self):
+        # Setting git_path to None fails.
+        snap = self.makeSnap(git_ref=self.factory.makeGitRefs()[0])
+        response = self.webservice.patch(
+            snap["self_link"], "application/json",
+            json.dumps({"git_path": None}))
+        self.assertEqual(400, response.status)
+
+    def test_set_git_path(self):
+        # Setting git_path on a Git-based Snap works.
+        ref_master, ref_next = self.factory.makeGitRefs(
+            paths=[u"refs/heads/master", u"refs/heads/next"])
+        snap = self.makeSnap(git_ref=ref_master)
+        response = self.webservice.patch(
+            snap["self_link"], "application/json",
+            json.dumps({"git_path": ref_next.path}))
+        self.assertEqual(209, response.status)
+        self.assertThat(response.jsonBody(), ContainsDict({
+            "git_repository_link": Equals(snap["git_repository_link"]),
+            "git_path": Equals(ref_next.path),
+            }))
+
+    def test_set_git_path_external(self):
+        # Setting git_path on a Snap backed by an external Git repository
+        # works.
+        ref = self.factory.makeGitRefRemote()
+        repository_url = ref.repository_url
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person, git_ref=ref)
+        snap_url = api_url(snap)
+        logout()
+        response = self.webservice.patch(
+            snap_url, "application/json", json.dumps({"git_path": "HEAD"}))
+        self.assertEqual(209, response.status)
+        self.assertThat(response.jsonBody(), ContainsDict({
+            "git_repository_url": Equals(repository_url),
+            "git_path": Equals("HEAD"),
+            }))
+
     def test_getByName(self):
         # lp.snaps.getByName returns a matching Snap.
         snap = self.makeSnap()
@@ -1221,6 +1430,236 @@ class TestSnapWebservice(TestCaseWithFactory):
         self.assertEqual(
             "No such snap package with this owner: 'nonexistent'.",
             response.body)
+
+    def test_findByURL(self):
+        # lp.snaps.findByURL returns visible Snaps with the given URL.
+        persons = [self.factory.makePerson(), self.factory.makePerson()]
+        urls = [u"https://git.example.org/foo", u"https://git.example.org/bar"]
+        snaps = []
+        for url in urls:
+            for person in persons:
+                for private in (False, True):
+                    ref = self.factory.makeGitRefRemote(repository_url=url)
+                    snaps.append(self.factory.makeSnap(
+                        registrant=person, owner=person, git_ref=ref,
+                        private=private))
+        with admin_logged_in():
+            person_urls = [api_url(person) for person in persons]
+            ws_snaps = [
+                self.webservice.getAbsoluteUrl(api_url(snap))
+                for snap in snaps]
+        commercial_admin = (
+            getUtility(ILaunchpadCelebrities).commercial_admin.teamowner)
+        logout()
+        # Anonymous requests can only see public snaps.
+        anon_webservice = LaunchpadWebServiceCaller("test", "")
+        response = anon_webservice.named_get(
+            "/+snaps", "findByURL", url=urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[0], ws_snaps[2]],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = anon_webservice.named_get(
+            "/+snaps", "findByURL", url=urls[0], owner=person_urls[0],
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[0]],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        # persons[0] can see both public snaps with this URL, as well as
+        # their own private snap.
+        webservice = webservice_for_person(
+            persons[0], permission=OAuthPermission.READ_PRIVATE)
+        response = webservice.named_get(
+            "/+snaps", "findByURL", url=urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            ws_snaps[:3],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = webservice.named_get(
+            "/+snaps", "findByURL", url=urls[0], owner=person_urls[0],
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            ws_snaps[:2],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        # Admins can see all snaps with this URL.
+        commercial_admin_webservice = webservice_for_person(
+            commercial_admin, permission=OAuthPermission.READ_PRIVATE)
+        response = commercial_admin_webservice.named_get(
+            "/+snaps", "findByURL", url=urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            ws_snaps[:4],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = commercial_admin_webservice.named_get(
+            "/+snaps", "findByURL", url=urls[0], owner=person_urls[0],
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            ws_snaps[:2],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+
+    def test_findByURLPrefix(self):
+        # lp.snaps.findByURLPrefix returns visible Snaps with the given URL
+        # prefix.
+        self.pushConfig("launchpad", default_batch_size=10)
+        persons = [self.factory.makePerson(), self.factory.makePerson()]
+        urls = [
+            u"https://git.example.org/foo/a",
+            u"https://git.example.org/foo/b",
+            u"https://git.example.org/bar",
+            ]
+        snaps = []
+        for url in urls:
+            for person in persons:
+                for private in (False, True):
+                    ref = self.factory.makeGitRefRemote(repository_url=url)
+                    snaps.append(self.factory.makeSnap(
+                        registrant=person, owner=person, git_ref=ref,
+                        private=private))
+        with admin_logged_in():
+            person_urls = [api_url(person) for person in persons]
+            ws_snaps = [
+                self.webservice.getAbsoluteUrl(api_url(snap))
+                for snap in snaps]
+        commercial_admin = (
+            getUtility(ILaunchpadCelebrities).commercial_admin.teamowner)
+        logout()
+        prefix = u"https://git.example.org/foo/"
+        # Anonymous requests can only see public snaps.
+        anon_webservice = LaunchpadWebServiceCaller("test", "")
+        response = anon_webservice.named_get(
+            "/+snaps", "findByURLPrefix", url_prefix=prefix,
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 2, 4, 6)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = anon_webservice.named_get(
+            "/+snaps", "findByURLPrefix", url_prefix=prefix,
+            owner=person_urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 4)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        # persons[0] can see all public snaps with this URL prefix, as well
+        # as their own matching private snaps.
+        webservice = webservice_for_person(
+            persons[0], permission=OAuthPermission.READ_PRIVATE)
+        response = webservice.named_get(
+            "/+snaps", "findByURLPrefix", url_prefix=prefix,
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 1, 2, 4, 5, 6)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = webservice.named_get(
+            "/+snaps", "findByURLPrefix", url_prefix=prefix,
+            owner=person_urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 1, 4, 5)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        # Admins can see all snaps with this URL prefix.
+        commercial_admin_webservice = webservice_for_person(
+            commercial_admin, permission=OAuthPermission.READ_PRIVATE)
+        response = commercial_admin_webservice.named_get(
+            "/+snaps", "findByURLPrefix", url_prefix=prefix,
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            ws_snaps[:8],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = commercial_admin_webservice.named_get(
+            "/+snaps", "findByURLPrefix", url_prefix=prefix,
+            owner=person_urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 1, 4, 5)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+
+    def test_findByURLPrefixes(self):
+        # lp.snaps.findByURLPrefixes returns visible Snaps with any of the
+        # given URL prefixes.
+        self.pushConfig("launchpad", default_batch_size=20)
+        persons = [self.factory.makePerson(), self.factory.makePerson()]
+        urls = [
+            u"https://git.example.org/foo/a",
+            u"https://git.example.org/foo/b",
+            u"https://git.example.org/bar/a",
+            u"https://git.example.org/bar/b",
+            u"https://git.example.org/baz",
+            ]
+        snaps = []
+        for url in urls:
+            for person in persons:
+                for private in (False, True):
+                    ref = self.factory.makeGitRefRemote(repository_url=url)
+                    snaps.append(self.factory.makeSnap(
+                        registrant=person, owner=person, git_ref=ref,
+                        private=private))
+        with admin_logged_in():
+            person_urls = [api_url(person) for person in persons]
+            ws_snaps = [
+                self.webservice.getAbsoluteUrl(api_url(snap))
+                for snap in snaps]
+        commercial_admin = (
+            getUtility(ILaunchpadCelebrities).commercial_admin.teamowner)
+        logout()
+        prefixes = [
+            u"https://git.example.org/foo/", u"https://git.example.org/bar/"]
+        # Anonymous requests can only see public snaps.
+        anon_webservice = LaunchpadWebServiceCaller("test", "")
+        response = anon_webservice.named_get(
+            "/+snaps", "findByURLPrefixes", url_prefixes=prefixes,
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 2, 4, 6, 8, 10, 12, 14)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = anon_webservice.named_get(
+            "/+snaps", "findByURLPrefixes", url_prefixes=prefixes,
+            owner=person_urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 4, 8, 12)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        # persons[0] can see all public snaps with any of these URL
+        # prefixes, as well as their own matching private snaps.
+        webservice = webservice_for_person(
+            persons[0], permission=OAuthPermission.READ_PRIVATE)
+        response = webservice.named_get(
+            "/+snaps", "findByURLPrefixes", url_prefixes=prefixes,
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = webservice.named_get(
+            "/+snaps", "findByURLPrefixes", url_prefixes=prefixes,
+            owner=person_urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 1, 4, 5, 8, 9, 12, 13)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        # Admins can see all snaps with any of these URL prefixes.
+        commercial_admin_webservice = webservice_for_person(
+            commercial_admin, permission=OAuthPermission.READ_PRIVATE)
+        response = commercial_admin_webservice.named_get(
+            "/+snaps", "findByURLPrefixes", url_prefixes=prefixes,
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            ws_snaps[:16],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = commercial_admin_webservice.named_get(
+            "/+snaps", "findByURLPrefixes", url_prefixes=prefixes,
+            owner=person_urls[0], api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[i] for i in (0, 1, 4, 5, 8, 9, 12, 13)],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
 
     def setProcessors(self, user, snap, names):
         ws = webservice_for_person(
@@ -1291,6 +1730,159 @@ class TestSnapWebservice(TestCaseWithFactory):
 
         response = self.setProcessors(self.person, snap, ["386"])
         self.assertEqual(403, response.status)
+
+    def assertBeginsAuthorization(self, snap, **kwargs):
+        snap_url = api_url(snap)
+        root_macaroon = Macaroon()
+        root_macaroon.add_third_party_caveat(
+            urlsplit(config.launchpad.openid_provider_root).netloc, '',
+            'dummy')
+        root_macaroon_raw = root_macaroon.serialize()
+
+        @all_requests
+        def handler(url, request):
+            self.request = request
+            return {
+                "status_code": 200,
+                "content": {"macaroon": root_macaroon_raw},
+                }
+
+        self.pushConfig("snappy", store_url="http://sca.example/")
+        logout()
+        with HTTMock(handler):
+            response = self.webservice.named_post(
+                snap_url, "beginAuthorization", **kwargs)
+        self.assertThat(self.request, MatchesStructure.byEquality(
+            url="http://sca.example/dev/api/acl/", method="POST"))
+        with person_logged_in(self.person):
+            expected_body = {
+                "packages": [{
+                    "name": snap.store_name,
+                    "series": snap.store_series.name,
+                    }],
+                "permissions": ["package_upload"],
+                }
+            self.assertEqual(expected_body, json.loads(self.request.body))
+            self.assertEqual({"root": root_macaroon_raw}, snap.store_secrets)
+        return response, root_macaroon.third_party_caveats()[0]
+
+    def test_beginAuthorization(self):
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode())
+        response, sso_caveat = self.assertBeginsAuthorization(snap)
+        self.assertEqual(sso_caveat.caveat_id, response.jsonBody())
+
+    def test_beginAuthorization_unauthorized(self):
+        # A user without edit access cannot authorize snap package uploads.
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode())
+        snap_url = api_url(snap)
+        other_person = self.factory.makePerson()
+        other_webservice = webservice_for_person(
+            other_person, permission=OAuthPermission.WRITE_PUBLIC)
+        other_webservice.default_api_version = "devel"
+        response = other_webservice.named_post(snap_url, "beginAuthorization")
+        self.assertEqual(401, response.status)
+
+    def test_completeAuthorization(self):
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode(),
+            store_secrets={"root": "dummy-root"})
+        snap_url = api_url(snap)
+        logout()
+        response = self.webservice.named_post(
+            snap_url, "completeAuthorization",
+            discharge_macaroon="dummy-discharge")
+        self.assertEqual(200, response.status)
+        with person_logged_in(self.person):
+            self.assertEqual(
+                {"root": "dummy-root", "discharge": "dummy-discharge"},
+                snap.store_secrets)
+
+    def test_completeAuthorization_without_beginAuthorization(self):
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode())
+        snap_url = api_url(snap)
+        logout()
+        response = self.webservice.named_post(
+            snap_url, "completeAuthorization",
+            discharge_macaroon="dummy-discharge")
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "beginAuthorization must be called before completeAuthorization.",
+            response.body)
+
+    def test_completeAuthorization_unauthorized(self):
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode(),
+            store_secrets={"root": "dummy-root"})
+        snap_url = api_url(snap)
+        other_person = self.factory.makePerson()
+        other_webservice = webservice_for_person(
+            other_person, permission=OAuthPermission.WRITE_PUBLIC)
+        other_webservice.default_api_version = "devel"
+        response = other_webservice.named_post(
+            snap_url, "completeAuthorization",
+            discharge_macaroon="dummy-discharge")
+        self.assertEqual(401, response.status)
+
+    def test_completeAuthorization_both_macaroons(self):
+        # It is possible to do the authorization work entirely externally
+        # and send both root and discharge macaroons in one go.
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode())
+        snap_url = api_url(snap)
+        logout()
+        response = self.webservice.named_post(
+            snap_url, "completeAuthorization",
+            root_macaroon="dummy-root", discharge_macaroon="dummy-discharge")
+        self.assertEqual(200, response.status)
+        with person_logged_in(self.person):
+            self.assertEqual(
+                {"root": "dummy-root", "discharge": "dummy-discharge"},
+                snap.store_secrets)
+
+    def test_completeAuthorization_only_root_macaroon(self):
+        # It is possible to store only a root macaroon.  This may make sense
+        # if the store has some other way to determine that user consent has
+        # been acquired and thus has not added a third-party caveat.
+        with admin_logged_in():
+            snappy_series = self.factory.makeSnappySeries()
+        snap = self.factory.makeSnap(
+            registrant=self.person, store_upload=True,
+            store_series=snappy_series,
+            store_name=self.factory.getUniqueUnicode())
+        snap_url = api_url(snap)
+        logout()
+        response = self.webservice.named_post(
+            snap_url, "completeAuthorization", root_macaroon="dummy-root")
+        self.assertEqual(200, response.status)
+        with person_logged_in(self.person):
+            self.assertEqual({"root": "dummy-root"}, snap.store_secrets)
 
     def makeBuildableDistroArchSeries(self, **kwargs):
         das = self.factory.makeDistroArchSeries(**kwargs)
@@ -1430,6 +2022,102 @@ class TestSnapWebservice(TestCaseWithFactory):
             "if the snap package owner and the archive owner are equal.",
             response.body)
 
+    def test_requestAutoBuilds(self):
+        # requestAutoBuilds can be performed over the webservice.
+        distroseries = self.factory.makeDistroSeries()
+        dases = []
+        for _ in range(3):
+            processor = self.factory.makeProcessor(supports_virtualized=True)
+            dases.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=processor))
+        archive = self.factory.makeArchive()
+        snap = self.makeSnap(
+            distroseries=distroseries,
+            processors=[das.processor for das in dases[:2]],
+            auto_build_archive=archive,
+            auto_build_pocket=PackagePublishingPocket.PROPOSED)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestAutoBuilds")
+        self.assertEqual(200, response.status)
+        builds = response.jsonBody()
+        self.assertContentEqual(
+            [self.getURL(das) for das in dases[:2]],
+            [build["distro_arch_series_link"] for build in builds])
+
+    def test_requestAutoBuilds_requires_auto_build_archive(self):
+        # requestAutoBuilds fails if auto_build_archive is not set.
+        snap = self.makeSnap()
+        response = self.webservice.named_post(
+            snap["self_link"], "requestAutoBuilds")
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "This snap package cannot have automatic builds created for it "
+            "because auto_build_archive is not set.",
+            response.body)
+
+    def test_requestAutoBuilds_requires_auto_build_pocket(self):
+        # requestAutoBuilds fails if auto_build_pocket is not set.
+        snap = self.makeSnap(auto_build_archive=self.factory.makeArchive())
+        response = self.webservice.named_post(
+            snap["self_link"], "requestAutoBuilds")
+        self.assertEqual(400, response.status)
+        self.assertEqual(
+            "This snap package cannot have automatic builds created for it "
+            "because auto_build_pocket is not set.",
+            response.body)
+
+    def test_requestAutoBuilds_requires_all_requests_to_succeed(self):
+        # requestAutoBuilds fails if any one of its build requests fail.
+        distroseries = self.factory.makeDistroSeries()
+        dases = []
+        for _ in range(2):
+            processor = self.factory.makeProcessor(supports_virtualized=True)
+            dases.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=processor))
+        archive = self.factory.makeArchive(enabled=False)
+        snap = self.makeSnap(
+            distroseries=distroseries,
+            processors=[das.processor for das in dases[:2]],
+            auto_build_archive=archive,
+            auto_build_pocket=PackagePublishingPocket.PROPOSED)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestAutoBuilds")
+        self.assertEqual(403, response.status)
+        self.assertEqual(
+            "%s is disabled." % archive.displayname, response.body)
+        response = self.webservice.get(snap["builds_collection_link"])
+        self.assertEqual([], response.jsonBody()["entries"])
+
+    def test_requestAutoBuilds_allows_already_pending(self):
+        # requestAutoBuilds succeeds if some of its build requests are
+        # already pending.
+        distroseries = self.factory.makeDistroSeries()
+        dases = []
+        das_urls = []
+        for _ in range(3):
+            processor = self.factory.makeProcessor(supports_virtualized=True)
+            dases.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=processor))
+            das_urls.append(api_url(dases[-1]))
+        archive = self.factory.makeArchive()
+        archive_url = api_url(archive)
+        snap = self.makeSnap(
+            distroseries=distroseries,
+            processors=[das.processor for das in dases[:2]],
+            auto_build_archive=archive,
+            auto_build_pocket=PackagePublishingPocket.PROPOSED)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuild", archive=archive_url,
+            distro_arch_series=das_urls[0], pocket="Proposed")
+        self.assertEqual(201, response.status)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestAutoBuilds")
+        self.assertEqual(200, response.status)
+        builds = response.jsonBody()
+        self.assertContentEqual(
+            [self.getURL(dases[1])],
+            [build["distro_arch_series_link"] for build in builds])
+
     def test_getBuilds(self):
         # The builds, completed_builds, and pending_builds properties are as
         # expected.
@@ -1507,3 +2195,50 @@ class TestSnapWebservice(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             self.webservice.get(url)
         self.assertThat(recorder, HasQueryCount(Equals(15)))
+
+    def test_builds_query_count(self):
+        # The query count of Snap.builds is constant in the number of
+        # builds, even if they have store upload jobs.
+        self.pushConfig(
+            "snappy", store_url="http://sca.example/",
+            store_upload_url="http://updown.example/")
+        with admin_logged_in():
+            snappyseries = self.factory.makeSnappySeries()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=getUtility(IDistributionSet)['ubuntu'],
+            registrant=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, processor=processor, owner=self.person)
+        with person_logged_in(self.person):
+            snap = self.factory.makeSnap(
+                registrant=self.person, owner=self.person,
+                distroseries=distroseries, processors=[processor])
+            snap.store_series = snappyseries
+            snap.store_name = self.factory.getUniqueUnicode()
+            snap.store_upload = True
+            snap.store_secrets = {"root": Macaroon().serialize()}
+        builds_url = "%s/builds" % api_url(snap)
+        logout()
+
+        def make_build():
+            with person_logged_in(self.person):
+                build = snap.requestBuild(
+                    self.person, distroseries.main_archive, distroarchseries,
+                    PackagePublishingPocket.PROPOSED)
+                with dbuser(config.builddmaster.dbuser):
+                    build.updateStatus(
+                        BuildStatus.BUILDING, date_started=snap.date_created)
+                    build.updateStatus(
+                        BuildStatus.FULLYBUILT,
+                        date_finished=(
+                            snap.date_created + timedelta(minutes=10)))
+                return build
+
+        def get_builds():
+            response = self.webservice.get(builds_url)
+            self.assertEqual(200, response.status)
+            return response
+
+        recorder1, recorder2 = record_two_runs(get_builds, make_build, 2)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

@@ -1,13 +1,10 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from lazr.restfulclient.errors import BadRequest
-from testtools.matchers import (
-    Equals,
-    LessThan,
-    )
+from testtools.matchers import LessThan
 from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
@@ -23,6 +20,7 @@ from lp.testing import (
     launchpadlib_for,
     login_person,
     logout,
+    person_logged_in,
     record_two_runs,
     run_with_login,
     TestCaseWithFactory,
@@ -37,20 +35,19 @@ class TestBranch(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_landing_candidates_constant_queries(self):
-        target = self.factory.makeProduct()
-        login_person(target.owner)
-        trunk = self.factory.makeBranch(target=target)
-        trunk_url = api_url(trunk)
-        webservice = webservice_for_person(
-            target.owner, permission=OAuthPermission.WRITE_PRIVATE)
-        logout()
+        project = self.factory.makeProduct()
+        with person_logged_in(project.owner):
+            trunk = self.factory.makeBranch(target=project)
+            trunk_url = api_url(trunk)
+            webservice = webservice_for_person(
+                project.owner, permission=OAuthPermission.WRITE_PRIVATE)
 
         def create_mp():
             with admin_logged_in():
                 branch = self.factory.makeBranch(
-                    target=target,
+                    target=project,
                     stacked_on=self.factory.makeBranch(
-                        target=target,
+                        target=project,
                         information_type=InformationType.PRIVATESECURITY),
                     information_type=InformationType.PRIVATESECURITY)
                 self.factory.makeBranchMergeProposal(
@@ -62,11 +59,34 @@ class TestBranch(TestCaseWithFactory):
         list_mps()
         recorder1, recorder2 = record_two_runs(list_mps, create_mp, 2)
         self.assertThat(recorder1, HasQueryCount(LessThan(30)))
-        # Each new MP triggers a query for Person, BranchMergeProposal
-        # and PreviewDiff. Eventually they should be batched, but this
-        # at least ensures the situation doesn't get worse.
-        self.assertThat(
-            recorder2, HasQueryCount(Equals(recorder1.count + (2 * 3))))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
+    def test_landing_targets_constant_queries(self):
+        project = self.factory.makeProduct()
+        with person_logged_in(project.owner):
+            source = self.factory.makeBranch(target=project)
+            source_url = api_url(source)
+            webservice = webservice_for_person(
+                project.owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+        def create_mp():
+            with admin_logged_in():
+                branch = self.factory.makeBranch(
+                    target=project,
+                    stacked_on=self.factory.makeBranch(
+                        target=project,
+                        information_type=InformationType.PRIVATESECURITY),
+                    information_type=InformationType.PRIVATESECURITY)
+                self.factory.makeBranchMergeProposal(
+                    source_branch=source, target_branch=branch)
+
+        def list_mps():
+            webservice.get(source_url + '/landing_targets')
+
+        list_mps()
+        recorder1, recorder2 = record_two_runs(list_mps, create_mp, 2)
+        self.assertThat(recorder1, HasQueryCount(LessThan(30)))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
 class TestBranchOperations(TestCaseWithFactory):

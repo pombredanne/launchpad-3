@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -376,17 +376,19 @@ class LaunchpadScript:
 class LaunchpadCronScript(LaunchpadScript):
     """Logs successful script runs in the database."""
 
-    def __init__(self, name=None, dbuser=None, test_args=None, logger=None):
+    def __init__(self, name=None, dbuser=None, test_args=None, logger=None,
+                 ignore_cron_control=False):
         super(LaunchpadCronScript, self).__init__(
             name, dbuser, test_args=test_args, logger=logger)
 
         # self.name is used instead of the name argument, since it may have
         # have been overridden by command-line parameters or by
         # overriding the name property.
-        enabled = cronscript_enabled(
-            config.canonical.cron_control_url, self.name, self.logger)
-        if not enabled:
-            sys.exit(0)
+        if not ignore_cron_control:
+            enabled = cronscript_enabled(
+                config.canonical.cron_control_url, self.name, self.logger)
+            if not enabled:
+                sys.exit(0)
 
         # Configure the IErrorReportingUtility we use with defaults.
         # Scripts can override this if they want.

@@ -1,5 +1,7 @@
-# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+from debian.deb822 import Changes
 
 from lp.services.job.runner import JobRunner
 from lp.services.mail.sendmail import format_address_for_person
@@ -97,7 +99,13 @@ class TestPackageUploadNotificationJob(TestCaseWithFactory):
         # Running a job produces a notification.  Detailed tests of which
         # notifications go to whom live in the PackageUpload and
         # PackageUploadMailer tests.
-        upload = self.factory.makeSourcePackageUpload()
+        distroseries = self.factory.makeDistroSeries()
+        creator = self.factory.makePerson()
+        changes = Changes({"Changed-By": format_address_for_person(creator)})
+        upload = self.factory.makePackageUpload(
+            distroseries=distroseries, archive=distroseries.main_archive,
+            changes_file_content=changes.dump().encode("UTF-8"))
+        upload.addSource(self.factory.makeSourcePackageRelease())
         self.factory.makeComponentSelection(
             upload.distroseries, upload.sourcepackagerelease.component)
         upload.setAccepted()
@@ -106,8 +114,6 @@ class TestPackageUploadNotificationJob(TestCaseWithFactory):
         with dbuser(job.config.dbuser):
             JobRunner([job]).runAll()
         [email] = pop_notifications()
-        self.assertEqual(
-            format_address_for_person(upload.sourcepackagerelease.creator),
-            email['To'])
+        self.assertEqual(format_address_for_person(creator), email['To'])
         self.assertIn('(Accepted)', email['Subject'])
         self.assertIn('Fake summary', email.get_payload()[0].get_payload())

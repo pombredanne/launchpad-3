@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -35,12 +35,10 @@ from storm.locals import (
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implementer
-from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
-from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
     SourcePackageType,
@@ -102,6 +100,7 @@ class SourcePackageRelease(SQLBase):
     version = StringCol(dbName='version', notNull=True)
     changelog = ForeignKey(foreignKey='LibraryFileAlias', dbName='changelog')
     changelog_entry = StringCol(dbName='changelog_entry')
+    buildinfo = ForeignKey(foreignKey='LibraryFileAlias', dbName='buildinfo')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
     build_conflicts = StringCol(dbName='build_conflicts')

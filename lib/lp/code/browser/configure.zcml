@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -23,6 +23,8 @@
         classes="BranchFeed PersonBranchFeed ProductBranchFeed ProjectBranchFeed
                  PersonRevisionFeed ProductRevisionFeed ProjectRevisionFeed"
         />
+
+  <include package=".widgets"/>
 
   <facet facet="branches">
 
@@ -191,6 +193,9 @@
         <browser:page
             name="+pagelet-summary"
             template="../templates/branchmergeproposal-pagelet-summary.pt"/>
+        <browser:page
+            name="++bug-links"
+            template="../templates/branchmergeproposal-bug-links.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
@@ -395,12 +400,6 @@
         name="+macros"
         permission="zope.Public"
         template="../templates/branch-macros.pt"/>
-    <browser:page
-        for="*"
-        name="branch-form-macros"
-        permission="zope.Public"
-        template="../templates/branch-form-macros.pt"
-        class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         name="+whiteboard"
         for="lp.code.interfaces.branch.IBranch"
@@ -1276,7 +1275,7 @@
         <browser:page
             for="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipe"
             class="lp.code.browser.sourcepackagerecipe.SourcePackageRecipeDeleteView"
-            permission="launchpad.Edit"
+            permission="launchpad.Delete"
             name="+delete"
             template="../../app/templates/generic-edit.pt"/>
 

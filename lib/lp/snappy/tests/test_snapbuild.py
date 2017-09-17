@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build features."""
@@ -14,6 +14,7 @@ from urllib2 import (
     urlopen,
     )
 
+from pymacaroons import Macaroon
 import pytz
 from testtools.matchers import (
     Equals,
@@ -42,6 +43,7 @@ from lp.snappy.interfaces.snapbuild import (
     CannotScheduleStoreUpload,
     ISnapBuild,
     ISnapBuildSet,
+    SnapBuildStoreUploadStatus,
     )
 from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
 from lp.soyuz.enums import ArchivePurpose
@@ -216,6 +218,15 @@ class TestSnapBuild(TestCaseWithFactory):
         self.factory.makeSnapFile(snapbuild=self.build)
         self.assertTrue(self.build.verifySuccessfulUpload())
 
+    def test_updateStatus_stores_revision_id(self):
+        # If the builder reports a revision_id, updateStatus saves it.
+        self.assertIsNone(self.build.revision_id)
+        self.build.updateStatus(BuildStatus.BUILDING, slave_status={})
+        self.assertIsNone(self.build.revision_id)
+        self.build.updateStatus(
+            BuildStatus.BUILDING, slave_status={"revision_id": "dummy"})
+        self.assertEqual("dummy", self.build.revision_id)
+
     def test_updateStatus_triggers_webhooks(self):
         # Updating the status of a SnapBuild triggers webhooks on the
         # corresponding Snap.
@@ -229,6 +240,7 @@ class TestSnapBuild(TestCaseWithFactory):
             "snap": Equals(
                 canonical_url(self.build.snap, force_local_path=True)),
             "status": Equals("Successfully built"),
+            "store_upload_status": Equals("Unscheduled"),
             }
         delivery = hook.deliveries.one()
         self.assertThat(
@@ -246,8 +258,7 @@ class TestSnapBuild(TestCaseWithFactory):
         self.build.snap.store_series = self.factory.makeSnappySeries()
         self.build.snap.store_name = self.factory.getUniqueUnicode()
         self.build.snap.store_upload = True
-        self.build.snap.store_secrets = {
-            "root": "dummy-root", "discharge": "dummy-discharge"}
+        self.build.snap.store_secrets = {"root": Macaroon().serialize()}
         with dbuser(config.builddmaster.dbuser):
             self.build.updateStatus(BuildStatus.FAILEDTOBUILD)
         self.assertContentEqual([], self.build.store_upload_jobs)
@@ -257,8 +268,7 @@ class TestSnapBuild(TestCaseWithFactory):
         self.build.snap.store_series = self.factory.makeSnappySeries()
         self.build.snap.store_name = self.factory.getUniqueUnicode()
         self.build.snap.store_upload = True
-        self.build.snap.store_secrets = {
-            "root": "dummy-root", "discharge": "dummy-discharge"}
+        self.build.snap.store_secrets = {"root": Macaroon().serialize()}
         with dbuser(config.builddmaster.dbuser):
             self.build.updateStatus(BuildStatus.FULLYBUILT)
         self.assertEqual(1, len(list(self.build.store_upload_jobs)))
@@ -360,8 +370,45 @@ class TestSnapBuild(TestCaseWithFactory):
         self.build.snap.store_series = self.factory.makeSnappySeries(
             usable_distro_series=[self.build.snap.distro_series])
         self.build.snap.store_name = self.factory.getUniqueUnicode()
-        self.build.snap.store_secrets = {
-            "root": "dummy-root", "discharge": "dummy-discharge"}
+        self.build.snap.store_secrets = {"root": Macaroon().serialize()}
+
+    def test_store_upload_status_unscheduled(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        self.assertEqual(
+            SnapBuildStoreUploadStatus.UNSCHEDULED, build.store_upload_status)
+
+    def test_store_upload_status_pending(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        getUtility(ISnapStoreUploadJobSource).create(build)
+        self.assertEqual(
+            SnapBuildStoreUploadStatus.PENDING, build.store_upload_status)
+
+    def test_store_upload_status_uploaded(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.COMPLETED
+        self.assertEqual(
+            SnapBuildStoreUploadStatus.UPLOADED, build.store_upload_status)
+
+    def test_store_upload_status_failed_to_upload(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.FAILED
+        self.assertEqual(
+            SnapBuildStoreUploadStatus.FAILEDTOUPLOAD,
+            build.store_upload_status)
+
+    def test_store_upload_status_failed_to_release(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.FAILED
+        naked_job.store_url = "http://sca.example/dev/click-apps/1/rev/1/"
+        self.assertEqual(
+            SnapBuildStoreUploadStatus.FAILEDTORELEASE,
+            build.store_upload_status)
 
     def test_scheduleStoreUpload(self):
         # A build not previously uploaded to the store can be uploaded
@@ -434,6 +481,37 @@ class TestSnapBuild(TestCaseWithFactory):
         self.assertEqual(
             [], list(getUtility(ISnapStoreUploadJobSource).iterReady()))
 
+    def test_scheduleStoreUpload_triggers_webhooks(self):
+        # Scheduling a store upload triggers webhooks on the corresponding
+        # snap.
+        self.setUpStoreUpload()
+        self.build.updateStatus(BuildStatus.FULLYBUILT)
+        self.factory.makeSnapFile(
+            snapbuild=self.build,
+            libraryfile=self.factory.makeLibraryFileAlias(db_only=True))
+        hook = self.factory.makeWebhook(
+            target=self.build.snap, event_types=["snap:build:0.1"])
+        self.build.scheduleStoreUpload()
+        expected_payload = {
+            "snap_build": Equals(
+                canonical_url(self.build, force_local_path=True)),
+            "action": Equals("status-changed"),
+            "snap": Equals(
+                canonical_url(self.build.snap, force_local_path=True)),
+            "status": Equals("Successfully built"),
+            "store_upload_status": Equals("Pending"),
+            }
+        delivery = hook.deliveries.one()
+        self.assertThat(
+            delivery, MatchesStructure(
+                event_type=Equals("snap:build:0.1"),
+                payload=MatchesDict(expected_payload)))
+        with dbuser(config.IWebhookDeliveryJobSource.dbuser):
+            self.assertEqual(
+                "<WebhookDeliveryJob for webhook %d on %r>" % (
+                    hook.id, hook.target),
+                repr(delivery))
+
 
 class TestSnapBuildSet(TestCaseWithFactory):
 
@@ -498,6 +576,8 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
             self.assertEqual(
                 self.getURL(db_build.distro_arch_series),
                 build["distro_arch_series_link"])
+            self.assertEqual(
+                db_build.distro_arch_series.architecturetag, build["arch_tag"])
             self.assertEqual("Updates", build["pocket"])
             self.assertIsNone(build["score"])
             self.assertFalse(build["can_be_rescored"])

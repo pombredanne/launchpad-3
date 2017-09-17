@@ -1,4 +1,4 @@
-# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,7 +15,6 @@ from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
 from lp.services.mail.sendmail import format_address_for_person
-from lp.services.propertycache import get_property_cache
 from lp.services.webapp import canonical_url
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingPocket

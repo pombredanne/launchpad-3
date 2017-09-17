@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -180,11 +180,6 @@
 
   <!-- pages for the bazaar application -->
 
-  <xmlrpc:view
-      for="lp.code.interfaces.codehosting.IBazaarApplication"
-      interface="lp.code.xmlrpc.branch.IBranchSetAPI"
-      class="lp.code.xmlrpc.branch.BranchSetAPI"
-      permission="launchpad.AnyPerson"/>
   <xmlrpc:view
       for="lp.code.interfaces.codehosting.IBazaarApplication"
       interface="lp.code.xmlrpc.branch.IPublicCodehostingAPI"
@@ -896,11 +891,26 @@
         permission="launchpad.View"
         interface="lp.code.interfaces.gitref.IGitRef" />
   </class>
+  <class class="lp.code.model.gitref.GitRefDefault">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitref.IGitRef" />
+  </class>
   <class class="lp.code.model.gitref.GitRefFrozen">
     <require
         permission="launchpad.View"
         interface="lp.code.interfaces.gitref.IGitRef" />
   </class>
+  <class class="lp.code.model.gitref.GitRefRemote">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitref.IGitRef" />
+  </class>
+  <securedutility
+      component="lp.code.model.gitref.GitRefRemote"
+      provides="lp.code.interfaces.gitref.IGitRefRemoteSet">
+    <allow interface="lp.code.interfaces.gitref.IGitRefRemoteSet" />
+  </securedutility>
 
   <!-- GitCollection -->
 
@@ -1095,6 +1105,10 @@
        set_schema="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeEditableAttributes"
        set_attributes="builder_recipe date_last_modified"
         />
+    <require
+       permission="launchpad.Delete"
+       interface="lp.code.interfaces.sourcepackagerecipe.ISourcePackageRecipeDelete"
+       />
   </class>
   <class
      class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -120,6 +120,7 @@ class BrokenUploadPolicy(AbstractUploadPolicy):
         self.name = "broken"
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
+        self.unsigned_buildinfo_ok = True
 
     def checkUpload(self, upload):
         """Raise an exception upload processing is not expecting."""
@@ -1978,7 +1979,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Subject: [ubuntu] netapplet_1.0-1_source.changes (Rejected)",
             "File %s/netapplet_1.0-1-signed/netapplet_1.0-1_source.changes "
             "is signed with a deactivated key %s" % (
-                self.incoming_folder, fingerprint[-8:]),
+                self.incoming_folder, fingerprint),
             ]
         expected = []
         expected.append({
@@ -2054,6 +2055,80 @@ class TestUploadProcessor(TestUploadProcessorBase):
             status=PackageUploadStatus.DONE, name=u"bar",
             version=u"1.0-2", exact_match=True)
         self.assertEqual(PackagePublishingPocket.PROPOSED, queue_item.pocket)
+
+    def test_source_buildinfo(self):
+        # A buildinfo file is attached to the SPR.
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1_buildinfo")
+        with open(os.path.join(upload_dir, "bar_1.0-1_source.buildinfo")) as f:
+            buildinfo_contents = f.read()
+        self.processUpload(uploadprocessor, upload_dir)
+        source_pub = self.publishPackage("bar", "1.0-1")
+        self.assertEqual(
+            buildinfo_contents,
+            source_pub.sourcepackagerelease.buildinfo.read())
+
+    def test_binary_buildinfo(self):
+        # A buildinfo file is attached to the BPB.
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        source_pub = self.publishPackage("bar", "1.0-1")
+        [build] = source_pub.createMissingBuilds()
+        self.switchToAdmin()
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED,
+            version=u"1.0-1", name=u"bar")
+        queue_item.setDone()
+        build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
+        build.updateStatus(
+            BuildStatus.UPLOADING, builder=build.buildqueue_record.builder)
+        self.switchToUploader()
+        shutil.rmtree(upload_dir)
+        self.layer.txn.commit()
+        behaviour = IBuildFarmJobBehaviour(build)
+        leaf_name = behaviour.getUploadDirLeaf(build.build_cookie)
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_binary_buildinfo", queue_entry=leaf_name)
+        with open(os.path.join(upload_dir, "bar_1.0-1_i386.buildinfo")) as f:
+            buildinfo_contents = f.read()
+        self.options.context = "buildd"
+        self.options.builds = True
+        BuildUploadHandler(
+            uploadprocessor, self.incoming_folder, leaf_name).process()
+        self.assertEqual(BuildStatus.FULLYBUILT, build.status)
+        self.assertEqual(buildinfo_contents, build.buildinfo.read())
+
+    def test_binary_buildinfo_arch_indep(self):
+        # A buildinfo file for an arch-indep build is attached to the BPB.
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+        source_pub = self.publishPackage("bar", "1.0-1")
+        [build] = source_pub.createMissingBuilds()
+        self.switchToAdmin()
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED,
+            version=u"1.0-1", name=u"bar")
+        queue_item.setDone()
+        build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
+        build.updateStatus(
+            BuildStatus.UPLOADING, builder=build.buildqueue_record.builder)
+        self.switchToUploader()
+        shutil.rmtree(upload_dir)
+        self.layer.txn.commit()
+        behaviour = IBuildFarmJobBehaviour(build)
+        leaf_name = behaviour.getUploadDirLeaf(build.build_cookie)
+        upload_dir = self.queueUpload(
+            "bar_1.0-1_binary_buildinfo_indep", queue_entry=leaf_name)
+        with open(os.path.join(upload_dir, "bar_1.0-1_i386.buildinfo")) as f:
+            buildinfo_contents = f.read()
+        self.options.context = "buildd"
+        self.options.builds = True
+        BuildUploadHandler(
+            uploadprocessor, self.incoming_folder, leaf_name).process()
+        self.assertEqual(BuildStatus.FULLYBUILT, build.status)
+        self.assertEqual(buildinfo_contents, build.buildinfo.read())
 
 
 class TestUploadHandler(TestUploadProcessorBase):
@@ -2295,6 +2370,28 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.assertEquals(None, build.builder)
         self.assertIsNot(None, build.duration)
         self.assertIs(None, build.upload_log)
+
+    def testSnapBuild_deleted_snap(self):
+        # A snap build will fail if the snap is deleted.
+        self.switchToAdmin()
+        build = self.factory.makeSnapBuild()
+        self.switchToUploader()
+        Store.of(build).flush()
+        behaviour = IBuildFarmJobBehaviour(build)
+        leaf_name = behaviour.getUploadDirLeaf(build.build_cookie)
+        os.mkdir(os.path.join(self.incoming_folder, leaf_name))
+        self.options.context = 'buildd'
+        self.options.builds = True
+        build.updateStatus(BuildStatus.UPLOADING)
+        self.switchToAdmin()
+        build.snap.destroySelf()
+        self.switchToUploader()
+        BuildUploadHandler(
+            self.uploadprocessor, self.incoming_folder, leaf_name).process()
+        self.assertFalse(
+            os.path.exists(os.path.join(self.incoming_folder, leaf_name)))
+        self.assertTrue(
+            os.path.exists(os.path.join(self.failed_folder, leaf_name)))
 
     def processUploadWithBuildStatus(self, status):
         upload_dir = self.queueUpload("bar_1.0-1")

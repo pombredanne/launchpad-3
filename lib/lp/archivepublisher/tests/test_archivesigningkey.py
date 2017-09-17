@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test ArchiveSigningKey."""
@@ -7,6 +7,8 @@ __metaclass__ = type
 
 import os
 
+from testtools.deferredruntest import AsynchronousDeferredRunTest
+from twisted.internet import defer
 from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
@@ -18,14 +20,16 @@ from lp.services.osutils import write_file
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 from lp.testing.gpgkeys import gpgkeysdir
-from lp.testing.keyserver import KeyServerTac
+from lp.testing.keyserver import InProcessKeyServerFixture
 from lp.testing.layers import ZopelessDatabaseLayer
 
 
 class TestArchiveSigningKey(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
+    @defer.inlineCallbacks
     def setUp(self):
         super(TestArchiveSigningKey, self).setUp()
         self.temp_dir = self.makeTemporaryDirectory()
@@ -38,9 +42,11 @@ class TestArchiveSigningKey(TestCaseWithFactory):
         self.archive_root = getPubConfig(self.archive).archiveroot
         self.suite = "distroseries"
 
-        with KeyServerTac():
+        with InProcessKeyServerFixture() as keyserver:
+            yield keyserver.start()
             key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
-            IArchiveSigningKey(self.archive).setSigningKey(key_path)
+            yield IArchiveSigningKey(self.archive).setSigningKey(
+                key_path, async_keyserver=True)
 
     def test_signfile_absolute_within_archive(self):
         filename = os.path.join(self.archive_root, "signme")

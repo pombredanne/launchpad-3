@@ -156,12 +156,16 @@ PAGE-BOTTOM
         </div>
     </div>
     <div class="colophon">
-      &copy; 2004-2016
+      &copy; 2004-2017
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a href="https://launchpad.net/legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
-      <a href="/support">Contact Launchpad Support</a>
+      <a href="https://launchpad.net/support">Contact Launchpad Support</a>
+      &nbsp;&bull;&nbsp;
+      <a href="http://blog.launchpad.net/">Blog</a>
+      &nbsp;&bull;&nbsp;
+      <a href="http://www.canonical.com/about-canonical/careers">Careers</a>
       &nbsp;&bull;&nbsp;
       <a href="https://twitter.com/launchpadstatus">System status</a>
       </span>

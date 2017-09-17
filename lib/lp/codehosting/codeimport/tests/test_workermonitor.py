@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the CodeImportWorkerMonitor and related classes."""
@@ -16,10 +16,7 @@ import tempfile
 import urllib
 
 from bzrlib.branch import Branch
-from bzrlib.tests import (
-    TestCase as BzrTestCase,
-    TestCaseInTempDir,
-    )
+from bzrlib.tests import TestCaseInTempDir
 from dulwich.repo import Repo as GitRepo
 import oops_twisted
 from testtools.deferredruntest import (
@@ -525,7 +522,7 @@ class TestWorkerMonitorUnit(TestCase):
         self.assertEqual(calls, [])
 
 
-class TestWorkerMonitorRunNoProcess(BzrTestCase):
+class TestWorkerMonitorRunNoProcess(TestCase):
     """Tests for `CodeImportWorkerMonitor.run` that don't launch a subprocess.
     """
 
@@ -582,10 +579,11 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
         # with CodeImportResultStatus.FAILURE, but the call to run() still
         # succeeds.
         # Need a twisted error reporting stack (normally set up by
-        # loggingsuppoer.set_up_oops_reporting).
+        # loggingsupport.set_up_oops_reporting).
         errorlog.globalErrorUtility.configure(
             config_factory=oops_twisted.Config,
-            publisher_adapter=oops_twisted.defer_publisher)
+            publisher_adapter=oops_twisted.defer_publisher,
+            publisher_helpers=oops_twisted.publishers)
         self.addCleanup(errorlog.globalErrorUtility.configure)
         worker_monitor = self.WorkerMonitor(defer.fail(RuntimeError()))
         return worker_monitor.run().addCallback(
@@ -610,22 +608,16 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
         worker_monitor.finishJob = finishJob
         return worker_monitor.run()
 
-    def test_log_oops(self):
-        # Ensure an OOPS is logged if published.
+    def test_callFinishJob_logs_failure(self):
+        # callFinishJob logs a failure from the child process.
         errorlog.globalErrorUtility.configure(
             config_factory=oops_twisted.Config,
-            publisher_adapter=oops_twisted.defer_publisher)
+            publisher_adapter=oops_twisted.defer_publisher,
+            publisher_helpers=oops_twisted.publishers)
         self.addCleanup(errorlog.globalErrorUtility.configure)
-        failure_msg = "test_log_oops expected failure"
+        failure_msg = "test_callFinishJob_logs_failure expected failure"
         worker_monitor = self.WorkerMonitor(
             defer.fail(RuntimeError(failure_msg)))
-
-        def finishJob(reason):
-            from twisted.python import failure
-            return worker_monitor._logOopsFromFailure(
-                failure.Failure())
-
-        worker_monitor.finishJob = finishJob
         d = worker_monitor.run()
 
         def check_log_file(ignored):

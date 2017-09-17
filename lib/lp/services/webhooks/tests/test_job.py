@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `WebhookJob`s."""
@@ -38,6 +38,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app import versioninfo
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
@@ -334,6 +335,15 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
             "<WebhookDeliveryJob for webhook %d on %r>" % (hook.id, branch),
             repr(job))
 
+    def test_snap__repr__(self):
+        # `WebhookDeliveryJob` objects for snaps have an informative __repr__.
+        snap = self.factory.makeSnap()
+        hook = self.factory.makeWebhook(target=snap)
+        job = WebhookDeliveryJob.create(hook, 'test', payload={'foo': 'bar'})
+        self.assertEqual(
+            "<WebhookDeliveryJob for webhook %d on %r>" % (hook.id, snap),
+            repr(job))
+
     def test_short_lease_and_timeout(self):
         # Webhook jobs have a request timeout of 30 seconds, a celery
         # timeout of 45 seconds, and a lease of 60 seconds, to give
@@ -348,6 +358,16 @@ class TestWebhookDeliveryJob(TestCaseWithFactory):
                 LessThan(timedelta(seconds=60))))
         self.assertEqual(
             timedelta(seconds=45), removeSecurityProxy(job).soft_time_limit)
+
+    def test_iterReady_orders_by_job_id(self):
+        # Older jobs are run first.
+        hook = self.factory.makeWebhook()
+        jobs = [
+            WebhookJob(hook, WebhookJobType.DELIVERY, {}) for _ in range(3)]
+        IStore(WebhookJob).flush()
+        self.assertEqual(
+            [job.job_id for job in jobs],
+            [job.job_id for job in WebhookDeliveryJob.iterReady()])
 
     def test_run_200(self):
         # A request that returns 200 is a success.

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -81,11 +81,11 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
+from lp.soyuz.adapters.buildarch import determine_architectures_to_build
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
-from lp.soyuz.adapters.buildarch import determine_architectures_to_build
 from lp.soyuz.interfaces.archive import (
     InvalidExternalDependencies,
     validate_external_dependencies,
@@ -228,6 +228,9 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
     external_dependencies = Unicode(
         name='external_dependencies',
         validator=storm_validate_external_dependencies)
+
+    buildinfo_id = Int(name='buildinfo')
+    buildinfo = Reference(buildinfo_id, 'LibraryFileAlias.id')
 
     def getLatestSourcePublication(self):
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -703,6 +706,13 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
             estimate = 5
         return datetime.timedelta(minutes=estimate)
 
+    def addBuildInfo(self, buildinfo):
+        """See `IBinaryPackageBuild`."""
+        if self.buildinfo is None:
+            self.buildinfo = buildinfo
+        else:
+            assert self.buildinfo == buildinfo
+
     def verifySuccessfulUpload(self):
         return bool(self.binarypackages)
 
@@ -783,7 +793,8 @@ class BinaryPackageBuild(PackageBuildMixin, SQLBase):
 class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
 
     def new(self, source_package_release, archive, distro_arch_series, pocket,
-            arch_indep=None, status=BuildStatus.NEEDSBUILD, builder=None):
+            arch_indep=None, status=BuildStatus.NEEDSBUILD, builder=None,
+            buildinfo=None):
         """See `IBinaryPackageBuildSet`."""
         # Force the current timestamp instead of the default UTC_NOW for
         # the transaction, avoid several row with same datecreated.
@@ -806,7 +817,7 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
             distribution=distro_arch_series.distroseries.distribution,
             distro_series=distro_arch_series.distroseries,
             source_package_name=source_package_release.sourcepackagename,
-            date_created=date_created)
+            buildinfo=buildinfo, date_created=date_created)
 
     def getByID(self, id):
         """See `IBinaryPackageBuildSet`."""

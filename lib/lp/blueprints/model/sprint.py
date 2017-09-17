@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -276,27 +276,21 @@ class Sprint(SQLBase, HasDriversMixin, HasSpecificationsMixin):
                 people, need_validity=True))
         return sorted(result, key=lambda a: a.attendee.displayname.lower())
 
-    # linking to specifications
-    def linkSpecification(self, spec):
-        """See `ISprint`."""
-        for speclink in self.spec_links:
-            if speclink.spec.id == spec.id:
-                return speclink
-        return SprintSpecification(sprint=self, specification=spec)
-
-    def unlinkSpecification(self, spec):
-        """See `ISprint`."""
-        for speclink in self.spec_links:
-            if speclink.spec.id == spec.id:
-                SprintSpecification.delete(speclink.id)
-                return speclink
-
     def isDriver(self, user):
         """See `ISprint`."""
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.owner) or
                 user.inTeam(self.driver) or
                 user.inTeam(admins))
+
+    def destroySelf(self):
+        Store.of(self).find(
+            SprintSpecification,
+            SprintSpecification.sprint == self).remove()
+        Store.of(self).find(
+            SprintAttendance,
+            SprintAttendance.sprint == self).remove()
+        Store.of(self).remove(self)
 
 
 @implementer(ISprintSet)

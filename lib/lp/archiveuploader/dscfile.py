@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ DSCFile and related.
@@ -146,7 +146,8 @@ class SignableTagFile:
                 self.raw_content, self.filepath)
             if self.signingkey.active == False:
                 raise UploadError("File %s is signed with a deactivated key %s"
-                                  % (self.filepath, self.signingkey.keyid))
+                                  % (self.filepath,
+                                     self.signingkey.fingerprint))
         else:
             self.logger.debug("%s can be unsigned." % self.filename)
             self.parsed_content = self.raw_content
@@ -670,6 +671,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         user_defined_fields = self.extractUserDefinedFields([
             (field, encoded[field]) for field in self._dict.iterkeys()])
 
+        if self.changes.buildinfo is not None:
+            buildinfo_lfa = self.changes.buildinfo.storeInDatabase()
+        else:
+            buildinfo_lfa = None
+
         release = self.policy.distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=source_name,
             version=self.dsc_version,
@@ -697,6 +703,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             copyright=encoded.get('copyright'),
             # dateuploaded by default is UTC:now in the database
             user_defined_fields=user_defined_fields,
+            buildinfo=buildinfo_lfa,
             )
 
         # SourcePackageFiles should contain also the DSC

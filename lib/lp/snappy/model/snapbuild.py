@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,14 +8,23 @@ __all__ = [
     ]
 
 from datetime import timedelta
+from operator import attrgetter
 
 import pytz
+from storm.expr import (
+    Column,
+    Table,
+    With,
+    )
 from storm.locals import (
+    And,
     Bool,
     DateTime,
     Desc,
     Int,
     Reference,
+    Select,
+    SQL,
     Store,
     Storm,
     Unicode,
@@ -55,7 +64,10 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from lp.services.propertycache import cachedproperty
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.snappy.interfaces.snap import ISnapSet
 from lp.snappy.interfaces.snapbuild import (
     CannotScheduleStoreUpload,
@@ -63,6 +75,7 @@ from lp.snappy.interfaces.snapbuild import (
     ISnapBuildSet,
     ISnapBuildStatusChangedEvent,
     ISnapFile,
+    SnapBuildStoreUploadStatus,
     )
 from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
 from lp.snappy.mail.snapbuild import SnapBuildMailer
@@ -145,6 +158,8 @@ class SnapBuild(PackageBuildMixin, Storm):
 
     status = DBEnum(name='status', enum=BuildStatus, allow_none=False)
 
+    revision_id = Unicode(name='revision_id')
+
     log_id = Int(name='log')
     log = Reference(log_id, 'LibraryFileAlias.id')
 
@@ -197,6 +212,11 @@ class SnapBuild(PackageBuildMixin, Storm):
     def distro_series(self):
         """See `IPackageBuild`."""
         return self.distro_arch_series.distroseries
+
+    @property
+    def arch_tag(self):
+        """See `ISnapBuild`."""
+        return self.distro_arch_series.architecturetag
 
     @property
     def current_component(self):
@@ -319,6 +339,10 @@ class SnapBuild(PackageBuildMixin, Storm):
             status, builder=builder, slave_status=slave_status,
             date_started=date_started, date_finished=date_finished,
             force_invalid_transition=force_invalid_transition)
+        if slave_status is not None:
+            revision_id = slave_status.get("revision_id")
+            if revision_id is not None:
+                self.revision_id = unicode(revision_id)
         notify(SnapBuildStatusChangedEvent(self))
 
     def notify(self, extra_info=None):
@@ -396,6 +420,40 @@ class SnapBuild(PackageBuildMixin, Storm):
         return DecoratedResultSet(
             jobs, lambda job: job.makeDerived(), pre_iter_hook=preload_jobs)
 
+    @cachedproperty
+    def last_store_upload_job(self):
+        return self.store_upload_jobs.first()
+
+    @property
+    def store_upload_status(self):
+        job = self.last_store_upload_job
+        if job is None or job.job.status == JobStatus.SUSPENDED:
+            return SnapBuildStoreUploadStatus.UNSCHEDULED
+        elif job.job.status in (JobStatus.WAITING, JobStatus.RUNNING):
+            return SnapBuildStoreUploadStatus.PENDING
+        elif job.job.status == JobStatus.COMPLETED:
+            return SnapBuildStoreUploadStatus.UPLOADED
+        else:
+            if job.store_url:
+                return SnapBuildStoreUploadStatus.FAILEDTORELEASE
+            else:
+                return SnapBuildStoreUploadStatus.FAILEDTOUPLOAD
+
+    @property
+    def store_upload_url(self):
+        job = self.last_store_upload_job
+        return job and job.store_url
+
+    @property
+    def store_upload_revision(self):
+        job = self.last_store_upload_job
+        return job and job.store_revision
+
+    @property
+    def store_upload_error_message(self):
+        job = self.last_store_upload_job
+        return job and job.error_message
+
     def scheduleStoreUpload(self):
         """See `ISnapBuild`."""
         if not self.snap.can_upload_to_store:
@@ -405,15 +463,13 @@ class SnapBuild(PackageBuildMixin, Storm):
         if not self.was_built or self.getFiles().is_empty():
             raise CannotScheduleStoreUpload(
                 "Cannot upload this package because it has no files.")
-        job = self.store_upload_jobs.first()
-        if job is not None:
-            if job.job.status in (JobStatus.WAITING, JobStatus.RUNNING):
-                raise CannotScheduleStoreUpload(
-                    "An upload of this package is already in progress.")
-            if job.job.status == JobStatus.COMPLETED:
-                raise CannotScheduleStoreUpload(
-                    "Cannot upload this package because it has already "
-                    "been uploaded.")
+        if self.store_upload_status == SnapBuildStoreUploadStatus.PENDING:
+            raise CannotScheduleStoreUpload(
+                "An upload of this package is already in progress.")
+        elif self.store_upload_status == SnapBuildStoreUploadStatus.UPLOADED:
+            raise CannotScheduleStoreUpload(
+                "Cannot upload this package because it has already been "
+                "uploaded.")
         getUtility(ISnapStoreUploadJobSource).create(self)
 
 
@@ -450,7 +506,8 @@ class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
         # Circular import.
         from lp.snappy.model.snap import Snap
         load_related(Person, builds, ["requester_id"])
-        load_related(LibraryFileAlias, builds, ["log_id"])
+        lfas = load_related(LibraryFileAlias, builds, ["log_id"])
+        load_related(LibraryFileContent, lfas, ["contentID"])
         archives = load_related(Archive, builds, ["archive_id"])
         load_related(Person, archives, ["ownerID"])
         distroarchseries = load_related(
@@ -460,6 +517,29 @@ class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
         load_related(Distribution, distroseries, ['distributionID'])
         snaps = load_related(Snap, builds, ["snap_id"])
         getUtility(ISnapSet).preloadDataForSnaps(snaps)
+        snapbuild_ids = set(map(attrgetter("id"), builds))
+        latest_jobs_cte = With("LatestJobs", Select(
+            (SnapBuildJob.job_id,
+             SQL(
+                 "rank() OVER "
+                 "(PARTITION BY snapbuild ORDER BY job DESC) AS rank")),
+            tables=SnapBuildJob,
+            where=And(
+                SnapBuildJob.snapbuild_id.is_in(snapbuild_ids),
+                SnapBuildJob.job_type == SnapBuildJobType.STORE_UPLOAD)))
+        LatestJobs = Table("LatestJobs")
+        sbjs = list(IStore(SnapBuildJob).with_(latest_jobs_cte).using(
+            SnapBuildJob, LatestJobs).find(
+                SnapBuildJob,
+                SnapBuildJob.job_id == Column("job", LatestJobs),
+                Column("rank", LatestJobs) == 1))
+        sbj_map = {}
+        for sbj in sbjs:
+            sbj_map[sbj.snapbuild] = sbj.makeDerived()
+        for build in builds:
+            get_property_cache(build).last_store_upload_job = (
+                sbj_map.get(build))
+        load_related(Job, sbjs, ["job_id"])
 
     def getByBuildFarmJobs(self, build_farm_jobs):
         """See `ISpecificBuildFarmJobSource`."""

@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `SnapBuild`.
@@ -83,33 +83,43 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         """
         build = self.build
         args = {}
-        token = yield self._requestProxyToken()
-        args["proxy_url"] = (
-            "http://{username}:{password}@{host}:{port}".format(
-                username=token['username'],
-                password=token['secret'],
-                host=config.snappy.builder_proxy_host,
-                port=config.snappy.builder_proxy_port))
-        args["revocation_endpoint"] = (
-            "{endpoint}/{token}".format(
-                endpoint=config.snappy.builder_proxy_auth_api_endpoint,
-                token=token['username']))
+        if config.snappy.builder_proxy_host:
+            token = yield self._requestProxyToken()
+            args["proxy_url"] = (
+                "http://{username}:{password}@{host}:{port}".format(
+                    username=token['username'],
+                    password=token['secret'],
+                    host=config.snappy.builder_proxy_host,
+                    port=config.snappy.builder_proxy_port))
+            args["revocation_endpoint"] = (
+                "{endpoint}/{token}".format(
+                    endpoint=config.snappy.builder_proxy_auth_api_endpoint,
+                    token=token['username']))
         args["name"] = build.snap.name
+        args["series"] = build.distro_series.name
         args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
         # some more fine-grained level.
-        args["archives"] = get_sources_list_for_building(
-            build, build.distro_arch_series, None,
-            tools_source=config.snappy.tools_source, logger=logger)
+        args["archives"], args["trusted_keys"] = (
+            yield get_sources_list_for_building(
+                build, build.distro_arch_series, None,
+                tools_source=config.snappy.tools_source,
+                tools_fingerprint=config.snappy.tools_fingerprint,
+                logger=logger))
         args["archive_private"] = build.archive.private
         if build.snap.branch is not None:
             args["branch"] = build.snap.branch.bzr_identity
         elif build.snap.git_ref is not None:
-            args["git_repository"] = build.snap.git_repository.git_https_url
+            if build.snap.git_ref.repository_url is not None:
+                args["git_repository"] = build.snap.git_ref.repository_url
+            else:
+                args["git_repository"] = (
+                    build.snap.git_repository.git_https_url)
             # "git clone -b" doesn't accept full ref names.  If this becomes
             # a problem then we could change launchpad-buildd to do "git
             # clone" followed by "git checkout" instead.
-            args["git_path"] = build.snap.git_ref.name
+            if build.snap.git_path != u"HEAD":
+                args["git_path"] = build.snap.git_ref.name
         else:
             raise CannotBuild(
                 "Source branch/repository for ~%s/%s has been deleted." %
@@ -119,8 +129,17 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
     @defer.inlineCallbacks
     def _requestProxyToken(self):
         admin_username = config.snappy.builder_proxy_auth_api_admin_username
+        if not admin_username:
+            raise CannotBuild(
+                "builder_proxy_auth_api_admin_username is not configured.")
         secret = config.snappy.builder_proxy_auth_api_admin_secret
+        if not secret:
+            raise CannotBuild(
+                "builder_proxy_auth_api_admin_secret is not configured.")
         url = config.snappy.builder_proxy_auth_api_endpoint
+        if not secret:
+            raise CannotBuild(
+                "builder_proxy_auth_api_endpoint is not configured.")
         timestamp = int(time.time())
         proxy_username = '{build_id}-{timestamp}'.format(
             build_id=self.build.build_cookie,

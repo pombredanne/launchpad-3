@@ -102,7 +102,7 @@
       // we need this to create a single YUI instance all events and code
       // talks across. All instances of YUI().use should be based off of
       // LPJS instead.
-      LPJS = new YUI();
+      var LPJS = new YUI();
   </script>
 
 </metal:load-javascript>
@@ -198,7 +198,7 @@
   <tal:comment replace="nothing">
     This macro loads a single css file containing all our stylesheets.
     If you need to include a new css file here, add it to
-    buildout-templates/bin/combine-css.in instead.
+    lib/lp/scripts/utilities/js/combinecss.py instead.
 
     We load the CSS from the same host that served the HTML in order to optimize
     IE caching over SSL. This is inefficient when you cross subdomains (from
@@ -293,7 +293,7 @@
     </div>
 
     <div class="colophon">
-      &copy; 2004-2016
+      &copy; 2004-2017
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a tal:attributes="href string:${rooturl}legal">Terms of use</a>

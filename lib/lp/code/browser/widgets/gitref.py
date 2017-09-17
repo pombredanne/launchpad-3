@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,7 +7,9 @@ __all__ = [
     'GitRefWidget',
     ]
 
+import six
 from z3c.ptcompat import ViewPageTemplateFile
+from zope.component import getUtility
 from zope.formlib.interfaces import (
     ConversionError,
     IInputWidget,
@@ -25,13 +27,77 @@ from zope.schema import (
     Choice,
     TextLine,
     )
+from zope.schema.interfaces import IChoice
 
 from lp.app.errors import UnexpectedFormData
 from lp.app.validators import LaunchpadValidationError
+from lp.app.widgets.popup import VocabularyPickerWidget
+from lp.code.interfaces.gitref import IGitRefRemoteSet
+from lp.code.interfaces.gitrepository import IGitRepository
+from lp.services.fields import URIField
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IMultiLineWidgetLayout,
     )
+
+
+class IGitRepositoryField(IChoice):
+    pass
+
+
+@implementer(IGitRepositoryField)
+class GitRepositoryField(Choice):
+    """A field identifying a Git repository.
+
+    This may always be set to the unique name of a Launchpad-hosted
+    repository.  If `allow_external` is True, then it may also be set to a
+    valid external repository URL.
+    """
+
+    def __init__(self, allow_external=False, **kwargs):
+        super(GitRepositoryField, self).__init__(**kwargs)
+        if allow_external:
+            self._uri_field = URIField(
+                __name__=self.__name__, title=self.title,
+                allowed_schemes=["git", "http", "https"],
+                allow_userinfo=True,
+                allow_port=True,
+                allow_query=False,
+                allow_fragment=False,
+                trailing_slash=False)
+        else:
+            self._uri_field = None
+
+    def set(self, object, value):
+        if self._uri_field is not None and isinstance(value, six.string_types):
+            try:
+                self._uri_field.set(object, value)
+                return
+            except LaunchpadValidationError:
+                pass
+        super(GitRepositoryField, self).set(object, value)
+
+    def _validate(self, value):
+        if self._uri_field is not None and isinstance(value, six.string_types):
+            try:
+                self._uri_field._validate(value)
+                return
+            except LaunchpadValidationError:
+                pass
+        super(GitRepositoryField, self)._validate(value)
+
+
+class GitRepositoryPickerWidget(VocabularyPickerWidget):
+
+    def convertTokensToValues(self, tokens):
+        if self.context._uri_field is not None:
+            try:
+                self.context._uri_field._validate(tokens[0])
+                return [tokens[0]]
+            except LaunchpadValidationError:
+                pass
+        return super(GitRepositoryPickerWidget, self).convertTokensToValues(
+            tokens)
 
 
 @implementer(IMultiLineWidgetLayout, IAlwaysSubmittedWidget, IInputWidget)
@@ -41,13 +107,17 @@ class GitRefWidget(BrowserWidget, InputWidget):
     display_label = False
     _widgets_set_up = False
 
+    # If True, allow entering external repository URLs.
+    allow_external = False
+
     def setUpSubWidgets(self):
         if self._widgets_set_up:
             return
         fields = [
-            Choice(
+            GitRepositoryField(
                 __name__="repository", title=u"Git repository",
-                required=False, vocabulary="GitRepository"),
+                required=False, vocabulary="GitRepository",
+                allow_external=self.allow_external),
             TextLine(__name__="path", title=u"Git branch", required=False),
             ]
         for field in fields:
@@ -59,7 +129,10 @@ class GitRefWidget(BrowserWidget, InputWidget):
         """See `IWidget`."""
         self.setUpSubWidgets()
         if value is not None:
-            self.repository_widget.setRenderedValue(value.repository)
+            if self.allow_external and value.repository_url is not None:
+                self.repository_widget.setRenderedValue(value.repository_url)
+            else:
+                self.repository_widget.setRenderedValue(value.repository)
             self.path_widget.setRenderedValue(value.path)
         else:
             self.repository_widget.setRenderedValue(None)
@@ -112,13 +185,16 @@ class GitRefWidget(BrowserWidget, InputWidget):
                         "Please enter a Git branch path."))
             else:
                 return
-        ref = repository.getRefByPath(path)
-        if ref is None:
-            raise WidgetInputError(
-                self.name, self.label,
-                LaunchpadValidationError(
-                    "The repository at %s does not contain a branch named "
-                    "'%s'." % (repository.display_name, path)))
+        if self.allow_external and not IGitRepository.providedBy(repository):
+            ref = getUtility(IGitRefRemoteSet).new(repository, path)
+        else:
+            ref = repository.getRefByPath(path)
+            if ref is None:
+                raise WidgetInputError(
+                    self.name, self.label,
+                    LaunchpadValidationError(
+                        "The repository at %s does not contain a branch named "
+                        "'%s'." % (repository.display_name, path)))
         return ref
 
     def error(self):

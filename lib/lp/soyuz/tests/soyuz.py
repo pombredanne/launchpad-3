@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions/classes for Soyuz tests."""
@@ -6,14 +6,22 @@
 __metaclass__ = type
 
 __all__ = [
+    'Base64KeyMatches',
     'SoyuzTestHelper',
     ]
 
+import base64
+
+from testtools.matchers import (
+    Equals,
+    Matcher,
+    )
 from zope.component import getUtility
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.testing.sampledata import (
@@ -94,3 +102,18 @@ class SoyuzTestHelper:
         Return True if the lists matches, otherwise False.
         """
         return [p.id for p in expected] == [r.id for r in given]
+
+
+class Base64KeyMatches(Matcher):
+    """Matches if base64-encoded key material has a given fingerprint."""
+
+    def __init__(self, fingerprint):
+        self.fingerprint = fingerprint
+
+    def match(self, encoded_key):
+        key = base64.b64decode(encoded_key)
+        return Equals(self.fingerprint).match(
+            getUtility(IGPGHandler).importPublicKey(key).fingerprint)
+
+    def __str__(self):
+        return "Base64KeyMatches(%s)" % self.fingerprint

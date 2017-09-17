@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -302,16 +302,11 @@ class LimitedViewDeferredToView(AuthorizationBase):
     usedfor = Interface
 
     def checkUnauthenticated(self):
-        return (
-            self.forwardCheckUnauthenticated(self.obj, 'launchpad.View') or
-            self.forwardCheckUnauthenticated(
-                self.obj, 'launchpad.SubscriberView'))
+        return self.forwardCheckUnauthenticated(permission='launchpad.View')
 
     def checkAuthenticated(self, user):
-        return (
-            self.forwardCheckAuthenticated(user, self.obj, 'launchpad.View') or
-            self.forwardCheckAuthenticated(
-                user, self.obj, 'launchpad.SubscriberView'))
+        return self.forwardCheckAuthenticated(
+            user, permission='launchpad.View')
 
 
 class AdminByAdminsTeam(AuthorizationBase):
@@ -667,7 +662,7 @@ class DriveSprint(AuthorizationBase):
                 user.in_admin)
 
 
-class Sprint(AuthorizationBase):
+class ViewSprint(AuthorizationBase):
     """An attendee, owner, or driver of a sprint."""
     permission = 'launchpad.View'
     usedfor = ISprint
@@ -678,6 +673,21 @@ class Sprint(AuthorizationBase):
                 user.person in [attendance.attendee
                             for attendance in self.obj.attendances] or
                 user.in_admin)
+
+
+class EditSprint(EditByOwnersOrAdmins):
+    usedfor = ISprint
+
+
+class ModerateSprint(ModerateByRegistryExpertsOrAdmins):
+    """The sprint owner, registry experts, and admins can moderate sprints."""
+    permission = 'launchpad.Moderate'
+    usedfor = ISprint
+
+    def checkAuthenticated(self, user):
+        return (
+            super(ModerateSprint, self).checkAuthenticated(user) or
+            user.isOwner(self.obj))
 
 
 class EditSpecificationSubscription(AuthorizationBase):
@@ -2303,6 +2313,18 @@ class ViewGitRef(DelegatedAuthorization):
     def __init__(self, obj):
         super(ViewGitRef, self).__init__(obj, obj.repository)
 
+    def checkAuthenticated(self, user):
+        if self.obj.repository is not None:
+            return super(ViewGitRef, self).checkAuthenticated(user)
+        else:
+            return True
+
+    def checkUnauthenticated(self):
+        if self.obj.repository is not None:
+            return super(ViewGitRef, self).checkUnauthenticated()
+        else:
+            return True
+
 
 class EditGitRef(DelegatedAuthorization):
     """Anyone who can edit a Git repository can edit references within it."""
@@ -2462,10 +2484,11 @@ class BranchMergeProposalEdit(AuthorizationBase):
           * the reviewer for the merge_target
           * an administrator
         """
-        return (user.inTeam(self.obj.registrant) or
+        if (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.merge_source.owner) or
-                self.forwardCheckAuthenticated(user, self.obj.merge_target) or
-                user.inTeam(self.obj.merge_target.reviewer))
+                user.inTeam(self.obj.merge_target.reviewer)):
+            return True
+        return self.forwardCheckAuthenticated(user, self.obj.merge_target)
 
 
 class AdminDistroSeriesLanguagePacks(
@@ -2616,6 +2639,23 @@ class SubscriberViewArchive(ViewArchive):
             user.person, include_subscribed=True)
         return not IStore(self.obj).find(
             Archive.id, And(Archive.id == self.obj.id, filter)).is_empty()
+
+
+class LimitedViewArchive(AuthorizationBase):
+    """Restricted existence knowledge of private archives.
+
+    Just delegate to SubscriberView, since that includes View.
+    """
+    permission = 'launchpad.LimitedView'
+    usedfor = IArchive
+
+    def checkUnauthenticated(self):
+        return self.forwardCheckUnauthenticated(
+            permission='launchpad.SubscriberView')
+
+    def checkAuthenticated(self, user):
+        return self.forwardCheckAuthenticated(
+            user, permission='launchpad.SubscriberView')
 
 
 class EditArchive(AuthorizationBase):
@@ -2793,6 +2833,17 @@ class ViewSourcePackageRecipe(DelegatedAuthorization):
         return self.obj.getReferencedBranches()
 
 
+class DeleteSourcePackageRecipe(AuthorizationBase):
+
+    permission = "launchpad.Delete"
+    usedfor = ISourcePackageRecipe
+
+    def checkAuthenticated(self, user):
+        return (
+            user.isOwner(self.obj) or
+            user.in_registry_experts or user.in_admin)
+
+
 class ViewSourcePackageRecipeBuild(DelegatedAuthorization):
 
     permission = "launchpad.View"
@@ -2810,18 +2861,12 @@ class ViewSourcePackagePublishingHistory(AuthorizationBase):
     usedfor = ISourcePackagePublishingHistory
 
     def checkUnauthenticated(self):
-        return (
-            self.forwardCheckUnauthenticated(
-                self.obj.archive, 'launchpad.View') or
-            self.forwardCheckUnauthenticated(
-                self.obj.archive, 'launchpad.SubscriberView'))
+        return self.forwardCheckUnauthenticated(
+            self.obj.archive, 'launchpad.SubscriberView')
 
     def checkAuthenticated(self, user):
-        return (
-            self.forwardCheckAuthenticated(
-                user, self.obj.archive, 'launchpad.View') or
-            self.forwardCheckAuthenticated(
-                user, self.obj.archive, 'launchpad.SubscriberView'))
+        return self.forwardCheckAuthenticated(
+            user, self.obj.archive, 'launchpad.SubscriberView')
 
 
 class EditPublishing(DelegatedAuthorization):
@@ -3048,6 +3093,11 @@ class EditLiveFS(AuthorizationBase):
         return (
             user.isOwner(self.obj) or
             user.in_commercial_admin or user.in_admin)
+
+
+class ModerateLiveFS(ModerateArchive):
+    """Restrict changing the build score on live filesystems."""
+    usedfor = ILiveFS
 
 
 class AdminLiveFS(AuthorizationBase):

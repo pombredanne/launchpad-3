@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """OpenPGP keys used for testing.
@@ -31,6 +31,7 @@ from lp.services.gpg.interfaces import (
     GPGKeyAlgorithm,
     IGPGHandler,
     )
+
 
 gpgkeysdir = os.path.join(os.path.dirname(__file__), 'data')
 
@@ -69,7 +70,7 @@ def import_public_key(email_addr):
         keyid=key.keyid,
         fingerprint=key.fingerprint,
         keysize=key.keysize,
-        algorithm=GPGKeyAlgorithm.items[key.algorithm],
+        algorithm=key.algorithm,
         active=(not key.revoked))
 
 
@@ -130,6 +131,8 @@ def decrypt_content(content, password):
 
     # setup context
     ctx = gpgme.Context()
+    # Stick to GnuPG 1.
+    ctx.set_engine_info(gpgme.PROTOCOL_OpenPGP, "/usr/bin/gpg", None)
     ctx.armor = True
 
     # setup containers
@@ -141,7 +144,7 @@ def decrypt_content(content, password):
 
     ctx.passphrase_cb = passphrase_cb
 
-    # Do the deecryption.
+    # Do the decryption.
     try:
         ctx.decrypt(cipher, plain)
     except gpgme.GpgmeError:

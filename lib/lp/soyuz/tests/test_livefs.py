@@ -1,4 +1,4 @@
-# Copyright 2014-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystems."""
@@ -17,6 +17,7 @@ from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
 from zope.event import notify
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
@@ -44,6 +45,7 @@ from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 from lp.testing import (
     ANONYMOUS,
     api_url,
+    celebrity_logged_in,
     login,
     logout,
     person_logged_in,
@@ -109,6 +111,16 @@ class TestLiveFS(TestCaseWithFactory):
         self.assertSqlAttributeEqualsDate(
             livefs, "date_last_modified", UTC_NOW)
 
+    def test_relative_build_score(self):
+        # Buildd admins can change the relative build score of a LiveFS, but
+        # ordinary users cannot.
+        livefs = self.factory.makeLiveFS()
+        with person_logged_in(livefs.owner):
+            self.assertRaises(
+                Unauthorized, setattr, livefs, "relative_build_score", 100)
+        with celebrity_logged_in("buildd_admin"):
+            livefs.relative_build_score = 100
+
     def test_requestBuild(self):
         # requestBuild creates a new LiveFSBuild.
         livefs = self.factory.makeLiveFS()
@@ -150,8 +162,9 @@ class TestLiveFS(TestCaseWithFactory):
         self.assertEqual(2510, queue_record.lastscore)
 
     def test_requestBuild_relative_build_score(self):
-        # Offsets for archives are respected.
+        # Offsets for archives and livefses are respected.
         livefs = self.factory.makeLiveFS()
+        removeSecurityProxy(livefs).relative_build_score = 50
         archive = self.factory.makeArchive(owner=livefs.owner)
         removeSecurityProxy(archive).relative_build_score = 100
         distroarchseries = self.factory.makeDistroArchSeries(
@@ -161,7 +174,7 @@ class TestLiveFS(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         queue_record = build.buildqueue_record
         queue_record.score()
-        self.assertEqual(2610, queue_record.lastscore)
+        self.assertEqual(2660, queue_record.lastscore)
 
     def test_requestBuild_rejects_repeats(self):
         # requestBuild refuses if there is already a pending build.

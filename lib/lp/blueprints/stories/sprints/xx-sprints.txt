@@ -12,6 +12,8 @@ schedul-o-matic.
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('test@canonical.com')
     >>> rome_sprint = factory.makeSprint(name='rome', title='Rome')
+    >>> logout()
+    >>> ignored = login_person(rome_sprint.owner)
     >>> rome_sprint.time_ends = dt.datetime.now(UTC) + dt.timedelta(30)
     >>> rome_sprint.time_starts = dt.datetime.now(UTC) + dt.timedelta(20)
     >>> sample_person = getUtility(IPersonSet).getByName('name12')

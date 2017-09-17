@@ -81,7 +81,7 @@ URL for the branch.
 
 == SSH key directions ==
 
-If the user has the permission to upload to a branch, but does not have a SSH
+If the user has the permission to upload to a branch, but does not have an SSH
 key registered, point to the SSH keys form.
 
 First, unregister the existing SSH key for Sample Person.
@@ -90,7 +90,7 @@ First, unregister the existing SSH key for Sample Person.
     >>> name12_browser.getLink(url='editsshkeys').click()
     >>> name12_browser.getControl('Remove').click()
 
-The branch page now displays directions and a link to register a SSH key.
+The branch page now displays directions and a link to register an SSH key.
 
     >>> name12_browser.open(branch_page)
     >>> content = name12_browser.contents
@@ -98,11 +98,11 @@ The branch page now displays directions and a link to register a SSH key.
     >>> print instructions.renderContents()
     To authenticate with the Launchpad branch upload service, you need to
     <a href="http://launchpad.dev/~name12/+editsshkeys">
-    register a SSH key </a>.
+    register an SSH key</a>.
 
 Click the link and register a key.
 
-    >>> name12_browser.getLink('register a SSH key').click()
+    >>> name12_browser.getLink('register an SSH key').click()
     >>> name12_browser.getControl(name='sshkey').value = some_sshkey
     >>> name12_browser.getControl('Import Public Key').click()
 

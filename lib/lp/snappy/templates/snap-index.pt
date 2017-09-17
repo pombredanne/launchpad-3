@@ -111,7 +111,7 @@
           <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
         </dd>
       </dl>
-      <p id="store_channels" tal:condition="not: context/store_channels">
+      <p id="store_channels" tal:condition="not: view/store_channels">
         This snap package will not be released to any channels on the store.
       </p>
     </div>

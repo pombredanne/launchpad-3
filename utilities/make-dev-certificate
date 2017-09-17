@@ -1,0 +1,70 @@
+#! /usr/bin/python
+#
+# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Make a new local development SSL certificate.
+
+This is a very occasional maintenance utility.  It writes new versions of
+configs/development/launchpad.key and configs/development/launchpad.crt, and
+these changes should be committed.
+"""
+
+from __future__ import print_function
+
+import atexit
+import os.path
+import shutil
+import subprocess
+import sys
+import tempfile
+
+
+vhosts = [
+    "launchpad.dev",
+    "answers.launchpad.dev",
+    "api.launchpad.dev",
+    "bazaar.launchpad.dev",
+    "blueprints.launchpad.dev",
+    "bugs.launchpad.dev",
+    "code.launchpad.dev",
+    "feeds.launchpad.dev",
+    "translations.launchpad.dev",
+    "xmlrpc.launchpad.dev",
+    "testopenid.dev",
+    ]
+
+
+def main():
+    """Run the script."""
+    key = "configs/development/launchpad.key"
+    certificate = "configs/development/launchpad.crt"
+    tmpdir = tempfile.mkdtemp()
+    atexit.register(shutil.rmtree, tmpdir)
+    config = os.path.join(tmpdir, "launchpad.cnf")
+    shutil.copy2("/etc/ssl/openssl.cnf", config)
+    with open(config, "a") as f:
+        f.write(
+            "\n[subjectAltName]\nsubjectAltName=%s\n" %
+            ",".join("DNS:%s" % vhost for vhost in vhosts))
+    subprocess.check_call([
+        "openssl", "req",
+        "-config", config,
+        "-new",
+        "-newkey", "rsa:4096",
+        "-nodes",
+        "-sha256",
+        "-subj", "/CN=%s/" % vhosts[0],
+        "-extensions", "subjectAltName",
+        "-x509",
+        "-days", "3650",
+        "-keyout", key,
+        "-out", certificate,
+        ])
+    print("Created new local key and self-signed certificate.")
+    subprocess.check_call(["openssl", "x509", "-in", certificate, "-text"])
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

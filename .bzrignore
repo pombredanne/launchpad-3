@@ -12,6 +12,7 @@ database/schema/diagrams/*.ps
 database/schema/diagrams/*.dot
 thread*.request
 ./TAGS
+lib/Mailman
 lib/mailman
 TAGS
 cover.txt
@@ -41,7 +42,6 @@ build
 dist
 ./eggs
 ./download-cache
-./_pythonpath.py
 ./production-configs
 bzr.dev
 _trial_temp
@@ -75,7 +75,6 @@ lib/canonical/launchpad/icing/*.positioning
 lib/canonical/launchpad/icing/yui
 .emacs.desktop
 callgrind.out.*
-scripts/mlist-sync.py
 ./celerybeat-schedule
 !logs/README.txt
 ./logs

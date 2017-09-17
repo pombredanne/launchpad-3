@@ -1,13 +1,16 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
     'GitRef',
+    'GitRefDefault',
     'GitRefFrozen',
+    'GitRefRemote',
     ]
 
 from datetime import datetime
+from functools import partial
 import json
 from urllib import quote_plus
 from urlparse import urlsplit
@@ -24,13 +27,18 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implementer
+from zope.interface import (
+    implementer,
+    provider,
+    )
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.app.errors import NotFoundError
 from lp.code.enums import (
     BranchMergeProposalStatus,
     GitObjectType,
+    GitRepositoryType,
     )
 from lp.code.errors import (
     BranchMergeProposalExists,
@@ -45,13 +53,15 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.githosting import IGitHostingClient
-from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitref import (
+    IGitRef,
+    IGitRefRemoteSet,
+    )
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
     BranchMergeProposalGetter,
     )
 from lp.services.config import config
-from lp.services.database.bulk import load_related
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
@@ -59,6 +69,7 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class GitRefMixin:
@@ -67,6 +78,8 @@ class GitRefMixin:
     These can be derived solely from the repository and path, and so do not
     require a database record.
     """
+
+    repository_url = None
 
     @property
     def display_name(self):
@@ -93,6 +106,11 @@ class GitRefMixin:
     def unique_name(self):
         """See `IGitRef`."""
         return "%s:%s" % (self.repository.unique_name, self.name)
+
+    @property
+    def repository_type(self):
+        """See `IGitRef`."""
+        return self.repository.repository_type
 
     @property
     def owner(self):
@@ -194,25 +212,34 @@ class GitRefMixin:
             BranchMergeProposal.source_git_repository == self.repository,
             BranchMergeProposal.source_git_path == self.path)
 
+    def getPrecachedLandingTargets(self, user):
+        """See `IGitRef`."""
+        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
+        return DecoratedResultSet(self.landing_targets, pre_iter_hook=loader)
+
+    @property
+    def _api_landing_targets(self):
+        return self.getPrecachedLandingTargets(getUtility(ILaunchBag).user)
+
     @property
     def landing_candidates(self):
         """See `IGitRef`."""
-        # Circular import.
-        from lp.code.model.gitrepository import GitRepository
-
-        result = Store.of(self).find(
+        return Store.of(self).find(
             BranchMergeProposal,
             BranchMergeProposal.target_git_repository == self.repository,
             BranchMergeProposal.target_git_path == self.path,
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
-        def eager_load(rows):
-            load_related(
-                GitRepository, rows,
-                ["source_git_repositoryID", "prerequisite_git_repositoryID"])
+    def getPrecachedLandingCandidates(self, user):
+        """See `IGitRef`."""
+        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
+        return DecoratedResultSet(
+            self.landing_candidates, pre_iter_hook=loader)
 
-        return DecoratedResultSet(result, pre_iter_hook=eager_load)
+    @property
+    def _api_landing_candidates(self):
+        return self.getPrecachedLandingCandidates(getUtility(ILaunchBag).user)
 
     @property
     def dependent_landings(self):
@@ -510,8 +537,73 @@ class GitRef(StormBase, GitRefMixin):
             commit_message=commit_message, review_requests=review_requests)
 
 
+class GitRefDatabaseBackedMixin(GitRefMixin):
+    """A mixin for virtual Git references backed by a database record."""
+
+    @property
+    def _non_database_attributes(self):
+        """A sequence of attributes not backed by the database."""
+        raise NotImplementedError()
+
+    @property
+    def _self_in_database(self):
+        """Return the equivalent database-backed record of self."""
+        raise NotImplementedError()
+
+    def __getattr__(self, name):
+        return getattr(self._self_in_database, name)
+
+    def __setattr__(self, name, value):
+        if name in self._non_database_attributes:
+            self.__dict__[name] = value
+        else:
+            setattr(self._self_in_database, name, value)
+
+    def __eq__(self, other):
+        return (
+            self.repository == other.repository and
+            self.path == other.path and
+            self.commit_sha1 == other.commit_sha1)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash(self.repository) ^ hash(self.path) ^ hash(self.commit_sha1)
+
+
 @implementer(IGitRef)
-class GitRefFrozen(GitRefMixin):
+class GitRefDefault(GitRefDatabaseBackedMixin):
+    """A reference to the default branch in a Git repository.
+
+    This always refers to whatever the default branch currently is, even if
+    it changes later.
+    """
+
+    def __init__(self, repository):
+        self.repository_id = repository.id
+        self.repository = repository
+        self.path = u"HEAD"
+
+    _non_database_attributes = ("repository_id", "repository", "path")
+
+    @property
+    def _self_in_database(self):
+        """See `GitRefDatabaseBackedMixin`."""
+        path = self.repository.default_branch
+        if path is None:
+            raise NotFoundError(
+                "Repository '%s' has no default branch" % self.repository)
+        ref = IStore(GitRef).get(GitRef, (self.repository_id, path))
+        if ref is None:
+            raise NotFoundError(
+                "Repository '%s' has default branch '%s', but there is no "
+                "such reference" % (self.repository, path))
+        return ref
+
+
+@implementer(IGitRef)
+class GitRefFrozen(GitRefDatabaseBackedMixin):
     """A frozen Git reference.
 
     This is like a GitRef, but is frozen at a particular commit, even if the
@@ -528,9 +620,12 @@ class GitRefFrozen(GitRefMixin):
         self.path = path
         self.commit_sha1 = commit_sha1
 
+    _non_database_attributes = (
+        "repository_id", "repository", "path", "commit_sha1")
+
     @property
     def _self_in_database(self):
-        """Return the equivalent database-backed record of self."""
+        """See `GitRefDatabaseBackedMixin`."""
         ref = IStore(GitRef).get(GitRef, (self.repository_id, self.path))
         if ref is None:
             raise NotFoundError(
@@ -538,23 +633,107 @@ class GitRefFrozen(GitRefMixin):
                 "'%s'" % (self.repository, self.path))
         return ref
 
-    def __getattr__(self, name):
-        return getattr(self._self_in_database, name)
 
-    def __setattr__(self, name, value):
-        if name in ("repository_id", "repository", "path", "commit_sha1"):
-            self.__dict__[name] = value
-        else:
-            setattr(self._self_in_database, name, value)
+@implementer(IGitRef)
+@provider(IGitRefRemoteSet)
+class GitRefRemote(GitRefMixin):
+    """A reference in a remotely-hosted Git repository.
+
+    We can do very little with these - for example, we don't know their tip
+    commit ID - but it's useful to be able to pass the repository URL and
+    path around as a unit.
+    """
+
+    def __init__(self, repository_url, path):
+        self.repository_url = repository_url
+        self.path = path
+
+    @classmethod
+    def new(cls, repository_url, path):
+        """See `IGitRefRemoteSet`."""
+        return cls(repository_url, path)
+
+    def _unimplemented(self, *args, **kwargs):
+        raise NotImplementedError("Not implemented for remote repositories.")
+
+    repository = None
+    commit_sha1 = property(_unimplemented)
+    object_type = property(_unimplemented)
+    author = None
+    author_date = None
+    committer = None
+    committer_date = None
+    commit_message = None
+    commit_message_first_line = property(_unimplemented)
+
+    @property
+    def identity(self):
+        """See `IGitRef`."""
+        return "%s %s" % (self.repository_url, self.name)
+
+    @property
+    def unique_name(self):
+        """See `IGitRef`."""
+        return "%s %s" % (self.repository_url, self.name)
+
+    repository_type = GitRepositoryType.REMOTE
+    owner = property(_unimplemented)
+    target = property(_unimplemented)
+    namespace = property(_unimplemented)
+    getCodebrowseUrl = _unimplemented
+    getCodebrowseUrlForRevision = _unimplemented
+    information_type = InformationType.PUBLIC
+    private = False
+
+    def visibleByUser(self, user):
+        """See `IGitRef`."""
+        return True
+
+    transitionToInformationType = _unimplemented
+    reviewer = property(_unimplemented)
+    code_reviewer = property(_unimplemented)
+    isPersonTrustedReviewer = _unimplemented
+
+    @property
+    def subscriptions(self):
+        """See `IGitRef`."""
+        return []
+
+    @property
+    def subscribers(self):
+        """See `IGitRef`."""
+        return []
+
+    subscribe = _unimplemented
+    getSubscription = _unimplemented
+    unsubscribe = _unimplemented
+    getNotificationRecipients = _unimplemented
+    landing_targets = property(_unimplemented)
+    landing_candidates = property(_unimplemented)
+    dependent_landings = property(_unimplemented)
+    addLandingTarget = _unimplemented
+    createMergeProposal = _unimplemented
+    getMergeProposals = _unimplemented
+    getDependentMergeProposals = _unimplemented
+    pending_writes = False
+
+    def getCommits(self, *args, **kwargs):
+        """See `IGitRef`."""
+        return []
+
+    def getLatestCommits(self, *args, **kwargs):
+        """See `IGitRef`."""
+        return []
+
+    @property
+    def recipes(self):
+        """See `IHasRecipes`."""
+        return []
 
     def __eq__(self, other):
         return (
-            self.repository == other.repository and
-            self.path == other.path and
-            self.commit_sha1 == other.commit_sha1)
+            self.repository_url == other.repository_url and
+            self.path == other.path)
 
     def __ne__(self, other):
         return not self == other
-
-    def __hash__(self):
-        return hash(self.repository) ^ hash(self.path) ^ hash(self.commit_sha1)

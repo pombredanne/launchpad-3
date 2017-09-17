@@ -32,6 +32,7 @@ from lazr.restful.fields import Reference
 from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import (
+    Bool,
     Choice,
     Datetime,
     Int,
@@ -107,6 +108,10 @@ class ISnappySeriesEditableAttributes(Interface):
     status = exported(Choice(
         title=_("Status"), required=True, vocabulary=SeriesStatus))
 
+    preferred_distro_series = exported(Reference(
+        IDistroSeries, title=_("Preferred distro series"),
+        required=False, readonly=False))
+
     usable_distro_series = exported(List(
         title=_("Usable distro series"),
         description=_(
@@ -131,6 +136,12 @@ class ISnappyDistroSeries(Interface):
         ISnappySeries, title=_("Snappy series"), readonly=True)
     distro_series = Reference(
         IDistroSeries, title=_("Distro series"), readonly=True)
+    preferred = Bool(
+        title=_("Preferred"),
+        required=True, readonly=False,
+        description=_(
+            "True if this identifies the default distro series for builds "
+            "for this snappy series."))
 
     title = Title(title=_("Title"), required=True, readonly=True)
 

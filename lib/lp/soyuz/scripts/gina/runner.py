@@ -12,6 +12,7 @@ import time
 import psycopg2
 from zope.component import getUtility
 
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.scripts import log
@@ -40,9 +41,6 @@ from lp.soyuz.scripts.gina.packages import (
 
 
 def run_gina(options, ztm, target_section):
-    # Avoid circular imports.
-    from lp.registry.interfaces.pocket import PackagePublishingPocket
-
     package_root = target_section.root
     distro = target_section.distro
     pocket_distroseries = target_section.pocketrelease

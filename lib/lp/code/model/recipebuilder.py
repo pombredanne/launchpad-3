@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to build recipes on the buildfarm."""
@@ -8,6 +8,7 @@ __all__ = [
     'RecipeBuildBehaviour',
     ]
 
+from twisted.internet import defer
 from zope.component import adapter
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
@@ -40,12 +41,14 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
     # in this list.
     ALLOWED_STATUS_NOTIFICATIONS = ['PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
 
+    @defer.inlineCallbacks
     def _extraBuildArgs(self, distroarchseries, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
         # Build extra arguments.
         args = {}
+        args['series'] = self.build.distroseries.name
         args['suite'] = self.build.distroseries.getSuite(self.build.pocket)
         args['arch_tag'] = distroarchseries.architecturetag
         requester = self.build.requester
@@ -65,16 +68,21 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
         args["ogrecomponent"] = get_primary_current_component(
             self.build.archive, self.build.distroseries,
             None).name
-        args['archives'] = get_sources_list_for_building(
-            self.build, distroarchseries, None,
-            tools_source=config.builddmaster.bzr_builder_sources_list,
-            logger=logger)
+        args['archives'], args['trusted_keys'] = (
+            yield get_sources_list_for_building(
+                self.build, distroarchseries, None,
+                tools_source=config.builddmaster.bzr_builder_sources_list,
+                logger=logger))
         args['archive_private'] = self.build.archive.private
+        # XXX cjwatson 2017-07-26: This duplicates "series", which is common
+        # to all build types; this name for it is deprecated and should be
+        # removed once launchpad-buildd no longer requires it.
         args['distroseries_name'] = self.build.distroseries.name
         if self.build.recipe.base_git_repository is not None:
             args['git'] = True
-        return args
+        defer.returnValue(args)
 
+    @defer.inlineCallbacks
     def composeBuildRequest(self, logger):
         das = self.build.distroseries.getDistroArchSeriesByProcessor(
             self._builder.processor)
@@ -83,8 +91,8 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
                 "Unable to find distroarchseries for %s in %s" %
                 (self._builder.processor.name,
                  self.build.distroseries.displayname))
-        args = self._extraBuildArgs(das, logger=logger)
-        return ("sourcepackagerecipe", das, {}, args)
+        args = yield self._extraBuildArgs(das, logger=logger)
+        defer.returnValue(("sourcepackagerecipe", das, {}, args))
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.

@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the source package recipe view classes and templates."""
@@ -14,6 +14,7 @@ import re
 from textwrap import dedent
 
 from BeautifulSoup import BeautifulSoup
+from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
 from pytz import UTC
 from testtools.matchers import Equals
@@ -390,6 +391,7 @@ class TestSourcePackageRecipeAddViewMixin:
     layer = DatabaseFunctionalLayer
 
     def test_create_new_recipe_not_logged_in(self):
+        self.useFixture(FakeLogger())
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.makeBranch(
@@ -1576,6 +1578,7 @@ class TestSourcePackageRecipeViewMixin:
 
     def test_request_builds_action_not_logged_in(self):
         """Requesting a build creates pending builds."""
+        self.useFixture(FakeLogger())
         self._makeWoodyDistroSeries()
         recipe = self.makeRecipe()
         browser = self.getViewBrowser(recipe, no_login=True)
@@ -1926,7 +1929,23 @@ class TestSourcePackageRecipeDeleteViewMixin:
             'http://code.launchpad.dev/~chef',
             browser.url)
 
+    def test_delete_recipe_registry_expert(self):
+        branch = self.makeBranch()
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, branches=[branch])
+
+        browser = self.getUserBrowser(
+            canonical_url(recipe), user=self.factory.makeRegistryExpert())
+
+        browser.getLink('Delete recipe').click()
+        browser.getControl('Delete recipe').click()
+
+        self.assertEqual(
+            'http://code.launchpad.dev/~chef',
+            browser.url)
+
     def test_delete_recipe_no_permissions(self):
+        self.useFixture(FakeLogger())
         branch = self.makeBranch()
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, branches=[branch])

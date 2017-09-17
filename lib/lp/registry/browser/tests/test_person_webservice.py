@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -14,7 +14,6 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.ssh import SSHKeyType
 from lp.registry.interfaces.teammembership import ITeamMembershipSet
-from lp.registry.tests.test_ssh import VULNERABLE_RSA_KEY
 from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccountSet,
@@ -557,26 +556,6 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
         self.assertEqual(400, response.status)
         self.assertEqual(
             "Invalid SSH key type: 'foo'",
-            response.body)
-
-    def test_addSSHKeyFromSSO_rejects_vulnerable_keys(self):
-        with admin_logged_in():
-            person = self.factory.makePerson()
-            openid_id = person.account.openid_identifiers.any().identifier
-        response = self.addSSHKeyForPerson(openid_id, VULNERABLE_RSA_KEY)
-        self.assertEqual(400, response.status)
-        self.assertEqual(
-            "This key cannot be added as it is known to be compromised.",
-            response.body)
-
-    def test_addSSHKeyFromSSO_rejects_vulnerable_keys_dry_run(self):
-        with admin_logged_in():
-            person = self.factory.makePerson()
-            openid_id = person.account.openid_identifiers.any().identifier
-        response = self.addSSHKeyForPerson(openid_id, VULNERABLE_RSA_KEY, True)
-        self.assertEqual(400, response.status)
-        self.assertEqual(
-            "This key cannot be added as it is known to be compromised.",
             response.body)
 
     def test_addSSHKeyFromSSO_works(self):

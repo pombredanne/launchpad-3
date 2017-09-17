@@ -22,6 +22,7 @@ from requests.exceptions import (
 from testtools.matchers import MatchesStructure
 
 from lp.services.timeout import (
+    default_timeout,
     get_default_timeout_function,
     reduced_timeout,
     set_default_timeout_function,
@@ -206,6 +207,15 @@ class TestTimeout(TestCase):
         self.addCleanup(set_default_timeout_function, None)
         no_default_timeout()
         self.assertEqual([True], using_default)
+
+    def test_default_timeout(self):
+        """default_timeout sets the default timeout if none is set."""
+        self.addCleanup(set_default_timeout_function, None)
+        with default_timeout(1.0):
+            self.assertEqual(1.0, get_default_timeout_function()())
+        set_default_timeout_function(lambda: 5.0)
+        with default_timeout(1.0):
+            self.assertEqual(5.0, get_default_timeout_function()())
 
     def test_reduced_timeout(self):
         """reduced_timeout caps the available timeout in various ways."""

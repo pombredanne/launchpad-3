@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/code modules."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
+    'BranchListingSort',
     'BranchMergeProposalStatus',
     'BranchSubscriptionDiffSize',
     'BranchSubscriptionNotificationLevel',
@@ -135,6 +136,13 @@ class GitRepositoryType(DBEnumeratedType):
         repository and is made available through Launchpad.
         """)
 
+    REMOTE = DBItem(4, """
+        Remote
+
+        Registered in Launchpad with an external location,
+        but is not to be mirrored, nor available through Launchpad.
+        """)
+
 
 class GitObjectType(DBEnumeratedType):
     """Git Object Type
@@ -189,6 +197,69 @@ class BranchLifecycleStatusFilter(EnumeratedType):
         Any status
 
         Show all the branches.
+        """)
+
+
+class BranchListingSort(EnumeratedType):
+    """Choices for how to sort branch listings."""
+
+    # XXX: MichaelHudson 2007-10-17 bug=153891: We allow sorting on quantities
+    # that are not visible in the listing!
+
+    DEFAULT = Item("""
+        by most interesting
+
+        Sort branches by the default ordering for the view.
+        """)
+
+    PRODUCT = Item("""
+        by project name
+
+        Sort branches by name of the project the branch is for.
+        """)
+
+    LIFECYCLE = Item("""
+        by status
+
+        Sort branches by their status.
+        """)
+
+    NAME = Item("""
+        by branch name
+
+        Sort branches by the name of the branch.
+        """)
+
+    OWNER = Item("""
+        by owner name
+
+        Sort branches by the name of the owner.
+        """)
+
+    MOST_RECENTLY_CHANGED_FIRST = Item("""
+        most recently changed first
+
+        Sort branches from the most recently to the least recently
+        changed.
+        """)
+
+    LEAST_RECENTLY_CHANGED_FIRST = Item("""
+        most neglected first
+
+        Sort branches from the least recently to the most recently
+        changed.
+        """)
+
+    NEWEST_FIRST = Item("""
+        newest first
+
+        Sort branches from newest to oldest.
+        """)
+
+    OLDEST_FIRST = Item("""
+        oldest first
+
+        Sort branches from oldest to newest.
         """)
 
 

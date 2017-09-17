@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -95,6 +95,7 @@ from lp.app.browser.vocabulary import vocabulary_filters
 from lp.app.enums import PROPRIETARY_INFORMATION_TYPES
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.archivepublisher.debversion import Version
 from lp.bugs.browser.bug import (
     BugContextMenu,
     BugTextView,
@@ -1655,28 +1656,34 @@ def bugtask_sort_key(bugtask):
     Designed to make sense when bugtargetdisplayname is shown.
     """
     if IDistribution.providedBy(bugtask.target):
-        return (
-            None, bugtask.target.displayname, None, None, None)
+        key = (None, bugtask.target.displayname, None, None, None)
     elif IDistroSeries.providedBy(bugtask.target):
-        return (
+        key = (
             None, bugtask.target.distribution.displayname,
             bugtask.target.name, None, None)
     elif IDistributionSourcePackage.providedBy(bugtask.target):
-        return (
+        key = (
             bugtask.target.sourcepackagename.name,
             bugtask.target.distribution.displayname, None, None, None)
     elif ISourcePackage.providedBy(bugtask.target):
-        return (
+        key = (
             bugtask.target.sourcepackagename.name,
             bugtask.target.distribution.displayname,
-            bugtask.target.distroseries.name, None, None)
+            Version(bugtask.target.distroseries.version), None, None)
     elif IProduct.providedBy(bugtask.target):
-        return (None, None, None, bugtask.target.displayname, None)
+        key = (None, None, None, bugtask.target.displayname, None)
     elif IProductSeries.providedBy(bugtask.target):
-        return (
+        key = (
             None, None, None, bugtask.target.product.displayname,
             bugtask.target.name)
-    raise AssertionError("No sort key for %r" % bugtask.target)
+    else:
+        raise AssertionError("No sort key for %r" % bugtask.target)
+
+    # Map elements of the sort key into a form where None is guaranteed to
+    # compare before non-None.  Values of arbitrary types are not guaranteed
+    # to compare greater than None in Python 2, and in Python 3 even asking
+    # the question results in a TypeError.
+    return [(0, None) if value is None else (1, value) for value in key]
 
 
 class BugTasksNominationsView(LaunchpadView):

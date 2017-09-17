@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -246,8 +246,7 @@ class TxLongPollService(Service):
         return config.txlongpoll.launch
 
     def launch(self):
-        twistd_bin = os.path.join(
-            config.root, 'bin', 'twistd-for-txlongpoll')
+        twistd_bin = os.path.join(config.root, 'bin', 'twistd')
         broker_hostname, broker_port = as_host_port(
             config.rabbitmq.host, None, None)
         self.server = TxLongPollServer(

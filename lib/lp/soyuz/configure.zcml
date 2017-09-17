@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -350,7 +350,7 @@
         <require
             permission="launchpad.InternalScriptsOnly"
             attributes="signing_key_owner"
-            set_attributes="distribution signing_key_owner
+            set_attributes="dirty_suites distribution signing_key_owner
                             signing_key_fingerprint"/>
     </class>
     <adapter
@@ -951,11 +951,15 @@
             permission="launchpad.View"
             interface=".interfaces.livefs.ILiveFSView
                        .interfaces.livefs.ILiveFSEditableAttributes
+                       .interfaces.livefs.ILiveFSModerateAttributes
                        .interfaces.livefs.ILiveFSAdminAttributes"/>
         <require
             permission="launchpad.Edit"
             interface=".interfaces.livefs.ILiveFSEdit"
             set_schema=".interfaces.livefs.ILiveFSEditableAttributes"/>
+        <require
+            permission="launchpad.Moderate"
+            set_schema=".interfaces.livefs.ILiveFSModerateAttributes"/>
         <require
             permission="launchpad.Admin"
             set_schema=".interfaces.livefs.ILiveFSAdminAttributes"/>

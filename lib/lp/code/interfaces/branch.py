@@ -544,14 +544,18 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     # These attributes actually have a value_type of IBranchMergeProposal,
     # but uses Interface to prevent circular imports, and the value_type is
     # set near IBranchMergeProposal.
-    landing_targets = exported(
+    landing_targets = Attribute(
+        'A collection of the merge proposals where this branch is '
+        'the source branch.')
+    _api_landing_targets = exported(
         CollectionField(
             title=_('Landing Targets'),
             description=_(
                 'A collection of the merge proposals where this branch is '
                 'the source branch.'),
             readonly=True,
-            value_type=Reference(Interface)))
+            value_type=Reference(Interface)),
+        exported_as='landing_targets')
     landing_candidates = Attribute(
         'A collection of the merge proposals where this branch is '
         'the target branch.')
@@ -572,6 +576,13 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
                 'on this branch.'),
             readonly=True,
             value_type=Reference(Interface)))
+
+    def getPrecachedLandingTargets(user):
+        """Return precached landing targets.
+
+        Target and prerequisite branches are preloaded, along with the
+        related chains of stacked-on branches visible to `user`.
+        """
 
     def getPrecachedLandingCandidates(user):
         """Return precached landing candidates.

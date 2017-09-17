@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposals."""
@@ -22,8 +22,10 @@ import simplejson
 from soupmatchers import (
     HTMLContains,
     Tag,
+    Within,
     )
 from testtools.matchers import (
+    ContainsDict,
     DocTestMatches,
     Equals,
     Is,
@@ -108,7 +110,10 @@ from lp.testing.pages import (
     first_tag_by_class,
     get_feedback_messages,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_initialized_view,
+    create_view,
+    )
 
 
 class GitHostingClientMixin:
@@ -1593,6 +1598,100 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             "%.7s...\nby\nExample Person &lt;person@example.org&gt;\n"
             "on 2015-01-01" % sha1, extract_text(tag))
 
+    def test_client_cache_bzr(self):
+        # For Bazaar, the client cache contains the branch name and a
+        # loggerhead-based diff link.
+        bmp = self.factory.makeBranchMergeProposal()
+        view = create_initialized_view(bmp, '+index')
+        cache = IJSONRequestCache(view.request)
+        self.assertThat(cache.objects, ContainsDict({
+            'branch_name': Equals(bmp.source_branch.name),
+            'branch_diff_link': Equals(
+                'https://code.launchpad.dev/+loggerhead/%s/diff/' %
+                bmp.source_branch.unique_name),
+            }))
+
+    def test_client_cache_git(self):
+        # For Git, the client cache contains the ref name and a webapp-based
+        # diff link.
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        view = create_initialized_view(bmp, '+index')
+        cache = IJSONRequestCache(view.request)
+        self.assertThat(cache.objects, ContainsDict({
+            'branch_name': Equals(bmp.source_git_ref.name),
+            'branch_diff_link': Equals(
+                'http://code.launchpad.dev/%s/+diff/' %
+                bmp.source_git_repository.unique_name),
+            }))
+
+    def test_breadcrumbs_bzr(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        view = create_view(bmp, '+index', principal=self.user)
+        # To test the breadcrumbs we need a correct traversal stack.
+        view.request.traversed_objects = [bmp.source_branch, bmp, view]
+        view.initialize()
+        breadcrumbs_tag = Tag(
+            'breadcrumbs', 'ol', attrs={'class': 'breadcrumbs'})
+        self.assertThat(
+            view(),
+            HTMLContains(
+                Within(
+                    breadcrumbs_tag,
+                    Tag(
+                        'branch breadcrumb', 'a', text=bmp.source_branch.name,
+                        attrs={
+                            'href': 'http://code.launchpad.dev/%s' % (
+                                bmp.source_branch.unique_name)})),
+                Within(
+                    breadcrumbs_tag,
+                    Tag(
+                        'merge proposal breadcrumb', 'li',
+                        text=re.compile(
+                            '\sMerge into %s\s' %
+                            re.escape(bmp.target_branch.name))))))
+
+    def test_breadcrumbs_git(self):
+        self.useFixture(GitHostingFixture())
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        view = create_view(bmp, '+index', principal=self.user)
+        # To test the breadcrumbs we need a correct traversal stack.
+        view.request.traversed_objects = [bmp.source_git_repository, bmp, view]
+        view.initialize()
+        breadcrumbs_tag = Tag(
+            'breadcrumbs', 'ol', attrs={'class': 'breadcrumbs'})
+        self.assertThat(
+            view(),
+            HTMLContains(
+                Within(
+                    breadcrumbs_tag,
+                    Tag(
+                        'git collection breadcrumb', 'a', text='Git',
+                        attrs={'href': re.compile(r'/\+git$')})),
+                Within(
+                    breadcrumbs_tag,
+                    Tag(
+                        'git repository breadcrumb', 'a',
+                        text=bmp.source_git_repository.git_identity,
+                        attrs={
+                            'href': 'http://code.launchpad.dev/%s' % (
+                                bmp.source_git_repository.unique_name)})),
+                Within(
+                    breadcrumbs_tag,
+                    Tag(
+                        'git ref breadcrumb', 'a',
+                        text=bmp.source_git_ref.name,
+                        attrs={
+                            'href': 'http://code.launchpad.dev/%s/+ref/%s' % (
+                                bmp.source_git_repository.unique_name,
+                                bmp.source_git_ref.name)})),
+                Within(
+                    breadcrumbs_tag,
+                    Tag(
+                        'merge proposal breadcrumb', 'li',
+                        text=re.compile(
+                            '\sMerge into %s\s' %
+                            re.escape(bmp.target_git_ref.name))))))
+
 
 class TestBranchMergeProposalBrowserView(BrowserTestCase):
 
@@ -2043,7 +2142,7 @@ class TestBranchMergeProposalLinkBugViewMixin:
         self.assertEqual(
             expected_text,
             [extract_text(tag) for tag in find_tags_by_class(
-                 browser.contents, "bug-mp-summary")])
+                 browser.contents, "buglink-summary")])
 
     def test_link(self):
         # A user can enter a bug number to link from an MP to a bug.
@@ -2092,7 +2191,7 @@ class TestBranchMergeProposalLinkBugViewGit(
                 flags=doctest.ELLIPSIS))
         self.assertThat(
             [extract_text(tag) for tag in find_tags_by_class(
-                 browser.contents, "bug-mp-summary")],
+                 browser.contents, "buglink-summary")],
             MatchesListwise(matchers))
 
     def test_bug_page_shows_link(self):

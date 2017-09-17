@@ -1,4 +1,4 @@
-# Copyright 2014-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystem build behaviour."""
@@ -6,14 +6,21 @@
 __metaclass__ = type
 
 from datetime import datetime
+import os.path
 
 import fixtures
 import pytz
+from testtools.deferredruntest import AsynchronousDeferredRunTest
+from testtools.matchers import MatchesListwise
 import transaction
+from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
 from zope.security.proxy import Proxy
 
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
@@ -36,27 +43,35 @@ from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
+from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.interfaces.livefs import (
     LIVEFS_FEATURE_FLAG,
     LiveFSBuildArchiveOwnerMismatch,
     )
 from lp.soyuz.model.livefsbuildbehaviour import LiveFSBuildBehaviour
+from lp.soyuz.tests.soyuz import Base64KeyMatches
 from lp.testing import TestCaseWithFactory
+from lp.testing.gpgkeys import gpgkeysdir
+from lp.testing.keyserver import InProcessKeyServerFixture
 from lp.testing.layers import LaunchpadZopelessLayer
 
 
-class TestLiveFSBuildBehaviour(TestCaseWithFactory):
+class TestLiveFSBuildBehaviourBase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestLiveFSBuildBehaviour, self).setUp()
+        super(TestLiveFSBuildBehaviourBase, self).setUp()
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
 
-    def makeJob(self, pocket=PackagePublishingPocket.RELEASE, **kwargs):
+    def makeJob(self, archive=None, pocket=PackagePublishingPocket.RELEASE,
+                **kwargs):
         """Create a sample `ILiveFSBuildBehaviour`."""
-        distribution = self.factory.makeDistribution(name="distro")
+        if archive is None:
+            distribution = self.factory.makeDistribution(name="distro")
+        else:
+            distribution = archive.distribution
         distroseries = self.factory.makeDistroSeries(
             distribution=distribution, name="unstable")
         processor = getUtility(IProcessorSet).getByName("386")
@@ -64,9 +79,12 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
             distroseries=distroseries, architecturetag="i386",
             processor=processor)
         build = self.factory.makeLiveFSBuild(
-            distroarchseries=distroarchseries, pocket=pocket,
+            archive=archive, distroarchseries=distroarchseries, pocket=pocket,
             name=u"test-livefs", **kwargs)
         return IBuildFarmJobBehaviour(build)
+
+
+class TestLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
 
     def test_provides_interface(self):
         # LiveFSBuildBehaviour provides IBuildFarmJobBehaviour.
@@ -157,13 +175,21 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
         e = self.assertRaises(CannotBuild, job.verifyBuildRequest, logger)
         self.assertIn("Missing chroot", str(e))
 
+
+class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
+
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=30)
+
+    @defer.inlineCallbacks
     def test_extraBuildArgs(self):
         # _extraBuildArgs returns a reasonable set of additional arguments.
         job = self.makeJob(
             date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC),
             metadata={"project": "distro", "subproject": "special"})
-        expected_archives = get_sources_list_for_building(
-            job.build, job.build.distro_arch_series, None)
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
+        extra_args = yield job._extraBuildArgs()
         self.assertEqual({
             "archive_private": False,
             "archives": expected_archives,
@@ -173,35 +199,57 @@ class TestLiveFSBuildBehaviour(TestCaseWithFactory):
             "project": "distro",
             "subproject": "special",
             "series": "unstable",
-            }, job._extraBuildArgs())
+            "trusted_keys": expected_trusted_keys,
+            }, extra_args)
 
+    @defer.inlineCallbacks
     def test_extraBuildArgs_proposed(self):
         # _extraBuildArgs returns appropriate arguments if asked to build a
         # job for -proposed.
         job = self.makeJob(
             pocket=PackagePublishingPocket.PROPOSED,
             metadata={"project": "distro"})
-        args = job._extraBuildArgs()
+        args = yield job._extraBuildArgs()
         self.assertEqual("unstable", args["series"])
         self.assertEqual("proposed", args["pocket"])
 
+    @defer.inlineCallbacks
     def test_extraBuildArgs_no_security_proxy(self):
         # _extraBuildArgs returns an object without security wrapping, even
         # if values in the metadata are (say) lists and hence get proxied by
         # Zope.
         job = self.makeJob(metadata={"lb_args": ["--option=value"]})
-        args = job._extraBuildArgs()
+        args = yield job._extraBuildArgs()
         self.assertEqual(["--option=value"], args["lb_args"])
         self.assertIsNot(Proxy, type(args["lb_args"]))
 
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_archive_trusted_keys(self):
+        # If the archive has a signing key, _extraBuildArgs sends it.
+        yield self.useFixture(InProcessKeyServerFixture()).start()
+        archive = self.factory.makeArchive()
+        key_path = os.path.join(gpgkeysdir, "ppa-sample@canonical.com.sec")
+        yield IArchiveSigningKey(archive).setSigningKey(
+            key_path, async_keyserver=True)
+        job = self.makeJob(archive=archive)
+        self.factory.makeBinaryPackagePublishingHistory(
+            distroarchseries=job.build.distro_arch_series,
+            pocket=job.build.pocket, archive=archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        args = yield job._extraBuildArgs()
+        self.assertThat(args["trusted_keys"], MatchesListwise([
+            Base64KeyMatches("0D57E99656BEFB0897606EE9A022DD1F5001B46D"),
+            ]))
+
+    @defer.inlineCallbacks
     def test_composeBuildRequest(self):
         job = self.makeJob()
         lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
         build_request = yield job.composeBuildRequest(None)
+        args = yield job._extraBuildArgs()
         self.assertEqual(
-            ('livefs', job.build.distro_arch_series, {},
-             job._extraBuildArgs()), build_request)
+            ('livefs', job.build.distro_arch_series, {}, args), build_request)
 
 
 class MakeLiveFSBuildMixin:

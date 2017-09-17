@@ -21,6 +21,7 @@ import tempfile
 
 from contextlib import contextmanager
 from sqlobject import SQLObjectNotFound
+from storm.store import Store
 from swiftclient import client as swiftclient
 import transaction
 
@@ -43,7 +44,10 @@ from lp.services.librarianserver import (
 from lp.services.log.logger import BufferLogger
 from lp.services.features.testing import FeatureFixture
 from lp.services.utils import utc_now
-from lp.testing import TestCase
+from lp.testing import (
+    monkey_patch,
+    TestCase,
+    )
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
     LaunchpadZopelessLayer,
@@ -723,8 +727,10 @@ class TestSwiftLibrarianGarbageCollection(
         swift.to_swift(BufferLogger(), remove_func=os.unlink)
         assert not os.path.exists(path), "to_swift failed to move files"
 
-    def file_exists(self, content_id):
+    def file_exists(self, content_id, suffix=None):
         container, name = swift.swift_location(content_id)
+        if suffix:
+            name += suffix
         with swift.connection() as swift_connection:
             try:
                 swift_connection.head_object(container, name)
@@ -738,6 +744,58 @@ class TestSwiftLibrarianGarbageCollection(
         container, name = swift.swift_location(content_id)
         with swift.connection() as swift_connection:
             swift_connection.delete_object(container, name)
+
+    def test_delete_unwanted_files_handles_segments(self):
+        # Large files are handled by Swift as multiple segments joined
+        # by a manifest. GC treats the segments like the original file.
+        switch_dbuser('testadmin')
+        content = 'uploading to swift bigly'
+        big1_lfa = LibraryFileAlias.get(self.client.addFile(
+            'foo.txt', len(content), StringIO(content), 'text/plain'))
+        big1_id = big1_lfa.contentID
+
+        big2_lfa = LibraryFileAlias.get(self.client.addFile(
+            'bar.txt', len(content), StringIO(content), 'text/plain'))
+        big2_id = big2_lfa.contentID
+        transaction.commit()
+
+        for lfc_id in (big1_id, big2_id):
+            # Make the files old so they don't look in-progress.
+            os.utime(swift.filesystem_path(lfc_id), (0, 0))
+
+        switch_dbuser(config.librarian_gc.dbuser)
+
+        # Force the files to be segmented as if they were large.
+        with monkey_patch(swift, MAX_SWIFT_OBJECT_SIZE=4):
+            swift.to_swift(BufferLogger(), remove_func=os.unlink)
+
+        def segment_existence(lfc_id):
+            return [
+                self.file_exists(lfc_id, suffix=suffix)
+                for suffix in (None, '/0000', '/0001')]
+
+        # Both files and their segments exist in Swift.
+        self.assertEqual([True, True, True], segment_existence(big1_id))
+        self.assertEqual([True, True, True], segment_existence(big2_id))
+
+        # All the segments survive the first purge.
+        with self.librariangc_thinking_it_is_tomorrow():
+            librariangc.delete_unwanted_files(self.con)
+        self.assertEqual([True, True, True], segment_existence(big1_id))
+        self.assertEqual([True, True, True], segment_existence(big2_id))
+
+        # Remove the first file from the DB.
+        content = big1_lfa.content
+        Store.of(big1_lfa).remove(big1_lfa)
+        Store.of(content).remove(content)
+        transaction.commit()
+
+        # The first file and its segments are removed, but the second is
+        # intact.
+        with self.librariangc_thinking_it_is_tomorrow():
+            librariangc.delete_unwanted_files(self.con)
+        self.assertEqual([False, False, False], segment_existence(big1_id))
+        self.assertEqual([True, True, True], segment_existence(big2_id))
 
 
 class TestBlobCollection(TestCase):

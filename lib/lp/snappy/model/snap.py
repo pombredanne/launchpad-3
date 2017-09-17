@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,13 +10,17 @@ from datetime import (
     datetime,
     timedelta,
     )
+from urlparse import urlsplit
 
+from pymacaroons import Macaroon
 import pytz
 from storm.expr import (
     And,
     Desc,
     LeftJoin,
     Not,
+    Or,
+    Select,
     )
 from storm.locals import (
     Bool,
@@ -38,6 +42,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.errors import IncompatibleArguments
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -54,7 +59,10 @@ from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
     )
-from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitref import (
+    IGitRef,
+    IGitRefRemoteSet,
+    )
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.model.branch import Branch
 from lp.code.model.branchcollection import GenericBranchCollection
@@ -71,12 +79,14 @@ from lp.registry.interfaces.role import (
     IHasOwner,
     IPersonRoles,
     )
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.interfaces import (
     IMasterStore,
@@ -91,18 +101,23 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
+from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
+    BadSnapSource,
+    CannotAuthorizeStoreUploads,
     CannotModifySnapProcessor,
+    CannotRequestAutoBuilds,
     DuplicateSnapName,
     ISnap,
     ISnapSet,
     NoSourceForSnap,
     NoSuchSnap,
     SNAP_PRIVATE_FEATURE_FLAG,
+    SnapAuthorizationBadMacaroon,
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
     SnapBuildDisallowedArchitecture,
@@ -112,6 +127,7 @@ from lp.snappy.interfaces.snap import (
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
+from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snapbuild import SnapBuild
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.model.archive import (
@@ -162,6 +178,8 @@ class Snap(Storm, WebhookTargetMixin):
     git_repository_id = Int(name='git_repository', allow_none=True)
     git_repository = Reference(git_repository_id, 'GitRepository.id')
 
+    git_repository_url = Unicode(name='git_repository_url', allow_none=True)
+
     git_path = Unicode(name='git_path', allow_none=True)
 
     auto_build = Bool(name='auto_build', allow_none=False)
@@ -186,7 +204,7 @@ class Snap(Storm, WebhookTargetMixin):
 
     store_secrets = JSON('store_secrets', allow_none=True)
 
-    store_channels = JSON('store_channels', allow_none=True)
+    _store_channels = JSON('store_channels', allow_none=True)
 
     def __init__(self, registrant, owner, distro_series, name,
                  description=None, branch=None, git_ref=None, auto_build=False,
@@ -216,15 +234,34 @@ class Snap(Storm, WebhookTargetMixin):
         self.store_secrets = store_secrets
         self.store_channels = store_channels
 
+    def __repr__(self):
+        return "<Snap ~%s/+snap/%s>" % (self.owner.name, self.name)
+
     @property
     def valid_webhook_event_types(self):
         return ["snap:build:0.1"]
+
+    @property
+    def _api_git_path(self):
+        return self.git_path
+
+    @_api_git_path.setter
+    def _api_git_path(self, value):
+        if self.git_repository is None and self.git_repository_url is None:
+            raise BadSnapSource(
+                "git_path may only be set on a Git-based snap.")
+        if value is None:
+            raise BadSnapSource("git_path may not be set to None.")
+        self.git_path = value
 
     @property
     def git_ref(self):
         """See `ISnap`."""
         if self.git_repository is not None:
             return self.git_repository.getRefByPath(self.git_path)
+        elif self.git_repository_url is not None:
+            return getUtility(IGitRefRemoteSet).new(
+                self.git_repository_url, self.git_path)
         else:
             return None
 
@@ -233,9 +270,11 @@ class Snap(Storm, WebhookTargetMixin):
         """See `ISnap`."""
         if value is not None:
             self.git_repository = value.repository
+            self.git_repository_url = value.repository_url
             self.git_path = value.path
         else:
             self.git_repository = None
+            self.git_repository_url = None
             self.git_path = None
 
     @property
@@ -326,14 +365,79 @@ class Snap(Storm, WebhookTargetMixin):
         self.store_series = value.snappy_series
 
     @property
+    def store_channels(self):
+        return self._store_channels or []
+
+    @store_channels.setter
+    def store_channels(self, value):
+        self._store_channels = value or None
+
+    @staticmethod
+    def extractSSOCaveats(macaroon):
+        locations = [
+            urlsplit(root).netloc
+            for root in CurrentOpenIDEndPoint.getAllRootURLs()]
+        return [
+            c for c in macaroon.third_party_caveats()
+            if c.location in locations]
+
+    def beginAuthorization(self):
+        """See `ISnap`."""
+        if self.store_series is None:
+            raise CannotAuthorizeStoreUploads(
+                "Cannot authorize uploads of a snap package with no store "
+                "series.")
+        if self.store_name is None:
+            raise CannotAuthorizeStoreUploads(
+                "Cannot authorize uploads of a snap package with no store "
+                "name.")
+        snap_store_client = getUtility(ISnapStoreClient)
+        root_macaroon_raw = snap_store_client.requestPackageUploadPermission(
+            self.store_series, self.store_name)
+        sso_caveats = self.extractSSOCaveats(
+            Macaroon.deserialize(root_macaroon_raw))
+        # We must have exactly one SSO caveat; more than one should never be
+        # required and could be an attempt to substitute weaker caveats.  We
+        # might as well OOPS here, even though the cause of this is probably
+        # in some other service, since the user can't do anything about it
+        # and it should show up in our OOPS reports.
+        if not sso_caveats:
+            raise SnapAuthorizationBadMacaroon("Macaroon has no SSO caveats")
+        elif len(sso_caveats) > 1:
+            raise SnapAuthorizationBadMacaroon(
+                "Macaroon has multiple SSO caveats")
+        self.store_secrets = {'root': root_macaroon_raw}
+        return sso_caveats[0].caveat_id
+
+    def completeAuthorization(self, root_macaroon=None,
+                              discharge_macaroon=None):
+        """See `ISnap`."""
+        if root_macaroon is not None:
+            self.store_secrets = {"root": root_macaroon}
+        else:
+            if self.store_secrets is None or "root" not in self.store_secrets:
+                raise CannotAuthorizeStoreUploads(
+                    "beginAuthorization must be called before "
+                    "completeAuthorization.")
+        if discharge_macaroon is not None:
+            self.store_secrets["discharge"] = discharge_macaroon
+        else:
+            self.store_secrets.pop("discharge", None)
+
+    @property
     def can_upload_to_store(self):
-        return (
-            config.snappy.store_upload_url is not None and
-            config.snappy.store_url is not None and
-            self.store_series is not None and
-            self.store_name is not None and
-            self.store_secrets is not None and
-            "discharge" in self.store_secrets)
+        if (config.snappy.store_upload_url is None or
+                config.snappy.store_url is None or
+                self.store_series is None or
+                self.store_name is None or
+                self.store_secrets is None or
+                "root" not in self.store_secrets):
+            return False
+        root_macaroon = Macaroon.deserialize(self.store_secrets["root"])
+        if (self.extractSSOCaveats(root_macaroon) and
+                "discharge" not in self.store_secrets):
+            return False
+        return True
 
     def requestBuild(self, requester, archive, distro_arch_series, pocket):
         """See `ISnap`."""
@@ -364,6 +468,42 @@ class Snap(Storm, WebhookTargetMixin):
         build.queueBuild()
         return build
 
+    def requestAutoBuilds(self, allow_failures=False, logger=None):
+        """See `ISnapSet`."""
+        builds = []
+        if self.auto_build_archive is None:
+            raise CannotRequestAutoBuilds("auto_build_archive")
+        if self.auto_build_pocket is None:
+            raise CannotRequestAutoBuilds("auto_build_pocket")
+        self.is_stale = False
+        if logger is not None:
+            logger.debug(
+                "Scheduling builds of snap package %s/%s",
+                self.owner.name, self.name)
+        for arch in self.getAllowedArchitectures():
+            try:
+                build = self.requestBuild(
+                    self.owner, self.auto_build_archive, arch,
+                    self.auto_build_pocket)
+                if logger is not None:
+                    logger.debug(
+                        " - %s/%s/%s: Build requested.",
+                        self.owner.name, self.name, arch.architecturetag)
+                builds.append(build)
+            except SnapBuildAlreadyPending as e:
+                if logger is not None:
+                    logger.warning(
+                        " - %s/%s/%s: %s",
+                        self.owner.name, self.name, arch.architecturetag, e)
+            except Exception as e:
+                if not allow_failures:
+                    raise
+                elif logger is not None:
+                    logger.exception(
+                        " - %s/%s/%s: %s",
+                        self.owner.name, self.name, arch.architecturetag, e)
+        return builds
+
     def _getBuilds(self, filter_term, order_by):
         """The actual query to get the builds."""
         query_args = [
@@ -378,7 +518,12 @@ class Snap(Storm, WebhookTargetMixin):
             query_args.append(filter_term)
         result = Store.of(self).find(SnapBuild, *query_args)
         result.order_by(order_by)
-        return result
+
+        def eager_load(rows):
+            getUtility(ISnapBuildSet).preloadBuildsData(rows)
+            getUtility(IBuildQueueSet).preloadForBuildFarmJobs(rows)
+
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getBuildSummariesForSnapBuildIds(self, snap_build_ids):
         """See `ISnap`."""
@@ -390,7 +535,6 @@ class Snap(Storm, WebhookTargetMixin):
         builds = self._getBuilds(filter_term, order_by)
 
         # Prefetch data to keep DB query count constant
-        getUtility(IBuildQueueSet).preloadForBuildFarmJobs(builds)
         lfas = load_related(LibraryFileAlias, builds, ["log_id"])
         load_related(LibraryFileContent, lfas, ["contentID"])
 
@@ -512,7 +656,8 @@ class SnapSet:
     """See `ISnapSet`."""
 
     def new(self, registrant, owner, distro_series, name, description=None,
-            branch=None, git_ref=None, auto_build=False,
+            branch=None, git_repository=None, git_repository_url=None,
+            git_path=None, git_ref=None, auto_build=False,
             auto_build_archive=None, auto_build_pocket=None,
             require_virtualized=True, processors=None, date_created=DEFAULT,
             private=False, store_upload=False, store_series=None,
@@ -528,6 +673,21 @@ class SnapSet:
                     "%s cannot create snap packages owned by %s." %
                     (registrant.displayname, owner.displayname))
 
+        if sum([git_repository is not None, git_repository_url is not None,
+                git_ref is not None]) > 1:
+            raise IncompatibleArguments(
+                "You cannot specify more than one of 'git_repository', "
+                "'git_repository_url', and 'git_ref'.")
+        if ((git_repository is None and git_repository_url is None) !=
+                (git_path is None)):
+            raise IncompatibleArguments(
+                "You must specify both or neither of "
+                "'git_repository'/'git_repository_url' and 'git_path'.")
+        if git_repository is not None:
+            git_ref = git_repository.getRefByPath(git_path)
+        elif git_repository_url is not None:
+            git_ref = getUtility(IGitRefRemoteSet).new(
+                git_repository_url, git_path)
         if branch is None and git_ref is None:
             raise NoSourceForSnap
         if self.exists(owner, name):
@@ -566,8 +726,8 @@ class SnapSet:
             return True
 
         # Public snaps with private sources are not allowed.
-        source_ref = branch or git_ref
-        if source_ref.information_type in PRIVATE_INFORMATION_TYPES:
+        source = branch or git_ref
+        if source.information_type in PRIVATE_INFORMATION_TYPES:
             return False
 
         # Public snaps owned by private teams are not allowed.
@@ -616,8 +776,12 @@ class SnapSet:
             return owned.union(packaged)
 
         bzr_collection = removeSecurityProxy(getUtility(IAllBranches))
+        bzr_snaps = _getSnaps(bzr_collection)
         git_collection = removeSecurityProxy(getUtility(IAllGitRepositories))
-        return _getSnaps(bzr_collection).union(_getSnaps(git_collection))
+        git_snaps = _getSnaps(git_collection)
+        git_url_snaps = IStore(Snap).find(
+            Snap, Snap.owner == person, Snap.git_repository_url != None)
+        return bzr_snaps.union(git_snaps).union(git_url_snaps)
 
     def findByProject(self, project, visible_by_user=None):
         """See `ISnapSet`."""
@@ -667,6 +831,48 @@ class SnapSet:
         if order_by_date:
             snaps.order_by(Desc(Snap.date_last_modified))
         return snaps
+
+    def _findByURLVisibilityClause(self, visible_by_user):
+        # XXX cjwatson 2016-11-25: This is in principle a poor query, but we
+        # don't yet have the access grant infrastructure to do better, and
+        # in any case the numbers involved should be very small.
+        if visible_by_user is None:
+            return Snap.private == False
+        else:
+            roles = IPersonRoles(visible_by_user)
+            if roles.in_admin or roles.in_commercial_admin:
+                return True
+            else:
+                return Or(
+                    Snap.private == False,
+                    Snap.owner_id.is_in(Select(
+                        TeamParticipation.teamID,
+                        TeamParticipation.person == visible_by_user)))
+
+    def findByURL(self, url, owner=None, visible_by_user=None):
+        """See `ISnapSet`."""
+        clauses = [Snap.git_repository_url == url]
+        if owner is not None:
+            clauses.append(Snap.owner == owner)
+        clauses.append(self._findByURLVisibilityClause(visible_by_user))
+        return IStore(Snap).find(Snap, *clauses)
+
+    def findByURLPrefix(self, url_prefix, owner=None, visible_by_user=None):
+        """See `ISnapSet`."""
+        return self.findByURLPrefixes(
+            [url_prefix], owner=owner, visible_by_user=visible_by_user)
+
+    def findByURLPrefixes(self, url_prefixes, owner=None,
+                          visible_by_user=None):
+        """See `ISnapSet`."""
+        prefix_clauses = [
+            Snap.git_repository_url.startswith(url_prefix)
+            for url_prefix in url_prefixes]
+        clauses = [Or(*prefix_clauses)]
+        if owner is not None:
+            clauses.append(Snap.owner == owner)
+        clauses.append(self._findByURLVisibilityClause(visible_by_user))
+        return IStore(Snap).find(Snap, *clauses)
 
     def preloadDataForSnaps(self, snaps, user=None):
         """See `ISnapSet`."""
@@ -727,33 +933,8 @@ class SnapSet:
         snaps = cls._findStaleSnaps()
         builds = []
         for snap in snaps:
-            snap.is_stale = False
-            if logger is not None:
-                logger.debug(
-                    "Scheduling builds of snap package %s/%s",
-                    snap.owner.name, snap.name)
-            for arch in snap.getAllowedArchitectures():
-                try:
-                    build = snap.requestBuild(
-                        snap.owner, snap.auto_build_archive, arch,
-                        snap.auto_build_pocket)
-                    if logger is not None:
-                        logger.debug(
-                            " - %s/%s/%s: Build requested.",
-                            snap.owner.name, snap.name, arch.architecturetag)
-                    builds.append(build)
-                except SnapBuildAlreadyPending as e:
-                    if logger is not None:
-                        logger.warning(
-                            " - %s/%s/%s: %s",
-                            snap.owner.name, snap.name, arch.architecturetag,
-                            e)
-                except Exception as e:
-                    if logger is not None:
-                        logger.exception(
-                            " - %s/%s/%s: %s",
-                            snap.owner.name, snap.name, arch.architecturetag,
-                            e)
+            builds.extend(snap.requestAutoBuilds(
+                allow_failures=True, logger=logger))
         return builds
 
     def detachFromBranch(self, branch):

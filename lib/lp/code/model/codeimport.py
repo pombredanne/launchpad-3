@@ -364,9 +364,17 @@ class CodeImportSet:
         return CodeImport.selectOneBy(
             cvs_root=cvs_root, cvs_module=cvs_module)
 
-    def getByURL(self, url):
+    def getByURL(self, url, target_rcs_type):
         """See `ICodeImportSet`."""
-        return CodeImport.selectOneBy(url=url)
+        clauses = [CodeImport.url == url]
+        if target_rcs_type == TargetRevisionControlSystems.BZR:
+            clauses.append(CodeImport.branch != None)
+        elif target_rcs_type == TargetRevisionControlSystems.GIT:
+            clauses.append(CodeImport.git_repository != None)
+        else:
+            raise AssertionError(
+                "Unknown target_rcs_type %s" % target_rcs_type)
+        return IStore(CodeImport).find(CodeImport, *clauses).one()
 
     def getByBranch(self, branch):
         """See `ICodeImportSet`."""

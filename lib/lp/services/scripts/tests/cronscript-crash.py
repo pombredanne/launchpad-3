@@ -1,5 +1,5 @@
 #!/usr/bin/python -S
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Cronscript that raises an unhandled exception."""
@@ -17,7 +17,12 @@ class CrashScript(LaunchpadCronScript):
 
     def main(self):
         self.oopses = []
-        globalErrorUtility._oops_config.publishers[:] = [self.oopses.append]
+
+        def publish(report):
+            self.oopses.append(report)
+            return []
+
+        globalErrorUtility._oops_config.publisher = publish
 
         self.logger.debug("This is debug level")
         # Debug messages do not generate an OOPS.

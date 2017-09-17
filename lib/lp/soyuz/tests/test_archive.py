@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -9,24 +9,31 @@ from datetime import (
     timedelta,
     )
 import doctest
+import os.path
 
 from pytz import UTC
+from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     AllMatch,
     DocTestMatches,
     LessThan,
+    MatchesListwise,
     MatchesPredicate,
     MatchesRegex,
     MatchesStructure,
     )
 from testtools.testcase import ExpectedException
 import transaction
+from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
 from lp.buildmaster.enums import (
     BuildQueueStatus,
     BuildStatus,
@@ -78,6 +85,7 @@ from lp.soyuz.interfaces.archive import (
     DuplicateTokenName,
     IArchiveSet,
     InsufficientUploadRights,
+    InvalidExternalDependencies,
     InvalidPocketForPartnerArchive,
     InvalidPocketForPPA,
     NAMED_AUTH_TOKEN_FEATURE_FLAG,
@@ -105,6 +113,7 @@ from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.model.component import ComponentSelection
+from lp.soyuz.tests.soyuz import Base64KeyMatches
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     admin_logged_in,
@@ -113,10 +122,12 @@ from lp.testing import (
     login,
     login_person,
     person_logged_in,
-    StormStatementRecorder,
     RequestTimelineCollector,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.gpgkeys import gpgkeysdir
+from lp.testing.keyserver import InProcessKeyServerFixture
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -1745,10 +1756,17 @@ class TestAddArchiveDependencies(TestCaseWithFactory):
 class TestArchiveDependencies(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
+    @defer.inlineCallbacks
     def test_private_sources_list(self):
         """Entries for private dependencies include credentials."""
         p3a = self.factory.makeArchive(name='p3a', private=True)
+        with InProcessKeyServerFixture() as keyserver:
+            yield keyserver.start()
+            key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+            yield IArchiveSigningKey(p3a).setSigningKey(
+                key_path, async_keyserver=True)
         dependency = self.factory.makeArchive(
             name='dependency', private=True, owner=p3a.owner)
         with person_logged_in(p3a.owner):
@@ -1759,13 +1777,28 @@ class TestArchiveDependencies(TestCaseWithFactory):
                 PackagePublishingPocket.RELEASE)
             build = self.factory.makeBinaryPackageBuild(archive=p3a,
                 distroarchseries=bpph.distroarchseries)
-            sources_list = get_sources_list_for_building(
+            sources_list, trusted_keys = yield get_sources_list_for_building(
                 build, build.distro_arch_series,
                 build.source_package_release.name)
             matches = MatchesRegex(
                 "deb http://buildd:sekrit@private-ppa.launchpad.dev/"
                 "person-name-.*/dependency/ubuntu distroseries-.* main")
             self.assertThat(sources_list[0], matches)
+            self.assertThat(trusted_keys, MatchesListwise([
+                Base64KeyMatches("0D57E99656BEFB0897606EE9A022DD1F5001B46D"),
+                ]))
+
+    def test_invalid_external_dependencies(self):
+        """Trying to set invalid external dependencies raises an exception."""
+        ppa = self.factory.makeArchive()
+        self.assertRaisesWithContent(
+            InvalidExternalDependencies,
+            "Invalid external dependencies:\n"
+            "Malformed format string here --> %(series): "
+            "Must start with 'deb'\n"
+            "Malformed format string here --> %(series): Invalid URL\n",
+            setattr, ppa, "external_dependencies",
+            "Malformed format string here --> %(series)")
 
 
 class TestFindDepCandidates(TestCaseWithFactory):
@@ -1932,6 +1965,7 @@ class TestFindDepCandidates(TestCaseWithFactory):
 class TestOverlays(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=30)
 
     def _createDep(self, test_publisher, derived_series, parent_series,
                    parent_distro, component_name=None, pocket=None,
@@ -1965,6 +1999,7 @@ class TestOverlays(TestCaseWithFactory):
             component=component)
         return depseries, depdistro
 
+    @defer.inlineCallbacks
     def test_overlay_dependencies(self):
         # sources.list is properly generated for a complex overlay structure.
         # Pocket dependencies and component dependencies are taken into
@@ -1999,8 +2034,8 @@ class TestOverlays(TestCaseWithFactory):
         self._createDep(
             test_publisher, series11, 'series12', 'depdistro4', 'multiverse',
             PackagePublishingPocket.UPDATES)
-        sources_list = get_sources_list_for_building(build,
-            build.distro_arch_series, build.source_package_release.name)
+        sources_list, trusted_keys = yield get_sources_list_for_building(
+            build, build.distro_arch_series, build.source_package_release.name)
 
         self.assertThat(
             "\n".join(sources_list),
@@ -2021,6 +2056,7 @@ class TestOverlays(TestCaseWithFactory):
                 ".../depdistro4 series12-updates "
                     "main restricted universe multiverse\n",
                 doctest.ELLIPSIS))
+        self.assertEqual([], trusted_keys)
 
 
 class TestComponents(TestCaseWithFactory):
@@ -4136,3 +4172,51 @@ class TestArchiveGetOverridePolicy(TestCaseWithFactory):
                  (existing_bpn, 'i386'): BinaryOverride(component=self.main),
                  (other_bpn, 'amd64'): BinaryOverride(component=self.main),
                 }))
+
+
+class TestMarkSuiteDirty(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_default_is_none(self):
+        archive = self.factory.makeArchive()
+        self.assertIsNone(archive.dirty_suites)
+
+    def test_requires_owner(self):
+        archive = self.factory.makeArchive()
+        self.assertRaises(Unauthorized, getattr, archive, "markSuiteDirty")
+
+    def test_first_suite(self):
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution)
+        with person_logged_in(archive.owner):
+            archive.markSuiteDirty(
+                distroseries, PackagePublishingPocket.UPDATES)
+        self.assertEqual(
+            ["%s-updates" % distroseries.name], archive.dirty_suites)
+
+    def test_already_dirty(self):
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution)
+        with person_logged_in(archive.owner):
+            archive.markSuiteDirty(
+                distroseries, PackagePublishingPocket.UPDATES)
+            archive.markSuiteDirty(
+                distroseries, PackagePublishingPocket.UPDATES)
+        self.assertEqual(
+            ["%s-updates" % distroseries.name], archive.dirty_suites)
+
+    def test_second_suite(self):
+        archive = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries(
+            distribution=archive.distribution)
+        with person_logged_in(archive.owner):
+            archive.markSuiteDirty(
+                distroseries, PackagePublishingPocket.UPDATES)
+            archive.markSuiteDirty(
+                distroseries, PackagePublishingPocket.RELEASE)
+        self.assertContentEqual(
+            ["%s-updates" % distroseries.name, distroseries.name],
+            archive.dirty_suites)

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the code import worker."""
@@ -837,6 +837,12 @@ class TestActualImportMixin:
             worker.source_details.target_id)
         return Branch.open(branch_url)
 
+    def clearCaches(self):
+        """Clear any caches between worker runs, if necessary.
+
+        Override this in your subclass if you need it.
+        """
+
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
         # the branch.
@@ -860,6 +866,7 @@ class TestActualImportMixin:
         self.makeForeignCommit(worker.source_details)
 
         # Run the same worker again.
+        self.clearCaches()
         worker.run()
 
         # Check that the new revisions are in the Bazaar branch.
@@ -1089,6 +1096,7 @@ class PullingImportWorkerTests:
             svn_revisions_import_limit=import_limit)
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
+        self.clearCaches()
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS, worker.run())
 
@@ -1133,6 +1141,10 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.setUpImport()
 
     def tearDown(self):
+        self.clearCaches()
+        super(TestGitImport, self).tearDown()
+
+    def clearCaches(self):
         """Clear bzr-git's cache of sqlite connections.
 
         This is rather obscure: different test runs tend to re-use the same
@@ -1142,7 +1154,6 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         """
         from bzrlib.plugins.git.cache import mapdbs
         mapdbs().clear()
-        WorkerTest.tearDown(self)
 
     def makeImportWorker(self, source_details, opener_policy):
         """Make a new `ImportWorker`."""
@@ -1442,7 +1453,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             bzr_branch_url="http://example.com/foo")
         self.assertArgumentsMatch(
             code_import, Equals([
-                str(code_import.branch.id), 'bzr',
+                str(code_import.branch.id), 'bzr:bzr',
                 'http://example.com/foo']))
 
     def test_git_arguments(self):
@@ -1450,7 +1461,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             git_repo_url="git://git.example.com/project.git")
         self.assertArgumentsMatch(
             code_import, Equals([
-                str(code_import.branch.id), 'git',
+                str(code_import.branch.id), 'git:bzr',
                 'git://git.example.com/project.git']))
 
     def test_git_to_git_arguments(self):
@@ -1472,7 +1483,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             cvs_root=':pserver:foo@example.com/bar', cvs_module='bar')
         self.assertArgumentsMatch(
             code_import, Equals([
-                str(code_import.branch.id), 'cvs',
+                str(code_import.branch.id), 'cvs:bzr',
                 ':pserver:foo@example.com/bar', 'bar']))
 
     def test_bzr_svn_arguments(self):
@@ -1480,7 +1491,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
             svn_branch_url='svn://svn.example.com/trunk')
         self.assertArgumentsMatch(
             code_import, Equals([
-                str(code_import.branch.id), 'bzr-svn',
+                str(code_import.branch.id), 'bzr-svn:bzr',
                 'svn://svn.example.com/trunk']))
 
     def test_bzr_stacked(self):
@@ -1491,7 +1502,7 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
         code_import.branch.stacked_on = devfocus
         self.assertArgumentsMatch(
             code_import, Equals([
-                str(code_import.branch.id), 'bzr',
+                str(code_import.branch.id), 'bzr:bzr',
                 'bzr://bzr.example.com/foo',
                 compose_public_url('http', branch_id_alias(devfocus))]))
 
@@ -1505,5 +1516,5 @@ class CodeImportSourceDetailsTests(TestCaseWithFactory):
         code_import.branch.stacked_on = devfocus
         self.assertArgumentsMatch(
             code_import, Equals([
-                str(code_import.branch.id), 'bzr',
+                str(code_import.branch.id), 'bzr:bzr',
                 'bzr://bzr.example.com/foo']))

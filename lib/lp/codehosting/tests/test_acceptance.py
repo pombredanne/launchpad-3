@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Acceptance tests for the codehosting server."""
@@ -12,17 +12,18 @@ import signal
 import subprocess
 import sys
 import time
-import unittest
 import urllib2
 import xmlrpclib
 
 import bzrlib.branch
-from bzrlib.tests import (
-    multiply_tests,
-    TestCaseWithTransport,
-    )
+from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests.per_repository import all_repository_format_scenarios
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from zope.component import getUtility
 
 from lp.code.bzr import (
@@ -41,10 +42,7 @@ from lp.codehosting import (
     get_BZR_PLUGIN_PATH_for_subprocess,
     )
 from lp.codehosting.bzrutils import DenyingServer
-from lp.codehosting.tests.helpers import (
-    adapt_suite,
-    LoomTestMixin,
-    )
+from lp.codehosting.tests.helpers import LoomTestMixin
 from lp.codehosting.tests.servers import (
     CodeHostingTac,
     set_up_test_user,
@@ -340,8 +338,26 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin, TestCaseWithFactory):
         return branch_url
 
 
-class SmokeTest(SSHTestCase):
+class SmokeTest(WithScenarios, SSHTestCase):
     """Smoke test for repository support."""
+
+    excluded_scenarios = [
+        # RepositoryFormat4 is not initializable (bzrlib raises TestSkipped
+        # when you try).
+        'RepositoryFormat4',
+        # Fetching weave formats from the smart server is known to be broken.
+        # See bug 173807 and bzrlib.tests.test_repository.
+        'RepositoryFormat5',
+        'RepositoryFormat6',
+        'RepositoryFormat7',
+        'GitRepositoryFormat',
+        'SvnRepositoryFormat',
+        ]
+
+    scenarios = [
+        scenario for scenario in all_repository_format_scenarios()
+        if scenario[0] not in excluded_scenarios
+        and not scenario[0].startswith('RemoteRepositoryFormat')]
 
     def setUp(self):
         self.scheme = 'bzr+ssh'
@@ -380,12 +396,17 @@ class SmokeTest(SSHTestCase):
         self.assertBranchesMatch(self.first_tree, self.second_tree)
 
 
-class AcceptanceTests(SSHTestCase):
+class AcceptanceTests(WithScenarios, SSHTestCase):
     """Acceptance tests for the Launchpad codehosting service.
 
     Originally converted from the English at
     https://launchpad.canonical.com/SupermirrorTaskList
     """
+
+    scenarios = [
+        ('sftp', {'scheme': 'sftp'}),
+        ('bzr+ssh', {'scheme': 'bzr+ssh'}),
+        ]
 
     def assertNotBranch(self, url):
         """Assert that there's no branch at 'url'."""
@@ -650,8 +671,12 @@ class AcceptanceTests(SSHTestCase):
         self.assertBranchesMatch('loom', remote_url)
 
 
-class SmartserverTests(SSHTestCase):
+class SmartserverTests(WithScenarios, SSHTestCase):
     """Acceptance tests for the codehosting smartserver."""
+
+    scenarios = [
+        ('bzr+ssh', {'scheme': 'bzr+ssh'}),
+        ]
 
     def makeMirroredBranch(self, person_name, product_name, branch_name):
         ro_branch_url = self.createBazaarBranch(
@@ -727,45 +752,4 @@ class SmartserverTests(SSHTestCase):
         urllib2.urlopen(web_status_url)
 
 
-def make_server_tests(base_suite, servers):
-    from lp.codehosting.tests.helpers import (
-        CodeHostingTestProviderAdapter)
-    adapter = CodeHostingTestProviderAdapter(servers)
-    return adapt_suite(adapter, base_suite)
-
-
-def make_smoke_tests(base_suite):
-    from bzrlib.tests.per_repository import (
-        all_repository_format_scenarios,
-        )
-    excluded_scenarios = [
-        # RepositoryFormat4 is not initializable (bzrlib raises TestSkipped
-        # when you try).
-        'RepositoryFormat4',
-        # Fetching weave formats from the smart server is known to be broken.
-        # See bug 173807 and bzrlib.tests.test_repository.
-        'RepositoryFormat5',
-        'RepositoryFormat6',
-        'RepositoryFormat7',
-        'GitRepositoryFormat',
-        'SvnRepositoryFormat',
-        ]
-    scenarios = all_repository_format_scenarios()
-    scenarios = [
-        scenario for scenario in scenarios
-        if scenario[0] not in excluded_scenarios
-        and not scenario[0].startswith('RemoteRepositoryFormat')]
-    new_suite = unittest.TestSuite()
-    multiply_tests(base_suite, scenarios, new_suite)
-    return new_suite
-
-
-def test_suite():
-    base_suite = unittest.makeSuite(AcceptanceTests)
-    suite = unittest.TestSuite()
-
-    suite.addTest(make_server_tests(base_suite, ['sftp', 'bzr+ssh']))
-    suite.addTest(make_server_tests(
-            unittest.makeSuite(SmartserverTests), ['bzr+ssh']))
-    suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
-    return suite
+load_tests = load_tests_apply_scenarios

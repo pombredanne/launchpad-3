@@ -437,6 +437,44 @@ some results.
     ...     "Published dates are not sorted.")
 
 
+== Latest bugs for any target ==
+
+This feed gets the latest bugs reported against any target.
+
+    >>> browser.open('http://feeds.launchpad.dev/bugs/latest-bugs.atom')
+    >>> validate_feed(browser.contents,
+    ...               browser.headers['content-type'], browser.url)
+    No Errors
+    >>> BSS(browser.contents).title.contents
+    [u'Launchpad bugs']
+    >>> browser.url
+    'http://feeds.launchpad.dev/bugs/latest-bugs.atom'
+
+    >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
+    >>> print extract_text(soup.find('id'))
+    tag:launchpad.net,2008:/bugs
+
+    >>> self_links = parse_links(browser.contents, 'self')
+    >>> for link in self_links:
+    ...     print link
+    <link rel="self" href="http://feeds.launchpad.dev/bugs/latest-bugs.atom" />
+
+    >>> entries = parse_entries(browser.contents)
+    >>> print len(entries)
+    13
+
+    >>> entry = entries[0]
+    >>> print extract_text(entry.title)
+    [15] Nonsensical bugs are useless
+    >>> print extract_text(entry.author('name')[0])
+    Foo Bar
+    >>> print extract_text(entry.author('uri')[0])
+    http://bugs.launchpad.dev/~name16
+
+    >>> assert check_entries_order(entries), (
+    ...     "Published dates are not sorted.")
+
+
 == General bug search ==
 
 This feed is the most useful of them all. Any bug search can be turned into

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for a distribution series."""
@@ -1187,7 +1187,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=DEFAULT,
         source_package_recipe_build=None, user_defined_fields=None,
-        homepage=None):
+        homepage=None, buildinfo=None):
         """See `IDistroSeries`."""
         return SourcePackageRelease(
             upload_distroseries=self, sourcepackagename=sourcepackagename,
@@ -1206,7 +1206,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             build_conflicts=build_conflicts,
             build_conflicts_indep=build_conflicts_indep,
             source_package_recipe_build=source_package_recipe_build,
-            user_defined_fields=user_defined_fields, homepage=homepage)
+            user_defined_fields=user_defined_fields, homepage=homepage,
+            buildinfo=buildinfo)
 
     def getComponentByName(self, name):
         """See `IDistroSeries`."""

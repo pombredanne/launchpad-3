@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -92,6 +92,7 @@ from lp.code.interfaces.gitcollection import (
     IGitCollection,
     )
 from lp.code.interfaces.githosting import IGitHostingClient
+from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitnamespace import (
     get_git_namespace,
@@ -106,7 +107,10 @@ from lp.code.interfaces.gitrepository import (
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
 from lp.code.model.branchmergeproposal import BranchMergeProposal
-from lp.code.model.gitref import GitRef
+from lp.code.model.gitref import (
+    GitRef,
+    GitRefDefault,
+    )
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
@@ -155,6 +159,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.webapp.authorization import available_with_permission
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
 from lp.snappy.interfaces.snap import ISnapSet
@@ -243,21 +248,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     date_last_modified = DateTime(
         name='date_last_modified', tzinfo=pytz.UTC, allow_none=False)
 
-    _repository_type = EnumCol(
-        dbName='repository_type', enum=GitRepositoryType, notNull=False)
-
-    @property
-    def repository_type(self):
-        # XXX cjwatson 2016-10-03: Remove once this column has been
-        # backfilled.
-        if self._repository_type is None:
-            return GitRepositoryType.HOSTED
-        else:
-            return self._repository_type
-
-    @repository_type.setter
-    def repository_type(self, value):
-        self._repository_type = value
+    repository_type = EnumCol(
+        dbName='repository_type', enum=GitRepositoryType, notNull=True)
 
     registrant_id = Int(name='registrant', allow_none=False)
     registrant = Reference(registrant_id, 'Person.id')
@@ -526,6 +518,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 self.getInternalPath(), default_branch=ref.path)
 
     def getRefByPath(self, path):
+        if path == u"HEAD":
+            return GitRefDefault(self)
         paths = [path]
         if not path.startswith(u"refs/heads/"):
             paths.append(u"refs/heads/%s" % path)
@@ -696,6 +690,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             self.createOrUpdateRefs(refs_to_upsert, logger=logger)
         if refs_to_remove:
             self.removeRefs(refs_to_remove)
+
+    def rescan(self):
+        """See `IGitRepository`."""
+        getUtility(IGitRefScanJobSource).create(self)
 
     @cachedproperty
     def _known_viewers(self):
@@ -887,6 +885,15 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             BranchMergeProposal,
             BranchMergeProposal.source_git_repository == self)
 
+    def getPrecachedLandingTargets(self, user):
+        """See `IGitRef`."""
+        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
+        return DecoratedResultSet(self.landing_targets, pre_iter_hook=loader)
+
+    @property
+    def _api_landing_targets(self):
+        return self.getPrecachedLandingTargets(getUtility(ILaunchBag).user)
+
     def getActiveLandingTargets(self, paths):
         """Merge proposals not in final states where these refs are source."""
         return Store.of(self).find(
@@ -904,6 +911,16 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             BranchMergeProposal.target_git_repository == self,
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    def getPrecachedLandingCandidates(self, user):
+        """See `IGitRef`."""
+        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
+        return DecoratedResultSet(
+            self.landing_candidates, pre_iter_hook=loader)
+
+    @property
+    def _api_landing_candidates(self):
+        return self.getPrecachedLandingCandidates(getUtility(ILaunchBag).user)
 
     def getActiveLandingCandidates(self, paths):
         """Merge proposals not in final states where these refs are target."""

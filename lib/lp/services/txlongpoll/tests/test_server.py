@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.services.rabbit.TxLongPollServer."""
@@ -22,8 +22,7 @@ class TestTxLongPollServer(TestCase):
     def test_service_config(self):
         # TxLongPollServer pokes some .ini configuration into its
         # service_config attributes.
-        twistd_bin = os.path.join(
-            config.root, 'bin', 'twistd-for-txlongpoll')
+        twistd_bin = os.path.join(config.root, 'bin', 'twistd')
         fixture = self.useFixture(TxLongPollServer(
             broker_user='guest', broker_password='guest', broker_vhost='/',
             broker_port=123, frontend_port=None,

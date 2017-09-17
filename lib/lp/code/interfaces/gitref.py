@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IGitRef',
     'IGitRefBatchNavigator',
+    'IGitRefRemoteSet',
     ]
 
 from lazr.restful.declarations import (
@@ -67,6 +68,9 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         schema=Interface,
         description=_("The Git repository containing this reference.")))
 
+    repository_url = Attribute(
+        "The repository URL, if this is a reference in a remote repository.")
+
     path = exported(TextLine(
         title=_("Path"), required=True, readonly=True,
         description=_(
@@ -125,6 +129,9 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         "the containing repository, plus a colon, plus the reference path "
         "with any leading refs/heads/ removed; for example, "
         "~launchpad-pqm/launchpad:master.")
+
+    repository_type = Attribute(
+        "The type of the repository containing this reference.")
 
     owner = Attribute("The owner of the repository containing this reference.")
 
@@ -221,22 +228,34 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         and their subscriptions.
         """
 
-    landing_targets = exported(CollectionField(
-        title=_("Landing targets"),
-        description=_(
-            "A collection of the merge proposals where this reference is the "
-            "source."),
-        readonly=True,
-        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
-        value_type=Reference(Interface)))
-    landing_candidates = exported(CollectionField(
-        title=_("Landing candidates"),
-        description=_(
-            "A collection of the merge proposals where this reference is the "
-            "target."),
-        readonly=True,
-        # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
-        value_type=Reference(Interface)))
+    landing_targets = Attribute(
+        "A collection of the merge proposals where this reference is "
+        "the source.")
+    _api_landing_targets = exported(
+        CollectionField(
+            title=_("Landing targets"),
+            description=_(
+                "A collection of the merge proposals where this reference is "
+                "the source."),
+            readonly=True,
+            # Really IBranchMergeProposal, patched in
+            # _schema_circular_imports.py.
+            value_type=Reference(Interface)),
+        exported_as="landing_targets")
+    landing_candidates = Attribute(
+        "A collection of the merge proposals where this reference is "
+        "the target.")
+    _api_landing_candidates = exported(
+        CollectionField(
+            title=_("Landing candidates"),
+            description=_(
+                "A collection of the merge proposals where this reference is "
+                "the target."),
+            readonly=True,
+            # Really IBranchMergeProposal, patched in
+            # _schema_circular_imports.py.
+            value_type=Reference(Interface)),
+        exported_as="landing_candidates")
     dependent_landings = exported(CollectionField(
         title=_("Dependent landings"),
         description=_(
@@ -245,6 +264,18 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         readonly=True,
         # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
         value_type=Reference(Interface)))
+
+    def getPrecachedLandingTargets(user):
+        """Return precached landing targets.
+
+        Target and prerequisite repositories are preloaded.
+        """
+
+    def getPrecachedLandingCandidates(user):
+        """Return precached landing candidates.
+
+        Source and prerequisite repositories are preloaded.
+        """
 
     # XXX cjwatson 2015-04-16: Rename in line with landing_targets above
     # once we have a better name.
@@ -354,3 +385,10 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
 
 class IGitRefBatchNavigator(ITableBatchNavigator):
     pass
+
+
+class IGitRefRemoteSet(Interface):
+    """Interface allowing creation of `GitRefRemote`s."""
+
+    def new(repository_url, path):
+        """Create a new remote reference."""

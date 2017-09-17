@@ -15,7 +15,8 @@
       Core</a>.  Launchpad can build snap packages using <a
       href="https://developer.ubuntu.com/en/snappy/snapcraft/">snapcraft</a>,
       from any Git or Bazaar branch on Launchpad that has a
-      <tt>snapcraft.yaml</tt> file at its top level.
+      <tt>snap/snapcraft.yaml</tt>, <tt>snapcraft.yaml</tt>, or
+      <tt>.snapcraft.yaml</tt> file at its top level.
     </p>
   </div>
 
@@ -62,7 +63,7 @@
                   <metal:block use-macro="context/@@launchpad_form/widget_row" />
                 </tal:widget>
                 <tal:widget define="widget nocall:view/widgets/store_channels"
-                            condition="widget/context/value_type/vocabulary">
+                            condition="widget/has_risks_vocabulary">
                   <metal:block use-macro="context/@@launchpad_form/widget_row" />
                 </tal:widget>
               </table>

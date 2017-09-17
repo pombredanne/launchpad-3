@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Communication with the snap store."""
@@ -10,6 +10,7 @@ __all__ = [
     'SnapStoreClient',
     ]
 
+import base64
 import json
 try:
     from json.decoder import JSONDecodeError
@@ -36,16 +37,15 @@ from lp.services.timeout import urlfetch
 from lp.services.webapp.url import urlappend
 from lp.snappy.interfaces.snapstoreclient import (
     BadRefreshResponse,
-    BadReleaseResponse,
     BadRequestPackageUploadResponse,
     BadScanStatusResponse,
     BadSearchResponse,
-    BadUploadResponse,
     ISnapStoreClient,
     NeedsRefreshResponse,
     ReleaseFailedResponse,
     ScanFailedResponse,
     UnauthorizedUploadResponse,
+    UploadFailedResponse,
     UploadNotScannedYetResponse,
     )
 
@@ -81,19 +81,44 @@ class MacaroonAuth(requests.auth.AuthBase):
     # The union of the base64 and URL-safe base64 alphabets.
     allowed_chars = set(string.digits + string.letters + "+/=-_")
 
-    def __init__(self, root_macaroon_raw, unbound_discharge_macaroon_raw):
+    def __init__(self, root_macaroon_raw, unbound_discharge_macaroon_raw=None,
+                 logger=log):
         self.root_macaroon_raw = root_macaroon_raw
         self.unbound_discharge_macaroon_raw = unbound_discharge_macaroon_raw
+        self.logger = logger
 
-    @classmethod
-    def _makeAuthParam(cls, key, value):
+    def _logMacaroon(self, macaroon_name, macaroon_raw):
+        """Log relevant information from the authorising macaroons.
+
+        This shouldn't be trusted for anything since we can't verify the
+        macaroons here, but it's helpful when debugging.
+        """
+        macaroon = Macaroon.deserialize(macaroon_raw)
+        for caveat in macaroon.first_party_caveats():
+            try:
+                _, key, value = caveat.caveat_id.split("|")
+                if key == "account":
+                    account = json.loads(
+                        base64.b64decode(value).decode("UTF-8"))
+                    if "openid" in account:
+                        self.logger.debug(
+                            "%s macaroon: OpenID identifier: %s" %
+                            (macaroon_name, account["openid"]))
+                elif key == "package_id":
+                    self.logger.debug(
+                        "%s macaroon: snap-ids: %s" % (macaroon_name, value))
+            except ValueError:
+                pass
+
+    def _makeAuthParam(self, key, value):
         # Check framing.
-        if not set(key).issubset(cls.allowed_chars):
+        if not set(key).issubset(self.allowed_chars):
             raise InvalidStoreSecretsError(
                 "Key contains unsafe characters: %r" % key)
-        if not set(value).issubset(cls.allowed_chars):
+        if not set(value).issubset(self.allowed_chars):
             # Don't include secrets in exception arguments.
             raise InvalidStoreSecretsError("Value contains unsafe characters")
+        self._logMacaroon(key, value)
         return '%s="%s"' % (key, value)
 
     @property
@@ -108,8 +133,9 @@ class MacaroonAuth(requests.auth.AuthBase):
     def __call__(self, r):
         params = []
         params.append(self._makeAuthParam("root", self.root_macaroon_raw))
-        params.append(
-            self._makeAuthParam("discharge", self.discharge_macaroon_raw))
+        if self.unbound_discharge_macaroon_raw is not None:
+            params.append(
+                self._makeAuthParam("discharge", self.discharge_macaroon_raw))
         r.headers["Authorization"] = "Macaroon " + ", ".join(params)
         return r
 
@@ -136,7 +162,27 @@ class SnapStoreClient:
             return None
         return get_request_timeline(request)
 
-    def requestPackageUploadPermission(self, snappy_series, snap_name):
+    @classmethod
+    def _makeSnapStoreError(cls, error_class, requests_error):
+        error_message = requests_error.args[0]
+        if requests_error.response.content:
+            try:
+                response_data = requests_error.response.json()
+            except JSONDecodeError:
+                pass
+            else:
+                if "error_list" in response_data:
+                    error_message = "\n".join(
+                        error["message"]
+                        for error in response_data["error_list"])
+        detail = requests_error.response.content
+        if isinstance(detail, bytes):
+            detail = detail.decode("UTF-8", errors="replace")
+        can_retry = requests_error.response.status_code in (502, 503)
+        return error_class(error_message, detail=detail, can_retry=can_retry)
+
+    @classmethod
+    def requestPackageUploadPermission(cls, snappy_series, snap_name):
         assert config.snappy.store_url is not None
         request_url = urlappend(config.snappy.store_url, "dev/api/acl/")
         request = get_current_browser_request()
@@ -156,11 +202,12 @@ class SnapStoreClient:
                 raise BadRequestPackageUploadResponse(response.text)
             return response_data["macaroon"]
         except requests.HTTPError as e:
-            raise BadRequestPackageUploadResponse(e.args[0])
+            raise cls._makeSnapStoreError(BadRequestPackageUploadResponse, e)
         finally:
             timeline_action.finish()
 
-    def _uploadFile(self, lfa, lfc):
+    @classmethod
+    def _uploadFile(cls, lfa, lfc):
         """Upload a single file."""
         assert config.snappy.store_upload_url is not None
         unscanned_upload_url = urlappend(
@@ -178,17 +225,21 @@ class SnapStoreClient:
             try:
                 response = urlfetch(
                     unscanned_upload_url, method="POST", data=encoder,
-                    headers={"Content-Type": encoder.content_type})
+                    headers={
+                        "Content-Type": encoder.content_type,
+                        "Accept": "application/json",
+                        })
                 response_data = response.json()
                 if not response_data.get("successful", False):
-                    raise BadUploadResponse(response.text)
+                    raise UploadFailedResponse(response.text)
                 return {"upload_id": response_data["upload_id"]}
             except requests.HTTPError as e:
-                raise BadUploadResponse(e.args[0])
+                raise cls._makeSnapStoreError(UploadFailedResponse, e)
         finally:
             lfa.close()
 
-    def _uploadApp(self, snap, upload_data):
+    @classmethod
+    def _uploadApp(cls, snap, upload_data):
         """Create a new store upload based on the uploaded file."""
         assert config.snappy.store_url is not None
         assert snap.store_name is not None
@@ -206,7 +257,7 @@ class SnapStoreClient:
                 upload_url, method="POST", json=data,
                 auth=MacaroonAuth(
                     snap.store_secrets["root"],
-                    snap.store_secrets["discharge"]))
+                    snap.store_secrets.get("discharge")))
             response_data = response.json()
             return response_data["status_details_url"]
         except requests.HTTPError as e:
@@ -216,22 +267,23 @@ class SnapStoreClient:
                     raise NeedsRefreshResponse()
                 else:
                     raise UnauthorizedUploadResponse("Authorization failed.")
-            raise BadUploadResponse(e.args[0])
+            raise cls._makeSnapStoreError(UploadFailedResponse, e)
 
-    def upload(self, snapbuild):
+    @classmethod
+    def upload(cls, snapbuild):
         """See `ISnapStoreClient`."""
         assert snapbuild.snap.can_upload_to_store
         for _, lfa, lfc in snapbuild.getFiles():
             if not lfa.filename.endswith(".snap"):
                 continue
-            upload_data = self._uploadFile(lfa, lfc)
+            upload_data = cls._uploadFile(lfa, lfc)
             try:
-                return self._uploadApp(snapbuild.snap, upload_data)
+                return cls._uploadApp(snapbuild.snap, upload_data)
             except NeedsRefreshResponse:
                 # Try to automatically refresh the discharge macaroon and
                 # retry the upload.
-                self.refreshDischargeMacaroon(snapbuild.snap)
-                return self._uploadApp(snapbuild.snap, upload_data)
+                cls.refreshDischargeMacaroon(snapbuild.snap)
+                return cls._uploadApp(snapbuild.snap, upload_data)
 
     @classmethod
     def refreshDischargeMacaroon(cls, snap):
@@ -251,7 +303,7 @@ class SnapStoreClient:
             new_secrets["discharge"] = response_data["discharge_macaroon"]
             snap.store_secrets = new_secrets
         except requests.HTTPError as e:
-            raise BadRefreshResponse(e.args[0])
+            raise cls._makeSnapStoreError(BadRefreshResponse, e)
 
     @classmethod
     def checkStatus(cls, status_url):
@@ -270,7 +322,7 @@ class SnapStoreClient:
             else:
                 return response_data["url"], response_data["revision"]
         except requests.HTTPError as e:
-            raise BadScanStatusResponse(e.args[0])
+            raise cls._makeSnapStoreError(BadScanStatusResponse, e)
 
     @classmethod
     def listChannels(cls):
@@ -301,7 +353,7 @@ class SnapStoreClient:
                 response = urlfetch(
                     channels_url, headers={"Accept": "application/hal+json"})
             except requests.HTTPError as e:
-                raise BadSearchResponse(e.args[0])
+                raise cls._makeSnapStoreError(BadSearchResponse, e)
             finally:
                 if timeline is not None:
                     action.finish()
@@ -339,14 +391,6 @@ class SnapStoreClient:
                 release_url, method="POST", json=data,
                 auth=MacaroonAuth(
                     snap.store_secrets["root"],
-                    snap.store_secrets["discharge"]))
+                    snap.store_secrets.get("discharge")))
         except requests.HTTPError as e:
-            if e.response is not None:
-                error = None
-                try:
-                    error = e.response.json()["errors"]
-                except Exception:
-                    pass
-                if error is not None:
-                    raise ReleaseFailedResponse(error)
-            raise BadReleaseResponse(e.args[0])
+            raise cls._makeSnapStoreError(ReleaseFailedResponse, e)

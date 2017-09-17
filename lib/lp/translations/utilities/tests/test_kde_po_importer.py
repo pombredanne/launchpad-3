@@ -1,10 +1,11 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """KDE PO importer tests."""
 
 __metaclass__ = type
 
+from io import BytesIO
 import unittest
 
 import transaction
@@ -114,7 +115,7 @@ class KdePOImporterTestCase(unittest.TestCase):
 
     def testFormat(self):
         """Check whether KdePOImporter can handle the KDEPO file format."""
-        format = self.template_importer.getFormat(test_kde_template)
+        format = self.template_importer.getFormat(BytesIO(test_kde_template))
         self.failUnless(
             format == TranslationFileFormat.KDEPO,
             'KdePOImporter format expected KDEPO but got %s' % format.name)
