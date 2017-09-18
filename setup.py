@@ -104,7 +104,6 @@ setup(
         'transaction',
         'Twisted',
         'txfixtures',
-        'txlongpoll',
         'txlongpollfixture',
         'txpkgupload',
         'wadllib',
