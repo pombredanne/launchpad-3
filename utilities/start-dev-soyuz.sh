@@ -20,7 +20,7 @@ start_twistd_plugin() {
     plugin=$2
     shift 2
     echo "Starting $name."
-    bin/twistd \
+    "bin/twistd-for-$name" \
         --logfile "/var/tmp/development-$name.log" \
         --pidfile "/var/tmp/development-$name.pid" \
         "$plugin" "$@"

@@ -105,7 +105,6 @@ setup(
         'Twisted',
         'txfixtures',
         'txlongpollfixture',
-        'txpkgupload',
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',
