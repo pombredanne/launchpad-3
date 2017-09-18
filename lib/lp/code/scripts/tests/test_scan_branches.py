@@ -51,6 +51,7 @@ class TestScanBranches(TestCaseWithFactory):
         retcode, stdout, stderr = run_script(
             'cronscripts/process-job-source.py', ['IBranchScanJobSource'],
             expect_returncode=0)
+        self.oops_capture.sync()
         self.assertEqual('', stdout)
         self.assertIn(
             'INFO    Ran 1 BranchScanJob jobs.\n', stderr)
