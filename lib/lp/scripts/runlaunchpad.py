@@ -246,7 +246,8 @@ class TxLongPollService(Service):
         return config.txlongpoll.launch
 
     def launch(self):
-        twistd_bin = os.path.join(config.root, 'bin', 'twistd')
+        twistd_bin = os.path.join(
+            config.root, 'bin', 'twistd-for-txlongpoll')
         broker_hostname, broker_port = as_host_port(
             config.rabbitmq.host, None, None)
         self.server = TxLongPollServer(
