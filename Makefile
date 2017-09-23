@@ -47,7 +47,7 @@ API_INDEX = $(APIDOC_DIR)/index.html
 # NB: It's important BUILDOUT_BIN only mentions things genuinely produced by
 # buildout.
 BUILDOUT_BIN = \
-    $(PY) bin/apiindex bin/bzr bin/combine-css bin/fl-build-report \
+    $(PY) bin/bzr bin/combine-css bin/fl-build-report \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/harness bin/iharness bin/ipy bin/jsbuild bin/lpjsmin\

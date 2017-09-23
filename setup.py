@@ -166,7 +166,6 @@ setup(
     ),
     entry_points=dict(
         console_scripts=[  # `console_scripts` is a magic name to setuptools
-            'apiindex = lp.scripts.utilities.apiindex:main',
             'bzr = lp.scripts.utilities.bzr:main',
             'combine-css = lp.scripts.utilities.js.combinecss:main',
             'googletestservice = '
