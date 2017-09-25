@@ -94,7 +94,6 @@ setup(
         'setuptools',
         'six',
         'soupmatchers',
-        'sourcecodegen',
         'Sphinx',
         'storm',
         'subvertpy',
