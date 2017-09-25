@@ -104,7 +104,9 @@ setup(
         'transaction',
         'Twisted',
         'txfixtures',
+        'txlongpoll',
         'txlongpollfixture',
+        'txpkgupload',
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',
@@ -167,6 +169,8 @@ setup(
     entry_points=dict(
         console_scripts=[  # `console_scripts` is a magic name to setuptools
             'apiindex = lp.scripts.utilities.apiindex:main',
+            'build-twisted-plugin-cache = '
+                'lp.services.twistedsupport.plugincache:main',
             'bzr = lp.scripts.utilities.bzr:main',
             'combine-css = lp.scripts.utilities.js.combinecss:main',
             'googletestservice = '
