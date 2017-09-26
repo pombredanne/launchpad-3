@@ -94,7 +94,6 @@ setup(
         'setuptools',
         'six',
         'soupmatchers',
-        'sourcecodegen',
         'Sphinx',
         'storm',
         'subvertpy',
@@ -168,7 +167,6 @@ setup(
     ),
     entry_points=dict(
         console_scripts=[  # `console_scripts` is a magic name to setuptools
-            'apiindex = lp.scripts.utilities.apiindex:main',
             'build-twisted-plugin-cache = '
                 'lp.services.twistedsupport.plugincache:main',
             'bzr = lp.scripts.utilities.bzr:main',
