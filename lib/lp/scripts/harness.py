@@ -1,4 +1,4 @@
-# Copyright 2004-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2004-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Scripts for starting a Python prompt with Launchpad initialized.
@@ -12,10 +12,8 @@ One uses Python, the other iPython.
 __metaclass__ = type
 __all__ = ['python', 'ipython']
 
-# This has setup.py scripts.  It is usually installed via buildout.
-#
+# This has entry points with corresponding scripts installed by setup.py.
 
-#
 import os
 import readline
 import rlcompleter

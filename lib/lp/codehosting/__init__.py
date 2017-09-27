@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad code-hosting system.
@@ -26,15 +26,7 @@ from lp.services.config import config
 
 def get_bzr_path():
     """Find the path to the copy of Bazaar for this rocketfuel instance"""
-    bzr_in_egg_path = os.path.join(
-        os.path.dirname(os.path.dirname(bzrlib.__file__)),
-        'EGG-INFO/scripts/bzr')
-    if os.path.exists(bzr_in_egg_path):
-        return bzr_in_egg_path
-    else:
-        return os.path.join(
-            os.path.dirname(os.path.dirname(bzrlib.__file__)),
-            'bzr')
+    return os.path.join(config.root, 'bin', 'bzr')
 
 
 def _get_bzr_plugins_path():
