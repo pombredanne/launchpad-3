@@ -4012,12 +4012,12 @@ class PersonSet:
         # Checking validity requires having a preferred email.
         if not need_api and need_preferred_email and not need_validity:
             # Teams don't have email, so a left join
-            origin.append(
-                LeftJoin(EmailAddress, EmailAddress.person == Person.id))
+            origin.append(LeftJoin(
+                EmailAddress,
+                And(
+                    EmailAddress.person == Person.id,
+                    EmailAddress.status == EmailAddressStatus.PREFERRED)))
             columns.append(EmailAddress)
-            conditions = And(conditions,
-                Or(EmailAddress.status == None,
-                   EmailAddress.status == EmailAddressStatus.PREFERRED))
         if need_validity or need_api:
             valid_stuff = Person._validity_queries()
             origin.extend(valid_stuff["joins"])
