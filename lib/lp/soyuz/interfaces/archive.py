@@ -55,6 +55,7 @@ __all__ = [
     ]
 
 import httplib
+import re
 from urlparse import urlparse
 
 from lazr.restful.declarations import (
@@ -2468,8 +2469,9 @@ def validate_external_dependencies(ext_deps):
     # The field can consist of multiple entries separated by
     # newlines, so process each in turn.
     for dep in ext_deps.splitlines():
+        dep_without_options = re.sub(r"^([^ ]*) \[[^]]*\] ", r"\1 ", dep)
         try:
-            deb, url, suite, components = dep.split(" ", 3)
+            deb, url, suite, components = dep_without_options.split(" ", 3)
         except ValueError:
             errors.append(
                 "'%s' is not a complete and valid sources.list entry"
