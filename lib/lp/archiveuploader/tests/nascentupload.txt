@@ -39,31 +39,6 @@ managed archive.
     ...     name='anything', distro='ubuntu', distroseries='hoary')
 
 
-Constructing a NascentUpload object
------------------------------------
-
-Constructing a NascentUpload instance verifies that the changes file
-specified exists and tries to build a ChangesFile (see
-doc/nascentuploadfile.txt) object based on that. If anything goes
-wrong during this process UploadError is raised:
-
-    >>> from lp.services.log.logger import DevNullLogger, FakeLogger
-    >>> NascentUpload.from_changesfile_path(
-    ...     datadir("DOES-NOT-EXIST"), buildd_policy, FakeLogger())
-    Traceback (most recent call last):
-    ...
-    UploadError:...
-
-Otherwise a ChangesFile object is ready to use.
-
-    >>> quodlibet = NascentUpload.from_changesfile_path(
-    ...     datadir("quodlibet_0.13.1-1_i386.changes"),
-    ...     anything_policy, DevNullLogger())
-
-    >>> quodlibet.changes
-    <lp.archiveuploader.changesfile.ChangesFile ...>
-
-
 NascentUpload Processing
 ------------------------
 
@@ -71,6 +46,27 @@ Processing a NascentUpload consists of building files objects for each
 specified file in the upload, executing all their specific checks and
 collect all errors that may be generated. (see doc/nascentuploadfile.txt)
 
+First, NascentUpload verifies that the changes file specified exist, and
+tries to build a ChangesFile (see doc/nascentuploadfile.txt) object based
+on that.
+
+    >>> from lp.services.log.logger import DevNullLogger, FakeLogger
+
+    >>> nonexistent = NascentUpload.from_changesfile_path(
+    ...     datadir("DOES-NOT-EXIST"), buildd_policy, FakeLogger())
+    >>> nonexistent.process()
+    Traceback (most recent call last):
+    ...
+    EarlyReturnUploadError: An error occurred that prevented further
+    processing.
+    >>> nonexistent.is_rejected
+    True
+    >>> print nonexistent.rejection_message
+    Unable to read DOES-NOT-EXIST: ...
+
+    >>> quodlibet = NascentUpload.from_changesfile_path(
+    ...     datadir("quodlibet_0.13.1-1_i386.changes"),
+    ...     anything_policy, DevNullLogger())
     >>> quodlibet.process()
     >>> for f in quodlibet.changes.files:
     ...     print f.filename, f

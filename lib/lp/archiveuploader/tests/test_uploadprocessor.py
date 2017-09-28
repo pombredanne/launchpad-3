@@ -51,6 +51,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -240,7 +241,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
                 excName = excClass.__name__
             else:
                 excName = str(excClass)
-            raise self.failureException, "%s not raised" % excName
+            raise self.failureException("%s not raised" % excName)
 
     def setupBreezy(self, name="breezy", permitted_formats=None):
         """Create a fresh distroseries in ubuntu.
@@ -1955,8 +1956,45 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         self.assertEqual(UploadStatusEnum.REJECTED, result)
         self.assertLogContains(
-            "INFO Failed to parse changes file")
+            "INFO Not sending rejection notice without a signing key.")
         self.assertEmailQueueLength(0)
+        self.assertEqual([], self.oopses)
+
+    def test_deactivated_key_upload_sends_mail(self):
+        # An upload signed with a deactivated key does not OOPS and sends a
+        # rejection email.
+        self.switchToAdmin()
+        fingerprint = "340CA3BB270E2716C9EE0B768E7EB7086C64A8C5"
+        gpgkeyset = getUtility(IGPGKeySet)
+        gpgkeyset.deactivate(gpgkeyset.getByFingerprint(fingerprint))
+        self.switchToUploader()
+
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("netapplet_1.0-1-signed")
+
+        [result] = self.processUpload(uploadprocessor, upload_dir)
+
+        self.assertEqual(UploadStatusEnum.REJECTED, result)
+        base_contents = [
+            "Subject: [ubuntu] netapplet_1.0-1_source.changes (Rejected)",
+            "File %s/netapplet_1.0-1-signed/netapplet_1.0-1_source.changes "
+            "is signed with a deactivated key %s" % (
+                self.incoming_folder, fingerprint),
+            ]
+        expected = []
+        expected.append({
+            "contents": base_contents + [
+                "You are receiving this email because you are the most "
+                    "recent person",
+                "listed in this package's changelog."],
+            "recipient": "daniel.silverstone@canonical.com",
+            })
+        expected.append({
+            "contents": base_contents + [
+                "You are receiving this email because you made this upload."],
+            "recipient": "foo.bar@canonical.com",
+            })
+        self.assertEmails(expected)
         self.assertEqual([], self.oopses)
 
     def test_ddeb_upload_overrides(self):
