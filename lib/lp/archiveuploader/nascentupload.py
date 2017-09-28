@@ -142,6 +142,8 @@ class NascentUpload:
         policy = self.policy
         self.logger.debug("Beginning processing.")
 
+        self.run_and_reject_on_error(self.changes.parseChanges)
+
         try:
             policy.setDistroSeriesAndPocket(self.changes.suite_name)
         except NotFoundError:
@@ -780,7 +782,7 @@ class NascentUpload:
                 IDistributionSet)['ubuntu'].currentseries
             return distroseries.createQueueEntry(
                 PackagePublishingPocket.RELEASE,
-                distroseries.main_archive, self.changes.filename,
+                self.policy.archive, self.changes.filename,
                 self.changes.raw_content, signing_key=self.changes.signingkey)
         else:
             return distroseries.createQueueEntry(

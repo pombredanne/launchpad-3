@@ -208,7 +208,9 @@ class PackageUploadFileTestCase(NascentUploadFileTestCase):
         path = os.path.join(tempdir, filename)
         with open(path, "w") as changes_fd:
             changes.dump(changes_fd)
-        return ChangesFile(path, self.policy, self.logger)
+        changesfile = ChangesFile(path, self.policy, self.logger)
+        self.assertEqual([], list(changesfile.parseChanges()))
+        return changesfile
 
 
 class DSCFileTests(PackageUploadFileTestCase):
