@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad Memcache client."""
@@ -23,7 +23,7 @@ def memcache_client_factory():
         (host, int(weight)) for host, weight in re.findall(
             r'\((.+?),(\d+)\)', config.memcache.servers)]
     assert len(servers) > 0, "Invalid memcached server list %r" % (
-        config.memcache.addresses,)
+        config.memcache.servers,)
     return TimelineRecordingClient(servers)
 
 
