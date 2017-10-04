@@ -1,7 +1,9 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the tales formatters."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -41,7 +43,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         else:
             content = ''
         preview = bmp.updatePreviewDiff(
-            content, u'rev-a', u'rev-b', conflicts=conflicts)
+            content, 'rev-a', 'rev-b', conflicts=conflicts)
         bmp.source_branch.last_scanned_id = preview.source_revision_id
         bmp.target_branch.last_scanned_id = preview.target_revision_id
         # Update the values directly sidestepping the security.
@@ -68,13 +70,13 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
     def test_creation_method(self):
         # Just confirm that our helpers do what they say.
         preview = self._createPreviewDiff(
-            12, 45, 23, u'conflicts', {'filename': (3, 2)})
+            12, 45, 23, 'conflicts', {'filename': (3, 2)})
         self.assertEqual(12, preview.diff_lines_count)
         self.assertEqual(45, preview.added_lines_count)
         self.assertEqual(23, preview.removed_lines_count)
         self.assertEqual(False, preview.stale)
         self.assertEqual(True, self._createStalePreviewDiff().stale)
-        self.assertEqual(u'conflicts', preview.conflicts)
+        self.assertEqual('conflicts', preview.conflicts)
         self.assertEqual({'filename': (3, 2)}, preview.diffstat)
 
     def test_fmt_no_diff(self):
@@ -151,7 +153,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
 
     def test_fmt_simple_conflicts(self):
         # Conflicts are indicated using text in the link.
-        preview = self._createPreviewDiff(10, 2, 3, u'conflicts')
+        preview = self._createPreviewDiff(10, 2, 3, 'conflicts')
         self.assertEqual(
             '<a href="%s/+files/preview.diff" class="diff-link">'
             '10 lines (+2/-3) (has conflicts)</a>'
@@ -188,7 +190,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         diffstat = dict(
             (self.factory.getUniqueString(), (2, 3)) for x in range(23))
         preview = self._createStalePreviewDiff(
-            500, 89, 340, u'conflicts', diffstat=diffstat)
+            500, 89, 340, 'conflicts', diffstat=diffstat)
         expected_diffstat = '<br/>'.join(
             '%s (+2/-3)' % path for path in sorted(diffstat))
         self.assertEqual(
