@@ -1,7 +1,9 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the IGitLookup implementation."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -171,7 +173,7 @@ class TestGetByUrl(TestCaseWithFactory):
         owner = self.factory.makePerson(name="aa")
         project = self.factory.makeProduct(name="bb")
         return self.factory.makeGitRepository(
-            owner=owner, target=project, name=u"cc")
+            owner=owner, target=project, name="cc")
 
     def test_getByUrl_with_none(self):
         # getByUrl returns None if given None.
@@ -383,7 +385,7 @@ class TestGitTraverser(TestCaseWithFactory):
         # `traverse_path` resolves an existing project repository.
         person = self.factory.makePerson(name="person")
         repository = self.factory.makeGitRepository(
-            owner=person, target=person, name=u"repository")
+            owner=person, target=person, name="repository")
         self.assertTraverses(
             "~person/+git/repository", person, person, repository)
 
@@ -499,7 +501,7 @@ class TestGitTraverser(TestCaseWithFactory):
         # point for the traversal.
         person = self.factory.makePerson(name="person")
         repository = self.factory.makeGitRepository(
-            owner=person, target=person, name=u"repository")
+            owner=person, target=person, name="repository")
         segments = ["~person", "+git", "repository"]
         self.assertEqual(
             (person, person, repository, None),
