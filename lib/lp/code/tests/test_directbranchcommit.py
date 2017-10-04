@@ -1,7 +1,9 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `DirectBranchCommit`."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -73,10 +75,10 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase, TestCaseWithFactory):
 
     def test_DirectBranchCommit_empty_initial_commit_noop(self):
         # An empty initial commit to a branch is a no-op.
-        self.assertEqual('null:', self.tree.branch.last_revision())
+        self.assertEqual(b'null:', self.tree.branch.last_revision())
         self.committer.commit('')
         self.assertEqual({}, self._getContents())
-        self.assertEqual('null:', self.tree.branch.last_revision())
+        self.assertEqual(b'null:', self.tree.branch.last_revision())
 
     def _addInitialCommit(self):
         self.committer._getDir('')
@@ -86,7 +88,7 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase, TestCaseWithFactory):
 
     def test_DirectBranchCommit_commits_no_changes(self):
         # Committing nothing to an empty branch leaves its tree empty.
-        self.assertEqual('null:', self.tree.branch.last_revision())
+        self.assertEqual(b'null:', self.tree.branch.last_revision())
         old_rev_id = self.tree.branch.last_revision()
         self._addInitialCommit()
         self.committer.commit('')
@@ -96,17 +98,17 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase, TestCaseWithFactory):
     def test_DirectBranchCommit_rejects_change_after_commit(self):
         # Changes are not accepted after commit.
         self.committer.commit('')
-        self.assertRaises(AssertionError, self.committer.writeFile, 'x', 'y')
+        self.assertRaises(AssertionError, self.committer.writeFile, 'x', b'y')
 
     def test_DirectBranchCommit_adds_file(self):
         # DirectBranchCommit can add a new file to the branch.
-        self.committer.writeFile('file.txt', 'contents')
+        self.committer.writeFile('file.txt', b'contents')
         self.committer.commit('')
-        self.assertEqual({'file.txt': 'contents'}, self._getContents())
+        self.assertEqual({'file.txt': b'contents'}, self._getContents())
 
     def test_commit_returns_revision_id(self):
         # DirectBranchCommit.commit returns the new revision_id.
-        self.committer.writeFile('file.txt', 'contents')
+        self.committer.writeFile('file.txt', b'contents')
         revision_id = self.committer.commit('')
         branch_revision_id = self.committer.bzrbranch.last_revision()
         self.assertEqual(branch_revision_id, revision_id)
@@ -116,56 +118,56 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase, TestCaseWithFactory):
         self._tearDownCommitter()
         # Merge parents cannot be specified for initial commit, so do an
         # empty commit.
-        self.tree.commit('foo', committer='foo@bar', rev_id='foo')
+        self.tree.commit('foo', committer='foo@bar', rev_id=b'foo')
         self.db_branch.last_mirrored_id = 'foo'
         committer = DirectBranchCommit(
-            self.db_branch, merge_parents=['parent-1', 'parent-2'])
+            self.db_branch, merge_parents=[b'parent-1', b'parent-2'])
         committer.last_scanned_id = (
             committer.bzrbranch.last_revision())
-        committer.writeFile('file.txt', 'contents')
+        committer.writeFile('file.txt', b'contents')
         committer.commit('')
         branch_revision_id = committer.bzrbranch.last_revision()
         branch_revision = committer.bzrbranch.repository.get_revision(
             branch_revision_id)
         self.assertEqual(
-            ['parent-1', 'parent-2'], branch_revision.parent_ids[1:])
+            [b'parent-1', b'parent-2'], branch_revision.parent_ids[1:])
 
     def test_DirectBranchCommit_aborts_cleanly(self):
         # If a DirectBranchCommit is not committed, its changes do not
         # go into the branch.
-        self.committer.writeFile('oldfile.txt', 'already here')
+        self.committer.writeFile('oldfile.txt', b'already here')
         self.committer.commit('')
         self._setUpCommitter()
-        self.committer.writeFile('newfile.txt', 'adding this')
+        self.committer.writeFile('newfile.txt', b'adding this')
         self._setUpCommitter()
-        self.assertEqual({'oldfile.txt': 'already here'}, self._getContents())
+        self.assertEqual({'oldfile.txt': b'already here'}, self._getContents())
         self.committer.unlock()
 
     def test_DirectBranchCommit_updates_file(self):
         # DirectBranchCommit can replace a file in the branch.
-        self.committer.writeFile('file.txt', 'contents')
+        self.committer.writeFile('file.txt', b'contents')
         self.committer.commit('')
         self._setUpCommitter()
-        self.committer.writeFile('file.txt', 'changed')
+        self.committer.writeFile('file.txt', b'changed')
         self.committer.commit('')
-        self.assertEqual({'file.txt': 'changed'}, self._getContents())
+        self.assertEqual({'file.txt': b'changed'}, self._getContents())
 
     def test_DirectBranchCommit_creates_directories(self):
         # Files can be in subdirectories.
-        self.committer.writeFile('a/b/c.txt', 'ctext')
+        self.committer.writeFile('a/b/c.txt', b'ctext')
         self.committer.commit('')
-        self.assertEqual({'a/b/c.txt': 'ctext'}, self._getContents())
+        self.assertEqual({'a/b/c.txt': b'ctext'}, self._getContents())
 
     def test_DirectBranchCommit_adds_directories(self):
         # Creating a subdirectory of an existing directory also works.
-        self.committer.writeFile('a/n.txt', 'aa')
+        self.committer.writeFile('a/n.txt', b'aa')
         self.committer.commit('')
         self._setUpCommitter()
-        self.committer.writeFile('a/b/m.txt', 'aa/bb')
+        self.committer.writeFile('a/b/m.txt', b'aa/bb')
         self.committer.commit('')
         expected = {
-            'a/n.txt': 'aa',
-            'a/b/m.txt': 'aa/bb',
+            'a/n.txt': b'aa',
+            'a/b/m.txt': b'aa/bb',
         }
         self.assertEqual(expected, self._getContents())
 
@@ -173,47 +175,47 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase, TestCaseWithFactory):
         # If a directory doesn't exist in the committed branch, creating
         # it twice would be an error.  DirectBranchCommit doesn't do
         # that.
-        self.committer.writeFile('foo/x.txt', 'x')
-        self.committer.writeFile('foo/y.txt', 'y')
+        self.committer.writeFile('foo/x.txt', b'x')
+        self.committer.writeFile('foo/y.txt', b'y')
         self.committer.commit('')
         expected = {
-            'foo/x.txt': 'x',
-            'foo/y.txt': 'y',
+            'foo/x.txt': b'x',
+            'foo/y.txt': b'y',
         }
         self.assertEqual(expected, self._getContents())
 
     def test_DirectBranchCommit_writes_new_file_twice(self):
         # If you write the same new file multiple times before
         # committing, the original wins.
-        self.committer.writeFile('x.txt', 'aaa')
-        self.committer.writeFile('x.txt', 'bbb')
+        self.committer.writeFile('x.txt', b'aaa')
+        self.committer.writeFile('x.txt', b'bbb')
         self.committer.commit('')
-        self.assertEqual({'x.txt': 'aaa'}, self._getContents())
+        self.assertEqual({'x.txt': b'aaa'}, self._getContents())
 
     def test_DirectBranchCommit_updates_file_twice(self):
         # If you update the same file multiple times before committing,
         # the original wins.
-        self.committer.writeFile('y.txt', 'aaa')
+        self.committer.writeFile('y.txt', b'aaa')
         self.committer.commit('')
         self._setUpCommitter()
-        self.committer.writeFile('y.txt', 'bbb')
-        self.committer.writeFile('y.txt', 'ccc')
+        self.committer.writeFile('y.txt', b'bbb')
+        self.committer.writeFile('y.txt', b'ccc')
         self.committer.commit('')
-        self.assertEqual({'y.txt': 'bbb'}, self._getContents())
+        self.assertEqual({'y.txt': b'bbb'}, self._getContents())
 
     def test_DirectBranchCommit_detects_race_condition(self):
         # If the branch has been updated since it was last scanned,
         # attempting to commit to it will raise ConcurrentUpdateError.
-        self.committer.writeFile('hi.c', 'main(){puts("hi world");}')
+        self.committer.writeFile('hi.c', b'main(){puts("hi world");}')
         self.committer.commit('')
         self._setUpCommitter(False)
-        self.committer.writeFile('hi.py', 'print "hi world"')
+        self.committer.writeFile('hi.py', b'print "hi world"')
         self.assertRaises(ConcurrentUpdateError, self.committer.commit, '')
 
     def test_DirectBranchCommit_records_committed_revision_id(self):
         # commit() records the committed revision in the database record for
         # the branch.
-        self.committer.writeFile('hi.c', 'main(){puts("hi world");}')
+        self.committer.writeFile('hi.c', b'main(){puts("hi world");}')
         revid = self.committer.commit('')
         self.assertEqual(revid, self.db_branch.last_mirrored_id)
 
@@ -225,7 +227,7 @@ class TestDirectBranchCommit(DirectBranchCommitTestCase, TestCaseWithFactory):
         fake_commit = FakeMethod()
         self.committer.transform_preview.commit = fake_commit
 
-        self.committer.writeFile('x', 'y')
+        self.committer.writeFile('x', b'y')
         self.committer.commit('')
 
         commit_args, commit_kwargs = fake_commit.calls[-1]
