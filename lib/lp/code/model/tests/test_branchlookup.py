@@ -1,7 +1,9 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the IBranchLookup implementation."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -746,7 +748,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         series = self.factory.makeProductSeries(branch=branch)
         result = self.branch_lookup.getByLPPath(
             '%s/%s/other/bits' % (series.product.name, series.name))
-        self.assertEqual((branch, u'other/bits'), result)
+        self.assertEqual((branch, 'other/bits'), result)
 
     def test_too_long_sourcepackage(self):
         package = self.factory.makeSourcePackage()
@@ -757,7 +759,7 @@ class TestGetByLPPath(TestCaseWithFactory):
                 package.distribution.owner)
         result = self.branch_lookup.getByLPPath(
             '%s/other/bits' % package.path)
-        self.assertEqual((branch, u'other/bits'), result)
+        self.assertEqual((branch, 'other/bits'), result)
 
 
 class PerformLookupTestCase(TestCaseWithFactory):
