@@ -77,7 +77,7 @@ class ParseApacheLogs(LaunchpadCronScript):
         # disappears before we get around to parsing it, which is
         # desirable behaviour.
         files_to_parse = list(get_files_to_parse(
-            sorted(glob.glob(os.path.join(self.root, self.log_file_glob)))))
+            glob.glob(os.path.join(self.root, self.log_file_glob))))
 
         country_set = getUtility(ICountrySet)
         parsed_lines = 0
