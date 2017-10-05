@@ -210,17 +210,6 @@ jsbuild: $(LP_JS_BUILD) $(YUI_DEFAULT_SYMLINK)
 	build/js/lp/meta.js >/dev/null
 	utilities/check-js-deps
 
-env:
-	mkdir -p env
-	(echo '[easy_install]'; \
-	 echo "allow_hosts = ''"; \
-	 echo 'find_links = file://$(WD)/download-cache/dist/') \
-		>env/.pydistutils.cfg
-	virtualenv \
-		--python=$(PYTHON) --system-site-packages --never-download \
-		--extra-search-dir=$(WD)/download-cache/dist/ \
-		env
-
 # This target is used by LOSAs to prepare a build to be pushed out to
 # destination machines.  We only want wheels: they are the expensive bits,
 # and the other bits might run into problems like bug 575037.  This
@@ -238,7 +227,17 @@ build_eggs: build_wheels
 # If we listed every target on the left-hand side, a parallel make would try
 # multiple copies of this rule to build them all.  Instead, we nominally build
 # just $(PY), and everything else is implicitly updated by that.
-$(PY): download-cache env constraints.txt setup.py
+$(PY): download-cache constraints.txt setup.py
+	rm -rf env
+	mkdir -p env
+	(echo '[easy_install]'; \
+	 echo "allow_hosts = ''"; \
+	 echo 'find_links = file://$(WD)/download-cache/dist/') \
+		>env/.pydistutils.cfg
+	virtualenv \
+		--python=$(PYTHON) --system-site-packages --never-download \
+		--extra-search-dir=$(WD)/download-cache/dist/ \
+		env
 	ln -sfn env/bin bin
 	$(SHHH) $(PIP) install $(PIP_INSTALL_ARGS) \
 		-r pip-requirements.txt
