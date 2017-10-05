@@ -251,6 +251,7 @@ $(PY): download-cache env constraints.txt setup.py
 $(subst $(PY),,$(PIP_BIN)): $(PY)
 
 compile: $(PY) $(VERSION_INFO)
+	${SHHH} utilities/relocate-virtualenv env
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} bin/build-twisted-plugin-cache

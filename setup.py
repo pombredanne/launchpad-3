@@ -224,6 +224,7 @@ setup(
         'txlongpoll',
         'txlongpollfixture',
         'txpkgupload',
+        'virtualenv-tools3',
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',

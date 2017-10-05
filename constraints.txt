@@ -348,6 +348,7 @@ txlongpollfixture==0.1.3
 txpkgupload==0.2
 unittest2==0.5.1
 van.testing==3.0.0
+virtualenv-tools3==2.0.0
 wadllib==1.3.2
 wheel==0.29.0
 wsgiref==0.1.2
