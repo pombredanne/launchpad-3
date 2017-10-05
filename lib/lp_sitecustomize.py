@@ -10,7 +10,6 @@ import logging
 import os
 import warnings
 
-from swiftclient import client as swiftclient
 from twisted.internet.defer import (
     Deferred,
     DeferredList,
@@ -95,7 +94,8 @@ def silence_swiftclient_logger():
     only does swiftclient then emit lots of noise, but it also turns
     keystoneclient debugging on.
     """
-    swiftclient.logger.setLevel(logging.INFO)
+    swiftclient_logger = logging.getLogger('swiftclient')
+    swiftclient_logger.setLevel(logging.INFO)
 
 
 def silence_zcml_logger():
