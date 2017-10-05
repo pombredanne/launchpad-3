@@ -363,7 +363,6 @@ clean_pip:
 	$(RM) -r build
 	if [ -d $(CONVOY_ROOT) ]; then $(RM) -r $(CONVOY_ROOT) ; fi
 	$(RM) -r bin
-	$(RM) -r env
 	$(RM) -r parts
 	$(RM) .installed.cfg
 	$(RM) -r yui/*
@@ -399,6 +398,7 @@ lxc-clean: clean_js clean_mailman clean_pip clean_logs
 	if test -f sourcecode/mailman/Makefile; then \
 		$(MAKE) -C sourcecode/mailman clean; \
 	fi
+	$(RM) -r env
 	$(RM) -r lib/subvertpy/*.so
 	$(RM) -r $(LP_BUILT_JS_ROOT)/*
 	$(RM) -r $(CODEHOSTING_ROOT)/*
