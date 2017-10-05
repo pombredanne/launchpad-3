@@ -13,7 +13,6 @@ import traceback
 from fixtures import TempDir
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
-from lp_sitecustomize import customize_get_converter
 import oops_amqp
 import pytz
 import testtools
@@ -609,77 +608,6 @@ class TestOopsIgnoring(testtools.TestCase):
             directlyProvides(exc_info[1], IUnloggedException)
         report = utility._oops_config.create(dict(exc_info=exc_info))
         self.assertTrue(report['ignore'])
-
-
-class TestWrappedParameterConverter(testtools.TestCase):
-    """Make sure URL parameter type conversions don't generate OOPS reports"""
-
-    def test_return_value_untouched(self):
-        # When a converter succeeds, its return value is passed through the
-        # wrapper untouched.
-
-        class FauxZopePublisherBrowserModule:
-            def get_converter(self, type_):
-                def the_converter(value):
-                    return 'converted %r to %s' % (value, type_)
-                return the_converter
-
-        module = FauxZopePublisherBrowserModule()
-        customize_get_converter(module)
-        converter = module.get_converter('int')
-        self.assertEqual("converted '42' to int", converter('42'))
-
-    def test_value_errors_marked(self):
-        # When a ValueError is raised by the wrapped converter, the exception
-        # is marked with IUnloggedException so the OOPS machinery knows that a
-        # report should not be logged.
-
-        class FauxZopePublisherBrowserModule:
-            def get_converter(self, type_):
-                def the_converter(value):
-                    raise ValueError
-                return the_converter
-
-        module = FauxZopePublisherBrowserModule()
-        customize_get_converter(module)
-        converter = module.get_converter('int')
-        try:
-            converter(42)
-        except ValueError as e:
-            self.assertTrue(IUnloggedException.providedBy(e))
-
-    def test_other_errors_not_marked(self):
-        # When an exception other than ValueError is raised by the wrapped
-        # converter, the exception is not marked with IUnloggedException an
-        # OOPS report will be created.
-
-        class FauxZopePublisherBrowserModule:
-            def get_converter(self, type_):
-                def the_converter(value):
-                    raise RuntimeError
-                return the_converter
-
-        module = FauxZopePublisherBrowserModule()
-        customize_get_converter(module)
-        converter = module.get_converter('int')
-        try:
-            converter(42)
-        except RuntimeError as e:
-            self.assertFalse(IUnloggedException.providedBy(e))
-
-    def test_none_is_not_wrapped(self):
-        # The get_converter function that we're wrapping can return None, in
-        # that case there's no function for us to wrap and we just return None
-        # as well.
-
-        class FauxZopePublisherBrowserModule:
-            def get_converter(self, type_):
-                return None
-
-        module = FauxZopePublisherBrowserModule()
-        customize_get_converter(module)
-        converter = module.get_converter('int')
-        self.assertTrue(converter is None)
 
 
 class TestHooks(testtools.TestCase):
