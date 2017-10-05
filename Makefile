@@ -244,7 +244,8 @@ $(PY): download-cache constraints.txt setup.py
 	$(SHHH) LPCONFIG=$(LPCONFIG) $(PIP) \
 		--cache-dir=$(WD)/download-cache/ \
 		install $(PIP_INSTALL_ARGS) \
-		-c pip-requirements.txt -c constraints.txt -e .
+		-c pip-requirements.txt -c constraints.txt -e . \
+		|| { code=$$?; rm -f $@; exit $$code; }
 	touch $@
 
 $(subst $(PY),,$(PIP_BIN)): $(PY)
