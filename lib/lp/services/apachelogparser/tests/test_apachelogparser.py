@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from datetime import datetime
@@ -7,6 +7,9 @@ from operator import itemgetter
 import os
 from StringIO import StringIO
 import tempfile
+import time
+
+from fixtures import TempDir
 
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry,
@@ -22,6 +25,7 @@ from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.librarianserver.apachelogparser import DBUSER
 from lp.services.log.logger import BufferLogger
+from lp.services.osutils import write_file
 from lp.testing import TestCase
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.layers import (
@@ -384,6 +388,20 @@ class TestParsedFilesDetection(TestCase):
     def setUp(self):
         super(TestParsedFilesDetection, self).setUp()
         switch_dbuser(DBUSER)
+
+    def test_sorts_by_mtime(self):
+        # Files are sorted by ascending mtime.
+        root = self.useFixture(TempDir()).path
+        file_paths = [os.path.join(root, str(name)) for name in range(3)]
+        now = time.time()
+        for i, path in enumerate(file_paths):
+            write_file(path, '%s\n' % i)
+            os.utime(path, (now - i, now - i))
+        contents = []
+        for fd, _ in get_files_to_parse(file_paths):
+            fd.seek(0)
+            contents.append(fd.read())
+        self.assertEqual(['2\n', '1\n', '0\n'], contents)
 
     def test_not_parsed_file(self):
         # A file that has never been parsed will have to be parsed from the

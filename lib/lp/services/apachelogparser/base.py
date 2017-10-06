@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from datetime import datetime
@@ -31,6 +31,7 @@ def get_files_to_parse(file_paths):
     :param file_paths: The paths to the files.
     """
     store = IStore(ParsedApacheLog)
+    file_paths = sorted(file_paths, key=lambda path: os.stat(path).st_mtime)
     for file_path in file_paths:
         fd, file_size = get_fd_and_file_size(file_path)
         first_line = unicode(fd.readline())
