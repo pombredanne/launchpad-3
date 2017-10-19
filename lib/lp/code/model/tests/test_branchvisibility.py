@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for visibility of branches.
@@ -9,6 +9,8 @@ visible to everybody, even people not logged in.
 Some branches are also considered "private".  These are branches that
 are only visible to the owner of the branch, and the subscribers.
 """
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
