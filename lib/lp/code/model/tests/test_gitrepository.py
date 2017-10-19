@@ -3,6 +3,8 @@
 
 """Tests for Git repositories."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import datetime
@@ -309,7 +311,7 @@ class TestGitIdentityMixin(TestCaseWithFactory):
         eric = self.factory.makePerson(name="eric")
         fooix = self.factory.makeProduct(name="fooix", owner=eric)
         repository = self.factory.makeGitRepository(
-            owner=eric, target=fooix, name=u"fooix-repo")
+            owner=eric, target=fooix, name="fooix-repo")
         with person_logged_in(fooix.owner) as user:
             self.repository_set.setDefaultRepositoryForOwner(
                 repository.owner, fooix, repository, user)
@@ -333,7 +335,7 @@ class TestGitIdentityMixin(TestCaseWithFactory):
         mint_choc = self.factory.makeDistributionSourcePackage(
             distribution=mint, sourcepackagename="choc")
         repository = self.factory.makeGitRepository(
-            owner=eric, target=mint_choc, name=u"choc-repo")
+            owner=eric, target=mint_choc, name="choc-repo")
         dsp = repository.target
         with admin_logged_in():
             self.repository_set.setDefaultRepositoryForOwner(
@@ -362,7 +364,7 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
         self.user = self.factory.makePerson()
         self.project = self.factory.makeProduct(owner=self.user)
         self.repository = self.factory.makeGitRepository(
-            name=u"to-delete", owner=self.user, target=self.project)
+            name="to-delete", owner=self.user, target=self.project)
         [self.ref] = self.factory.makeGitRefs(repository=self.repository)
         # The owner of the repository is subscribed to the repository when
         # it is created.  The tests here assume no initial connections, so
@@ -423,7 +425,7 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
     def test_landing_target_disables_deletion(self):
         # A repository with a landing target cannot be deleted.
         [merge_target] = self.factory.makeGitRefs(
-            name=u"landing-target", owner=self.user, target=self.project)
+            name="landing-target", owner=self.user, target=self.project)
         self.ref.addLandingTarget(self.user, merge_target)
         self.assertFalse(
             self.repository.canBeDeleted(),
@@ -434,7 +436,7 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
     def test_landing_candidate_disables_deletion(self):
         # A repository with a landing candidate cannot be deleted.
         [merge_source] = self.factory.makeGitRefs(
-            name=u"landing-candidate", owner=self.user, target=self.project)
+            name="landing-candidate", owner=self.user, target=self.project)
         merge_source.addLandingTarget(self.user, self.ref)
         self.assertFalse(
             self.repository.canBeDeleted(),
@@ -445,9 +447,9 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
     def test_prerequisite_repository_disables_deletion(self):
         # A repository that is a prerequisite repository cannot be deleted.
         [merge_source] = self.factory.makeGitRefs(
-            name=u"landing-candidate", owner=self.user, target=self.project)
+            name="landing-candidate", owner=self.user, target=self.project)
         [merge_target] = self.factory.makeGitRefs(
-            name=u"landing-target", owner=self.user, target=self.project)
+            name="landing-target", owner=self.user, target=self.project)
         merge_source.addLandingTarget(self.user, merge_target, self.ref)
         self.assertFalse(
             self.repository.canBeDeleted(),
@@ -710,7 +712,7 @@ class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
         # break_references allows deleting a repository used by a snap package.
         repository = self.factory.makeGitRepository()
         [ref1, ref2] = self.factory.makeGitRefs(
-            repository=repository, paths=[u"refs/heads/1", u"refs/heads/2"])
+            repository=repository, paths=["refs/heads/1", "refs/heads/2"])
         snap1 = self.factory.makeSnap(git_ref=ref1)
         snap2 = self.factory.makeSnap(git_ref=ref2)
         repository.destroySelf(break_references=True)
@@ -789,8 +791,8 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
         [ref] = self.factory.makeGitRefs(repository=repository)
         new_refs_info = {
             ref.path: {
-                u"sha1": u"0000000000000000000000000000000000000000",
-                u"type": ref.object_type,
+                "sha1": "0000000000000000000000000000000000000000",
+                "type": ref.object_type,
                 },
             }
         repository.createOrUpdateRefs(new_refs_info)
@@ -802,9 +804,9 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
             date_created=datetime(2015, 6, 1, tzinfo=pytz.UTC))
         [ref] = self.factory.makeGitRefs(repository=repository)
         new_refs_info = {
-            u"refs/heads/new": {
-                u"sha1": ref.commit_sha1,
-                u"type": ref.object_type,
+            "refs/heads/new": {
+                "sha1": ref.commit_sha1,
+                "type": ref.object_type,
                 },
             }
         repository.createOrUpdateRefs(new_refs_info)
@@ -828,7 +830,7 @@ class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
     def test_sends_notifications(self):
         # Attribute modifications send mail to subscribers.
         self.assertEqual(0, len(stub.test_emails))
-        repository = self.factory.makeGitRepository(name=u"foo")
+        repository = self.factory.makeGitRepository(name="foo")
         repository_before_modification = Snapshot(
             repository, providing=providedBy(repository))
         with person_logged_in(repository.owner):
@@ -838,7 +840,7 @@ class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
                 BranchSubscriptionDiffSize.NODIFF,
                 CodeReviewNotificationLevel.NOEMAIL,
                 repository.owner)
-            repository.setName(u"bar", repository.owner)
+            repository.setName("bar", repository.owner)
             notify(ObjectModifiedEvent(
                 repository, repository_before_modification, ["name"],
                 user=repository.owner))
@@ -918,7 +920,7 @@ class TestGitRepositoryURLs(TestCaseWithFactory):
         # IGitRepository.getCodebrowseUrlForRevision gives the URL to the
         # browser for a specific commit of the code
         repository = self.factory.makeGitRepository()
-        commit = u'0' * 40
+        commit = '0' * 40
         urlByCommit = repository.getCodebrowseUrlForRevision(commit)
         url = repository.getCodebrowseUrl()
         self.assertEqual(urlByCommit, "%s/commit/?id=%s" % (url, commit))
@@ -1041,7 +1043,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
     def test__convertRefInfo(self):
         # _convertRefInfo converts a valid info dictionary.
         sha1 = unicode(hashlib.sha1("").hexdigest())
-        info = {"object": {"sha1": sha1, "type": u"commit"}}
+        info = {"object": {"sha1": sha1, "type": "commit"}}
         expected_info = {"sha1": sha1, "type": GitObjectType.COMMIT}
         self.assertEqual(expected_info, GitRepository._convertRefInfo(info))
 
@@ -1057,7 +1059,7 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
 
     def test__convertRefInfo_requires_object_type(self):
         info = {
-            "object": {"sha1": u"0000000000000000000000000000000000000000"},
+            "object": {"sha1": "0000000000000000000000000000000000000000"},
             }
         self.assertRaisesWithContent(
             ValueError, 'ref info object does not contain "type" key',
@@ -1072,8 +1074,8 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
     def test__convertRefInfo_bad_type(self):
         info = {
             "object": {
-                "sha1": u"0000000000000000000000000000000000000000",
-                "type": u"nonsense",
+                "sha1": "0000000000000000000000000000000000000000",
+                "type": "nonsense",
                 },
             }
         self.assertRaisesWithContent(
@@ -1093,57 +1095,57 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
     def test_create(self):
         repository = self.factory.makeGitRepository()
         self.assertEqual([], list(repository.refs))
-        paths = (u"refs/heads/master", u"refs/tags/1.0")
+        paths = ("refs/heads/master", "refs/tags/1.0")
         self.factory.makeGitRefs(repository=repository, paths=paths)
         self.assertRefsMatch(repository.refs, repository, paths)
-        master_ref = repository.getRefByPath(u"refs/heads/master")
+        master_ref = repository.getRefByPath("refs/heads/master")
         new_refs_info = {
-            u"refs/tags/1.1": {
-                u"sha1": master_ref.commit_sha1,
-                u"type": master_ref.object_type,
+            "refs/tags/1.1": {
+                "sha1": master_ref.commit_sha1,
+                "type": master_ref.object_type,
                 },
             }
         repository.createOrUpdateRefs(new_refs_info)
         self.assertRefsMatch(
-            [ref for ref in repository.refs if ref.path != u"refs/tags/1.1"],
+            [ref for ref in repository.refs if ref.path != "refs/tags/1.1"],
             repository, paths)
         self.assertThat(
-            repository.getRefByPath(u"refs/tags/1.1"),
+            repository.getRefByPath("refs/tags/1.1"),
             MatchesStructure.byEquality(
                 repository=repository,
-                path=u"refs/tags/1.1",
+                path="refs/tags/1.1",
                 commit_sha1=master_ref.commit_sha1,
                 object_type=master_ref.object_type,
                 ))
 
     def test_remove(self):
         repository = self.factory.makeGitRepository()
-        paths = (u"refs/heads/master", u"refs/heads/branch", u"refs/tags/1.0")
+        paths = ("refs/heads/master", "refs/heads/branch", "refs/tags/1.0")
         self.factory.makeGitRefs(repository=repository, paths=paths)
         self.assertRefsMatch(repository.refs, repository, paths)
-        repository.removeRefs([u"refs/heads/branch", u"refs/tags/1.0"])
+        repository.removeRefs(["refs/heads/branch", "refs/tags/1.0"])
         self.assertRefsMatch(
-            repository.refs, repository, [u"refs/heads/master"])
+            repository.refs, repository, ["refs/heads/master"])
 
     def test_update(self):
         repository = self.factory.makeGitRepository()
-        paths = (u"refs/heads/master", u"refs/tags/1.0")
+        paths = ("refs/heads/master", "refs/tags/1.0")
         self.factory.makeGitRefs(repository=repository, paths=paths)
         self.assertRefsMatch(repository.refs, repository, paths)
         new_info = {
-            u"sha1": u"0000000000000000000000000000000000000000",
-            u"type": GitObjectType.BLOB,
+            "sha1": "0000000000000000000000000000000000000000",
+            "type": GitObjectType.BLOB,
             }
-        repository.createOrUpdateRefs({u"refs/tags/1.0": new_info})
+        repository.createOrUpdateRefs({"refs/tags/1.0": new_info})
         self.assertRefsMatch(
-            [ref for ref in repository.refs if ref.path != u"refs/tags/1.0"],
-            repository, [u"refs/heads/master"])
+            [ref for ref in repository.refs if ref.path != "refs/tags/1.0"],
+            repository, ["refs/heads/master"])
         self.assertThat(
-            repository.getRefByPath(u"refs/tags/1.0"),
+            repository.getRefByPath("refs/tags/1.0"),
             MatchesStructure.byEquality(
                 repository=repository,
-                path=u"refs/tags/1.0",
-                commit_sha1=u"0000000000000000000000000000000000000000",
+                path="refs/tags/1.0",
+                commit_sha1="0000000000000000000000000000000000000000",
                 object_type=GitObjectType.BLOB,
                 ))
 
@@ -1164,34 +1166,34 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         jobs = self._getWaitingUpdatePreviewDiffJobs(repository)
         self.assertEqual([bmp], [job.branch_merge_proposal for job in jobs])
         new_info = {
-            u"sha1": u"0000000000000000000000000000000000000000",
-            u"type": GitObjectType.BLOB,
+            "sha1": "0000000000000000000000000000000000000000",
+            "type": GitObjectType.BLOB,
             }
         repository.createOrUpdateRefs({ref.path: new_info})
         jobs = self._getWaitingUpdatePreviewDiffJobs(repository)
         self.assertEqual(
             [bmp, bmp], [job.branch_merge_proposal for job in jobs])
         self.assertEqual(
-            u"0000000000000000000000000000000000000000",
+            "0000000000000000000000000000000000000000",
             bmp.source_git_commit_sha1)
 
     def test_getRefByPath_without_leading_refs_heads(self):
-        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/master"])
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/master"])
         self.assertEqual(
-            ref, ref.repository.getRefByPath(u"refs/heads/master"))
-        self.assertEqual(ref, ref.repository.getRefByPath(u"master"))
-        self.assertIsNone(ref.repository.getRefByPath(u"other"))
+            ref, ref.repository.getRefByPath("refs/heads/master"))
+        self.assertEqual(ref, ref.repository.getRefByPath("master"))
+        self.assertIsNone(ref.repository.getRefByPath("other"))
 
     def test_getRefByPath_HEAD(self):
         # The special ref path "HEAD" always refers to the current default
         # branch.
-        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/master"])
-        ref_HEAD = ref.repository.getRefByPath(u"HEAD")
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/master"])
+        ref_HEAD = ref.repository.getRefByPath("HEAD")
         self.assertEqual(ref.repository, ref_HEAD.repository)
-        self.assertEqual(u"HEAD", ref_HEAD.path)
+        self.assertEqual("HEAD", ref_HEAD.path)
         self.assertRaises(NotFoundError, getattr, ref_HEAD, "commit_sha1")
         removeSecurityProxy(ref.repository)._default_branch = (
-            u"refs/heads/missing")
+            "refs/heads/missing")
         self.assertRaises(NotFoundError, getattr, ref_HEAD, "commit_sha1")
         removeSecurityProxy(ref.repository)._default_branch = ref.path
         self.assertEqual(ref.commit_sha1, ref_HEAD.commit_sha1)
@@ -1200,68 +1202,68 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         # planRefChanges copes with planning changes to refs in a repository
         # where some refs have been created, some deleted, and some changed.
         repository = self.factory.makeGitRepository()
-        paths = (u"refs/heads/master", u"refs/heads/foo", u"refs/heads/bar")
+        paths = ("refs/heads/master", "refs/heads/foo", "refs/heads/bar")
         self.factory.makeGitRefs(repository=repository, paths=paths)
         self.assertRefsMatch(repository.refs, repository, paths)
-        master_sha1 = repository.getRefByPath(u"refs/heads/master").commit_sha1
-        foo_sha1 = repository.getRefByPath(u"refs/heads/foo").commit_sha1
+        master_sha1 = repository.getRefByPath("refs/heads/master").commit_sha1
+        foo_sha1 = repository.getRefByPath("refs/heads/foo").commit_sha1
         self.useFixture(GitHostingFixture(refs={
-            u"refs/heads/master": {
-                u"object": {
-                    u"sha1": u"1111111111111111111111111111111111111111",
-                    u"type": u"commit",
+            "refs/heads/master": {
+                "object": {
+                    "sha1": "1111111111111111111111111111111111111111",
+                    "type": "commit",
                     },
                 },
-            u"refs/heads/foo": {
-                u"object": {
-                    u"sha1": foo_sha1,
-                    u"type": u"commit",
+            "refs/heads/foo": {
+                "object": {
+                    "sha1": foo_sha1,
+                    "type": "commit",
                     },
                 },
-            u"refs/tags/1.0": {
-                u"object": {
-                    u"sha1": master_sha1,
-                    u"type": u"commit",
+            "refs/tags/1.0": {
+                "object": {
+                    "sha1": master_sha1,
+                    "type": "commit",
                     },
                 },
             }))
         refs_to_upsert, refs_to_remove = repository.planRefChanges("dummy")
 
         expected_upsert = {
-            u"refs/heads/master": {
-                u"sha1": u"1111111111111111111111111111111111111111",
-                u"type": GitObjectType.COMMIT,
+            "refs/heads/master": {
+                "sha1": "1111111111111111111111111111111111111111",
+                "type": GitObjectType.COMMIT,
                 },
-            u"refs/heads/foo": {
-                u"sha1": unicode(hashlib.sha1(u"refs/heads/foo").hexdigest()),
-                u"type": GitObjectType.COMMIT,
+            "refs/heads/foo": {
+                "sha1": unicode(hashlib.sha1("refs/heads/foo").hexdigest()),
+                "type": GitObjectType.COMMIT,
                 },
-            u"refs/tags/1.0": {
-                u"sha1": unicode(
-                    hashlib.sha1(u"refs/heads/master").hexdigest()),
-                u"type": GitObjectType.COMMIT,
+            "refs/tags/1.0": {
+                "sha1": unicode(
+                    hashlib.sha1("refs/heads/master").hexdigest()),
+                "type": GitObjectType.COMMIT,
                 },
             }
         self.assertEqual(expected_upsert, refs_to_upsert)
-        self.assertEqual(set([u"refs/heads/bar"]), refs_to_remove)
+        self.assertEqual(set(["refs/heads/bar"]), refs_to_remove)
 
     def test_planRefChanges_skips_non_commits(self):
         # planRefChanges does not attempt to update refs that point to
         # non-commits.
         repository = self.factory.makeGitRepository()
-        blob_sha1 = unicode(hashlib.sha1(u"refs/heads/blob").hexdigest())
+        blob_sha1 = unicode(hashlib.sha1("refs/heads/blob").hexdigest())
         refs_info = {
-            u"refs/heads/blob": {
-                u"sha1": blob_sha1,
-                u"type": GitObjectType.BLOB,
+            "refs/heads/blob": {
+                "sha1": blob_sha1,
+                "type": GitObjectType.BLOB,
                 },
             }
         repository.createOrUpdateRefs(refs_info)
         self.useFixture(GitHostingFixture(refs={
-            u"refs/heads/blob": {
-                u"object": {
-                    u"sha1": blob_sha1,
-                    u"type": u"blob",
+            "refs/heads/blob": {
+                "object": {
+                    "sha1": blob_sha1,
+                    "type": "blob",
                     },
                 },
             }))
@@ -1270,8 +1272,8 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
     def test_fetchRefCommits(self):
         # fetchRefCommits fetches detailed tip commit metadata for the
         # requested refs.
-        master_sha1 = unicode(hashlib.sha1(u"refs/heads/master").hexdigest())
-        foo_sha1 = unicode(hashlib.sha1(u"refs/heads/foo").hexdigest())
+        master_sha1 = unicode(hashlib.sha1("refs/heads/master").hexdigest())
+        foo_sha1 = unicode(hashlib.sha1("refs/heads/foo").hexdigest())
         author = self.factory.makePerson()
         with person_logged_in(author):
             author_email = author.preferredemail.email
@@ -1280,29 +1282,29 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         committer_date = datetime(2015, 1, 2, tzinfo=pytz.UTC)
         hosting_fixture = self.useFixture(GitHostingFixture(commits=[
             {
-                u"sha1": master_sha1,
-                u"message": u"tip of master",
-                u"author": {
-                    u"name": author.displayname,
-                    u"email": author_email,
-                    u"time": int((author_date - epoch).total_seconds()),
+                "sha1": master_sha1,
+                "message": "tip of master",
+                "author": {
+                    "name": author.displayname,
+                    "email": author_email,
+                    "time": int((author_date - epoch).total_seconds()),
                     },
-                u"committer": {
-                    u"name": u"New Person",
-                    u"email": u"new-person@example.org",
-                    u"time": int((committer_date - epoch).total_seconds()),
+                "committer": {
+                    "name": "New Person",
+                    "email": "new-person@example.org",
+                    "time": int((committer_date - epoch).total_seconds()),
                     },
-                u"parents": [],
-                u"tree": unicode(hashlib.sha1("").hexdigest()),
+                "parents": [],
+                "tree": unicode(hashlib.sha1("").hexdigest()),
                 }]))
         refs = {
-            u"refs/heads/master": {
-                u"sha1": master_sha1,
-                u"type": GitObjectType.COMMIT,
+            "refs/heads/master": {
+                "sha1": master_sha1,
+                "type": GitObjectType.COMMIT,
                 },
-            u"refs/heads/foo": {
-                u"sha1": foo_sha1,
-                u"type": GitObjectType.COMMIT,
+            "refs/heads/foo": {
+                "sha1": foo_sha1,
+                "type": GitObjectType.COMMIT,
                 },
             }
         GitRepository.fetchRefCommits("dummy", refs)
@@ -1310,27 +1312,27 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         expected_oids = [master_sha1, foo_sha1]
         [(_, observed_oids)] = hosting_fixture.getCommits.extract_args()
         self.assertContentEqual(expected_oids, observed_oids)
-        expected_author_addr = u"%s <%s>" % (author.displayname, author_email)
+        expected_author_addr = "%s <%s>" % (author.displayname, author_email)
         [expected_author] = getUtility(IRevisionSet).acquireRevisionAuthors(
             [expected_author_addr]).values()
-        expected_committer_addr = u"New Person <new-person@example.org>"
+        expected_committer_addr = "New Person <new-person@example.org>"
         [expected_committer] = getUtility(IRevisionSet).acquireRevisionAuthors(
             [expected_committer_addr]).values()
         expected_refs = {
-            u"refs/heads/master": {
-                u"sha1": master_sha1,
-                u"type": GitObjectType.COMMIT,
-                u"author": expected_author,
-                u"author_addr": expected_author_addr,
-                u"author_date": author_date,
-                u"committer": expected_committer,
-                u"committer_addr": expected_committer_addr,
-                u"committer_date": committer_date,
-                u"commit_message": u"tip of master",
+            "refs/heads/master": {
+                "sha1": master_sha1,
+                "type": GitObjectType.COMMIT,
+                "author": expected_author,
+                "author_addr": expected_author_addr,
+                "author_date": author_date,
+                "committer": expected_committer,
+                "committer_addr": expected_committer_addr,
+                "committer_date": committer_date,
+                "commit_message": "tip of master",
                 },
-            u"refs/heads/foo": {
-                u"sha1": foo_sha1,
-                u"type": GitObjectType.COMMIT,
+            "refs/heads/foo": {
+                "sha1": foo_sha1,
+                "type": GitObjectType.COMMIT,
                 },
             }
         self.assertEqual(expected_refs, refs)
@@ -1339,34 +1341,32 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         # synchroniseRefs copes with synchronising a repository where some
         # refs have been created, some deleted, and some changed.
         repository = self.factory.makeGitRepository()
-        paths = (u"refs/heads/master", u"refs/heads/foo", u"refs/heads/bar")
+        paths = ("refs/heads/master", "refs/heads/foo", "refs/heads/bar")
         self.factory.makeGitRefs(repository=repository, paths=paths)
         self.assertRefsMatch(repository.refs, repository, paths)
         refs_to_upsert = {
-            u"refs/heads/master": {
-                u"sha1": u"1111111111111111111111111111111111111111",
-                u"type": GitObjectType.COMMIT,
+            "refs/heads/master": {
+                "sha1": "1111111111111111111111111111111111111111",
+                "type": GitObjectType.COMMIT,
                 },
-            u"refs/heads/foo": {
-                u"sha1": repository.getRefByPath(
-                    u"refs/heads/foo").commit_sha1,
-                u"type": GitObjectType.COMMIT,
+            "refs/heads/foo": {
+                "sha1": repository.getRefByPath("refs/heads/foo").commit_sha1,
+                "type": GitObjectType.COMMIT,
                 },
-            u"refs/tags/1.0": {
-                u"sha1": repository.getRefByPath(
-                    u"refs/heads/master").commit_sha1,
-                u"type": GitObjectType.COMMIT,
+            "refs/tags/1.0": {
+                "sha1": repository.getRefByPath(
+                    "refs/heads/master").commit_sha1,
+                "type": GitObjectType.COMMIT,
                 },
             }
-        refs_to_remove = set([u"refs/heads/bar"])
+        refs_to_remove = set(["refs/heads/bar"])
         repository.synchroniseRefs(refs_to_upsert, refs_to_remove)
         expected_sha1s = [
-            (u"refs/heads/master",
-             u"1111111111111111111111111111111111111111"),
-            (u"refs/heads/foo",
-             unicode(hashlib.sha1(u"refs/heads/foo").hexdigest())),
-            (u"refs/tags/1.0",
-             unicode(hashlib.sha1(u"refs/heads/master").hexdigest())),
+            ("refs/heads/master", "1111111111111111111111111111111111111111"),
+            ("refs/heads/foo",
+             unicode(hashlib.sha1("refs/heads/foo").hexdigest())),
+            ("refs/tags/1.0",
+             unicode(hashlib.sha1("refs/heads/master").hexdigest())),
             ]
         matchers = [
             MatchesStructure.byEquality(
@@ -1382,26 +1382,26 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         repository = self.factory.makeGitRepository()
         self.factory.makeGitRefs(
             repository=repository,
-            paths=(u"refs/heads/master", u"refs/heads/new"))
-        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+            paths=("refs/heads/master", "refs/heads/new"))
+        removeSecurityProxy(repository)._default_branch = "refs/heads/master"
         with person_logged_in(repository.owner):
-            repository.default_branch = u"new"
+            repository.default_branch = "new"
         self.assertEqual(
             [((repository.getInternalPath(),),
-             {u"default_branch": u"refs/heads/new"})],
+             {"default_branch": "refs/heads/new"})],
             hosting_fixture.setProperties.calls)
-        self.assertEqual(u"refs/heads/new", repository.default_branch)
+        self.assertEqual("refs/heads/new", repository.default_branch)
 
     def test_set_default_branch_unchanged(self):
         hosting_fixture = self.useFixture(GitHostingFixture())
         repository = self.factory.makeGitRepository()
         self.factory.makeGitRefs(
-            repository=repository, paths=[u"refs/heads/master"])
-        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+            repository=repository, paths=["refs/heads/master"])
+        removeSecurityProxy(repository)._default_branch = "refs/heads/master"
         with person_logged_in(repository.owner):
-            repository.default_branch = u"master"
+            repository.default_branch = "master"
         self.assertEqual([], hosting_fixture.setProperties.calls)
-        self.assertEqual(u"refs/heads/master", repository.default_branch)
+        self.assertEqual("refs/heads/master", repository.default_branch)
 
     def test_set_default_branch_imported(self):
         hosting_fixture = self.useFixture(GitHostingFixture())
@@ -1409,16 +1409,16 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
             repository_type=GitRepositoryType.IMPORTED)
         self.factory.makeGitRefs(
             repository=repository,
-            paths=(u"refs/heads/master", u"refs/heads/new"))
-        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+            paths=("refs/heads/master", "refs/heads/new"))
+        removeSecurityProxy(repository)._default_branch = "refs/heads/master"
         with person_logged_in(repository.owner):
             self.assertRaisesWithContent(
                 CannotModifyNonHostedGitRepository,
                 "Cannot modify non-hosted Git repository %s." %
                     repository.display_name,
-                setattr, repository, "default_branch", u"new")
+                setattr, repository, "default_branch", "new")
         self.assertEqual([], hosting_fixture.setProperties.calls)
-        self.assertEqual(u"refs/heads/master", repository.default_branch)
+        self.assertEqual("refs/heads/master", repository.default_branch)
 
 
 class TestGitRepositoryGetAllowedInformationTypes(TestCaseWithFactory):
@@ -1489,9 +1489,9 @@ class TestGitRepositoryModerate(TestCaseWithFactory):
         project = self.factory.makeProduct()
         repository = self.factory.makeGitRepository(target=project)
         with person_logged_in(project.owner):
-            repository.description = u"something"
+            repository.description = "something"
             repository.reviewer = project.owner
-        self.assertEqual(u"something", repository.description)
+        self.assertEqual("something", repository.description)
         self.assertEqual(project.owner, repository.reviewer)
 
 
@@ -1577,20 +1577,20 @@ class TestGitRepositorySetName(TestCaseWithFactory):
 
     def test_name_clash(self):
         # Name clashes are refused.
-        repository = self.factory.makeGitRepository(name=u"foo")
+        repository = self.factory.makeGitRepository(name="foo")
         self.factory.makeGitRepository(
-            owner=repository.owner, target=repository.target, name=u"bar")
+            owner=repository.owner, target=repository.target, name="bar")
         with person_logged_in(repository.owner):
             self.assertRaises(
                 GitRepositoryExists, repository.setName,
-                u"bar", repository.owner)
+                "bar", repository.owner)
 
     def test_rename(self):
         # A non-clashing rename request works.
-        repository = self.factory.makeGitRepository(name=u"foo")
+        repository = self.factory.makeGitRepository(name="foo")
         with person_logged_in(repository.owner):
-            repository.setName(u"bar", repository.owner)
-        self.assertEqual(u"bar", repository.name)
+            repository.setName("bar", repository.owner)
+        self.assertEqual("bar", repository.name)
 
 
 class TestGitRepositorySetOwner(TestCaseWithFactory):
@@ -1848,16 +1848,16 @@ class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
     def test_updates_proposals(self):
         # `updateMergeCommitIDs` updates proposals for specified refs.
         repository = self.factory.makeGitRepository()
-        paths = [u"refs/heads/1", u"refs/heads/2", u"refs/heads/3"]
+        paths = ["refs/heads/1", "refs/heads/2", "refs/heads/3"]
         [ref1, ref2, ref3] = self.factory.makeGitRefs(
             repository=repository, paths=paths)
         bmp1 = self.factory.makeBranchMergeProposalForGit(
             target_ref=ref1, source_ref=ref2)
         bmp2 = self.factory.makeBranchMergeProposalForGit(
             target_ref=ref1, source_ref=ref3, prerequisite_ref=ref2)
-        removeSecurityProxy(ref1).commit_sha1 = u"0" * 40
-        removeSecurityProxy(ref2).commit_sha1 = u"1" * 40
-        removeSecurityProxy(ref3).commit_sha1 = u"2" * 40
+        removeSecurityProxy(ref1).commit_sha1 = "0" * 40
+        removeSecurityProxy(ref2).commit_sha1 = "1" * 40
+        removeSecurityProxy(ref3).commit_sha1 = "2" * 40
         self.assertNotEqual(ref1, bmp1.target_git_ref)
         self.assertNotEqual(ref2, bmp1.source_git_ref)
         self.assertNotEqual(ref1, bmp2.target_git_ref)
@@ -1875,7 +1875,7 @@ class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
     def test_skips_unspecified_refs(self):
         # `updateMergeCommitIDs` skips unspecified refs.
         repository1 = self.factory.makeGitRepository()
-        paths = [u"refs/heads/1", u"refs/heads/2"]
+        paths = ["refs/heads/1", "refs/heads/2"]
         [ref1_1, ref1_2] = self.factory.makeGitRefs(
             repository=repository1, paths=paths)
         bmp1 = self.factory.makeBranchMergeProposalForGit(
@@ -1885,10 +1885,10 @@ class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
             repository=repository2, paths=paths)
         bmp2 = self.factory.makeBranchMergeProposalForGit(
             target_ref=ref2_1, source_ref=ref2_2)
-        removeSecurityProxy(ref1_1).commit_sha1 = u"0" * 40
-        removeSecurityProxy(ref1_2).commit_sha1 = u"1" * 40
-        removeSecurityProxy(ref2_1).commit_sha1 = u"2" * 40
-        removeSecurityProxy(ref2_2).commit_sha1 = u"3" * 40
+        removeSecurityProxy(ref1_1).commit_sha1 = "0" * 40
+        removeSecurityProxy(ref1_2).commit_sha1 = "1" * 40
+        removeSecurityProxy(ref2_1).commit_sha1 = "2" * 40
+        removeSecurityProxy(ref2_2).commit_sha1 = "3" * 40
         self.assertNotEqual(ref1_1, bmp1.target_git_ref)
         self.assertNotEqual(ref1_2, bmp1.source_git_ref)
         self.assertNotEqual(ref2_1, bmp2.target_git_ref)
@@ -1942,18 +1942,18 @@ class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe(branches=[ref])
         removeSecurityProxy(recipe).is_stale = False
         ref.repository.createOrUpdateRefs(
-            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+            {ref.path: {"sha1": "0" * 40, "type": GitObjectType.COMMIT}})
         self.assertTrue(recipe.is_stale)
 
     def test_base_repository_different_ref_recipe(self):
         # On ref changes, recipes where a different ref in the same
         # repository is the base are left alone.
         ref1, ref2 = self.factory.makeGitRefs(
-            paths=[u"refs/heads/a", u"refs/heads/b"])
+            paths=["refs/heads/a", "refs/heads/b"])
         recipe = self.factory.makeSourcePackageRecipe(branches=[ref1])
         removeSecurityProxy(recipe).is_stale = False
         ref1.repository.createOrUpdateRefs(
-            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+            {ref2.path: {"sha1": "0" * 40, "type": GitObjectType.COMMIT}})
         self.assertFalse(recipe.is_stale)
 
     def test_base_repository_default_branch_recipe(self):
@@ -1961,15 +1961,15 @@ class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
         # repository is the base with no explicit revspec become stale.
         repository = self.factory.makeGitRepository()
         ref1, ref2 = self.factory.makeGitRefs(
-            repository=repository, paths=[u"refs/heads/a", u"refs/heads/b"])
-        removeSecurityProxy(repository)._default_branch = u"refs/heads/a"
+            repository=repository, paths=["refs/heads/a", "refs/heads/b"])
+        removeSecurityProxy(repository)._default_branch = "refs/heads/a"
         recipe = self.factory.makeSourcePackageRecipe(branches=[repository])
         removeSecurityProxy(recipe).is_stale = False
         repository.createOrUpdateRefs(
-            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+            {ref2.path: {"sha1": "0" * 40, "type": GitObjectType.COMMIT}})
         self.assertFalse(recipe.is_stale)
         repository.createOrUpdateRefs(
-            {ref1.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+            {ref1.path: {"sha1": "0" * 40, "type": GitObjectType.COMMIT}})
         self.assertTrue(recipe.is_stale)
 
     def test_instruction_repository_recipe(self):
@@ -1979,7 +1979,7 @@ class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe(branches=[base_ref, ref])
         removeSecurityProxy(recipe).is_stale = False
         ref.repository.createOrUpdateRefs(
-            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+            {ref.path: {"sha1": "0" * 40, "type": GitObjectType.COMMIT}})
         self.assertTrue(recipe.is_stale)
 
     def test_instruction_repository_different_ref_recipe(self):
@@ -1987,12 +1987,12 @@ class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
         # repository are left alone.
         [base_ref] = self.factory.makeGitRefs()
         ref1, ref2 = self.factory.makeGitRefs(
-            paths=[u"refs/heads/a", u"refs/heads/b"])
+            paths=["refs/heads/a", "refs/heads/b"])
         recipe = self.factory.makeSourcePackageRecipe(
             branches=[base_ref, ref1])
         removeSecurityProxy(recipe).is_stale = False
         ref1.repository.createOrUpdateRefs(
-            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+            {ref2.path: {"sha1": "0" * 40, "type": GitObjectType.COMMIT}})
         self.assertFalse(recipe.is_stale)
 
     def test_instruction_repository_default_branch_recipe(self):
@@ -2001,16 +2001,16 @@ class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
         [base_ref] = self.factory.makeGitRefs()
         repository = self.factory.makeGitRepository()
         ref1, ref2 = self.factory.makeGitRefs(
-            repository=repository, paths=[u"refs/heads/a", u"refs/heads/b"])
-        removeSecurityProxy(repository)._default_branch = u"refs/heads/a"
+            repository=repository, paths=["refs/heads/a", "refs/heads/b"])
+        removeSecurityProxy(repository)._default_branch = "refs/heads/a"
         recipe = self.factory.makeSourcePackageRecipe(
             branches=[base_ref, repository])
         removeSecurityProxy(recipe).is_stale = False
         repository.createOrUpdateRefs(
-            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+            {ref2.path: {"sha1": "0" * 40, "type": GitObjectType.COMMIT}})
         self.assertFalse(recipe.is_stale)
         repository.createOrUpdateRefs(
-            {ref1.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+            {ref1.path: {"sha1": "0" * 40, "type": GitObjectType.COMMIT}})
         self.assertTrue(recipe.is_stale)
 
     def test_unrelated_repository_recipe(self):
@@ -2020,7 +2020,7 @@ class TestGitRepositoryMarkRecipesStale(TestCaseWithFactory):
             branches=self.factory.makeGitRefs())
         removeSecurityProxy(recipe).is_stale = False
         ref.repository.createOrUpdateRefs(
-            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+            {ref.path: {"sha1": "0" * 40, "type": GitObjectType.COMMIT}})
         self.assertFalse(recipe.is_stale)
 
 
@@ -2034,18 +2034,18 @@ class TestGitRepositoryMarkSnapsStale(TestCaseWithFactory):
         snap = self.factory.makeSnap(git_ref=ref)
         removeSecurityProxy(snap).is_stale = False
         ref.repository.createOrUpdateRefs(
-            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+            {ref.path: {"sha1": "0" * 40, "type": GitObjectType.COMMIT}})
         self.assertTrue(snap.is_stale)
 
     def test_same_repository_different_ref(self):
         # On ref changes, snap packages using a different ref in the same
         # repository are left alone.
         ref1, ref2 = self.factory.makeGitRefs(
-            paths=[u"refs/heads/a", u"refs/heads/b"])
+            paths=["refs/heads/a", "refs/heads/b"])
         snap = self.factory.makeSnap(git_ref=ref1)
         removeSecurityProxy(snap).is_stale = False
         ref1.repository.createOrUpdateRefs(
-            {ref2.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+            {ref2.path: {"sha1": "0" * 40, "type": GitObjectType.COMMIT}})
         self.assertFalse(snap.is_stale)
 
     def test_different_repository(self):
@@ -2054,7 +2054,7 @@ class TestGitRepositoryMarkSnapsStale(TestCaseWithFactory):
         snap = self.factory.makeSnap(git_ref=self.factory.makeGitRefs()[0])
         removeSecurityProxy(snap).is_stale = False
         ref.repository.createOrUpdateRefs(
-            {ref.path: {u"sha1": u"0" * 40, u"type": GitObjectType.COMMIT}})
+            {ref.path: {"sha1": "0" * 40, "type": GitObjectType.COMMIT}})
         self.assertFalse(snap.is_stale)
 
 
@@ -2096,10 +2096,10 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
         repository = self.factory.makeGitRepository()
         [target_1, target_2, source_1, source_2] = self.factory.makeGitRefs(
             repository, paths=[
-                u"refs/heads/target-1",
-                u"refs/heads/target-2",
-                u"refs/heads/source-1",
-                u"refs/heads/source-2",
+                "refs/heads/target-1",
+                "refs/heads/target-2",
+                "refs/heads/source-1",
+                "refs/heads/source-2",
                 ])
         bmp1 = self.factory.makeBranchMergeProposalForGit(
             target_ref=target_1, source_ref=source_1)
@@ -2108,15 +2108,15 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
         bmp3 = self.factory.makeBranchMergeProposalForGit(
             target_ref=target_2, source_ref=source_1)
         hosting_fixture = self.useFixture(GitHostingFixture(
-            merges={source_1.commit_sha1: u"0" * 40}))
+            merges={source_1.commit_sha1: "0" * 40}))
         refs_info = {
-            u"refs/heads/target-1": {
-                u"sha1": u"0" * 40,
-                u"type": GitObjectType.COMMIT,
+            "refs/heads/target-1": {
+                "sha1": "0" * 40,
+                "type": GitObjectType.COMMIT,
                 },
-            u"refs/heads/target-2": {
-                u"sha1": u"1" * 40,
-                u"type": GitObjectType.COMMIT,
+            "refs/heads/target-2": {
+                "sha1": "1" * 40,
+                "type": GitObjectType.COMMIT,
                 },
             }
         expected_events = [
@@ -2132,11 +2132,11 @@ class TestGitRepositoryDetectMerges(TestCaseWithFactory):
         self.assertContentEqual(
             expected_args, hosting_fixture.detectMerges.extract_args())
         self.assertEqual(BranchMergeProposalStatus.MERGED, bmp1.queue_status)
-        self.assertEqual(u"0" * 40, bmp1.merged_revision_id)
+        self.assertEqual("0" * 40, bmp1.merged_revision_id)
         self.assertEqual(
             BranchMergeProposalStatus.WORK_IN_PROGRESS, bmp2.queue_status)
         self.assertEqual(BranchMergeProposalStatus.MERGED, bmp3.queue_status)
-        self.assertEqual(u"0" * 40, bmp3.merged_revision_id)
+        self.assertEqual("0" * 40, bmp3.merged_revision_id)
         # The two ObjectModifiedEvents indicate the queue_status changes.
         self.assertContentEqual(
             [bmp1, bmp3], [event.object for event in events[:2]])
@@ -2540,7 +2540,7 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         owner_db = self.factory.makePerson(name="person")
         project_db = self.factory.makeProduct(name="project")
         repository_db = self.factory.makeGitRepository(
-            owner=owner_db, target=project_db, name=u"repository")
+            owner=owner_db, target=project_db, name="repository")
         webservice = webservice_for_person(
             repository_db.owner, permission=OAuthPermission.READ_PUBLIC)
         webservice.default_api_version = "devel"
@@ -2713,8 +2713,8 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
     def test_getRefByPath(self):
         repository_db = self.factory.makeGitRepository()
         ref_dbs = self.factory.makeGitRefs(
-            repository=repository_db, paths=[u"refs/heads/a", u"refs/heads/b"])
-        removeSecurityProxy(repository_db)._default_branch = u"refs/heads/a"
+            repository=repository_db, paths=["refs/heads/a", "refs/heads/b"])
+        removeSecurityProxy(repository_db)._default_branch = "refs/heads/a"
         repository_url = api_url(repository_db)
         ref_urls = [api_url(ref_db) for ref_db in ref_dbs]
         webservice = webservice_for_person(
@@ -2750,8 +2750,8 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
             subscriber_url = api_url(subscriber_db)
         response = webservice.named_post(
             repository_url, "subscribe", person=subscriber_url,
-            notification_level=u"Branch attribute notifications only",
-            max_diff_lines=u"Don't send diffs", code_review_level=u"No email")
+            notification_level="Branch attribute notifications only",
+            max_diff_lines="Don't send diffs", code_review_level="No email")
         self.assertEqual(200, response.status)
         with person_logged_in(ANONYMOUS):
             subscription_db = repository_db.getSubscription(subscriber_db)
@@ -2802,9 +2802,9 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         webservice.default_api_version = "devel"
         response = webservice.named_post(
             repository_url, "subscribe", person=subscriber_url,
-            notification_level=u"No email",
-            max_diff_lines=u"Send entire diff",
-            code_review_level=u"Status changes only")
+            notification_level="No email",
+            max_diff_lines="Send entire diff",
+            code_review_level="Status changes only")
         self.assertEqual(200, response.status)
         with person_logged_in(subscriber_db):
             self.assertThat(
