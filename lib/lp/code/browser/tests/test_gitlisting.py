@@ -1,7 +1,9 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Git listing views."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -31,18 +33,18 @@ class TestTargetGitListingView:
 
     def test_rendering(self):
         main_repo = self.factory.makeGitRepository(
-            owner=self.owner, target=self.target, name=u"foo")
+            owner=self.owner, target=self.target, name="foo")
         self.factory.makeGitRefs(
             main_repo,
-            paths=[u"refs/heads/master", u"refs/heads/1.0", u"refs/tags/1.1"])
+            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
 
         other_repo = self.factory.makeGitRepository(
-            owner=self.factory.makePerson(name=u"contributor"),
-            target=self.target, name=u"foo")
-        self.factory.makeGitRefs(other_repo, paths=[u"refs/heads/bug-1234"])
+            owner=self.factory.makePerson(name="contributor"),
+            target=self.target, name="foo")
+        self.factory.makeGitRefs(other_repo, paths=["refs/heads/bug-1234"])
         self.factory.makeGitRepository(
-            owner=self.factory.makePerson(name=u"random"),
-            target=self.target, name=u"bar")
+            owner=self.factory.makePerson(name="random"),
+            target=self.target, name="bar")
 
         with admin_logged_in():
             getUtility(IGitRepositorySet).setDefaultRepository(
@@ -73,7 +75,7 @@ class TestTargetGitListingView:
             [link.find(text=True) for link in table.findAll('a')])
         self.assertEndsWith(
             table.find(text="1.0").parent['href'],
-            u"/~foowner/%s/+git/foo/+ref/1.0" % self.target_path)
+            "/~foowner/%s/+git/foo/+ref/1.0" % self.target_path)
 
         # Other repos are listed.
         table = soup.find(
@@ -86,7 +88,7 @@ class TestTargetGitListingView:
         self.assertEndsWith(
             table.find(
                 text="lp:~contributor/%s" % self.target_path).parent['href'],
-            u"/~contributor/%s/+git/foo" % self.target_path)
+            "/~contributor/%s/+git/foo" % self.target_path)
 
         # But not their branches.
         self.assertNotIn('bug-1234', content)
@@ -112,8 +114,8 @@ class TestTargetGitListingView:
 
     def test_copes_with_no_default(self):
         self.factory.makeGitRepository(
-            owner=self.factory.makePerson(name=u"contributor"),
-            target=self.target, name=u"foo")
+            owner=self.factory.makePerson(name="contributor"),
+            target=self.target, name="foo")
 
         view = create_initialized_view(self.target, '+git')
         self.assertIs(None, view.default_git_repository)
@@ -184,14 +186,14 @@ class TestPersonTargetGitListingView:
 
     def test_rendering(self):
         default_repo = self.factory.makeGitRepository(
-            owner=self.owner, target=self.target, name=u"foo")
+            owner=self.owner, target=self.target, name="foo")
         self.factory.makeGitRefs(
             default_repo,
-            paths=[u"refs/heads/master", u"refs/heads/bug-1234"])
+            paths=["refs/heads/master", "refs/heads/bug-1234"])
 
         other_repo = self.factory.makeGitRepository(
-            owner=self.owner, target=self.target, name=u"bar")
-        self.factory.makeGitRefs(other_repo, paths=[u"refs/heads/bug-2468"])
+            owner=self.owner, target=self.target, name="bar")
+        self.factory.makeGitRefs(other_repo, paths=["refs/heads/bug-2468"])
 
         with admin_logged_in():
             getUtility(IGitRepositorySet).setDefaultRepositoryForOwner(
@@ -220,7 +222,7 @@ class TestPersonTargetGitListingView:
             [link.find(text=True) for link in table.findAll('a')])
         self.assertEndsWith(
             table.find(text="bug-1234").parent['href'],
-            u"/~dev/%s/+git/foo/+ref/bug-1234" % self.target_path)
+            "/~dev/%s/+git/foo/+ref/bug-1234" % self.target_path)
 
         # Other repos are listed.
         table = soup.find(
@@ -232,14 +234,14 @@ class TestPersonTargetGitListingView:
         self.assertEndsWith(
             table.find(
                 text="lp:~dev/%s/+git/bar" % self.target_path).parent['href'],
-            u"/~dev/%s/+git/bar" % self.target_path)
+            "/~dev/%s/+git/bar" % self.target_path)
 
         # But not their branches.
         self.assertNotIn('bug-2468', content)
 
     def test_copes_with_no_default(self):
         self.factory.makeGitRepository(
-            owner=self.owner, target=self.target, name=u"foo")
+            owner=self.owner, target=self.target, name="foo")
 
         view = create_initialized_view(self.owner_target, '+git')
         self.assertIs(None, view.default_git_repository)
@@ -311,9 +313,9 @@ class TestProductGitListingView(TestTargetGitListingView,
 
     def setUp(self):
         super(TestProductGitListingView, self).setUp()
-        self.owner = self.factory.makePerson(name=u"foowner")
-        self.target = self.factory.makeProduct(name=u"foo", owner=self.owner)
-        self.target_path = u"foo"
+        self.owner = self.factory.makePerson(name="foowner")
+        self.target = self.factory.makeProduct(name="foo", owner=self.owner)
+        self.target_path = "foo"
         self.branch_target = self.target
 
 
@@ -322,9 +324,9 @@ class TestPersonProductGitListingView(TestPersonTargetGitListingView,
 
     def setUp(self):
         super(TestPersonProductGitListingView, self).setUp()
-        self.owner = self.factory.makePerson(name=u"dev")
-        self.target = self.factory.makeProduct(name=u"foo")
-        self.target_path = u"foo"
+        self.owner = self.factory.makePerson(name="dev")
+        self.target = self.factory.makeProduct(name="foo")
+        self.target_path = "foo"
         self.owner_target = PersonProduct(self.owner, self.target)
         self.branch_target = self.target
 
@@ -334,11 +336,11 @@ class TestDistributionSourcePackageGitListingView(TestTargetGitListingView,
 
     def setUp(self):
         super(TestDistributionSourcePackageGitListingView, self).setUp()
-        self.owner = self.factory.makePerson(name=u"foowner")
-        distro = self.factory.makeDistribution(name=u"foo", owner=self.owner)
+        self.owner = self.factory.makePerson(name="foowner")
+        distro = self.factory.makeDistribution(name="foo", owner=self.owner)
         self.target = self.factory.makeDistributionSourcePackage(
-            distribution=distro, sourcepackagename=u"bar")
-        self.target_path = u"foo/+source/bar"
+            distribution=distro, sourcepackagename="bar")
+        self.target_path = "foo/+source/bar"
         self.factory.makeDistroSeries(distribution=distro)
         self.branch_target = self.target.development_version
 
@@ -348,11 +350,11 @@ class TestPersonDistributionSourcePackageGitListingView(
 
     def setUp(self):
         super(TestPersonDistributionSourcePackageGitListingView, self).setUp()
-        self.owner = self.factory.makePerson(name=u"dev")
-        distro = self.factory.makeDistribution(name=u"foo", owner=self.owner)
+        self.owner = self.factory.makePerson(name="dev")
+        distro = self.factory.makeDistribution(name="foo", owner=self.owner)
         self.target = self.factory.makeDistributionSourcePackage(
-            distribution=distro, sourcepackagename=u"bar")
-        self.target_path = u"foo/+source/bar"
+            distribution=distro, sourcepackagename="bar")
+        self.target_path = "foo/+source/bar"
         self.owner_target = PersonDistributionSourcePackage(
             self.owner, self.target)
         self.factory.makeDistroSeries(distribution=distro)
@@ -376,14 +378,14 @@ class TestPlainGitListingView:
 
     def test_rendering(self):
         some_repo = self.factory.makeGitRepository(
-            owner=self.owner, target=self.target, name=u"foo")
+            owner=self.owner, target=self.target, name="foo")
         self.factory.makeGitRefs(
             some_repo,
-            paths=[u"refs/heads/master", u"refs/heads/bug-1234"])
+            paths=["refs/heads/master", "refs/heads/bug-1234"])
 
         other_repo = self.factory.makeGitRepository(
-            owner=self.owner, target=self.target, name=u"bar")
-        self.factory.makeGitRefs(other_repo, paths=[u"refs/heads/bug-2468"])
+            owner=self.owner, target=self.target, name="bar")
+        self.factory.makeGitRefs(other_repo, paths=["refs/heads/bug-2468"])
 
         view = create_initialized_view(self.context, '+git')
         self.assertIs(None, view.default_git_repository)

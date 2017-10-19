@@ -3,6 +3,8 @@
 
 """Tests for branch listing."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import timedelta
@@ -78,7 +80,7 @@ class AjaxBatchNavigationMixin:
                                                  view_name='+branches'):
         # The Javascript to wire up the ajax batch navigation behaviour is
         # correctly hidden behind a feature flag.
-        flags = {u"ajax.batch_navigator.enabled": u"true"}
+        flags = {"ajax.batch_navigator.enabled": "true"}
         with FeatureFixture(flags):
             view = create_initialized_view(
                 context, name=view_name, rootsite='code', principal=user)

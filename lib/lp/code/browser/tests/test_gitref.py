@@ -1,7 +1,9 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for GitRefView."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -52,11 +54,11 @@ class TestGitRefView(BrowserTestCase):
         repository = self.factory.makeGitRepository(
             owner=self.factory.makePerson(name="person"),
             target=self.factory.makeProduct(name="target"),
-            name=u"git")
+            name="git")
         getUtility(IGitRepositorySet).setDefaultRepositoryForOwner(
             repository.owner, repository.target, repository, repository.owner)
         [ref] = self.factory.makeGitRefs(
-            repository=repository, paths=[u"refs/heads/master"])
+            repository=repository, paths=["refs/heads/master"])
         view = create_view(ref, "+index")
         # To test the breadcrumbs we need a correct traversal stack.
         view.request.traversed_objects = [repository, ref, view]
@@ -86,7 +88,7 @@ class TestGitRefView(BrowserTestCase):
                         text=re.compile(r'\smaster\s')))))
 
     def test_clone_instructions(self):
-        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/branch"])
         text = self.getMainText(ref, "+index", user=ref.owner)
         self.assertTextMatchesExpressionIgnoreWhitespace(r"""
             git clone -b branch https://.*
@@ -102,20 +104,20 @@ class TestGitRefView(BrowserTestCase):
             datetime(2015, 1, day + 1, tzinfo=pytz.UTC) for day in range(5)]
         return [
             {
-                u"sha1": unicode(hashlib.sha1(str(i)).hexdigest()),
-                u"message": u"Commit %d" % i,
-                u"author": {
-                    u"name": authors[i].display_name,
-                    u"email": author_emails[i],
-                    u"time": int((dates[i] - epoch).total_seconds()),
+                "sha1": unicode(hashlib.sha1(str(i)).hexdigest()),
+                "message": "Commit %d" % i,
+                "author": {
+                    "name": authors[i].display_name,
+                    "email": author_emails[i],
+                    "time": int((dates[i] - epoch).total_seconds()),
                     },
-                u"committer": {
-                    u"name": authors[i].display_name,
-                    u"email": author_emails[i],
-                    u"time": int((dates[i] - epoch).total_seconds()),
+                "committer": {
+                    "name": authors[i].display_name,
+                    "email": author_emails[i],
+                    "time": int((dates[i] - epoch).total_seconds()),
                     },
-                u"parents": [unicode(hashlib.sha1(str(i - 1)).hexdigest())],
-                u"tree": unicode(hashlib.sha1("").hexdigest()),
+                "parents": [unicode(hashlib.sha1(str(i - 1)).hexdigest())],
+                "tree": unicode(hashlib.sha1("").hexdigest()),
                 }
             for i in range(5)]
 
@@ -133,7 +135,7 @@ class TestGitRefView(BrowserTestCase):
             JobRunner([job]).runAll()
 
     def test_recent_commits(self):
-        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/branch"])
         log = self.makeCommitLog()
         self.hosting_fixture.getLog.result = list(reversed(log))
         self.scanRef(ref, log[-1])
@@ -153,7 +155,7 @@ class TestGitRefView(BrowserTestCase):
             expected_urls, [detail.a["href"] for detail in details])
 
     def test_recent_commits_with_merge(self):
-        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/branch"])
         log = self.makeCommitLog()
         self.hosting_fixture.getLog.result = list(reversed(log))
         self.scanRef(ref, log[-1])
@@ -179,7 +181,7 @@ class TestGitRefView(BrowserTestCase):
             [link["href"] for link in details[5].findAll("a")])
 
     def test_recent_commits_with_merge_from_deleted_ref(self):
-        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/branch"])
         log = self.makeCommitLog()
         self.hosting_fixture.getLog.result = list(reversed(log))
         self.scanRef(ref, log[-1])
@@ -206,7 +208,7 @@ class TestGitRefView(BrowserTestCase):
             [link["href"] for link in details[5].findAll("a")])
 
     def test_all_commits_link(self):
-        [ref] = self.factory.makeGitRefs(paths=[u"refs/heads/branch"])
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/branch"])
         log = self.makeCommitLog()
         self.hosting_fixture.getLog.result = list(reversed(log))
         self.scanRef(ref, log[-1])

@@ -1,7 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for DiffView."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from lp.code.browser.diff import PreviewDiffFormatterAPI
 from lp.testing import TestCaseWithFactory
@@ -14,7 +16,7 @@ class TestFormatterAPI(TestCaseWithFactory):
 
     def test_empty_conflicts(self):
         """'has conflicts' does not appear if conflicts is empty string."""
-        diff = self.factory.makePreviewDiff(conflicts=u'')
+        diff = self.factory.makePreviewDiff(conflicts='')
         self.assertEqual('', diff.conflicts)
         formatter = PreviewDiffFormatterAPI(diff)
         self.assertNotIn('has conflicts', formatter.link(None))
@@ -28,7 +30,7 @@ class TestFormatterAPI(TestCaseWithFactory):
 
     def test_with_conflicts(self):
         """'has conflicts' appears if conflicts is a non-empty string."""
-        diff = self.factory.makePreviewDiff(conflicts=u'bork')
+        diff = self.factory.makePreviewDiff(conflicts='bork')
         self.assertEqual('bork', diff.conflicts)
         formatter = PreviewDiffFormatterAPI(diff)
         self.assertIn('has conflicts', formatter.link(None))

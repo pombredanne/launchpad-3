@@ -1,6 +1,9 @@
 # Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Tests for the source package recipe view classes and templates."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -77,8 +80,8 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         cake_branch = self.factory.makeProductBranch(
             owner=self.chef, name='cake', product=chocolate)
         recipe = self.factory.makeSourcePackageRecipe(
-            owner=self.chef, distroseries=self.squirrel, name=u'cake_recipe',
-            description=u'This recipe builds a foo for disto bar, with my'
+            owner=self.chef, distroseries=self.squirrel, name='cake_recipe',
+            description='This recipe builds a foo for distro bar, with my'
             ' Secret Squirrel changes.', branches=[cake_branch],
             daily_build_archive=self.ppa)
         build = self.factory.makeSourcePackageRecipeBuild(
