@@ -1,7 +1,9 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Diff, etc."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -90,10 +92,10 @@ def create_example_bzr_merge(test_case):
     test_case.factory.makeRevisionsForBranch(bmp.source_branch)
     test_case.factory.makeRevisionsForBranch(bmp.target_branch)
     bzr_target = test_case.createBzrBranch(bmp.target_branch)
-    commit_file(bmp.target_branch, 'foo', 'a\n')
+    commit_file(bmp.target_branch, 'foo', b'a\n')
     test_case.createBzrBranch(bmp.source_branch, bzr_target)
-    source_rev_id = commit_file(bmp.source_branch, 'foo', 'd\na\nb\n')
-    target_rev_id = commit_file(bmp.target_branch, 'foo', 'c\na\n')
+    source_rev_id = commit_file(bmp.source_branch, 'foo', b'd\na\nb\n')
+    target_rev_id = commit_file(bmp.target_branch, 'foo', b'c\na\n')
     return bmp, source_rev_id, target_rev_id
 
 
@@ -128,14 +130,14 @@ class DiffTestCase(TestCaseWithFactory):
             source = bmp.source_branch
             prerequisite = bmp.prerequisite_branch
         target_bzr = self.createBzrBranch(target)
-        commit_file(target, 'file', 'target text\n')
+        commit_file(target, 'file', b'target text\n')
         prerequisite_bzr = self.createBzrBranch(prerequisite, target_bzr)
         commit_file(
-            prerequisite, 'file', 'target text\nprerequisite text\n')
+            prerequisite, 'file', b'target text\nprerequisite text\n')
         source_bzr = self.createBzrBranch(source, prerequisite_bzr)
         source_rev_id = commit_file(
             source, 'file',
-            'target text\nprerequisite text\nsource text\n')
+            b'target text\nprerequisite text\nsource text\n')
         return (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
                 prerequisite)
 
@@ -290,7 +292,7 @@ class TestDiffInScripts(DiffTestCase):
         "-b\n"
         " c\n"
         "+d\n"
-        "+e\n")
+        "+e\n").encode("UTF-8")
 
     diff_bytes_2 = (
         "--- bar\t2009-08-26 15:53:34.000000000 -0400\n"
@@ -312,7 +314,7 @@ class TestDiffInScripts(DiffTestCase):
         " c\n"
         "+d\n"
         "+e\n"
-        "+f\n")
+        "+f\n").encode("UTF-8")
 
     def test_mergePreviewWithPrerequisite(self):
         # Changes introduced in the prerequisite branch are ignored.
@@ -329,8 +331,7 @@ class TestDiffInScripts(DiffTestCase):
         # affect the diff.
         (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
          prerequisite) = self.preparePrerequisiteMerge()
-        commit_file(
-            prerequisite, 'file', 'prerequisite text2\n')
+        commit_file(prerequisite, 'file', b'prerequisite text2\n')
         diff, conflicts = Diff.mergePreviewFromBranches(
             source_bzr, source_rev_id, target_bzr, prerequisite_bzr)
         transaction.commit()
@@ -348,7 +349,7 @@ class TestDiffInScripts(DiffTestCase):
             "--- foo\t2009-08-26 15:53:23.000000000 -0400\n"
             "+++ foo\t2009-08-26 15:56:43.000000000 -0400\n"
             "@@ -1,1 +1,1 @@\n"
-            " a\r-b\r c\r+d\r+e\r+f\r")
+            " a\r-b\r c\r+d\r+e\r+f\r").encode("UTF-8")
         self.assertEqual({'foo': (0, 0)}, Diff.generateDiffstat(diff_bytes))
 
     def test_fromFileSetsDiffstat(self):
@@ -357,7 +358,7 @@ class TestDiffInScripts(DiffTestCase):
             {'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)}, diff.diffstat)
 
     def test_fromFileAcceptsBinary(self):
-        diff_bytes = "Binary files a\t and b\t differ\n"
+        diff_bytes = b"Binary files a\t and b\t differ\n"
         diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
         self.assertEqual({}, diff.diffstat)
 
@@ -371,7 +372,7 @@ class TestDiffInScripts(DiffTestCase):
     def test_fromFile_withError(self):
         # If the diff is formatted such that generating the diffstat fails, we
         # want to record an oops but continue.
-        diff_bytes = "not a real diff"
+        diff_bytes = b"not a real diff"
         diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
         oops = self.oopses[0]
         self.assertEqual('MalformedPatchHeader', oops['type'])
@@ -394,11 +395,11 @@ class TestPreviewDiff(DiffTestCase):
         if prerequisite_branch is None:
             prerequisite_revision_id = None
         else:
-            prerequisite_revision_id = u'rev-c'
+            prerequisite_revision_id = 'rev-c'
         if content is None:
             content = ''.join(unified_diff('', 'content'))
         mp.updatePreviewDiff(
-            content, u'rev-a', u'rev-b',
+            content, 'rev-a', 'rev-b',
             prerequisite_revision_id=prerequisite_revision_id)
         # Make sure the librarian file is written.
         transaction.commit()
@@ -412,11 +413,11 @@ class TestPreviewDiff(DiffTestCase):
         if merge_prerequisite is None:
             prerequisite_revision_id = None
         else:
-            prerequisite_revision_id = u"c" * 40
+            prerequisite_revision_id = "c" * 40
         if content is None:
             content = "".join(unified_diff("", "content"))
         mp.updatePreviewDiff(
-            content, u"a" * 40, u"b" * 40,
+            content, "a" * 40, "b" * 40,
             prerequisite_revision_id=prerequisite_revision_id)
         # Make sure the librarian file is written.
         transaction.commit()
@@ -523,10 +524,10 @@ class TestPreviewDiff(DiffTestCase):
         self.useBzrBranches(direct_database=True)
         bmp = self.factory.makeBranchMergeProposal()
         bzr_target = self.createBzrBranch(bmp.target_branch)
-        commit_file(bmp.target_branch, 'foo', 'a\n')
+        commit_file(bmp.target_branch, 'foo', b'a\n')
         self.createBzrBranch(bmp.source_branch, bzr_target)
-        commit_file(bmp.source_branch, 'foo', 'a\nb\n')
-        commit_file(bmp.target_branch, 'foo', 'c\na\n')
+        commit_file(bmp.source_branch, 'foo', b'a\nb\n')
+        commit_file(bmp.target_branch, 'foo', b'c\na\n')
         diff = PreviewDiff.fromBranchMergeProposal(bmp)
         self.assertEqual('', diff.conflicts)
         self.assertFalse(diff.has_conflicts)
@@ -657,23 +658,23 @@ class TestIncrementalDiff(DiffTestCase):
         bmp = self.factory.makeBranchMergeProposal(
             prerequisite_branch=prerequisite_branch)
         target_branch = self.createBzrBranch(bmp.target_branch)
-        old_revision_id = commit_file(bmp.target_branch, 'foo', 'a\nb\ne\n')
+        old_revision_id = commit_file(bmp.target_branch, 'foo', b'a\nb\ne\n')
         old_revision = self.factory.makeRevision(rev_id=old_revision_id)
         source_branch = self.createBzrBranch(
             bmp.source_branch, target_branch)
-        commit_file(bmp.source_branch, 'foo', 'a\nc\ne\n')
+        commit_file(bmp.source_branch, 'foo', b'a\nc\ne\n')
         prerequisite = self.createBzrBranch(
             bmp.prerequisite_branch, target_branch)
         prerequisite_revision = commit_file(
-            bmp.prerequisite_branch, 'foo', 'd\na\nb\ne\n')
-        merge_parent = commit_file(bmp.target_branch, 'foo', 'a\nb\ne\nf\n')
+            bmp.prerequisite_branch, 'foo', b'd\na\nb\ne\n')
+        merge_parent = commit_file(bmp.target_branch, 'foo', b'a\nb\ne\nf\n')
         source_branch.repository.fetch(target_branch.repository,
             revision_id=merge_parent)
-        commit_file(bmp.source_branch, 'foo', 'a\nc\ne\nf\n', [merge_parent])
+        commit_file(bmp.source_branch, 'foo', b'a\nc\ne\nf\n', [merge_parent])
         source_branch.repository.fetch(prerequisite.repository,
             revision_id=prerequisite_revision)
         new_revision_id = commit_file(
-            bmp.source_branch, 'foo', 'd\na\nc\ne\nf\n',
+            bmp.source_branch, 'foo', b'd\na\nc\ne\nf\n',
             [prerequisite_revision])
         new_revision = self.factory.makeRevision(rev_id=new_revision_id)
         incremental_diff = bmp.generateIncrementalDiff(

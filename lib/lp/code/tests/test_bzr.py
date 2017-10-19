@@ -1,7 +1,9 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.code.bzr."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -88,11 +90,11 @@ class TestBranchRevisionHistory(TestCaseWithTransport):
     def test_some_commits(self):
         branch = self.make_branch('test')
         tree = branch.bzrdir.create_workingtree()
-        tree.commit('acommit', rev_id='A')
-        tree.commit('bcommit', rev_id='B')
-        tree.commit('ccommit', rev_id='C')
+        tree.commit('acommit', rev_id=b'A')
+        tree.commit('bcommit', rev_id=b'B')
+        tree.commit('ccommit', rev_id=b'C')
         self.assertEquals(
-            ['A', 'B', 'C'], branch_revision_history(tree.branch))
+            [b'A', b'B', b'C'], branch_revision_history(tree.branch))
 
 
 class TestGetAncestry(TestCaseWithTransport):
@@ -102,36 +104,36 @@ class TestGetAncestry(TestCaseWithTransport):
         # If the revision does not exist, NoSuchRevision should be raised.
         branch = self.make_branch('test')
         self.assertRaises(
-            NoSuchRevision, get_ancestry, branch.repository, 'orphan')
+            NoSuchRevision, get_ancestry, branch.repository, b'orphan')
 
     def test_some(self):
         # Verify ancestors are included.
         branch = self.make_branch('test')
         tree = branch.bzrdir.create_workingtree()
-        tree.commit('msg a', rev_id='A')
-        tree.commit('msg b', rev_id='B')
-        tree.commit('msg c', rev_id='C')
+        tree.commit('msg a', rev_id=b'A')
+        tree.commit('msg b', rev_id=b'B')
+        tree.commit('msg c', rev_id=b'C')
         self.assertEqual(
-            set(['A']), get_ancestry(branch.repository, 'A'))
+            set([b'A']), get_ancestry(branch.repository, b'A'))
         self.assertEqual(
-            set(['A', 'B']), get_ancestry(branch.repository, 'B'))
+            set([b'A', b'B']), get_ancestry(branch.repository, b'B'))
         self.assertEqual(
-            set(['A', 'B', 'C']), get_ancestry(branch.repository, 'C'))
+            set([b'A', b'B', b'C']), get_ancestry(branch.repository, b'C'))
 
     def test_children(self):
         # Verify non-mainline children are included.
         branch = self.make_branch('test')
         tree = branch.bzrdir.create_workingtree()
-        tree.commit('msg a', rev_id='A')
+        tree.commit('msg a', rev_id=b'A')
         branch.generate_revision_history(NULL_REVISION)
         tree.set_parent_ids([])
-        tree.commit('msg b', rev_id='B')
-        branch.generate_revision_history('A')
-        tree.set_parent_ids(['A', 'B'])
-        tree.commit('msg c', rev_id='C')
+        tree.commit('msg b', rev_id=b'B')
+        branch.generate_revision_history(b'A')
+        tree.set_parent_ids([b'A', b'B'])
+        tree.commit('msg c', rev_id=b'C')
         self.assertEqual(
-            set(['A']), get_ancestry(branch.repository, 'A'))
+            set([b'A']), get_ancestry(branch.repository, b'A'))
         self.assertEqual(
-            set(['B']), get_ancestry(branch.repository, 'B'))
+            set([b'B']), get_ancestry(branch.repository, b'B'))
         self.assertEqual(
-            set(['A', 'B', 'C']), get_ancestry(branch.repository, 'C'))
+            set([b'A', b'B', b'C']), get_ancestry(branch.repository, b'C'))
