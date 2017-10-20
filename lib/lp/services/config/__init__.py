@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 '''
@@ -22,7 +22,6 @@ from urlparse import (
 
 from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
-import pkg_resources
 import ZConfig
 
 from lp.services.osutils import open_for_writing
@@ -241,6 +240,7 @@ class LaunchpadConfig:
 
     def _setZConfig(self):
         """Modify the config, adding automatically generated settings"""
+        import pkg_resources
         schemafile = pkg_resources.resource_filename(
             'zope.app.server', 'schema.xml')
         schema = ZConfig.loadSchema(schemafile)
