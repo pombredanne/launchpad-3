@@ -307,6 +307,10 @@ if the bug is closed:
     'Invalid'
     >>> external_bugzilla.convertRemoteStatus('CLOSED UPSTREAM').title
     "Won't Fix"
+    >>> external_bugzilla.convertRemoteStatus('CLOSED EOL').title
+    'Expired'
+    >>> external_bugzilla.convertRemoteStatus('CLOSED DEFERRED').title
+    'Expired'
 
 If the status can't be converted an UnknownRemoteStatusError will be
 returned.

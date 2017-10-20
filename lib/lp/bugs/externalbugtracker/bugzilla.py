@@ -300,6 +300,7 @@ class Bugzilla(ExternalBugTracker):
                 ('WONTFIX', 'WILL_NOT_FIX', 'NOTOURBUG', 'UPSTREAM',
                  BugTaskStatus.WONTFIX),
                 ('OBSOLETE', 'INSUFFICIENT_DATA', 'INCOMPLETE', 'EXPIRED',
+                 'EOL', 'DEFERRED',
                  BugTaskStatus.EXPIRED),
                 ('INVALID', 'WORKSFORME', 'NOTABUG', 'CANTFIX',
                  'UNREPRODUCIBLE', 'DUPLICATE',
