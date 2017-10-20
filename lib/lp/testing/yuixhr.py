@@ -232,8 +232,6 @@ class YUITestFixtureControllerView(LaunchpadView):
         <html>
           <head>
           <title>YUI XHR Tests</title>
-          <link rel="stylesheet"
-            href="/+icing/yui/assets/skins/sam/skin.css"/>
           <link rel="stylesheet" href="/+icing/rev%(revision)s/combo.css"/>
           <style>
           ul {
