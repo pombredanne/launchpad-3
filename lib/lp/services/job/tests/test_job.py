@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,11 +7,11 @@ from datetime import (
     datetime,
     timedelta,
     )
-from pytz import UTC
 import time
 
 from lazr.jobrunner.jobrunner import LeaseHeld
 import pytz
+from pytz import UTC
 from storm.locals import Store
 from testtools.matchers import Equals
 import transaction
@@ -186,6 +186,13 @@ class TestJob(TestCaseWithFactory):
         self.assertNotEqual(None, job.date_finished)
         self.assertEqual(job.status, JobStatus.WAITING)
 
+    def test_queue_clears_lease_expires(self):
+        """Queueing a job releases its lease."""
+        job = Job(_status=JobStatus.RUNNING)
+        job.lease_expires = UTC_NOW
+        job.queue()
+        self.assertIsNone(job.lease_expires)
+
     def test_suspend(self):
         """A job that is in the WAITING state can be suspended."""
         job = Job(_status=JobStatus.WAITING)
@@ -218,12 +225,12 @@ class TestJob(TestCaseWithFactory):
             job.status,
             JobStatus.WAITING)
 
-    def test_resume_clears_lease_expiry(self):
-        """A job that resumes should null out the lease_expiry."""
+    def test_resume_clears_lease_expires(self):
+        """A job that resumes should null out the lease_expires."""
         job = Job(_status=JobStatus.SUSPENDED)
         job.lease_expires = UTC_NOW
         job.resume()
-        self.assertIs(None, job.lease_expires)
+        self.assertIsNone(job.lease_expires)
 
     def test_resume_when_running(self):
         """When a job is running, attempting to resume is invalid."""

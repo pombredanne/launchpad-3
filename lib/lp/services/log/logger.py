@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Loggers."""
@@ -16,11 +16,6 @@ import logging
 from StringIO import StringIO
 import sys
 import traceback
-
-from testtools.content import (
-    Content,
-    UTF8_TEXT,
-    )
 
 from lp.services.log import loglevels
 
@@ -224,5 +219,10 @@ class BufferLogger(FakeLogger):
         Use with `testtools.TestCase.addDetail`, `fixtures.Fixture.addDetail`,
         and anything else that understands details.
         """
+        # Only import these here to avoid importing testtools outside tests.
+        from testtools.content import (
+            Content,
+            UTF8_TEXT,
+            )
         get_bytes = lambda: [self.getLogBuffer().encode("utf-8")]
         return Content(UTF8_TEXT, get_bytes)

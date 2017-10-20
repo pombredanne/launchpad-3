@@ -245,14 +245,14 @@ class TestCaptureOopsNoRabbit(TestCase):
 
     def test_subscribes_to_events(self):
         capture = self.useFixture(CaptureOops())
-        publishers = globalErrorUtility._oops_config.publishers[:]
+        publisher = globalErrorUtility._oops_config.publisher
         try:
-            globalErrorUtility._oops_config.publishers[:] = [notify_publisher]
+            globalErrorUtility._oops_config.publisher = notify_publisher
             id = globalErrorUtility.raising(sys.exc_info())['id']
             self.assertEqual(id, capture.oopses[0]['id'])
             self.assertEqual(1, len(capture.oopses))
         finally:
-            globalErrorUtility._oops_config.publishers[:] = publishers
+            globalErrorUtility._oops_config.publisher = publisher
 
 
 class TestCaptureOopsRabbit(TestCase):
@@ -272,9 +272,9 @@ class TestCaptureOopsRabbit(TestCase):
         amqp_publisher = oops_amqp.Publisher(
             factory, exchange, routing_key, inherit_id=True)
         oops = {'id': 'fnor', 'foo': 'dr'}
-        self.assertEqual('fnor', amqp_publisher(oops))
+        self.assertEqual(['fnor'], amqp_publisher(oops))
         oops2 = {'id': 'quux', 'foo': 'strangelove'}
-        self.assertEqual('quux', amqp_publisher(oops2))
+        self.assertEqual(['quux'], amqp_publisher(oops2))
         capture.sync()
         self.assertEqual([oops, oops2], capture.oopses)
 

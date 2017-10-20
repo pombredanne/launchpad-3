@@ -197,7 +197,6 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         )
 
     retry_error_types = (UploadNotScannedYetResponse, RetryableSnapStoreError)
-    retry_delay = timedelta(minutes=1)
     max_retries = 20
 
     config = config.ISnapStoreUploadJobSource
@@ -255,29 +254,29 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
     # Ideally we'd just override Job._set_status or similar, but
     # lazr.delegates makes that difficult, so we use this to override all
     # the individual Job lifecycle methods instead.
-    def _do_lifecycle(self, method, *args, **kwargs):
+    def _do_lifecycle(self, method_name, *args, **kwargs):
         old_store_upload_status = self.snapbuild.store_upload_status
-        method(*args, **kwargs)
+        getattr(super(SnapStoreUploadJob, self), method_name)(*args, **kwargs)
         if self.snapbuild.store_upload_status != old_store_upload_status:
             notify(SnapBuildStoreUploadStatusChangedEvent(self.snapbuild))
 
     def start(self, *args, **kwargs):
-        self._do_lifecycle(self.job.start, *args, **kwargs)
+        self._do_lifecycle("start", *args, **kwargs)
 
     def complete(self, *args, **kwargs):
-        self._do_lifecycle(self.job.complete, *args, **kwargs)
+        self._do_lifecycle("complete", *args, **kwargs)
 
     def fail(self, *args, **kwargs):
-        self._do_lifecycle(self.job.fail, *args, **kwargs)
+        self._do_lifecycle("fail", *args, **kwargs)
 
     def queue(self, *args, **kwargs):
-        self._do_lifecycle(self.job.queue, *args, **kwargs)
+        self._do_lifecycle("queue", *args, **kwargs)
 
     def suspend(self, *args, **kwargs):
-        self._do_lifecycle(self.job.suspend, *args, **kwargs)
+        self._do_lifecycle("suspend", *args, **kwargs)
 
     def resume(self, *args, **kwargs):
-        self._do_lifecycle(self.job.resume, *args, **kwargs)
+        self._do_lifecycle("resume", *args, **kwargs)
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
@@ -285,15 +284,34 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         oops_vars.append(('error_detail', self.error_detail))
         return oops_vars
 
+    @property
+    def retry_delay(self):
+        """See `BaseRunnableJob`."""
+        if "status_url" in self.metadata and self.store_url is None:
+            # At the moment we have to poll the status endpoint to find out
+            # if the store has finished scanning.  Try to deal with easy
+            # cases quickly without hammering our job runners or the store
+            # too badly.
+            delays = (15, 15, 30, 30)
+            try:
+                return timedelta(seconds=delays[self.attempt_count - 1])
+            except IndexError:
+                pass
+        return timedelta(minutes=1)
+
     def run(self):
         """See `IRunnableJob`."""
         client = getUtility(ISnapStoreClient)
         try:
             if "status_url" not in self.metadata:
                 self.metadata["status_url"] = client.upload(self.snapbuild)
+                # We made progress, so reset attempt_count.
+                self.attempt_count = 1
             if self.store_url is None:
                 self.store_url, self.store_revision = (
                     client.checkStatus(self.metadata["status_url"]))
+                # We made progress, so reset attempt_count.
+                self.attempt_count = 1
             if self.snapbuild.snap.store_channels:
                 if self.store_revision is None:
                     raise ManualReview(

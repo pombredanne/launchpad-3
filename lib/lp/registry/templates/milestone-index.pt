@@ -89,7 +89,7 @@
                 <dl tal:condition="not: view/release">
                   <dt>Expected:</dt>
                   <dd><span
-                    tal:attributes="title context/dateexpected/fmt:datetime"
+                    tal:attributes="title context/dateexpected/fmt:date"
                     tal:content="context/dateexpected/fmt:approximatedate" />
                     &nbsp;
                     <a tal:replace="structure milestone_menu/create_release/fmt:icon-link" />

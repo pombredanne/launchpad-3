@@ -47,10 +47,10 @@ API_INDEX = $(APIDOC_DIR)/index.html
 # NB: It's important BUILDOUT_BIN only mentions things genuinely produced by
 # buildout.
 BUILDOUT_BIN = \
-    $(PY) bin/apiindex bin/bzr bin/combine-css bin/fl-build-report \
+    $(PY) bin/build-twisted-plugin-cache bin/bzr \
+    bin/combine-css bin/fl-build-report \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
-    bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
     bin/harness bin/iharness bin/ipy bin/jsbuild bin/lpjsmin\
     bin/killservice bin/kill-test-services bin/retest \
     bin/run bin/run-testapp bin/sprite-util bin/start_librarian \
@@ -240,6 +240,7 @@ $(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 compile: $(PY) $(VERSION_INFO)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
+	${SHHH} bin/build-twisted-plugin-cache
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
 
 test_build: build
@@ -419,8 +420,12 @@ realclean: clean
 potemplates: launchpad.pot
 
 # Generate launchpad.pot by extracting message ids from the source
+# XXX cjwatson 2017-09-04: This was previously done using i18nextract from
+# z3c.recipe.i18n, but has been broken for some time.  The place to start in
+# putting this together again is probably zope.app.locales.
 launchpad.pot:
-	bin/i18nextract.py
+	echo "POT generation not currently supported; help us fix this!" >&2
+	exit 1
 
 # Called by the rocketfuel-setup script. You probably don't want to run this
 # on its own.

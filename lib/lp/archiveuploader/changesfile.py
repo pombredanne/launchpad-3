@@ -84,6 +84,11 @@ class ChangesFile(SignableTagFile):
     files = None
 
     def __init__(self, filepath, policy, logger):
+        self.filepath = filepath
+        self.policy = policy
+        self.logger = logger
+
+    def parseChanges(self):
         """Process the given changesfile.
 
         Does:
@@ -93,24 +98,25 @@ class ChangesFile(SignableTagFile):
             * Checks name of changes file
             * Checks signature of changes file
 
-        If any of these checks fail, UploadError is raised, and it's
-        considered a fatal error (no subsequent processing of the upload
-        will be done).
+        If any of these checks fail, UploadError is yielded, and it should
+        be considered a fatal error (no subsequent processing of the upload
+        should be done).
 
         Logger and Policy are instances built in uploadprocessor.py passed
         via NascentUpload class.
         """
-        self.filepath = filepath
-        self.policy = policy
-        self.logger = logger
-
-        self.parse(verify_signature=not policy.unsigned_changes_ok)
+        try:
+            self.parse(verify_signature=not self.policy.unsigned_changes_ok)
+        except UploadError as e:
+            yield e
+            return
 
         for field in self.mandatory_fields:
             if field not in self._dict:
-                raise UploadError(
+                yield UploadError(
                     "Unable to find mandatory field '%s' in the changes "
                     "file." % field)
+                return
 
         try:
             format = float(self._dict["Format"])
@@ -119,7 +125,7 @@ class ChangesFile(SignableTagFile):
             format = 1.5
 
         if format < 1.5 or format > 2.0:
-            raise UploadError(
+            yield UploadError(
                 "Format out of acceptable range for changes file. Range "
                 "1.5 - 2.0, format %g" % format)
 

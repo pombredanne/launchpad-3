@@ -1,8 +1,9 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Branches."""
 
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -335,7 +336,7 @@ class TestBranchJobViaCelery(TestCaseWithFactory):
         self.useBzrBranches()
         db_branch, bzr_tree = self.create_branch_and_tree()
         bzr_tree.commit(
-            'First commit', rev_id='rev1', committer='me@example.org')
+            'First commit', rev_id=b'rev1', committer='me@example.org')
         with person_logged_in(db_branch.owner):
             db_branch.branchChanged(None, 'rev1', None, None, None)
         with block_on_job():
@@ -347,7 +348,7 @@ class TestBranchJobViaCelery(TestCaseWithFactory):
         self.useBzrBranches()
         db_branch, bzr_tree = self.create_branch_and_tree()
         bzr_tree.commit(
-            'First commit', rev_id='rev1', committer='me@example.org')
+            'First commit', rev_id=b'rev1', committer='me@example.org')
         with person_logged_in(db_branch.owner):
             db_branch.branchChanged(None, 'rev1', None, None, None)
         with monitor_celery() as responses:
@@ -1941,7 +1942,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
 
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""
-        commit_message = u'Some commit message'
+        commit_message = 'Some commit message'
         proposal = self.source.addLandingTarget(
             self.user, self.target, self.prerequisite,
             commit_message=commit_message)

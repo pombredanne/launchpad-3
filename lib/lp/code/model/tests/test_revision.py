@@ -1,7 +1,9 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Revisions."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -228,11 +230,11 @@ class TestRevisionSet(TestCaseWithFactory):
         self.becomeDbUser('branchscanner')
         bzr_revisions = [
             self.factory.makeBzrRevision(
-                'rev-1',
+                b'rev-1',
                 props={
                     'prop1': 'foo', 'deb-pristine-delta': 'bar',
                     'deb-pristine-delta-xz': 'baz'}),
-            self.factory.makeBzrRevision('rev-2', parent_ids=['rev-1'])
+            self.factory.makeBzrRevision(b'rev-2', parent_ids=[b'rev-1'])
         ]
         with StormStatementRecorder() as recorder:
             self.revision_set.newFromBazaarRevisions(bzr_revisions)

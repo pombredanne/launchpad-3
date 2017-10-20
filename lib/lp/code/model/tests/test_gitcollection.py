@@ -1,7 +1,9 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repository collections."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -595,7 +597,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         # only merge proposals where that repository is the target are
         # returned.
         [ref1, ref2] = self.factory.makeGitRefs(
-            paths=[u"refs/heads/ref1", u"refs/heads/ref2"])
+            paths=["refs/heads/ref1", "refs/heads/ref2"])
         mp1 = self.factory.makeBranchMergeProposalForGit(target_ref=ref1)
         mp2 = self.factory.makeBranchMergeProposalForGit(target_ref=ref2)
         self.factory.makeBranchMergeProposalForGit()
@@ -618,7 +620,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         # prerequisite_path, only merge proposals where that repository is
         # the prerequisite are returned.
         [ref1, ref2] = self.factory.makeGitRefs(
-            paths=[u"refs/heads/ref1", u"refs/heads/ref2"])
+            paths=["refs/heads/ref1", "refs/heads/ref2"])
         mp1 = self.factory.makeBranchMergeProposalForGit(prerequisite_ref=ref1)
         mp2 = self.factory.makeBranchMergeProposalForGit(prerequisite_ref=ref2)
         self.factory.makeBranchMergeProposalForGit()
@@ -718,9 +720,9 @@ class TestGenericGitCollectionVisibleFilter(TestCaseWithFactory):
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.public_repository = self.factory.makeGitRepository(name=u'public')
+        self.public_repository = self.factory.makeGitRepository(name='public')
         self.private_repository = self.factory.makeGitRepository(
-            name=u'private', information_type=InformationType.USERDATA)
+            name='private', information_type=InformationType.USERDATA)
         self.all_repositories = getUtility(IAllGitRepositories)
 
     def test_all_repositories(self):
@@ -942,8 +944,8 @@ class TestSearch(TestCaseWithFactory):
     def test_match_exact_repository_name(self):
         # search returns all repositories with the same name as the search
         # term.
-        repository1 = self.factory.makeGitRepository(name=u'foo')
-        repository2 = self.factory.makeGitRepository(name=u'foo')
+        repository1 = self.factory.makeGitRepository(name='foo')
+        repository2 = self.factory.makeGitRepository(name='foo')
         self.factory.makeGitRepository()
         search_results = self.collection.search('foo')
         self.assertEqual(
@@ -952,7 +954,7 @@ class TestSearch(TestCaseWithFactory):
     def disabled_test_match_against_unique_name(self):
         # XXX cjwatson 2015-02-06: Disabled until the URL format settles
         # down.
-        repository = self.factory.makeGitRepository(name=u'fooa')
+        repository = self.factory.makeGitRepository(name='fooa')
         search_term = repository.target.name + '/foo'
         search_results = self.collection.search(search_term)
         self.assertEqual([repository], list(search_results))
@@ -960,15 +962,15 @@ class TestSearch(TestCaseWithFactory):
     def test_match_sub_repository_name(self):
         # search returns all repositories which have a name of which the
         # search term is a substring.
-        repository1 = self.factory.makeGitRepository(name=u'afoo')
-        repository2 = self.factory.makeGitRepository(name=u'foob')
+        repository1 = self.factory.makeGitRepository(name='afoo')
+        repository2 = self.factory.makeGitRepository(name='foob')
         self.factory.makeGitRepository()
         search_results = self.collection.search('foo')
         self.assertEqual(
             sorted([repository1, repository2]), sorted(search_results))
 
     def test_match_ignores_case(self):
-        repository = self.factory.makeGitRepository(name=u'foobar')
+        repository = self.factory.makeGitRepository(name='foobar')
         search_results = self.collection.search('FOOBAR')
         self.assertEqual([repository], list(search_results))
 
@@ -977,8 +979,8 @@ class TestSearch(TestCaseWithFactory):
         # the project name.
         project = self.factory.makeProduct('foo')
         repository1 = self.factory.makeGitRepository(
-            target=project, name=u'foo')
-        self.factory.makeGitRepository(target=project, name=u'bar')
+            target=project, name='foo')
+        self.factory.makeGitRepository(target=project, name='bar')
         search_results = self.collection.inProject(project).search('foo')
         self.assertEqual([repository1], list(search_results))
 

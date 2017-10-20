@@ -1,7 +1,9 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeReviewComments."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -158,9 +160,9 @@ class TestCodeReviewCommentHtmlMixin:
 
     def test_download_view(self):
         """The download view has the expected contents and header."""
-        comment = self.makeCodeReviewComment(body=u'\u1234')
+        comment = self.makeCodeReviewComment(body='\u1234')
         browser = self.getViewBrowser(comment, view_name='+download')
-        contents = u'\u1234'.encode('utf-8')
+        contents = '\u1234'.encode('utf-8')
         self.assertEqual(contents, browser.contents)
         self.assertEqual(
             'text/plain;charset=utf-8', browser.headers['Content-type'])
@@ -171,7 +173,7 @@ class TestCodeReviewCommentHtmlMixin:
 
     def test_parent_comment_in_reply(self):
         """The reply view has the expected contents from the parent comment."""
-        contents = u'test-comment'.encode('utf-8')
+        contents = 'test-comment'.encode('utf-8')
         comment = self.makeCodeReviewComment(body=contents)
         browser = self.getViewBrowser(comment, view_name='+reply')
         self.assertIn(contents, browser.contents)

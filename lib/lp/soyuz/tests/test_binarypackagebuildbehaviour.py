@@ -140,6 +140,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             'build_debug_symbols': archive.build_debug_symbols,
             'ogrecomponent': component,
             'distribution': das.distroseries.distribution.name,
+            'series': ds_name,
             'suite': suite,
             'trusted_keys': trusted_keys,
             }

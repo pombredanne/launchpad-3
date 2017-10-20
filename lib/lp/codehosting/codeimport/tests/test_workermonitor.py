@@ -582,7 +582,8 @@ class TestWorkerMonitorRunNoProcess(TestCase):
         # loggingsupport.set_up_oops_reporting).
         errorlog.globalErrorUtility.configure(
             config_factory=oops_twisted.Config,
-            publisher_adapter=oops_twisted.defer_publisher)
+            publisher_adapter=oops_twisted.defer_publisher,
+            publisher_helpers=oops_twisted.publishers)
         self.addCleanup(errorlog.globalErrorUtility.configure)
         worker_monitor = self.WorkerMonitor(defer.fail(RuntimeError()))
         return worker_monitor.run().addCallback(
@@ -611,7 +612,8 @@ class TestWorkerMonitorRunNoProcess(TestCase):
         # callFinishJob logs a failure from the child process.
         errorlog.globalErrorUtility.configure(
             config_factory=oops_twisted.Config,
-            publisher_adapter=oops_twisted.defer_publisher)
+            publisher_adapter=oops_twisted.defer_publisher,
+            publisher_helpers=oops_twisted.publishers)
         self.addCleanup(errorlog.globalErrorUtility.configure)
         failure_msg = "test_callFinishJob_logs_failure expected failure"
         worker_monitor = self.WorkerMonitor(

@@ -107,6 +107,7 @@ from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
+    BadSnapSource,
     CannotAuthorizeStoreUploads,
     CannotModifySnapProcessor,
     CannotRequestAutoBuilds,
@@ -239,6 +240,19 @@ class Snap(Storm, WebhookTargetMixin):
     @property
     def valid_webhook_event_types(self):
         return ["snap:build:0.1"]
+
+    @property
+    def _api_git_path(self):
+        return self.git_path
+
+    @_api_git_path.setter
+    def _api_git_path(self, value):
+        if self.git_repository is None and self.git_repository_url is None:
+            raise BadSnapSource(
+                "git_path may only be set on a Git-based snap.")
+        if value is None:
+            raise BadSnapSource("git_path may not be set to None.")
+        self.git_path = value
 
     @property
     def git_ref(self):

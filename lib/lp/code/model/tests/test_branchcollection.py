@@ -1,7 +1,9 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch collections."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -12,6 +14,10 @@ from datetime import (
 from operator import attrgetter
 
 import pytz
+from storm.expr import (
+    Asc,
+    Desc,
+    )
 from storm.store import (
     EmptyResultSet,
     Store,
@@ -25,6 +31,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchLifecycleStatus,
+    BranchListingSort,
     BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
@@ -43,12 +50,15 @@ from lp.code.tests.helpers import remove_all_sample_data_branches
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.person import Owner
+from lp.registry.model.product import Product
 from lp.services.database.interfaces import IStore
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     person_logged_in,
     run_with_login,
     StormStatementRecorder,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -149,6 +159,21 @@ class TestGenericBranchCollection(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             self.assertTrue(branch.visibleByUser(someone))
             self.assertThat(recorder, HasQueryCount(Equals(0)))
+
+    def test_getBranches_sort_by(self):
+        product_a = self.factory.makeProduct(name='a')
+        product_b = self.factory.makeProduct(name='b')
+        branch_a_b = self.factory.makeProductBranch(
+            product=product_a, name='b')
+        branch_b_a = self.factory.makeProductBranch(
+            product=product_b, name='a')
+        collection = GenericBranchCollection(self.store)
+        self.assertEqual(
+            [branch_a_b, branch_b_a],
+            list(collection.getBranches(sort_by=BranchListingSort.DEFAULT)))
+        self.assertEqual(
+            [branch_b_a, branch_a_b],
+            list(collection.getBranches(sort_by=BranchListingSort.NAME)))
 
     def test_getBranchIds(self):
         branch = self.factory.makeProductBranch()
@@ -1378,3 +1403,57 @@ class TestBranchCollectionOwnerCounts(TestCaseWithFactory):
             *DEFAULT_BRANCH_STATUS_IN_LISTING)
         person_count, team_count = collection.ownerCounts()
         self.assertEqual(1, person_count)
+
+
+class TestBranchCollectionConvertListingSortToOrderBy(TestCase):
+
+    DEFAULT_BRANCH_LISTING_SORT = [
+        Asc(Product.name),
+        Desc(Branch.lifecycle_status),
+        Asc(Owner.name),
+        Asc(Branch.name),
+        ]
+
+    def assertSortsEqual(self, sort_one, sort_two):
+        """Assert that one list of sort specs is equal to another."""
+        def sort_data(sort):
+            return sort.suffix, sort.expr
+        self.assertEqual(map(sort_data, sort_one), map(sort_data, sort_two))
+
+    def test_default(self):
+        """Test that passing None or DEFAULT results in the default list."""
+        self.assertSortsEqual(
+            self.DEFAULT_BRANCH_LISTING_SORT,
+            GenericBranchCollection._convertListingSortToOrderBy(None))
+        self.assertSortsEqual(
+            self.DEFAULT_BRANCH_LISTING_SORT,
+            GenericBranchCollection._convertListingSortToOrderBy(
+                BranchListingSort.DEFAULT))
+
+    def test_lifecycle(self):
+        """Test with an option that's part of the default sort.
+
+        Sorting on LIFECYCLE moves the lifecycle reference to the first
+        element of the output.
+        """
+        # Check that this isn't a no-op.
+        lifecycle_order = GenericBranchCollection._convertListingSortToOrderBy(
+            BranchListingSort.LIFECYCLE)
+        self.assertSortsEqual(
+            [Desc(Branch.lifecycle_status),
+             Asc(Product.name),
+             Asc(Owner.name),
+             Asc(Branch.name)], lifecycle_order)
+
+    def test_sort_on_column_not_in_default_sort_order(self):
+        """Test with an option that's not part of the default sort.
+
+        This should put the passed option first in the list, but leave the
+        rest the same.
+        """
+        registrant_order = (
+            GenericBranchCollection._convertListingSortToOrderBy(
+                BranchListingSort.OLDEST_FIRST))
+        self.assertSortsEqual(
+            [Asc(Branch.date_created)] + self.DEFAULT_BRANCH_LISTING_SORT,
+            registrant_order)

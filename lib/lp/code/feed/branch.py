@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch feed (syndication) views."""
@@ -15,23 +15,19 @@ __all__ = [
     'ProjectRevisionFeed',
     ]
 
-from storm.locals import (
-    Asc,
-    Desc,
-    )
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 
 from lp.code.browser.branch import BranchView
+from lp.code.enums import BranchListingSort
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING,
     IBranch,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.revisioncache import IRevisionCache
-from lp.code.model.branch import Branch
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
@@ -165,11 +161,10 @@ class BranchListingFeed(BranchFeedBase):
         """
         collection = self._getCollection().visibleByUser(
             None).withLifecycleStatus(*DEFAULT_BRANCH_STATUS_IN_LISTING)
-        branches = collection.getBranches(eager_load=False)
-        return list(branches.order_by(
-            Desc(Branch.date_last_modified), Asc(Branch.target_suffix),
-            Desc(Branch.lifecycle_status), Asc(Branch.name)).config(
-                limit=self.quantity))
+        branches = collection.getBranches(
+            eager_load=False,
+            sort_by=BranchListingSort.MOST_RECENTLY_CHANGED_FIRST)
+        return list(branches.config(limit=self.quantity))
 
 
 class ProductBranchFeed(BranchListingFeed):

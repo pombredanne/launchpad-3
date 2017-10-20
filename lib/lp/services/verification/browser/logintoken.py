@@ -358,7 +358,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
                 'process to <a href="${url}/+editpgpkeys">find and '
                 'import</a> the new key.',
-                mapping=dict(key=e.key.keyid, url=person_url))))
+                mapping=dict(key=e.key.fingerprint, url=person_url))))
         except GPGKeyExpired as e:
             self.addError(
                         structured(_(
@@ -366,7 +366,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
                 'Change the expiry date (in a terminal, enter '
                 '<kbd>gpg --edit-key <var>your@email.address</var></kbd> '
                 'then enter <kbd>expire</kbd>), and try again.',
-                mapping=dict(key=e.key.keyid))))
+                mapping=dict(key=e.key.fingerprint))))
         else:
             return key
 

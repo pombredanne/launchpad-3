@@ -1,7 +1,9 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git references."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -55,10 +57,10 @@ class TestGitRef(TestCaseWithFactory):
 
     def test_display_name(self):
         [master, personal] = self.factory.makeGitRefs(
-            paths=[u"refs/heads/master", u"refs/heads/people/foo/bar"])
+            paths=["refs/heads/master", "refs/heads/people/foo/bar"])
         repo_path = master.repository.shortened_path
         self.assertEqual(
-            [u"%s:master" % repo_path, "%s:people/foo/bar" % repo_path],
+            ["%s:master" % repo_path, "%s:people/foo/bar" % repo_path],
             [ref.display_name for ref in (master, personal)])
 
     def test_getMergeProposals(self):
@@ -111,36 +113,36 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         self.sha1_root = unicode(hashlib.sha1("root").hexdigest())
         self.log = [
             {
-                u"sha1": self.sha1_tip,
-                u"message": u"tip",
-                u"author": {
-                    u"name": self.authors[0].display_name,
-                    u"email": self.author_emails[0],
-                    u"time": int((self.dates[1] - epoch).total_seconds()),
+                "sha1": self.sha1_tip,
+                "message": "tip",
+                "author": {
+                    "name": self.authors[0].display_name,
+                    "email": self.author_emails[0],
+                    "time": int((self.dates[1] - epoch).total_seconds()),
                     },
-                u"committer": {
-                    u"name": self.authors[1].display_name,
-                    u"email": self.author_emails[1],
-                    u"time": int((self.dates[1] - epoch).total_seconds()),
+                "committer": {
+                    "name": self.authors[1].display_name,
+                    "email": self.author_emails[1],
+                    "time": int((self.dates[1] - epoch).total_seconds()),
                     },
-                u"parents": [self.sha1_root],
-                u"tree": unicode(hashlib.sha1("").hexdigest()),
+                "parents": [self.sha1_root],
+                "tree": unicode(hashlib.sha1("").hexdigest()),
                 },
             {
-                u"sha1": self.sha1_root,
-                u"message": u"root",
-                u"author": {
-                    u"name": self.authors[1].display_name,
-                    u"email": self.author_emails[1],
-                    u"time": int((self.dates[0] - epoch).total_seconds()),
+                "sha1": self.sha1_root,
+                "message": "root",
+                "author": {
+                    "name": self.authors[1].display_name,
+                    "email": self.author_emails[1],
+                    "time": int((self.dates[0] - epoch).total_seconds()),
                     },
-                u"committer": {
-                    u"name": self.authors[0].display_name,
-                    u"email": self.author_emails[0],
-                    u"time": int((self.dates[0] - epoch).total_seconds()),
+                "committer": {
+                    "name": self.authors[0].display_name,
+                    "email": self.author_emails[0],
+                    "time": int((self.dates[0] - epoch).total_seconds()),
                     },
-                u"parents": [],
-                u"tree": unicode(hashlib.sha1("").hexdigest()),
+                "parents": [],
+                "tree": unicode(hashlib.sha1("").hexdigest()),
                 },
             ]
         self.hosting_fixture = self.useFixture(GitHostingFixture(log=self.log))
@@ -157,29 +159,29 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 "sha1": Equals(self.sha1_tip),
                 "author": MatchesStructure.byEquality(person=self.authors[0]),
                 "author_date": Equals(self.dates[1]),
-                "commit_message": Equals(u"tip"),
+                "commit_message": Equals("tip"),
                 }),
             ContainsDict({
                 "sha1": Equals(self.sha1_root),
                 "author": MatchesStructure.byEquality(person=self.authors[1]),
                 "author_date": Equals(self.dates[0]),
-                "commit_message": Equals(u"root"),
+                "commit_message": Equals("root"),
                 }),
             ]))
-        key = u"git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
+        key = "git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
         self.assertEqual(
             json.dumps(self.log),
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
     def test_cache(self):
         path = self.ref.repository.getInternalPath()
-        key = u"git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
+        key = "git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
         getUtility(IMemcacheClient).set(key.encode("UTF-8"), "[]")
         self.assertEqual([], self.ref.getCommits(self.sha1_tip))
 
     def test_disable_hosting(self):
         self.useFixture(
-            FeatureFixture({u"code.git.log.disable_hosting": u"on"}))
+            FeatureFixture({"code.git.log.disable_hosting": "on"}))
         commits = self.ref.getCommits(self.sha1_tip)
         self.assertThat(commits, MatchesListwise([
             ContainsDict({
@@ -189,14 +191,14 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             ]))
         self.assertEqual([], self.hosting_fixture.getLog.calls)
         path = self.ref.repository.getInternalPath()
-        key = u"git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
+        key = "git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
         self.assertIsNone(getUtility(IMemcacheClient).get(key.encode("UTF-8")))
 
     def test_disable_memcache(self):
         self.useFixture(
-            FeatureFixture({u"code.git.log.disable_memcache": u"on"}))
+            FeatureFixture({"code.git.log.disable_memcache": "on"}))
         path = self.ref.repository.getInternalPath()
-        key = u"git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
+        key = "git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
         getUtility(IMemcacheClient).set(key.encode("UTF-8"), "[]")
         self.assertNotEqual([], self.ref.getCommits(self.sha1_tip))
         self.assertEqual(
@@ -209,7 +211,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             [((path, self.sha1_tip),
               {"limit": 10, "stop": self.sha1_root, "logger": None})],
             self.hosting_fixture.getLog.calls)
-        key = u"git.launchpad.dev:git-log:%s:%s:limit=10:stop=%s" % (
+        key = "git.launchpad.dev:git-log:%s:%s:limit=10:stop=%s" % (
             path, self.sha1_tip, self.sha1_root)
         self.assertEqual(
             json.dumps(self.log),
@@ -227,7 +229,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             [((path, self.sha1_tip),
               {"limit": None, "stop": self.sha1_root, "logger": None})],
             self.hosting_fixture.getLog.calls)
-        key = u"git.launchpad.dev:git-log:%s:%s:stop=%s" % (
+        key = "git.launchpad.dev:git-log:%s:%s:stop=%s" % (
             path, self.sha1_tip, self.sha1_root)
         self.assertEqual(
             json.dumps(self.log),
@@ -240,7 +242,7 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         self.assertThat(commits, MatchesListwise([
             ContainsDict({"sha1": Equals(self.sha1_tip)}),
             ]))
-        key = u"git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
+        key = "git.launchpad.dev:git-log:%s:%s" % (path, self.sha1_tip)
         self.assertEqual(
             json.dumps(self.log),
             getUtility(IMemcacheClient).get(key.encode("UTF-8")))
@@ -279,13 +281,13 @@ class TestGitRefCreateMergeProposal(TestCaseWithFactory):
         with admin_logged_in():
             self.project = self.factory.makeProduct()
             self.user = self.factory.makePerson()
-            self.reviewer = self.factory.makePerson(name=u"reviewer")
+            self.reviewer = self.factory.makePerson(name="reviewer")
             [self.source] = self.factory.makeGitRefs(
-                name=u"source", owner=self.user, target=self.project)
+                name="source", owner=self.user, target=self.project)
             [self.target] = self.factory.makeGitRefs(
-                name=u"target", owner=self.user, target=self.project)
+                name="target", owner=self.user, target=self.project)
             [self.prerequisite] = self.factory.makeGitRefs(
-                name=u"prerequisite", owner=self.user, target=self.project)
+                name="prerequisite", owner=self.user, target=self.project)
 
     def assertOnePendingReview(self, proposal, reviewer, review_type=None):
         # There should be one pending vote for the reviewer with the specified
@@ -380,7 +382,7 @@ class TestGitRefCreateMergeProposal(TestCaseWithFactory):
         reviewer should be assigned to the merge proposal.
         """
         [target_with_default_reviewer] = self.factory.makeGitRefs(
-            name=u"target-branch-with-reviewer", owner=self.user,
+            name="target-branch-with-reviewer", owner=self.user,
             target=self.project, reviewer=self.reviewer)
         proposal = self.source.addLandingTarget(
             self.user, target_with_default_reviewer)
@@ -396,7 +398,7 @@ class TestGitRefCreateMergeProposal(TestCaseWithFactory):
 
     def test_attribute_assignment(self):
         """Smoke test to make sure the assignments are there."""
-        commit_message = u"Some commit message"
+        commit_message = "Some commit message"
         proposal = self.source.addLandingTarget(
             self.user, self.target, self.prerequisite,
             commit_message=commit_message)
@@ -433,7 +435,7 @@ class TestGitRefWebservice(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_attributes(self):
-        [master] = self.factory.makeGitRefs(paths=[u"refs/heads/master"])
+        [master] = self.factory.makeGitRefs(paths=["refs/heads/master"])
         webservice = webservice_for_person(
             master.repository.owner, permission=OAuthPermission.READ_PUBLIC)
         webservice.default_api_version = "devel"
@@ -444,9 +446,9 @@ class TestGitRefWebservice(TestCaseWithFactory):
         self.assertEqual(200, response.status)
         result = response.jsonBody()
         self.assertThat(result["repository_link"], EndsWith(repository_url))
-        self.assertEqual(u"refs/heads/master", result["path"])
+        self.assertEqual("refs/heads/master", result["path"])
         self.assertEqual(
-            unicode(hashlib.sha1(u"refs/heads/master").hexdigest()),
+            unicode(hashlib.sha1("refs/heads/master").hexdigest()),
             result["commit_sha1"])
 
     def test_landing_candidates(self):

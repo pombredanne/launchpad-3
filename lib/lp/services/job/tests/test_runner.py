@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for job-running facilities."""
@@ -349,6 +349,7 @@ class TestJobRunner(TestCaseWithFactory):
             MatchesAll(
                 GreaterThan(expected_delay - timedelta(minutes=1)),
                 LessThan(expected_delay + timedelta(minutes=1))))
+        self.assertIsNone(job.lease_expires)
         self.assertNotIn(job, runner.completed_jobs)
         self.assertIn(job, runner.incomplete_jobs)
 
@@ -579,6 +580,9 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
             sys.path.append(config.root)
             self.addCleanup(sys.path.remove, config.root)
 
+    def _attachLog(self, logger):
+        self.addDetail('log', logger.content)
+
     def test_timeout_long(self):
         """When a job exceeds its lease, an exception is raised.
 
@@ -588,6 +592,7 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         """
         logger = BufferLogger()
         logger.setLevel(logging.INFO)
+        self.addCleanup(self._attachLog, logger)
         # StuckJob is actually a source of two jobs. The first is fast, the
         # second slow.
         runner = TwistedJobRunner.runFromSource(
@@ -618,6 +623,7 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         """
         logger = BufferLogger()
         logger.setLevel(logging.INFO)
+        self.addCleanup(self._attachLog, logger)
         # StuckJob is actually a source of two jobs. The first is fast, the
         # second slow.
         runner = TwistedJobRunner.runFromSource(
@@ -644,6 +650,7 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         reused for a new job, so we kill the worker.
         """
         logger = BufferLogger()
+        self.addCleanup(self._attachLog, logger)
         runner = TwistedJobRunner.runFromSource(
             InitialFailureJob, 'branchscanner', logger)
         self.assertEqual(
@@ -656,6 +663,7 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         for a new job, so we reuse the worker.
         """
         logger = BufferLogger()
+        self.addCleanup(self._attachLog, logger)
         runner = TwistedJobRunner.runFromSource(
             ProcessSharingJob, 'branchscanner', logger)
         self.assertEqual(
@@ -667,6 +675,7 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         # especially in parallel tests.
         logger = BufferLogger()
         logger.setLevel(logging.INFO)
+        self.addCleanup(self._attachLog, logger)
         runner = TwistedJobRunner.runFromSource(
             MemoryHogJob, 'branchscanner', logger)
         self.assertEqual(
@@ -678,6 +687,7 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
     def test_no_jobs(self):
         logger = BufferLogger()
         logger.setLevel(logging.INFO)
+        self.addCleanup(self._attachLog, logger)
         runner = TwistedJobRunner.runFromSource(
             NoJobs, 'branchscanner', logger)
         self.assertEqual(
@@ -687,6 +697,7 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         """Jobs that raise LeaseHeld are handled correctly."""
         logger = BufferLogger()
         logger.setLevel(logging.DEBUG)
+        self.addCleanup(self._attachLog, logger)
         runner = TwistedJobRunner.runFromSource(
             LeaseHeldJob, 'branchscanner', logger)
         self.assertIn('Could not acquire lease', logger.getLogBuffer())

@@ -49,22 +49,13 @@ directly.
 URLs to additional FileBug elements
 -----------------------------------
 
-FileBugViewBase's inline_filebug_base_url returns the base URL for all
-inline +filebug work.
+FileBugViewBase provides properties that return the URLs of useful parts of
+the +filebug process.
 
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> filebug_view = create_initialized_view(
     ...     firefox, '+filebug')
-
-This property returns the root URL of the current request, so in the
-case of this test will return 127.0.0.1.
-
-    >>> print filebug_view.inline_filebug_base_url
-    http://127.0.0.1/
-
-FileBugViewBase provides properties that return the URLs of further
-useful parts of the +filebug process.
 
 The inline_filebug_form_url property returns the URL of the inline
 filebug form so that it may be loaded asynchronously.

@@ -3,6 +3,8 @@
 
 """Helper functions for code testing live here."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 __all__ = [
     'add_revision_to_branch',
@@ -118,7 +120,7 @@ def make_erics_fooix_project(factory):
     # And fake a diff.
     naked_bmp = removeSecurityProxy(bmp)
     preview = removeSecurityProxy(naked_bmp.updatePreviewDiff(
-        ''.join(unified_diff('', 'random content')), u'rev-a', u'rev-b'))
+        ''.join(unified_diff('', 'random content')), 'rev-a', 'rev-b'))
     naked_bmp.source_branch.last_scanned_id = preview.source_revision_id
     naked_bmp.target_branch.last_scanned_id = preview.target_revision_id
     preview.diff_lines_count = 47
@@ -302,12 +304,12 @@ def remove_all_sample_data_branches():
 class GitHostingFixture(fixtures.Fixture):
     """A fixture that temporarily registers a fake Git hosting client."""
 
-    def __init__(self, default_branch=u"refs/heads/master",
+    def __init__(self, default_branch="refs/heads/master",
                  refs=None, commits=None, log=None, diff=None, merge_diff=None,
                  merges=None, blob=None, disable_memcache=True):
         self.create = FakeMethod()
         self.getProperties = FakeMethod(
-            result={u"default_branch": default_branch})
+            result={"default_branch": default_branch})
         self.setProperties = FakeMethod()
         self.getRefs = FakeMethod(result=({} if refs is None else refs))
         self.getCommits = FakeMethod(

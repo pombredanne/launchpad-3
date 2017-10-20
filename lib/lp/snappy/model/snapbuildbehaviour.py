@@ -96,6 +96,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                     endpoint=config.snappy.builder_proxy_auth_api_endpoint,
                     token=token['username']))
         args["name"] = build.snap.name
+        args["series"] = build.distro_series.name
         args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
         # some more fine-grained level.
@@ -128,8 +129,17 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
     @defer.inlineCallbacks
     def _requestProxyToken(self):
         admin_username = config.snappy.builder_proxy_auth_api_admin_username
+        if not admin_username:
+            raise CannotBuild(
+                "builder_proxy_auth_api_admin_username is not configured.")
         secret = config.snappy.builder_proxy_auth_api_admin_secret
+        if not secret:
+            raise CannotBuild(
+                "builder_proxy_auth_api_admin_secret is not configured.")
         url = config.snappy.builder_proxy_auth_api_endpoint
+        if not secret:
+            raise CannotBuild(
+                "builder_proxy_auth_api_endpoint is not configured.")
         timestamp = int(time.time())
         proxy_username = '{build_id}-{timestamp}'.format(
             build_id=self.build.build_cookie,

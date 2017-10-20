@@ -1,7 +1,9 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeImportJob and CodeImportJobWorkflow."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -127,7 +129,7 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
         if state == CodeImportJobState.RUNNING:
             getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
         naked_job = removeSecurityProxy(job)
-        naked_job.date_due = UTC_NOW + u'%d days' % date_due_delta
+        naked_job.date_due = UTC_NOW + '%d days' % date_due_delta
         naked_job.requesting_user = requesting_user
         return job
 
@@ -235,7 +237,7 @@ class ReclaimableJobTests(TestCaseWithFactory):
     def makeJobWithHeartbeatInPast(self, seconds_in_past):
         code_import = make_running_import(factory=self.factory)
         naked_job = removeSecurityProxy(code_import.import_job)
-        naked_job.heartbeat = UTC_NOW + u'%d seconds' % -seconds_in_past
+        naked_job.heartbeat = UTC_NOW + '%d seconds' % -seconds_in_past
         return code_import.import_job
 
     def assertReclaimableJobs(self, jobs):
@@ -701,7 +703,7 @@ class TestCodeImportJobWorkflowUpdateHeartbeat(TestCaseWithFactory,
             "The CodeImportJob associated with %s is "
             "PENDING." % code_import.branch.unique_name,
             getUtility(ICodeImportJobWorkflow).updateHeartbeat,
-            job, u'')
+            job, '')
 
     def test_updateHeartboat(self):
         code_import = self.factory.makeCodeImport()
@@ -712,9 +714,9 @@ class TestCodeImportJobWorkflowUpdateHeartbeat(TestCaseWithFactory,
         # Set heartbeat to something wrong so that we can prove that it was
         # changed.
         removeSecurityProxy(job).heartbeat = None
-        workflow.updateHeartbeat(job, u'some interesting log output')
+        workflow.updateHeartbeat(job, 'some interesting log output')
         self.assertSqlAttributeEqualsDate(job, 'heartbeat', UTC_NOW)
-        self.assertEqual(u'some interesting log output', job.logtail)
+        self.assertEqual('some interesting log output', job.logtail)
 
 
 class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
@@ -1126,7 +1128,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         self.requestJobByUserWithDisplayName(code_import_id, "New User")
         user_browser.getControl('Import Now').click()
         self.assertEqual(
-            [u'The import has already been requested by New User.'],
+            ['The import has already been requested by New User.'],
             get_feedback_messages(user_browser.contents))
 
     def test_pressButtonJobDeleted(self):
@@ -1137,7 +1139,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         self.deleteJob(code_import_id)
         user_browser.getControl('Import Now').click()
         self.assertEqual(
-            [u'This import is no longer being updated automatically.'],
+            ['This import is no longer being updated automatically.'],
             get_feedback_messages(user_browser.contents))
 
     def test_pressButtonJobStarted(self):
@@ -1147,7 +1149,7 @@ class TestRequestJobUIRaces(TestCaseWithFactory):
         self.startJob(code_import_id)
         user_browser.getControl('Import Now').click()
         self.assertEqual(
-            [u'The import is already running.'],
+            ['The import is already running.'],
             get_feedback_messages(user_browser.contents))
 
 

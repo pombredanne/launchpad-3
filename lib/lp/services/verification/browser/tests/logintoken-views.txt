@@ -57,5 +57,6 @@ perform the last step of the workflow for adding a GPG key.
     >>> print "\n".join(
     ...     notification.message
     ...     for notification in validategpg_view.request.notifications)
-    The key 1024D/DFD20543 was successfully validated...
+    The key 1024D/A419AE861E88BC9E04B9C26FBA2B9389DFD20543 was successfully
+    validated...
     >>> tac.tearDown()

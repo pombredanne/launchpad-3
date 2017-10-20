@@ -72,10 +72,14 @@ considered) for the upload in question.
     >>> ed_binary_changes = ChangesFile(
     ...     datadir('ed_0.2-20_i386.changes.binary-only'),
     ...     modified_insecure_policy, DevNullLogger())
+    >>> len(list(ed_binary_changes.parseChanges()))
+    0
 
     >>> ed_source_changes = ChangesFile(
     ...     datadir('ed_0.2-20_source.changes'),
     ...     modified_insecure_policy, DevNullLogger())
+    >>> len(list(ed_source_changes.parseChanges()))
+    0
 
 Make sure we are not getting any exceptions due to a malformed changes
 file name.
@@ -324,7 +328,7 @@ know as 'sponsor' or 'mentor':
 The IGPGKey used to sign this ChangesFile:
 
     >>> ed_binary_changes.signingkey.displayname
-    u'1024D/5D147547'
+    u'1024D/FD311613D941C6DE55737D310E3498675D147547'
 
 
 DSCFile
@@ -382,7 +386,7 @@ The IGPGKey used to sign this DSC, which will be stored as the
 ISourcePackageRelease.dscsiginingkey:
 
     >>> ed_source_dsc.signingkey.displayname
-    u'1024D/6C64A8C5'
+    u'1024D/340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
 
 A DSCFile provides a verification API similiar to what we have in
 ChangesFile itself:

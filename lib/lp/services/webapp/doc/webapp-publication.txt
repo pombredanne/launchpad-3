@@ -333,7 +333,7 @@ the registered factories.)
     >>> print_request_and_publication('launchpad.dev', method='DELETE')
     ProtocolErrorRequest
     ProtocolErrorPublication: status=405
-      Allow: GET HEAD POST
+      Allow: GET, HEAD, POST
 
     >>> print_request_and_publication('api.launchpad.dev')
     WebServiceClientRequest
