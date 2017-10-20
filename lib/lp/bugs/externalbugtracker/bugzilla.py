@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bugzilla ExternalBugTracker utility."""
@@ -25,6 +25,7 @@ import six
 from zope.component import getUtility
 from zope.interface import implementer
 
+from lp.app.validators.email import valid_email
 from lp.bugs.externalbugtracker.base import (
     BugNotFound,
     BugTrackerAuthenticationError,
@@ -839,12 +840,18 @@ class BugzillaAPI(Bugzilla):
         comment = self._bugs[actual_bug_id]['comments'][comment_id]
         display_name, email = parseaddr(comment['author'])
 
-        # If the name is empty then we return None so that
-        # IPersonSet.ensurePerson() can actually do something with it.
-        if not display_name:
-            display_name = None
-
-        return (display_name, email)
+        # If the email isn't valid, return the email address as the
+        # display name (a Launchpad Person will be created with this
+        # name).
+        if not valid_email(email):
+            return email, None
+        # If the display name is empty, set it to None so that it's
+        # useable by IPersonSet.ensurePerson().
+        elif display_name == '':
+            return None, email
+        # Both displayname and email are valid, return both.
+        else:
+            return display_name, email
 
     def getMessageForComment(self, remote_bug_id, comment_id, poster):
         """See `ISupportsCommentImport`."""
