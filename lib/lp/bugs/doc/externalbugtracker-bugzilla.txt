@@ -406,6 +406,18 @@ isn't available in which case we map against priority values.
     >>> external_bugzilla.convertRemoteImportance('P1').title
     'Low'
 
+A priority or severity of 'UNSPECIFIED' turns into
+BugTaskImportance.UNDECIDED unless the other field gives us something
+better.
+
+    >>> external_bugzilla.convertRemoteImportance('URGENT UNSPECIFIED').title
+    'Critical'
+    >>> external_bugzilla.convertRemoteImportance(
+    ...     'UNSPECIFIED UNSPECIFIED').title
+    'Undecided'
+    >>> external_bugzilla.convertRemoteImportance('UNSPECIFIED').title
+    'Undecided'
+
 Some bugzillas don't provide a value, resulting in blank strings for
 priority and severity.  We simply leave the importance unknown in this
 case.

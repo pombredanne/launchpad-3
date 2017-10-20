@@ -264,19 +264,22 @@ class Bugzilla(ExternalBugTracker):
         'p1': BugTaskImportance.LOW,
         'enhancement': BugTaskImportance.WISHLIST,
         'wishlist': BugTaskImportance.WISHLIST,
+        'unspecified': BugTaskImportance.UNDECIDED,
         }
 
     def convertRemoteImportance(self, remote_importance):
         """See `ExternalBugTracker`."""
         words = remote_importance.lower().split()
-        try:
-            return self._importance_lookup[words.pop()]
-        except KeyError:
-            raise UnknownRemoteImportanceError(remote_importance)
-        except IndexError:
-            return BugTaskImportance.UNKNOWN
-
-        return BugTaskImportance.UNKNOWN
+        importance = BugTaskImportance.UNKNOWN
+        while importance in (
+                BugTaskImportance.UNKNOWN, BugTaskImportance.UNDECIDED):
+            try:
+                importance = self._importance_lookup[words.pop()]
+            except KeyError:
+                raise UnknownRemoteImportanceError(remote_importance)
+            except IndexError:
+                break
+        return importance
 
     _status_lookup_titles = 'Bugzilla status', 'Bugzilla resolution'
     _status_lookup = LookupTree(
