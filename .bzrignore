@@ -45,7 +45,6 @@ dist
 ./production-configs
 bzr.dev
 _trial_temp
-lazr-js
 .bazaar
 .cache
 .subversion
@@ -78,3 +77,4 @@ callgrind.out.*
 ./celerybeat-schedule
 !logs/README.txt
 ./logs
+yarn/node_modules

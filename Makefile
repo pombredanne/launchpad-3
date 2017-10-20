@@ -22,10 +22,10 @@ ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
 
 JS_BUILD_DIR := build/js
-YUI_VERSIONS := 3.10.3
-YUI_BUILDS := $(patsubst %,$(JS_BUILD_DIR)/yui-%, $(YUI_VERSIONS))
-YUI_DEFAULT := yui-3.10.3
-YUI_DEFAULT_SYMLINK := $(JS_BUILD_DIR)/yui
+YARN_VERSION := 1.2.1
+YARN_BUILD := $(JS_BUILD_DIR)/yarn
+YARN := utilities/yarn
+YUI_SYMLINK := $(JS_BUILD_DIR)/yui
 LP_JS_BUILD := $(JS_BUILD_DIR)/lp
 
 MINS_TO_SHUTDOWN=15
@@ -145,7 +145,7 @@ endif
 css_combine: jsbuild_widget_css
 	${SHHH} bin/sprite-util create-image
 	${SHHH} bin/sprite-util create-css
-	ln -sfn ../../../../build/js/$(YUI_DEFAULT) $(ICING)/yui
+	ln -sfn ../../../../yarn/node_modules/yui $(ICING)/yui
 	${SHHH} bin/combine-css
 
 jsbuild_widget_css: bin/jsbuild
@@ -159,17 +159,20 @@ jsbuild_watch:
 $(JS_BUILD_DIR):
 	mkdir -p $@
 
-$(YUI_BUILDS): | $(JS_BUILD_DIR)
+$(YARN_BUILD): | $(JS_BUILD_DIR)
 	mkdir -p $@/tmp
-	unzip -q download-cache/dist/yui_$(subst build/js/yui-,,$@).zip -d $@/tmp 'yui/build/*'
-	# We don't use the Flash components and they have a bad security
-	# record. Kill them.
-	find $@/tmp/yui/build -name '*.swf' -delete
-	mv $@/tmp/yui/build/* $@
+	tar -C $@/tmp -xf download-cache/dist/yarn-$(YARN_VERSION).tar.gz
+	mv $@/tmp/yarn-v$(YARN_VERSION)/* $@
 	$(RM) -r $@/tmp
 
-$(YUI_DEFAULT_SYMLINK): $(YUI_BUILDS)
-	ln -sfn $(YUI_DEFAULT) $@
+yarn/node_modules/yui: yarn/package.json | $(YARN_BUILD)
+	$(YARN) install --offline --frozen-lockfile
+	# We don't use YUI's Flash components and they have a bad security
+	# record. Kill them.
+	find yarn/node_modules/yui -name '*.swf' -delete
+
+$(YUI_SYMLINK): yarn/node_modules/yui
+	ln -sfn ../../yarn/node_modules/yui $@
 
 $(LP_JS_BUILD): | $(JS_BUILD_DIR)
 	-mkdir $@
@@ -181,7 +184,7 @@ $(LP_JS_BUILD): | $(JS_BUILD_DIR)
 	find $@ -name 'tests' -type d | xargs rm -rf
 	bin/lpjsmin -p $@
 
-jsbuild: $(LP_JS_BUILD) $(YUI_DEFAULT_SYMLINK)
+jsbuild: $(LP_JS_BUILD) $(YUI_SYMLINK)
 	utilities/js-deps -n LP_MODULES -s build/js/lp -x '-min.js' -o \
 	build/js/lp/meta.js >/dev/null
 	utilities/check-js-deps
@@ -340,7 +343,7 @@ rebuildfti:
 
 clean_js:
 	$(RM) -r $(JS_BUILD_DIR)
-	$(RM) -r yui # Remove obsolete top-level directory for now.
+	$(RM) -r yarn/node_modules
 
 clean_buildout:
 	$(RM) -r build
@@ -349,7 +352,6 @@ clean_buildout:
 	$(RM) -r parts
 	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
-	$(RM) -r yui/*
 
 clean_logs:
 	$(RM) logs/thread*.request
