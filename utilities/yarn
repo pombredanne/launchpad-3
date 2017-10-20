@@ -2,4 +2,6 @@
 set -e
 
 cd "$(dirname "$0")"/../yarn
-../build/js/yarn/bin/yarn "$@"
+# Disable the unsupported Node version check for now.  It's much easier to
+# go with what's in Ubuntu 16.04, and things seem to work OK at the moment.
+../build/js/yarn/bin/yarn --no-node-version-check "$@"

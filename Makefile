@@ -22,7 +22,7 @@ ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
 
 JS_BUILD_DIR := build/js
-YARN_VERSION := 0.27.5
+YARN_VERSION := 1.2.1
 YARN_BUILD := $(JS_BUILD_DIR)/yarn
 YARN := utilities/yarn
 YUI_SYMLINK := $(JS_BUILD_DIR)/yui
@@ -162,7 +162,7 @@ $(JS_BUILD_DIR):
 $(YARN_BUILD): | $(JS_BUILD_DIR)
 	mkdir -p $@/tmp
 	tar -C $@/tmp -xf download-cache/dist/yarn-$(YARN_VERSION).tar.gz
-	mv $@/tmp/dist/* $@
+	mv $@/tmp/yarn-v$(YARN_VERSION)/* $@
 	$(RM) -r $@/tmp
 
 yarn/node_modules/yui: yarn/package.json | $(YARN_BUILD)
