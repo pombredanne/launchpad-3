@@ -87,10 +87,9 @@ queue:
     >>> pmount_upload = NascentUpload.from_changesfile_path(
     ...     datadir('pmount_0.9.7-2ubuntu2_amd64.changes'),
     ...     buildd_policy, FakeLogger())
-    DEBUG pmount_0.9.7-2ubuntu2_amd64.changes can be unsigned.
-
     >>> pmount_upload.process(build=build)
     DEBUG Beginning processing.
+    DEBUG pmount_0.9.7-2ubuntu2_amd64.changes can be unsigned.
     DEBUG Verifying the changes file.
     DEBUG Verifying files in upload.
     DEBUG Verifying binary pmount_0.9.7-2ubuntu2_amd64.deb

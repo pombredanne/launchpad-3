@@ -1,7 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchURIField."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -49,13 +51,13 @@ class TestBranchURIField(TestCase):
         # Branches on the supermirror are already registered, so there is no
         # need to register them, again.
         self.assertInvalid(
-            u'%s/~user/+junk/branch' % config.codehosting.supermirror_root)
+            '%s/~user/+junk/branch' % config.codehosting.supermirror_root)
 
     def test_notFromLaunchpad(self):
         # URIs from Launchpad itself are invalid, no matter what the
         # subdomain.
         for domain in self.listLaunchpadDomains():
-            self.assertInvalid(u'http://%s/user/+junk/branch' % domain)
+            self.assertInvalid('http://%s/user/+junk/branch' % domain)
 
     def test_get_blacklisted_hostnames(self):
         self.pushConfig(
@@ -71,5 +73,5 @@ class TestBranchURIField(TestCase):
         # allowed to be registered.
         self.pushConfig(
             'codehosting', blacklisted_hostnames='localhost,127.0.0.1')
-        self.assertInvalid(u'http://localhost/foo/bar')
-        self.assertInvalid(u'http://127.0.0.1/foo/bar')
+        self.assertInvalid('http://localhost/foo/bar')
+        self.assertInvalid('http://127.0.0.1/foo/bar')

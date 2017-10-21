@@ -1038,7 +1038,12 @@
     <browser:defaultView
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         layer="lp.code.publisher.CodeLayer"
-        name="+branches"/>
+        name="+code"/>
+
+    <browser:defaultView
+        for="lp.registry.interfaces.persondistributionsourcepackage.IPersonDistributionSourcePackage"
+        layer="lp.code.publisher.CodeLayer"
+        name="+code"/>
 
     <browser:defaultView
         for="lp.registry.interfaces.distribution.IDistribution"

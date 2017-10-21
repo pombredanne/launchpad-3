@@ -175,9 +175,12 @@ we'll set those up.
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> inactive = factory.makeProduct()
     >>> login('admin@canonical.com')
     >>> firefox.answers_usage = ServiceUsage.LAUNCHPAD
     >>> ubuntu.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> inactive.answers_usage = ServiceUsage.LAUNCHPAD
+    >>> inactive.active = False
     >>> transaction.commit()
 
 This method can be used to retrieve the projects that are the most actively
@@ -207,6 +210,7 @@ Then some recent questions are created on a number of projects.
     ...     ('ubuntu', 3),
     ...     ('firefox', 2),
     ...     ('landscape', 1),
+    ...     (inactive.name, 5),
     ...     ))
 
 A question is created just before the time limit on Launchpad.
@@ -232,7 +236,7 @@ during the period.
     LAUNCHPAD
 
     # Launchpad is not returned because the question was not asked in
-    # the last 60 days.
+    # the last 60 days.  Inactive projects are not returned either.
     >>> for project in question_set.getMostActiveProjects():
     ...     print project.displayname
     Ubuntu

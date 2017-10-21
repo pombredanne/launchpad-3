@@ -16,10 +16,10 @@ names = [
     'ubuntu-webfonts.css',
     'style.css',
     'yui/cssreset/cssreset.css',
-    'yui/assets/skins/sam/autocomplete-list.css',
-    'yui/assets/skins/sam/calendar-base.css',
-    'yui/assets/skins/sam/calendar.css',
-    'yui/assets/skins/sam/calendarnavigator.css',
+    'yui/autocomplete-list/assets/skins/sam/autocomplete-list.css',
+    'yui/calendar-base/assets/skins/sam/calendar-base.css',
+    'yui/calendar/assets/skins/sam/calendar.css',
+    'yui/calendarnavigator/assets/skins/sam/calendarnavigator.css',
     # Since the old cssgrids uses yui-, and the new uses yui3-, it is only
     # used for the calendar.
     'yui/cssgrids/cssgrids.css',

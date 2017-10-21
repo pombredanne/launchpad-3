@@ -3,6 +3,8 @@
 
 """Tests for branch merge proposal jobs."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import (
@@ -275,11 +277,11 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         committer = self.factory.makePerson()
         self.hosting_fixture.getLog.result = [
             {
-                u"sha1": unicode(hashlib.sha1("tip").hexdigest()),
-                u"message": u"Fix upside-down messages\n\nLP: #%d" % bug.id,
-                u"committer": {
-                    u"name": committer.display_name,
-                    u"email": committer.preferredemail.email,
+                "sha1": unicode(hashlib.sha1("tip").hexdigest()),
+                "message": "Fix upside-down messages\n\nLP: #%d" % bug.id,
+                "committer": {
+                    "name": committer.display_name,
+                    "email": committer.preferredemail.email,
                     },
                 },
             ]

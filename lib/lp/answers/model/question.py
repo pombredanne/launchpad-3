@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Question models."""
@@ -755,7 +755,7 @@ class QuestionSet:
                     LEFT OUTER JOIN Distribution ON (
                         Question.distribution = Distribution.id)
                 WHERE
-                    (Product.answers_usage = %s
+                    ((Product.answers_usage = %s AND Product.active)
                     OR Distribution.answers_usage = %s)
                     AND Question.datecreated > (
                         current_timestamp -interval '60 days')
@@ -920,6 +920,10 @@ class QuestionSearch:
             constraints.append("""
                 Question.product = Product.id AND Product.active AND
                 Product.project = %s""" % sqlvalues(self.projectgroup))
+        else:
+            constraints.append("""
+                ((Question.product = Product.id AND Product.active) OR
+                 Question.product IS NULL)""")
 
         return constraints
 
@@ -929,6 +933,8 @@ class QuestionSearch:
             return self.getMessageJoins(self.needs_attention_from)
         elif self.projectgroup:
             return self.getProductJoins()
+        elif not self.product and not self.distribution:
+            return self.getActivePillarJoins()
         else:
             return []
 
@@ -941,6 +947,8 @@ class QuestionSearch:
                 AND QuestionMessage.owner = %s""" % sqlvalues(person))]
         if self.projectgroup:
             joins.extend(self.getProductJoins())
+        elif not self.product and not self.distribution:
+            joins.extend(self.getActivePillarJoins())
 
         return joins
 
@@ -949,6 +957,10 @@ class QuestionSearch:
         particular project group."""
         return [('JOIN Product '
                  'ON Question.product = Product.id')]
+
+    def getActivePillarJoins(self):
+        """Create the joins needed to select constraints on active pillars."""
+        return [('LEFT OUTER JOIN Product ON Question.product = Product.id')]
 
     def getConstraints(self):
         """Return a list of SQL constraints to use for this search."""
@@ -1176,8 +1188,7 @@ class QuestionPersonSearch(QuestionSearch):
 
         if QuestionParticipation.COMMENTER in self.participation:
             message_joins = self.getMessageJoins(self.person)
-            if not set(joins).intersection(set(message_joins)):
-                joins.extend(message_joins)
+            joins.extend([join for join in message_joins if join not in joins])
 
         return joins
 

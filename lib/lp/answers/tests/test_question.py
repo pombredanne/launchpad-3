@@ -1,4 +1,4 @@
-# Copyright 2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,6 +8,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     admin_logged_in,
@@ -64,3 +65,13 @@ class TestQuestionSearch(TestCaseWithFactory):
         self.factory.makeQuestion(target=inactive)
         removeSecurityProxy(inactive).active = False
         self.assertContentEqual([question], group.searchQuestions())
+
+    def test_global_with_inactive_products_not_in_results(self):
+        product = self.factory.makeProduct()
+        inactive = self.factory.makeProduct()
+        active_question = self.factory.makeQuestion(target=product)
+        inactive_question = self.factory.makeQuestion(target=inactive)
+        removeSecurityProxy(inactive).active = False
+        questions = list(getUtility(IQuestionSet).searchQuestions())
+        self.assertIn(active_question, questions)
+        self.assertNotIn(inactive_question, questions)

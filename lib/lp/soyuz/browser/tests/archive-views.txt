@@ -1490,3 +1490,12 @@ If the URL looks invalid, it fails:
     ...     "deb http://example.com/ karmic universe\n"
     ...     "deb example.com/ karmic main")
     ['deb example.com/ karmic main: Invalid URL']
+
+Options are permitted:
+
+    >>> print validate_external_dependencies(
+    ...     "deb [trusted=yes] http://example.com/ karmic main")
+    []
+    >>> print validate_external_dependencies(
+    ...     "deb [trusted=yes] example.com/ karmic main")
+    ['deb [trusted=yes] example.com/ karmic main: Invalid URL']

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Initializes the application after ZCML has been processed."""
@@ -8,14 +8,18 @@ from zope.component import (
     getSiteManager,
     )
 from zope.interface import (
+    alsoProvides,
     implementer,
     Interface,
     )
 from zope.processlifetime import IDatabaseOpened
+import zope.publisher.browser
 from zope.publisher.interfaces import IRequest
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.publisher.interfaces.http import IHTTPRequest
 from zope.traversing.interfaces import ITraversable
+
+from lp.services.webapp.interfaces import IUnloggedException
 
 
 @implementer(Interface)
@@ -37,6 +41,7 @@ def handle_process_start(ev):
     Python first starts.
     """
     fix_up_namespace_traversers()
+    customize_get_converter()
 
 
 def fix_up_namespace_traversers():
@@ -61,3 +66,37 @@ def fix_up_namespace_traversers():
                 sm.registerAdapter(
                     adapter_mask,
                     required=(Interface, request_iface), name=name, info=info)
+
+
+def customize_get_converter(zope_publisher_browser=zope.publisher.browser):
+    """URL parameter conversion errors shouldn't generate an OOPS report.
+
+    This injects (monkey patches) our wrapper around get_converter so improper
+    use of parameter type converters (like http://...?foo=bar:int) won't
+    generate OOPS reports.
+
+    This is done in a function rather than in ZCML because zope.publisher
+    doesn't provide fine enough control of this any other way.
+    """
+    original_get_converter = zope_publisher_browser.get_converter
+
+    def get_converter(*args, **kws):
+        """Get a type converter but turn off OOPS reporting if it fails."""
+        converter = original_get_converter(*args, **kws)
+
+        def wrapped_converter(v):
+            try:
+                return converter(v)
+            except ValueError as e:
+                # Mark the exception as not being OOPS-worthy.
+                alsoProvides(e, IUnloggedException)
+                raise
+
+        # The converter can be None, in which case wrapping it makes no sense,
+        # otherwise it is a function which we wrap.
+        if converter is None:
+            return None
+        else:
+            return wrapped_converter
+
+    zope_publisher_browser.get_converter = get_converter

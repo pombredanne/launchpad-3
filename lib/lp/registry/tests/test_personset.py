@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for PersonSet."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 
 from testtools.matchers import (
+    Equals,
     GreaterThan,
     LessThan,
     )
@@ -153,6 +154,39 @@ class TestPersonSet(TestCaseWithFactory):
                 person.preferredemail
                 person.teamowner
         self.assertThat(recorder, HasQueryCount(LessThan(1)))
+
+    def test_getPrecachedPersonsFromIDs_preferred_email(self):
+        # getPrecachedPersonsFromIDs() sets preferredemail to the preferred
+        # address if it exists, but otherwise leaves it as none.
+        team_no_contact = self.factory.makeTeam(email=None)
+        team_contact = self.factory.makeTeam(email=u'team@example.com')
+        team_list = self.factory.makeTeam(email=None)
+        self.factory.makeMailingList(team_list, team_list.teamowner)
+        person_normal = self.factory.makePerson()
+        person_unactivated = self.factory.makePerson(
+            account_status=AccountStatus.NOACCOUNT)
+        person_ids = [
+            t.id for t in [
+                team_no_contact, team_contact, team_list, person_normal,
+                person_unactivated]]
+        transaction.commit()
+
+        with StormStatementRecorder() as recorder:
+            list(self.person_set.getPrecachedPersonsFromIDs(
+                person_ids, need_preferred_email=True))
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+        with StormStatementRecorder() as recorder:
+            self.assertIsNone(team_no_contact.preferredemail)
+            self.assertEqual(
+                EmailAddressStatus.PREFERRED,
+                team_contact.preferredemail.status)
+            self.assertIsNone(team_list.preferredemail)
+            self.assertIsNone(person_unactivated.preferredemail)
+            self.assertEqual(
+                EmailAddressStatus.PREFERRED,
+                person_normal.preferredemail.status)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
 
     def test_getPrecachedPersonsFromIDs_is_ubuntu_coc_signer(self):
         # getPrecachedPersonsFromIDs() sets is_ubuntu_coc_signer

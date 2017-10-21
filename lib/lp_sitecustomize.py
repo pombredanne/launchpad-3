@@ -11,20 +11,16 @@ import os
 import warnings
 import sys
 
-from swiftclient import client as swiftclient
 from twisted.internet.defer import (
     Deferred,
     DeferredList,
     )
-from zope.interface import alsoProvides
-import zope.publisher.browser
 from zope.security import checker
 
 from lp.services.log import loglevels
 from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter
 from lp.services.mime import customizeMimetypes
-from lp.services.webapp.interfaces import IUnloggedException
 
 
 def add_custom_loglevels():
@@ -96,7 +92,8 @@ def silence_swiftclient_logger():
     only does swiftclient then emit lots of noise, but it also turns
     keystoneclient debugging on.
     """
-    swiftclient.logger.setLevel(logging.INFO)
+    swiftclient_logger = logging.getLogger('swiftclient')
+    swiftclient_logger.setLevel(logging.INFO)
 
 
 def silence_zcml_logger():
@@ -176,37 +173,6 @@ def customize_logger():
     silence_swiftclient_logger()
 
 
-def customize_get_converter(zope_publisher_browser=zope.publisher.browser):
-    """URL parameter conversion errors shouldn't generate an OOPS report.
-
-    This injects (monkey patches) our wrapper around get_converter so improper
-    use of parameter type converters (like http://...?foo=bar:int) won't
-    generate OOPS reports.
-    """
-    original_get_converter = zope_publisher_browser.get_converter
-
-    def get_converter(*args, **kws):
-        """Get a type converter but turn off OOPS reporting if it fails."""
-        converter = original_get_converter(*args, **kws)
-
-        def wrapped_converter(v):
-            try:
-                return converter(v)
-            except ValueError as e:
-                # Mark the exception as not being OOPS-worthy.
-                alsoProvides(e, IUnloggedException)
-                raise
-
-        # The converter can be None, in which case wrapping it makes no sense,
-        # otherwise it is a function which we wrap.
-        if converter is None:
-            return None
-        else:
-            return wrapped_converter
-
-    zope_publisher_browser.get_converter = get_converter
-
-
 def main(instance_name=None):
     # This is called by _pythonpath.py and by the standard Launchpad script
     # preamble (see LPScriptWriter in setup.py).  The instance name is sent
@@ -233,4 +199,3 @@ def main(instance_name=None):
     # through actually using itertools.groupby.
     grouper = type(list(itertools.groupby([0]))[0][1])
     checker.BasicTypes[grouper] = checker._iteratorChecker
-    customize_get_converter()

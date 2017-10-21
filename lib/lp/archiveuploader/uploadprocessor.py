@@ -338,22 +338,8 @@ class UploadHandler:
         # The path we want for NascentUpload is the path to the folder
         # containing the changes file (and the other files referenced by it).
         changesfile_path = os.path.join(self.upload_path, changes_file)
-        try:
-            upload = NascentUpload.from_changesfile_path(
-                changesfile_path, policy, self.processor.log)
-        except UploadError as e:
-            # We failed to parse the changes file, so we have no key or
-            # Changed-By to notify of the rejection. Just log it and
-            # move on.
-            # XXX wgrant 2011-09-29 bug=499438: With some refactoring we
-            # could do better here: if we have a signature then we have
-            # somebody to email, even if the rest of the file is
-            # corrupt.
-            logger.info(
-                "Failed to parse changes file '%s': %s" % (
-                    os.path.join(self.upload_path, changes_file),
-                    str(e)))
-            return UploadStatusEnum.REJECTED
+        upload = NascentUpload.from_changesfile_path(
+            changesfile_path, policy, self.processor.log)
 
         # Reject source upload to buildd upload paths.
         first_path = relative_path.split(os.path.sep)[0]
@@ -411,7 +397,16 @@ class UploadHandler:
                 notify = False
             if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
-                upload.do_reject(notify)
+                if upload.changes.parsed_content is not None:
+                    # We got past the point of checking any required
+                    # signature, so we can do a proper rejection.
+                    upload.do_reject(notify)
+                else:
+                    # The upload required a signature and either didn't have
+                    # one or we failed to verify it, so we have nobody to
+                    # notify.  Just log it and move on.
+                    logger.info(
+                        "Not sending rejection notice without a signing key.")
                 self.processor.ztm.abort()
             else:
                 successful = self._acceptUpload(upload, notify)

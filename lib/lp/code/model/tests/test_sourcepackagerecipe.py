@@ -3,6 +3,8 @@
 
 """Tests for the SourcePackageRecipe content type."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import (
@@ -183,8 +185,8 @@ class TestSourcePackageRecipeMixin:
             registrant=registrant,
             owner=self.factory.makeTeam(owner=registrant),
             distroseries=[self.factory.makeDistroSeries()],
-            name=self.factory.getUniqueString(u'recipe-name'),
-            description=self.factory.getUniqueString(u'recipe-description'),
+            name=self.factory.getUniqueString('recipe-name'),
+            description=self.factory.getUniqueString('recipe-description'),
             recipe=self.factory.makeRecipeText(*branches))
 
     def test_creation(self):
@@ -243,7 +245,7 @@ class TestSourcePackageRecipeMixin:
 
         self.assertFalse(
             getUtility(ISourcePackageRecipeSource).exists(
-                recipe.owner, u'daily'))
+                recipe.owner, 'daily'))
 
     def test_source_implements_interface(self):
         # The SourcePackageRecipe class implements ISourcePackageRecipeSource.
@@ -541,7 +543,7 @@ class TestSourcePackageRecipeMixin:
 
     def test_sourcepackagerecipe_description(self):
         """Ensure that the SourcePackageRecipe has a proper description."""
-        description = u'The whoozits and whatzits.'
+        description = 'The whoozits and whatzits.'
         source_package_recipe = self.makeSourcePackageRecipe(
             description=description)
         self.assertEqual(description, source_package_recipe.description)
@@ -862,8 +864,8 @@ class TestRecipeBranchRoundTrippingMixin:
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam(owner=registrant)
         distroseries = self.factory.makeDistroSeries()
-        name = self.factory.getUniqueString(u'recipe-name')
-        description = self.factory.getUniqueString(u'recipe-description')
+        name = self.factory.getUniqueString('recipe-name')
+        description = self.factory.getUniqueString('recipe-description')
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=[distroseries],
             name=name, description=description, recipe=recipe_text)
@@ -1147,7 +1149,7 @@ class TestWebserviceMixin:
             daily_build_archive=ws_archive)
         # at the moment, distroseries is not exposed in the API.
         transaction.commit()
-        db_recipe = owner.getRecipe(name=u'toaster-1')
+        db_recipe = owner.getRecipe(name='toaster-1')
         self.assertEqual(set([db_distroseries]), set(db_recipe.distroseries))
         return recipe, ws_owner, launchpad
 

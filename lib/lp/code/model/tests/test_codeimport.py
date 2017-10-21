@@ -1,7 +1,9 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of CodeImport and CodeImportSet."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from datetime import (
     datetime,
@@ -95,7 +97,7 @@ class TestCodeImportCreation(TestCodeImportBase):
             CodeImportSet().new,
             registrant=self.factory.makePerson(),
             context=self.factory.makeProduct(),
-            branch_name=u'imported',
+            branch_name='imported',
             rcs_type=RevisionControlSystems.BZR_SVN,
             target_rcs_type=self.target_rcs_type,
             url=self.factory.getUniqueURL(scheme="svn"))
@@ -115,7 +117,7 @@ class TestCodeImportCreation(TestCodeImportBase):
             CodeImportSet().new,
             registrant=self.factory.makePerson(),
             context=self.factory.makeProduct(),
-            branch_name=u'imported',
+            branch_name='imported',
             rcs_type=RevisionControlSystems.BZR_SVN,
             target_rcs_type=self.target_rcs_type,
             url=self.factory.getUniqueURL(),
@@ -136,11 +138,11 @@ class TestCodeImportCreation(TestCodeImportBase):
             CodeImportSet().new,
             registrant=self.factory.makePerson(),
             context=self.factory.makeProduct(),
-            branch_name=u'imported',
+            branch_name='imported',
             rcs_type=RevisionControlSystems.CVS,
             target_rcs_type=self.target_rcs_type,
             cvs_root=self.factory.getUniqueURL(),
-            cvs_module=u'module',
+            cvs_module='module',
             review_status=None)
         if self.supports_source_cvs:
             code_import = create_func()
@@ -157,7 +159,7 @@ class TestCodeImportCreation(TestCodeImportBase):
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
             context=self.factory.makeProduct(),
-            branch_name=u'imported',
+            branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             target_rcs_type=self.target_rcs_type,
             url=self.factory.getUniqueURL(scheme="git"),
@@ -178,7 +180,7 @@ class TestCodeImportCreation(TestCodeImportBase):
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
             context=self.factory.makeProduct(),
-            branch_name=u'imported',
+            branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             target_rcs_type=self.target_rcs_type,
             url=self.factory.getUniqueURL(),
@@ -200,7 +202,7 @@ class TestCodeImportCreation(TestCodeImportBase):
             CodeImportSet().new,
             registrant=self.factory.makePerson(),
             context=self.factory.makeProduct(),
-            branch_name=u'mirrored',
+            branch_name='mirrored',
             rcs_type=RevisionControlSystems.BZR,
             target_rcs_type=self.target_rcs_type,
             url=self.factory.getUniqueURL(),
@@ -221,7 +223,7 @@ class TestCodeImportCreation(TestCodeImportBase):
         self.assertRaises(AssertionError, CodeImportSet().new,
             registrant=registrant,
             context=registrant,
-            branch_name=u'imported',
+            branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             target_rcs_type=self.target_rcs_type,
             url=self.factory.getUniqueURL(),
@@ -238,7 +240,7 @@ class TestCodeImportCreation(TestCodeImportBase):
         code_import = CodeImportSet().new(
             registrant=registrant,
             context=context,
-            branch_name=u'imported',
+            branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             target_rcs_type=self.target_rcs_type,
             url=self.factory.getUniqueURL(),
@@ -268,7 +270,7 @@ class TestCodeImportCreation(TestCodeImportBase):
         code_import = CodeImportSet().new(
             registrant=registrant,
             context=context,
-            branch_name=u'imported',
+            branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             target_rcs_type=self.target_rcs_type,
             url=self.factory.getUniqueURL(),
@@ -303,7 +305,7 @@ class TestCodeImportCreation(TestCodeImportBase):
             CodeImportSet().new,
             registrant=registrant,
             context=context,
-            branch_name=u'imported',
+            branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
             target_rcs_type=self.target_rcs_type,
             url=self.factory.getUniqueURL(),

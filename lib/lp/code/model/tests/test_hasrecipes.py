@@ -1,7 +1,9 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for classes that implement IHasRecipes."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -48,7 +50,7 @@ class TestIHasRecipes(TestCaseWithFactory):
         # IGitRepository.recipes should provide all the SourcePackageRecipes
         # attached to that repository.
         base_ref1, base_ref2 = self.factory.makeGitRefs(
-            paths=[u"refs/heads/ref1", u"refs/heads/ref2"])
+            paths=["refs/heads/ref1", "refs/heads/ref2"])
         [other_ref] = self.factory.makeGitRefs()
         self.factory.makeSourcePackageRecipe(branches=[base_ref1])
         self.factory.makeSourcePackageRecipe(branches=[base_ref2])

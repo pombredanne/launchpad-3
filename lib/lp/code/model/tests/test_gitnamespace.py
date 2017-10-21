@@ -1,7 +1,9 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IGitNamespace` implementations."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -725,7 +727,7 @@ class BaseValidateNewRepositoryMixin:
         namespace = self._getNamespace(self.factory.makePerson())
         self.assertRaises(
             LaunchpadValidationError,
-            namespace.validateRepositoryName, u"+foo")
+            namespace.validateRepositoryName, "+foo")
 
     def test_permitted_first_character(self):
         # The first character of a repository name must be a letter or a
@@ -844,9 +846,9 @@ class TestGitNamespaceMoveRepository(TestCaseWithFactory):
 
     def test_name_clash_raises(self):
         # A name clash will raise an exception.
-        repository = self.factory.makeGitRepository(name=u"test")
+        repository = self.factory.makeGitRepository(name="test")
         another = self.factory.makeGitRepository(
-            owner=repository.owner, name=u"test")
+            owner=repository.owner, name="test")
         namespace = another.namespace
         self.assertRaises(
             GitRepositoryExists, namespace.moveRepository,
@@ -855,9 +857,9 @@ class TestGitNamespaceMoveRepository(TestCaseWithFactory):
     def test_move_with_rename(self):
         # A name clash with 'rename_if_necessary' set to True will cause the
         # repository to be renamed instead of raising an error.
-        repository = self.factory.makeGitRepository(name=u"test")
+        repository = self.factory.makeGitRepository(name="test")
         another = self.factory.makeGitRepository(
-            owner=repository.owner, name=u"test")
+            owner=repository.owner, name="test")
         namespace = another.namespace
         namespace.moveRepository(
             repository, repository.owner, rename_if_necessary=True)
@@ -866,18 +868,18 @@ class TestGitNamespaceMoveRepository(TestCaseWithFactory):
 
     def test_move_with_new_name(self):
         # A new name for the repository can be specified as part of the move.
-        repository = self.factory.makeGitRepository(name=u"test")
+        repository = self.factory.makeGitRepository(name="test")
         another = self.factory.makeGitRepository(
-            owner=repository.owner, name=u"test")
+            owner=repository.owner, name="test")
         namespace = another.namespace
-        namespace.moveRepository(repository, repository.owner, new_name=u"foo")
+        namespace.moveRepository(repository, repository.owner, new_name="foo")
         self.assertEqual("foo", repository.name)
         self.assertNamespacesEqual(namespace, repository.namespace)
 
     def test_sets_repository_owner(self):
         # Moving to a new namespace may change the owner of the repository
         # if the owner of the namespace is different.
-        repository = self.factory.makeGitRepository(name=u"test")
+        repository = self.factory.makeGitRepository(name="test")
         team = self.factory.makeTeam(repository.owner)
         project = self.factory.makeProduct()
         namespace = ProjectGitNamespace(team, project)
