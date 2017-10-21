@@ -8,7 +8,6 @@ __metaclass__ = type
 import os
 from urllib import quote
 
-from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import (
     IJSONRequestCache,
     IWebServiceClientRequest,
@@ -22,6 +21,7 @@ from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp import canonical_url
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (

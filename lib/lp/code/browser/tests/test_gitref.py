@@ -11,7 +11,6 @@ from datetime import datetime
 import hashlib
 import re
 
-from BeautifulSoup import BeautifulSoup
 import pytz
 import soupmatchers
 from storm.store import Store
@@ -22,6 +21,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.tests.helpers import GitHostingFixture
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.job.runner import JobRunner
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (

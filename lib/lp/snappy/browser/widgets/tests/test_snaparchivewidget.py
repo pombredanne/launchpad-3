@@ -5,7 +5,6 @@ __metaclass__ = type
 
 import re
 
-from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
 from testscenarios import (
     load_tests_apply_scenarios,
@@ -20,6 +19,7 @@ from zope.formlib.interfaces import (
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget

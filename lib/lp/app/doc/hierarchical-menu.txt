@@ -248,7 +248,7 @@ Rendering the list
 The Hierarchy object is responsible for rendering the HTML for the
 location bar.
 
-    >>> from BeautifulSoup import BeautifulSoup
+    >>> from lp.services.beautifulsoup import BeautifulSoup
     >>> from lp.testing.pages import extract_text
 
     # Borrowed from lp.testing.pages.print_location()

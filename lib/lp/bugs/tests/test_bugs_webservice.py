@@ -11,7 +11,6 @@ from datetime import (
     )
 import re
 
-from BeautifulSoup import BeautifulSoup
 from lazr.lifecycle.interfaces import IDoNotSnapshot
 from lazr.restfulclient.errors import (
     BadRequest,
@@ -32,6 +31,7 @@ from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.interfaces.bug import IBug
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.product import License
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp import snapshot
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.servers import LaunchpadTestRequest

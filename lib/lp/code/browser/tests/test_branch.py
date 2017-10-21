@@ -10,7 +10,6 @@ __metaclass__ = type
 from datetime import datetime
 from textwrap import dedent
 
-from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 import pytz
 from storm.store import Store
@@ -36,6 +35,7 @@ from lp.code.enums import BranchType
 from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.helpers import truncate_text

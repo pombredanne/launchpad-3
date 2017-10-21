@@ -5,7 +5,6 @@ __metaclass__ = type
 
 import re
 
-from BeautifulSoup import BeautifulSoup
 from zope.formlib.interfaces import (
     IBrowserWidget,
     IInputWidget,
@@ -14,6 +13,7 @@ from zope.formlib.interfaces import (
 from zope.schema import List
 
 from lp.app.validators import LaunchpadValidationError
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.widgets.storechannels import StoreChannelsWidget

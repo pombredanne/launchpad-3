@@ -49,7 +49,7 @@ from time import sleep
 from urllib import urlencode
 import urllib2
 
-from BeautifulSoup import BeautifulSoup
+from lp.services.beautifulsoup import BeautifulSoup
 
 
 class RoundupSniffer:

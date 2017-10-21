@@ -11,7 +11,6 @@ from operator import attrgetter
 import re
 import textwrap
 
-from BeautifulSoup import BeautifulSoup
 from pytz import UTC
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -29,6 +28,7 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.config import config
 from lp.testing.pages import (
     extract_text,
