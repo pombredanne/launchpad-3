@@ -33,7 +33,7 @@ When the user makes a mistake and uses an invalid bug number, an error
 message is displayed:
 
     >>> soup = find_main_content(user_browser.contents)
-    >>> soup.first('div', 'message')
+    >>> soup.find('div', 'message')
     <div class="message">Not a valid bug number or nickname.</div>
 
 The user is offered a link to search for bug in case they don't know the
@@ -82,7 +82,7 @@ message is displayed:
     >>> user_browser.url
     '.../firefox/+question/2'
     >>> soup = find_main_content(user_browser.contents)
-    >>> soup.first('div', 'informational message')
+    >>> soup.find('div', 'informational message')
     <div class="informational message">Removed link to bug #...</div>
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'related-bugs'))

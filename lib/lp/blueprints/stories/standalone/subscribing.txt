@@ -162,7 +162,7 @@ based on the subscription change we have made above.
     >>> subscribers = find_tags_by_class(browser.contents, 'subscriber')
     >>> for subscriber in subscribers:
     ...     a_tags = subscriber.findAll('a')
-    ...     img = a_tags[0].first('img')
+    ...     img = a_tags[0].find('img')
     ...     print img['src'],
     ...     print a_tags[1].string
     /@@/subscriber-essential Stuart Bishop
@@ -187,7 +187,7 @@ based on the subscription change we have made above.
     >>> subscribers = find_tags_by_class(browser.contents, 'subscriber')
     >>> for subscriber in subscribers:
     ...     a_tags = subscriber.findAll('a')
-    ...     img = a_tags[0].first('img')
+    ...     img = a_tags[0].find('img')
     ...     print img['src'],
     ...     print a_tags[1].string
     /@@/subscriber-inessential Stuart Bishop
@@ -320,7 +320,7 @@ not.
     >>> subscribers = find_tags_by_class(browser.contents, 'subscriber')
     >>> for subscriber in subscribers:
     ...     a_tags = subscriber.findAll('a')
-    ...     img = a_tags[0].first('img')
+    ...     img = a_tags[0].find('img')
     ...     print img['src'],
     ...     print a_tags[1].string
     /@@/subscriber-essential Andrew Bennetts
