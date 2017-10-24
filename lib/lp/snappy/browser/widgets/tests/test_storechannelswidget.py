@@ -1,6 +1,8 @@
 # Copyright 2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 import re
@@ -34,7 +36,7 @@ class TestStoreChannelsWidget(TestCaseWithFactory):
 
     def setUp(self):
         super(TestStoreChannelsWidget, self).setUp()
-        field = List(__name__="channels", title=u"Store channels")
+        field = List(__name__="channels", title="Store channels")
         self.context = self.factory.makeSnap()
         field = field.bind(self.context)
         request = LaunchpadTestRequest()
