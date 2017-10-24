@@ -3,6 +3,8 @@
 
 """Test snap package build views."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 import re
@@ -51,7 +53,7 @@ class TestCanonicalUrlForSnapBuild(TestCaseWithFactory):
     def test_canonical_url(self):
         owner = self.factory.makePerson(name="person")
         snap = self.factory.makeSnap(
-            registrant=owner, owner=owner, name=u"snap")
+            registrant=owner, owner=owner, name="snap")
         build = self.factory.makeSnapBuild(requester=owner, snap=snap)
         self.assertThat(
             canonical_url(build),
@@ -243,9 +245,10 @@ class TestSnapBuildOperations(BrowserTestCase):
         browser = self.getViewBrowser(
             self.build, "+rescore", user=self.buildd_admin)
         self.assertEqual(self.build_url, browser.url)
-        self.assertIn(
-            "Cannot rescore this build because it is not queued.",
-            browser.contents)
+        self.assertThat(browser.contents, soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "notification", "div", attrs={"class": "warning message"},
+                text="Cannot rescore this build because it is not queued.")))
 
     def setUpStoreUpload(self):
         self.pushConfig(
