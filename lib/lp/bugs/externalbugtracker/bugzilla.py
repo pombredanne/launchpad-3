@@ -25,7 +25,6 @@ import six
 from zope.component import getUtility
 from zope.interface import implementer
 
-from lp.app.validators.email import valid_email
 from lp.bugs.externalbugtracker.base import (
     BugNotFound,
     BugTrackerAuthenticationError,
@@ -847,7 +846,15 @@ class BugzillaAPI(Bugzilla):
         # If the email isn't valid, return the email address as the
         # display name (a Launchpad Person will be created with this
         # name).
-        if not valid_email(email):
+        # XXX cjwatson 2017-10-24: It's possible that an email address will
+        # be considered valid by the remote system but not by Launchpad.  To
+        # avoid disclosing email addresses as a result of this, we'll allow
+        # that case to generate an OOPS for now (in
+        # `PersonSet.createPersonAndEmail`).  If this is common then we
+        # should do a full `valid_email` check here and sanitise the name
+        # more enthusiastically in `BugTracker.ensurePersonForSelf`, perhaps
+        # just by stripping off any domain part.
+        if '@' not in email:
             return email, None
         # If the display name is empty, set it to None so that it's
         # useable by IPersonSet.ensurePerson().
