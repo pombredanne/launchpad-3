@@ -23,7 +23,10 @@ import xmlrpclib
 import pytz
 import six
 from zope.component import getUtility
-from zope.interface import implementer
+from zope.interface import (
+    alsoProvides,
+    implementer,
+    )
 
 from lp.bugs.externalbugtracker.base import (
     BugNotFound,
@@ -551,8 +554,7 @@ def needs_authentication(func):
     return decorator
 
 
-@implementer(
-    ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
+@implementer(ISupportsCommentImport)
 class BugzillaAPI(Bugzilla):
     """An `ExternalBugTracker` to handle Bugzillas that offer an API."""
 
@@ -569,6 +571,14 @@ class BugzillaAPI(Bugzilla):
             self.xmlrpc_transport = UrlLib2Transport(self.xmlrpc_endpoint)
         else:
             self.xmlrpc_transport = xmlrpc_transport
+
+        try:
+            self.credentials
+        except BugTrackerAuthenticationError:
+            pass
+        else:
+            alsoProvides(self, ISupportsBackLinking)
+            alsoProvides(self, ISupportsCommentPushing)
 
     def getExternalBugTrackerToUse(self):
         """The Bugzilla API has been chosen, so return self."""
