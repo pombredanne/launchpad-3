@@ -40,9 +40,13 @@ class DpkgArchitectureCache:
         return self._matches[(arch, wildcard)]
 
     def findAllMatches(self, arches, wildcards):
-        return list(sorted(set(
-            arch for arch in arches for wildcard in wildcards
-            if self.match(arch, wildcard))))
+        matches = set()
+        for arch in arches:
+            for wildcard in wildcards:
+                if self.match(arch, wildcard):
+                    matches.add(arch)
+                    break
+        return list(sorted(matches))
 
 
 dpkg_architecture = DpkgArchitectureCache()

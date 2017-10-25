@@ -38,7 +38,6 @@ class TestDpkgArchitectureCache(TestCase):
                 ['amd64', 'i386', 'armhf'], ['amd64', 'armhf']))
         self.assertTimeline([
             '-iamd64 DEB_HOST_ARCH=amd64',
-            '-iarmhf DEB_HOST_ARCH=amd64',
             '-iamd64 DEB_HOST_ARCH=i386',
             '-iarmhf DEB_HOST_ARCH=i386',
             '-iamd64 DEB_HOST_ARCH=armhf',
@@ -75,9 +74,7 @@ class TestDpkgArchitectureCache(TestCase):
                 ['linux-any', 'any-amd64']))
         self.assertTimeline([
             '-ilinux-any DEB_HOST_ARCH=amd64',
-            '-iany-amd64 DEB_HOST_ARCH=amd64',
             '-ilinux-any DEB_HOST_ARCH=i386',
-            '-iany-amd64 DEB_HOST_ARCH=i386',
             '-ilinux-any DEB_HOST_ARCH=kfreebsd-amd64',
             '-iany-amd64 DEB_HOST_ARCH=kfreebsd-amd64',
             '-ilinux-any DEB_HOST_ARCH=kfreebsd-i386',
