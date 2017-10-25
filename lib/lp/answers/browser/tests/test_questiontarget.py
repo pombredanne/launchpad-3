@@ -3,6 +3,8 @@
 
 """Test questiontarget views."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 import os
@@ -50,7 +52,7 @@ class TestSearchQuestionsView(TestCaseWithFactory):
         product = self.factory.makeProduct()
         # Avoid non-ascii character in unicode literal to not upset
         # pocket-lint. Bug #776389.
-        non_ascii_string = u'portugu\xeas'
+        non_ascii_string = 'portugu\xeas'
         with person_logged_in(product.owner):
             self.factory.makeFAQ(product, non_ascii_string)
         form = {
