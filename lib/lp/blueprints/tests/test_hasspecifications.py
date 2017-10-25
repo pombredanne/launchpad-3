@@ -3,6 +3,8 @@
 
 """Unit tests for objects implementing IHasSpecifications."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from lp.blueprints.enums import SpecificationDefinitionStatus
