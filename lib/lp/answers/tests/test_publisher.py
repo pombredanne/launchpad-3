@@ -3,9 +3,11 @@
 
 """Tests for answers's custom publications."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
-import StringIO
+import io
 
 from lp.answers.publisher import (
     AnswersBrowserRequest,
@@ -44,7 +46,7 @@ class TestRegistration(TestCase):
     def test_response_should_vary_based_on_language(self):
         # Responses to requests to answers pages have the 'Vary' header set to
         # include Accept-Language.
-        request = AnswersBrowserRequest(StringIO.StringIO(''), {})
+        request = AnswersBrowserRequest(io.StringIO(''), {})
         self.assertEquals(
             request.response.getHeader('Vary'),
             'Cookie, Authorization, Accept-Language')
