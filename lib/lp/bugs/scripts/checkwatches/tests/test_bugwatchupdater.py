@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the checkwatches.bugwatchupdater module."""
@@ -223,7 +223,7 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
         #     This test can be removed when bug 578714 is fixed.
         remote_bug_updater = RemoteBugUpdater(
             self.checkwatches_master,
-            BugzillaAPI("http://example.com"),
+            BugzillaAPI("http://bugzilla-3.4.example.com"),
             self.bug_watch.remotebug, [self.bug_watch.id],
             [], datetime.now())
         bug_watch_updater = LoggingBugWatchUpdater(

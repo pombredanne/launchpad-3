@@ -595,6 +595,15 @@ defines the necessary methods for pushing comments to remote servers.
     >>> verifyObject(ISupportsCommentPushing, bugzilla)
     True
 
+If an instance of BugzillaAPI does not have suitable credentials set up,
+then that instance does not provide ISupportsCommentPushing.
+
+    >>> verifyObject(ISupportsCommentPushing, BugzillaAPI(
+    ...     'http://unknown.example.com/', xmlrpc_transport=test_transport))
+    Traceback (most recent call last):
+    ...
+    DoesNotImplement: ...
+
 ISupportsCommentPushing.addRemoteComment() is the method used to push a
 comment to the remote server. It takes three parameters: the remote bug
 ID, the body of the comment to push and the rfc822msgid of the comment
@@ -646,6 +655,15 @@ bug is linked to a Launchpad bug.
     >>> from lp.bugs.interfaces.externalbugtracker import ISupportsBackLinking
     >>> verifyObject(ISupportsBackLinking, bugzilla)
     True
+
+If an instance of BugzillaAPI does not have suitable credentials set up,
+then that instance does not provide ISupportsBackLinking.
+
+    >>> verifyObject(ISupportsBackLinking, BugzillaAPI(
+    ...     'http://unknown.example.com/', xmlrpc_transport=test_transport))
+    Traceback (most recent call last):
+    ...
+    DoesNotImplement: ...
 
 BugzillaAPI.setLaunchpadBugId() can be used to set the Launchpad bug ID
 for a given bug.
