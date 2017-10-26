@@ -3,8 +3,9 @@
 
 """Unit test for sprints."""
 
-__metaclass__ = type
+from __future__ import absolute_import, print_function, unicode_literals
 
+__metaclass__ = type
 
 import datetime
 
@@ -180,9 +181,9 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint1 = self.makeSpec(title='abc')
         sprint = blueprint1.sprints[0]
         blueprint2 = self.makeSpec(sprint, title='def')
-        result = list_result(sprint, [u'abc'])
+        result = list_result(sprint, ['abc'])
         self.assertEqual([blueprint1], result)
-        result = list_result(sprint, [u'def'])
+        result = list_result(sprint, ['def'])
         self.assertEqual([blueprint2], result)
 
     def test_declined(self):

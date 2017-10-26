@@ -1,6 +1,8 @@
 # Copyright 2012 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import (
@@ -53,7 +55,7 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
             product=self.current_milestone.product,
             assignee=self.team.teamowner, milestone=self.current_milestone)
         workitem = self.factory.makeSpecificationWorkItem(
-            title=u'workitem 1', specification=spec)
+            title='workitem 1', specification=spec)
         bugtask = self.factory.makeBug(
             milestone=self.current_milestone).bugtasks[0]
         removeSecurityProxy(bugtask).assignee = self.team.teamowner
@@ -85,9 +87,9 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
             milestone=self.current_milestone,
             assignee=self.factory.makePerson())
         self.factory.makeSpecificationWorkItem(
-            title=u'workitem 1', specification=spec)
+            title='workitem 1', specification=spec)
         workitem = self.factory.makeSpecificationWorkItem(
-            title=u'workitem 2', specification=spec,
+            title='workitem 2', specification=spec,
             assignee=self.team.teamowner)
 
         workitems = getWorkItemsDueBefore(
@@ -108,10 +110,10 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
         # This workitem is targeted to a future milestone so it won't be in
         # our results below.
         self.factory.makeSpecificationWorkItem(
-            title=u'workitem 1', specification=spec,
+            title='workitem 1', specification=spec,
             milestone=self.future_milestone)
         current_wi = self.factory.makeSpecificationWorkItem(
-            title=u'workitem 2', specification=spec,
+            title='workitem 2', specification=spec,
             milestone=self.current_milestone)
 
         workitems = getWorkItemsDueBefore(
@@ -133,10 +135,10 @@ class Test_getWorkItemsDueBefore(TestCaseWithFactory):
             product=self.current_milestone.product,
             assignee=self.team.teamowner)
         current_workitem = self.factory.makeSpecificationWorkItem(
-            title=u'workitem 1', specification=spec,
+            title='workitem 1', specification=spec,
             milestone=self.current_milestone)
         future_workitem = self.factory.makeSpecificationWorkItem(
-            title=u'workitem 2', specification=spec,
+            title='workitem 2', specification=spec,
             milestone=self.future_milestone)
 
         workitems = getWorkItemsDueBefore(
@@ -285,7 +287,7 @@ class TestPersonUpcomingWork(BrowserTestCase):
 
     def test_no_xss_on_workitem_title(self):
         self.factory.makeSpecificationWorkItem(
-            title=u"<script>window.alert('XSS')</script>",
+            title="<script>window.alert('XSS')</script>",
             assignee=self.team.teamowner, milestone=self.today_milestone)
 
         browser = self.getViewBrowser(

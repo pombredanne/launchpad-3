@@ -6,6 +6,8 @@
 There are also tests in lp/blueprints/stories/blueprints/xx-dependencies.txt.
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from lp.app.enums import InformationType
