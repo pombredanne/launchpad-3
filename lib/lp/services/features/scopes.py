@@ -89,6 +89,8 @@ class PageScope(BaseScope):
         request_segments = self._request_pageid_namespace
         for scope_segment, request_segment in izip_longest(
                 scope_segments, request_segments):
+            if scope_segment is None:
+                break
             if scope_segment != request_segment:
                 return False
         return True
