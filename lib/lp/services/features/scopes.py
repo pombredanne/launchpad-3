@@ -23,6 +23,7 @@ __all__ = [
 
 __metaclass__ = type
 
+from itertools import izip_longest
 import re
 
 from lp.registry.interfaces.person import IPerson
@@ -86,11 +87,9 @@ class PageScope(BaseScope):
         pageid_scope = scope_name[len('pageid:'):]
         scope_segments = self._pageid_to_namespace(pageid_scope)
         request_segments = self._request_pageid_namespace
-        # In 2.6, this can be replaced with izip_longest
-        for pos, name in enumerate(scope_segments):
-            if pos == len(request_segments):
-                return False
-            if request_segments[pos] != name:
+        for scope_segment, request_segment in izip_longest(
+                scope_segments, request_segments):
+            if scope_segment != request_segment:
                 return False
         return True
 
