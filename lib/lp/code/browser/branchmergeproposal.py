@@ -532,7 +532,7 @@ class DiffRenderingMixin:
             diff = preview_diff.text.decode('utf-8')
         except UnicodeDecodeError:
             diff = preview_diff.text.decode('windows-1252', 'replace')
-        except LibrarianServerError:
+        except (LookupError, LibrarianServerError):
             self._diff_available = False
             diff = ''
         # Strip off the trailing carriage returns.
