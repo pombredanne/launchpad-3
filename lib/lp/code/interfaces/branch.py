@@ -538,6 +538,10 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     pending_writes = Attribute(
         "Whether there is new Bazaar data for this branch.")
 
+    pending_updates = Attribute(
+        "Whether there is an update job of some kind (mirroring or scanning) "
+        "pending for the Bazaar data in this branch.")
+
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 

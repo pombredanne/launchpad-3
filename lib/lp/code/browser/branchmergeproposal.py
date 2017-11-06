@@ -370,7 +370,7 @@ class UnmergedRevisionsMixin:
                 return []
 
     @property
-    def pending_writes(self):
+    def pending_updates(self):
         """Needed to make the branch-revisions metal macro work."""
         return False
 
@@ -736,7 +736,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def pending_diff(self):
         return (
             self.context.next_preview_diff_job is not None or
-            self.context.merge_source.pending_writes)
+            self.context.merge_source.pending_updates)
 
     @cachedproperty
     def preview_diff(self):
