@@ -273,12 +273,12 @@ class TestDistroBrancher(TestCaseWithFactory):
             new_branch).getScannerData()
         self.assertEqual(old_ancestry, new_ancestry)
         self.assertEqual(old_history, new_history)
-        self.assertFalse(new_branch.pending_writes)
         self.assertIs(None, new_branch.stacked_on)
         self.assertEqual(new_branch, db_branch.stacked_on)
         # The script doesn't have permission to create branch jobs, but just
         # to be insanely paranoid.
         switch_dbuser('launchpad')
+        self.assertFalse(new_branch.pending_writes)
         scan_jobs = list(getUtility(IBranchScanJobSource).iterReady())
         self.assertEqual(existing_scan_job_count, len(scan_jobs))
 

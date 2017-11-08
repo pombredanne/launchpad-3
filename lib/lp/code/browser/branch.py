@@ -451,9 +451,9 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
         return self.context.control_format is None
 
     @property
-    def pending_writes(self):
-        """Whether or not there are pending writes for this branch."""
-        return self.context.pending_writes
+    def pending_updates(self):
+        """Whether or not there are pending updates for this branch."""
+        return self.context.pending_updates
 
     def bzr_download_url(self):
         """Return the generic URL for downloading the branch."""

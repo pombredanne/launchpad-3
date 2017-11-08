@@ -72,9 +72,9 @@
     </div>
   </div>
 
-  <div class="yui-g" tal:condition="context/pending_writes">
+  <div class="yui-g" tal:condition="context/pending_updates">
     <div class="portlet">
-      <div id="repository-pending-writes" class="pending-update">
+      <div id="repository-pending-updates" class="pending-update">
         <h3>Updating repository...</h3>
         <p>
           Launchpad is processing new changes to this repository which will
