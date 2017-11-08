@@ -53,9 +53,11 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
         return "translationtemplates_%s_%d.txt" % (safe_name, self.build.id)
 
     def composeBuildRequest(self, logger):
+        das = self._getDistroArchSeries()
         args = {
-            'arch_tag': self._getDistroArchSeries().architecturetag,
+            'arch_tag': das.architecturetag,
             'branch_url': self.build.branch.composePublicURL(),
+            'series': das.distroseries.name,
             }
         return ("translation-templates", self._getDistroArchSeries(), {}, args)
 

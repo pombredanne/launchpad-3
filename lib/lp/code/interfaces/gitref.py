@@ -358,7 +358,7 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
                                    eager_load=False):
         """Return BranchMergeProposals dependent on merging this reference."""
 
-    pending_writes = Attribute(
+    pending_updates = Attribute(
         "Whether there are recent changes in this repository that have not "
         "yet been scanned.")
 
