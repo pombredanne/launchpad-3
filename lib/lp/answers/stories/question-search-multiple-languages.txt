@@ -14,8 +14,8 @@ information.
 
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> soup = find_main_content(anon_browser.contents)
-    >>> for question in soup.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in soup.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
@@ -25,8 +25,8 @@ information.
     # Since we have more than 5 results, some of them are in the second batch.
     >>> anon_browser.getLink('Next').click()
     >>> soup = find_main_content(anon_browser.contents)
-    >>> for question in soup.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in soup.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Installation failed
 
 The questions match the languages inferred from by GeoIP
@@ -46,7 +46,7 @@ the anonymous user will see a Spanish question.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> table = find_tag_by_id(anon_browser.contents, 'question-listing')
     >>> for question in table.findAll('td', 'questionTITLE'):
-    ...     question.first('a').renderContents()
+    ...     question.find('a').renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
     'Continue playing after shutdown'
     'Play DVDs in Totem'
@@ -72,7 +72,7 @@ Arabic and is written from right-to-left.
     >>> anon_browser.getLink('Next').click()
     >>> table = find_tag_by_id(anon_browser.contents, 'question-listing')
     >>> for question in table.findAll('td', 'questionTITLE'):
-    ...     question.first('a').renderContents()
+    ...     question.find('a').renderContents()
     'Slow system'
     'Installation failed'
     '\xd8\xb9\xd9\x83\xd8\xb3 ...
@@ -103,7 +103,7 @@ language controls.
       ...
     LookupError: name 'field.language...
 
-    >>> content = find_main_content(anon_browser.contents).first('p')
+    >>> content = find_main_content(anon_browser.contents).find('p')
     >>> print content.renderContents()
     There are no questions for Kubuntu with the requested statuses.
 
@@ -132,8 +132,8 @@ then questions with those language will be displayed:
     True
 
     >>> soup = find_main_content(anon_browser.contents)
-    >>> for question in soup.fetch('td', 'questionTITLE'):
-    ...     question.first('a').renderContents()
+    >>> for question in soup.findAll('td', 'questionTITLE'):
+    ...     question.find('a').renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
     'Continue playing after shutdown'
     'Play DVDs in Totem'
@@ -143,8 +143,8 @@ then questions with those language will be displayed:
     # Since we have more than 5 results, some of them are in the second batch.
     >>> anon_browser.getLink('Next').click()
     >>> soup = find_main_content(anon_browser.contents)
-    >>> for question in soup.fetch('td', 'questionTITLE'):
-    ...     question.first('a').renderContents()
+    >>> for question in soup.findAll('td', 'questionTITLE'):
+    ...     question.find('a').renderContents()
     'Slow system'
     'Installation failed'
 
@@ -207,8 +207,8 @@ the search results.
     >>> browser.getControl('English (en)').selected = False
     >>> browser.getControl('Search', index=0).click()
     >>> content = find_main_content(browser.contents)
-    >>> for question in content.fetch('td', 'questionTITLE'):
-    ...     question.first('a').renderContents()
+    >>> for question in content.findAll('td', 'questionTITLE'):
+    ...     question.find('a').renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
 
 Some users, translators in particular, speak an English variant.
@@ -247,8 +247,8 @@ English, and can use it to locate English questions.
     >>> daf_browser.getControl('English (en)').selected = True
     >>> daf_browser.getControl('Search', index=0).click()
     >>> content = find_main_content(daf_browser.contents)
-    >>> for question in content.fetch('td', 'questionTITLE'):
-    ...     question.first('a').renderContents()
+    >>> for question in content.findAll('td', 'questionTITLE'):
+    ...     question.find('a').renderContents()
     'Continue playing after shutdown'
     'Play DVDs in Totem'
     'mailto: problem in webpage'
@@ -297,7 +297,7 @@ the preceding page.
 
     >>> content = find_main_content(user_browser.contents)
     >>> for question in content.findAll('td', 'questionTITLE'):
-    ...     question.first('a').renderContents()
+    ...     question.find('a').renderContents()
     'Problemas de Impress\xc3\xa3o no Firefox'
 
 The page in all other respects behaves like a question search page.

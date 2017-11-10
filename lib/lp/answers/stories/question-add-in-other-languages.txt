@@ -50,7 +50,7 @@ understood by any member of the support community.
     already finds nothing.
 
     #>>> for row in similar_questions.findAll('tr', 'noted'):
-    #...     row.first('a').renderContents()
+    #...     row.find('a').renderContents()
     #'Installation of Java Runtime Environment for Mozilla'
     #'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
 

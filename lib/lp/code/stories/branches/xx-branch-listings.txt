@@ -28,7 +28,7 @@ branches in the listings.
     ...1...&rarr;...6...of 10 results...
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.thead.fetch('tr'):
+    >>> for row in table.thead.findAll('tr'):
     ...     print extract_text(row)
     Name
     Status
@@ -39,7 +39,7 @@ Unfortunately our sample data is somewhat lacking in the last commit
 fields.  There are a couple of branches that have them, but most don't
 and are really just branch metadata without the revisions behind them.
 
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/firefox/main                Development  ...
     lp://dev/~name12/gnome-terminal/2.6          Mature       ...
@@ -55,7 +55,7 @@ and are really just branch metadata without the revisions behind them.
     ...7...&rarr;...10...of 10 results...
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/gnome-terminal/klingon          Experimental  ...
     lp://dev/~name12/+junk/junk.contrib              Development   ...
@@ -82,7 +82,7 @@ shown.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/firefox/main                 Development  ...
     lp://dev/~name12/gnome-terminal/2.6           Mature       ...
@@ -117,7 +117,7 @@ Now all types of branches should be shown.
     ...1...&rarr;...6...of 12 results...
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/firefox/main                 Development    ...
     lp://dev/~name12/gnome-terminal/2.4           Abandoned      ...
@@ -133,7 +133,7 @@ Now all types of branches should be shown.
     ...7...&rarr;...12...of 12 results...
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/gnome-terminal/pushed         Development     ...
     lp://dev/~name12/gnome-terminal/scanned        Development     ...
@@ -148,7 +148,7 @@ will cause only branches with that status to be listed.
     >>> browser.getControl(name='field.lifecycle').displayValue = ['Abandoned']
     >>> browser.getControl('Filter').click()
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/gnome-terminal/2.4    Abandoned     ...
 
@@ -160,7 +160,7 @@ status value, it will default to current branches.
     >>> browser.getControl(name='field.lifecycle').displayValue
     ['Any active status']
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/firefox/main                  Development  ...
     lp://dev/~name12/gnome-terminal/2.6            Mature       ...
@@ -188,7 +188,7 @@ first.
     ...     'http://code.launchpad.dev/~name12/+branches?'
     ...     'field.category=subscribed')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/firefox/main ...
     lp://dev/~launchpad/gnome-terminal/launchpad ...
@@ -212,12 +212,12 @@ We display badges for associated bugs.
 
     >>> def branchSummary(browser):
     ...     table = find_tag_by_id(browser.contents, 'branchtable')
-    ...     for row in table.tbody.fetch('tr'):
+    ...     for row in table.tbody.findAll('tr'):
     ...         if row.getText().startswith('A development focus branch'):
     ...             continue
     ...         cells = row.findAll('td')
     ...         first_cell = cells[0]
-    ...         anchors = first_cell.fetch('a')
+    ...         anchors = first_cell.findAll('a')
     ...         print anchors[0].get('href')
     ...         # Badges in the next cell
     ...         for img in cells[1].findAll('img'):
@@ -334,7 +334,7 @@ Finally, sorting by a particular criterion has the desired effect.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal/+branches')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     A development focus ...
     lp://dev/~name12/gnome-terminal/2.6            Mature       ...
@@ -347,7 +347,7 @@ Finally, sorting by a particular criterion has the desired effect.
     >>> browser.getControl(name='field.sort_by').value = ['by branch name']
     >>> browser.getControl('Filter').click()
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     A development focus ...
     lp://dev/~name12/gnome-terminal/2.6             Mature          ...
@@ -380,8 +380,8 @@ both the series link in the first column with the branch unique name.
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> # The development focus is always first.
-    >>> row = table.tbody.fetch('tr')[0]
-    >>> cols = row.fetch('td')
+    >>> row = table.tbody.findAll('tr')[0]
+    >>> cols = row.findAll('td')
     >>> print extract_text(cols[0])
     lp://dev/gnome-terminal     Series: trunk
 
@@ -408,7 +408,7 @@ The current development focus is shown first though.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> print extract_text(table.tbody.fetch('tr')[0])
+    >>> print extract_text(table.tbody.findAll('tr')[0])
     lp://dev/gnome-terminal  Series: trunk, alpha, pre-1.0  ...
 
 
@@ -421,7 +421,7 @@ Merged or Abandoned branches are not shown.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/gnome-terminal   Series: trunk...    Development  ...
     lp://dev/~name12/gnome-terminal/2.6           Mature       ...
@@ -446,7 +446,7 @@ will cause only branches with that status to be listed.
     >>> browser.getControl(name='field.lifecycle').displayValue = ['Experimental']
     >>> browser.getControl('Filter').click()
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/gnome-terminal/klingon       Experimental ...
 
@@ -456,7 +456,7 @@ first.
     >>> browser.getControl(name='field.lifecycle').displayValue = ['Development']
     >>> browser.getControl('Filter').click()
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/gnome-terminal   Series: trunk...    Development  ...
 
