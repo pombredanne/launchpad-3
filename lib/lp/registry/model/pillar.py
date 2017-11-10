@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad Pillars share a namespace.
@@ -8,6 +8,7 @@ Pillars are currently Product, ProjectGroup and Distribution.
 
 __metaclass__ = type
 
+from operator import attrgetter
 import warnings
 
 from sqlobject import (
@@ -46,12 +47,15 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.services.config import config
+from lp.services.database.bulk import load_related
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
 from lp.services.helpers import ensure_unicode
+from lp.services.librarian.model import LibraryFileAlias
 
 
 __all__ = [
@@ -269,10 +273,28 @@ class PillarNameSet:
     @property
     def featured_projects(self):
         """See `IPillarSet`."""
+        # Circular imports.
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.product import Product
+        from lp.registry.model.projectgroup import ProjectGroup
 
-        query = "PillarName.id = FeaturedProject.pillar_name"
-        return [pillar_name.pillar for pillar_name in PillarName.select(
-                    query, clauseTables=['FeaturedProject'])]
+        store = IStore(PillarName)
+        pillar_names = store.find(
+            PillarName, PillarName.id == FeaturedProject.pillar_name)
+
+        def preload_pillars(rows):
+            pillar_names = (
+                set(rows).union(load_related(PillarName, rows, ['alias_for'])))
+            pillars = load_related(Product, pillar_names, ['productID'])
+            pillars.extend(load_related(
+                ProjectGroup, pillar_names, ['projectgroupID']))
+            pillars.extend(load_related(
+                Distribution, pillar_names, ['distributionID']))
+            load_related(LibraryFileAlias, pillars, ['iconID'])
+
+        return DecoratedResultSet(
+            pillar_names, result_decorator=attrgetter('pillar'),
+            pre_iter_hook=preload_pillars)
 
 
 @implementer(IPillarName)
