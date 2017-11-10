@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper classes for testing ExternalSystem."""
@@ -450,7 +450,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         }
 
     # Comments are mapped to bug IDs.
-    comment_id_index = 4
+    comment_id_index = 5
     new_comment_time = datetime(2008, 6, 20, 11, 42, 42)
     _bug_comments = {
         1: {
@@ -854,12 +854,19 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
                 'text': "Bring the passengers to the bridge please Marvin.",
                 'time': datetime(2008, 6, 16, 13, 8, 8),
                 },
-             2: {'author': 'Ford Prefect <ford.prefect@h2g2.com>',
+            2: {'author': 'Ford Prefect <ford.prefect@h2g2.com>',
                 'bug_id': 2,
                 'id': 4,
                 'is_private': False,
                 'text': "I appear to have become a perfectly safe penguin.",
                 'time': datetime(2008, 6, 17, 20, 28, 40),
+                },
+            3: {'author': 'arthur.dent@earth.example.com',
+                'bug_id': 2,
+                'id': 5,
+                'is_private': False,
+                'text': "I never could get the hang of Thursdays.",
+                'time': datetime(2008, 6, 19, 9, 30, 0),
                 },
             },
         }

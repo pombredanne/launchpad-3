@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for TranslationTemplatesBuildBehaviour."""
@@ -101,10 +101,13 @@ class TestTranslationTemplatesBuildBehaviour(
         behaviour = self.makeBehaviour()
         switch_dbuser(config.builddmaster.dbuser)
         build_request = yield behaviour.composeBuildRequest(None)
+        das = behaviour._getDistroArchSeries()
         self.assertEqual(
-            ('translation-templates', behaviour._getDistroArchSeries(), {},
-             {'arch_tag': behaviour._getDistroArchSeries().architecturetag,
-              'branch_url': behaviour.build.branch.composePublicURL()}),
+            ('translation-templates', das, {}, {
+                'arch_tag': das.architecturetag,
+                'branch_url': behaviour.build.branch.composePublicURL(),
+                'series': das.distroseries.name,
+                }),
             build_request)
 
     def test_getDistroArchSeries(self):

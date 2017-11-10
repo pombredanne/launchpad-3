@@ -1097,6 +1097,7 @@ class MilestoneImageDisplayAPI(ObjectImageDisplayAPI):
         return '<img height="14" width="14" alt="" src="/@@/milestone" />'
 
 
+# Keep this in sync with lib/lp/buildmaster/javascript/build_statuses.js.
 class BuildImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IBuild objects to an image.
 
@@ -1119,8 +1120,8 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             BuildStatus.CHROOTWAIT: {'src': "/@@/build-chrootwait"},
             BuildStatus.SUPERSEDED: {'src': "/@@/build-superseded"},
             BuildStatus.BUILDING: {'src': "/@@/processing"},
-            BuildStatus.UPLOADING: {'src': "/@@/processing"},
             BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
+            BuildStatus.UPLOADING: {'src': "/@@/processing"},
             BuildStatus.CANCELLING: {'src': "/@@/processing"},
             BuildStatus.CANCELLED: {'src': "/@@/build-failed"},
             }

@@ -949,7 +949,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         return self.namespace.areRepositoriesMergeable(other.namespace)
 
     @property
-    def pending_writes(self):
+    def pending_updates(self):
         """See `IGitRepository`."""
         from lp.code.model.gitjob import (
             GitJob,

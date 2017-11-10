@@ -3,6 +3,8 @@
 
 """Test snap package build features."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import (
@@ -292,7 +294,7 @@ class TestSnapBuild(TestCaseWithFactory):
             distroseries=distroseries, architecturetag="i386",
             processor=processor)
         build = self.factory.makeSnapBuild(
-            name=u"snap-1", requester=person, owner=person,
+            name="snap-1", requester=person, owner=person,
             distroarchseries=distroarchseries,
             date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC),
             status=BuildStatus.FAILEDTOBUILD,

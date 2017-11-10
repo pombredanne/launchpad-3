@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bugzilla ExternalBugTracker utility."""
@@ -23,7 +23,10 @@ import xmlrpclib
 import pytz
 import six
 from zope.component import getUtility
-from zope.interface import implementer
+from zope.interface import (
+    alsoProvides,
+    implementer,
+    )
 
 from lp.bugs.externalbugtracker.base import (
     BugNotFound,
@@ -263,19 +266,22 @@ class Bugzilla(ExternalBugTracker):
         'p1': BugTaskImportance.LOW,
         'enhancement': BugTaskImportance.WISHLIST,
         'wishlist': BugTaskImportance.WISHLIST,
+        'unspecified': BugTaskImportance.UNDECIDED,
         }
 
     def convertRemoteImportance(self, remote_importance):
         """See `ExternalBugTracker`."""
         words = remote_importance.lower().split()
-        try:
-            return self._importance_lookup[words.pop()]
-        except KeyError:
-            raise UnknownRemoteImportanceError(remote_importance)
-        except IndexError:
-            return BugTaskImportance.UNKNOWN
-
-        return BugTaskImportance.UNKNOWN
+        importance = BugTaskImportance.UNKNOWN
+        while importance in (
+                BugTaskImportance.UNKNOWN, BugTaskImportance.UNDECIDED):
+            try:
+                importance = self._importance_lookup[words.pop()]
+            except KeyError:
+                raise UnknownRemoteImportanceError(remote_importance)
+            except IndexError:
+                break
+        return importance
 
     _status_lookup_titles = 'Bugzilla status', 'Bugzilla resolution'
     _status_lookup = LookupTree(
@@ -294,6 +300,7 @@ class Bugzilla(ExternalBugTracker):
                  'DOCUMENTED',
                  BugTaskStatus.FIXRELEASED),
                 ('WONTFIX', 'WILL_NOT_FIX', 'NOTOURBUG', 'UPSTREAM',
+                 'EOL', 'DEFERRED',
                  BugTaskStatus.WONTFIX),
                 ('OBSOLETE', 'INSUFFICIENT_DATA', 'INCOMPLETE', 'EXPIRED',
                  BugTaskStatus.EXPIRED),
@@ -547,8 +554,7 @@ def needs_authentication(func):
     return decorator
 
 
-@implementer(
-    ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
+@implementer(ISupportsCommentImport)
 class BugzillaAPI(Bugzilla):
     """An `ExternalBugTracker` to handle Bugzillas that offer an API."""
 
@@ -565,6 +571,14 @@ class BugzillaAPI(Bugzilla):
             self.xmlrpc_transport = UrlLib2Transport(self.xmlrpc_endpoint)
         else:
             self.xmlrpc_transport = xmlrpc_transport
+
+        try:
+            self.credentials
+        except BugTrackerAuthenticationError:
+            pass
+        else:
+            alsoProvides(self, ISupportsBackLinking)
+            alsoProvides(self, ISupportsCommentPushing)
 
     def getExternalBugTrackerToUse(self):
         """The Bugzilla API has been chosen, so return self."""
@@ -839,12 +853,26 @@ class BugzillaAPI(Bugzilla):
         comment = self._bugs[actual_bug_id]['comments'][comment_id]
         display_name, email = parseaddr(comment['author'])
 
-        # If the name is empty then we return None so that
-        # IPersonSet.ensurePerson() can actually do something with it.
-        if not display_name:
-            display_name = None
-
-        return (display_name, email)
+        # If the email isn't valid, return the email address as the
+        # display name (a Launchpad Person will be created with this
+        # name).
+        # XXX cjwatson 2017-10-24: It's possible that an email address will
+        # be considered valid by the remote system but not by Launchpad.  To
+        # avoid disclosing email addresses as a result of this, we'll allow
+        # that case to generate an OOPS for now (in
+        # `PersonSet.createPersonAndEmail`).  If this is common then we
+        # should do a full `valid_email` check here and sanitise the name
+        # more enthusiastically in `BugTracker.ensurePersonForSelf`, perhaps
+        # just by stripping off any domain part.
+        if '@' not in email:
+            return email, None
+        # If the display name is empty, set it to None so that it's
+        # useable by IPersonSet.ensurePerson().
+        elif display_name == '':
+            return None, email
+        # Both displayname and email are valid, return both.
+        else:
+            return display_name, email
 
     def getMessageForComment(self, remote_bug_id, comment_id, poster):
         """See `ISupportsCommentImport`."""

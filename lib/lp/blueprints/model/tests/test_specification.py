@@ -3,6 +3,8 @@
 
 """Unit tests for blueprints here."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -182,35 +184,34 @@ class TestSpecificationValidation(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_specurl_validation_duplicate(self):
-        existing = self.factory.makeSpecification(
-            specurl=u'http://ubuntu.com')
+        existing = self.factory.makeSpecification(specurl='http://ubuntu.com')
         spec = self.factory.makeSpecification()
         url = canonical_url(existing)
         field = ISpecification['specurl'].bind(spec)
-        e = self.assertRaises(LaunchpadValidationError, field.validate,
-            u'http://ubuntu.com')
+        e = self.assertRaises(
+            LaunchpadValidationError, field.validate, 'http://ubuntu.com')
         self.assertEqual(
             '%s is already registered by <a href="%s">%s</a>.'
-            % (u'http://ubuntu.com', url, existing.title), str(e))
+            % ('http://ubuntu.com', url, existing.title), str(e))
 
     def test_specurl_validation_valid(self):
         spec = self.factory.makeSpecification()
         field = ISpecification['specurl'].bind(spec)
-        field.validate(u'http://example.com/nigelb')
+        field.validate('http://example.com/nigelb')
 
     def test_specurl_validation_escape(self):
         existing = self.factory.makeSpecification(
-                specurl=u'http://ubuntu.com/foo',
-                title='<script>alert("foo");</script>')
+            specurl='http://ubuntu.com/foo',
+            title='<script>alert("foo");</script>')
         cleaned_title = '&lt;script&gt;alert(&quot;foo&quot;);&lt;/script&gt;'
         spec = self.factory.makeSpecification()
         url = canonical_url(existing)
         field = ISpecification['specurl'].bind(spec)
-        e = self.assertRaises(LaunchpadValidationError, field.validate,
-            u'http://ubuntu.com/foo')
+        e = self.assertRaises(
+            LaunchpadValidationError, field.validate, 'http://ubuntu.com/foo')
         self.assertEqual(
             '%s is already registered by <a href="%s">%s</a>.'
-            % (u'http://ubuntu.com/foo', url, cleaned_title), str(e))
+            % ('http://ubuntu.com/foo', url, cleaned_title), str(e))
 
 
 class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
@@ -226,7 +227,7 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         spec = self.factory.makeSpecification()
         old_spec = Snapshot(spec, providing=providedBy(spec))
         new_work_item = {
-            'title': u'A work item',
+            'title': 'A work item',
             'status': SpecificationWorkItemStatus.TODO,
             'assignee': None,
             'milestone': None,
@@ -278,14 +279,14 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         original_status = SpecificationWorkItemStatus.TODO
         new_status = SpecificationWorkItemStatus.DONE
         original_work_item = {
-            'title': u'The same work item',
+            'title': 'The same work item',
             'status': original_status,
             'assignee': None,
             'milestone': None,
             'sequence': 0
         }
         new_work_item = {
-            'title': u'The same work item',
+            'title': 'The same work item',
             'status': new_status,
             'assignee': None,
             'milestone': None,
@@ -332,16 +333,16 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
                 line = ''
                 if item.assignee is not None:
                     line = "[%s] " % item.assignee.name
-                expected_lines.append(u"%s%s: %s" % (line, item.title,
+                expected_lines.append("%s%s: %s" % (line, item.title,
                                                     item.status.name))
             else:
                 self.assertIsInstance(item, Milestone)
                 if expected_lines != []:
-                    expected_lines.append(u"")
+                    expected_lines.append("")
                 if item == self.wi_header:
-                    expected_lines.append(u"Work items:")
+                    expected_lines.append("Work items:")
                 else:
-                    expected_lines.append(u"Work items for %s:" % item.name)
+                    expected_lines.append("Work items for %s:" % item.name)
         expected = "\n".join(expected_lines)
         self.assertEqual(expected, spec.workitems_text)
 
@@ -353,11 +354,11 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
     def test_owner_newworkitem_allowed(self):
         spec = self.factory.makeSpecification()
         login_person(spec.owner)
-        work_item = spec.newWorkItem(title=u'new-work-item', sequence=0)
+        work_item = spec.newWorkItem(title='new-work-item', sequence=0)
         self.assertIsInstance(work_item, SpecificationWorkItem)
 
     def test_newworkitem_uses_passed_arguments(self):
-        title = u'new-work-item'
+        title = 'new-work-item'
         spec = self.factory.makeSpecification()
         assignee = self.factory.makePerson()
         milestone = self.factory.makeMilestone(product=spec.product)
@@ -406,7 +407,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         milestone = self.factory.makeMilestone(product=spec.product)
         login_person(spec.owner)
         work_item = self.factory.makeSpecificationWorkItem(specification=spec,
-            title=u'new-work-item',
+            title='new-work-item',
             status=SpecificationWorkItemStatus.TODO,
             milestone=milestone)
         items = [milestone, work_item]
@@ -417,11 +418,11 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         milestone = self.factory.makeMilestone(product=spec.product)
         login_person(spec.owner)
         work_item1 = self.factory.makeSpecificationWorkItem(specification=spec,
-            title=u'Work item with default milestone',
+            title='Work item with default milestone',
             status=SpecificationWorkItemStatus.TODO,
             milestone=None)
         work_item2 = self.factory.makeSpecificationWorkItem(specification=spec,
-            title=u'Work item with set milestone',
+            title='Work item with set milestone',
             status=SpecificationWorkItemStatus.TODO,
             milestone=milestone)
         items = [self.wi_header, work_item1, milestone, work_item2]
@@ -432,11 +433,11 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         milestone = self.factory.makeMilestone(product=spec.product)
         login_person(spec.owner)
         work_item1 = self.factory.makeSpecificationWorkItem(specification=spec,
-            title=u'Work item with set milestone',
+            title='Work item with set milestone',
             status=SpecificationWorkItemStatus.TODO,
             milestone=milestone)
         work_item2 = self.factory.makeSpecificationWorkItem(specification=spec,
-            title=u'Work item with default milestone',
+            title='Work item with default milestone',
             status=SpecificationWorkItemStatus.TODO,
             milestone=None)
         items = [milestone, work_item1, self.wi_header, work_item2]
@@ -448,11 +449,11 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
         milestone2 = self.factory.makeMilestone(product=spec.product)
         login_person(spec.owner)
         work_item1 = self.factory.makeSpecificationWorkItem(specification=spec,
-            title=u'Work item with first milestone',
+            title='Work item with first milestone',
             status=SpecificationWorkItemStatus.TODO,
             milestone=milestone1)
         work_item2 = self.factory.makeSpecificationWorkItem(specification=spec,
-            title=u'Work item with second milestone',
+            title='Work item with second milestone',
             status=SpecificationWorkItemStatus.TODO,
             milestone=milestone2)
         items = [milestone1, work_item1, milestone2, work_item2]
@@ -487,10 +488,10 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
             product=self.factory.makeProduct())
         milestone = self.factory.makeMilestone(product=spec.product)
         work_item1_data = dict(
-            title=u'Foo Bar', status=SpecificationWorkItemStatus.DONE,
+            title='Foo Bar', status=SpecificationWorkItemStatus.DONE,
             assignee=spec.owner, milestone=None)
         work_item2_data = dict(
-            title=u'Bar Foo', status=SpecificationWorkItemStatus.TODO,
+            title='Bar Foo', status=SpecificationWorkItemStatus.TODO,
             assignee=None, milestone=milestone)
 
         # We start with no work items.
@@ -527,10 +528,10 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
 
         # These are the work items we'll be inserting.
         new_wi1_data = dict(
-            title=u'Some Title', status=SpecificationWorkItemStatus.TODO,
+            title='Some Title', status=SpecificationWorkItemStatus.TODO,
             assignee=None, milestone=None)
         new_wi2_data = dict(
-            title=u'Other title', status=SpecificationWorkItemStatus.TODO,
+            title='Other title', status=SpecificationWorkItemStatus.TODO,
             assignee=None, milestone=None)
 
         # We want to insert the two work items above in the first and third

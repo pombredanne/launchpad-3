@@ -1395,6 +1395,26 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             markup = view()
             self.assertIn('The diff is not available at this time.', markup)
 
+    def test_preview_diff_lookup_error(self):
+        # The preview_diff will recover from a LookupError while getting the
+        # librarian content.  (This can happen e.g. on staging replicas of
+        # the production database.)
+        text = b''.join(chr(x) for x in range(255))
+        diff_bytes = b''.join(unified_diff(b'', text))
+        preview_diff = self.setPreviewDiff(diff_bytes)
+        transaction.commit()
+
+        def fake_open(*args):
+            raise LookupError
+
+        lfa = preview_diff.diff.diff_text
+        with monkey_patch(lfa, open=fake_open):
+            view = create_initialized_view(preview_diff, '+diff')
+            self.assertEqual('', view.preview_diff_text)
+            self.assertFalse(view.diff_available)
+            markup = view()
+            self.assertIn('The diff is not available at this time.', markup)
+
     def setPreviewDiff(self, preview_diff_bytes):
         return PreviewDiff.create(
             self.bmp, preview_diff_bytes, 'a', 'b', None, '')
