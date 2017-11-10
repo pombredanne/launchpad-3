@@ -486,7 +486,7 @@ By default, all widgets are visible.
   >>> request = LaunchpadTestRequest()
   >>> view = TestWidgetVisibility(context, request)
 
-  >>> from BeautifulSoup import BeautifulSoup
+  >>> from lp.services.beautifulsoup import BeautifulSoup
   >>> soup = BeautifulSoup(view())
   >>> for input in soup.findAll('input'):
   ...     print input

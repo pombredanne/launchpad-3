@@ -1,0 +1,36 @@
+#! /usr/bin/python
+#
+# Copyright 2017 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+"""Run a command as another user and with the proper environment.
+
+This can only be run as root, and makes it easier to run Launchpad code
+inside "lxc exec".  (sudo in xenial breaks without a tty, so cannot be used
+here.)
+"""
+
+from __future__ import absolute_import, print_function, unicode_literals
+
+import os
+import pwd
+import resource
+import sys
+
+
+user = sys.argv[1]
+pw = pwd.getpwnam(user)
+os.setresgid(pw.pw_gid, pw.pw_gid, pw.pw_gid)
+os.setresuid(pw.pw_uid, pw.pw_uid, pw.pw_uid)
+os.environ["HOME"] = pw.pw_dir
+os.environ["SHELL"] = pw.pw_shell
+os.environ["USER"] = user
+os.environ["LOGNAME"] = user
+os.chdir(os.path.dirname(os.path.dirname(__file__)))
+# The current default is 1048576, which is rather over the top and causes
+# GPGME-based tests to be extremely slow.  See:
+#   https://lists.gnupg.org/pipermail/gnupg-devel/2017-September/033086.html
+soft_nofile, hard_nofile = resource.getrlimit(resource.RLIMIT_NOFILE)
+if hard_nofile > 4096:
+    resource.setrlimit(resource.RLIMIT_NOFILE, (min(soft_nofile, 4096), 4096))
+os.execvp(sys.argv[2], sys.argv[2:])

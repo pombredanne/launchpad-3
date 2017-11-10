@@ -22,12 +22,12 @@ import os
 import time
 from urlparse import urljoin
 
-from BeautifulSoup import BeautifulSoup
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.datetime import rfc1123_date
 from zope.interface import implementer
 
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.config import config
 from lp.services.feeds.interfaces.feed import (
     IFeed,

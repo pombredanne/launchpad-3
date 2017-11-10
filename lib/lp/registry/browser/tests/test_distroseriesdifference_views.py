@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import re
 
-from BeautifulSoup import BeautifulSoup
 import soupmatchers
 from testtools.matchers import (
     MatchesAny,
@@ -27,6 +26,7 @@ from lp.registry.enums import (
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.comments.interfaces.conversation import (
     IComment,
     IConversation,

@@ -11,7 +11,7 @@ launchpad.dev to provide links to corresponding Atom feeds.
 The root launchpad.dev url will have a link to the Atom feed which
 displays the most recent announcements for all the projects.
 
-    >>> from BeautifulSoup import BeautifulSoup
+    >>> from lp.services.beautifulsoup import BeautifulSoup
     >>> browser.open('http://launchpad.dev/')
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.head.findAll('link', type='application/atom+xml')

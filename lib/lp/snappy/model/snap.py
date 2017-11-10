@@ -551,7 +551,7 @@ class Snap(Storm, WebhookTargetMixin):
 
             result[build.id] = {
                 "status": build.status.name,
-                "buildstate": build.status,
+                "buildstate": build.status.title,
                 "when_complete": when_complete,
                 "when_complete_estimate": build.estimate,
                 "build_log_url": build.log_url,

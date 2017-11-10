@@ -42,7 +42,8 @@ Firefox has not yet selected a bug tracker.
     >>> print firefox.projectgroup.bugtracker
     None
 
-    >>> from BeautifulSoup import BeautifulSoup, Tag
+    >>> from BeautifulSoup import Tag
+    >>> from lp.services.beautifulsoup import BeautifulSoup
     >>> from lp.testing.pages import extract_text
     >>> def print_items(html):
     ...     soup = BeautifulSoup(html)

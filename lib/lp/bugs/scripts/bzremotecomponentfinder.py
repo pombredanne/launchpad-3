@@ -15,7 +15,6 @@ from urllib2 import (
     urlopen,
     )
 
-from BeautifulSoup import BeautifulSoup
 import transaction
 from zope.component import getUtility
 
@@ -24,6 +23,7 @@ from lp.bugs.interfaces.bugtracker import (
     IBugTrackerSet,
     )
 from lp.bugs.model.bugtracker import BugTrackerComponent
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.database import bulk
 from lp.services.database.interfaces import IStore
 from lp.services.scripts.logger import log as default_log
