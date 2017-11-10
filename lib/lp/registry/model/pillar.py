@@ -292,9 +292,9 @@ class PillarNameSet:
                 Distribution, pillar_names, ['distributionID']))
             load_related(LibraryFileAlias, pillars, ['iconID'])
 
-        return DecoratedResultSet(
+        return list(DecoratedResultSet(
             pillar_names, result_decorator=attrgetter('pillar'),
-            pre_iter_hook=preload_pillars)
+            pre_iter_hook=preload_pillars))
 
 
 @implementer(IPillarName)
