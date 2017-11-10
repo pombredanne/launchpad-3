@@ -9,8 +9,6 @@ __all__ = ['SourceForge']
 import re
 import urllib
 
-from BeautifulSoup import BeautifulSoup
-
 from lp.bugs.externalbugtracker import (
     BugNotFound,
     ExternalBugTracker,
@@ -25,6 +23,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp import urlsplit
 
 

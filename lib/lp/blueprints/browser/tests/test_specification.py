@@ -10,7 +10,6 @@ import json
 import re
 import unittest
 
-from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
@@ -38,6 +37,7 @@ from lp.blueprints.interfaces.specification import (
 from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.product import IProductSeries
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import BrowserNotificationLevel

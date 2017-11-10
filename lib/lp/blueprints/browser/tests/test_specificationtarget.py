@@ -5,7 +5,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -20,6 +19,7 @@ from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
     )
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.testing import (
     BrowserTestCase,
     login_person,

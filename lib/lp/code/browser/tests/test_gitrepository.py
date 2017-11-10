@@ -11,7 +11,6 @@ from datetime import datetime
 import doctest
 from textwrap import dedent
 
-from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 import pytz
 from testtools.matchers import DocTestMatches
@@ -31,6 +30,7 @@ from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.database.constants import UTC_NOW
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest

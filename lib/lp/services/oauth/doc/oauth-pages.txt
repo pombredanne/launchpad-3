@@ -25,9 +25,13 @@ consumer's request to access Launchpad on their behalf.
     ...     view.initialize()
     ...     return view, token
 
-    >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
+    >>> from lp.services.beautifulsoup import (
+    ...     BeautifulSoup,
+    ...     SoupStrainer,
+    ...     )
     >>> def print_hidden_fields(html):
-    ...     soup = BeautifulSoup(html, SoupStrainer(attrs={'type': 'hidden'}))
+    ...     soup = BeautifulSoup(
+    ...         html, parseOnlyThese=SoupStrainer(attrs={'type': 'hidden'}))
     ...     for tag in soup.findAll(attrs={'type': 'hidden'}):
     ...         if tag.attrMap['value']:
     ...             print tag.attrMap['name'], tag.attrMap['value']

@@ -13,11 +13,7 @@ import urllib
 import urllib2
 from urlparse import urlunparse
 
-from BeautifulSoup import (
-    BeautifulSoup,
-    Comment,
-    SoupStrainer,
-    )
+from BeautifulSoup import Comment
 
 from lp.bugs.externalbugtracker import (
     BugNotFound,
@@ -34,6 +30,10 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.services.beautifulsoup import (
+    BeautifulSoup,
+    SoupStrainer,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp.url import urlparse
 

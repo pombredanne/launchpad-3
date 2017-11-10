@@ -26,6 +26,8 @@ from storm.locals import Store
 from testtools.matchers import (
     ContainsDict,
     Equals,
+    Is,
+    MatchesDict,
     MatchesSetwise,
     MatchesStructure,
     )
@@ -423,8 +425,19 @@ class TestSnap(TestCaseWithFactory):
         summary1 = snap1.getBuildSummariesForSnapBuildIds(
             [build11.id, build12.id])
         summary2 = snap2.getBuildSummariesForSnapBuildIds([build2.id])
-        self.assertContentEqual([build11.id, build12.id], summary1.keys())
-        self.assertContentEqual([build2.id], summary2.keys())
+        summary_matcher = MatchesDict({
+            "status": Equals("NEEDSBUILD"),
+            "buildstate": Equals("Needs building"),
+            "when_complete": Is(None),
+            "when_complete_estimate": Is(False),
+            "build_log_url": Is(None),
+            "build_log_size": Is(None),
+            })
+        self.assertThat(summary1, MatchesDict({
+            build11.id: summary_matcher,
+            build12.id: summary_matcher,
+            }))
+        self.assertThat(summary2, MatchesDict({build2.id: summary_matcher}))
 
     def test_getBuildSummariesForSnapBuildIds_empty_input(self):
         snap = self.factory.makeSnap()

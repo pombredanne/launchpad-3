@@ -7,7 +7,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
 from lp.app.enums import InformationType
@@ -16,6 +15,7 @@ from lp.registry.model.persondistributionsourcepackage import (
     PersonDistributionSourcePackage,
     )
 from lp.registry.model.personproduct import PersonProduct
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.testing import (
     admin_logged_in,
     anonymous_logged_in,

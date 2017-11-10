@@ -6,10 +6,6 @@
 __metaclass__ = type
 
 
-from BeautifulSoup import (
-    BeautifulSoup,
-    SoupStrainer,
-    )
 from fixtures import FakeLogger
 from zope.component import getUtility
 from zope.security.checker import selectChecker
@@ -17,6 +13,10 @@ from zope.security.checker import selectChecker
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.services.beautifulsoup import (
+    BeautifulSoup,
+    SoupStrainer,
+    )
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient

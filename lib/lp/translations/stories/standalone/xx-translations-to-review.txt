@@ -4,11 +4,10 @@ Translations to Review
 When a translations reviewer visits their own homepage, it shows a list
 of translations that they could or should be reviewing.
 
-    >>> from BeautifulSoup import BeautifulSoup
-
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
 
+    >>> from lp.services.beautifulsoup import BeautifulSoup
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> from lp.translations.interfaces.translator import ITranslatorSet
 

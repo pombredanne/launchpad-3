@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import get_current_web_service_request
@@ -27,6 +26,7 @@ from lp.registry.enums import (
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicyGrantFlatSource
 from lp.registry.model.pillar import PillarPerson
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.config import config
 from lp.services.webapp.interfaces import StormRangeFactoryError
 from lp.services.webapp.publisher import canonical_url

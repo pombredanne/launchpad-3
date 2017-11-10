@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -207,8 +207,17 @@ class _MismatchedQueryCount(Mismatch):
 
     @staticmethod
     def _getQueryDetails(collector):
-        result = [unicode(query).encode('utf8') for query in collector.queries]
-        return Content(UTF8_TEXT, lambda: ['\n'.join(result)])
+        result = []
+        for query in collector.queries:
+            start, stop, dbname, statement, backtrace = query
+            result.append(u'%d-%d@%s %s' % (
+                start, stop, dbname, statement.rstrip()))
+            result.append(u'-' * 70)
+            if backtrace is not None:
+                result.append(backtrace.rstrip())
+                result.append(u'.' * 70)
+        result = [item.encode('UTF-8') for item in result]
+        return Content(UTF8_TEXT, lambda: [b'\n'.join(result)])
 
     def get_details(self):
         details = {}

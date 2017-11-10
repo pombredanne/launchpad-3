@@ -12,7 +12,6 @@ from datetime import (
     timedelta,
     )
 
-from BeautifulSoup import BeautifulSoup
 from lazr.restfulclient.errors import HTTPError
 import pytz
 from simplejson import dumps
@@ -30,6 +29,7 @@ from lp.answers.errors import (
     NotQuestionOwnerError,
     QuestionTargetError,
     )
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     admin_logged_in,

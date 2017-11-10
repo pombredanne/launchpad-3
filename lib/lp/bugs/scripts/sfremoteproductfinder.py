@@ -14,11 +14,11 @@ from urllib2 import (
     urlopen,
     )
 
-from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.product import IProductSet
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.scripts.logger import log as default_log
 from lp.services.webapp import (
     urlappend,
