@@ -138,7 +138,7 @@ Following the link will show the questions results:
 
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.findAll('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    ...     print question.find('a').renderContents()
     Installation of Java Runtime Environment for Mozilla
 
 On the question page, there is also a link to consult the FAQs matching

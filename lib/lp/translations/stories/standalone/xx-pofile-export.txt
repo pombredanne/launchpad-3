@@ -86,7 +86,7 @@ evolution yet; it will be created at the moment the export is requested.
     ...     browser.contents, 'Translation file details')
     >>> carlos = u'Carlos Perell\xf3 Mar\xedn'
     >>> creator = extract_text(
-    ...     translation_portlet.firstText('Creator:').findNext('a'))
+    ...     translation_portlet.find(text='Creator:').findNext('a'))
     >>> carlos in creator
     True
 

@@ -37,7 +37,7 @@ OK, best we try again, with administrator rights!
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/+groups/+new')
     >>> print find_main_content(
-    ...     admin_browser.contents).first('h1').renderContents()
+    ...     admin_browser.contents).find('h1').renderContents()
     Create a new translation group
 
 Translation group names must meet certain conditions.  For example, they

@@ -24,7 +24,7 @@ If there are branches, then they are displayed.
 
     >>> browser.open('http://code.launchpad.dev/mozilla')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~mark/firefox/release--0.9.1  Development   firefox ...
     lp://dev/~mark/firefox/release-0.8     Development   firefox ...

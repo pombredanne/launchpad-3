@@ -80,7 +80,7 @@ def print_bug_affects_table(content, highlighted_only=False):
         :param highlighted_only: Only print the highlighted row
     """
     main_content = find_main_content(content)
-    affects_table = main_content.first('table', {'class': 'listing'})
+    affects_table = main_content.find('table', {'class': 'listing'})
     if highlighted_only:
         tr_attrs = {'class': 'highlight'}
     else:

@@ -34,7 +34,7 @@ with a link to the complete listing.
     Most active projects in the last month
     see all projects&#8230;
 
-    >>> print preview.fetch('a')[-1]['href']
+    >>> print preview.findAll('a')[-1]['href']
     /projects
 
 
@@ -72,7 +72,7 @@ The recently registered branch listing is ordered with the most recently
 registered branches first.
 
     >>> registered = find_tag_by_id(browser.contents, 'recently-registered')
-    >>> print registered.fetch('a')[-1]['href']
+    >>> print registered.findAll('a')[-1]['href']
     /+recently-registered-branches
 
     >>> browser.getLink(url='recently-registered-branches').click()
@@ -84,7 +84,7 @@ is also shown in the listing.  And since the date that the branch was
 registered is the ordering, the registered date is also shown.
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.thead.fetch('tr'):
+    >>> for row in table.thead.findAll('tr'):
     ...     print extract_text(row)
     Name
     Status
@@ -105,7 +105,7 @@ recent commits first.
 
     >>> browser.open('http://code.launchpad.dev/')
     >>> changed = find_tag_by_id(browser.contents, 'recently-changed')
-    >>> print changed.fetch('a')[-1]['href']
+    >>> print changed.findAll('a')[-1]['href']
     /+recently-changed-branches
 
     >>> browser.getLink(url='recently-changed-branches').click()
@@ -113,7 +113,7 @@ recent commits first.
     Recently changed branches
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.thead.fetch('tr'):
+    >>> for row in table.thead.findAll('tr'):
     ...     print extract_text(row)
     Name
     Status
@@ -132,7 +132,7 @@ imported branches.
 
     >>> browser.open('http://code.launchpad.dev/')
     >>> imported = find_tag_by_id(browser.contents, 'recent-imports')
-    >>> print imported.fetch('a')[-1]['href']
+    >>> print imported.findAll('a')[-1]['href']
     /+recently-imported-branches
 
     >>> browser.getLink(url='recently-imported-branches').click()
@@ -144,7 +144,7 @@ of the branches are not normally set, the Author column is not shown for
 imported branch listings.
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.thead.fetch('tr'):
+    >>> for row in table.thead.findAll('tr'):
     ...     print extract_text(row)
     Name
     Status

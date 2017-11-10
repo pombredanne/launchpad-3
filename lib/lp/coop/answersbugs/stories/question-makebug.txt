@@ -53,7 +53,7 @@ The bug page will display a link to the originating question in the 'Related
 questions' portlet:
 
   >>> portlet = find_portlet(browser.contents, 'Related questions')
-  >>> for question in portlet.fetch('li', 'question-row'):
+  >>> for question in portlet.findAll('li', 'question-row'):
   ...     print question.renderContents()
   <span class="sprite question">Mozilla Firefox</span>: ...<a href=".../firefox/+question/2">Problem...
 
