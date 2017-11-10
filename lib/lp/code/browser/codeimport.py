@@ -22,7 +22,6 @@ __all__ = [
 from textwrap import dedent
 from urlparse import urlparse
 
-from BeautifulSoup import BeautifulSoup
 from lazr.restful.interface import (
     copy_field,
     use_template,
@@ -91,6 +90,7 @@ from lp.code.interfaces.gitnamespace import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IPersonRoles
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.fields import URIField
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (

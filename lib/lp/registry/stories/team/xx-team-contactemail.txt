@@ -24,7 +24,7 @@ send notifications to that team.  The possible contact methods are:
 A warning is rendered about the privacy implications of using a mailing list or
 external contact address.
 
-    >>> from BeautifulSoup import BeautifulSoup
+    >>> from lp.services.beautifulsoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
     >>> soup.find(id='email-warning')
     <p ... Email sent to a mailing list or external contact address may ...

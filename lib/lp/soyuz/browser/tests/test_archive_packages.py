@@ -11,7 +11,6 @@ __all__ = [
 
 import re
 
-from BeautifulSoup import BeautifulSoup
 import soupmatchers
 from testtools.matchers import (
     Equals,
@@ -24,6 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.utilities.celebrities import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp import canonical_url
 from lp.services.webapp.authentication import LaunchpadPrincipal
 from lp.soyuz.browser.archive import ArchiveNavigationMenu

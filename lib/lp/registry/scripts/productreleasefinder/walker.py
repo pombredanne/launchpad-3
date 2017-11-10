@@ -22,7 +22,6 @@ from urlparse import (
     urlsplit,
     )
 
-from BeautifulSoup import BeautifulSoup
 from cscvs.dircompare.path import (
     as_dir,
     subdir,
@@ -33,6 +32,7 @@ from lazr.uri import (
     )
 
 from lp.registry.scripts.productreleasefinder import log
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp.url import urlappend
 
 

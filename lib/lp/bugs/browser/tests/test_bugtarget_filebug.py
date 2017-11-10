@@ -5,7 +5,6 @@ __metaclass__ = type
 
 from textwrap import dedent
 
-from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
 from testscenarios import (
     load_tests_apply_scenarios,
@@ -36,6 +35,7 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.features.testing import FeatureFixture
 from lp.services.temporaryblobstorage.interfaces import (
     ITemporaryStorageManager,
