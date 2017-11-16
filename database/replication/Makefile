@@ -84,7 +84,7 @@ stagingsetup:
 	cat ${STAGING_DUMP} \
 	    | ./walblock.py -n 5000 -d /var/lib/postgresql/9.3/staging/pg_xlog \
 	    | pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
-		--use-list=${DUMPLIST}
+		--use-list=${DUMPLIST} -v
 	rm ${DUMPLIST}
 	# Apply database patches.
 	@echo Running upgrade.py `date`.
