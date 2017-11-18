@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Browser code for the Launchpad root page."""
 
@@ -32,10 +32,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.name import sanitize_name
-from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import IBugSet
-from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -113,12 +110,13 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     @property
     def branch_count(self):
         """The total branch count of public branches in all of Launchpad."""
-        return getUtility(IAllBranches).visibleByUser(None).count()
+        return getUtility(ILaunchpadStatisticSet).value('public_branch_count')
 
     @property
     def gitrepository_count(self):
         """The total Git repository count in all of Launchpad."""
-        return getUtility(IAllGitRepositories).visibleByUser(None).count()
+        return getUtility(ILaunchpadStatisticSet).value(
+            'public_git_repository_count')
 
     @property
     def bug_count(self):
@@ -138,7 +136,8 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     @property
     def blueprint_count(self):
         """The total blueprint count in all of Launchpad."""
-        return getUtility(ISpecificationSet).specificationCount(None)
+        return getUtility(ILaunchpadStatisticSet).value(
+            'public_specification_count')
 
     @property
     def answer_count(self):
