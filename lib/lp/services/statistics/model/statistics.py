@@ -20,8 +20,11 @@ from zope.interface import implementer
 from lp.answers.enums import QuestionStatus
 from lp.answers.model.question import Question
 from lp.app.enums import ServiceUsage
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import BugTask
+from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.product import Product
 from lp.services.database.constants import UTC_NOW
@@ -91,6 +94,8 @@ class LaunchpadStatisticSet:
         self._updateRegistryStatistics(ztm)
         self._updateRosettaStatistics(ztm)
         self._updateQuestionStatistics(ztm)
+        self._updateBlueprintStatistics(ztm)
+        self._updateCodeStatistics(ztm)
         getUtility(IPersonSet).updateStatistics()
 
     def _updateMaloneStatistics(self, ztm):
@@ -220,4 +225,20 @@ class LaunchpadStatisticSet:
             "SELECT COUNT(DISTINCT product) + COUNT(DISTINCT distribution) "
             "FROM Question")
         self.update("projects_with_questions_count", cur.fetchone()[0] or 0)
+        ztm.commit()
+
+    def _updateBlueprintStatistics(self, ztm):
+        self.update(
+            'public_specification_count',
+            getUtility(ISpecificationSet).specificationCount(None))
+        ztm.commit()
+
+    def _updateCodeStatistics(self, ztm):
+        self.update(
+            'public_branch_count',
+            getUtility(IAllBranches).visibleByUser(None).count())
+        ztm.commit()
+        self.update(
+            'public_git_repository_count',
+            getUtility(IAllGitRepositories).visibleByUser(None).count())
         ztm.commit()

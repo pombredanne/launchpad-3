@@ -59,7 +59,7 @@ button allows the user to upload a new image.
     >>> widget = ImageChangeWidget(
     ...     person_logo, LaunchpadTestRequest(), edit_style)
 
-    >>> from BeautifulSoup import BeautifulSoup
+    >>> from lp.services.beautifulsoup import BeautifulSoup
     >>> html = widget()
     >>> print BeautifulSoup(html).find('img').get('src')
     /@@/person-logo

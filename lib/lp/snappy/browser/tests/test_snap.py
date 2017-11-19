@@ -3,6 +3,8 @@
 
 """Test snap package views."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import (
@@ -111,7 +113,7 @@ class TestSnapNavigation(TestCaseWithFactory):
     def test_canonical_url(self):
         owner = self.factory.makePerson(name="person")
         snap = self.factory.makeSnap(
-            registrant=owner, owner=owner, name=u"snap")
+            registrant=owner, owner=owner, name="snap")
         self.assertEqual(
             "http://launchpad.dev/~person/+snap/snap", canonical_url(snap))
 
@@ -324,7 +326,7 @@ class TestSnapAddView(BaseTestSnapView):
             owner=self.person,
             information_type=InformationType.USERDATA)
 
-        with self.useFixture(FeatureFixture({SNAP_PRIVATE_FEATURE_FLAG: u""})):
+        with self.useFixture(FeatureFixture({SNAP_PRIVATE_FEATURE_FLAG: ""})):
             browser = self.getViewBrowser(branch, user=self.person)
             self.assertRaises(
                 LinkNotFoundError, browser.getLink, "Create snap package")
@@ -414,11 +416,11 @@ class TestSnapAddView(BaseTestSnapView):
             redirection = self.assertRaises(
                 HTTPError, browser.getControl("Create snap package").click)
         login_person(self.person)
-        snap = getUtility(ISnapSet).getByName(self.person, u"snap-name")
+        snap = getUtility(ISnapSet).getByName(self.person, "snap-name")
         self.assertThat(snap, MatchesStructure.byEquality(
             owner=self.person, distro_series=self.distroseries,
-            name=u"snap-name", source=branch, store_upload=True,
-            store_series=self.snappyseries, store_name=u"store-name",
+            name="snap-name", source=branch, store_upload=True,
+            store_series=self.snappyseries, store_name="store-name",
             store_secrets={"root": root_macaroon_raw},
             store_channels=["track/edge"]))
         self.assertThat(self.request, MatchesStructure.byEquality(
@@ -482,7 +484,7 @@ class TestSnapAddView(BaseTestSnapView):
         browser.getControl(name="field.name").value = "snap-name"
         browser.getControl("Create snap package").click()
         login_person(self.person)
-        snap = getUtility(ISnapSet).getByName(self.person, u"snap-name")
+        snap = getUtility(ISnapSet).getByName(self.person, "snap-name")
         self.assertContentEqual(
             ["386", "amd64"], [proc.name for proc in snap.processors])
 
@@ -724,16 +726,16 @@ class TestSnapEditView(BaseTestSnapView):
             view.initialize()
             view.request_action.success({
                 "owner": snap.owner,
-                "name": u"changed",
+                "name": "changed",
                 "distro_series": snap.distro_series,
                 })
         self.assertSqlAttributeEqualsDate(snap, "date_last_modified", UTC_NOW)
 
     def test_edit_snap_already_exists(self):
         snap = self.factory.makeSnap(
-            registrant=self.person, owner=self.person, name=u"one")
+            registrant=self.person, owner=self.person, name="one")
         self.factory.makeSnap(
-            registrant=self.person, owner=self.person, name=u"two")
+            registrant=self.person, owner=self.person, name="two")
         browser = self.getViewBrowser(snap, user=self.person)
         browser.getLink("Edit snap package").click()
         browser.getControl(name="field.name").value = "two"
@@ -902,7 +904,7 @@ class TestSnapEditView(BaseTestSnapView):
     def assertNeedStoreReauth(self, expected, initial_kwargs, data):
         initial_kwargs.setdefault("store_upload", True)
         initial_kwargs.setdefault("store_series", self.snappyseries)
-        initial_kwargs.setdefault("store_name", u"one")
+        initial_kwargs.setdefault("store_name", "one")
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
             distroseries=self.distroseries, **initial_kwargs)
@@ -928,7 +930,7 @@ class TestSnapEditView(BaseTestSnapView):
 
     def test__needStoreReauth_different_name(self):
         # Changing the store name requires reauthorization.
-        self.assertNeedStoreReauth(True, {}, {"store_name": u"two"})
+        self.assertNeedStoreReauth(True, {}, {"store_name": "two"})
 
     def test__needStoreReauth_enable_upload(self):
         # Enabling store upload requires reauthorization.  (This can happen
@@ -946,7 +948,7 @@ class TestSnapEditView(BaseTestSnapView):
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
             distroseries=self.distroseries, store_upload=True,
-            store_series=self.snappyseries, store_name=u"one",
+            store_series=self.snappyseries, store_name="one",
             store_channels=["track/edge"])
         view_url = canonical_url(snap, view_name="+edit")
         browser = self.getNonRedirectingBrowser(url=view_url, user=self.person)
@@ -975,7 +977,7 @@ class TestSnapEditView(BaseTestSnapView):
                 HTTPError, browser.getControl("Update snap package").click)
         login_person(self.person)
         self.assertThat(snap, MatchesStructure.byEquality(
-            store_name=u"two", store_secrets={"root": root_macaroon_raw},
+            store_name="two", store_secrets={"root": root_macaroon_raw},
             store_channels=["stable", "edge"]))
         self.assertThat(self.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
@@ -1165,7 +1167,7 @@ class TestSnapView(BaseTestSnapView):
             kwargs["branch"] = self.factory.makeAnyBranch()
         return self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=self.distroseries, name=u"snap-name", **kwargs)
+            distroseries=self.distroseries, name="snap-name", **kwargs)
 
     def makeBuild(self, snap=None, archive=None, date_created=None, **kwargs):
         if snap is None:
@@ -1232,8 +1234,8 @@ class TestSnapView(BaseTestSnapView):
 
     def test_index_git(self):
         [ref] = self.factory.makeGitRefs(
-            owner=self.person, target=self.person, name=u"snap-repository",
-            paths=[u"refs/heads/master"])
+            owner=self.person, target=self.person, name="snap-repository",
+            paths=["refs/heads/master"])
         snap = self.makeSnap(git_ref=ref)
         build = self.makeBuild(
             snap=snap, status=BuildStatus.FULLYBUILT,
@@ -1259,8 +1261,8 @@ class TestSnapView(BaseTestSnapView):
 
     def test_index_git_url(self):
         ref = self.factory.makeGitRefRemote(
-            repository_url=u"https://git.example.org/foo",
-            path=u"refs/heads/master")
+            repository_url="https://git.example.org/foo",
+            path="refs/heads/master")
         snap = self.makeSnap(git_ref=ref)
         build = self.makeBuild(
             snap=snap, status=BuildStatus.FULLYBUILT,
@@ -1331,7 +1333,7 @@ class TestSnapView(BaseTestSnapView):
                 usable_distro_series=[self.distroseries])
         snap = self.makeSnap(
             store_upload=True, store_series=snappyseries,
-            store_name=self.getUniqueString(u"store-name"))
+            store_name=self.getUniqueString("store-name"))
         view = create_initialized_view(snap, "+index")
         store_upload_tag = soupmatchers.Tag(
             "store upload", "div", attrs={"id": "store_upload"})
@@ -1399,7 +1401,7 @@ class TestSnapRequestBuildsView(BaseTestSnapView):
             self.architectures.append(das)
         self.snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=self.distroseries, name=u"snap-name")
+            distroseries=self.distroseries, name="snap-name")
 
     def test_request_builds_page(self):
         # The +request-builds page is sane.

@@ -112,7 +112,7 @@ ensurePersonForSelf() can also handle remote users whose email
 addresses aren't provided.
 
     >>> noemail_person = bugtracker.ensurePersonForSelf(
-    ...     display_name='no-email-person',
+    ...     display_name='No-Email-Person',
     ...     email=None, rationale=PersonCreationRationale.BUGIMPORT,
     ...     creation_comment='whilst testing ensurePersonForSelf().')
 
@@ -120,11 +120,11 @@ addresses aren't provided.
     no-email-person-bugzilla-checkwatches
 
 A BugTrackerPerson record will have been created to map
-'no-email-person' on our example bugtracker to
+'No-Email-Person' on our example bugtracker to
 'no-email-person-bugzilla-checkwatches-1' in Launchpad.
 
     >>> bugtracker_person = bugtracker.getLinkedPersonByName(
-    ...     'no-email-person')
+    ...     'No-Email-Person')
 
     >>> bugtracker_person.person == noemail_person
     True

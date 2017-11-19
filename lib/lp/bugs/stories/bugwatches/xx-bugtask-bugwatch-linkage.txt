@@ -116,7 +116,7 @@ created, instead the old one will be used.
     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
 
     >>> bugwatch_portlet = find_portlet(browser.contents, 'Remote bug watches')
-    >>> for li_tag in bugwatch_portlet.fetch('li'):
+    >>> for li_tag in bugwatch_portlet.findAll('li'):
     ...     print li_tag.findAll('a')[0].string
     mozilla.org #123543
     mozilla.org #2000

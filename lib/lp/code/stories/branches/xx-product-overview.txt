@@ -10,7 +10,7 @@ registered branches.
     ...     if branches is None:
     ...         print "No 'Latest branches' portlet found at %s" % (url,)
     ...         return
-    ...     for list_item in branches.fetch('li'):
+    ...     for list_item in branches.findAll('li'):
     ...         print extract_text(list_item)
 
     >>> def make_branch_on_product(product, branch_name, person_name):

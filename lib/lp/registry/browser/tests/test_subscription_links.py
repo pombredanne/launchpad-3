@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import unittest
 
-from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 from zope.component import getUtility
 
@@ -16,6 +15,7 @@ from lp.bugs.browser.structuralsubscription import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.milestone import ProjectMilestone
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url

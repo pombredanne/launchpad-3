@@ -17,14 +17,12 @@ import unittest
 from urlparse import urljoin
 
 from BeautifulSoup import (
-    BeautifulSoup,
     CData,
     Comment,
     Declaration,
     NavigableString,
     PageElement,
     ProcessingInstruction,
-    SoupStrainer,
     Tag,
     )
 from contrib.oauth import (
@@ -48,6 +46,10 @@ from zope.testbrowser.testing import Browser
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import NameAlreadyTaken
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.services.beautifulsoup import (
+    BeautifulSoup,
+    SoupStrainer,
+    )
 from lp.services.config import config
 from lp.services.oauth.interfaces import (
     IOAuthConsumerSet,
@@ -195,8 +197,7 @@ def find_tag_by_id(content, id):
     else:
         elements_with_id = [
             tag for tag in BeautifulSoup(
-                content, parseOnlyThese=SoupStrainer(id=id),
-                fromEncoding='utf-8')]
+                content, parseOnlyThese=SoupStrainer(id=id))]
     if len(elements_with_id) == 0:
         return None
     elif len(elements_with_id) == 1:
@@ -222,8 +223,7 @@ def find_tags_by_class(content, class_, only_first=False):
         classes = set(value.split())
         return match_classes.issubset(classes)
     soup = BeautifulSoup(
-        content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}),
-        fromEncoding='utf-8')
+        content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}))
     if only_first:
         find = BeautifulSoup.find
     else:
@@ -257,7 +257,7 @@ def find_main_content(content):
     if main_content is None:
         # Simple pages have neither of these, so as a last resort, we get
         # the page <body>.
-        main_content = BeautifulSoup(content, fromEncoding='utf-8').body
+        main_content = BeautifulSoup(content).body
     return main_content
 
 
@@ -267,8 +267,7 @@ def get_feedback_messages(content):
                        'warning message']
     soup = BeautifulSoup(
         content,
-        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}),
-        fromEncoding='utf-8')
+        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
     return [extract_text(tag) for tag in soup]
 
 
@@ -327,7 +326,7 @@ def print_radio_button_field(content, name):
     (*) A checked option
     ( ) An unchecked option
     """
-    main = BeautifulSoup(content, fromEncoding='utf-8')
+    main = BeautifulSoup(content)
     for field in get_radio_button_text_for_field(main, name):
         print field
 
@@ -379,7 +378,7 @@ def extract_text(content, extract_image_text=False, skip_tags=None):
     if skip_tags is None:
         skip_tags = ['script']
     if not isinstance(content, PageElement):
-        soup = BeautifulSoup(content, fromEncoding='utf-8')
+        soup = BeautifulSoup(content)
     else:
         soup = content
 
@@ -450,7 +449,7 @@ def parse_relationship_section(content):
 
     See package-relationship-pages.txt and related.
     """
-    soup = BeautifulSoup(content, fromEncoding='utf-8')
+    soup = BeautifulSoup(content)
     section = soup.find('ul')
     whitespace_re = re.compile('\s+')
     if section is None:

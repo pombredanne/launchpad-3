@@ -3,6 +3,8 @@
 
 """Tests related to IQuestionTarget."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 __all__ = []
@@ -107,7 +109,7 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
         langs = [
             lang.englishname for lang in answer_contact.getLanguagesCache()]
         # The languages cache has been filled in the correct order.
-        self.failUnlessEqual(langs, [u'English', u'Portuguese (Brazil)'])
+        self.failUnlessEqual(langs, ['English', 'Portuguese (Brazil)'])
 
     def test_SourcePackage_implementation_should_prefill_cache(self):
         # Remove the answer contact's security proxy because we need to call
@@ -130,7 +132,7 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
         langs = [
             lang.englishname for lang in answer_contact.getLanguagesCache()]
         # The languages cache has been filled in the correct order.
-        self.failUnlessEqual(langs, [u'English', u'Portuguese (Brazil)'])
+        self.failUnlessEqual(langs, ['English', 'Portuguese (Brazil)'])
 
 
 class TestQuestionTargetCreateQuestionFromBug(TestCaseWithFactory):

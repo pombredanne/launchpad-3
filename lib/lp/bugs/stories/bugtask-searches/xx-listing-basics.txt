@@ -205,9 +205,9 @@ We display bug badges for associated branches, specifications, patches, etc.
 
     >>> def names_and_branches(contents):
     ...     listing = find_tag_by_id(contents, 'bugs-table-listing')
-    ...     for row in listing.fetch(None, {'class': 'buglisting-row'}):
+    ...     for row in listing.findAll(None, {'class': 'buglisting-row'}):
     ...         badge_cell = row.find(None, {'class': 'bug-related-icons'})
-    ...         spans = badge_cell.fetch('span')
+    ...         spans = badge_cell.findAll('span')
     ...         for span in spans:
     ...            print "  Badge:", span.get('alt')
 

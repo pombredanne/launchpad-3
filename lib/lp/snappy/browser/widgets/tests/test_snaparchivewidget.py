@@ -1,11 +1,12 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
 import re
 
-from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
 from testscenarios import (
     load_tests_apply_scenarios,
@@ -20,6 +21,7 @@ from zope.formlib.interfaces import (
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
@@ -59,8 +61,7 @@ class TestSnapArchiveWidget(WithScenarios, TestCaseWithFactory):
     def setUp(self):
         super(TestSnapArchiveWidget, self).setUp()
         self.distroseries = self.factory.makeDistroSeries()
-        field = Reference(
-            __name__="archive", schema=IArchive, title=u"Archive")
+        field = Reference(__name__="archive", schema=IArchive, title="Archive")
         self.context = self.context_factory(self)
         field = field.bind(self.context)
         request = LaunchpadTestRequest()

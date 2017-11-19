@@ -46,7 +46,7 @@ A person's owned branches are shown on their code application overview page.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/landscape/feature-x      Development
     ...
@@ -64,7 +64,7 @@ There is also a filter for registered branches.
     >>> print browser.title
     Code : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~name12/landscape/feature-x      Development
     ...
@@ -83,7 +83,7 @@ subscribed branches.
     >>> print browser.title
     Code : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
-    >>> for row in table.tbody.fetch('tr'):
+    >>> for row in table.tbody.findAll('tr'):
     ...     print extract_text(row)
     lp://dev/~launchpad/gnome-terminal/launchpad  Development           ...
     lp://dev/~name12/+junk/junk.dev               Experimental  ...

@@ -8,8 +8,8 @@ describes the appearance.
 Public PPAs appear like any other launchpad page.
 
     >>> browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> body_el = BeautifulSoup(browser.contents).first('body')
+    >>> from lp.services.beautifulsoup import BeautifulSoup
+    >>> body_el = BeautifulSoup(browser.contents).find('body')
     >>> 'private' in body_el['class']
     False
 
@@ -33,6 +33,6 @@ presentation for private items.
     >>> cprov_browser = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:test')
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/p3a")
-    >>> body_el = BeautifulSoup(cprov_browser.contents).first('body')
+    >>> body_el = BeautifulSoup(cprov_browser.contents).find('body')
     >>> 'private' in body_el['class']
     True

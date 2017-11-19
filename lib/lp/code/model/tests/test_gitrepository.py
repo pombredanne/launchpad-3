@@ -960,28 +960,28 @@ class TestGitRepositoryNamespace(TestCaseWithFactory):
         self.assertEqual(namespace, repository.namespace)
 
 
-class TestGitRepositoryPendingWrites(TestCaseWithFactory):
+class TestGitRepositoryPendingUpdates(TestCaseWithFactory):
     """Are there changes to this repository not reflected in the database?"""
 
     layer = LaunchpadFunctionalLayer
 
-    def test_new_repository_no_writes(self):
-        # New repositories have no pending writes.
+    def test_new_repository_no_updates(self):
+        # New repositories have no pending updates.
         repository = self.factory.makeGitRepository()
-        self.assertFalse(repository.pending_writes)
+        self.assertFalse(repository.pending_updates)
 
     def test_notify(self):
         # If the hosting service has just sent us a change notification,
-        # then there are pending writes, but running the ref-scanning job
+        # then there are pending updates, but running the ref-scanning job
         # clears that flag.
         git_api = GitAPI(None, None)
         repository = self.factory.makeGitRepository()
         self.assertIsNone(git_api.notify(repository.getInternalPath()))
-        self.assertTrue(repository.pending_writes)
+        self.assertTrue(repository.pending_updates)
         [job] = list(getUtility(IGitRefScanJobSource).iterReady())
         with dbuser("branchscanner"):
             JobRunner([job]).runAll()
-        self.assertFalse(repository.pending_writes)
+        self.assertFalse(repository.pending_updates)
 
 
 class TestGitRepositoryPrivacy(TestCaseWithFactory):

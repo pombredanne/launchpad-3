@@ -346,6 +346,13 @@ the comments for those bugs.
         text: I appear to have become a perfectly safe penguin.
         time: 2008-06-17 20:28:40
     <BLANKLINE>
+        author: arthur.dent@earth.example.com
+        bug_id: 2
+        id: 5
+        is_private: False
+        text: I never could get the hang of Thursdays.
+        time: 2008-06-19 09:30:00
+    <BLANKLINE>
     <BLANKLINE>
 
 Passing a list of comment IDs to Bug.comments will cause it to return
@@ -404,6 +411,9 @@ returned for each comment.
     <BLANKLINE>
         author: Ford Prefect <ford.prefect@h2g2.com>
         id: 4
+    <BLANKLINE>
+        author: arthur.dent@earth.example.com
+        id: 5
 
     >>> return_dict = server.Bug.comments(
     ...     {'comment_ids': [1, 4], 'include_fields': ('id', 'author')})
@@ -445,12 +455,12 @@ on the remote server.
     >>> bugzilla_transport.auth_cookie = 'open sesame'
     >>> return_dict = server.Bug.add_comment({'id': 1, 'comment': comment})
     >>> return_dict
-    {'id': 5}
+    {'id': 6}
 
 The comment will be stored with the other comments on the remote server.
 
     >>> return_dict = server.Bug.comments({
-    ...     'id': [1], 'comment_ids': [5]})
+    ...     'id': [1], 'comment_ids': [6]})
     >>> comments_dict = return_dict['comments']
 
     >>> for comment_id, comment in comments_dict.items():
@@ -458,10 +468,10 @@ The comment will be stored with the other comments on the remote server.
     ...     for comment_key in sorted(comment):
     ...         print "    %s: %s" % (
     ...             comment_key, comment[comment_key])
-    Comment 5:
+    Comment 6:
         author: launchpad
         bug_id: 1
-        id: 5
+        id: 6
         is_private: False
         text: I'm supposed to write something apposite here.
         time: ...

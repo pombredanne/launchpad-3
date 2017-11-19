@@ -1,6 +1,8 @@
 # Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import datetime
@@ -8,7 +10,6 @@ import json
 import re
 import unittest
 
-from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
@@ -36,6 +37,7 @@ from lp.blueprints.interfaces.specification import (
 from lp.registry.enums import SpecificationSharingPolicy
 from lp.registry.interfaces.person import PersonVisibility
 from lp.registry.interfaces.product import IProductSeries
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.interaction import ANONYMOUS
 from lp.services.webapp.interfaces import BrowserNotificationLevel
@@ -325,7 +327,7 @@ class TestSpecificationInformationType(BrowserTestCase):
             spec, owner, information_type=self.factory.getUniqueString())
         self.assertEqual(400, status)
         error_data = json.loads(body)
-        self.assertEqual({u'field.information_type': u'Invalid value'},
+        self.assertEqual({'field.information_type': 'Invalid value'},
                          error_data['errors'])
         self.assertEqual(InformationType.PUBLIC, spec.information_type)
 
@@ -388,8 +390,8 @@ class NewSpecificationTests:
         """Helper to check for invalid information type on submit."""
         with person_logged_in(owner):
             view = create_initialized_view(context, '+addspec', form=form)
-            expected = (u'This information type is not permitted for'
-                        u' this product')
+            expected = ('This information type is not permitted for'
+                        ' this product')
             self.assertIn(expected, view.errors)
 
     def test_cache_contains_information_type(self):
@@ -429,7 +431,7 @@ class TestNewSpecificationFromRootView(TestCaseWithFactory,
         form = self._create_form_data(product.name)
         form['field.information_type'] = 'PROPRIETARY'
         view = create_initialized_view(context, '+new', form=form)
-        expected = u'This information type is not permitted for this product'
+        expected = 'This information type is not permitted for this product'
         self.assertIn(expected, view.errors)
 
 
@@ -855,11 +857,11 @@ class TestSecificationHelpers(unittest.TestCase):
     def test_dict_to_DOT_attrs(self):
         """Verify that dicts are converted to a sorted DOT attr string."""
         expected_attrs = (
-            u'  [\n'
-            u'  "bar"="bar \\" \\n bar",\n'
-            u'  "baz"="zab",\n'
-            u'  "foo"="foo"\n'
-            u'  ]')
+            '  [\n'
+            '  "bar"="bar \\" \\n bar",\n'
+            '  "baz"="zab",\n'
+            '  "foo"="foo"\n'
+            '  ]')
         dict_attrs = dict(
             foo="foo",
             bar="bar \" \n bar",

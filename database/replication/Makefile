@@ -56,8 +56,10 @@ stagingsetup: DUMPLIST:=$(shell tempfile --suffix=.lst --prefix=lpstag)
 stagingsetup:
 	# List the dump first to make sure it is usable before destroying
 	# anything.
+	# XXX wgrant 2017-11-16: Exclude tsearch2 bits that are
+	# erreonously being dumped now.
 	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
-	    > ${DUMPLIST}
+	    | grep -v 'OPERATOR FAMILY ts2' > ${DUMPLIST}
 
 	# Deny new connections to the main DBs and kill any leftovers.
 	${STAGING_PGBOUNCER} -c 'DISABLE launchpad_staging'
@@ -82,7 +84,7 @@ stagingsetup:
 	cat ${STAGING_DUMP} \
 	    | ./walblock.py -n 5000 -d /var/lib/postgresql/9.3/staging/pg_xlog \
 	    | pg_restore --dbname=lpmain_staging --no-owner ${EXIT_ON_ERROR} \
-		--use-list=${DUMPLIST}
+		--use-list=${DUMPLIST} -v
 	rm ${DUMPLIST}
 	# Apply database patches.
 	@echo Running upgrade.py `date`.

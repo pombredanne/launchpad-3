@@ -3,6 +3,8 @@
 
 """Webservice unit tests related to Launchpad blueprints."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 import json
@@ -144,8 +146,8 @@ class SpecificationAttributeWebserviceTests(SpecificationWebserviceTestCase):
         url = '/%s/+spec/%s' % (spec.product.name, spec.name)
         webservice = webservice_for_person(user)
         response = webservice.get(url)
-        expected_keys = [u'self_link', u'http_etag', u'resource_type_link',
-                         u'web_link', u'information_type']
+        expected_keys = ['self_link', 'http_etag', 'resource_type_link',
+                         'web_link', 'information_type']
         self.assertEqual(response.status, 200)
         self.assertContentEqual(expected_keys, response.jsonBody().keys())
 

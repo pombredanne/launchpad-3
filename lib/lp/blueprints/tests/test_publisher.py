@@ -3,6 +3,8 @@
 
 """Tests for blueprints' custom publications."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from lp.blueprints.publisher import BlueprintsLayer

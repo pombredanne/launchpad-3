@@ -10,7 +10,6 @@ from datetime import (
 import re
 import urllib
 
-from BeautifulSoup import BeautifulSoup
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interfaces import IJSONRequestCache
@@ -65,6 +64,7 @@ from lp.layers import (
     )
 from lp.registry.enums import BugSharingPolicy
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture

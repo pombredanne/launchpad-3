@@ -8,7 +8,7 @@ A custom widget to display checkboxes in multiple columns.
 This widget is created to allow many options to be displayed in a single
 page.
 
-    >>> from BeautifulSoup import BeautifulSoup
+    >>> from lp.services.beautifulsoup import BeautifulSoup
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
     >>> from lp.registry.interfaces.product import (
     ...     IProduct,
