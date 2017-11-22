@@ -75,7 +75,7 @@ def get_current_view(request=None):
 
 def get_facet(view):
     """Return the view's facet name."""
-    return getattr(removeSecurityProxy(view), '__launchpad_facetname__', None)
+    return getattr(removeSecurityProxy(view), '__launchpad_facetname__', u'')
 
 
 @implementer(ILinkData)
