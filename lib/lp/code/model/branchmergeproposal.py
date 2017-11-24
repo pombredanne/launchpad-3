@@ -1179,6 +1179,23 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             for diff in diffs)
         return [diff_dict.get(revisions) for revisions in revision_list]
 
+    def scheduleDiffUpdates(self, return_jobs=True):
+        """See `IBranchMergeProposal`."""
+        from lp.code.model.branchmergeproposaljob import (
+            GenerateIncrementalDiffJob,
+            UpdatePreviewDiffJob,
+            )
+        jobs = []
+        if (self.target_branch is None or
+                self.target_branch.last_scanned_id is not None):
+            jobs.append(UpdatePreviewDiffJob.create(self))
+            if self.target_branch is not None:
+                for old, new in self.getMissingIncrementalDiffs():
+                    jobs.append(GenerateIncrementalDiffJob.create(
+                        self, old.revision_id, new.revision_id))
+        if return_jobs:
+            return jobs
+
     @property
     def revision_end_date(self):
         """The cutoff date for showing revisions.

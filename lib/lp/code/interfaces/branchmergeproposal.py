@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The interface for branch merge proposals."""
@@ -508,6 +508,19 @@ class IBranchMergeProposalEdit(Interface):
         :param prerequisite_revision_id: The revision id that was used from
             the prerequisite branch.
         :param conflicts: Text describing the conflicts if any.
+        """
+
+    @call_with(return_jobs=False)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def scheduleDiffUpdates(return_jobs=True):
+        """Schedule updates of the diffs for this proposal.
+
+        This can be used if the previous attempt to generate diffs crashed,
+        or if Launchpad failed to notice that the current diffs are outdated
+        for some reason.
+
+        :param return_jobs: If True, return the created jobs.
         """
 
     @call_with(user=REQUEST_USER)
