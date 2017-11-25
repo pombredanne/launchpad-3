@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -653,18 +653,9 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
 
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
-        from lp.code.model.branchmergeproposaljob import (
-                GenerateIncrementalDiffJob,
-                UpdatePreviewDiffJob,
-            )
         jobs = []
         for merge_proposal in self.active_landing_targets:
-            if merge_proposal.target_branch.last_scanned_id is None:
-                continue
-            jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
-            for old, new in merge_proposal.getMissingIncrementalDiffs():
-                GenerateIncrementalDiffJob.create(
-                    merge_proposal, old.revision_id, new.revision_id)
+            jobs.extend(merge_proposal.scheduleDiffUpdates())
         return jobs
 
     def markRecipesStale(self):

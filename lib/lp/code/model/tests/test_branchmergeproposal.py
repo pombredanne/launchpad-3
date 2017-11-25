@@ -60,6 +60,7 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG,
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
+    IBranchMergeProposalJobSource,
     notify_modified,
     )
 from lp.code.model.branchmergeproposal import (
@@ -82,6 +83,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.webapp import canonical_url
 from lp.services.xref.interfaces import IXRefSet
 from lp.testing import (
@@ -2082,7 +2084,7 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
 
 
 class TestUpdatePreviewDiff(TestCaseWithFactory):
-    """Test the updateMergeDiff method of BranchMergeProposal."""
+    """Test the updatePreviewDiff method of BranchMergeProposal."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -2135,6 +2137,39 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
             removeSecurityProxy(merge_proposal.preview_diff).id)
         self.assertNotEqual(
             diff_id, removeSecurityProxy(merge_proposal.preview_diff).diff_id)
+
+
+class TestScheduleDiffUpdates(TestCaseWithFactory):
+    """Test scheduling of diff updates."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestScheduleDiffUpdates, self).setUp()
+        self.job_source = removeSecurityProxy(
+            getUtility(IBranchMergeProposalJobSource))
+
+    def test_scheduleDiffUpdates_bzr(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        self.factory.makeRevisionsForBranch(bmp.source_branch)
+        self.factory.makeRevisionsForBranch(bmp.target_branch)
+        [job] = self.job_source.iterReady()
+        removeSecurityProxy(job).job._status = JobStatus.COMPLETED
+        self.assertEqual([], list(self.job_source.iterReady()))
+        with person_logged_in(bmp.merge_target.owner):
+            bmp.scheduleDiffUpdates()
+        [job] = self.job_source.iterReady()
+        self.assertIsInstance(job, UpdatePreviewDiffJob)
+
+    def test_scheduleDiffUpdates_git(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        [job] = self.job_source.iterReady()
+        removeSecurityProxy(job).job._status = JobStatus.COMPLETED
+        self.assertEqual([], list(self.job_source.iterReady()))
+        with person_logged_in(bmp.merge_target.owner):
+            bmp.scheduleDiffUpdates()
+        [job] = self.job_source.iterReady()
+        self.assertIsInstance(job, UpdatePreviewDiffJob)
 
 
 class TestNextPreviewDiffJob(TestCaseWithFactory):
