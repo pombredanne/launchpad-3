@@ -1011,10 +1011,9 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
     def updateLandingTargets(self, paths):
         """See `IGitRepository`."""
-        from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
         jobs = []
         for merge_proposal in self.getActiveLandingTargets(paths):
-            jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
+            jobs.extend(merge_proposal.scheduleDiffUpdates())
         return jobs
 
     def _getRecipes(self, paths=None):

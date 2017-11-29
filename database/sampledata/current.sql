@@ -1,4 +1,4 @@
--- Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+-- Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 -- Created using pg_dump (PostgreSQL) 9.3.5
 
@@ -4537,6 +4537,9 @@ INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (23, 'produ
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (24, 'products_with_bugs', 5, '2007-04-29 23:45:04.416248');
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (25, 'products_with_questions', 1, '2007-04-29 23:45:04.416248');
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (26, 'reviewed_products', 1, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (27, 'public_specification_count', 12, '2017-11-18 13:15:56.602272');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (28, 'public_branch_count', 30, '2017-11-18 13:16:47.719834');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (29, 'public_git_repository_count', 0, '2017-11-18 13:17:08.109074');
 
 
 ALTER TABLE launchpadstatistic ENABLE TRIGGER ALL;

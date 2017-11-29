@@ -217,7 +217,7 @@ class SpecificationTests(TestCaseWithFactory):
 
     def test_security_adapters(self):
         expected_adapters = {
-            CheckerPublic: None,
+            'zope.Public': None,
             'launchpad.Admin': AdminSpecification,
             'launchpad.Edit': EditSpecificationByRelatedPeople,
             'launchpad.LimitedView': ViewSpecification,

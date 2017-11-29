@@ -658,9 +658,11 @@ def layer_for_rootsite(rootsite):
     defined with the specified name, then LaunchpadLayer is returned.
     """
     try:
-        return getUtility(IDefaultBrowserLayer, rootsite)
+        if rootsite is not None:
+            return getUtility(IDefaultBrowserLayer, rootsite)
     except ComponentLookupError:
-        return LaunchpadLayer
+        pass
+    return LaunchpadLayer
 
 
 class FakeRequest:

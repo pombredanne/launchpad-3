@@ -15,7 +15,8 @@ zope.catalog==3.8.2
 # Tell pip about extras to work around https://github.com/pypa/pip/issues/3046
 # XXX cjwatson 2017-09-03: This should be fixed in pip 9.0.0, but apparently
 # isn't.
-zope.component[hook,zcml]==3.10.0
+# Upgrade from ZTK 1.1.6 for ZCML registration performance.
+zope.component[hook,zcml]==3.11.0
 zope.componentvocabulary==1.0.1
 zope.configuration==3.7.4
 zope.container==3.12.0
@@ -37,7 +38,9 @@ zope.hookable==3.4.1
 zope.i18n==3.7.4
 zope.i18nmessageid==3.5.3
 zope.index==3.6.4
-zope.interface==3.7.0
+#zope.interface==3.7.0
+# Upgrade from ZTK 1.1.6 for ZCML registration performance.
+zope.interface==4.4.3
 zope.intid==3.7.2
 zope.keyreference==3.6.4
 zope.lifecycleevent==3.6.2
