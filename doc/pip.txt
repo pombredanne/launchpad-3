@@ -184,47 +184,74 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
     install_requires, or ``'lazr.foo>=1.1'`` if we know that we are
     depending on features introduced in version 1.1 of lazr.foo.
 
-2.  [OPTIONAL] If you know it, add the desired version number to
-    constraints.txt now.
+2.  [OPTIONAL] Add the desired package to the ``download-cache/dist``
+    directory.
 
-    For instance, if you know you want lazr.foo 1.1.2, add this line to
-    ``constraints.txt``::
+    You should only need to do this if the package is one that doesn't exist
+    on PyPI at all (which should be unusual).  Otherwise, it's less
+    error-prone to fetch the desired package from PyPI along with any new
+    dependencies it may have.
 
-      lazr.foo==1.1.2
+3.  Run the following command (or your variation)::
 
-3.  [OPTIONAL] Add the desired distribution of lazr.foo 1.1.2 to the
-    ``download-cache/dist`` directory.
+        bin/pip install --no-binary :all: lazr.foo
 
-4.  Run the following command (or your variation)::
+    This will either produce some errors which you'll need to fix, or it
+    will succeed and finish with a line such as this::
 
-        bin/pip download -d download-cache/dist/ -c constraints.txt \
-          --no-cache-dir --no-binary :all: lazr.foo | tee out.txt | grep Saved
+        Successfully installed lazr-foo-1.1.2 z3c.shazam-2.0.1 zope.bar-3.6.1
 
-    The first part (``bin/pip ...``) will run pip, allowing it to download
-    source packages from the Internet to ``download-cache/dist``.  The
-    second part (``tee out.txt``) will dump the full output to the
-    ``out.txt`` file in case you need to debug a problem.  The last part
-    (``grep Saved``) will filter the output so that only additional
-    packages--dependencies of your dependency--will be listed.  You need to
-    see if it means that you have dependencies, some of which may be
-    indirect dependencies.  We'll see how to do this with an example.
-    Here's an imaginary output::
+    You can use `requirements specifiers`_ on this command line, so, for
+    instance, if you already know you want lazr.foo 1.1.2, you might run
+    this command instead::
 
-        Saved .../download-cache/dist/lazr.foo-1.1.2.tar.gz
-        Saved .../download-cache/dist/zope.bar-3.6.1.tar.gz
-        Saved .../download-cache/dist/z3c.shazam-2.0.1.tar.gz
+        bin/pip install --no-binary :all: lazr.foo==1.1.2
 
-    In our example, this means that these packages have been added to
-    your ``download-cache/dist`` directory.  You now need to add those
-    versions to the ``constraints.txt`` file::
+    You may need to use the ``--ignore-installed`` option if some of the
+    packages involved happen to be installed system-wide on your build
+    system, but we want to consume them as Python packages.  You can spot
+    this situation by looking for output like this from ``pip install``:
 
-        lazr.foo = 1.1.2
-        zope.bar = 3.6.1
-        z3c.shazam = 2.0.1
+        Requirement already satisfied: netaddr>=0.7.6 in /usr/lib/python2.7/dist-packages (from python-keystoneclient==0.7.1)
 
-5.  Run ``make``.  If it breaks, go back to step 4.
+    If you do this, check the output very carefully, as it can easily be
+    wrong.  (This will stop being a problem once we stop using system
+    site-packages.)
 
-6.  Test.
+4.  Add the successfully-installed packages to the shared download cache for
+    future use.
+
+        bin/pip download -d download-cache/dist/ --no-deps \
+          --no-binary :all: ...
+
+    You'll need to copy the list of packages from the "Successfully
+    installed" line above, replacing the ``-`` immediately before each
+    version number with ``==`` to turn each package/version pair into a
+    requirements specifier.  So, in the case above, you would run:
+
+        bin/pip download -d download-cache/dist/ --no-deps \
+          --no-binary :all: \
+          lazr-foo==1.1.2 z3c.shazam==2.0.1 zope.bar==3.6.1
+
+    This will normally be able to fetch package files that were saved to
+    your ``pip`` cache directory (``~/.cache/pip/`` by default) by ``pip
+    install``, so it shouldn't need to download them from PyPI again.
+
+    We use ``--no-deps`` here because ``pip install`` has already done the
+    hard work of resolving dependencies and told us the result, and because
+    ``pip download`` doesn't consider what's currently installed and so is
+    liable to download too much otherwise.
+
+5.  Add the new versions to the ``constraints.txt`` file, still using the
+    requirements specifier syntax::
+
+        lazr.foo==1.1.2
+        z3c.shazam==2.0.1
+        zope.bar==3.6.1
+
+6.  Run ``make``.  If it breaks, go back to step 3.
+
+7.  Test.
 
     Note that you can tell ``ec2 test`` to include all uncommitted
     distributions from the local download-cache in its tests with the
@@ -234,7 +261,7 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
     *not* explicitly tell ec2 test to include or ignore the
     uncommitted distributions, it will refuse to start an instance.
 
-7.  Check old versions in the download-cache.  If you are sure that
+8.  Check old versions in the download-cache.  If you are sure that
     they are not in use any more, *anywhere*, then remove them to save
     checkout space.  More explicitly, check with the LOSAs to see if
     they are in use in production and send an email to
@@ -245,7 +272,7 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
     information by using ``bzr log`` on the newer (replacement)
     download-cache/dist file for the particular package.
 
-8.  Now you need to share your package changes with the rest of the
+9.  Now you need to share your package changes with the rest of the
     team.  You must do this before submitting your Launchpad branch to
     PQM or else your branch will not build properly anywhere else,
     including buildbot.  Commit the changes (``cd download-cache``,
@@ -257,24 +284,25 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
 change in version number, or else very bad inconsistencies and
 confusion across build environments will happen.
 
+.. _`requirements specifiers`: https://pip.pypa.io/en/stable/reference/pip_install/#requirement-specifiers
+
 
 Upgrade a Package
 =================
 
 Sometimes you need to upgrade a dependency.  This may require additional
-dependency additions or upgrades.
+dependency additions or upgrades.  In general, this works just like adding a
+new package, so follow the `Add a Package`_ instructions above.
 
-If you already know what version you want, the simplest thing to try is to
-modify constraints.txt to specify the new version and run steps 4, 5, 6, and
-7 of the `Add a Package`_ instructions.
+If you know what version you want, specify it explicitly on the ``pip
+install`` line.
 
-If you don't know what version you want, but just want to see what happens when
-you upgrade to the most recent revision, you can clear out the versions of the
-packages for upgrade and give it a try (that is, run steps 4, 5, and 6 of the
-`Add a Package`_ instructions).  Note that, when not given an explicit version
-number, pip prefers final releases over alpha and beta releases.  If you
-want to temporarily override this behaviour, use the ``--pre`` option to
-``pip``.
+If you don't know what version you want, but just want to see what happens
+when you upgrade to the most recent version, then omit the version and
+specify the ``--upgrade`` option to ``pip install``.  Note that, when not
+given an explicit version number, pip prefers final releases over alpha and
+beta releases.  If you want to temporarily override this behaviour, use the
+``--pre`` option to ``pip``.
 
 Add a Script
 ============
