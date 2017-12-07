@@ -89,7 +89,6 @@ setup(
         'rabbitfixture',
         'requests',
         'requests-toolbelt',
-        's4',
         'setproctitle',
         'setuptools',
         'six',
