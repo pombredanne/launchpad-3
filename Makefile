@@ -8,7 +8,8 @@ PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:${PYTHONPATH}
 VERBOSITY=-vv
 
-# pip fails if setlocale fails, so force a valid locale.
+# virtualenv and pip fail if setlocale fails, so force a valid locale.
+VIRTUALENV := LC_ALL=C.UTF-8 virtualenv
 PIP := PYTHONPATH= LC_ALL=C.UTF-8 env/bin/pip
 # Run with "make PIP_NO_INDEX=" if you want pip to find software
 # dependencies *other* than those in our download-cache.  Once you have the
@@ -237,7 +238,7 @@ $(PY): download-cache constraints.txt setup.py
 	 echo "allow_hosts = ''"; \
 	 echo 'find_links = file://$(WD)/download-cache/dist/') \
 		>env/.pydistutils.cfg
-	virtualenv \
+	$(VIRTUALENV) \
 		--python=$(PYTHON) --system-site-packages --never-download \
 		--extra-search-dir=$(WD)/download-cache/dist/ \
 		env
