@@ -45,9 +45,9 @@ mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH" "$YUI_PATH"
 # Get/update the download cache.
 if [ -d "$LP_DOWNLOAD_CACHE_PATH" ]
 then
-    bzr up "$LP_DOWNLOAD_CACHE_PATH"
+    git -C "$LP_DOWNLOAD_CACHE_PATH" pull
 else
-    bzr co lp:lp-source-dependencies "$LP_DOWNLOAD_CACHE_PATH"
+    git clone --depth=1 lp:lp-source-dependencies "$LP_DOWNLOAD_CACHE_PATH"
 fi
 
 # Add or update sourcepackages.
