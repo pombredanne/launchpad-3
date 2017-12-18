@@ -195,7 +195,7 @@ Branches have not been created, as requested.  You will need to do some or all
 of the following steps:
 $ bzr branch lp:launchpad devel
 $ cd devel
-$ git clone --depth=1 lp:~launchpad/lp-source-dependencies/trunk/ download-cache
+$ git clone --depth=1 lp:lp-source-dependencies download-cache
 $ utilities/update-sourcecode
 $ utilities/launchpad-database-setup
 $ make schema
