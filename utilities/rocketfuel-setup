@@ -195,7 +195,7 @@ Branches have not been created, as requested.  You will need to do some or all
 of the following steps:
 $ bzr branch lp:launchpad devel
 $ cd devel
-$ bzr branch lp:~launchpad/lp-source-dependencies/trunk/ download-cache
+$ git clone --depth=1 lp:lp-source-dependencies download-cache
 $ utilities/update-sourcecode
 $ utilities/launchpad-database-setup
 $ make schema
@@ -267,6 +267,19 @@ if [ $? -ne 0 ]; then
   echo "with Launchpad.  Registering an SSH key is only important if you"
   echo "are writing data to Launchpad, or trying to access private data."
   echo ""
+fi
+
+# Make sure "git clone lp:..." works.  Yes, it's pretty odd to use bzr to
+# help configure git, but it knows how to check whether the user has SSH
+# keys.  If we eventually want to drop our dependency on bzr then we can
+# write this out longhand in Python.
+echo "Configuring git..."
+if [ "$(git ls-remote --get-url lp:launchpad)" = lp:launchpad ]; then
+  if bzr launchpad-login --verbose 2>/dev/null | grep -q 'has SSH keys'; then
+    git config --global url.git+ssh://git.launchpad.net/.insteadof lp:
+  else
+    git config --global url.https://git.launchpad.net/.insteadof lp:
+  fi
 fi
 
 cd $LP_SHARED_REPO

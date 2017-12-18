@@ -175,7 +175,7 @@ the trunk branch from which you make local branches.
 
 ::
 
-    bzr co lp:lp-source-dependencies download-cache
+    git clone --depth=1 lp:lp-source-dependencies download-cache
 
 Then run ``make`` in the trunk.
 
@@ -204,7 +204,7 @@ If you don't use the rocketfuel scripts, you will still use
 cannot find a version of a dependency, do the following, from within the
 branch::
 
-    bzr up download-cache
+    git -C download-cache pull
 
 After this, retry your make (or run ``bin/buildout`` from the branch).
 
@@ -339,7 +339,7 @@ you might notice seven new items in the checkout.
     The ``download-cache`` directory is a set of downloaded distributions--that
     is, exact copies of the items that would typically be obtained from the
     Python Package Index ("PyPI"), or another download source. We manage the
-    download cache as a shared resource across all of our developers with a bzr
+    download cache as a shared resource across all of our developers with a git
     branch in a Launchpad project called ``lp-source-dependencies``.
 
     When we run buildout, Buildout reads a special key and value in the
@@ -467,16 +467,16 @@ Let's suppose that we want to add the "lazr.foo" package as a dependency.
     are unsure.  A rule of thumb is that it's worth starting this
     investigation if the replacement has already been in use by the
     Launchpad tree for more than a month.  You can approximate this
-    information by using ``bzr log`` on the newer (replacement)
+    information by using ``git log`` on the newer (replacement)
     download-cache/dist file for the particular package.
 
 7.  Now you need to share your package changes with the rest of the
     team.  You must do this before submitting your Launchpad branch to
     PQM or else your branch will not build properly anywhere else,
     including buildbot.  Commit the changes (``cd download-cache``,
-    bzr add the needed files, ``bzr up``, ``bzr commit -m 'Add
-    lazr.foom 1.1.2 and depdendencies to the download cache'``) to the
-    shared download cache when you are sure it is what you want.
+    git add the needed files, ``git pull``, ``git commit -m 'Add
+    lazr.foom 1.1.2 and dependencies'``) to the shared download cache
+    when you are sure it is what you want.
 
 *Never* modify a package in the download-cache.  A change in code must mean a
 change in version number, or else very bad inconsistencies and
