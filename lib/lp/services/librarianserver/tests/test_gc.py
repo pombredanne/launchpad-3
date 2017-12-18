@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Librarian garbage collection tests"""
@@ -6,8 +6,12 @@
 __metaclass__ = type
 
 import calendar
+from contextlib import contextmanager
 from cStringIO import StringIO
-from datetime import datetime, timedelta
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import hashlib
 import os
 import shutil
@@ -19,19 +23,19 @@ from subprocess import (
 import sys
 import tempfile
 
-from contextlib import contextmanager
 from sqlobject import SQLObjectNotFound
 from storm.store import Store
 from swiftclient import client as swiftclient
 import transaction
 
 from lp.services.config import config
+from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import (
     connect,
     cursor,
     ISOLATION_LEVEL_AUTOCOMMIT,
     )
-from lp.services.database.interfaces import IMasterStore
+from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.client import LibrarianClient
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -42,17 +46,13 @@ from lp.services.librarianserver import (
     swift,
     )
 from lp.services.log.logger import BufferLogger
-from lp.services.features.testing import FeatureFixture
 from lp.services.utils import utc_now
 from lp.testing import (
     monkey_patch,
     TestCase,
     )
 from lp.testing.dbuser import switch_dbuser
-from lp.testing.layers import (
-    LaunchpadZopelessLayer,
-    LibrarianLayer,
-    )
+from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.swift.fixture import SwiftFixture
 
 
@@ -713,11 +713,6 @@ class TestSwiftLibrarianGarbageCollection(
         self.addCleanup(swift.connection_pool.clear)
 
         self.useFixture(FeatureFixture({'librarian.swift.enabled': True}))
-
-        # Restart the Librarian so it picks up the OS_* environment
-        # variables.
-        LibrarianLayer.librarian_fixture.killTac()
-        LibrarianLayer.librarian_fixture.setUp()
 
         super(TestSwiftLibrarianGarbageCollection, self).setUp()
 
