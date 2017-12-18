@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Server used in codehosting acceptance tests."""
@@ -43,14 +43,9 @@ def set_up_test_user(test_user, test_team):
         membership_policy=TeamMembershipPolicy.OPEN)
     testUser.join(testTeam)
     ssh_key_set = getUtility(ISSHKeySet)
-    ssh_key_set.new(
-        testUser,
-        'ssh-dss AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u'
-        '0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON'
-        '9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95E'
-        'Z5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93J'
-        'hnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00Usn'
-        'UXh3GE3Rgw== testuser')
+    with open(sibpath(__file__, 'id_rsa.pub')) as f:
+        pubkey_data = f.read().rstrip('\n')
+    ssh_key_set.new(testUser, pubkey_data)
     transaction.commit()
 
 
@@ -107,12 +102,12 @@ class SSHCodeHostingServer(Server):
         user_home = os.path.abspath(tempfile.mkdtemp())
         os.makedirs(os.path.join(user_home, '.ssh'))
         shutil.copyfile(
-            sibpath(__file__, 'id_dsa'),
-            os.path.join(user_home, '.ssh', 'id_dsa'))
+            sibpath(__file__, 'id_rsa'),
+            os.path.join(user_home, '.ssh', 'id_rsa'))
         shutil.copyfile(
-            sibpath(__file__, 'id_dsa.pub'),
-            os.path.join(user_home, '.ssh', 'id_dsa.pub'))
-        os.chmod(os.path.join(user_home, '.ssh', 'id_dsa'), 0o600)
+            sibpath(__file__, 'id_rsa.pub'),
+            os.path.join(user_home, '.ssh', 'id_rsa.pub'))
+        os.chmod(os.path.join(user_home, '.ssh', 'id_rsa'), 0o600)
         real_home, os.environ['HOME'] = os.environ['HOME'], user_home
         return real_home, user_home
 
