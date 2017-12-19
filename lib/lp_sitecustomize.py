@@ -8,8 +8,8 @@ from collections import defaultdict
 import itertools
 import logging
 import os
-import warnings
 import sys
+import warnings
 
 from twisted.internet.defer import (
     Deferred,
@@ -127,23 +127,6 @@ def silence_transaction_logger():
     logging.getLogger('txn').addHandler(txn_handler)
 
 
-def dont_wrap_class_and_subclasses(cls):
-    checker.BasicTypes.update({cls: checker.NoProxy})
-    for subcls in cls.__subclasses__():
-        dont_wrap_class_and_subclasses(subcls)
-
-
-def dont_wrap_bzr_branch_classes():
-    from bzrlib.branch import Branch
-    # Load bzr plugins
-    import lp.codehosting
-    lp.codehosting
-    # Force LoomBranch classes to be listed as subclasses of Branch
-    import bzrlib.plugins.loom.branch
-    bzrlib.plugins.loom.branch
-    dont_wrap_class_and_subclasses(Branch)
-
-
 def silence_warnings():
     """Silence warnings across the entire Launchpad project."""
     # pycrypto-2.0.1 on Python2.6:
@@ -190,7 +173,6 @@ def main(instance_name=None):
     customizeMimetypes()
     silence_warnings()
     customize_logger()
-    dont_wrap_bzr_branch_classes()
     checker.BasicTypes.update({defaultdict: checker.NoProxy})
     checker.BasicTypes.update({Deferred: checker.NoProxy})
     checker.BasicTypes.update({DeferredList: checker.NoProxy})
