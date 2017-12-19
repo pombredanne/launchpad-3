@@ -728,7 +728,8 @@ class TestSwiftLibrarianGarbageCollection(
             name += suffix
         with swift.connection() as swift_connection:
             try:
-                swift_connection.head_object(container, name)
+                with swift.disable_swiftclient_logging():
+                    swift_connection.head_object(container, name)
                 return True
             except swiftclient.ClientException as x:
                 if x.http_status == 404:

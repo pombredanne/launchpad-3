@@ -1,12 +1,17 @@
-# Copyright 2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Move files from Librarian disk storage into Swift."""
 
 __metaclass__ = type
 __all__ = [
-    'to_swift', 'filesystem_path', 'swift_location',
-    'connection', 'connection_pool', 'SWIFT_CONTAINER_PREFIX',
+    'SWIFT_CONTAINER_PREFIX',
+    'connection',
+    'connection_pool',
+    'disable_swiftclient_logging',
+    'filesystem_path',
+    'swift_location',
+    'to_swift',
     ]
 
 from contextlib import contextmanager
@@ -27,6 +32,23 @@ SWIFT_CONTAINER_PREFIX = 'librarian_'
 MAX_SWIFT_OBJECT_SIZE = 5 * 1024 ** 3  # 5GB Swift limit.
 
 ONE_DAY = 24 * 60 * 60
+
+
+@contextmanager
+def disable_swiftclient_logging():
+    # swiftclient has some very rude logging practices: the low-level API
+    # calls `logger.exception` when a request fails, without considering
+    # whether the caller might handle it and recover.  This was introduced
+    # in 1.6.0 and removed in 3.2.0; until we're on a new enough version not
+    # to need to worry about this, we shut up the noisy logging around calls
+    # whose failure we can handle.
+    # Messier still, logging.getLogger('swiftclient') doesn't necessarily
+    # refer to the Logger instance actually being used by swiftclient, so we
+    # have to use swiftclient.logger directly.
+    old_disabled = swiftclient.logger.disabled
+    swiftclient.logger.disabled = True
+    yield
+    swiftclient.logger.disabled = old_disabled
 
 
 def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove_func=False):
@@ -118,7 +140,8 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove_func=False):
             container, obj_name = swift_location(lfc)
 
             try:
-                swift_connection.head_container(container)
+                with disable_swiftclient_logging():
+                    swift_connection.head_container(container)
                 log.debug2('{0} container already exists'.format(container))
             except swiftclient.ClientException as x:
                 if x.http_status != 404:
@@ -127,7 +150,8 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove_func=False):
                 swift_connection.put_container(container)
 
             try:
-                headers = swift_connection.head_object(container, obj_name)
+                with disable_swiftclient_logging():
+                    headers = swift_connection.head_object(container, obj_name)
                 log.debug(
                     "{0} already exists in Swift({1}, {2})".format(
                         lfc, container, obj_name))
@@ -188,7 +212,7 @@ def _put(log, swift_connection, lfc_id, container, obj_name, fs_path):
             assert segment <= 9999, 'Insane number of segments'
             seg_name = '%s/%04d' % (obj_name, segment)
             seg_size = min(fs_size - fs_file.tell(), MAX_SWIFT_OBJECT_SIZE)
-            md5_stream = HashStream(fs_file)
+            md5_stream = HashStream(fs_file, length=seg_size)
             swift_md5_hash = swift_connection.put_object(
                 container, seg_name, md5_stream, seg_size)
             segment_md5_hash = md5_stream.hash.hexdigest()
@@ -304,13 +328,20 @@ class SwiftStream:
 
 class HashStream:
     """Read a file while calculating a checksum as we go."""
-    def __init__(self, stream, hash_factory=hashlib.md5):
+    def __init__(self, stream, length=None, hash_factory=hashlib.md5):
         self._stream = stream
+        self._length = self._remaining = length
         self.hash_factory = hash_factory
         self.hash = hash_factory()
 
     def read(self, size=-1):
+        if self._remaining is not None:
+            if self._remaining <= 0:
+                return ''
+            size = min(size, self._remaining)
         chunk = self._stream.read(size)
+        if self._remaining is not None:
+            self._remaining -= len(chunk)
         self.hash.update(chunk)
         return chunk
 
@@ -320,6 +351,8 @@ class HashStream:
     def seek(self, offset):
         """Seek to offset, and reset the hash."""
         self.hash = self.hash_factory()
+        if self._remaining is not None:
+            self._remaining = self._length - offset
         return self._stream.seek(offset)
 
 

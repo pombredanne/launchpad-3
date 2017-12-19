@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Librarian garbage collection routines"""
@@ -55,7 +55,8 @@ def file_exists(content_id):
         swift_connection = swift.connection_pool.get()
         container, name = swift.swift_location(content_id)
         try:
-            swift_connection.head_object(container, name)
+            with swift.disable_swiftclient_logging():
+                swift_connection.head_object(container, name)
             return True
         except swiftclient.ClientException as x:
             if x.http_status != 404:
@@ -79,8 +80,9 @@ def open_stream(content_id):
         try:
             swift_connection = swift.connection_pool.get()
             container, name = swift.swift_location(content_id)
-            chunks = swift_connection.get_object(
-                container, name, resp_chunk_size=STREAM_CHUNK_SIZE)[1]
+            with swift.disable_swiftclient_logging():
+                chunks = swift_connection.get_object(
+                    container, name, resp_chunk_size=STREAM_CHUNK_SIZE)[1]
             return swift.SwiftStream(swift_connection, chunks)
         except swiftclient.ClientException as x:
             if x.http_status != 404:
@@ -562,7 +564,8 @@ class UnreferencedContentPruner:
                 container, name = swift.swift_location(content_id)
                 with swift.connection() as swift_connection:
                     try:
-                        swift_connection.delete_object(container, name)
+                        with swift.disable_swiftclient_logging():
+                            swift_connection.delete_object(container, name)
                         removed.append('Swift')
                     except swiftclient.ClientException as x:
                         if x.http_status != 404:
@@ -739,10 +742,11 @@ def swift_files(max_lfc_id):
             container_num += 1
             container = swift.SWIFT_CONTAINER_PREFIX + str(container_num)
             try:
-                names = sorted(
-                    swift_connection.get_container(
-                        container, full_listing=True)[1],
-                    key=lambda x: map(int, x['name'].split('/')))
+                with swift.disable_swiftclient_logging():
+                    names = sorted(
+                        swift_connection.get_container(
+                            container, full_listing=True)[1],
+                        key=lambda x: map(int, x['name'].split('/')))
                 for name in names:
                     yield (container, name)
             except swiftclient.ClientException as x:

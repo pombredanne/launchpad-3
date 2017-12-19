@@ -1,4 +1,4 @@
-# Copyright 2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Librarian disk to Swift storage tests."""
@@ -19,13 +19,16 @@ from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.client import LibrarianClient
 from lp.services.librarian.model import LibraryFileAlias
+from lp.services.librarianserver import swift
 from lp.services.librarianserver.storage import LibrarianStorage
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
-from lp.testing.layers import BaseLayer, LaunchpadZopelessLayer, LibrarianLayer
+from lp.testing.layers import (
+    BaseLayer,
+    LaunchpadZopelessLayer,
+    LibrarianLayer,
+    )
 from lp.testing.swift.fixture import SwiftFixture
-
-from lp.services.librarianserver import swift
 
 
 class TestFeedSwift(TestCase):
@@ -293,7 +296,8 @@ class TestHashStream(TestCase):
 
     def test_partial_read(self):
         empty_sha1 = 'da39a3ee5e6b4b0d3255bfef95601890afd80709'
-        s = swift.HashStream(StringIO('make me another coffee'), hashlib.sha1)
+        s = swift.HashStream(
+            StringIO('make me another coffee'), hash_factory=hashlib.sha1)
         self.assertEqual(s.hash.hexdigest(), empty_sha1)
         chunk = s.read(4)
         self.assertEqual(chunk, 'make')
@@ -303,6 +307,21 @@ class TestHashStream(TestCase):
         self.assertEqual(chunk, ' me another coffee')
         self.assertEqual(s.hash.hexdigest(),
                          '8c826e573016ce05f3968044f82507b46fd2aa93')
+
+    def test_limited_length(self):
+        base_stream = StringIO('make me a coffee')
+        s = swift.HashStream(base_stream, length=8)
+        chunk = s.read(4)
+        self.assertEqual(chunk, 'make')
+        self.assertEqual(s.hash.hexdigest(),
+                         '099dafc678df7d266c25f95ccf6cde22')
+        chunk = s.read(8)
+        self.assertEqual(chunk, ' me ')
+        self.assertEqual(s.hash.hexdigest(),
+                         '10a0334e435b75f35b1923842bd87f81')
+        self.assertEqual(s.read(), '')
+        self.assertEqual(s.tell(), 8)
+        self.assertEqual(base_stream.tell(), 8)
 
     def test_tell(self):
         s = swift.HashStream(StringIO('hurry up with that coffee'))
