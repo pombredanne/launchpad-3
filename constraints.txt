@@ -1,0 +1,356 @@
+# ztk-versions.cfg from ZTK 1.1.6, with some upgrades
+# ---------------------------------------------------
+
+zope.annotation==3.6.0
+zope.applicationcontrol==3.5.5
+zope.authentication==3.7.1
+zope.broken==3.6.0
+zope.browser==1.3
+zope.browsermenu==3.9.1
+zope.browserpage==3.12.2
+zope.browserresource==3.12.0
+zope.cachedescriptors==3.5.1
+zope.catalog==3.8.2
+#zope.component==3.10.0
+# Tell pip about extras to work around https://github.com/pypa/pip/issues/3046
+# XXX cjwatson 2017-09-03: This should be fixed in pip 9.0.0, but apparently
+# isn't.
+# Upgrade from ZTK 1.1.6 for ZCML registration performance.
+zope.component[hook,zcml]==3.11.0
+zope.componentvocabulary==1.0.1
+zope.configuration==3.7.4
+zope.container==3.12.0
+zope.contentprovider==3.7.2
+zope.contenttype==3.5.5
+zope.copy==3.5.0
+zope.copypastemove==3.8.0
+zope.datetime==3.4.1
+zope.deferredimport==3.5.3
+zope.deprecation==3.4.1
+zope.dottedname==3.4.6
+zope.dublincore==3.8.2
+zope.error==3.7.4
+zope.event==3.5.2
+zope.exceptions==3.6.2
+zope.filerepresentation==3.6.1
+zope.formlib==4.0.6
+zope.hookable==3.4.1
+zope.i18n==3.7.4
+zope.i18nmessageid==3.5.3
+zope.index==3.6.4
+#zope.interface==3.7.0
+# Upgrade from ZTK 1.1.6 for ZCML registration performance.
+zope.interface==4.4.3
+zope.intid==3.7.2
+zope.keyreference==3.6.4
+zope.lifecycleevent==3.6.2
+zope.location==3.9.1
+zope.login==1.0.0
+zope.mimetype==1.3.1
+zope.minmax==1.1.2
+#zope.pagetemplate==3.5.2
+# Build of lp:~wallyworld/zope.pagetemplate/fix-isinstance
+# p1    This version adds a small change to the traversal logic so that the
+#       optimisation which applies if the object is a dict also works for
+#       subclasses of dict. This patch has been merged in 4.2.0, so we can
+#       drop it when we upgrade.
+# post2 Cherry-pick zope.security [untrustedpython] dependency from 3.5.1.
+#       Use PEP 440-compliant version.
+zope.pagetemplate==3.5.0.post2
+zope.password==3.6.1
+zope.pluggableauth==1.2
+zope.principalannotation==3.6.1
+zope.principalregistry==3.7.1
+zope.processlifetime==1.0
+zope.proxy==3.6.1
+zope.ptresource==3.9.0
+zope.publisher==3.12.6
+zope.ramcache==1.0
+zope.schema==3.7.1
+#zope.security==3.8.3
+# Tell pip about extras to work around https://github.com/pypa/pip/issues/3046
+# XXX cjwatson 2017-09-03: This should be fixed in pip 9.0.0, but apparently
+# isn't.
+zope.security[untrustedpython]==3.8.3
+zope.securitypolicy==3.7.0
+zope.sendmail==3.7.5
+zope.sequencesort==3.4.0
+zope.server==3.8.6
+#zope.session==3.9.5
+# XXX: downgraded to avoid 3.9.2 cookie calculation changes
+zope.session==3.9.1
+zope.site==3.9.2
+zope.size==3.4.1
+zope.structuredtext==3.5.1
+zope.tal==3.5.2
+zope.tales==3.5.3
+#zope.testing==3.10.3
+# p1 Build of lp:~mars/zope.testing/3.9.4-p1.  Fixes bugs 570380 and 587886.
+# p2 With patch for thread leaks to make them skips, fixes windmill errors
+#    with 'new threads' in hudson/ec2 builds.
+# p3 And always tear down layers, because thats the Right Thing To Do.
+# p4 fixes --subunit --list to really just list the tests.
+# p5 Build of lp:~launchpad/zope.testing/3.9.4-p5. Fixes bug #609986.
+# p6 reinstates fix from p4.  Build of lp:~launchpad/zope.testing/3.9.4-fork
+#    revision 26.
+# p7 was unused
+# p8 redirects stdout and stderr to a black hole device when --subunit is used
+# p9 adds the redirection of __stderr__ to a black hole device
+# p10 changed the test reporting to use test.id() rather than
+#     str(test) since only the id is unique.
+# p11 reverts p9.
+# p12 reverts p11, restoring p9.
+# p13 Add a new --require-unique flag to the testrunner. When set,
+#     this will cause the testrunner to check all tests IDs to ensure they
+#     haven't been loaded before. If it encounters a duplicate, it will
+#     raise an error and quit.
+# p14 Adds test data written to stderr and stdout into the subunit output.
+# p15 Fixed internal tests.
+# p16 Adds support for skips in Python 2.7.
+# p17 Fixes skip support for Python 2.6.
+# To build (use Python 2.6) run "python bootstrap.py; ./bin/buildout".  Then to
+#    build the distribution run "bin/buildout setup . sdist"
+# Make sure you have subunit installed.
+zope.testing==3.9.4-p17
+zope.testrunner==4.0.4
+zope.traversing==3.14.0
+zope.viewlet==3.7.2
+
+# Deprecating
+
+# Dependencies
+#distribute==0.6.36
+distribute==0.7.3
+docutils==0.7
+Jinja2==2.5.5
+mechanize==0.2.5
+Paste==1.7.5.1
+PasteDeploy==1.3.4
+PasteScript==1.7.5
+py==1.4.8
+#Pygments==1.4
+Pygments==1.6
+python-gettext==1.0
+#python-subunit==0.0.7
+python-subunit==0.0.8beta
+#pytz==2014.10
+pytz==2017.2
+RestrictedPython==3.6.0
+#setuptools==0.6c11
+setuptools==36.4.0
+Sphinx==1.0.8
+#testtools==0.9.12
+testtools==0.9.30
+transaction==1.1.1
+z3c.recipe.sphinxdoc==0.0.8
+zc.buildout==1.7.1
+zc.lockfile==1.0.2
+#ZConfig==2.8.0
+ZConfig==2.9.1dev-20110728
+zc.recipe.egg==1.3.2
+zc.recipe.testrunner==1.4.0
+zc.resourcelibrary==1.3.4
+zdaemon==2.0.7
+ZODB3==3.10.5
+zope.mkzeoinstance==3.9.5
+
+# toolchain
+#argparse==1.1
+argparse==1.2.1
+coverage==3.5.2
+lxml==2.2.8
+mr.developer==1.25
+nose==1.1.2
+tl.eggdeps==0.4
+z3c.checkversions==0.4.1
+z3c.recipe.compattest==0.13.1
+z3c.recipe.depgraph==0.5
+z3c.recipe.scripts==1.0.1
+zope.kgs==1.2.0
+
+# zopeapp-versions.cfg from ZTK 1.1.6, with some upgrades
+# -------------------------------------------------------
+
+# ZopeApp
+zc.sourcefactory==0.7.0
+zope.app.applicationcontrol==3.5.10
+zope.app.appsetup==3.15.0
+zope.app.debug==3.4.1
+zope.app.http==3.9.0
+zope.app.publication==3.12.0
+zope.app.wsgi==3.10.0
+zope.testbrowser==3.10.4
+
+# Deprecated
+roman==1.4.0
+#wsgi-intercept==0.4
+# Upgrade from ZTK 1.1.5 to intercept lazr.restfulclient.
+wsgi-intercept==0.5.1
+zope.app.authentication==3.9.0
+zope.app.basicskin==3.5.1
+zope.app.broken==3.6.0
+zope.app.component==3.9.3
+zope.app.container==3.9.2
+zope.app.content==3.5.1
+zope.app.dependable==3.5.1
+zope.app.error==3.5.3
+zope.app.exception==3.6.3
+zope.app.folder==3.5.2
+zope.app.form==4.0.2
+zope.app.generations==3.7.1
+zope.app.i18n==3.6.4
+zope.app.locales==3.6.2
+zope.app.localpermission==3.7.2
+zope.app.pagetemplate==3.11.2
+zope.app.principalannotation==3.7.0
+zope.app.publisher==3.10.2
+zope.app.renderer==3.5.1
+zope.app.rotterdam==3.5.3
+zope.app.schema==3.5.0
+zope.app.security==3.7.5
+zope.app.testing==3.8.1
+zope.app.zcmlfiles==3.7.1
+zope.app.zopeappgenerations==3.6.1
+zope.generations==3.7.1
+
+# Launchpad
+# ---------
+
+# Alphabetical, case-insensitive, please! :-)
+
+# lp:~launchpad/ampoule/lp
+# post1 Don't add a process back to the ready set if it received an error
+# such as a timeout.
+ampoule==0.2.0.post1
+amqp==1.4.9
+amqplib==1.0.2
+anyjson==0.3.3
+auditor==0.0.3
+auditorclient==0.0.4
+auditorfixture==0.0.7
+backports.lzma==0.0.3
+BeautifulSoup==3.2.1
+billiard==3.3.0.20
+bson==0.3.3
+bzr==2.6.0.lp.2
+celery==3.1.18
+Chameleon==2.11
+cssselect==0.9.1
+cssutils==0.9.10
+d2to1==0.2.12
+Django==1.4
+dkimpy==0.5.4
+# Required by dkimpy
+dnspython==1.10.0
+elementtree==1.2.6-20050316
+epydoc==3.0.1
+extras==0.0.3
+feedparser==4.1
+feedvalidator==0.0.0DEV-r1049
+fixtures==0.3.9
+FormEncode==1.2.4
+grokcore.component==1.6
+html5browser==0.0.9
+httmock==1.2.3
+httplib2==0.8
+importlib==1.0.2
+ipython==0.13.2
+iso8601==0.1.4
+jsautobuild==0.2
+keyring==0.6.2
+kombu==3.0.30
+launchpad-buildd==157
+launchpadlib==1.10.5
+lazr.authentication==0.1.1
+lazr.batchnavigator==1.2.11
+lazr.config==2.2.1
+lazr.delegates==2.0.4
+lazr.enum==1.1.3
+lazr.jobrunner==0.13
+lazr.lifecycle==1.1
+lazr.restful==0.20.0
+lazr.restfulclient==0.13.2
+lazr.smtptest==1.3
+lazr.sshserver==0.1.3
+lazr.testing==0.1.1
+lazr.uri==1.0.3
+libnacl==1.3.6
+lpjsmin==0.5
+manuel==1.7.2
+Markdown==2.3.1
+martian==0.11
+meliae==0.2.0.final.0
+mock==1.0.1
+mocker==1.1.1
+oauth==1.0
+oops==0.0.13
+oops-amqp==0.0.8b1
+oops-datedir-repo==0.0.23
+oops-timeline==0.0.1
+oops-twisted==0.0.7
+oops-wsgi==0.0.8
+ordereddict==1.1
+oslo.config==1.1.1
+paramiko==1.7.7.2
+pbr==0.5.20
+pgbouncer==0.0.8
+prettytable==0.7.2
+psycopg2==2.6.1
+pyasn1==0.1.6
+pycrypto==2.6
+pygpgme==0.2
+pyinotify==0.9.4
+pymacaroons==0.9.2
+pyOpenSSL==0.13
+pystache==0.5.3
+python-dateutil==1.5
+python-debian==0.1.23
+python-keystoneclient==0.3.1
+python-memcached==1.58
+python-mimeparse==0.1.4
+# XXX: deryck 2012-08-10
+# See lp:~deryck/python-openid/python-openid-fix1034376 which
+# reapplied a patch from wgrant to get codehosting going again.
+python-openid==2.2.5-fix1034376
+python-swiftclient==1.5.0
+PyYAML==3.10
+rabbitfixture==0.3.6
+requests==2.7.0
+requests-toolbelt==0.6.2
+setproctitle==1.1.7
+setuptools-git==1.2
+simplejson==3.8.2
+SimpleTAL==4.3
+six==1.9.0
+soupmatchers==0.2
+# lp:~launchpad-committers/storm/with-without-datetime
+storm==0.19.0.99-lpwithnodatetime-r408
+subprocess32==3.2.6
+subvertpy==0.9.1
+testresources==0.2.7
+testscenarios==0.4
+timeline==0.0.3
+# Build of lp:~canonical-launchpad-branches/twisted:lp-backport.
+# p1    Support diffie-hellman-group14-sha1 key exchange in conch.ssh.
+# p2    Add diffie-hellman-group-exchange-sha256 to twisted.conch.ssh.
+#       Add support in twisted.conch.ssh for hmac-sha2-256 and hmac-sha2-512.
+# post3 Use PEP 440-compliant version.
+Twisted==13.0.0post3
+txAMQP==0.6.2
+txfixtures==0.1.4
+txlongpoll==0.2.12
+txlongpollfixture==0.1.3
+txpkgupload==0.2
+unittest2==0.5.1
+van.testing==3.0.0
+virtualenv-tools3==2.0.0
+wadllib==1.3.2
+wheel==0.29.0
+wsgiref==0.1.2
+z3c.pt==2.2.3
+z3c.ptcompat==0.5.7
+zc.zservertracelog==1.3.2
+# Not in ZTK 1.1.5
+zope.app.server==3.6.0
+# Not in ZTK 1.1.5 (extracted from zope.app.schema)
+zope.vocabularyregistry==1.0.0

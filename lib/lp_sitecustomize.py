@@ -1,14 +1,15 @@
 # Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# This file is imported by parts/scripts/sitecustomize.py, as set up in our
-# buildout.cfg (see the "initialization" key in the "[scripts]" section).
+# This file is imported by _pythonpath.py and by the standard Launchpad
+# script preamble (see LPScriptWriter in setup.py).
 
 from collections import defaultdict
 import itertools
 import logging
 import os
 import warnings
+import sys
 
 from twisted.internet.defer import (
     Deferred,
@@ -172,14 +173,15 @@ def customize_logger():
     silence_swiftclient_logger()
 
 
-def main(instance_name):
-    # This is called by our custom buildout-generated sitecustomize.py
-    # in parts/scripts/sitecustomize.py. The instance name is sent to
-    # buildout from the Makefile, and then inserted into
-    # sitecustomize.py.  See buildout.cfg in the "initialization" value
-    # of the [scripts] section for the code that goes into this custom
-    # sitecustomize.py.  We do all actual initialization here, in a more
-    # visible place.
+def main(instance_name=None):
+    # This is called by _pythonpath.py and by the standard Launchpad script
+    # preamble (see LPScriptWriter in setup.py).  The instance name is sent
+    # to setup.py from the Makefile, and then written to env/instance_name.
+    # We do all actual initialization here, in a more visible place.
+    if instance_name is None:
+        instance_name_path = os.path.join(sys.prefix, 'instance_name')
+        with open(instance_name_path) as instance_name_file:
+            instance_name = instance_name_file.read().rstrip('\n')
     if instance_name and instance_name != 'development':
         # See bug 656213 for why we do this carefully.
         os.environ.setdefault('LPCONFIG', instance_name)

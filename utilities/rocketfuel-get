@@ -1,6 +1,6 @@
 #! /bin/bash
 #
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # Update your copy of trunk and the necessary source dependencies, and make
@@ -29,10 +29,8 @@ else
 fi
 
 LP_DOWNLOAD_CACHE_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/download-cache"
-LP_EGGS_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/eggs"
 YUI_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/yui"
 LP_DOWNLOAD_CACHE_PATH="$(eval echo ${LP_DOWNLOAD_CACHE_PATH})"
-LP_EGGS_PATH="$(eval echo ${LP_EGGS_PATH})"
 
 # Pull launchpad devel from launchpad.
 INITIAL_REV=$(bzr revno "$LP_TRUNK_PATH")
@@ -40,7 +38,7 @@ bzr pull -d "$LP_TRUNK_PATH"
 FINAL_REV=$(bzr revno "$LP_TRUNK_PATH")
 
 # Make sure our directories are around.
-mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH" "$YUI_PATH"
+mkdir -p "$LP_SOURCEDEPS_PATH" "$YUI_PATH"
 
 # Get/update the download cache.
 if [ -d "$LP_DOWNLOAD_CACHE_PATH" ]
