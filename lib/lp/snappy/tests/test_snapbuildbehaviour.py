@@ -18,7 +18,6 @@ import fixtures
 from mock import patch
 from pymacaroons import Macaroon
 from testtools import ExpectedException
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     AfterPreprocessing,
     Equals,
@@ -27,6 +26,7 @@ from testtools.matchers import (
     MatchesListwise,
     StartsWith,
     )
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase

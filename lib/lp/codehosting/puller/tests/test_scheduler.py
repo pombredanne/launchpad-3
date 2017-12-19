@@ -13,7 +13,7 @@ from bzrlib.bzrdir import (
     format_registry,
     )
 from bzrlib.urlutils import join as urljoin
-from testtools.deferredruntest import (
+from testtools.twistedsupport import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     flush_logged_errors,

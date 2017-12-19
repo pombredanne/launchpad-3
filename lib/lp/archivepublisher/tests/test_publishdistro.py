@@ -11,11 +11,11 @@ import shutil
 import subprocess
 import sys
 
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     Not,
     PathExists,
     )
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 from twisted.internet import defer
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy

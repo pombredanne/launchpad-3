@@ -12,7 +12,6 @@ import doctest
 import os.path
 
 from pytz import UTC
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     AllMatch,
     DocTestMatches,
@@ -23,6 +22,7 @@ from testtools.matchers import (
     MatchesStructure,
     )
 from testtools.testcase import ExpectedException
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
 from zope.component import getUtility
