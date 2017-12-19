@@ -49,8 +49,7 @@ class Service(fixtures.Fixture):
         """
         raise NotImplementedError
 
-    def setUp(self):
-        super(Service, self).setUp()
+    def _setUp(self):
         self.launch()
 
 

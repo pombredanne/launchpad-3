@@ -156,8 +156,7 @@ class ZopeAdapterFixture(Fixture):
     def __init__(self, *args, **kwargs):
         self._args, self._kwargs = args, kwargs
 
-    def setUp(self):
-        super(ZopeAdapterFixture, self).setUp()
+    def _setUp(self):
         site_manager = getGlobalSiteManager()
         site_manager.registerAdapter(
             *self._args, **self._kwargs)
@@ -173,8 +172,7 @@ class ZopeEventHandlerFixture(Fixture):
         super(ZopeEventHandlerFixture, self).__init__()
         self._handler = handler
 
-    def setUp(self):
-        super(ZopeEventHandlerFixture, self).setUp()
+    def _setUp(self):
         gsm = getGlobalSiteManager()
         provideHandler(self._handler)
         self.addCleanup(gsm.unregisterHandler, self._handler)
@@ -207,8 +205,7 @@ class ZopeViewReplacementFixture(Fixture):
                 'Try a layer.')
         self.replacement = replacement
 
-    def setUp(self):
-        super(ZopeViewReplacementFixture, self).setUp()
+    def _setUp(self):
         if self.replacement is None:
             raise ValueError('replacement is not set')
         self.gsm.adapters.register(
@@ -243,8 +240,7 @@ class ZopeUtilityFixture(Fixture):
         self.name = name
         self.intf = intf
 
-    def setUp(self):
-        super(ZopeUtilityFixture, self).setUp()
+    def _setUp(self):
         gsm = getGlobalSiteManager()
         original = gsm.queryUtility(self.intf, self.name)
         gsm.registerUtility(self.component, self.intf, self.name)
@@ -263,10 +259,9 @@ class Urllib2Fixture(Fixture):
     that is all that is needed.  Later work could connect all
     sub-hosts (e.g. bugs.launchpad.dev)."""
 
-    def setUp(self):
+    def _setUp(self):
         # Work around circular import.
         from lp.testing.layers import wsgi_application
-        super(Urllib2Fixture, self).setUp()
         add_wsgi_intercept('launchpad.dev', 80, lambda: wsgi_application)
         self.addCleanup(remove_wsgi_intercept, 'launchpad.dev', 80)
         install_opener()
@@ -284,8 +279,7 @@ class CaptureOops(Fixture):
 
     AMQP_SENTINEL = "STOP NOW"
 
-    def setUp(self):
-        super(CaptureOops, self).setUp()
+    def _setUp(self):
         self.oopses = []
         self.oops_ids = set()
         self.useFixture(ZopeEventHandlerFixture(self._recordOops))
@@ -372,8 +366,7 @@ class CaptureTimeline(Fixture):
     reset the timeline.
     """
 
-    def setUp(self):
-        Fixture.setUp(self)
+    def _setUp(self):
         webapp.adapter.set_request_started(time.time())
         self.timeline = get_request_timeline(
             get_current_browser_request())
@@ -387,8 +380,7 @@ class DemoMode(Fixture):
     other things.
     """
 
-    def setUp(self):
-        Fixture.setUp(self)
+    def _setUp(self):
         config.push('demo-fixture', '''
 [launchpad]
 is_demo: true
@@ -404,8 +396,7 @@ class DisableTriggerFixture(Fixture):
     def __init__(self, table_triggers=None):
         self.table_triggers = table_triggers or {}
 
-    def setUp(self):
-        super(DisableTriggerFixture, self).setUp()
+    def _setUp(self):
         self._disable_triggers()
         self.addCleanup(self._enable_triggers)
 

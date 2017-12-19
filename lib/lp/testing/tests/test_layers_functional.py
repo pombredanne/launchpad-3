@@ -76,8 +76,7 @@ class BaseLayerIsolator(Fixture):
         super(BaseLayerIsolator, self).__init__()
         self.with_persistent = with_persistent
 
-    def setUp(self):
-        super(BaseLayerIsolator, self).setUp()
+    def _setUp(self):
         if self.with_persistent:
             env_value = ''
         else:
@@ -103,8 +102,7 @@ class LayerFixture(Fixture):
         super(LayerFixture, self).__init__()
         self.layer = layer
 
-    def setUp(self):
-        super(LayerFixture, self).setUp()
+    def _setUp(self):
         self.layer.setUp()
         self.addCleanup(self.layer.tearDown)
 
