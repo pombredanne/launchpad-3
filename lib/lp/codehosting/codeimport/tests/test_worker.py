@@ -1266,12 +1266,12 @@ class TestBzrImport(WorkerTest, TestActualImportMixin,
             stacked_on_url=stacked_on_url)
 
     def test_partial(self):
-        self.skip(
+        self.skipTest(
             "Partial fetching is not supported for native bzr branches "
             "at the moment.")
 
     def test_unsupported_feature(self):
-        self.skip("All Bazaar features are supported by Bazaar.")
+        self.skipTest("All Bazaar features are supported by Bazaar.")
 
     def test_reject_branch_reference(self):
         # Branch references are allowed in the BzrImporter, but their URL

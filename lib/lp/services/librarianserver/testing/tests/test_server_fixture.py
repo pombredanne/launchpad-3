@@ -28,7 +28,7 @@ class TestLibrarianServerFixture(TestCase):
 
     def skip_if_persistent(self, fixture):
         if fixture._persistent_servers():
-            self.skip('persistent server running.')
+            self.skipTest('persistent server running.')
 
     def test_on_init_no_pid(self):
         fixture = LibrarianServerFixture(BaseLayer.config_fixture)
