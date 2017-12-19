@@ -219,10 +219,6 @@ class BufferLogger(FakeLogger):
         Use with `testtools.TestCase.addDetail`, `fixtures.Fixture.addDetail`,
         and anything else that understands details.
         """
-        # Only import these here to avoid importing testtools outside tests.
-        from testtools.content import (
-            Content,
-            UTF8_TEXT,
-            )
-        get_bytes = lambda: [self.getLogBuffer().encode("utf-8")]
-        return Content(UTF8_TEXT, get_bytes)
+        # Only import this here to avoid importing testtools outside tests.
+        from testtools.content import text_content
+        return text_content(self.getLogBuffer())
