@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from lp.registry.scripts import listteammembers
@@ -49,12 +49,10 @@ ubuntuteam_full = sorted([
     ])
 
 ubuntuteam_sshkeys = [
-    u'mark: ssh-dss AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0'
-    u'B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3Dz'
-    u'eVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalv'
-    u'GXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8'
-    u'Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw== Private key in '
-    u'lib/lp/codehosting/tests/id_dsa',
+    u'mark: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQCeP6iOLFdRSJ/CwuUjj0dE3+bJi'
+    u'ZUn2AsappUcjCZN75CBKvqPkpGDIU/ZlOddAdj1rif6dl9rqEBuoliduIZ1bmPaGs1jmpME'
+    u'7HPctLhCmzy1oC8wkdVNkZnmoTW34j5Y8mKWuy32hVWvp3OdfIo+dxW576ny52VkTbST+t4'
+    u'KlQ== Private key in lib/lp/codehosting/tests/id_rsa',
     ]
 
 

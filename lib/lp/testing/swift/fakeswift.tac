@@ -1,5 +1,5 @@
 # -*- python -*-
-# Copyright 2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 '''Launch a mock Swift service.'''
@@ -15,19 +15,16 @@ from twisted.application import internet, service
 
 logging.basicConfig()
 
-from s4 import hollow
+from lp.testing.swift.fakeswift import Root
 
-storedir = os.environ['HOLLOW_ROOT']
+storedir = os.environ['SWIFT_ROOT']
 assert os.path.exists(storedir)
 
-application = service.Application('hollow')
-root = hollow.Root(storage_dir=storedir, hostname='localhost')
-
-# make sure "the bucket" is created
-root.swift.addBucket("the bucket")
+application = service.Application('fakeswift')
+root = Root(hostname='localhost')
 site = twisted.web.server.Site(root)
 
-port = int(os.environ['HOLLOW_PORT'])
+port = int(os.environ['SWIFT_PORT'])
 
 sc = service.IServiceCollection(application)
 internet.TCPServer(port, site).setServiceParent(sc)
