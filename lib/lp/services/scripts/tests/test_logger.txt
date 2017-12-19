@@ -7,12 +7,6 @@ by our logging handler.
     ...     import sys
     ...     import subprocess
     ...     from lp.services.config import config
-    ...     if 'env' in kw:
-    ...         # We want to make sure that the subprocess will have the
-    ...         # benefit of all of the dependency paths inserted by the
-    ...         # buildout.  This is already set up in our environment's
-    ...         # PYTHONPATH, so use it.
-    ...         kw['env']['PYTHONPATH'] = os.environ['PYTHONPATH']
     ...     test_script_path = os.path.join(
     ...         config.root, 'lib', 'lp', 'services',
     ...         'scripts', 'tests', 'loglevels.py')

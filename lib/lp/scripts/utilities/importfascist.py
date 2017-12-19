@@ -31,6 +31,10 @@ valid_imports_not_in_all = {
     'json.decoder': set(['JSONDecodeError']),
     'openid.fetchers': set(['Urllib2Fetcher']),
     'openid.message': set(['NamespaceAliasRegistrationError']),
+    # Exported as shlex.quote in Python 3.
+    'pipes': set(['quote']),
+    # Exported in Python 3, but missing and so not exported in Python 2.
+    'shlex': set(['quote']),
     'storm.database': set(['STATE_DISCONNECTED']),
     'textwrap': set(['dedent']),
     'testtools.testresult.real': set(['_details_to_str']),

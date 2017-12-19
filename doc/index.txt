@@ -27,7 +27,7 @@ Technical
 .. toctree::
    :maxdepth: 1
 
-   buildout
+   pip
 
 Possibly out-of-date
 --------------------

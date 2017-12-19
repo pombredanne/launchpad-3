@@ -1,13 +1,14 @@
 # Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# This file is imported by parts/scripts/sitecustomize.py, as set up in our
-# buildout.cfg (see the "initialization" key in the "[scripts]" section).
+# This file is imported by _pythonpath.py and by the standard Launchpad
+# script preamble (see LPScriptWriter in setup.py).
 
 from collections import defaultdict
 import itertools
 import logging
 import os
+import sys
 import warnings
 
 from twisted.internet.defer import (
@@ -126,23 +127,6 @@ def silence_transaction_logger():
     logging.getLogger('txn').addHandler(txn_handler)
 
 
-def dont_wrap_class_and_subclasses(cls):
-    checker.BasicTypes.update({cls: checker.NoProxy})
-    for subcls in cls.__subclasses__():
-        dont_wrap_class_and_subclasses(subcls)
-
-
-def dont_wrap_bzr_branch_classes():
-    from bzrlib.branch import Branch
-    # Load bzr plugins
-    import lp.codehosting
-    lp.codehosting
-    # Force LoomBranch classes to be listed as subclasses of Branch
-    import bzrlib.plugins.loom.branch
-    bzrlib.plugins.loom.branch
-    dont_wrap_class_and_subclasses(Branch)
-
-
 def silence_warnings():
     """Silence warnings across the entire Launchpad project."""
     # pycrypto-2.0.1 on Python2.6:
@@ -172,14 +156,15 @@ def customize_logger():
     silence_swiftclient_logger()
 
 
-def main(instance_name):
-    # This is called by our custom buildout-generated sitecustomize.py
-    # in parts/scripts/sitecustomize.py. The instance name is sent to
-    # buildout from the Makefile, and then inserted into
-    # sitecustomize.py.  See buildout.cfg in the "initialization" value
-    # of the [scripts] section for the code that goes into this custom
-    # sitecustomize.py.  We do all actual initialization here, in a more
-    # visible place.
+def main(instance_name=None):
+    # This is called by _pythonpath.py and by the standard Launchpad script
+    # preamble (see LPScriptWriter in setup.py).  The instance name is sent
+    # to setup.py from the Makefile, and then written to env/instance_name.
+    # We do all actual initialization here, in a more visible place.
+    if instance_name is None:
+        instance_name_path = os.path.join(sys.prefix, 'instance_name')
+        with open(instance_name_path) as instance_name_file:
+            instance_name = instance_name_file.read().rstrip('\n')
     if instance_name and instance_name != 'development':
         # See bug 656213 for why we do this carefully.
         os.environ.setdefault('LPCONFIG', instance_name)
@@ -188,7 +173,6 @@ def main(instance_name):
     customizeMimetypes()
     silence_warnings()
     customize_logger()
-    dont_wrap_bzr_branch_classes()
     checker.BasicTypes.update({defaultdict: checker.NoProxy})
     checker.BasicTypes.update({Deferred: checker.NoProxy})
     checker.BasicTypes.update({DeferredList: checker.NoProxy})

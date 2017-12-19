@@ -6,8 +6,23 @@ PYTHON:=python2.7
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:${PYTHONPATH}
-BUILDOUT_CFG=buildout.cfg
 VERBOSITY=-vv
+
+# virtualenv and pip fail if setlocale fails, so force a valid locale.
+VIRTUALENV := LC_ALL=C.UTF-8 virtualenv
+PIP := PYTHONPATH= LC_ALL=C.UTF-8 env/bin/pip
+# Run with "make PIP_NO_INDEX=" if you want pip to find software
+# dependencies *other* than those in our download-cache.  Once you have the
+# desired software, commit it to lp:lp-source-dependencies if it is going to
+# be reviewed/merged/deployed.
+# Although --ignore-installed is slower, we need it to avoid confusion with
+# system-installed Python packages.  If we ever manage to remove the need
+# for virtualenv --system-site-packages, then we can remove this too.
+PIP_NO_INDEX := --no-index
+PIP_INSTALL_ARGS := \
+	$(PIP_NO_INDEX) \
+	--ignore-installed \
+	--find-links=file://$(WD)/download-cache/dist/ \
 
 TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
@@ -40,22 +55,32 @@ APIDOC_DIR = lib/canonical/launchpad/apidoc
 APIDOC_TMPDIR = $(APIDOC_DIR).tmp/
 API_INDEX = $(APIDOC_DIR)/index.html
 
-# Do not add bin/buildout to this list.
-# It is impossible to get buildout to tell us all the files it would
-# build, since each egg's setup.py doesn't tell us that information.
+# It is impossible to get pip to tell us all the files it would build, since
+# each package's setup.py doesn't tell us that information.
 #
-# NB: It's important BUILDOUT_BIN only mentions things genuinely produced by
-# buildout.
-BUILDOUT_BIN = \
-    $(PY) bin/build-twisted-plugin-cache bin/bzr \
-    bin/combine-css bin/fl-build-report \
-    bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
-    bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
-    bin/harness bin/iharness bin/ipy bin/jsbuild bin/lpjsmin\
-    bin/killservice bin/kill-test-services bin/retest \
-    bin/run bin/run-testapp bin/sprite-util bin/start_librarian \
-    bin/tags bin/test bin/tracereport bin/twistd \
-    bin/watch_jsbuild bin/with-xvfb
+# NB: It's important PIP_BIN only mentions things genuinely produced by pip.
+PIP_BIN = \
+    $(PY) \
+    bin/build-twisted-plugin-cache \
+    bin/combine-css \
+    bin/googletestservice \
+    bin/harness \
+    bin/iharness \
+    bin/ipy \
+    bin/jsbuild \
+    bin/lpjsmin \
+    bin/killservice \
+    bin/kill-test-services \
+    bin/retest \
+    bin/run \
+    bin/run-testapp \
+    bin/sprite-util \
+    bin/start_librarian \
+    bin/test \
+    bin/tracereport \
+    bin/twistd \
+    bin/watch_jsbuild \
+    bin/with-xvfb
 
 # DO NOT ALTER : this should just build by default
 default: inplace
@@ -131,7 +156,7 @@ inplace: build logs clean_logs codehosting-dir
 build: compile apidoc jsbuild css_combine
 
 # LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
-# want the parent directory where the download-cache and eggs directory
+# want the parent directory where the download-cache and env directories
 # are. We re-use the variable that is using for the rocketfuel-get script.
 download-cache:
 ifdef LP_SOURCEDEPS_PATH
@@ -189,55 +214,48 @@ jsbuild: $(LP_JS_BUILD) $(YUI_SYMLINK)
 	build/js/lp/meta.js >/dev/null
 	utilities/check-js-deps
 
-eggs:
-	# Usually this is linked via link-external-sourcecode, but in
-	# deployment we create this ourselves.
-	mkdir eggs
-
-buildonce_eggs: $(PY)
-	find eggs -name '*.pyc' -exec rm {} \;
-
-# The download-cache dependency comes *before* eggs so that developers get the
-# warning before the eggs directory is made.  The target for the eggs
-# directory is only there for deployment convenience.
-# Note that the buildout version must be maintained here and in versions.cfg
-# to make sure that the build does not go over the network.
-#
-# buildout won't touch files that would have the same contents, but for Make's
-# sake we need them to get fresh timestamps, so we touch them after building.
-bin/buildout: download-cache eggs
-	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
-		--setup-source=ez_setup.py \
-		--download-base=download-cache/dist --eggs=eggs \
-		--version=1.7.1
-	touch --no-create $@
-
 # This target is used by LOSAs to prepare a build to be pushed out to
-# destination machines.  We only want eggs: they are the expensive bits,
+# destination machines.  We only want wheels: they are the expensive bits,
 # and the other bits might run into problems like bug 575037.  This
-# target runs buildout, and then removes everything created except for
-# the eggs.
-build_eggs: $(BUILDOUT_BIN) clean_buildout
+# target runs pip, and then removes everything created except for the
+# wheels.
+build_wheels: $(PIP_BIN) clean_pip
 
-# This builds bin/py and all the other bin files except bin/buildout.
-# Remove the target before calling buildout to ensure that buildout
-# updates the timestamp.
-buildout_bin: $(BUILDOUT_BIN)
+# Compatibility.
+build_eggs: build_wheels
 
-# buildout won't touch files that would have the same contents, but for Make's
-# sake we need them to get fresh timestamps, so we touch them after building.
+# setuptools won't touch files that would have the same contents, but for
+# Make's sake we need them to get fresh timestamps, so we touch them after
+# building.
 #
 # If we listed every target on the left-hand side, a parallel make would try
 # multiple copies of this rule to build them all.  Instead, we nominally build
 # just $(PY), and everything else is implicitly updated by that.
-$(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
-	$(SHHH) PYTHONPATH= ./bin/buildout \
-                configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
+$(PY): download-cache constraints.txt setup.py
+	rm -rf env
+	mkdir -p env
+	(echo '[easy_install]'; \
+	 echo "allow_hosts = ''"; \
+	 echo 'find_links = file://$(WD)/download-cache/dist/') \
+		>env/.pydistutils.cfg
+	$(VIRTUALENV) \
+		--python=$(PYTHON) --system-site-packages --never-download \
+		--extra-search-dir=$(WD)/download-cache/dist/ \
+		env
+	ln -sfn env/bin bin
+	$(SHHH) $(PIP) install $(PIP_INSTALL_ARGS) \
+		-r pip-requirements.txt
+	$(SHHH) LPCONFIG=$(LPCONFIG) $(PIP) \
+		--cache-dir=$(WD)/download-cache/ \
+		install $(PIP_INSTALL_ARGS) \
+		-c pip-requirements.txt -c constraints.txt -e . \
+		|| { code=$$?; rm -f $@; exit $$code; }
 	touch $@
 
-$(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
+$(subst $(PY),,$(PIP_BIN)): $(PY)
 
 compile: $(PY) $(VERSION_INFO)
+	${SHHH} utilities/relocate-virtualenv env
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} bin/build-twisted-plugin-cache
@@ -345,13 +363,15 @@ clean_js:
 	$(RM) -r $(JS_BUILD_DIR)
 	$(RM) -r yarn/node_modules
 
-clean_buildout:
+clean_pip:
 	$(RM) -r build
 	if [ -d $(CONVOY_ROOT) ]; then $(RM) -r $(CONVOY_ROOT) ; fi
 	$(RM) -r bin
 	$(RM) -r parts
-	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
+
+# Compatibility.
+clean_buildout: clean_pip
 
 clean_logs:
 	$(RM) logs/thread*.request
@@ -365,7 +385,7 @@ else
 	$(RM) -r lib/mailman
 endif
 
-lxc-clean: clean_js clean_mailman clean_buildout clean_logs
+lxc-clean: clean_js clean_mailman clean_pip clean_logs
 	# XXX: BradCrittenden 2012-05-25 bug=1004514:
 	# It is important for parallel tests inside LXC that the
 	# $(CODEHOSTING_ROOT) directory not be completely removed.
@@ -381,10 +401,7 @@ lxc-clean: clean_js clean_mailman clean_buildout clean_logs
 	if test -f sourcecode/mailman/Makefile; then \
 		$(MAKE) -C sourcecode/mailman clean; \
 	fi
-	find . -path ./eggs -prune -false -o \
-		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
-	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
-	    -print0 | xargs -r0 $(RM)
+	$(RM) -r env
 	$(RM) -r lib/subvertpy/*.so
 	$(RM) -r $(LP_BUILT_JS_ROOT)/*
 	$(RM) -r $(CODEHOSTING_ROOT)/*
@@ -466,15 +483,15 @@ reload-apache: enable-apache-launchpad
 
 TAGS: compile
 	# emacs tags
-	bin/tags -e
+	ctags -R -e --languages=-JavaScript --python-kinds=-i -f $@.new \
+		$(CURDIR)/lib $(CURDIR)/env/lib/$(PYTHON)/site-packages
+	mv $@.new $@
 
 tags: compile
 	# vi tags
-	bin/tags -v
-
-ID: compile
-	# idutils ID file
-	bin/tags -i
+	ctags -R --languages=-JavaScript --python-kinds=-i -f $@.new \
+		$(CURDIR)/lib $(CURDIR)/env/lib/$(PYTHON)/site-packages
+	mv $@.new $@
 
 PYDOCTOR = pydoctor
 PYDOCTOR_OPTIONS =
@@ -485,11 +502,10 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc build_eggs buildonce_eggs buildout_bin check \
-	check_config check_mailman clean clean_buildout clean_js	\
-	clean_logs compile css_combine debug default doc ftest_build	\
-	ftest_inplace hosted_branches jsbuild jsbuild_widget_css	\
-	launchpad.pot pagetests pull_branches pydoctor realclean	\
-	reload-apache run run-testapp runner scan_branches schema	\
-	sprite_css sprite_image start stop sync_branches TAGS tags	\
-	test_build test_inplace $(LP_JS_BUILD)
+.PHONY: apidoc build_eggs build_wheels check check_config check_mailman	\
+	clean clean_buildout clean_js clean_logs clean_pip compile	\
+	css_combine debug default doc ftest_build ftest_inplace		\
+	hosted_branches jsbuild jsbuild_widget_css launchpad.pot	\
+	pydoctor realclean reload-apache run run-testapp runner schema	\
+	sprite_css sprite_image start stop TAGS tags test_build		\
+	test_inplace $(LP_JS_BUILD)

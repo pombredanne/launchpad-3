@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import errno
@@ -24,7 +24,6 @@ from lp.codehosting import (
     get_bzr_path,
     get_BZR_PLUGIN_PATH_for_subprocess,
     )
-from lp.services.config import config
 from lp.testing.fakemethod import FakeMethod
 
 
@@ -319,10 +318,6 @@ class TestCaseWithSubprocess(tests.TestCaseWithTransport):
     same as the bzrlib.tests.TestCase version.
     """
 
-    def get_python_path(self):
-        """Return the path to the Python interpreter."""
-        return '%s/bin/py' % config.root
-
     def start_bzr_subprocess(self, process_args, env_changes=None,
                              working_dir=None):
         """Start bzr in a subprocess for testing.
@@ -353,15 +348,12 @@ class TestCaseWithSubprocess(tests.TestCaseWithTransport):
             cwd = osutils.getcwd()
             os.chdir(working_dir)
 
-        # LAUNCHPAD: Because of buildout, we need to get a custom Python
-        # binary, not sys.executable.
-        python_path = self.get_python_path()
         # LAUNCHPAD: We can't use self.get_bzr_path(), since it'll find
-        # lib/bzrlib, rather than the path to sourcecode/bzr/bzr.
+        # lib/bzrlib, rather than the path to bin/bzr.
         bzr_path = get_bzr_path()
         try:
             cleanup_environment()
-            command = [python_path, bzr_path]
+            command = [bzr_path]
             command.extend(process_args)
             process = self._popen(
                 command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,

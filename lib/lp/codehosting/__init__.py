@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad code-hosting system.
@@ -17,24 +17,18 @@ __all__ = [
 import os
 
 import bzrlib
+from bzrlib.branch import Branch
 from bzrlib.plugin import load_plugins
 # This import is needed so that bzr's logger gets registered.
 import bzrlib.trace
+from zope.security import checker
 
 from lp.services.config import config
 
 
 def get_bzr_path():
     """Find the path to the copy of Bazaar for this rocketfuel instance"""
-    bzr_in_egg_path = os.path.join(
-        os.path.dirname(os.path.dirname(bzrlib.__file__)),
-        'EGG-INFO/scripts/bzr')
-    if os.path.exists(bzr_in_egg_path):
-        return bzr_in_egg_path
-    else:
-        return os.path.join(
-            os.path.dirname(os.path.dirname(bzrlib.__file__)),
-            'bzr')
+    return os.path.join(config.root, 'bin', 'bzr')
 
 
 def _get_bzr_plugins_path():
@@ -71,3 +65,16 @@ def load_bundled_plugin(plugin_name):
 
 
 load_bundled_plugin("weave_fmt")
+
+
+def dont_wrap_class_and_subclasses(cls):
+    checker.BasicTypes.update({cls: checker.NoProxy})
+    for subcls in cls.__subclasses__():
+        dont_wrap_class_and_subclasses(subcls)
+
+
+# Don't wrap Branch or its subclasses in Zope security proxies.  Make sure
+# the various LoomBranch classes are present first.
+import bzrlib.plugins.loom.branch
+bzrlib.plugins.loom.branch
+dont_wrap_class_and_subclasses(Branch)

@@ -1,0 +1,25 @@
+#! /bin/sh
+set -e
+
+# Ensure that a virtualenv is relocated to its current path.  This does not
+# cope with moving a virtualenv to a different version of the base operating
+# system or a different architecture; it only copes with moving it to a
+# different filesystem path (perhaps on a different machine as long as it is
+# similar enough).
+
+if [ -z "$1" ]; then
+    echo "Usage: $0 ENV_PATH" 2>&1
+    exit 1
+fi
+
+# virtualenv-tools does most of the hard work.  We must explicitly invoke it
+# with the virtualenv's Python, as its #! line is probably wrong.
+"$1/bin/python" "$1/bin/virtualenv-tools" --update-path=auto "$1"
+
+# Fix up a few things that virtualenv-tools doesn't handle.
+top="$(readlink -f "$(dirname "$0")/..")"
+for path in "$1"/lib/*/site-packages/lp.egg-link; do
+    printf '%s/lib\n../' "$top" >"$path"
+done
+sed -i "s#^find_links = .*#find_links = file://$top/download-cache/dist/#" \
+    "$1"/.pydistutils.cfg
