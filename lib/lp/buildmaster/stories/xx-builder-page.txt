@@ -267,8 +267,6 @@ Farm list. Celso cannot see the link to it.
     Virtual build status
     Architecture Builders Queue
     386          1        empty
-    Non-virtual build status
-    Architecture Builders Queue
 
     >>> cprov_browser.getLink('bob').click()
     Traceback (most recent call last):
