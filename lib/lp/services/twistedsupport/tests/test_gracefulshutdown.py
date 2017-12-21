@@ -99,7 +99,7 @@ class TestServerAvailableResource(TestCase):
 
     def make_dummy_http_request(self):
         """Make a dummy HTTP request for tests."""
-        return http.Request('fake channel', True)
+        return http.Request(http.HTTPChannel(), True)
 
     def test_200_when_available(self):
         """When the factory is available a 200 response is generated."""
