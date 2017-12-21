@@ -12,6 +12,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.services.job.model.job import Job
 from lp.testing import (
+    admin_logged_in,
     record_two_runs,
     TestCaseWithFactory,
     )
@@ -22,7 +23,7 @@ from lp.testing.views import create_initialized_view
 
 def builders_homepage_render():
     builders = getUtility(IBuilderSet)
-    create_initialized_view(builders, "+index").render()
+    return create_initialized_view(builders, "+index").render()
 
 
 class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
@@ -90,3 +91,27 @@ class TestBuildersHomepage(TestCaseWithFactory, BuildCreationMixin):
         recorder1, recorder2 = record_two_runs(
             builders_homepage_render, create_builds, nb_objects)
         self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
+    def test_category_portlet_not_shown_if_empty(self):
+        content = builders_homepage_render()
+        self.assertIn("Virtual build status", content)
+        self.assertIn("Non-virtual build status", content)
+
+        with admin_logged_in():
+            getUtility(IBuilderSet).getByName('frog').active = False
+        content = builders_homepage_render()
+        self.assertNotIn("Virtual build status", content)
+        self.assertIn("Non-virtual build status", content)
+
+        with admin_logged_in():
+            getUtility(IBuilderSet).getByName('bob').active = False
+            getUtility(IBuilderSet).getByName('frog').active = True
+        content = builders_homepage_render()
+        self.assertIn("Virtual build status", content)
+        self.assertNotIn("Non-virtual build status", content)
+
+        with admin_logged_in():
+            getUtility(IBuilderSet).getByName('frog').active = False
+        content = builders_homepage_render()
+        self.assertNotIn("Virtual build status", content)
+        self.assertNotIn("Non-virtual build status", content)
