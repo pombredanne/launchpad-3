@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import atexit
 import os
 import re
 import signal
@@ -156,7 +155,6 @@ class SSHServerLayer(ZopelessAppServerLayer):
         tac_handler = SSHServerLayer.getTacHandler()
         tac_handler.setUp()
         SSHServerLayer._reset()
-        atexit.register(tac_handler.tearDown)
         forker = SSHServerLayer.getForker()
         forker.setUp()
 
