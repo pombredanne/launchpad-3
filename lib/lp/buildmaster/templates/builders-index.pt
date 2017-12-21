@@ -79,17 +79,19 @@
          </div><!-- portlet -->
        </div><!-- yui-u -->
 
-       <div class="yui-u">
+       <div tal:define="category view/virt_builders"
+            tal:condition="category/groups" class="yui-u">
          <div id="virt-queue-status" class="portlet">
-           <div tal:define="category view/virt_builders">
+           <div>
              <div metal:use-macro="template/macros/builder-category" />
            </div>
          </div><!-- portlet -->
        </div><!-- yui-u -->
 
-       <div class="yui-u">
+       <div tal:define="category view/nonvirt_builders"
+            tal:condition="category/groups" class="yui-u">
          <div id="nonvirt-queue-status" class="portlet">
-           <div tal:define="category view/nonvirt_builders">
+           <div>
              <div metal:use-macro="template/macros/builder-category" />
            </div>
          </div><!-- portlet -->
