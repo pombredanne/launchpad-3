@@ -121,7 +121,8 @@ zope.viewlet==3.7.2
 # Dependencies
 #distribute==0.6.36
 distribute==0.7.3
-docutils==0.7
+#docutils==0.7
+docutils==0.14
 Jinja2==2.5.5
 mechanize==0.2.5
 Paste==1.7.5.1
@@ -129,7 +130,7 @@ PasteDeploy==1.3.4
 PasteScript==1.7.5
 py==1.4.8
 #Pygments==1.4
-Pygments==1.6
+Pygments==2.2.0
 python-gettext==1.0
 #python-subunit==0.0.7
 python-subunit==0.0.8beta
@@ -138,7 +139,8 @@ pytz==2017.2
 RestrictedPython==3.6.0
 #setuptools==0.6c11
 setuptools==36.4.0
-Sphinx==1.0.8
+#Sphinx==1.0.8
+Sphinx==1.6.5
 #testtools==0.9.12
 testtools==0.9.30
 transaction==1.1.1
@@ -218,6 +220,7 @@ zope.generations==3.7.1
 
 # Alphabetical, case-insensitive, please! :-)
 
+alabaster==0.7.10
 # lp:~launchpad/ampoule/lp
 # post1 Don't add a process back to the ready set if it received an error
 # such as a timeout.
@@ -228,6 +231,7 @@ anyjson==0.3.3
 auditor==0.0.3
 auditorclient==0.0.4
 auditorfixture==0.0.7
+Babel==2.5.1
 backports.lzma==0.0.3
 BeautifulSoup==3.2.1
 billiard==3.3.0.20
@@ -253,6 +257,7 @@ grokcore.component==1.6
 html5browser==0.0.9
 httmock==1.2.3
 httplib2==0.8
+imagesize==0.7.1
 importlib==1.0.2
 ipython==0.13.2
 iso8601==0.1.4
@@ -322,7 +327,9 @@ setuptools-git==1.2
 simplejson==3.8.2
 SimpleTAL==4.3
 six==1.9.0
+snowballstemmer==1.2.1
 soupmatchers==0.2
+sphinxcontrib-websupport==1.0.1
 # lp:~launchpad-committers/storm/with-without-datetime
 storm==0.19.0.99-lpwithnodatetime-r408
 subprocess32==3.2.6
@@ -341,6 +348,7 @@ txfixtures==0.1.4
 txlongpoll==0.2.12
 txlongpollfixture==0.1.3
 txpkgupload==0.2
+typing==3.6.2
 unittest2==0.5.1
 van.testing==3.0.0
 virtualenv-tools3==2.0.0
