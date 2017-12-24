@@ -1152,16 +1152,16 @@ The Summary in the facet menu is selected because the current facet is
     <div>
       <ul>
         <li>
-          <a href=".../joy-of-cooking/fried-spam"
-             class="selected-True">Summary</a>
+          <a class="selected-True"
+             href=".../joy-of-cooking/fried-spam">Summary</a>
         </li>
         <li>
-          <a href=".../joy-of-cooking/fried-spam/+questions"
-             class="selected-False">Questions</a>
+          <a class="selected-False"
+             href=".../joy-of-cooking/fried-spam/+questions">Questions</a>
         </li>
         <li>
-          <a href=".../joy-of-cooking/fried-spam/+variations"
-             class="selected-False">Variations</a>
+          <a class="selected-False"
+             href=".../joy-of-cooking/fried-spam/+variations">Variations</a>
         </li>
       </ul>
     </div>
@@ -1175,8 +1175,8 @@ available (as can be seen in the next example).
     <div>
       <ul>
         <li>
-          <a href=".../joy-of-cooking/fried-spam"
-             class="selected-None">Summary</a>
+          <a class="selected-None"
+             href=".../joy-of-cooking/fried-spam">Summary</a>
         </li>
         <li>
           <strong>Journal</strong>
@@ -1201,8 +1201,8 @@ URL.
           <strong>Read Journal entries</strong>
         </li>
         <li>
-          <a href=".../joy-of-cooking/fried-spam/+write-entry"
-             class="selected-None">Write
+          <a class="selected-None"
+             href=".../joy-of-cooking/fried-spam/+write-entry">Write
             a journal entry</a>
         </li>
       </ul>
