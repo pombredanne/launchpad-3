@@ -38,7 +38,7 @@ defaultResource = static.Data("""
         file repository used by
         <a href="https://launchpad.net/">Launchpad</a>.
         </p>
-        <p><small>Copyright 2004-2017 Canonical Ltd.</small></p>
+        <p><small>Copyright 2004-2018 Canonical Ltd.</small></p>
         <!-- kthxbye. -->
         </body></html>
         """, type='text/html')
