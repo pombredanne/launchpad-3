@@ -29,7 +29,7 @@ He discovers that there are no questions on the Kubuntu Answers page:
     >>> print browser.title
     Questions : Kubuntu
 
-    >>> print find_main_content(browser.contents).first('p').renderContents()
+    >>> print find_main_content(browser.contents).find('p').renderContents()
     There are no questions for Kubuntu with the requested statuses.
 
 For projects that don't have products, the Answers facet is disabled.
@@ -52,8 +52,8 @@ Answers page and goes there to check.
 He sees a listing of the current questions posted on Ubuntu:
 
     >>> soup = find_main_content(browser.contents)
-    >>> for question in soup.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in soup.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
@@ -68,8 +68,8 @@ results. There, he finds only one other question:
     >>> print browser.title
     Questions : Ubuntu
     >>> soup = find_main_content(browser.contents)
-    >>> for question in soup.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in soup.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Installation failed
 
 This is the last results page, so the next and last links are greyed
@@ -114,11 +114,11 @@ description appears in a small pop-up:
 
     >>> import re
     >>> soup = find_main_content(browser.contents)
-    >>> question_link = soup.first('a', text=re.compile('Play DVDs'))
+    >>> question_link = soup.find('a', text=re.compile('Play DVDs'))
     >>> print question_link.findParent('tr')['title']
     How do you play DVDs in Totem..........?
 
-    >>> question_link = soup.first('a', text=re.compile('Slow system'))
+    >>> question_link = soup.find('a', text=re.compile('Slow system'))
     >>> print question_link.findParent('tr')['title']
     I get really poor hard drive performance.
 
@@ -174,7 +174,7 @@ is shown search results instead of the question.
     >>> print browser.title
     Questions matching "question 8"
 
-    >>> print find_main_content(browser.contents).first('p').renderContents()
+    >>> print find_main_content(browser.contents).find('p').renderContents()
     There are no questions matching "question 8" with the requested statuses.
 
 
@@ -219,8 +219,8 @@ selected. He adds 'Invalid' to the selection, and run his search again.
 This time, the search returns one item.
 
     >>> soup = find_main_content(browser.contents)
-    >>> for question in soup.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in soup.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Firefox is slow and consumes too much RAM
 
 He clicks on the link to read the question description.
@@ -294,8 +294,8 @@ recent questions on Mozilla Firefox.
     >>> print browser.title
     Questions : Mozilla Firefox
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Firefox loses focus and gets stuck
     Problem showing the SVG demo on W3C site
     Firefox cannot render Bank Site
@@ -314,8 +314,8 @@ problems:
     >>> browser.getControl(name='field.search_text').value = 'plugin'
     >>> browser.getControl('Search', index=0).click()
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Problem showing the SVG demo on W3C site
 
 
@@ -334,8 +334,8 @@ questions.)
     >>> [strip_label(status) for status in statuses]
     ['Answered', 'Solved']
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Play DVDs in Totem
     mailto: problem in webpage
     Installation of Java Runtime Environment for Mozilla
@@ -379,8 +379,8 @@ They need to login to access that page:
     'Questions you asked about mozilla-firefox in Ubuntu : Questions : mozilla-firefox package : Ubuntu'
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     mailto: problem in webpage
     Installation of Java Runtime Environment for Mozilla
 
@@ -401,8 +401,8 @@ The exact question they were searching for is displayed!
 
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     mailto: problem in webpage
 
 If the user didn't make any questions on the product, a message
@@ -420,7 +420,7 @@ informing them of this fact is displayed.
     ...     'http://launchpad.dev/gnomebaker/+questions')
     >>> sample_person_browser.getLink('My questions').click()
     >>> print find_main_content(
-    ...     sample_person_browser.contents).first('p').renderContents()
+    ...     sample_person_browser.contents).find('p').renderContents()
     You didn't ask any questions about gnomebaker.
 
 
@@ -447,8 +447,8 @@ They need to login to access that page:
     Questions needing your attention for Ubuntu : Questions : Ubuntu
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Play DVDs in Totem
     Installation of Java Runtime Environment for Mozilla
 
@@ -472,7 +472,7 @@ informing them of this fact is displayed.
     ...    'http://launchpad.dev/products/gnomebaker/+questions')
     >>> sample_person_browser.getLink('Need attention').click()
     >>> print find_main_content(
-    ...     sample_person_browser.contents).first('p').renderContents()
+    ...     sample_person_browser.contents).find('p').renderContents()
     No questions need your attention for gnomebaker.
 
 
@@ -492,8 +492,8 @@ commented on.
     Questions : Foo Bar
 
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
@@ -508,8 +508,8 @@ That listing is batched when there are many questions:
 The listing contains a 'In' column that shows the context where the
 questions was made.
 
-    >>> for question in questions.fetch('td', 'question-target'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'question-target'):
+    ...     print question.find('a').renderContents()
     Ubuntu
     Ubuntu
     mozilla-firefox in Ubuntu
@@ -532,8 +532,8 @@ questions to a particular status:
     ...     'Solved', 'Invalid']
     >>> browser.getControl('Search', index=0).click()
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Firefox is slow and consumes too much RAM
     mailto: problem in webpage
 
@@ -549,7 +549,7 @@ assigned.
     >>> browser.getLink('Assigned').click()
     >>> print browser.title
     Questions for Foo Bar : Questions : Foo Bar
-    >>> print find_main_content(browser.contents).first('p').renderContents()
+    >>> print find_main_content(browser.contents).find('p').renderContents()
     No questions assigned to Foo Bar found with the requested statuses.
 
 
@@ -562,8 +562,8 @@ answerer.
     >>> print browser.title
     Questions for Foo Bar : Questions : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     mailto: problem in webpage
 
 
@@ -576,8 +576,8 @@ questions commented on by the person.
     >>> print browser.title
     Questions for Foo Bar : Questions : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
@@ -594,8 +594,8 @@ asked by the person.
     >>> print browser.title
     Questions for Foo Bar : Questions : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Slow system
     Firefox loses focus and gets stuck
 
@@ -609,8 +609,8 @@ the attention of that person.
     >>> print browser.title
     Questions for Foo Bar : Questions : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Continue playing after shutdown
     Slow system
 
@@ -624,8 +624,8 @@ visiting the 'Subscribed' link in the 'Answers' facet.
     >>> print browser.title
     Questions for Foo Bar : Questions : Foo Bar
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Slow system
 
 
@@ -644,11 +644,11 @@ there is an 'In' column displaying where the questions were filed.
 
     >>> def print_questions_with_target(contents):
     ...     questions = find_tag_by_id(contents, 'question-listing')
-    ...     for question in questions.tbody.fetch('tr'):
-    ...         question_title = question.first(
-    ...             'td', 'questionTITLE').first('a').renderContents()
-    ...         question_target = question.first(
-    ...             'td', 'question-target').first('a').renderContents()
+    ...     for question in questions.tbody.findAll('tr'):
+    ...         question_title = question.find(
+    ...             'td', 'questionTITLE').find('a').renderContents()
+    ...         question_target = question.find(
+    ...             'td', 'question-target').find('a').renderContents()
     ...         print question_title, question_target
     >>> print_questions_with_target(browser.contents)
     Newly installed plug-in doesn't seem to be used Mozilla Firefox
@@ -662,8 +662,8 @@ That listing is searchable:
     >>> browser.getControl('Search', index=0).click()
 
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
-    >>> for question in questions.fetch('td', 'questionTITLE'):
-    ...     print question.first('a').renderContents()
+    >>> for question in questions.findAll('td', 'questionTITLE'):
+    ...     print question.find('a').renderContents()
     Problem showing the SVG demo on W3C site
 
 The same standard reports than on regular QuestionTarget are available:
@@ -724,7 +724,7 @@ When no results are found, a message informs the user of this fact:
     >>> browser.getControl('Search', index=0).click()
 
     >>> print find_main_content(
-    ...     browser.contents).first('p').renderContents()
+    ...     browser.contents).find('p').renderContents()
     There are no questions matching "firefox" with the requested statuses.
 
 Clicking the 'Search' button without entering any search text will

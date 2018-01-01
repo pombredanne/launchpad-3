@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to ILaunchpadRoot."""
@@ -6,16 +6,17 @@
 __metaclass__ = type
 
 
-from BeautifulSoup import (
-    BeautifulSoup,
-    SoupStrainer,
-    )
 from fixtures import FakeLogger
 from zope.component import getUtility
 from zope.security.checker import selectChecker
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.services.beautifulsoup import (
+    BeautifulSoup,
+    SoupStrainer,
+    )
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient
@@ -23,13 +24,16 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import ILaunchpadRoot
 from lp.testing import (
     anonymous_logged_in,
+    login_admin,
     login_person,
+    record_two_runs,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.publication import test_traverse
 from lp.testing.views import (
     create_initialized_view,
@@ -225,3 +229,20 @@ class LaunchpadRootIndexViewTestCase(TestCaseWithFactory):
             parseOnlyThese=SoupStrainer(id='homepage-blogposts'))
         items = markup.findAll('li', 'news')
         self.assertEqual(3, len(items))
+
+    def test_featured_projects_query_count(self):
+        def add_featured_projects():
+            product = self.factory.makeProduct()
+            project = self.factory.makeProject()
+            distribution = self.factory.makeDistribution()
+            for pillar in product, project, distribution:
+                pillar.icon = self.factory.makeLibraryFileAlias(db_only=True)
+                getUtility(IPillarNameSet).add_featured_project(pillar)
+
+        root = getUtility(ILaunchpadRoot)
+        user = self.factory.makePerson()
+        recorder1, recorder2 = record_two_runs(
+            lambda: create_initialized_view(
+                root, 'index.html', principal=user)(),
+            add_featured_projects, 5, login_method=login_admin)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

@@ -33,15 +33,14 @@ lib/canonical/launchpad/apidoc/wadl-test-playground.xml
 lib/canonical/launchpad/icing/build/*
 lib/canonical/launchpad/icing/combo.css
 bin
-develop-eggs
 .installed.cfg
 parts
 *.egg-info
 build
-*.egg
 dist
 ./eggs
 ./download-cache
+./env
 ./production-configs
 bzr.dev
 _trial_temp
@@ -77,4 +76,4 @@ callgrind.out.*
 ./celerybeat-schedule
 !logs/README.txt
 ./logs
-./node_modules
+yarn/node_modules

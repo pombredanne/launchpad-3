@@ -3,6 +3,8 @@
 
 """Unit tests for BranchMergeProposals."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import (
@@ -1365,8 +1367,8 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
 
     def test_preview_diff_all_chars(self):
         """preview_diff should work on diffs containing all possible bytes."""
-        text = ''.join(chr(x) for x in range(255))
-        diff_bytes = ''.join(unified_diff('', text))
+        text = b''.join(chr(x) for x in range(255))
+        diff_bytes = b''.join(unified_diff(b'', text))
         self.setPreviewDiff(diff_bytes)
         transaction.commit()
         view = create_initialized_view(self.bmp, '+index')
@@ -1377,8 +1379,8 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
     def test_preview_diff_timeout(self):
         # The preview_diff will recover from a timeout set to get the
         # librarian content.
-        text = ''.join(chr(x) for x in range(255))
-        diff_bytes = ''.join(unified_diff('', text))
+        text = b''.join(chr(x) for x in range(255))
+        diff_bytes = b''.join(unified_diff(b'', text))
         preview_diff = self.setPreviewDiff(diff_bytes)
         transaction.commit()
 
@@ -1393,9 +1395,29 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             markup = view()
             self.assertIn('The diff is not available at this time.', markup)
 
+    def test_preview_diff_lookup_error(self):
+        # The preview_diff will recover from a LookupError while getting the
+        # librarian content.  (This can happen e.g. on staging replicas of
+        # the production database.)
+        text = b''.join(chr(x) for x in range(255))
+        diff_bytes = b''.join(unified_diff(b'', text))
+        preview_diff = self.setPreviewDiff(diff_bytes)
+        transaction.commit()
+
+        def fake_open(*args):
+            raise LookupError
+
+        lfa = preview_diff.diff.diff_text
+        with monkey_patch(lfa, open=fake_open):
+            view = create_initialized_view(preview_diff, '+diff')
+            self.assertEqual('', view.preview_diff_text)
+            self.assertFalse(view.diff_available)
+            markup = view()
+            self.assertIn('The diff is not available at this time.', markup)
+
     def setPreviewDiff(self, preview_diff_bytes):
         return PreviewDiff.create(
-            self.bmp, preview_diff_bytes, u'a', u'b', None, u'')
+            self.bmp, preview_diff_bytes, 'a', 'b', None, '')
 
     def test_linked_bugtasks_excludes_mutual_bugs(self):
         """List bugs that are linked to the source only."""
@@ -1453,7 +1475,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                 old_revision=revisions[1].revision.getLefthandParent(),
                 new_revision=revisions[3].revision)
         self.useContext(feature_flags())
-        set_feature_flag(u'code.incremental_diffs.enabled', u'enabled')
+        set_feature_flag('code.incremental_diffs.enabled', 'enabled')
         view = create_initialized_view(bmp, '+index')
         comments = view.conversation.comments
         self.assertEqual(
@@ -1486,12 +1508,12 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             date_created=review_date)
         self.useFixture(GitHostingFixture(log=[
             {
-                u'sha1': unicode(hashlib.sha1(b'0').hexdigest()),
-                u'message': u'0',
-                u'author': {
-                    u'name': author.display_name,
-                    u'email': author_email,
-                    u'time': int((commit_date - epoch).total_seconds()),
+                'sha1': unicode(hashlib.sha1(b'0').hexdigest()),
+                'message': '0',
+                'author': {
+                    'name': author.display_name,
+                    'email': author_email,
+                    'time': int((commit_date - epoch).total_seconds()),
                     },
                 }
             ]))
@@ -1551,7 +1573,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         # subscribed to events relating to the merge proposal.
         bmp = self.factory.makeBranchMergeProposal()
         self.useContext(feature_flags())
-        set_feature_flag(u'longpoll.merge_proposals.enabled', u'enabled')
+        set_feature_flag('longpoll.merge_proposals.enabled', 'enabled')
         view = create_initialized_view(bmp, '+index', current_request=True)
         cache = IJSONRequestCache(view.request)
         self.assertIn("longpoll", cache.objects)
@@ -1582,12 +1604,12 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         commit_date = datetime(2015, 1, 1, tzinfo=pytz.UTC)
         self.useFixture(GitHostingFixture(log=[
             {
-                u'sha1': sha1,
-                u'message': u'Sample message',
-                u'author': {
-                    u'name': 'Example Person',
-                    u'email': 'person@example.org',
-                    u'time': int((commit_date - epoch).total_seconds()),
+                'sha1': sha1,
+                'message': 'Sample message',
+                'author': {
+                    'name': 'Example Person',
+                    'email': 'person@example.org',
+                    'time': int((commit_date - epoch).total_seconds()),
                     },
                 }
             ]))
@@ -1891,7 +1913,7 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
 
     def test_nonascii_in_attachment_renders(self):
         # The view should render without errors.
-        comment = self._makeCommentFromEmailWithAttachment('\xe2\x98\x95')
+        comment = self._makeCommentFromEmailWithAttachment(b'\xe2\x98\x95')
         # Need to commit in order to read the diff out of the librarian.
         transaction.commit()
         view = create_initialized_view(comment, '+comment-body')
@@ -1899,12 +1921,12 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
 
     def test_nonascii_in_attachment_decoded(self):
         # The diff_text should be a unicode string.
-        comment = self._makeCommentFromEmailWithAttachment('\xe2\x98\x95')
+        comment = self._makeCommentFromEmailWithAttachment(b'\xe2\x98\x95')
         # Need to commit in order to read the diff out of the librarian.
         transaction.commit()
         view = create_initialized_view(comment, '+comment-body')
         [diff_attachment] = view.comment.display_attachments
-        self.assertEqual(u'\u2615', diff_attachment.diff_text)
+        self.assertEqual('\u2615', diff_attachment.diff_text)
 
 
 class TestBranchMergeCandidateView(TestCaseWithFactory):
@@ -1960,7 +1982,7 @@ class TestBranchMergeProposal(BrowserTestCase):
         diff = self.factory.makeDiff()
         bmp.generateIncrementalDiff(parent, revision, diff)
         self.useContext(feature_flags())
-        set_feature_flag(u'code.incremental_diffs.enabled', u'enabled')
+        set_feature_flag('code.incremental_diffs.enabled', 'enabled')
         browser = self.getViewBrowser(bmp)
         assert 'unf_pbasyvpgf' in browser.contents
 
@@ -1970,7 +1992,7 @@ class TestBranchMergeProposal(BrowserTestCase):
         # automatically. See also
         # lib/lp/code/stories/branches/xx-branchmergeproposals.txt
         self.useContext(feature_flags())
-        set_feature_flag(u'longpoll.merge_proposals.enabled', u'enabled')
+        set_feature_flag('longpoll.merge_proposals.enabled', 'enabled')
         bmp = self.factory.makeBranchMergeProposal()
         browser = self.getViewBrowser(bmp)
         self.assertIn(

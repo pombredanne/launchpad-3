@@ -175,6 +175,8 @@ class UpdateStatsTest(unittest.TestCase):
             'rosetta_translator_count', 'products_with_potemplates',
             'projects_with_bugs', 'products_using_malone',
             'products_using_rosetta', 'shared_bug_count',
+            'public_specification_count',
+            'public_branch_count', 'public_git_repository_count',
             ]
 
         for key in keys:

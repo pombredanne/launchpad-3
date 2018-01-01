@@ -1,29 +1,26 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# This file is imported by parts/scripts/sitecustomize.py, as set up in our
-# buildout.cfg (see the "initialization" key in the "[scripts]" section).
+# This file is imported by _pythonpath.py and by the standard Launchpad
+# script preamble (see LPScriptWriter in setup.py).
 
 from collections import defaultdict
 import itertools
 import logging
 import os
+import sys
 import warnings
 
-from swiftclient import client as swiftclient
 from twisted.internet.defer import (
     Deferred,
     DeferredList,
     )
-from zope.interface import alsoProvides
-import zope.publisher.browser
 from zope.security import checker
 
 from lp.services.log import loglevels
 from lp.services.log.logger import LaunchpadLogger
 from lp.services.log.mappingfilter import MappingFilter
 from lp.services.mime import customizeMimetypes
-from lp.services.webapp.interfaces import IUnloggedException
 
 
 def add_custom_loglevels():
@@ -95,7 +92,8 @@ def silence_swiftclient_logger():
     only does swiftclient then emit lots of noise, but it also turns
     keystoneclient debugging on.
     """
-    swiftclient.logger.setLevel(logging.INFO)
+    swiftclient_logger = logging.getLogger('swiftclient')
+    swiftclient_logger.setLevel(logging.INFO)
 
 
 def silence_zcml_logger():
@@ -129,23 +127,6 @@ def silence_transaction_logger():
     logging.getLogger('txn').addHandler(txn_handler)
 
 
-def dont_wrap_class_and_subclasses(cls):
-    checker.BasicTypes.update({cls: checker.NoProxy})
-    for subcls in cls.__subclasses__():
-        dont_wrap_class_and_subclasses(subcls)
-
-
-def dont_wrap_bzr_branch_classes():
-    from bzrlib.branch import Branch
-    # Load bzr plugins
-    import lp.codehosting
-    lp.codehosting
-    # Force LoomBranch classes to be listed as subclasses of Branch
-    import bzrlib.plugins.loom.branch
-    bzrlib.plugins.loom.branch
-    dont_wrap_class_and_subclasses(Branch)
-
-
 def silence_warnings():
     """Silence warnings across the entire Launchpad project."""
     # pycrypto-2.0.1 on Python2.6:
@@ -175,45 +156,15 @@ def customize_logger():
     silence_swiftclient_logger()
 
 
-def customize_get_converter(zope_publisher_browser=zope.publisher.browser):
-    """URL parameter conversion errors shouldn't generate an OOPS report.
-
-    This injects (monkey patches) our wrapper around get_converter so improper
-    use of parameter type converters (like http://...?foo=bar:int) won't
-    generate OOPS reports.
-    """
-    original_get_converter = zope_publisher_browser.get_converter
-
-    def get_converter(*args, **kws):
-        """Get a type converter but turn off OOPS reporting if it fails."""
-        converter = original_get_converter(*args, **kws)
-
-        def wrapped_converter(v):
-            try:
-                return converter(v)
-            except ValueError as e:
-                # Mark the exception as not being OOPS-worthy.
-                alsoProvides(e, IUnloggedException)
-                raise
-
-        # The converter can be None, in which case wrapping it makes no sense,
-        # otherwise it is a function which we wrap.
-        if converter is None:
-            return None
-        else:
-            return wrapped_converter
-
-    zope_publisher_browser.get_converter = get_converter
-
-
-def main(instance_name):
-    # This is called by our custom buildout-generated sitecustomize.py
-    # in parts/scripts/sitecustomize.py. The instance name is sent to
-    # buildout from the Makefile, and then inserted into
-    # sitecustomize.py.  See buildout.cfg in the "initialization" value
-    # of the [scripts] section for the code that goes into this custom
-    # sitecustomize.py.  We do all actual initialization here, in a more
-    # visible place.
+def main(instance_name=None):
+    # This is called by _pythonpath.py and by the standard Launchpad script
+    # preamble (see LPScriptWriter in setup.py).  The instance name is sent
+    # to setup.py from the Makefile, and then written to env/instance_name.
+    # We do all actual initialization here, in a more visible place.
+    if instance_name is None:
+        instance_name_path = os.path.join(sys.prefix, 'instance_name')
+        with open(instance_name_path) as instance_name_file:
+            instance_name = instance_name_file.read().rstrip('\n')
     if instance_name and instance_name != 'development':
         # See bug 656213 for why we do this carefully.
         os.environ.setdefault('LPCONFIG', instance_name)
@@ -222,7 +173,6 @@ def main(instance_name):
     customizeMimetypes()
     silence_warnings()
     customize_logger()
-    dont_wrap_bzr_branch_classes()
     checker.BasicTypes.update({defaultdict: checker.NoProxy})
     checker.BasicTypes.update({Deferred: checker.NoProxy})
     checker.BasicTypes.update({DeferredList: checker.NoProxy})
@@ -231,4 +181,3 @@ def main(instance_name):
     # through actually using itertools.groupby.
     grouper = type(list(itertools.groupby([0]))[0][1])
     checker.BasicTypes[grouper] = checker._iteratorChecker
-    customize_get_converter()

@@ -3,12 +3,13 @@
 
 """Unit tests for BranchView."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import datetime
 from textwrap import dedent
 
-from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 import pytz
 from storm.store import Store
@@ -34,6 +35,7 @@ from lp.code.enums import BranchType
 from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.helpers import truncate_text
@@ -605,7 +607,7 @@ class TestBranchView(BrowserTestCase):
         logout()
         with StormStatementRecorder() as recorder:
             browser.open(branch_url)
-        self.assertThat(recorder, HasQueryCount(Equals(27)))
+        self.assertThat(recorder, HasQueryCount(Equals(28)))
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):

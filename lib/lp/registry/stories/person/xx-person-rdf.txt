@@ -3,7 +3,10 @@ Person RDF Pages
 
 We export FOAF RDF metadata from the /~Person.name/+index document.
 
-    >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
+    >>> from lp.services.beautifulsoup import (
+    ...     BeautifulSoup,
+    ...     SoupStrainer,
+    ...     )
     >>> anon_browser.open("http://launchpad.dev/~name16")
     >>> strainer = SoupStrainer(['link'], {'type': ['application/rdf+xml']})
     >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
@@ -98,7 +101,6 @@ Corner Cases
 Note how ascii and non-ascii names are rendered properly:
 
     >>> anon_browser.open("http://launchpad.dev/~carlos/+rdf")
-    >>> from BeautifulSoup import BeautifulSoup, SoupStrainer
     >>> strainer = SoupStrainer(['foaf:name'])
     >>> soup = BeautifulSoup(anon_browser.contents, parseOnlyThese=strainer)
     >>> for tag in soup:

@@ -46,6 +46,6 @@ if [ "$non_js_files" ]; then
     pocketlint $non_js_files 2>&1 || ret=$?
 fi
 if [ "$js_files" ]; then
-    nodejs node_modules/.bin/eslint $js_files 2>&1 || ret=$?
+    nodejs yarn/node_modules/.bin/eslint $js_files 2>&1 || ret=$?
 fi
 exit $ret

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The interface for branch merge proposals."""
@@ -277,7 +277,7 @@ class IBranchMergeProposalView(Interface):
                     'target branch.'), readonly=True))
 
     reviewed_revision_id = exported(
-        Text(
+        TextLine(
             title=_(
                 "The revision id that has been approved by the reviewer.")),
         exported_as='reviewed_revid')
@@ -298,7 +298,7 @@ class IBranchMergeProposalView(Interface):
                 "merge from the source branch (Bazaar only).")))
 
     merged_revision_id = exported(
-        Text(
+        TextLine(
             title=_("Merged Revision ID"), required=False, readonly=True,
             description=_(
                 "The revision ID on the target branch which contains the "
@@ -510,13 +510,26 @@ class IBranchMergeProposalEdit(Interface):
         :param conflicts: Text describing the conflicts if any.
         """
 
+    @call_with(return_jobs=False)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def scheduleDiffUpdates(return_jobs=True):
+        """Schedule updates of the diffs for this proposal.
+
+        This can be used if the previous attempt to generate diffs crashed,
+        or if Launchpad failed to notice that the current diffs are outdated
+        for some reason.
+
+        :param return_jobs: If True, return the created jobs.
+        """
+
     @call_with(user=REQUEST_USER)
     @rename_parameters_as(revision_id='revid')
     @operation_parameters(
         status=Choice(
             title=_("The new status of the merge proposal."),
             vocabulary=BranchMergeProposalStatus),
-        revision_id=Text(
+        revision_id=TextLine(
             description=_("An optional parameter for specifying the "
                 "revision of the branch for the status change."),
             required=False))

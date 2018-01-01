@@ -72,7 +72,7 @@ that they submitted:
 
     >>> similar_questions = find_tag_by_id(
     ...     user_browser.contents, 'similar-questions')
-    >>> for row in similar_questions.fetch('li'):
+    >>> for row in similar_questions.findAll('li'):
     ...     print row.a.renderContents()
     2: Problem showing the SVG demo on W3C site
 
@@ -93,7 +93,7 @@ An error message in the page informs the user that the summary is
 missing:
 
     >>> soup = find_main_content(user_browser.contents)
-    >>> print soup.first('div', 'message').renderContents()
+    >>> print soup.find('div', 'message').renderContents()
     You must enter a summary of your problem.
 
 The product Thunderbird that they selected on the previous screen is still
@@ -112,7 +112,7 @@ Thunderbird. Since there are no similar questions against Thunderbird,
 an appropriate message is displayed to inform them of this:
 
     >>> soup = find_main_content(user_browser.contents)
-    >>> print soup.first('p').renderContents()
+    >>> print soup.find('p').renderContents()
     There are no existing FAQs or questions similar to the summary you
     entered.
 
@@ -188,7 +188,7 @@ match. This condition demonstrates the supported language behaviour.
     >>> user_browser.getControl('Japanese').selected = True
     >>> user_browser.getControl('Save').click()
     >>> soup = find_main_content(user_browser.contents)
-    >>> print soup.first('div', 'informational message').renderContents()
+    >>> print soup.find('div', 'informational message').renderContents()
     Added Japanese to your preferred languages.
 
 So if No Privileges Person were to visit the Ask a Question page for

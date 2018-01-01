@@ -2534,7 +2534,7 @@
         />
     <browser:url
         for="lp.registry.interfaces.gpg.IGPGKey"
-        path_expression="string:+gpg-keys/${keyid}"
+        path_expression="string:+gpg-keys/${fingerprint}"
         rootsite="api"
         attribute_to_parent="owner"
         />

@@ -3,6 +3,8 @@
 
 """Test RecipeBuildBehaviour."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 import os.path
@@ -88,16 +90,16 @@ class TestRecipeBuilderBase(TestCaseWithFactory):
             recipe_owner = recipe_registrant
         if git:
             [somebranch] = self.factory.makeGitRefs(
-                owner=recipe_owner, name=u"pkg",
+                owner=recipe_owner, name="pkg",
                 target=self.factory.makeProduct("someapp"),
-                paths=[u"refs/heads/packaging"])
+                paths=["refs/heads/packaging"])
         else:
             somebranch = self.factory.makeBranch(
                 owner=recipe_owner, name="pkg",
                 product=self.factory.makeProduct("someapp"))
         recipe = self.factory.makeSourcePackageRecipe(
-            recipe_registrant, recipe_owner, distroseries, u"recept",
-            u"Recipe description", branches=[somebranch])
+            recipe_registrant, recipe_owner, distroseries, "recept",
+            "Recipe description", branches=[somebranch])
         spb = self.factory.makeSourcePackageRecipeBuild(
             sourcepackage=sourcepackage, archive=archive,
             recipe=recipe, requester=recipe_owner, distroseries=distroseries)
@@ -181,9 +183,10 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
         self.assertEqual({
             'archive_private': False,
             'arch_tag': 'i386',
-            'author_email': u'requester@ubuntu.com',
-            'suite': u'mydistro',
-            'author_name': u'Joe User',
+            'author_email': 'requester@ubuntu.com',
+            'series': job.build.distroseries.name,
+            'suite': 'mydistro',
+            'author_name': 'Joe User',
             'archive_purpose': 'PPA',
             'ogrecomponent': 'universe',
             'recipe_text':
@@ -273,9 +276,10 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
         self.assertEqual({
             'archive_private': False,
             'arch_tag': 'i386',
-            'author_email': u'requester@ubuntu.com',
-            'suite': u'mydistro',
-            'author_name': u'Joe User',
+            'author_email': 'requester@ubuntu.com',
+            'series': job.build.distroseries.name,
+            'suite': 'mydistro',
+            'author_name': 'Joe User',
             'archive_purpose': 'PPA',
             'ogrecomponent': 'universe',
             'recipe_text':
@@ -313,9 +317,10 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
         self.assertEqual({
             'archive_private': False,
             'arch_tag': 'i386',
-            'author_email': u'requester@ubuntu.com',
-            'suite': u'mydistro',
-            'author_name': u'Joe User',
+            'author_email': 'requester@ubuntu.com',
+            'series': job.build.distroseries.name,
+            'suite': 'mydistro',
+            'author_name': 'Joe User',
             'archive_purpose': 'PPA',
             'ogrecomponent': 'universe',
             'recipe_text':

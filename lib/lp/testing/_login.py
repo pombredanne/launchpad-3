@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,6 +8,7 @@ __all__ = [
     'anonymous_logged_in',
     'celebrity_logged_in',
     'login',
+    'login_admin',
     'login_as',
     'login_celebrity',
     'login_person',
@@ -128,7 +129,7 @@ def login_celebrity(celebrity_name, participation=None):
     return login_as(celeb, participation=participation)
 
 
-def login_admin(ignored, participation=None):
+def login_admin(participation=None):
     """Log in as an admin."""
     login(ANONYMOUS)
     admin = getUtility(ILaunchpadCelebrities).admin.teamowner
@@ -189,7 +190,7 @@ def celebrity_logged_in(celebrity_name):
 @contextmanager
 def admin_logged_in():
     # Use teamowner to avoid expensive and noisy team member additions.
-    return _with_login(login_admin, None)
+    return _with_login(lambda _: login_admin(), None)
 
 
 with_anonymous_login = decorate_with(person_logged_in, None)

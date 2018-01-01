@@ -5,7 +5,6 @@ __metaclass__ = type
 
 import re
 
-from BeautifulSoup import BeautifulSoup
 from lazr.restful.fields import Reference
 from zope.formlib.interfaces import (
     IBrowserWidget,
@@ -24,6 +23,7 @@ from lp.registry.vocabularies import (
     DistributionVocabulary,
     ProductVocabulary,
     )
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.escaping import html_escape
 from lp.services.webapp.servers import LaunchpadTestRequest

@@ -666,7 +666,7 @@ size), plus extra links for the MD5 hash and signature of that PRF.
     # First we define a helper function for printing the links together
     # with their titles.
 
-    >>> from BeautifulSoup import BeautifulSoup
+    >>> from lp.services.beautifulsoup import BeautifulSoup
     >>> def print_hrefs_with_titles(html):
     ...     soup = BeautifulSoup(html)
     ...     for link in soup.findAll('a'):

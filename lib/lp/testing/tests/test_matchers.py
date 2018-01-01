@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -218,7 +218,10 @@ class TestQueryMatching(TestCase):
         matcher = HasQueryCount(LessThan(2))
         collector = RequestTimelineCollector()
         collector.count = 2
-        collector.queries = [("foo", "bar"), ("baaz", "quux")]
+        collector.queries = [
+            (0, 1, "SQL-main-slave", "SELECT 1 FROM Person", None),
+            (2, 3, "SQL-main-slave", "SELECT 1 FROM Product", None),
+            ]
         mismatch = matcher.match(collector)
         self.assertThat(mismatch, Not(Is(None)))
         details = mismatch.get_details()
@@ -227,8 +230,47 @@ class TestQueryMatching(TestCase):
             self.assertEqual("queries", name)
             self.assertEqual("text", content.content_type.type)
             lines.append(''.join(content.iter_text()))
-        self.assertEqual(["('foo', 'bar')\n('baaz', 'quux')"],
-            lines)
+        separator = "-" * 70
+        expected_lines = [
+            "0-1@SQL-main-slave SELECT 1 FROM Person\n" + separator + "\n" +
+            "2-3@SQL-main-slave SELECT 1 FROM Product\n" + separator,
+            ]
+        self.assertEqual(expected_lines, lines)
+        self.assertEqual(
+            "queries do not match: %s" % (LessThan(2).match(2).describe(),),
+            mismatch.describe())
+
+    def test_with_backtrace(self):
+        matcher = HasQueryCount(LessThan(2))
+        collector = RequestTimelineCollector()
+        collector.count = 2
+        collector.queries = [
+            (0, 1, "SQL-main-slave", "SELECT 1 FROM Person",
+             '  File "example", line 2, in <module>\n'
+             '    Store.of(Person).one()\n'),
+            (2, 3, "SQL-main-slave", "SELECT 1 FROM Product",
+             '  File "example", line 3, in <module>\n'
+             '    Store.of(Product).one()\n'),
+            ]
+        mismatch = matcher.match(collector)
+        self.assertThat(mismatch, Not(Is(None)))
+        details = mismatch.get_details()
+        lines = []
+        for name, content in details.items():
+            self.assertEqual("queries", name)
+            self.assertEqual("text", content.content_type.type)
+            lines.append(''.join(content.iter_text()))
+        separator = "-" * 70
+        backtrace_separator = "." * 70
+        expected_lines = [
+            '0-1@SQL-main-slave SELECT 1 FROM Person\n' + separator + '\n' +
+            '  File "example", line 2, in <module>\n' +
+            '    Store.of(Person).one()\n' + backtrace_separator + '\n' +
+            '2-3@SQL-main-slave SELECT 1 FROM Product\n' + separator + '\n' +
+            '  File "example", line 3, in <module>\n' +
+            '    Store.of(Product).one()\n' + backtrace_separator,
+            ]
+        self.assertEqual(expected_lines, lines)
         self.assertEqual(
             "queries do not match: %s" % (LessThan(2).match(2).describe(),),
             mismatch.describe())
@@ -236,10 +278,17 @@ class TestQueryMatching(TestCase):
     def test_byEquality(self):
         old_collector = RequestTimelineCollector()
         old_collector.count = 2
-        old_collector.queries = [("a", "1"), ("b", "2")]
+        old_collector.queries = [
+            (0, 1, "SQL-main-slave", "SELECT 1 FROM Person", None),
+            (2, 3, "SQL-main-slave", "SELECT 1 FROM Product", None),
+            ]
         new_collector = RequestTimelineCollector()
         new_collector.count = 3
-        new_collector.queries = [("a", "1"), ("b", "2"), ("c", "3")]
+        new_collector.queries = [
+            (0, 1, "SQL-main-slave", "SELECT 1 FROM Person", None),
+            (2, 3, "SQL-main-slave", "SELECT 1 FROM Product", None),
+            (4, 5, "SQL-main-slave", "SELECT 1 FROM Distribution", None),
+            ]
         matcher = HasQueryCount.byEquality(old_collector)
         mismatch = matcher.match(new_collector)
         self.assertThat(mismatch, Not(Is(None)))
@@ -251,8 +300,18 @@ class TestQueryMatching(TestCase):
         old_lines.append("".join(details["other_queries"].iter_text()))
         self.assertEqual("text", details["queries"].content_type.type)
         new_lines.append("".join(details["queries"].iter_text()))
-        self.assertEqual(["('a', '1')\n('b', '2')"], old_lines)
-        self.assertEqual(["('a', '1')\n('b', '2')\n('c', '3')"], new_lines)
+        separator = "-" * 70
+        expected_old_lines = [
+            "0-1@SQL-main-slave SELECT 1 FROM Person\n" + separator + "\n" +
+            "2-3@SQL-main-slave SELECT 1 FROM Product\n" + separator,
+            ]
+        expected_new_lines = [
+            "0-1@SQL-main-slave SELECT 1 FROM Person\n" + separator + "\n" +
+            "2-3@SQL-main-slave SELECT 1 FROM Product\n" + separator + "\n" +
+            "4-5@SQL-main-slave SELECT 1 FROM Distribution\n" + separator,
+            ]
+        self.assertEqual(expected_old_lines, old_lines)
+        self.assertEqual(expected_new_lines, new_lines)
         self.assertEqual(
             "queries do not match: %s" % (Equals(2).match(3).describe(),),
             mismatch.describe())

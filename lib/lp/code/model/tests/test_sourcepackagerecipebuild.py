@@ -1,7 +1,9 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for source package builds."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -247,7 +249,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # that a build is requested for gets logged.
         owner = self.factory.makePerson(name='eric')
         self.factory.makeSourcePackageRecipe(
-            owner=owner, name=u'funky-recipe', build_daily=True)
+            owner=owner, name='funky-recipe', build_daily=True)
         logger = BufferLogger()
         SourcePackageRecipeBuild.makeDailyBuilds(logger)
         self.assertEqual(
@@ -284,7 +286,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # makeDailyBuilds() won't create a build.
         owner = self.factory.makePerson(name='eric')
         recipe = self.factory.makeSourcePackageRecipe(
-            owner=owner, name=u'funky-recipe', build_daily=True,
+            owner=owner, name='funky-recipe', build_daily=True,
             is_stale=True)
         series = list(recipe.distroseries)[0]
         self.factory.makeSourcePackageRecipeBuild(
@@ -307,7 +309,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # won't create a build.
         owner = self.factory.makePerson(name='eric')
         recipe = self.factory.makeSourcePackageRecipe(
-            owner=owner, name=u'funky-recipe', build_daily=True,
+            owner=owner, name='funky-recipe', build_daily=True,
             is_stale=True)
         archive = self.factory.makeArchive(owner=recipe.owner, name="ppa")
         removeSecurityProxy(recipe).daily_build_archive = archive
@@ -327,7 +329,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # insufficient permissions, makeDailyBuilds() won't create a build.
         owner = self.factory.makePerson(name='eric')
         recipe = self.factory.makeSourcePackageRecipe(
-            owner=owner, name=u'funky-recipe', build_daily=True,
+            owner=owner, name='funky-recipe', build_daily=True,
             is_stale=True)
         archive = self.factory.makeArchive(name="ppa")
         removeSecurityProxy(recipe).daily_build_archive = archive
@@ -485,9 +487,9 @@ class TestAsBuildmaster(TestCaseWithFactory):
         """
         person = self.factory.makePerson(name='person')
         cake = self.factory.makeSourcePackageRecipe(
-            name=u'recipe', owner=person)
+            name='recipe', owner=person)
         pantry = self.factory.makeArchive(name='ppa')
-        secret = self.factory.makeDistroSeries(name=u'distroseries')
+        secret = self.factory.makeDistroSeries(name='distroseries')
         secret.nominatedarchindep = self.factory.makeDistroArchSeries(
             distroseries=secret)
         build = self.factory.makeSourcePackageRecipeBuild(
@@ -501,9 +503,9 @@ class TestAsBuildmaster(TestCaseWithFactory):
         """Notify does nothing if recipe has been deleted."""
         person = self.factory.makePerson(name='person')
         cake = self.factory.makeSourcePackageRecipe(
-            name=u'recipe', owner=person)
+            name='recipe', owner=person)
         pantry = self.factory.makeArchive(name='ppa')
-        secret = self.factory.makeDistroSeries(name=u'distroseries')
+        secret = self.factory.makeDistroSeries(name='distroseries')
         secret.nominatedarchindep = self.factory.makeDistroArchSeries(
             distroseries=secret)
         build = self.factory.makeSourcePackageRecipeBuild(

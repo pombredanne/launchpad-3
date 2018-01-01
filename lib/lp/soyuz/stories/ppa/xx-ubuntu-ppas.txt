@@ -573,14 +573,14 @@ help wiki are presented in the PPA index page.
     ...     anon_browser.contents, 'signing-key')
 
     >>> print extract_text(signing_key_section)
-    Signing key: 1024D/12345678 (What is this?)
+    Signing key: 1024D/ABCDEF0123456789ABCDDCBA0000111112345678 (What is this?)
     Fingerprint: ABCDEF0123456789ABCDDCBA0000111112345678
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.
 
     >>> print anon_browser.getLink(
-    ...     '1024D/12345678').url
+    ...     '1024D/ABCDEF0123456789ABCDDCBA0000111112345678').url
     http://keyserver.ubuntu.com:11371/pks/lookup?fingerprint=on&op=index&search=0xABCDEF0123456789ABCDDCBA0000111112345678
 
 Using software from a PPA can be hard for novices. We offer two

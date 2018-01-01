@@ -282,9 +282,9 @@ class GitRefMixin:
             prerequisite_path=self.path, eager_load=eager_load)
 
     @property
-    def pending_writes(self):
+    def pending_updates(self):
         """See `IGitRef`."""
-        return self.repository.pending_writes
+        return self.repository.pending_updates
 
     def _getLog(self, start, limit=None, stop=None, union_repository=None,
                 enable_hosting=None, enable_memcache=None, logger=None):
@@ -592,7 +592,8 @@ class GitRefDefault(GitRefDatabaseBackedMixin):
         """See `GitRefDatabaseBackedMixin`."""
         path = self.repository.default_branch
         if path is None:
-            raise NotFoundError("Repository '%s' has no default branch")
+            raise NotFoundError(
+                "Repository '%s' has no default branch" % self.repository)
         ref = IStore(GitRef).get(GitRef, (self.repository_id, path))
         if ref is None:
             raise NotFoundError(
@@ -714,7 +715,7 @@ class GitRefRemote(GitRefMixin):
     createMergeProposal = _unimplemented
     getMergeProposals = _unimplemented
     getDependentMergeProposals = _unimplemented
-    pending_writes = False
+    pending_updates = False
 
     def getCommits(self, *args, **kwargs):
         """See `IGitRef`."""

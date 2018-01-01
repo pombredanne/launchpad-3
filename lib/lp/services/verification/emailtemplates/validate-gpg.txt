@@ -9,8 +9,8 @@ Requester details:
 
 Key details:
 
+    Key type    : %(key_type)s
     Fingerprint : %(fingerprint)s
-    Key type/ID : %(displayname)s
 
 UIDs:
 %(uids)s

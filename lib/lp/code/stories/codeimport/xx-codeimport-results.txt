@@ -52,7 +52,7 @@ is the text of the failure or success type.
 
     >>> # The ordering here is dependant on the order the status values
     >>> # are declared in the enumeration.
-    >>> for img in import_results.fetch('img'):
+    >>> for img in import_results.findAll('img'):
     ...     print img
     <img src="/@@/no" title="Unsupported feature" />
     <img src="/@@/no" title="Foreign branch invalid" />
@@ -64,7 +64,7 @@ is the text of the failure or success type.
 
     >>> browser.open(branch_url_2)
     >>> import_results = find_tag_by_id(browser.contents, 'import-results')
-    >>> for img in import_results.fetch('img'):
+    >>> for img in import_results.findAll('img'):
     ...     print img
     <img src="/@@/no" title="Job killed" />
     <img src="/@@/no" title="Job reclaimed" />

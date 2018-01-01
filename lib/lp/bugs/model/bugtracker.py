@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -635,7 +635,7 @@ class BugTracker(SQLBase):
 
         # Generate a valid Launchpad name for the Person.
         base_canonical_name = (
-            "%s-%s" % (sanitize_name(display_name), self.name))
+            "%s-%s" % (sanitize_name(display_name.lower()), self.name))
         canonical_name = base_canonical_name
 
         person_set = getUtility(IPersonSet)

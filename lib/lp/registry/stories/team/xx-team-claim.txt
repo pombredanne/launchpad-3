@@ -80,7 +80,7 @@ claim process the team's owner.
     Traceback (most recent call last):
     ...
     LookupError:...
-    >>> from BeautifulSoup import BeautifulSoup
+    >>> from lp.services.beautifulsoup import BeautifulSoup
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> print extract_text(
     ...     soup.find(attrs={'for': 'field.teamowner'}).findPrevious('tr'))

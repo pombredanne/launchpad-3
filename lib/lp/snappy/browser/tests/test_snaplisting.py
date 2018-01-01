@@ -1,12 +1,25 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package listings."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+    )
+from functools import partial
+
+import pytz
 import soupmatchers
-from testtools.matchers import Not
+from testtools.matchers import (
+    MatchesAll,
+    Not,
+    )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.tests.helpers import GitHostingFixture
 from lp.services.database.constants import (
@@ -24,6 +37,7 @@ from lp.testing import (
     )
 from lp.testing.layers import LaunchpadFunctionalLayer
 from lp.testing.matchers import HasQueryCount
+from lp.testing.views import create_initialized_view
 
 
 class TestSnapListing(BrowserTestCase):
@@ -141,6 +155,7 @@ class TestSnapListing(BrowserTestCase):
             snap-name.*     Team Name.*     lp:.*           .*""", text)
 
     def assertSnapsQueryCount(self, context, item_creator):
+        self.pushConfig("launchpad", default_batch_size=10)
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(context, "+snaps"), item_creator, 5)
         self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
@@ -224,3 +239,87 @@ class TestSnapListing(BrowserTestCase):
                     self.factory.makeSnap(git_ref=ref)
 
         self.assertSnapsQueryCount(project, create_snap)
+
+    def makeSnapsAndMatchers(self, create_snap, count, start_time):
+        snaps = [create_snap() for i in range(count)]
+        for i, snap in enumerate(snaps):
+            removeSecurityProxy(snap).date_last_modified = (
+                start_time - timedelta(seconds=i))
+        return [
+            soupmatchers.Tag(
+                "snap link", "a", text=snap.name,
+                attrs={
+                    "href": canonical_url(snap, path_only_if_possible=True)})
+            for snap in snaps]
+
+    def assertBatches(self, context, link_matchers, batched, start, size):
+        view = create_initialized_view(context, "+snaps")
+        listing_tag = soupmatchers.Tag(
+            "snap listing", "table", attrs={"class": "listing sortable"})
+        batch_nav_tag = soupmatchers.Tag(
+            "batch nav links", "td",
+            attrs={"class": "batch-navigation-links"})
+        present_links = ([batch_nav_tag] if batched else []) + [
+            matcher for i, matcher in enumerate(link_matchers)
+            if i in range(start, start + size)]
+        absent_links = ([] if batched else [batch_nav_tag]) + [
+            matcher for i, matcher in enumerate(link_matchers)
+            if i not in range(start, start + size)]
+        self.assertThat(
+            view.render(),
+            MatchesAll(
+                soupmatchers.HTMLContains(listing_tag, *present_links),
+                Not(soupmatchers.HTMLContains(*absent_links))))
+
+    def test_branch_batches_snaps(self):
+        branch = self.factory.makeAnyBranch()
+        create_snap = partial(self.factory.makeSnap, branch=branch)
+        now = datetime.now(pytz.UTC)
+        link_matchers = self.makeSnapsAndMatchers(create_snap, 3, now)
+        self.assertBatches(branch, link_matchers, False, 0, 3)
+        link_matchers.extend(self.makeSnapsAndMatchers(
+            create_snap, 7, now - timedelta(seconds=3)))
+        self.assertBatches(branch, link_matchers, True, 0, 5)
+
+    def test_git_repository_batches_snaps(self):
+        repository = self.factory.makeGitRepository()
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        create_snap = partial(self.factory.makeSnap, git_ref=ref)
+        now = datetime.now(pytz.UTC)
+        link_matchers = self.makeSnapsAndMatchers(create_snap, 3, now)
+        self.assertBatches(repository, link_matchers, False, 0, 3)
+        link_matchers.extend(self.makeSnapsAndMatchers(
+            create_snap, 7, now - timedelta(seconds=3)))
+        self.assertBatches(repository, link_matchers, True, 0, 5)
+
+    def test_git_ref_batches_snaps(self):
+        [ref] = self.factory.makeGitRefs()
+        create_snap = partial(self.factory.makeSnap, git_ref=ref)
+        now = datetime.now(pytz.UTC)
+        link_matchers = self.makeSnapsAndMatchers(create_snap, 3, now)
+        self.assertBatches(ref, link_matchers, False, 0, 3)
+        link_matchers.extend(self.makeSnapsAndMatchers(
+            create_snap, 7, now - timedelta(seconds=3)))
+        self.assertBatches(ref, link_matchers, True, 0, 5)
+
+    def test_person_batches_snaps(self):
+        owner = self.factory.makePerson()
+        create_snap = partial(
+            self.factory.makeSnap, registrant=owner, owner=owner)
+        now = datetime.now(pytz.UTC)
+        link_matchers = self.makeSnapsAndMatchers(create_snap, 3, now)
+        self.assertBatches(owner, link_matchers, False, 0, 3)
+        link_matchers.extend(self.makeSnapsAndMatchers(
+            create_snap, 7, now - timedelta(seconds=3)))
+        self.assertBatches(owner, link_matchers, True, 0, 5)
+
+    def test_project_batches_snaps(self):
+        project = self.factory.makeProduct()
+        branch = self.factory.makeProductBranch(product=project)
+        create_snap = partial(self.factory.makeSnap, branch=branch)
+        now = datetime.now(pytz.UTC)
+        link_matchers = self.makeSnapsAndMatchers(create_snap, 3, now)
+        self.assertBatches(project, link_matchers, False, 0, 3)
+        link_matchers.extend(self.makeSnapsAndMatchers(
+            create_snap, 7, now - timedelta(seconds=3)))
+        self.assertBatches(project, link_matchers, True, 0, 5)

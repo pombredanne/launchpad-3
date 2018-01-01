@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Writing of htaccess and htpasswd files."""
@@ -13,7 +13,7 @@ __all__ = [
     'write_htpasswd',
     ]
 
-
+import base64
 import crypt
 from operator import itemgetter
 import os
@@ -65,6 +65,21 @@ def write_htpasswd(filename, users):
         file.close()
 
 
+# XXX cjwatson 2017-10-09: This whole mechanism of writing password files to
+# disk (as opposed to e.g. using a WSGI authentication provider that checks
+# passwords against the database) is terrible, but as long as we're using it
+# we should use something like bcrypt rather than DES-based crypt.
+def make_salt(s):
+    """Produce a salt from an input string.
+
+    This ensures that salts are drawn from the correct alphabet
+    ([./a-zA-Z0-9]).
+    """
+    # As long as the input string is at least one character long, there will
+    # be no padding within the first two characters.
+    return base64.b64encode((s or " ").encode("UTF-8"), altchars=b"./")[:2]
+
+
 def htpasswd_credentials_for_archive(archive):
     """Return credentials for an archive for use with write_htpasswd.
 
@@ -94,10 +109,11 @@ def htpasswd_credentials_for_archive(archive):
     for person_id, token_name, token in tokens:
         if token_name:
             # A named auth token.
-            output.append(('+' + token_name, token, token_name[:2]))
+            output.append(('+' + token_name, token, make_salt(token_name)))
         else:
             # A subscription auth token.
-            output.append((names[person_id], token, names[person_id][:2]))
+            output.append(
+                (names[person_id], token, make_salt(names[person_id])))
 
     # The first .htpasswd entry is the buildd_secret.
     yield (BUILDD_USER_NAME, archive.buildd_secret, BUILDD_USER_NAME[:2])

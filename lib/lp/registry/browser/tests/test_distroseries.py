@@ -12,7 +12,6 @@ from textwrap import TextWrapper
 from urllib import urlencode
 from urlparse import urlparse
 
-from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 from lazr.restful.interfaces import IJSONRequestCache
 from lxml import html
@@ -51,6 +50,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore

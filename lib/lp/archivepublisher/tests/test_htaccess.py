@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test htaccess/htpasswd file generation. """
@@ -111,23 +111,27 @@ class TestHtpasswdGeneration(TestCaseWithFactory):
         self.ppa.buildd_secret = "geheim"
         name12 = getUtility(IPersonSet).getByName("name12")
         name16 = getUtility(IPersonSet).getByName("name16")
+        hyphenated = self.factory.makePerson(name="a-b-c")
         self.ppa.newSubscription(name12, self.ppa.owner)
         self.ppa.newSubscription(name16, self.ppa.owner)
+        self.ppa.newSubscription(hyphenated, self.ppa.owner)
         first_created_token = self.ppa.newAuthToken(name16)
         second_created_token = self.ppa.newAuthToken(name12)
+        third_created_token = self.ppa.newAuthToken(hyphenated)
         named_token_20 = self.ppa.newNamedAuthToken(u"name20", as_dict=False)
         named_token_14 = self.ppa.newNamedAuthToken(u"name14", as_dict=False)
         named_token_99 = self.ppa.newNamedAuthToken(u"name99", as_dict=False)
         named_token_99.deactivate()
 
+        expected_credentials = [
+            ("buildd", "geheim", "bu"),
+            ("+name14", named_token_14.token, "bm"),
+            ("+name20", named_token_20.token, "bm"),
+            ("a-b-c", third_created_token.token, "YS"),
+            ("name12", second_created_token.token, "bm"),
+            ("name16", first_created_token.token, "bm"),
+            ]
         credentials = list(htpasswd_credentials_for_archive(self.ppa))
 
         # Use assertEqual instead of assertContentEqual to verify order.
-        self.assertEqual(
-            credentials, [
-                ("buildd", "geheim", "bu"),
-                ("+name14", named_token_14.token, "na"),
-                ("+name20", named_token_20.token, "na"),
-                ("name12", second_created_token.token, "na"),
-                ("name16", first_created_token.token, "na"),
-                ])
+        self.assertEqual(expected_credentials, credentials)

@@ -1,4 +1,4 @@
--- Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+-- Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 -- Created using pg_dump (PostgreSQL) 9.3.5
 
@@ -4625,6 +4625,9 @@ INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (23, 'produ
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (24, 'products_with_bugs', 5, '2007-04-29 23:45:04.416248');
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (25, 'products_with_questions', 1, '2007-04-29 23:45:04.416248');
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (26, 'reviewed_products', 1, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (27, 'public_specification_count', 12, '2017-11-18 13:15:56.602272');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (28, 'public_branch_count', 30, '2017-11-18 13:16:47.719834');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (29, 'public_git_repository_count', 0, '2017-11-18 13:17:08.109074');
 
 
 ALTER TABLE launchpadstatistic ENABLE TRIGGER ALL;
@@ -10030,7 +10033,7 @@ ALTER TABLE sprintspecification ENABLE TRIGGER ALL;
 ALTER TABLE sshkey DISABLE TRIGGER ALL;
 
 INSERT INTO sshkey (id, person, keytype, keytext, comment, date_created) VALUES (1, 12, 2, 'AAAAB3NzaC1kc3MAAAEBAPfhCA15ZaT08brwVXwpJjcZT6QFIipzF1sGy57HY7QPi/W+uljr1VcCHzWdlSmda7YpTCTx0NFYYQIccQRGX6zYL8v1w9FSRCAnxxUJmqEhsUDFYFdVTa9uLCrs3MSbmh7wwFPdRrGrO6X5x7T4dMZQwykSZrOVdpLcCHRgrMZslLomIAjERn6OAQNiGFz7B2tEi/3Soqd52bGJwOtGymRiAXkPSLbH7KfzSCe34ytdh6BD+4SrgSoa+TL3VDV70QAdlOFXD42ZHl3Sc0Tde4LbZeYq2Uf84DOATLZBbOYpRSqTLkM9XngpnvCRVb6dxEQfgODDw783tEuPpySLj2EAAAAVANpUVgivDjt9gFibN/AXfYy1meeBAAABAB6FtnMywmWZg2lr2I3nDfE5U5QbGUQB/ZEP98ZkSkhOcF29VlnGOxyb2/VZbVTLa/btlPF82L4An/c8VKtKZnel7LnAlMoArdgzQNXGVQQVtnaWwM26ydgDzkSSIes3elNZgsfnPRBvaF0ol9Tqju0rNGKjnr3ZOX/NX+42bxpjRnxYj1h56yP2jKKeGfjorI6JK1YfqBAiTxzaDMzSpknnrbztaKJoh7IFqMMOp9ANSFh7H106pEaCv3ebCTJZprtWqNKjb2zum7OQPRz3upA0qx22ocTokjv4itXJ6yj/BvGu9qdOIQFXuB2rsFtLZtS8ATueOly0GzyeiZBx/AEAAAEBAO8jRYjL7tAYnVlO1p6UzPOicAuGCFWfNbBEDRAXoSgLNdj451jStw+eUc9ZVz7tG/XRVZsiavtFHb2cbrcfX1YOd69xi0m+IY6mo3yKt3irQRokDtt376sHoUdHgj2ozySZJgG8IJndtoS+VQQy6NdClA3fNFb96bF865eNaRYoHJO9ZI84lkWQL++MLzIuyFfCs1hSlapyyuHC8kFmF7AQdrVZvbohSbnWs+w53nIW8nAA7z21wAukvE1Pl6AQyG0e7U1sYS8Pc8dtmzJvdtVZWBl02/gqQJ7f06mFvnsN45rR1Uyxnrwl6rbFwqabZDlyD5Ac6Icbvz9SG1gBOiI=', 'andrew@trogdor', '2006-10-16 18:31:53.030784');
-INSERT INTO sshkey (id, person, keytype, keytext, comment, date_created) VALUES (2, 1, 2, 'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==', 'Private key in lib/lp/codehosting/tests/id_dsa', '2007-03-30 03:39:27.689516');
+INSERT INTO sshkey (id, person, keytype, keytext, comment, date_created) VALUES (2, 1, 1, 'AAAAB3NzaC1yc2EAAAADAQABAAAAgQCeP6iOLFdRSJ/CwuUjj0dE3+bJiZUn2AsappUcjCZN75CBKvqPkpGDIU/ZlOddAdj1rif6dl9rqEBuoliduIZ1bmPaGs1jmpME7HPctLhCmzy1oC8wkdVNkZnmoTW34j5Y8mKWuy32hVWvp3OdfIo+dxW576ny52VkTbST+t4KlQ==', 'Private key in lib/lp/codehosting/tests/id_rsa', '2017-12-15 00:38:47.058185');
 
 
 ALTER TABLE sshkey ENABLE TRIGGER ALL;

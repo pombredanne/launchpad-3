@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -1097,6 +1097,7 @@ class MilestoneImageDisplayAPI(ObjectImageDisplayAPI):
         return '<img height="14" width="14" alt="" src="/@@/milestone" />'
 
 
+# Keep this in sync with lib/lp/buildmaster/javascript/build_statuses.js.
 class BuildImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IBuild objects to an image.
 
@@ -1119,8 +1120,8 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             BuildStatus.CHROOTWAIT: {'src': "/@@/build-chrootwait"},
             BuildStatus.SUPERSEDED: {'src': "/@@/build-superseded"},
             BuildStatus.BUILDING: {'src': "/@@/processing"},
-            BuildStatus.UPLOADING: {'src': "/@@/processing"},
             BuildStatus.FAILEDTOUPLOAD: {'src': "/@@/build-failedtoupload"},
+            BuildStatus.UPLOADING: {'src': "/@@/processing"},
             BuildStatus.CANCELLING: {'src': "/@@/processing"},
             BuildStatus.CANCELLED: {'src': "/@@/build-failed"},
             }
@@ -2172,7 +2173,12 @@ class DateTimeFormatterAPI:
     """Adapter from datetime objects to a formatted string."""
 
     def __init__(self, datetimeobject):
-        self._datetime = datetimeobject
+        if isinstance(datetimeobject, datetime):
+            self._datetime = datetimeobject
+        else:
+            self._datetime = datetime(
+                datetimeobject.year, datetimeobject.month, datetimeobject.day,
+                tzinfo=pytz.timezone('UTC'))
 
     def time(self):
         if self._datetime.tzinfo:

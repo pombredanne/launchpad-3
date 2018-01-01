@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -653,18 +653,9 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
 
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
-        from lp.code.model.branchmergeproposaljob import (
-                GenerateIncrementalDiffJob,
-                UpdatePreviewDiffJob,
-            )
         jobs = []
         for merge_proposal in self.active_landing_targets:
-            if merge_proposal.target_branch.last_scanned_id is None:
-                continue
-            jobs.append(UpdatePreviewDiffJob.create(merge_proposal))
-            for old, new in merge_proposal.getMissingIncrementalDiffs():
-                GenerateIncrementalDiffJob.create(
-                    merge_proposal, old.revision_id, new.revision_id)
+            jobs.extend(merge_proposal.scheduleDiffUpdates())
         return jobs
 
     def markRecipesStale(self):
@@ -1163,25 +1154,53 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         return recipients
 
     @property
-    def pending_writes(self):
-        """See `IBranch`.
+    def _pending_mirror_operations(self):
+        """Does this branch have pending mirror operations?
 
-        A branch has pending writes if it has just been pushed to, if it has
-        been mirrored and not yet scanned or if it is in the middle of being
+        A branch has pending mirror operations if it is an imported branch
+        that has just been pushed to or if it is in the middle of being
         mirrored.
         """
         new_data_pushed = (
              self.branch_type == BranchType.IMPORTED
              and self.next_mirror_time is not None)
-        # XXX 2010-04-22, MichaelHudson: This should really look for a branch
-        # scan job.
-        pulled_but_not_scanned = self.last_mirrored_id != self.last_scanned_id
         pull_in_progress = (
             self.last_mirror_attempt is not None
             and (self.last_mirrored is None
                  or self.last_mirror_attempt > self.last_mirrored))
-        return (
-            new_data_pushed or pulled_but_not_scanned or pull_in_progress)
+        return new_data_pushed or pull_in_progress
+
+    @property
+    def pending_writes(self):
+        """See `IBranch`.
+
+        A branch has pending writes if it has pending mirror operations or
+        if it has been mirrored and not yet scanned.  Use this when you need
+        to know if the branch is in a condition where it is possible to run
+        other jobs on it: for example, a branch that has been unscanned
+        cannot support jobs being run for its related merge proposals.
+        """
+        pulled_but_not_scanned = self.last_mirrored_id != self.last_scanned_id
+        return self._pending_mirror_operations or pulled_but_not_scanned
+
+    @property
+    def pending_updates(self):
+        """See `IBranch`.
+
+        A branch has pending updates if it has pending mirror operations or
+        if it has a pending scan job.  Use this when you need to know if
+        there is work queued, for example when deciding whether to display
+        in-progress UI indicators.
+        """
+        from lp.code.model.branchjob import BranchJob, BranchJobType
+        jobs = Store.of(self).find(
+            BranchJob,
+            BranchJob.branch == self,
+            Job.id == BranchJob.jobID,
+            Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]),
+            BranchJob.job_type == BranchJobType.SCAN_BRANCH)
+        pending_scan_job = not jobs.is_empty()
+        return self._pending_mirror_operations or pending_scan_job
 
     def getScannerData(self):
         """See `IBranch`."""

@@ -1,8 +1,9 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Branches."""
 
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -129,6 +130,8 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.runner import JobRunner
 from lp.services.job.tests import (
     block_on_job,
     monitor_celery,
@@ -154,6 +157,7 @@ from lp.testing import (
     TestCaseWithFactory,
     WebServiceTestCase,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.testing.layers import (
     CeleryBranchWriteJobLayer,
@@ -335,7 +339,7 @@ class TestBranchJobViaCelery(TestCaseWithFactory):
         self.useBzrBranches()
         db_branch, bzr_tree = self.create_branch_and_tree()
         bzr_tree.commit(
-            'First commit', rev_id='rev1', committer='me@example.org')
+            'First commit', rev_id=b'rev1', committer='me@example.org')
         with person_logged_in(db_branch.owner):
             db_branch.branchChanged(None, 'rev1', None, None, None)
         with block_on_job():
@@ -347,7 +351,7 @@ class TestBranchJobViaCelery(TestCaseWithFactory):
         self.useBzrBranches()
         db_branch, bzr_tree = self.create_branch_and_tree()
         bzr_tree.commit(
-            'First commit', rev_id='rev1', committer='me@example.org')
+            'First commit', rev_id=b'rev1', committer='me@example.org')
         with person_logged_in(db_branch.owner):
             db_branch.branchChanged(None, 'rev1', None, None, None)
         with monitor_celery() as responses:
@@ -1941,7 +1945,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
 
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""
-        commit_message = u'Some commit message'
+        commit_message = 'Some commit message'
         proposal = self.source.addLandingTarget(
             self.user, self.target, self.prerequisite,
             commit_message=commit_message)
@@ -2363,89 +2367,133 @@ class TestBranchNamespace(TestCaseWithFactory):
         self.assertNamespaceEqual(namespace, branch.namespace)
 
 
-class TestPendingWrites(TestCaseWithFactory):
+class TestPendingWritesAndUpdates(TestCaseWithFactory):
     """Are there changes to this branch not reflected in the database?"""
 
     layer = LaunchpadFunctionalLayer
 
     def test_new_branch_no_writes(self):
-        # New branches have no pending writes.
+        # New branches have no pending writes or pending updates.
         branch = self.factory.makeAnyBranch()
-        self.assertEqual(False, branch.pending_writes)
+        self.assertFalse(branch.pending_writes)
+        self.assertFalse(branch.pending_updates)
 
     def test_branchChanged_for_hosted(self):
         # If branchChanged has been called with a new tip revision id, there
-        # are pending writes.
+        # are pending writes and pending updates.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
         with person_logged_in(branch.owner):
             branch.branchChanged('', 'new-tip', None, None, None)
-        self.assertEqual(True, branch.pending_writes)
+        self.assertTrue(branch.pending_writes)
+        self.assertTrue(branch.pending_updates)
+
+    def test_unscanned_without_rescan(self):
+        # If a branch was unscanned without requesting a rescan, then there
+        # are pending writes but no pending updates.
+        self.useBzrBranches(direct_database=True)
+        branch, bzr_tree = self.create_branch_and_tree()
+        rev_id = self.factory.getUniqueString(b'rev-id')
+        bzr_tree.commit('Commit', committer='me@example.com', rev_id=rev_id)
+        removeSecurityProxy(branch).branchChanged('', rev_id, None, None, None)
+        transaction.commit()
+        [job] = getUtility(IBranchScanJobSource).iterReady()
+        with dbuser('branchscanner'):
+            JobRunner([job]).runAll()
+        self.assertFalse(branch.pending_writes)
+        self.assertFalse(branch.pending_updates)
+        removeSecurityProxy(branch).unscan(rescan=False)
+        self.assertTrue(branch.pending_writes)
+        self.assertFalse(branch.pending_updates)
+
+    def test_unscanned_with_rescan(self):
+        # If a branch was unscanned and a rescan was requested, then there
+        # are pending writes and pending updates.
+        self.useBzrBranches(direct_database=True)
+        branch, bzr_tree = self.create_branch_and_tree()
+        rev_id = self.factory.getUniqueString(b'rev-id')
+        bzr_tree.commit('Commit', committer='me@example.com', rev_id=rev_id)
+        removeSecurityProxy(branch).branchChanged('', rev_id, None, None, None)
+        transaction.commit()
+        [job] = getUtility(IBranchScanJobSource).iterReady()
+        with dbuser('branchscanner'):
+            JobRunner([job]).runAll()
+        self.assertFalse(branch.pending_writes)
+        self.assertFalse(branch.pending_updates)
+        removeSecurityProxy(branch).unscan(rescan=True)
+        self.assertTrue(branch.pending_writes)
+        self.assertTrue(branch.pending_updates)
 
     def test_requestMirror_for_imported(self):
         # If an imported branch has a requested mirror, then we've just
-        # imported new changes. Therefore, pending writes.
+        # imported new changes. Therefore, pending writes and pending
+        # updates.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.IMPORTED)
         branch.requestMirror()
-        self.assertEqual(True, branch.pending_writes)
+        self.assertTrue(branch.pending_writes)
+        self.assertTrue(branch.pending_updates)
 
     def test_requestMirror_for_mirrored(self):
-        # Mirrored branches *always* have a requested mirror. The fact that a
-        # mirror is requested has no bearing on whether there are pending
-        # writes. Thus, pending_writes is False.
+        # Mirrored branches *always* have a requested mirror. The fact that
+        # a mirror is requested has no bearing on whether there are pending
+        # writes or pending updates. Thus, pending_writes and
+        # pending_updates are both False.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.requestMirror()
-        self.assertEqual(False, branch.pending_writes)
+        self.assertFalse(branch.pending_writes)
+        self.assertFalse(branch.pending_updates)
 
     def test_pulled_but_not_scanned(self):
         # If a branch has been pulled (mirrored) but not scanned, then we have
         # yet to load the revisions into the database. This means there are
-        # pending writes.
+        # pending writes and pending updates.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
             '', rev_id, None, None, None)
-        self.assertEqual(True, branch.pending_writes)
+        self.assertTrue(branch.pending_writes)
+        self.assertTrue(branch.pending_updates)
 
     def test_pulled_and_scanned(self):
         # If a branch has been pulled and scanned, then there are no pending
-        # writes.
+        # writes or pending updates.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
             '', rev_id, None, None, None)
-        # Cheat! The actual API for marking a branch as scanned is
-        # updateScannedDetails. That requires a revision in the database
+        # Cheat! The actual API for marking a branch as scanned is to run
+        # the BranchScanJob. That requires a revision in the database
         # though.
         removeSecurityProxy(branch).last_scanned_id = rev_id
-        self.assertEqual(False, branch.pending_writes)
+        [job] = getUtility(IBranchScanJobSource).iterReady()
+        removeSecurityProxy(job).job._status = JobStatus.COMPLETED
+        self.assertFalse(branch.pending_writes)
+        self.assertFalse(branch.pending_updates)
 
     def test_first_mirror_started(self):
         # If we have started mirroring the branch for the first time, then
-        # there are probably pending writes.
+        # there are probably pending writes and pending updates.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
-        self.assertEqual(True, branch.pending_writes)
+        self.assertTrue(branch.pending_writes)
+        self.assertTrue(branch.pending_updates)
 
     def test_following_mirror_started(self):
         # If we have started mirroring the branch, then there are probably
-        # pending writes.
+        # pending writes and pending updates.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
         branch.startMirroring()
         rev_id = self.factory.getUniqueString('rev-id')
         removeSecurityProxy(branch).branchChanged(
             '', rev_id, None, None, None)
-        # Cheat! The actual API for marking a branch as scanned is
-        # updateScannedDetails. That requires a revision in the database
-        # though.
-        removeSecurityProxy(branch).last_scanned_id = rev_id
-        # Cheat again! We can only tell if mirroring has started if the last
+        # Cheat! We can only tell if mirroring has started if the last
         # mirrored attempt is different from the last mirrored time. To ensure
         # this, we start the second mirror in a new transaction.
         transaction.commit()
         branch.startMirroring()
-        self.assertEqual(True, branch.pending_writes)
+        self.assertTrue(branch.pending_writes)
+        self.assertTrue(branch.pending_updates)
 
 
 class TestBranchPrivacy(TestCaseWithFactory):

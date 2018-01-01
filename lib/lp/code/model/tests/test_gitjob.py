@@ -1,7 +1,9 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `GitJob`s."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -140,7 +142,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
         # Ensure the job scans the repository.
         repository = self.factory.makeGitRepository()
         job = GitRefScanJob.create(repository)
-        paths = (u"refs/heads/master", u"refs/tags/1.0")
+        paths = ("refs/heads/master", "refs/tags/1.0")
         author = repository.owner
         author_date_start = datetime(2015, 1, 1, tzinfo=pytz.UTC)
         author_date_gen = time_counter(author_date_start, timedelta(days=1))
@@ -150,12 +152,12 @@ class TestGitRefScanJob(TestCaseWithFactory):
         with dbuser("branchscanner"):
             JobRunner([job]).runAll()
         self.assertRefsMatch(repository.refs, repository, paths)
-        self.assertEqual(u"refs/heads/master", repository.default_branch)
+        self.assertEqual("refs/heads/master", repository.default_branch)
 
     def test_logs_bad_ref_info(self):
         repository = self.factory.makeGitRepository()
         job = GitRefScanJob.create(repository)
-        self.useFixture(GitHostingFixture(refs={u"refs/heads/master": {}}))
+        self.useFixture(GitHostingFixture(refs={"refs/heads/master": {}}))
         expected_message = (
             'Unconvertible ref refs/heads/master {}: '
             'ref info does not contain "object" key')
@@ -169,11 +171,11 @@ class TestGitRefScanJob(TestCaseWithFactory):
         self.useFixture(FeatureFixture({'code.git.webhooks.enabled': 'on'}))
         repository = self.factory.makeGitRepository()
         self.factory.makeGitRefs(
-            repository, paths=[u'refs/heads/master', u'refs/tags/1.0'])
+            repository, paths=['refs/heads/master', 'refs/tags/1.0'])
         hook = self.factory.makeWebhook(
             target=repository, event_types=['git:push:0.1'])
         job = GitRefScanJob.create(repository)
-        paths = (u'refs/heads/master', u'refs/tags/2.0')
+        paths = ('refs/heads/master', 'refs/tags/2.0')
         self.useFixture(GitHostingFixture(refs=self.makeFakeRefs(paths)))
         with dbuser('branchscanner'):
             JobRunner([job]).runAll()
@@ -205,14 +207,14 @@ class TestGitRefScanJob(TestCaseWithFactory):
             {BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG: 'on'}))
         repository = self.factory.makeGitRepository()
         target, source = self.factory.makeGitRefs(
-            repository, paths=[u'refs/heads/target', u'refs/heads/source'])
+            repository, paths=['refs/heads/target', 'refs/heads/source'])
         bmp = self.factory.makeBranchMergeProposalForGit(
             target_ref=target, source_ref=source)
         hook = self.factory.makeWebhook(
             target=repository, event_types=['merge-proposal:0.1'])
         new_refs = {
             target.path: {'object': {
-                'sha1': u'0' * 40,
+                'sha1': '0' * 40,
                 'type': 'commit',
                 }},
             source.path: {'object': {
@@ -220,7 +222,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
                 'type': 'commit',
                 }},
             }
-        new_merges = {source.commit_sha1: u'0' * 40}
+        new_merges = {source.commit_sha1: '0' * 40}
         self.useFixture(GitHostingFixture(refs=new_refs, merges=new_merges))
         job = GitRefScanJob.create(repository)
         with dbuser('branchscanner'):
@@ -247,7 +249,7 @@ class TestGitRefScanJob(TestCaseWithFactory):
     def test_composeWebhookPayload(self):
         repository = self.factory.makeGitRepository()
         self.factory.makeGitRefs(
-            repository, paths=[u'refs/heads/master', u'refs/tags/1.0'])
+            repository, paths=['refs/heads/master', 'refs/tags/1.0'])
 
         sha1 = lambda s: hashlib.sha1(s).hexdigest()
         new_refs = {

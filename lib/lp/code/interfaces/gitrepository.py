@@ -537,7 +537,7 @@ class IGitRepositoryView(IHasRecipes):
     def isRepositoryMergeable(other):
         """Is the other repository mergeable into this one (or vice versa)?"""
 
-    pending_writes = Attribute(
+    pending_updates = Attribute(
         "Whether there are recent changes in this repository that have not "
         "yet been scanned.")
 

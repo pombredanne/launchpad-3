@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import absolute_import
@@ -23,6 +23,7 @@ __all__ = [
     'launchpadlib_credentials_for',
     'launchpadlib_for',
     'login',
+    'login_admin',
     'login_as',
     'login_celebrity',
     'login_person',
@@ -164,6 +165,7 @@ from lp.testing._login import (
     anonymous_logged_in,
     celebrity_logged_in,
     login,
+    login_admin,
     login_as,
     login_celebrity,
     login_person,
@@ -194,6 +196,7 @@ api_url
 celebrity_logged_in
 launchpadlib_credentials_for
 launchpadlib_for
+login_admin
 login_as
 login_celebrity
 login_person

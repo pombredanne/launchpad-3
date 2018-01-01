@@ -144,6 +144,7 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
         args = {}
         args['arch_indep'] = build.arch_indep
         args['distribution'] = das.distroseries.distribution.name
+        args['series'] = das.distroseries.name
         args['suite'] = das.distroseries.getSuite(build.pocket)
         args['arch_tag'] = das.architecturetag
 

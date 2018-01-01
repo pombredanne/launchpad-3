@@ -3,6 +3,8 @@
 
 """Tests for BranchMergeProposals."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import (
@@ -58,6 +60,7 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG,
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
+    IBranchMergeProposalJobSource,
     notify_modified,
     )
 from lp.code.model.branchmergeproposal import (
@@ -80,6 +83,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.webapp import canonical_url
 from lp.services.xref.interfaces import IXRefSet
 from lp.testing import (
@@ -641,7 +645,7 @@ class TestMergeProposalGetPreviewDiff(TestCaseWithFactory):
         self.mp_one = self.factory.makeBranchMergeProposal()
         self.mp_two = self.factory.makeBranchMergeProposal()
         self.preview_diff = self.mp_one.updatePreviewDiff(
-            'Some diff', u"source_id", u"target_id")
+            'Some diff', "source_id", "target_id")
         transaction.commit()
 
     def test_getPreviewDiff(self):
@@ -1500,22 +1504,22 @@ class TestBranchMergeProposalBugsGit(
         bmp = self._makeBranchMergeProposal()
         self.hosting_fixture.getLog.result = [
             {
-                u"sha1": bmp.source_git_commit_sha1,
-                u"message": u"Commit 1\n\nLP: #%d" % bugs[0].id,
+                "sha1": bmp.source_git_commit_sha1,
+                "message": "Commit 1\n\nLP: #%d" % bugs[0].id,
                 },
             {
-                u"sha1": unicode(hashlib.sha1("1").hexdigest()),
+                "sha1": unicode(hashlib.sha1("1").hexdigest()),
                 # Will not be matched.
-                u"message": u"Commit 2; see LP #%d" % bugs[1].id,
+                "message": "Commit 2; see LP #%d" % bugs[1].id,
                 },
             {
-                u"sha1": unicode(hashlib.sha1("2").hexdigest()),
-                u"message": u"Commit 3; LP: #%d" % bugs[2].id,
+                "sha1": unicode(hashlib.sha1("2").hexdigest()),
+                "message": "Commit 3; LP: #%d" % bugs[2].id,
                 },
             {
-                u"sha1": unicode(hashlib.sha1("3").hexdigest()),
+                "sha1": unicode(hashlib.sha1("3").hexdigest()),
                 # Non-existent bug ID will not be returned.
-                u"message": u"Non-existent bug; LP: #%d" % (bugs[2].id + 100),
+                "message": "Non-existent bug; LP: #%d" % (bugs[2].id + 100),
                 },
             ]
         related_bugs = bmp._fetchRelatedBugIDsFromSource()
@@ -1533,8 +1537,8 @@ class TestBranchMergeProposalBugsGit(
         """Set up a fake log response referring to the given bugs."""
         self.hosting_fixture.getLog.result = [
             {
-                u"sha1": unicode(hashlib.sha1(str(i)).hexdigest()),
-                u"message": u"LP: #%d" % bug.id,
+                "sha1": unicode(hashlib.sha1(str(i)).hexdigest()),
+                "message": "LP: #%d" % bug.id,
                 }
             for i, bug in enumerate(bugs)]
         self.hosting_fixture.memcache_fixture.clear()
@@ -1595,15 +1599,15 @@ class TestBranchMergeProposalBugsGit(
         bmp.updateRelatedBugsFromSource()
         self.assertEqual([bug], bmp.bugs)
         matches_expected_xref = MatchesDict(
-            {(u"bug", unicode(bug.id)): ContainsDict({"metadata": Is(None)})})
+            {("bug", unicode(bug.id)): ContainsDict({"metadata": Is(None)})})
         self.assertThat(
             getUtility(IXRefSet).findFrom(
-                (u"merge_proposal", unicode(bmp.id)), types=[u"bug"]),
+                ("merge_proposal", unicode(bmp.id)), types=["bug"]),
             matches_expected_xref)
         self._setUpLog([bug])
         self.assertThat(
             getUtility(IXRefSet).findFrom(
-                (u"merge_proposal", unicode(bmp.id)), types=[u"bug"]),
+                ("merge_proposal", unicode(bmp.id)), types=["bug"]),
             matches_expected_xref)
 
     def test_updateRelatedBugsFromSource_honours_limit(self):
@@ -2080,7 +2084,7 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
 
 
 class TestUpdatePreviewDiff(TestCaseWithFactory):
-    """Test the updateMergeDiff method of BranchMergeProposal."""
+    """Test the updatePreviewDiff method of BranchMergeProposal."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -2101,8 +2105,7 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
             " from lp.services.config import config\n")
         diff_stat = {'sample': (1, 1)}
         login_person(merge_proposal.registrant)
-        merge_proposal.updatePreviewDiff(
-            diff_text, u"source_id", u"target_id")
+        merge_proposal.updatePreviewDiff(diff_text, "source_id", "target_id")
         # Have to commit the transaction to make the Librarian file
         # available.
         transaction.commit()
@@ -2120,7 +2123,7 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
         merge_proposal = self.factory.makeBranchMergeProposal()
         login_person(merge_proposal.registrant)
         diff_bytes = ''.join(unified_diff('', 'random text'))
-        merge_proposal.updatePreviewDiff(diff_bytes, u"a", u"b")
+        merge_proposal.updatePreviewDiff(diff_bytes, "a", "b")
         transaction.commit()
         # Extract the primary key ids for the preview diff and the diff to
         # show that we are not reusing the objects.
@@ -2134,6 +2137,39 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
             removeSecurityProxy(merge_proposal.preview_diff).id)
         self.assertNotEqual(
             diff_id, removeSecurityProxy(merge_proposal.preview_diff).diff_id)
+
+
+class TestScheduleDiffUpdates(TestCaseWithFactory):
+    """Test scheduling of diff updates."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestScheduleDiffUpdates, self).setUp()
+        self.job_source = removeSecurityProxy(
+            getUtility(IBranchMergeProposalJobSource))
+
+    def test_scheduleDiffUpdates_bzr(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        self.factory.makeRevisionsForBranch(bmp.source_branch)
+        self.factory.makeRevisionsForBranch(bmp.target_branch)
+        [job] = self.job_source.iterReady()
+        removeSecurityProxy(job).job._status = JobStatus.COMPLETED
+        self.assertEqual([], list(self.job_source.iterReady()))
+        with person_logged_in(bmp.merge_target.owner):
+            bmp.scheduleDiffUpdates()
+        [job] = self.job_source.iterReady()
+        self.assertIsInstance(job, UpdatePreviewDiffJob)
+
+    def test_scheduleDiffUpdates_git(self):
+        bmp = self.factory.makeBranchMergeProposalForGit()
+        [job] = self.job_source.iterReady()
+        removeSecurityProxy(job).job._status = JobStatus.COMPLETED
+        self.assertEqual([], list(self.job_source.iterReady()))
+        with person_logged_in(bmp.merge_target.owner):
+            bmp.scheduleDiffUpdates()
+        [job] = self.job_source.iterReady()
+        self.assertIsInstance(job, UpdatePreviewDiffJob)
 
 
 class TestNextPreviewDiffJob(TestCaseWithFactory):
@@ -2607,7 +2643,7 @@ class TestWebservice(WebServiceTestCase):
         review_comment = ws_bmp.createComment(
             subject='Testing!',
             previewdiff_id=previewdiff.id,
-            inline_comments={u'2': u'foo'})
+            inline_comments={'2': 'foo'})
         transaction.commit()
 
         # Retrieving published inline comments requires only lp.View

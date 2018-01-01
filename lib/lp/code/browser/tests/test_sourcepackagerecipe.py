@@ -3,8 +3,9 @@
 
 """Tests for the source package recipe view classes and templates."""
 
-__metaclass__ = type
+from __future__ import absolute_import, print_function, unicode_literals
 
+__metaclass__ = type
 
 from datetime import (
     datetime,
@@ -13,7 +14,6 @@ from datetime import (
 import re
 from textwrap import dedent
 
-from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
 from pytz import UTC
@@ -48,6 +48,7 @@ from lp.registry.interfaces.person import TeamMembershipPolicy
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp import canonical_url
@@ -91,7 +92,7 @@ class TestCanonicalUrlForRecipe(TestCaseWithFactory):
     def test_canonical_url(self):
         owner = self.factory.makePerson(name='recipe-owner')
         recipe = self.factory.makeSourcePackageRecipe(
-            owner=owner, name=u'recipe-name')
+            owner=owner, name='recipe-name')
         self.assertEqual(
             'http://code.launchpad.dev/~recipe-owner/+recipe/recipe-name',
             canonical_url(recipe))
@@ -261,10 +262,10 @@ class TestCaseForRecipe(BrowserTestCase):
         """Create and return a specific recipe."""
         chocolate = self.factory.makeProduct(name='chocolate')
         cake_branch = self.makeBranch(
-            owner=self.chef, name=u'cake', target=chocolate)
+            owner=self.chef, name='cake', target=chocolate)
         return self.factory.makeSourcePackageRecipe(
-            owner=self.chef, distroseries=self.squirrel, name=u'cake_recipe',
-            description=u'This recipe builds a foo for distro bar, with my'
+            owner=self.chef, distroseries=self.squirrel, name='cake_recipe',
+            description='This recipe builds a foo for distro bar, with my'
             ' Secret Squirrel changes.', branches=[cake_branch],
             daily_build_archive=self.ppa, **kwargs)
 
@@ -277,8 +278,7 @@ class TestSourcePackageRecipeAddViewInitialValuesMixin:
         # If the initial name exists, a generator is used to find an unused
         # name by appending a numbered suffix on the end.
         owner = self.factory.makePerson()
-        self.factory.makeSourcePackageRecipe(
-            owner=owner, name=u'widget-daily')
+        self.factory.makeSourcePackageRecipe(owner=owner, name='widget-daily')
         widget = self.factory.makeProduct(name='widget')
         branch = self.makeBranch(target=widget)
         with person_logged_in(owner):
@@ -380,7 +380,7 @@ class TestSourcePackageRecipeAddViewInitialValuesGit(
         # not helpful.
         owner = self.factory.makePerson()
         repository = self.factory.makeGitRepository(
-            owner=owner, target=owner, name=u'widget')
+            owner=owner, target=owner, name='widget')
         with person_logged_in(repository.owner):
             view = create_initialized_view(repository, '+new-recipe')
         self.assertThat('widget-daily', Equals(view.initial_values['name']))
@@ -395,7 +395,7 @@ class TestSourcePackageRecipeAddViewMixin:
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'veggies')
+            owner=self.chef, target=product, name='veggies')
 
         browser = self.getViewBrowser(branch, no_login=True)
         self.assertRaises(
@@ -461,7 +461,7 @@ class TestSourcePackageRecipeAddViewMixin:
         browser.getControl('Create Recipe').click()
 
         login(ANONYMOUS)
-        recipe = team.getRecipe(u'daily')
+        recipe = team.getRecipe('daily')
         self.assertEqual(team, recipe.owner)
         self.assertEqual('daily', recipe.name)
 
@@ -498,7 +498,7 @@ class TestSourcePackageRecipeAddViewMixin:
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'veggies')
+            owner=self.chef, target=product, name='veggies')
         browser = self.getViewBrowser(branch, '+new-recipe', user=self.chef)
         browser.getControl('Description').value = 'Make some food!'
         browser.getControl('Recipe text').value = (
@@ -513,7 +513,7 @@ class TestSourcePackageRecipeAddViewMixin:
             product = self.factory.makeProduct(
                 name='ratatouille', displayname='Ratatouille')
             branch = self.makeBranch(
-                owner=self.chef, target=product, name=u'veggies')
+                owner=self.chef, target=product, name='veggies')
         browser = self.getViewBrowser(branch, '+new-recipe', user=self.chef)
         browser.getControl(name='field.name').value = 'daily'
         browser.getControl('Description').value = 'Make some food!'
@@ -524,8 +524,8 @@ class TestSourcePackageRecipeAddViewMixin:
     def test_create_recipe_usage(self):
         # The error for a recipe with invalid instruction parameters should
         # include instruction usage.
-        branch = self.makeBranch(name=u'veggies')
-        self.makeBranch(name=u'packaging')
+        branch = self.makeBranch(name='veggies')
+        self.makeBranch(name='packaging')
 
         browser = self.createRecipe(
             self.getMinimalRecipeText(branch) + "merge\n", branch=branch)
@@ -564,7 +564,7 @@ class TestSourcePackageRecipeAddViewMixin:
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'veggies')
+            owner=self.chef, target=product, name='veggies')
         recipe = self.getMinimalRecipeText(branch)
         recipe += 'nest packaging foo debian'
         browser = self.createRecipe(recipe, branch)
@@ -578,7 +578,7 @@ class TestSourcePackageRecipeAddViewMixin:
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'veggies')
+            owner=self.chef, target=product, name='veggies')
 
         with recipe_parser_newest_version(145.115):
             recipe = re.sub(
@@ -599,7 +599,7 @@ class TestSourcePackageRecipeAddViewMixin:
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'veggies')
+            owner=self.chef, target=product, name='veggies')
 
         # A new recipe can be created from the branch page.
         browser = self.getUserBrowser(canonical_url(branch), user=self.chef)
@@ -859,7 +859,7 @@ class TestSourcePackageRecipeAddViewGit(
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         repository = self.factory.makeGitRepository(
-            owner=self.chef, target=product, name=u'veggies')
+            owner=self.chef, target=product, name='veggies')
         self.factory.makeDistributionSourcePackage(
             sourcepackagename='ratatouille')
         return repository
@@ -877,12 +877,12 @@ class TestSourcePackageRecipeEditViewMixin:
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         veggie_branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'veggies')
+            owner=self.chef, target=product, name='veggies')
         meat_branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'meat')
+            owner=self.chef, target=product, name='meat')
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
-            name=u'things', description=u'This is a recipe',
+            name='things', description='This is a recipe',
             distroseries=self.squirrel, branches=[veggie_branch],
             daily_build_archive=self.ppa)
         self.factory.makeArchive(
@@ -921,7 +921,7 @@ class TestSourcePackageRecipeEditViewMixin:
         view = SourcePackageRecipeEditView(recipe, LaunchpadTestRequest())
         view.initialize()
         view.request_action.success({
-            'name': u'fings',
+            'name': 'fings',
             'recipe_text': recipe.recipe_text,
             'distroseries': recipe.distroseries})
         self.assertSqlAttributeEqualsDate(
@@ -934,12 +934,12 @@ class TestSourcePackageRecipeEditViewMixin:
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         veggie_branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'veggies')
+            owner=self.chef, target=product, name='veggies')
         meat_branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'meat')
+            owner=self.chef, target=product, name='meat')
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
-            name=u'things', description=u'This is a recipe',
+            name='things', description='This is a recipe',
             distroseries=self.squirrel, branches=[veggie_branch],
             daily_build_archive=self.ppa)
 
@@ -979,10 +979,10 @@ class TestSourcePackageRecipeEditViewMixin:
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         veggie_branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'veggies')
+            owner=self.chef, target=product, name='veggies')
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
-            name=u'things', description=u'This is a recipe',
+            name='things', description='This is a recipe',
             distroseries=self.squirrel, branches=[veggie_branch])
 
         browser = self.getUserBrowser(canonical_url(recipe), user=self.chef)
@@ -1004,10 +1004,10 @@ class TestSourcePackageRecipeEditViewMixin:
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         veggie_branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'veggies')
+            owner=self.chef, target=product, name='veggies')
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
-            name=u'things', description=u'This is a recipe',
+            name='things', description='This is a recipe',
             distroseries=self.squirrel, branches=[veggie_branch])
 
         new_recipe_text = re.sub(
@@ -1031,16 +1031,16 @@ class TestSourcePackageRecipeEditViewMixin:
         product = self.factory.makeProduct(
             name='ratatouille', displayname='Ratatouille')
         veggie_branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'veggies')
+            owner=self.chef, target=product, name='veggies')
         meat_branch = self.makeBranch(
-            owner=self.chef, target=product, name=u'meat')
+            owner=self.chef, target=product, name='meat')
         recipe = self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
-            name=u'things', description=u'This is a recipe',
+            name='things', description='This is a recipe',
             distroseries=self.squirrel, branches=[veggie_branch])
         self.factory.makeSourcePackageRecipe(
             owner=self.chef, registrant=self.chef,
-            name=u'fings', description=u'This is a recipe',
+            name='fings', description='This is a recipe',
             distroseries=self.squirrel, branches=[veggie_branch])
 
         recipe_text = self.getMinimalRecipeText(meat_branch)
@@ -1717,7 +1717,7 @@ class TestSourcePackageRecipeBuildViewMixin:
             owner=self.user)
         branch = self.makeBranch()
         recipe = self.factory.makeSourcePackageRecipe(
-            owner=self.user, name=u'my-recipe', branches=[branch])
+            owner=self.user, name='my-recipe', branches=[branch])
         distro_series = self.factory.makeDistroSeries(
             name='squirrel', distribution=archive.distribution)
         removeSecurityProxy(distro_series).nominatedarchindep = (
@@ -1999,7 +1999,7 @@ class TestBrokenExistingRecipesMixin:
         recipe = self.factory.makeSourcePackageRecipe(recipe=recipe_text)
         naked_data = removeSecurityProxy(recipe)._recipe_data
         nest_instruction = list(naked_data.instructions)[0]
-        nest_instruction.directory = u'.'
+        nest_instruction.directory = '.'
         return recipe
 
     def test_recipe_is_broken(self):

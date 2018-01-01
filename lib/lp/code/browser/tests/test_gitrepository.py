@@ -1,7 +1,9 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for GitRepositoryView."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -9,7 +11,6 @@ from datetime import datetime
 import doctest
 from textwrap import dedent
 
-from BeautifulSoup import BeautifulSoup
 from fixtures import FakeLogger
 import pytz
 from testtools.matchers import DocTestMatches
@@ -29,6 +30,7 @@ from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
+from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.database.constants import UTC_NOW
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -327,7 +329,7 @@ class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
         self.factory.makeAccessPolicyGrant(
             policy=ap, grantee=subscriber, grantor=project.owner)
         repository = self.factory.makeGitRepository(
-            target=project, owner=owner, name=u"repo",
+            target=project, owner=owner, name="repo",
             information_type=InformationType.USERDATA)
         with person_logged_in(owner):
             self.factory.makeGitSubscription(
@@ -390,7 +392,7 @@ class TestGitRepositoryBranches(BrowserTestCase):
                 naked_ref.author_date = now
                 naked_ref.committer = self.makeRevisionAuthor()
                 naked_ref.committer_date = now
-                naked_ref.commit_message = u"something"
+                naked_ref.commit_message = "something"
 
         recorder1, recorder2 = record_two_runs(
             lambda: self.getMainText(repository, "+index"), create_ref, 10)
@@ -670,13 +672,13 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
         # The name of a repository can be changed via the UI by an
         # authorised user.
         person = self.factory.makePerson()
-        repository = self.factory.makeGitRepository(owner=person, name=u"foo")
+        repository = self.factory.makeGitRepository(owner=person, name="foo")
         browser = self.getUserBrowser(
             canonical_url(repository) + "/+edit", user=person)
-        browser.getControl(name="field.name").value = u"bar"
+        browser.getControl(name="field.name").value = "bar"
         browser.getControl("Change Git Repository").click()
         with person_logged_in(person):
-            self.assertEqual(u"bar", repository.name)
+            self.assertEqual("bar", repository.name)
 
     def test_change_owner(self):
         # An authorised user can change the owner to a team they're a member
@@ -762,18 +764,18 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
         repository = self.factory.makeGitRepository(owner=person)
         master, new = self.factory.makeGitRefs(
             repository=repository,
-            paths=[u"refs/heads/master", u"refs/heads/new"])
-        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+            paths=["refs/heads/master", "refs/heads/new"])
+        removeSecurityProxy(repository)._default_branch = "refs/heads/master"
         browser = self.getUserBrowser(
             canonical_url(repository) + "/+edit", user=person)
-        browser.getControl(name="field.default_branch").value = u"new"
+        browser.getControl(name="field.default_branch").value = "new"
         browser.getControl("Change Git Repository").click()
         with person_logged_in(person):
             self.assertEqual(
                 [((repository.getInternalPath(),),
-                 {u"default_branch": u"refs/heads/new"})],
+                 {"default_branch": "refs/heads/new"})],
                 hosting_fixture.setProperties.calls)
-            self.assertEqual(u"refs/heads/new", repository.default_branch)
+            self.assertEqual("refs/heads/new", repository.default_branch)
 
     def test_change_default_branch_nonexistent(self):
         # Trying to change the default branch to one that doesn't exist
@@ -781,8 +783,8 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
         person = self.factory.makePerson()
         repository = self.factory.makeGitRepository(owner=person)
         [master] = self.factory.makeGitRefs(
-            repository=repository, paths=[u"refs/heads/master"])
-        removeSecurityProxy(repository)._default_branch = u"refs/heads/master"
+            repository=repository, paths=["refs/heads/master"])
+        removeSecurityProxy(repository)._default_branch = "refs/heads/master"
         form = {
             "field.default_branch": "refs/heads/new",
             "field.actions.change": "Change Git Repository",
@@ -794,7 +796,7 @@ class TestGitRepositoryEditView(TestCaseWithFactory):
             ["This repository does not contain a reference named "
              "&#x27;refs/heads/new&#x27;."],
             view.errors)
-        self.assertEqual(u"refs/heads/master", repository.default_branch)
+        self.assertEqual("refs/heads/master", repository.default_branch)
 
 
 class TestGitRepositoryEditViewInformationTypes(TestCaseWithFactory):
@@ -869,7 +871,7 @@ class TestGitRepositoryDiffView(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def test_render(self):
-        diff = u"A fake diff\n"
+        diff = "A fake diff\n"
         hosting_fixture = self.useFixture(GitHostingFixture(
             diff={"patch": diff}))
         person = self.factory.makePerson()
@@ -891,7 +893,7 @@ class TestGitRepositoryDiffView(BrowserTestCase):
     def test_security(self):
         # A user who can see a private repository can fetch diffs from it,
         # but other users cannot.
-        diff = u"A fake diff\n"
+        diff = "A fake diff\n"
         self.useFixture(GitHostingFixture(diff={"patch": diff}))
         person = self.factory.makePerson()
         project = self.factory.makeProduct(

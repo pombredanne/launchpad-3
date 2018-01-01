@@ -3,6 +3,8 @@
 
 """Unit tests for Specification."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import (
@@ -215,7 +217,7 @@ class SpecificationTests(TestCaseWithFactory):
 
     def test_security_adapters(self):
         expected_adapters = {
-            CheckerPublic: None,
+            'zope.Public': None,
             'launchpad.Admin': AdminSpecification,
             'launchpad.Edit': EditSpecificationByRelatedPeople,
             'launchpad.LimitedView': ViewSpecification,
@@ -756,9 +758,9 @@ class TestSpecifications(TestCaseWithFactory):
         blueprint1 = self.makeSpec(title='abc')
         product = blueprint1.product
         blueprint2 = self.makeSpec(product, title='def')
-        result = list_result(context, [u'abc'])
+        result = list_result(context, ['abc'])
         self.assertEqual([blueprint1], result)
-        result = list_result(product, [u'def'])
+        result = list_result(product, ['def'])
         self.assertEqual([blueprint2], result)
 
     def test_proprietary_not_listed(self):

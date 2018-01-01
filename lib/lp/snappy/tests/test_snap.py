@@ -3,6 +3,8 @@
 
 """Test snap packages."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 from datetime import (
@@ -22,7 +24,10 @@ import pytz
 from storm.exceptions import LostObjectError
 from storm.locals import Store
 from testtools.matchers import (
+    ContainsDict,
     Equals,
+    Is,
+    MatchesDict,
     MatchesSetwise,
     MatchesStructure,
     )
@@ -404,11 +409,11 @@ class TestSnap(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         snap = self.factory.makeSnap(
             registrant=owner, owner=owner, distroseries=distroseries,
-            name=u"condemned")
-        self.assertTrue(getUtility(ISnapSet).exists(owner, u"condemned"))
+            name="condemned")
+        self.assertTrue(getUtility(ISnapSet).exists(owner, "condemned"))
         with person_logged_in(snap.owner):
             snap.destroySelf()
-        self.assertFalse(getUtility(ISnapSet).exists(owner, u"condemned"))
+        self.assertFalse(getUtility(ISnapSet).exists(owner, "condemned"))
 
     def test_getBuildSummariesForSnapBuildIds(self):
         snap1 = self.factory.makeSnap()
@@ -420,8 +425,19 @@ class TestSnap(TestCaseWithFactory):
         summary1 = snap1.getBuildSummariesForSnapBuildIds(
             [build11.id, build12.id])
         summary2 = snap2.getBuildSummariesForSnapBuildIds([build2.id])
-        self.assertContentEqual([build11.id, build12.id], summary1.keys())
-        self.assertContentEqual([build2.id], summary2.keys())
+        summary_matcher = MatchesDict({
+            "status": Equals("NEEDSBUILD"),
+            "buildstate": Equals("Needs building"),
+            "when_complete": Is(None),
+            "when_complete_estimate": Is(False),
+            "build_log_url": Is(None),
+            "build_log_size": Is(None),
+            })
+        self.assertThat(summary1, MatchesDict({
+            build11.id: summary_matcher,
+            build12.id: summary_matcher,
+            }))
+        self.assertThat(summary2, MatchesDict({build2.id: summary_matcher}))
 
     def test_getBuildSummariesForSnapBuildIds_empty_input(self):
         snap = self.factory.makeSnap()
@@ -460,7 +476,7 @@ class TestSnap(TestCaseWithFactory):
         summary = snap.getBuildSummariesForSnapBuildIds([build.id])
         self.assertIsNone(summary[build.id]["build_log_size"])
         removeSecurityProxy(build).log = self.factory.makeLibraryFileAlias(
-            content='x' * 12345, db_only=True)
+            content=b'x' * 12345, db_only=True)
         summary = snap.getBuildSummariesForSnapBuildIds([build.id])
         self.assertEqual(12345, summary[build.id]["build_log_size"])
 
@@ -496,12 +512,12 @@ class TestSnapDeleteWithBuilds(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         snap = self.factory.makeSnap(
             registrant=owner, owner=owner, distroseries=distroseries,
-            name=u"condemned")
+            name="condemned")
         build = self.factory.makeSnapBuild(snap=snap)
         build_queue = build.queueBuild()
         snapfile = self.factory.makeSnapFile(snapbuild=build)
         snap_build_job = getUtility(ISnapStoreUploadJobSource).create(build)
-        self.assertTrue(getUtility(ISnapSet).exists(owner, u"condemned"))
+        self.assertTrue(getUtility(ISnapSet).exists(owner, "condemned"))
         other_build = self.factory.makeSnapBuild()
         other_build.queueBuild()
         store = Store.of(build)
@@ -515,7 +531,7 @@ class TestSnapDeleteWithBuilds(TestCaseWithFactory):
             snap.destroySelf()
         flush_database_caches()
         # The deleted snap and its builds are gone.
-        self.assertFalse(getUtility(ISnapSet).exists(owner, u"condemned"))
+        self.assertFalse(getUtility(ISnapSet).exists(owner, "condemned"))
         self.assertIsNone(getUtility(ISnapBuildSet).getByID(build_id))
         self.assertIsNone(store.get(BuildQueue, build_queue_id))
         self.assertIsNone(store.get(BuildFarmJob, build_farm_job_id))
@@ -563,7 +579,7 @@ class TestSnapSet(TestCaseWithFactory):
             registrant=registrant,
             owner=self.factory.makeTeam(owner=registrant),
             distro_series=self.factory.makeDistroSeries(),
-            name=self.factory.getUniqueString(u"snap-name"))
+            name=self.factory.getUniqueUnicode("snap-name"))
         if branch is None and git_ref is None:
             branch = self.factory.makeAnyBranch()
         if branch is not None:
@@ -644,7 +660,7 @@ class TestSnapSet(TestCaseWithFactory):
                 owner=owner,
                 git_ref=git_ref,
                 distro_series=self.factory.makeDistroSeries(),
-                name=self.factory.getUniqueString(u"snap-name"),
+                name=self.factory.getUniqueUnicode("snap-name"),
             )
             self.assertRaises(
                 SnapPrivacyMismatch, getUtility(ISnapSet).new, **components)
@@ -660,7 +676,7 @@ class TestSnapSet(TestCaseWithFactory):
                 owner=owner,
                 branch=branch,
                 distro_series=self.factory.makeDistroSeries(),
-                name=self.factory.getUniqueString(u"snap-name"),
+                name=self.factory.getUniqueUnicode("snap-name"),
             )
             self.assertRaises(
                 SnapPrivacyMismatch, getUtility(ISnapSet).new, **components)
@@ -677,7 +693,7 @@ class TestSnapSet(TestCaseWithFactory):
                 owner=private_team,
                 git_ref=git_ref,
                 distro_series=self.factory.makeDistroSeries(),
-                name=self.factory.getUniqueString(u"snap-name"),
+                name=self.factory.getUniqueUnicode("snap-name"),
             )
             self.assertRaises(
                 SnapPrivacyMismatch, getUtility(ISnapSet).new, **components)
@@ -689,7 +705,7 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertRaises(
             NoSourceForSnap, getUtility(ISnapSet).new,
             registrant, registrant, self.factory.makeDistroSeries(),
-            self.factory.getUniqueString(u"snap-name"))
+            self.factory.getUniqueUnicode("snap-name"))
 
     def test_exists(self):
         # ISnapSet.exists checks for matching Snaps.
@@ -697,7 +713,7 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertTrue(getUtility(ISnapSet).exists(snap.owner, snap.name))
         self.assertFalse(
             getUtility(ISnapSet).exists(self.factory.makePerson(), snap.name))
-        self.assertFalse(getUtility(ISnapSet).exists(snap.owner, u"different"))
+        self.assertFalse(getUtility(ISnapSet).exists(snap.owner, "different"))
 
     def test_findByOwner(self):
         # ISnapSet.findByOwner returns all Snaps with the given owner.
@@ -800,7 +816,7 @@ class TestSnapSet(TestCaseWithFactory):
         snaps = []
         for repository in repositories:
             refs.extend(self.factory.makeGitRefs(
-                paths=[u"refs/heads/master", u"refs/heads/other"]))
+                paths=["refs/heads/master", "refs/heads/other"]))
             snaps.append(self.factory.makeSnap(git_ref=refs[-2]))
             snaps.append(self.factory.makeSnap(git_ref=refs[-1]))
         snap_set = getUtility(ISnapSet)
@@ -816,7 +832,7 @@ class TestSnapSet(TestCaseWithFactory):
         repository = self.factory.makeGitRepository(target=project)
         refs = self.factory.makeGitRefs(
             repository=repository,
-            paths=[u"refs/heads/master", u"refs/heads/other"])
+            paths=["refs/heads/master", "refs/heads/other"])
         snaps = []
         snaps.append(self.factory.makeSnap(branch=branch))
         snaps.append(self.factory.makeSnap(branch=other_branch))
@@ -838,7 +854,7 @@ class TestSnapSet(TestCaseWithFactory):
 
     def test_findByURL(self):
         # ISnapSet.findByURL returns visible Snaps with the given URL.
-        urls = [u"https://git.example.org/foo", u"https://git.example.org/bar"]
+        urls = ["https://git.example.org/foo", "https://git.example.org/bar"]
         owners = [self.factory.makePerson() for i in range(2)]
         snaps = []
         for url in urls:
@@ -860,9 +876,9 @@ class TestSnapSet(TestCaseWithFactory):
         # ISnapSet.findByURLPrefix returns visible Snaps with the given URL
         # prefix.
         urls = [
-            u"https://git.example.org/foo/a",
-            u"https://git.example.org/foo/b",
-            u"https://git.example.org/bar",
+            "https://git.example.org/foo/a",
+            "https://git.example.org/foo/b",
+            "https://git.example.org/bar",
             ]
         owners = [self.factory.makePerson() for i in range(2)]
         snaps = []
@@ -875,7 +891,7 @@ class TestSnapSet(TestCaseWithFactory):
             self.factory.makeSnap(branch=self.factory.makeAnyBranch()))
         snaps.append(
             self.factory.makeSnap(git_ref=self.factory.makeGitRefs()[0]))
-        prefix = u"https://git.example.org/foo/"
+        prefix = "https://git.example.org/foo/"
         self.assertContentEqual(
             snaps[:4], getUtility(ISnapSet).findByURLPrefix(prefix))
         self.assertContentEqual(
@@ -886,11 +902,11 @@ class TestSnapSet(TestCaseWithFactory):
         # ISnapSet.findByURLPrefixes returns visible Snaps with any of the
         # given URL prefixes.
         urls = [
-            u"https://git.example.org/foo/a",
-            u"https://git.example.org/foo/b",
-            u"https://git.example.org/bar/a",
-            u"https://git.example.org/bar/b",
-            u"https://git.example.org/baz",
+            "https://git.example.org/foo/a",
+            "https://git.example.org/foo/b",
+            "https://git.example.org/bar/a",
+            "https://git.example.org/bar/b",
+            "https://git.example.org/baz",
             ]
         owners = [self.factory.makePerson() for i in range(2)]
         snaps = []
@@ -904,7 +920,7 @@ class TestSnapSet(TestCaseWithFactory):
         snaps.append(
             self.factory.makeSnap(git_ref=self.factory.makeGitRefs()[0]))
         prefixes = [
-            u"https://git.example.org/foo/", u"https://git.example.org/bar/"]
+            "https://git.example.org/foo/", "https://git.example.org/bar/"]
         self.assertContentEqual(
             snaps[:8], getUtility(ISnapSet).findByURLPrefixes(prefixes))
         self.assertContentEqual(
@@ -1119,7 +1135,7 @@ class TestSnapProcessors(TestCaseWithFactory):
         owner = self.factory.makePerson()
         snap = getUtility(ISnapSet).new(
             registrant=owner, owner=owner,
-            distro_series=self.factory.makeDistroSeries(), name=u"snap",
+            distro_series=self.factory.makeDistroSeries(), name="snap",
             branch=self.factory.makeAnyBranch())
         self.assertContentEqual(
             ["386", "amd64", "hppa", "default"],
@@ -1130,7 +1146,7 @@ class TestSnapProcessors(TestCaseWithFactory):
         owner = self.factory.makePerson()
         snap = getUtility(ISnapSet).new(
             registrant=owner, owner=owner,
-            distro_series=self.factory.makeDistroSeries(), name=u"snap",
+            distro_series=self.factory.makeDistroSeries(), name="snap",
             branch=self.factory.makeAnyBranch(), processors=[self.arm])
         self.assertContentEqual(
             ["arm"], [processor.name for processor in snap.processors])
@@ -1361,6 +1377,53 @@ class TestSnapWebservice(TestCaseWithFactory):
         self.assertEqual(
             "Test Person is not a member of Other Team.", response.body)
 
+    def test_cannot_set_git_path_for_bzr(self):
+        # Setting git_path on a Bazaar-based Snap fails.
+        snap = self.makeSnap(branch=self.factory.makeAnyBranch())
+        response = self.webservice.patch(
+            snap["self_link"], "application/json",
+            json.dumps({"git_path": "HEAD"}))
+        self.assertEqual(400, response.status)
+
+    def test_cannot_set_git_path_to_None(self):
+        # Setting git_path to None fails.
+        snap = self.makeSnap(git_ref=self.factory.makeGitRefs()[0])
+        response = self.webservice.patch(
+            snap["self_link"], "application/json",
+            json.dumps({"git_path": None}))
+        self.assertEqual(400, response.status)
+
+    def test_set_git_path(self):
+        # Setting git_path on a Git-based Snap works.
+        ref_master, ref_next = self.factory.makeGitRefs(
+            paths=["refs/heads/master", "refs/heads/next"])
+        snap = self.makeSnap(git_ref=ref_master)
+        response = self.webservice.patch(
+            snap["self_link"], "application/json",
+            json.dumps({"git_path": ref_next.path}))
+        self.assertEqual(209, response.status)
+        self.assertThat(response.jsonBody(), ContainsDict({
+            "git_repository_link": Equals(snap["git_repository_link"]),
+            "git_path": Equals(ref_next.path),
+            }))
+
+    def test_set_git_path_external(self):
+        # Setting git_path on a Snap backed by an external Git repository
+        # works.
+        ref = self.factory.makeGitRefRemote()
+        repository_url = ref.repository_url
+        snap = self.factory.makeSnap(
+            registrant=self.person, owner=self.person, git_ref=ref)
+        snap_url = api_url(snap)
+        logout()
+        response = self.webservice.patch(
+            snap_url, "application/json", json.dumps({"git_path": "HEAD"}))
+        self.assertEqual(209, response.status)
+        self.assertThat(response.jsonBody(), ContainsDict({
+            "git_repository_url": Equals(repository_url),
+            "git_path": Equals("HEAD"),
+            }))
+
     def test_getByName(self):
         # lp.snaps.getByName returns a matching Snap.
         snap = self.makeSnap()
@@ -1386,7 +1449,7 @@ class TestSnapWebservice(TestCaseWithFactory):
     def test_findByURL(self):
         # lp.snaps.findByURL returns visible Snaps with the given URL.
         persons = [self.factory.makePerson(), self.factory.makePerson()]
-        urls = [u"https://git.example.org/foo", u"https://git.example.org/bar"]
+        urls = ["https://git.example.org/foo", "https://git.example.org/bar"]
         snaps = []
         for url in urls:
             for person in persons:
@@ -1458,9 +1521,9 @@ class TestSnapWebservice(TestCaseWithFactory):
         self.pushConfig("launchpad", default_batch_size=10)
         persons = [self.factory.makePerson(), self.factory.makePerson()]
         urls = [
-            u"https://git.example.org/foo/a",
-            u"https://git.example.org/foo/b",
-            u"https://git.example.org/bar",
+            "https://git.example.org/foo/a",
+            "https://git.example.org/foo/b",
+            "https://git.example.org/bar",
             ]
         snaps = []
         for url in urls:
@@ -1478,7 +1541,7 @@ class TestSnapWebservice(TestCaseWithFactory):
         commercial_admin = (
             getUtility(ILaunchpadCelebrities).commercial_admin.teamowner)
         logout()
-        prefix = u"https://git.example.org/foo/"
+        prefix = "https://git.example.org/foo/"
         # Anonymous requests can only see public snaps.
         anon_webservice = LaunchpadWebServiceCaller("test", "")
         response = anon_webservice.named_get(
@@ -1537,11 +1600,11 @@ class TestSnapWebservice(TestCaseWithFactory):
         self.pushConfig("launchpad", default_batch_size=20)
         persons = [self.factory.makePerson(), self.factory.makePerson()]
         urls = [
-            u"https://git.example.org/foo/a",
-            u"https://git.example.org/foo/b",
-            u"https://git.example.org/bar/a",
-            u"https://git.example.org/bar/b",
-            u"https://git.example.org/baz",
+            "https://git.example.org/foo/a",
+            "https://git.example.org/foo/b",
+            "https://git.example.org/bar/a",
+            "https://git.example.org/bar/b",
+            "https://git.example.org/baz",
             ]
         snaps = []
         for url in urls:
@@ -1560,7 +1623,7 @@ class TestSnapWebservice(TestCaseWithFactory):
             getUtility(ILaunchpadCelebrities).commercial_admin.teamowner)
         logout()
         prefixes = [
-            u"https://git.example.org/foo/", u"https://git.example.org/bar/"]
+            "https://git.example.org/foo/", "https://git.example.org/bar/"]
         # Anonymous requests can only see public snaps.
         anon_webservice = LaunchpadWebServiceCaller("test", "")
         response = anon_webservice.named_get(
