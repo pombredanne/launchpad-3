@@ -36,12 +36,12 @@ ONE_DAY = 24 * 60 * 60
 
 @contextmanager
 def disable_swiftclient_logging():
-    # swiftclient has some very rude logging practices: the low-level API
-    # calls `logger.exception` when a request fails, without considering
-    # whether the caller might handle it and recover.  This was introduced
-    # in 1.6.0 and removed in 3.2.0; until we're on a new enough version not
-    # to need to worry about this, we shut up the noisy logging around calls
-    # whose failure we can handle.
+    # XXX cjwatson 2018-01-02: swiftclient has some very rude logging
+    # practices: the low-level API calls `logger.exception` when a request
+    # fails, without considering whether the caller might handle it and
+    # recover.  This was introduced in 1.6.0 and removed in 3.2.0; until
+    # we're on a new enough version not to need to worry about this, we shut
+    # up the noisy logging around calls whose failure we can handle.
     # Messier still, logging.getLogger('swiftclient') doesn't necessarily
     # refer to the Logger instance actually being used by swiftclient, so we
     # have to use swiftclient.logger directly.
