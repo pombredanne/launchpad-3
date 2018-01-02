@@ -29,7 +29,7 @@ class WalkerBase_Logging(TestCase):
         from logging import getLogger
         parent = getLogger("foo")
         w = WalkerBase("/", log_parent=parent)
-        self.assertEquals(w.log.parent, parent)
+        self.assertEqual(w.log.parent, parent)
 
 
 class WalkerBase_Base(TestCase):
@@ -37,22 +37,22 @@ class WalkerBase_Base(TestCase):
     def testSetsBase(self):
         """WalkerBase sets the base property."""
         w = WalkerBase("ftp://localhost/")
-        self.assertEquals(w.base, "ftp://localhost/")
+        self.assertEqual(w.base, "ftp://localhost/")
 
     def testSetsScheme(self):
         """WalkerBase sets the scheme property."""
         w = WalkerBase("ftp://localhost/")
-        self.assertEquals(w.scheme, "ftp")
+        self.assertEqual(w.scheme, "ftp")
 
     def testSetsHost(self):
         """WalkerBase sets the host property."""
         w = WalkerBase("ftp://localhost/")
-        self.assertEquals(w.host, "localhost")
+        self.assertEqual(w.host, "localhost")
 
     def testNoScheme(self):
         """WalkerBase works when given a URL with no scheme."""
         w = WalkerBase("/")
-        self.assertEquals(w.host, "")
+        self.assertEqual(w.host, "")
 
     def testWrongScheme(self):
         """WalkerBase raises WalkerError when given an unhandled scheme."""
@@ -63,75 +63,75 @@ class WalkerBase_Base(TestCase):
     def testUnescapesHost(self):
         """WalkerBase unescapes the host portion."""
         w = WalkerBase("ftp://local%40host/")
-        self.assertEquals(w.host, "local@host")
+        self.assertEqual(w.host, "local@host")
 
     def testNoUsername(self):
         """WalkerBase stores None when there is no username."""
         w = WalkerBase("ftp://localhost/")
-        self.assertEquals(w.user, None)
+        self.assertEqual(w.user, None)
 
     def testUsername(self):
         """WalkerBase splits out the username from the host portion."""
         w = WalkerBase("ftp://scott@localhost/")
-        self.assertEquals(w.user, "scott")
-        self.assertEquals(w.host, "localhost")
+        self.assertEqual(w.user, "scott")
+        self.assertEqual(w.host, "localhost")
 
     def testUnescapesUsername(self):
         """WalkerBase unescapes the username portion."""
         w = WalkerBase("ftp://scott%3awibble@localhost/")
-        self.assertEquals(w.user, "scott:wibble")
-        self.assertEquals(w.host, "localhost")
+        self.assertEqual(w.user, "scott:wibble")
+        self.assertEqual(w.host, "localhost")
 
     def testNoPassword(self):
         """WalkerBase stores None when there is no password."""
         w = WalkerBase("ftp://scott@localhost/")
-        self.assertEquals(w.passwd, None)
+        self.assertEqual(w.passwd, None)
 
     def testPassword(self):
         """WalkerBase splits out the password from the username."""
         w = WalkerBase("ftp://scott:wibble@localhost/")
-        self.assertEquals(w.user, "scott")
-        self.assertEquals(w.passwd, "wibble")
-        self.assertEquals(w.host, "localhost")
+        self.assertEqual(w.user, "scott")
+        self.assertEqual(w.passwd, "wibble")
+        self.assertEqual(w.host, "localhost")
 
     def testUnescapesPassword(self):
         """WalkerBase unescapes the password portion."""
         w = WalkerBase("ftp://scott:wibble%20wobble@localhost/")
-        self.assertEquals(w.user, "scott")
-        self.assertEquals(w.passwd, "wibble wobble")
-        self.assertEquals(w.host, "localhost")
+        self.assertEqual(w.user, "scott")
+        self.assertEqual(w.passwd, "wibble wobble")
+        self.assertEqual(w.host, "localhost")
 
     def testPathOnly(self):
         """WalkerBase stores the path if that's all there is."""
         w = WalkerBase("/path/to/something/")
-        self.assertEquals(w.path, "/path/to/something/")
+        self.assertEqual(w.path, "/path/to/something/")
 
     def testPathInUrl(self):
         """WalkerBase stores the path portion of a complete URL."""
         w = WalkerBase("ftp://localhost/path/to/something/")
-        self.assertEquals(w.path, "/path/to/something/")
+        self.assertEqual(w.path, "/path/to/something/")
 
     def testAddsSlashToPath(self):
         """WalkerBase adds a trailing slash to path if ommitted."""
         w = WalkerBase("ftp://localhost/path/to/something")
-        self.assertEquals(w.path, "/path/to/something/")
+        self.assertEqual(w.path, "/path/to/something/")
 
     def testUnescapesPath(self):
         """WalkerBase leaves the path escaped."""
         w = WalkerBase("ftp://localhost/some%20thing/")
-        self.assertEquals(w.path, "/some%20thing/")
+        self.assertEqual(w.path, "/some%20thing/")
 
     def testStoresQuery(self):
         """WalkerBase stores the query portion of a supporting URL."""
         w = WalkerBase("http://localhost/?foo")
-        self.assertEquals(w.query, "foo")
+        self.assertEqual(w.query, "foo")
 
     def testStoresFragment(self):
         """WalkerBase stores the fragment portion of a supporting URL."""
         WalkerBase.FRAGMENTS = True
         try:
             w = WalkerBase("http://localhost/#foo")
-            self.assertEquals(w.fragment, "foo")
+            self.assertEqual(w.fragment, "foo")
         finally:
             WalkerBase.FRAGMENTS = False
 
@@ -204,14 +204,14 @@ class FTPWalker_Base(TestCase):
         from lp.registry.scripts.productreleasefinder.walker import (
             FTPWalker)
         w = FTPWalker("ftp://localhost/")
-        self.assertEquals(w.host, "localhost")
+        self.assertEqual(w.host, "localhost")
 
     def testNoScheme(self):
         """FTPWalker works when given a URL with no scheme."""
         from lp.registry.scripts.productreleasefinder.walker import (
             FTPWalker)
         w = FTPWalker("/")
-        self.assertEquals(w.host, "")
+        self.assertEqual(w.host, "")
 
     def testWrongScheme(self):
         """FTPWalker raises WalkerError when given an unhandled scheme."""
@@ -224,14 +224,14 @@ class FTPWalker_Base(TestCase):
         from lp.registry.scripts.productreleasefinder.walker import (
             FTPWalker)
         w = FTPWalker("ftp://localhost/")
-        self.assertEquals(w.user, "anonymous")
+        self.assertEqual(w.user, "anonymous")
 
     def testNoPassword(self):
         """FTPWalker stores empty string when there is no password."""
         from lp.registry.scripts.productreleasefinder.walker import (
             FTPWalker)
         w = FTPWalker("ftp://scott@localhost/")
-        self.assertEquals(w.passwd, "")
+        self.assertEqual(w.passwd, "")
 
 
 class HTTPWalker_Base(TestCase):
@@ -241,21 +241,21 @@ class HTTPWalker_Base(TestCase):
         from lp.registry.scripts.productreleasefinder.walker import (
             HTTPWalker)
         w = HTTPWalker("http://localhost/")
-        self.assertEquals(w.host, "localhost")
+        self.assertEqual(w.host, "localhost")
 
     def testHttpsScheme(self):
         """HTTPWalker works when initialized with an https-scheme URL."""
         from lp.registry.scripts.productreleasefinder.walker import (
             HTTPWalker)
         w = HTTPWalker("https://localhost/")
-        self.assertEquals(w.host, "localhost")
+        self.assertEqual(w.host, "localhost")
 
     def testNoScheme(self):
         """HTTPWalker works when given a URL with no scheme."""
         from lp.registry.scripts.productreleasefinder.walker import (
             HTTPWalker)
         w = HTTPWalker("/")
-        self.assertEquals(w.host, "")
+        self.assertEqual(w.host, "")
 
     def testWrongScheme(self):
         """HTTPWalker raises WalkerError when given an unhandled scheme."""
@@ -274,13 +274,13 @@ class HTTPWalker_url_schemes_and_handlers(TestCase):
         self.walker = HTTPWalker("http://localhost/")
 
     def verify_url_scheme_and_handler(self, scheme, handler):
-        self.assert_(scheme in self.walker.URL_SCHEMES)
-        self.assert_(handler in self.walker.handlers)
+        self.assertIn(scheme, self.walker.URL_SCHEMES)
+        self.assertIn(handler, self.walker.handlers)
         # urllib2 uses a naming convention to select the handler for
         # a URL scheme. This test is sanity to check to ensure that the
         # HTTPWalker's configuration of the OpenerDirector is will work.
         method_name = '%s_open' % scheme
-        self.assert_(safe_hasattr(handler, method_name))
+        self.assertTrue(safe_hasattr(handler, method_name))
 
     def test_http_request(self):
         import urllib2
@@ -503,7 +503,7 @@ class Walker_CombineUrl(TestCase):
         """combine_url constructs the URL correctly."""
         from lp.registry.scripts.productreleasefinder.walker import (
             combine_url)
-        self.assertEquals(combine_url("file:///base", "/subdir/", "file"),
-                          "file:///subdir/file")
-        self.assertEquals(combine_url("file:///base", "/subdir", "file"),
-                          "file:///subdir/file")
+        self.assertEqual(combine_url("file:///base", "/subdir/", "file"),
+                         "file:///subdir/file")
+        self.assertEqual(combine_url("file:///base", "/subdir", "file"),
+                         "file:///subdir/file")

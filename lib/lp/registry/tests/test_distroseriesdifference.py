@@ -436,7 +436,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         packagesets = self._setupPackageSets(
             ds_diff, ds_diff.parent_series, 5)
         parent_packagesets = ds_diff.parent_packagesets
-        self.assertEquals(
+        self.assertEqual(
             sorted([packageset.name for packageset in packagesets]),
             [packageset.name for packageset in parent_packagesets])
 
@@ -445,7 +445,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference()
         packagesets = self._setupPackageSets(
             ds_diff, ds_diff.derived_series, 5)
-        self.assertEquals(
+        self.assertEqual(
             sorted([packageset.name for packageset in packagesets]),
             [packageset.name for packageset in ds_diff.packagesets])
 

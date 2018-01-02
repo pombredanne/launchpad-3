@@ -258,7 +258,7 @@ class CodehostingTest(WithScenarios, TestCaseWithFactory):
         self.assertUnmirrored(branch)
 
         branch.requestMirror()
-        self.assertEquals(
+        self.assertEqual(
             branch.id, self.codehosting_api.acquireBranchToPull([])[0])
 
         failure_message = self.factory.getUniqueString()

@@ -50,25 +50,25 @@ class TestDetermineFileClassAndName(TestCase):
 
     def testSourceFile(self):
         # A non-DSC source file is a SourceUploadFile.
-        self.assertEquals(
+        self.assertEqual(
             ('foo', SourceUploadFile),
             determine_file_class_and_name('foo_1.0.diff.gz'))
 
     def testDSCFile(self):
         # A DSC is a DSCFile, since they're special.
-        self.assertEquals(
+        self.assertEqual(
             ('foo', DSCFile),
             determine_file_class_and_name('foo_1.0.dsc'))
 
     def testDEBFile(self):
         # A binary file is the appropriate PackageUploadFile subclass.
-        self.assertEquals(
+        self.assertEqual(
             ('foo', DebBinaryUploadFile),
             determine_file_class_and_name('foo_1.0_all.deb'))
-        self.assertEquals(
+        self.assertEqual(
             ('foo', DdebBinaryUploadFile),
             determine_file_class_and_name('foo_1.0_all.ddeb'))
-        self.assertEquals(
+        self.assertEqual(
             ('foo', UdebBinaryUploadFile),
             determine_file_class_and_name('foo_1.0_all.udeb'))
 
@@ -219,43 +219,43 @@ class ChangesFileTests(TestCase):
         # checkFileName() yields an UploadError if the filename is invalid.
         contents = self.getBaseChanges()
         changes = self.createChangesFile("mypkg_0.1_i386.changes", contents)
-        self.assertEquals([], list(changes.checkFileName()))
+        self.assertEqual([], list(changes.checkFileName()))
         changes = self.createChangesFile("mypkg_0.1.changes", contents)
         errors = list(changes.checkFileName())
         self.assertIsInstance(errors[0], UploadError)
-        self.assertEquals(1, len(errors))
+        self.assertEqual(1, len(errors))
 
     def test_filename(self):
         # Filename gets set to the basename of the changes file on disk.
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", self.getBaseChanges())
-        self.assertEquals("mypkg_0.1_i386.changes", changes.filename)
+        self.assertEqual("mypkg_0.1_i386.changes", changes.filename)
 
     def test_suite_name(self):
         # The suite name gets extracted from the changes file.
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", self.getBaseChanges())
-        self.assertEquals("nifty", changes.suite_name)
+        self.assertEqual("nifty", changes.suite_name)
 
     def test_version(self):
         # The version gets extracted from the changes file.
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", self.getBaseChanges())
-        self.assertEquals("0.1", changes.version)
+        self.assertEqual("0.1", changes.version)
 
     def test_architectures(self):
         # The architectures get extracted from the changes file
         # and parsed correctly.
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", self.getBaseChanges())
-        self.assertEquals("i386", changes.architecture_line)
-        self.assertEquals(set(["i386"]), changes.architectures)
+        self.assertEqual("i386", changes.architecture_line)
+        self.assertEqual(set(["i386"]), changes.architectures)
 
     def test_source(self):
         # The source package name gets extracted from the changes file.
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", self.getBaseChanges())
-        self.assertEquals("mypkg", changes.source)
+        self.assertEqual("mypkg", changes.source)
 
     def test_processAddresses(self):
         # processAddresses parses the changes file and sets the
@@ -263,9 +263,9 @@ class ChangesFileTests(TestCase):
         contents = self.getBaseChanges()
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", contents)
-        self.assertEquals(None, changes.changed_by)
+        self.assertIsNone(changes.changed_by)
         errors = list(changes.processAddresses())
-        self.assertEquals(0, len(errors), "Errors: %r" % errors)
+        self.assertEqual(0, len(errors), "Errors: %r" % errors)
         self.assertThat(
             changes.changed_by,
             MatchesDict({
@@ -280,8 +280,8 @@ class ChangesFileTests(TestCase):
         contents = self.getBaseChanges()
         changes = self.createChangesFile(
             "mypkg_0.1_i386.changes", contents)
-        self.assertEquals([], list(changes.processAddresses()))
-        self.assertEquals(
+        self.assertEqual([], list(changes.processAddresses()))
+        self.assertEqual(
             "Something changed\n\n"
             " -- Somebody <somebody@ubuntu.com>  "
             "Fri, 25 Jun 2010 11:20:22 -0600",

@@ -807,7 +807,7 @@ class TestPersonStates(TestCaseWithFactory):
         login(user.preferredemail.email)
         expected_error = ('This account cannot be deactivated because it owns '
                         'the following non-public products: private')
-        self.assertEquals([expected_error], user.canDeactivate())
+        self.assertEqual([expected_error], user.canDeactivate())
 
     def test_deactivate_copes_with_names_already_in_use(self):
         """When a user deactivates their account, their name is changed.

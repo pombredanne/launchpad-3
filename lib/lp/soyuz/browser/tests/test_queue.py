@@ -173,7 +173,7 @@ class TestAcceptRejectQueueUploads(TestCaseWithFactory):
         request.method = 'POST'
         view = self.setupQueueView(request)
 
-        self.assertEquals(
+        self.assertEqual(
             html_escape(
                 "FAILED: partner-upload (You have no rights to accept "
                 "component(s) 'partner')"),
@@ -221,7 +221,7 @@ class TestAcceptRejectQueueUploads(TestCaseWithFactory):
         request.method = 'POST'
         view = self.setupQueueView(request)
 
-        self.assertEquals(
+        self.assertEqual(
             html_escape(
                 "FAILED: main-upload (You have no rights to accept "
                 "component(s) 'main')"),

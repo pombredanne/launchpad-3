@@ -356,9 +356,9 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             date_created=datetime.now(utc) - timedelta(hours=24, seconds=1),
             status=BuildStatus.FULLYBUILT)
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
-        self.assertEquals(1, len(daily_builds))
+        self.assertEqual(1, len(daily_builds))
         actual_title = [b.title for b in daily_builds]
-        self.assertEquals([build.title], actual_title)
+        self.assertEqual([build.title], actual_title)
 
     def test_makeDailyBuilds_with_an_older_and_newer_build(self):
         # If a recipe has been built twice, and the most recent build is
@@ -374,7 +374,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
                 date_created=datetime.now(utc) - timediff,
                 status=BuildStatus.FULLYBUILT)
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
-        self.assertEquals([], list(daily_builds))
+        self.assertEqual([], list(daily_builds))
 
     def test_makeDailyBuilds_with_new_build_different_archive(self):
         # If a recipe has been built into an archive that isn't the
@@ -390,7 +390,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             status=BuildStatus.FULLYBUILT)
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
         actual_title = [b.title for b in daily_builds]
-        self.assertEquals([build.title], actual_title)
+        self.assertEqual([build.title], actual_title)
 
     def test_makeDailyBuilds_with_disallowed_series(self):
         # If a recipe is set to build into a disallowed series,
@@ -402,7 +402,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         distroseries = list(recipe.distroseries)[0]
         removeSecurityProxy(distroseries).status = SeriesStatus.OBSOLETE
         SourcePackageRecipeBuild.makeDailyBuilds(logger)
-        self.assertEquals([], self.oopses)
+        self.assertEqual([], self.oopses)
         self.assertIn(
             "DEBUG  - cannot build against Warty (4.10).",
             logger.getLogBuffer())
@@ -452,7 +452,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
     def test_getUploader(self):
         # For ACL purposes the uploader is the build requester.
         build = self.makeSourcePackageRecipeBuild()
-        self.assertEquals(build.requester,
+        self.assertEqual(build.requester,
             build.getUploader(None))
 
     def test_getByBuildFarmJob(self):
@@ -497,7 +497,7 @@ class TestAsBuildmaster(TestCaseWithFactory):
         build.updateStatus(BuildStatus.FULLYBUILT)
         IStore(build).flush()
         build.notify()
-        self.assertEquals(0, len(pop_notifications()))
+        self.assertEqual(0, len(pop_notifications()))
 
     def test_notify_when_recipe_deleted(self):
         """Notify does nothing if recipe has been deleted."""
@@ -516,4 +516,4 @@ class TestAsBuildmaster(TestCaseWithFactory):
         IStore(build).flush()
         build.notify()
         notifications = pop_notifications()
-        self.assertEquals(0, len(notifications))
+        self.assertEqual(0, len(notifications))

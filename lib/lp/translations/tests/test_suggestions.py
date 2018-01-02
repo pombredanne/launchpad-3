@@ -59,9 +59,9 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         # translations for it, there are no suggestions for translating
         # it whatsoever.
         potmsgset = self.factory.makePOTMsgSet(self.foo_template)
-        self.assertEquals(
+        self.assertEqual(
             potmsgset.getExternallyUsedTranslationMessages(self.nl), [])
-        self.assertEquals(
+        self.assertEqual(
             potmsgset.getExternallySuggestedTranslationMessages(self.nl), [])
         self.assertEqual({},
             potmsgset.getExternallySuggestedOrUsedTranslationMessages(
@@ -80,9 +80,9 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         transaction.commit()
 
         def check_used_suggested():
-            self.assertEquals(len(used_suggestions), 1)
-            self.assertEquals(used_suggestions[0], translation)
-            self.assertEquals(len(other_suggestions), 0)
+            self.assertEqual(len(used_suggestions), 1)
+            self.assertEqual(used_suggestions[0], translation)
+            self.assertEqual(len(other_suggestions), 0)
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
             self.nl)
         other_suggestions = foomsg.getExternallySuggestedTranslationMessages(
@@ -110,12 +110,12 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         # There is a global (externally used) suggestion.
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
             self.nl)
-        self.assertEquals(len(used_suggestions), 1)
+        self.assertEqual(len(used_suggestions), 1)
         used_suggestions = (
             foomsg.getExternallySuggestedOrUsedTranslationMessages(
                 used_languages=[self.nl],
                 suggested_languages=[self.nl])[self.nl].used)
-        self.assertEquals(len(used_suggestions), 1)
+        self.assertEqual(len(used_suggestions), 1)
 
         # Override the config option to disable global suggestions.
         new_config = ("""
@@ -125,12 +125,12 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         config.push('disabled_suggestions', new_config)
         disabled_used_suggestions = (
             foomsg.getExternallyUsedTranslationMessages(self.nl))
-        self.assertEquals(len(disabled_used_suggestions), 0)
+        self.assertEqual(len(disabled_used_suggestions), 0)
         disabled_used_suggestions = (
             foomsg.getExternallySuggestedOrUsedTranslationMessages(
                 used_languages=[self.nl],
                 suggested_languages=[self.nl]))[self.nl].used
-        self.assertEquals(len(disabled_used_suggestions), 0)
+        self.assertEqual(len(disabled_used_suggestions), 0)
         # Restore the old configuration.
         config.pop('disabled_suggestions')
 
@@ -145,9 +145,9 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         transaction.commit()
 
         def check_used_suggested():
-            self.assertEquals(len(used_suggestions), 0)
-            self.assertEquals(len(other_suggestions), 1)
-            self.assertEquals(other_suggestions[0], suggestion)
+            self.assertEqual(len(used_suggestions), 0)
+            self.assertEqual(len(other_suggestions), 1)
+            self.assertEqual(other_suggestions[0], suggestion)
         used_suggestions = foomsg.getExternallyUsedTranslationMessages(
             self.nl)
         other_suggestions = foomsg.getExternallySuggestedTranslationMessages(
@@ -189,14 +189,14 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         transaction.commit()
         suggestions = oof_potmsgset.getExternallyUsedTranslationMessages(
             self.nl)
-        self.assertEquals(len(suggestions), 1)
-        self.assertEquals(suggestions[0], suggestion1)
+        self.assertEqual(len(suggestions), 1)
+        self.assertEqual(suggestions[0], suggestion1)
         suggestions = (
             oof_potmsgset.getExternallySuggestedOrUsedTranslationMessages(
                 suggested_languages=[self.nl],
                 used_languages=[self.nl])[self.nl].used)
-        self.assertEquals(len(suggestions), 1)
-        self.assertEquals(suggestions[0], suggestion1)
+        self.assertEqual(len(suggestions), 1)
+        self.assertEqual(suggestions[0], suggestion1)
 
     def test_RevertingToUpstream(self):
         # When a msgid string is unique and nobody has submitted any
@@ -219,7 +219,7 @@ class TestTranslationSuggestions(TestCaseWithFactory):
         upstream_translation = potmsgset.getOtherTranslation(
             self.foo_nl.language, self.foo_template.translation_side)
 
-        self.assertEquals(
+        self.assertEqual(
             upstream_translation, ubuntu_translation,
             "Upstream message should become current in Ubuntu if there are "
             "no previous imported messages.")

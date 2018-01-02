@@ -119,23 +119,22 @@ class TestLoginAndLogout(TestCaseWithFactory):
 
         # The view should have redirected us, with no actual response body.
 
-        self.assertEquals(self.request.response.getStatus(), 302)
-        self.assertEquals(result, '')
+        self.assertEqual(self.request.response.getStatus(), 302)
+        self.assertEqual(result, '')
 
         # We are redirecting to Loggerhead, to ask it to logout.
 
         location = lazr.uri.URI(self.request.response.getHeader('location'))
-        self.assertEquals(location.host, 'bazaar.launchpad.dev')
-        self.assertEquals(location.scheme, 'https')
-        self.assertEquals(location.path, '/+logout')
+        self.assertEqual(location.host, 'bazaar.launchpad.dev')
+        self.assertEqual(location.scheme, 'https')
+        self.assertEqual(location.path, '/+logout')
 
         # That page should then redirect to our OpenId provider to logout,
         # which we provide in our query string.  See
         # launchpad_loggerhead.tests.TestLogout for the pertinent tests.
 
         query = cgi.parse_qs(location.query)
-        self.assertEquals(
-            query['next_to'][0], 'http://testopenid.dev/+logout')
+        self.assertEqual(query['next_to'][0], 'http://testopenid.dev/+logout')
 
     def test_logging_in_and_logging_out_the_old_way(self):
         # A test showing that we can authenticate a request that had the

@@ -193,7 +193,7 @@ class TestSwiftFixture(TestCase):
         # Things work fine when the Swift server is up.
         self.swift_fixture.startup()
         headers, body = client.get_object("size", str(size))
-        self.assertEquals(body, "0" * size)
+        self.assertEqual(body, "0" * size)
 
         # But if the Swift server goes away again, we end up with
         # different failures since the connection has already
@@ -213,7 +213,7 @@ class TestSwiftFixture(TestCase):
         # But fresh connections are fine.
         client = self.swift_fixture.connect()
         headers, body = client.get_object("size", str(size))
-        self.assertEquals(body, "0" * size)
+        self.assertEqual(body, "0" * size)
 
     def test_env(self):
         self.assertEqual(

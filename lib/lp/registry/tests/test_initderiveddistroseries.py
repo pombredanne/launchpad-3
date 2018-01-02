@@ -90,7 +90,7 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
               p.getBuiltBinaries()[0].binarypackagerelease.version)
                  for p in pub_sources])
 
-        self.assertEquals(pack_versions, binaries)
+        self.assertEqual(pack_versions, binaries)
 
     def test_multiple_parents_binary_packages(self):
         # An initialization from many parents (using the package copier)

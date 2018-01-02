@@ -32,14 +32,12 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
 
     def test_no_templates_no_translation(self):
         # There are no templates and no translations.
-        self.assertEquals([],
-                          self.productseries.productserieslanguages)
+        self.assertEqual([], self.productseries.productserieslanguages)
 
     def test_one_template_no_translation(self):
         # There is a template and no translations.
         self.factory.makePOTemplate(productseries=self.productseries)
-        self.assertEquals([],
-                          self.productseries.productserieslanguages)
+        self.assertEqual([], self.productseries.productserieslanguages)
 
     def test_one_template_with_pofile(self):
         # There is a template and one translation.
@@ -52,15 +50,15 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
         sr_pofile = self.factory.makePOFile('sr', potemplate)
 
         psls = list(self.productseries.productserieslanguages)
-        self.assertEquals(1, len(psls))
+        self.assertEqual(1, len(psls))
 
         # ProductSeriesLanguage object correctly keeps values
         # for a language, productseries itself and POFile.
         sr_psl = psls[0]
-        self.assertEquals(self.productseries, sr_psl.productseries)
-        self.assertEquals(sr_pofile.language, sr_psl.language)
-        self.assertEquals(sr_pofile, sr_psl.pofile)
-        self.assertEquals([sr_pofile], list(sr_psl.pofiles))
+        self.assertEqual(self.productseries, sr_psl.productseries)
+        self.assertEqual(sr_pofile.language, sr_psl.language)
+        self.assertEqual(sr_pofile, sr_psl.pofile)
+        self.assertEqual([sr_pofile], list(sr_psl.pofiles))
 
     def test_productserieslanguages_languages_sorting(self):
         # ProductSeriesLanguages are sorted alphabetically by language.
@@ -77,7 +75,7 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
 
         languages = [psl.language for psl in
                      self.productseries.productserieslanguages]
-        self.assertEquals([albanian, serbian], languages)
+        self.assertEqual([albanian, serbian], languages)
 
     def test_two_templates_pofile_not_set(self):
         # With two templates, pofile attribute doesn't get set.
@@ -95,7 +93,7 @@ class TestProductSeriesLanguages(TestCaseWithFactory):
 
         # `pofile` is not set when there's more than one template.
         sr_psl = psls[0]
-        self.assertEquals(None, sr_psl.pofile)
+        self.assertIsNone(sr_psl.pofile)
 
 
 class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
@@ -134,7 +132,7 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         self.language = getUtility(ILanguageSet).getLanguageByCode('sr')
 
     def assertPSLStatistics(self, psl, stats):
-        self.assertEquals(
+        self.assertEqual(
             (psl.messageCount(),
              psl.translatedCount(),
              psl.currentCount(),
@@ -172,7 +170,7 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         # Getting PSL through PSLSet gives an uninitialized object.
         psl = self.psl_set.getProductSeriesLanguage(
             self.productseries, self.language)
-        self.assertEquals(psl.messageCount(), 0)
+        self.assertEqual(psl.messageCount(), 0)
 
         # We explicitely ask for stats to be recalculated.
         psl.recalculateCounts()

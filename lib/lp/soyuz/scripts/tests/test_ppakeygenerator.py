@@ -102,7 +102,7 @@ class TestPPAKeyGenerator(TestCase):
         key_generator.main()
 
         self.assertTrue(cprov.archive.signing_key is not None)
-        self.assertEquals(txn.commit_count, 1)
+        self.assertEqual(txn.commit_count, 1)
 
     def testGenerateKeyForAllPPA(self):
         """Signing key generation for all PPAs.
@@ -123,4 +123,4 @@ class TestPPAKeyGenerator(TestCase):
         for archive in archives:
             self.assertTrue(archive.signing_key is not None)
 
-        self.assertEquals(txn.commit_count, len(archives))
+        self.assertEqual(txn.commit_count, len(archives))

@@ -113,11 +113,11 @@ class TestDefaultConfigArgument(lp.testing.TestCase):
         instance_config_dir = os.path.join(self.config_root, 'test')
         os.mkdir(instance_config_dir)
         open(os.path.join(instance_config_dir, 'launchpad.conf'), 'w').close()
-        self.assertEquals(
+        self.assertEqual(
             ['-o', 'foo', '-C', '%s/launchpad.conf' % instance_config_dir],
             process_config_arguments(
                 ['-i', 'test', '-o', 'foo']))
-        self.assertEquals('test', config.instance_name)
+        self.assertEqual('test', config.instance_name)
 
 
 class ServersToStart(testtools.TestCase):

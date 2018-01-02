@@ -111,11 +111,11 @@ class TestApplicationServerSettingRequestFactory(TestCase):
         factory = ApplicationServerSettingRequestFactory(
             LaunchpadBrowserRequest, 'launchpad.dev', 'https', 443)
         request = factory(StringIO.StringIO(), {'HTTP_HOST': 'launchpad.dev'})
-        self.assertEquals(
+        self.assertEqual(
             request.get('HTTPS'), 'on', "factory didn't set the HTTPS env")
         # This is a sanity check ensuring that effect of this works as
         # expected with the Zope request implementation.
-        self.assertEquals(request.getURL(), 'https://launchpad.dev')
+        self.assertEqual(request.getURL(), 'https://launchpad.dev')
 
     def test___call___should_not_set_HTTPS(self):
         # Ensure that the factory doesn't put an HTTPS variable in the
@@ -123,7 +123,7 @@ class TestApplicationServerSettingRequestFactory(TestCase):
         factory = ApplicationServerSettingRequestFactory(
             LaunchpadBrowserRequest, 'launchpad.dev', 'http', 80)
         request = factory(StringIO.StringIO(), {})
-        self.assertEquals(
+        self.assertEqual(
             request.get('HTTPS'), None,
             "factory should not have set HTTPS env")
 
@@ -170,7 +170,7 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
         # Necessary preamble and sanity check.  We need to call
         # the factory's canHandle() method with an appropriate
         # WSGI environment before it can produce a request object for us.
-        self.assert_(self.factory.canHandle(env),
+        self.assertTrue(self.factory.canHandle(env),
             "Sanity check: The factory should be able to handle requests.")
 
         wrapped_factory, publication_factory = self.factory()
@@ -192,7 +192,7 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
         web service.
         """
         env = self.wsgi_env(self.non_api_path)
-        self.assert_(self.factory.canHandle(env),
+        self.assertTrue(self.factory.canHandle(env),
             "Sanity check: The factory should be able to handle requests.")
 
         wrapped_factory, publication_factory = self.factory()
@@ -216,11 +216,11 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
 
         for method in allowed_methods:
             env = self.wsgi_env(self.api_path, method)
-            self.assert_(self.factory.canHandle(env),
-                "Sanity check")
+            self.assertTrue(self.factory.canHandle(env), "Sanity check")
             # Returns a tuple of (request_factory, publication_factory).
             rfactory, pfactory = self.factory.checkRequest(env)
-            self.assert_(rfactory is None,
+            self.assertIsNone(
+                rfactory,
                 "The '%s' HTTP method should be handled by the factory."
                 % method)
 
@@ -237,10 +237,11 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
 
         for method in denied_methods:
             env = self.wsgi_env(self.non_api_path, method)
-            self.assert_(self.factory.canHandle(env), "Sanity check")
+            self.assertTrue(self.factory.canHandle(env), "Sanity check")
             # Returns a tuple of (request_factory, publication_factory).
             rfactory, pfactory = self.factory.checkRequest(env)
-            self.assert_(rfactory is not None,
+            self.assertIsNotNone(
+                rfactory,
                 "The '%s' HTTP method should be rejected by the factory."
                 % method)
 
@@ -352,7 +353,7 @@ class TestWebServiceRequest(WebServiceTestCase):
 
     def test_response_should_vary_based_on_content_type(self):
         request = WebServiceClientRequest(StringIO.StringIO(''), {})
-        self.assertEquals(
+        self.assertEqual(
             request.response.getHeader('Vary'), 'Accept')
 
 
@@ -364,26 +365,26 @@ class TestBasicLaunchpadRequest(TestCase):
     def test_baserequest_response_should_vary(self):
         """Test that our base response has a proper vary header."""
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
-        self.assertEquals(
+        self.assertEqual(
             request.response.getHeader('Vary'), 'Cookie, Authorization')
 
     def test_baserequest_response_should_vary_after_retry(self):
         """Test that our base response has a proper vary header."""
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
         retried_request = request.retry()
-        self.assertEquals(
+        self.assertEqual(
             retried_request.response.getHeader('Vary'),
             'Cookie, Authorization')
 
     def test_baserequest_security_headers(self):
         response = LaunchpadBrowserRequest(StringIO.StringIO(''), {}).response
-        self.assertEquals(
+        self.assertEqual(
             response.getHeader('X-Frame-Options'), 'SAMEORIGIN')
-        self.assertEquals(
+        self.assertEqual(
             response.getHeader('X-Content-Type-Options'), 'nosniff')
-        self.assertEquals(
+        self.assertEqual(
             response.getHeader('X-XSS-Protection'), '1; mode=block')
-        self.assertEquals(
+        self.assertEqual(
             response.getHeader(
                 'Strict-Transport-Security'), 'max-age=15552000')
 
@@ -399,7 +400,7 @@ class TestBasicLaunchpadRequest(TestCase):
         bad_path = 'fnord/trunk\xE4'
         env = {'PATH_INFO': bad_path}
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), env)
-        self.assertEquals(u'fnord/trunk\ufffd', request.getHeader('PATH_INFO'))
+        self.assertEqual(u'fnord/trunk\ufffd', request.getHeader('PATH_INFO'))
 
     def test_request_with_invalid_query_string_recovers(self):
         # When the query string has invalid utf-8, it is decoded with
@@ -591,8 +592,8 @@ class TestLaunchpadBrowserRequest_getNearest(TestCase):
         # interfaces are passed to getNearest().
         request = self.request
         request.traversed_objects.extend([self.thing_set, self.thing])
-        self.assertEquals(request.getNearest(IThing), (self.thing, IThing))
-        self.assertEquals(
+        self.assertEqual(request.getNearest(IThing), (self.thing, IThing))
+        self.assertEqual(
             request.getNearest(IThingSet), (self.thing_set, IThingSet))
 
     def test_multiple_traversed_objects_with_common_interface(self):
@@ -601,13 +602,13 @@ class TestLaunchpadBrowserRequest_getNearest(TestCase):
         thing2 = Thing()
         self.request.traversed_objects.extend(
             [self.thing_set, self.thing, thing2])
-        self.assertEquals(self.request.getNearest(IThing), (thing2, IThing))
+        self.assertEqual(self.request.getNearest(IThing), (thing2, IThing))
 
     def test_interface_not_traversed(self):
         # If a particular interface has not been traversed, the tuple
         # (None, None) is returned.
         self.request.traversed_objects.extend([self.thing_set])
-        self.assertEquals(self.request.getNearest(IThing), (None, None))
+        self.assertEqual(self.request.getNearest(IThing), (None, None))
 
 
 class TestLaunchpadBrowserRequest(TestCase):

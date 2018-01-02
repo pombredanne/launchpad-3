@@ -289,7 +289,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         jobs = find_waiting_jobs(
             dsp.derived_series, package, dsp.parent_series)
 
-        self.assertEquals(len(jobs), 1)
+        self.assertEqual(len(jobs), 1)
         self.assertJobsSeriesAndMetadata(
             jobs[0], dsp.derived_series, [package.id, dsp.parent_series.id])
 
@@ -306,7 +306,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         parent_jobs = find_waiting_jobs(
             parent_dsp.derived_series, package, parent_dsp.parent_series)
 
-        self.assertEquals(len(parent_jobs), 1)
+        self.assertEqual(len(parent_jobs), 1)
         self.assertJobsSeriesAndMetadata(
             parent_jobs[0], dsp.parent_series,
             [package.id, parent_dsp.parent_series.id])

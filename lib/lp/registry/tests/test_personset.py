@@ -569,7 +569,7 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
 
         ensured_person = self.person_set.ensurePerson(
             self.email_address, self.displayname, self.rationale)
-        self.assertEquals(testing_person.id, ensured_person.id)
+        self.assertEqual(testing_person.id, ensured_person.id)
         self.assertIsNot(
             ensured_person.displayname, self.displayname,
             'Person.displayname should not be overridden.')
@@ -655,10 +655,10 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
             u'other-openid-identifier', 'a@b.com')
 
         self.assertEqual(other_person, person)
-        self.assert_(
-            u'other-openid-identifier' in [
-                identifier.identifier for identifier in removeSecurityProxy(
-                    person.account).openid_identifiers])
+        self.assertIn(
+            u'other-openid-identifier',
+            [identifier.identifier for identifier in removeSecurityProxy(
+                person.account).openid_identifiers])
 
 
 class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):

@@ -50,25 +50,25 @@ class TestSourcePackageRelease(TestCaseWithFactory):
                 user_defined_fields=[
                     ("Python-Version", ">= 2.4"),
                     ("Other", "Bla")])
-        self.assertEquals([
+        self.assertEqual([
             ["Python-Version", ">= 2.4"],
             ["Other", "Bla"]], release.user_defined_fields)
 
     def test_homepage_default(self):
         # By default, no homepage is set.
         spr = self.factory.makeSourcePackageRelease()
-        self.assertEquals(None, spr.homepage)
+        self.assertIsNone(spr.homepage)
 
     def test_homepage_empty(self):
         # The homepage field can be empty.
         spr = self.factory.makeSourcePackageRelease(homepage="")
-        self.assertEquals("", spr.homepage)
+        self.assertEqual("", spr.homepage)
 
     def test_homepage_set_invalid(self):
         # As the homepage field is inherited from the DSCFile, the URL
         # does not have to be valid.
         spr = self.factory.makeSourcePackageRelease(homepage="<invalid<url")
-        self.assertEquals("<invalid<url", spr.homepage)
+        self.assertEqual("<invalid<url", spr.homepage)
 
     def test_aggregate_changelog(self):
         # If since_version is passed the "changelog" entry returned

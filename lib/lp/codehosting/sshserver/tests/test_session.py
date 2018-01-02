@@ -435,7 +435,7 @@ class TestLookupCommand(TestCase):
         self.assertRaises(ForbiddenCommand, lookup_command_template, 'foo')
 
     def test_bzr(self):
-        self.assertEquals(
+        self.assertEqual(
             config.root + '/bin/py ' + get_bzr_path() +
             ' lp-serve --inet %(user_id)s',
             lookup_command_template(

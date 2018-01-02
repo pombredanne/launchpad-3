@@ -370,7 +370,7 @@ class TestRunProcessWithTimeout(TestCase):
         d = run_process_with_timeout(('true',))
 
         def check_success_result(result):
-            self.assertEquals(result, None, "Success result is not None.")
+            self.assertEqual(result, None, "Success result is not None.")
 
         d.addCallback(check_success_result)
         return d

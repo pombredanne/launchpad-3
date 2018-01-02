@@ -359,7 +359,7 @@ class TestBzrSync(BzrSyncTestCase):
         self.commitRevision(committer=author)
         self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
         db_author = RevisionAuthor.selectOneBy(name=author)
-        self.assertEquals(db_author.name, author)
+        self.assertEqual(db_author.name, author)
 
     def test_new_parent(self):
         # Importing two revisions should import a new parent.
@@ -371,13 +371,13 @@ class TestBzrSync(BzrSyncTestCase):
     def test_sync_updates_branch(self):
         # test that the last scanned revision ID is recorded
         self.syncAndCount()
-        self.assertEquals(NULL_REVISION, self.db_branch.last_scanned_id)
+        self.assertEqual(NULL_REVISION, self.db_branch.last_scanned_id)
         last_modified = self.db_branch.date_last_modified
         last_scanned = self.db_branch.last_scanned
         self.commitRevision()
         self.syncAndCount(new_revisions=1, new_numbers=1, new_authors=1)
-        self.assertEquals(self.bzr_branch.last_revision(),
-                          self.db_branch.last_scanned_id)
+        self.assertEqual(self.bzr_branch.last_revision(),
+                         self.db_branch.last_scanned_id)
         self.assertTrue(self.db_branch.last_scanned > last_scanned,
                         "last_scanned was not updated")
         self.assertTrue(self.db_branch.date_last_modified > last_modified,
@@ -814,7 +814,7 @@ class TestRevisionProperty(BzrSyncTestCase):
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         # Check that properties were saved to the revision.
         bzr_revision = self.bzr_branch.repository.get_revision('rev1')
-        self.assertEquals(properties, bzr_revision.properties)
+        self.assertEqual(properties, bzr_revision.properties)
         # Check that properties are stored in the database.
         db_revision = getUtility(IRevisionSet).getByRevisionId('rev1')
-        self.assertEquals(properties, db_revision.getProperties())
+        self.assertEqual(properties, db_revision.getProperties())

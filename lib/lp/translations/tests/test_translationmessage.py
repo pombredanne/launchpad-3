@@ -85,7 +85,7 @@ class TestTranslationMessage(TestCaseWithFactory):
         language = self.factory.makeLanguage('sr@test')
         pofile = self.factory.makePOFile(language.code)
         tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
-        self.assertEquals(pofile, tm.getOnePOFile())
+        self.assertEqual(pofile, tm.getOnePOFile())
 
     def test_getOnePOFile_shared(self):
         language = self.factory.makeLanguage('sr@test')
@@ -103,7 +103,7 @@ class TestTranslationMessage(TestCaseWithFactory):
         pofile = self.factory.makePOFile(language.code)
         tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
         tm.potmsgset.setSequence(pofile.potemplate, 0)
-        self.assertEquals(None, tm.getOnePOFile())
+        self.assertIsNone(tm.getOnePOFile())
 
     def test_clone(self):
         """Cloning a translation should produce a near-identical copy."""

@@ -189,7 +189,7 @@ class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):
 
     def test_should_be_profile_page_when_delegating(self):
         """The profile page is the OpenID identifier in normal situation."""
-        self.assertEquals(
+        self.assertEqual(
             'http://launchpad.dev/~eris', self.view.openid_identity_url)
 
     def test_should_be_production_profile_page_when_not_delegating(self):
@@ -202,7 +202,7 @@ class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):
             [launchpad]
             non_restricted_hostname: prod.launchpad.dev
             '''))
-        self.assertEquals(
+        self.assertEqual(
             'http://prod.launchpad.dev/~eris', self.view.openid_identity_url)
 
 

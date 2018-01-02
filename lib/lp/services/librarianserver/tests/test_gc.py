@@ -299,10 +299,10 @@ class TestLibrarianGarbageCollectionBase:
         self.ztm.begin()
         # Make sure the well expired f1 is still there, but has no content.
         f1 = LibraryFileAlias.get(self.f1_id)
-        self.assert_(f1.content is None)
+        self.assertIsNone(f1.content)
         # f2 should still have content, as it isn't flagged for expiry.
         f2 = LibraryFileAlias.get(self.f2_id)
-        self.assert_(f2.content is not None)
+        self.assertIsNotNone(f2.content)
 
     def test_ignoreRecentlyExpiredAliases(self):
         # LibraryFileAlias records that have expired recently are not
@@ -323,10 +323,10 @@ class TestLibrarianGarbageCollectionBase:
         # Make sure f1 is still there and has content. This ensures that
         # our stay of execution is still working.
         f1 = LibraryFileAlias.get(self.f1_id)
-        self.assert_(f1.content is not None)
+        self.assertIsNotNone(f1.content)
         # f2 should still have content, as it isn't flagged for expiry.
         f2 = LibraryFileAlias.get(self.f2_id)
-        self.assert_(f2.content is not None)
+        self.assertIsNotNone(f2.content)
 
     def test_DeleteUnreferencedContent(self):
         # Merge the duplicates. This creates an
@@ -677,13 +677,13 @@ class TestDiskLibrarianGarbageCollection(
                 librariangc.delete_unwanted_files(self.con)
 
             # None of the rubbish we created has been touched.
-            self.assert_(os.path.isdir(noisedir1_path))
-            self.assert_(os.path.isdir(noisedir2_path))
-            self.assert_(os.path.isdir(noisedir3_path))
-            self.assert_(os.path.exists(noisefile1_path))
-            self.assert_(os.path.exists(noisefile2_path))
-            self.assert_(os.path.exists(noisefile3_path))
-            self.assert_(os.path.exists(migrated_path))
+            self.assertTrue(os.path.isdir(noisedir1_path))
+            self.assertTrue(os.path.isdir(noisedir2_path))
+            self.assertTrue(os.path.isdir(noisedir3_path))
+            self.assertTrue(os.path.exists(noisefile1_path))
+            self.assertTrue(os.path.exists(noisefile2_path))
+            self.assertTrue(os.path.exists(noisefile3_path))
+            self.assertTrue(os.path.exists(migrated_path))
         finally:
             # We need to clean this up ourselves, as the standard librarian
             # cleanup only removes files it knows where valid to avoid

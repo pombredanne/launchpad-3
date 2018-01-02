@@ -215,7 +215,7 @@ class TestRevisionSet(TestCaseWithFactory):
         # IRevisionSet.getByRevisionId returns the revision with that id.
         revision = self.factory.makeRevision()
         found = self.revision_set.getByRevisionId(revision.revision_id)
-        self.assertEquals(revision, found)
+        self.assertEqual(revision, found)
 
     def test_getRevisionById_nonexistent(self):
         # IRevisionSet.getByRevisionId returns None if there is no revision

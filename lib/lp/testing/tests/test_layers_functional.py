@@ -563,7 +563,7 @@ class LayerProcessControllerTestCase(testtools.TestCase):
         # XXX: Robert Collins 2010-10-17 bug=661967 - this isn't a reset, its
         # a flag that it *needs* a reset, which is actually quite different;
         # the lack of a teardown will leak databases.
-        self.assertEquals(True, LaunchpadTestSetup()._reset_db)
+        self.assertEqual(True, LaunchpadTestSetup()._reset_db)
 
 
 class TestNameTestCase(testtools.TestCase):

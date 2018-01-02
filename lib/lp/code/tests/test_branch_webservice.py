@@ -114,7 +114,7 @@ class TestBranchOperations(TestCaseWithFactory):
             target_branch=target, initial_comment='Merge\nit!',
             needs_review=True, commit_message='It was merged!\n',
             reviewers=[source.owner.self_link], review_types=[])
-        self.assertEquals(
+        self.assertEqual(
             exception.content,
             'reviewers and review_types must be equal length.')
 
@@ -148,7 +148,7 @@ class TestBranchOperations(TestCaseWithFactory):
             BadRequest, source.createMergeProposal,
             target_branch=source, initial_comment='Merge\nit!',
             needs_review=True, commit_message='It was merged!\n')
-        self.assertEquals(
+        self.assertEqual(
             exception.content,
             'Source and target branches must be different.')
 

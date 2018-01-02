@@ -70,9 +70,9 @@ class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
         harness.submit('cancel', {})
         actions = harness.view.actions.byname
         self.assertIn('field.actions.cancel', actions)
-        self.assertEquals(actions['field.actions.cancel'].submitted(), True)
-        self.assertEquals(harness.view.errors, [])
-        self.assertEquals(harness.view.next_url, self.expected_next_url)
+        self.assertEqual(actions['field.actions.cancel'].submitted(), True)
+        self.assertEqual(harness.view.errors, [])
+        self.assertEqual(harness.view.next_url, self.expected_next_url)
 
 
 class TestClaimTeamView(TestCaseWithFactory):
@@ -101,9 +101,9 @@ class TestClaimTeamView(TestCaseWithFactory):
             requester=self.claimer, requesteremail=None,
             email=self.claimee_email, tokentype=LoginTokenType.TEAMCLAIM)
         msgs = self._claimToken(token1)
-        self.assertEquals([u'Team claimed successfully'], msgs)
+        self.assertEqual([u'Team claimed successfully'], msgs)
         msgs = self._claimToken(token2)
-        self.assertEquals(
+        self.assertEqual(
             [u'claimee has already been converted to a team.'], msgs)
 
 

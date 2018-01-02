@@ -30,7 +30,7 @@ class TestMigrateCurrentFlag(TestCaseWithFactory):
         # Sample data already has 3 products with templates.
         sampledata_products = list(
             self.migrate_process.getProductsWithTemplates())
-        self.assertEquals(3, len(sampledata_products))
+        self.assertEqual(3, len(sampledata_products))
 
     def test_getProductsWithTemplates_noop(self):
         # Adding a product with no templates doesn't change anything.
@@ -178,11 +178,11 @@ class TestUpdaterLoop(TestCaseWithFactory):
         diverged_imported = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, diverged=True, potmsgset=translation.potmsgset)
         diverged_imported.is_current_ubuntu = True
-        self.assertEquals(pofile.potemplate, diverged_imported.potemplate)
+        self.assertEqual(pofile.potemplate, diverged_imported.potemplate)
         self.assertTrue(diverged_imported.is_current_upstream)
         self.assertTrue(diverged_imported.is_current_ubuntu)
 
         self.migrate_loop._updateTranslationMessages([translation.id])
-        self.assertEquals(pofile.potemplate, diverged_imported.potemplate)
+        self.assertEqual(pofile.potemplate, diverged_imported.potemplate)
         self.assertTrue(diverged_imported.is_current_upstream)
         self.assertTrue(diverged_imported.is_current_ubuntu)

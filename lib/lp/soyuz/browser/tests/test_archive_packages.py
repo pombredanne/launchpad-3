@@ -170,7 +170,7 @@ class TestPPAPackages(TestCaseWithFactory):
 
     def test_specified_name_filter_works(self):
         view = self.getPackagesView('field.name_filter=blah')
-        self.assertEquals('blah', view.specified_name_filter)
+        self.assertEqual('blah', view.specified_name_filter)
 
     def test_specified_name_filter_returns_none_on_omission(self):
         view = self.getPackagesView()
@@ -382,7 +382,7 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
                 attrs={'class': 'pending-job', 'job_id': job3.id}),
             )
         self.assertThat(html, packages_matches)
-        self.assertEquals(
+        self.assertEqual(
             [], BeautifulSoup(html).findAll(
                 'span', text=re.compile('Showing 5 of .')))
 
@@ -392,10 +392,10 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
             view = create_initialized_view(
                 self.archive, "+packages", principal=self.archive.owner)
             soup = BeautifulSoup(view.render())
-        self.assertEquals([],
+        self.assertEqual([],
             soup.findAll(
                 'div', attrs={'class': 'pending-job', 'job_id': jobs[-1].id}))
-        self.assertEquals(
+        self.assertEqual(
             [u'Showing 5 of 7'],
             soup.findAll('span', text=re.compile('Showing 5 of .')))
 

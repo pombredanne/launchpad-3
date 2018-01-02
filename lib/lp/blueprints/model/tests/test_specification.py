@@ -495,7 +495,7 @@ class TestSpecificationWorkItems(TestCaseWithFactory):
             assignee=None, milestone=milestone)
 
         # We start with no work items.
-        self.assertEquals([], list(spec.work_items))
+        self.assertEqual([], list(spec.work_items))
 
         login_person(spec.owner)
         spec.updateWorkItems([work_item1_data, work_item2_data])
