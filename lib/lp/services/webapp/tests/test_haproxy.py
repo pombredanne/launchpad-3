@@ -32,7 +32,7 @@ class HAProxyIntegrationTest(TestCase):
 
     def test_HAProxyStatusView_all_good_returns_200(self):
         result = self.http(u'GET /+haproxy HTTP/1.0', handle_errors=False)
-        self.assertEquals(200, result.getStatus())
+        self.assertEqual(200, result.getStatus())
 
     def test_authenticated_HAProxyStatusView_works(self):
         # We don't use authenticated requests, but this keeps us from
@@ -41,12 +41,12 @@ class HAProxyIntegrationTest(TestCase):
             u'GET /+haproxy HTTP/1.0\n'
             u'Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=\n',
             handle_errors=False)
-        self.assertEquals(200, result.getStatus())
+        self.assertEqual(200, result.getStatus())
 
     def test_HAProxyStatusView_going_down_returns_500(self):
         haproxy.set_going_down_flag(True)
         result = self.http(u'GET /+haproxy HTTP/1.0', handle_errors=False)
-        self.assertEquals(500, result.getStatus())
+        self.assertEqual(500, result.getStatus())
 
     def test_haproxy_url_uses_DatabaseBlocked_policy(self):
         request = LaunchpadTestRequest(environ={'PATH_INFO': '/+haproxy'})
@@ -56,9 +56,9 @@ class HAProxyIntegrationTest(TestCase):
     def test_switch_going_down_flag(self):
         haproxy.set_going_down_flag(True)
         haproxy.switch_going_down_flag()
-        self.assertEquals(False, haproxy.going_down_flag)
+        self.assertEqual(False, haproxy.going_down_flag)
         haproxy.switch_going_down_flag()
-        self.assertEquals(True, haproxy.going_down_flag)
+        self.assertEqual(True, haproxy.going_down_flag)
 
     def test_HAProxyStatusView_status_code_is_configurable(self):
         config.push('change_haproxy_status_code', dedent('''
@@ -68,4 +68,4 @@ class HAProxyIntegrationTest(TestCase):
         self.addCleanup(config.pop, 'change_haproxy_status_code')
         haproxy.set_going_down_flag(True)
         result = self.http(u'GET /+haproxy HTTP/1.0', handle_errors=False)
-        self.assertEquals(499, result.getStatus())
+        self.assertEqual(499, result.getStatus())

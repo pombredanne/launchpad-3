@@ -101,7 +101,7 @@ class TestHtpasswdGeneration(TestCaseWithFactory):
         # If there are no ArchiveAuthTokens for an archive just
         # the buildd secret is returned.
         self.ppa.buildd_secret = "sekr1t"
-        self.assertEquals(
+        self.assertEqual(
             [("buildd", "sekr1t", "bu")],
             list(htpasswd_credentials_for_archive(self.ppa)))
 

@@ -76,12 +76,12 @@ class TestBuildStartEstimation(TestCaseWithFactory):
         now = datetime.now(pytz.UTC)
         # Since build1 is higher priority, it's estimated dispatch time is now
         estimate = self.job_start_estimate(build1)
-        self.assertEquals(5, (estimate - now).seconds)
+        self.assertEqual(5, (estimate - now).seconds)
         # And build2 is next, so must take build1's duration into account
         estimate = self.job_start_estimate(build2)
-        self.assertEquals(600, (estimate - now).seconds)
+        self.assertEqual(600, (estimate - now).seconds)
         # If we disable build1's archive, build2 is next
         with person_logged_in(self.admin):
             build1.archive.disable()
         estimate = self.job_start_estimate(build2)
-        self.assertEquals(5, (estimate - now).seconds)
+        self.assertEqual(5, (estimate - now).seconds)

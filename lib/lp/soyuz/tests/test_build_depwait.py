@@ -67,7 +67,7 @@ class TestBuildDepWait(TestCaseWithFactory):
             # Commit to make sure stuff hits the database.
             transaction.commit()
         build.updateDependencies()
-        self.assertEquals(u'', build.dependencies)
+        self.assertEqual(u'', build.dependencies)
 
     def test_update_dependancies_respects_component(self):
         # Since main can only utilise packages that are published in main,
@@ -92,10 +92,10 @@ class TestBuildDepWait(TestCaseWithFactory):
             transaction.commit()
         build.updateDependencies()
         # Since the dependency is in universe, we still can't see it.
-        self.assertEquals(unicode(spn), build.dependencies)
+        self.assertEqual(unicode(spn), build.dependencies)
         with person_logged_in(self.admin):
             bpph.component = getUtility(IComponentSet)['main']
             transaction.commit()
         # Now that we have moved it main, we can see it.
         build.updateDependencies()
-        self.assertEquals(u'', build.dependencies)
+        self.assertEqual(u'', build.dependencies)

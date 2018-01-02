@@ -40,7 +40,7 @@ class TestPOTemplate(TestCaseWithFactory):
         # Avoid circular imports.
         from lp.translations.model.pofile import DummyPOFile
 
-        self.assertEquals(DummyPOFile, type(pofile))
+        self.assertEqual(DummyPOFile, type(pofile))
 
     def test_composePOFilePath(self):
         esperanto = getUtility(ILanguageSet).getLanguageByCode('eo')
@@ -667,7 +667,7 @@ class TestPOTemplateUbuntuUpstreamSharingMixin:
         this_potemplate = self.makeThisSidePOTemplate()
         other_potemplate = self.makeOtherSidePOTemplate()
         self._setPackagingLink()
-        self.assertEquals(
+        self.assertEqual(
             other_potemplate, this_potemplate.getOtherSidePOTemplate())
 
 

@@ -38,7 +38,7 @@ class MilestoneTagTest(TestCaseWithFactory):
 
     def test_no_tags(self):
         # Ensure a newly created milestone does not have associated tags.
-        self.assertEquals([], self.milestone.getTags())
+        self.assertEqual([], self.milestone.getTags())
 
     def test_tags_setting_and_retrieval(self):
         # Ensure tags are correctly saved and retrieved from the db.
@@ -59,7 +59,7 @@ class MilestoneTagTest(TestCaseWithFactory):
         with person_logged_in(self.person):
             self.milestone.setTags(self.tags, self.person)
             self.milestone.setTags([], self.person)
-        self.assertEquals([], self.milestone.getTags())
+        self.assertEqual([], self.milestone.getTags())
 
     def test_user_metadata(self):
         # Ensure the correct user metadata is created when tags are added.

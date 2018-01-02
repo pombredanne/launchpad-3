@@ -70,7 +70,7 @@ class TestUploadPolicy_validateUploadType(TestCase):
 
         policy.validateUploadType(upload)
 
-        self.assertEquals([], upload.rejections)
+        self.assertEqual([], upload.rejections)
 
     def test_binaryful_accepted(self):
         policy = make_policy(accepted_type=ArchiveUploadType.BINARY_ONLY)
@@ -78,7 +78,7 @@ class TestUploadPolicy_validateUploadType(TestCase):
 
         policy.validateUploadType(upload)
 
-        self.assertEquals([], upload.rejections)
+        self.assertEqual([], upload.rejections)
 
     def test_mixed_accepted(self):
         policy = make_policy(accepted_type=ArchiveUploadType.MIXED_ONLY)
@@ -86,7 +86,7 @@ class TestUploadPolicy_validateUploadType(TestCase):
 
         policy.validateUploadType(upload)
 
-        self.assertEquals([], upload.rejections)
+        self.assertEqual([], upload.rejections)
 
     def test_sourceful_not_accepted(self):
         policy = make_policy(accepted_type=ArchiveUploadType.BINARY_ONLY)

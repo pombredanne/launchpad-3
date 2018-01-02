@@ -85,7 +85,7 @@ class TestBranchRevisionHistory(TestCaseWithTransport):
 
     def test_empty(self):
         branch = self.make_branch('test')
-        self.assertEquals([], branch_revision_history(branch))
+        self.assertEqual([], branch_revision_history(branch))
 
     def test_some_commits(self):
         branch = self.make_branch('test')
@@ -93,7 +93,7 @@ class TestBranchRevisionHistory(TestCaseWithTransport):
         tree.commit('acommit', rev_id=b'A')
         tree.commit('bcommit', rev_id=b'B')
         tree.commit('ccommit', rev_id=b'C')
-        self.assertEquals(
+        self.assertEqual(
             [b'A', b'B', b'C'], branch_revision_history(tree.branch))
 
 

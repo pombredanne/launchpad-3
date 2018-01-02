@@ -26,7 +26,7 @@ class TestSessionModelAdapters(TestCase):
             for cls in [SessionData, SessionPkgData]:
                 for obj in [cls, cls()]:
                     store = adapter(obj)
-                    self.assert_(
+                    self.assertTrue(
                         'session' in store.get_database()._dsn,
                         'Unknown store returned adapting %r to %r'
                         % (obj, adapter))

@@ -38,15 +38,15 @@ class TestOAuthParsing(TestCase):
         # included in the OAuth calculations.
         headers = OAuthRequest._split_header(
             'OAuth realm="foo", oauth_consumer_key="justtesting"')
-        self.assertEquals(headers,
+        self.assertEqual(headers,
             {'oauth_consumer_key': 'justtesting'})
         headers = OAuthRequest._split_header(
             'OAuth oauth_consumer_key="justtesting"')
-        self.assertEquals(headers,
+        self.assertEqual(headers,
             {'oauth_consumer_key': 'justtesting'})
         headers = OAuthRequest._split_header(
             'OAuth oauth_consumer_key="justtesting", realm="realm"')
-        self.assertEquals(headers,
+        self.assertEqual(headers,
             {'oauth_consumer_key': 'justtesting'})
 
 

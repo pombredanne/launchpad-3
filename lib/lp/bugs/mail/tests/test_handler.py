@@ -98,7 +98,7 @@ class TestMaloneHandler(TestCaseWithFactory):
         # NB SignedMessage by default isn't actually signed, it just has the
         # capability of knowing about signing.
         message = self.factory.makeSignedMessage(body='  affects malone\nhi!')
-        self.assertEquals(message.signature, None)
+        self.assertEqual(message.signature, None)
 
         # Pretend that the mail auth has given us a logged-in user.
         handler = MaloneHandler()
@@ -106,8 +106,8 @@ class TestMaloneHandler(TestCaseWithFactory):
             mail_handled, add_comment_to_bug, commands = \
                 handler.extractAndAuthenticateCommands(message,
                     'new@bugs.launchpad.net')
-        self.assertEquals(mail_handled, None)
-        self.assertEquals(map(str, commands), [
+        self.assertEqual(mail_handled, None)
+        self.assertEqual(map(str, commands), [
             'bug new',
             'affects malone',
             ])

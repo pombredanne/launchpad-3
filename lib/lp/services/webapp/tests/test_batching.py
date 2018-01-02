@@ -459,7 +459,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         resultset = self.makeStormResultSet()
         range_factory = StormRangeFactory(resultset, self.logError)
         [where_clause] = range_factory.whereExpressions([Person.id], [1])
-        self.assertEquals('(Person.id) > (1)', compile(where_clause))
+        self.assertEqual('(Person.id) > (1)', compile(where_clause))
 
     def test_whereExpressions_desc(self):
         """For descending sort order, whereExpressions() returns the
@@ -469,7 +469,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset, self.logError)
         [where_clause] = range_factory.whereExpressions(
             [Desc(Person.id)], [1])
-        self.assertEquals('(Person.id) < (1)', compile(where_clause))
+        self.assertEqual('(Person.id) < (1)', compile(where_clause))
 
     def test_whereExpressions__two_sort_columns_asc_asc(self):
         """If the ascending sort columns c1, c2 and the memo values
@@ -483,7 +483,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset, self.logError)
         [where_clause] = range_factory.whereExpressions(
             [Person.id, Person.name], [1, 'foo'])
-        self.assertEquals(
+        self.assertEqual(
             "(Person.id, Person.name) > (1, E'foo')", compile(where_clause))
 
     def test_whereExpressions__two_sort_columns_desc_desc(self):
@@ -498,7 +498,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset, self.logError)
         [where_clause] = range_factory.whereExpressions(
             [Desc(Person.id), Desc(Person.name)], [1, 'foo'])
-        self.assertEquals(
+        self.assertEqual(
             "(Person.id, Person.name) < (1, E'foo')", compile(where_clause))
 
     def test_whereExpressions__two_sort_columns_asc_desc(self):
@@ -516,10 +516,10 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset, self.logError)
         [where_clause_1, where_clause_2] = range_factory.whereExpressions(
             [Person.id, Desc(Person.name)], [1, 'foo'])
-        self.assertEquals(
+        self.assertEqual(
             "Person.id = ? AND ((Person.name) < (E'foo'))",
             compile(where_clause_1))
-        self.assertEquals('(Person.id) > (1)', compile(where_clause_2))
+        self.assertEqual('(Person.id) > (1)', compile(where_clause_2))
 
     def test_getSlice__forward_without_memo(self):
         resultset = self.makeStormResultSet()

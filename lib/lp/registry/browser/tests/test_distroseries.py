@@ -592,7 +592,7 @@ class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
         [launchpad]
         default_batch_size: 2
         """)
-        self.assert_(
+        self.assertTrue(
             isinstance(view.milestone_batch_navigator, BatchNavigator),
             'milestone_batch_navigator is not a BatchNavigator object: %r'
             % view.milestone_batch_navigator)
@@ -693,7 +693,7 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         formatted_dict = seriesToVocab(distroseries)
 
-        self.assertEquals(
+        self.assertEqual(
             ['api_uri', 'title', 'value'],
             sorted(formatted_dict.keys()))
 
@@ -1477,9 +1477,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         job_source = getUtility(IPlainPackageCopyJobSource)
         jobs = list(
             job_source.getActiveJobs(series.distribution.main_archive))
-        self.assertEquals(1, len(jobs))
+        self.assertEqual(1, len(jobs))
         job = jobs[0]
-        self.assertEquals(series, job.target_distroseries)
+        self.assertEqual(series, job.target_distroseries)
         self.assertEqual(dsd.source_package_name.name, job.package_name)
         self.assertEqual(dsd.parent_source_version, job.package_version)
         self.assertEqual(PackagePublishingPocket.RELEASE, job.target_pocket)
@@ -2161,7 +2161,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                 derived_series, '+localpackagediffs', method='GET',
                 query_string='start=1&batch=1')
 
-        self.assertEquals(
+        self.assertEqual(
             'http://127.0.0.1?start=1&batch=1',
             view.action_url)
 

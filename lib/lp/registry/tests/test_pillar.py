@@ -40,7 +40,7 @@ class TestPillarNameSet(TestCaseWithFactory):
             pillar.name for pillar in
             pillar_set.search(
                 getUtility(IPersonSet).getByName('mark'), 'lz', limit=5)]
-        self.assertEquals(result_names, [u'launchzap', u'lz-bar', u'lz-foo'])
+        self.assertEqual(result_names, [u'launchzap', u'lz-bar', u'lz-foo'])
 
 
 class TestPillarPerson(TestCaseWithFactory):

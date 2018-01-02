@@ -27,15 +27,15 @@ class TestHasSpecificationsBreadcrumbOnBlueprintsFacet(
         crumbs = self.getBreadcrumbsForObject(
             self.product, rootsite='blueprints')
         last_crumb = crumbs[-1]
-        self.assertEquals(last_crumb.url, self.product_specs_url)
-        self.assertEquals(last_crumb.text, 'Blueprints')
+        self.assertEqual(last_crumb.url, self.product_specs_url)
+        self.assertEqual(last_crumb.text, 'Blueprints')
 
     def test_person(self):
         crumbs = self.getBreadcrumbsForObject(
             self.person, rootsite='blueprints')
         last_crumb = crumbs[-1]
-        self.assertEquals(last_crumb.url, self.person_specs_url)
-        self.assertEquals(last_crumb.text, 'Blueprints')
+        self.assertEqual(last_crumb.url, self.person_specs_url)
+        self.assertEqual(last_crumb.text, 'Blueprints')
 
 
 class TestSpecificationBreadcrumb(BaseBreadcrumbTestCase):
@@ -53,6 +53,5 @@ class TestSpecificationBreadcrumb(BaseBreadcrumbTestCase):
     def test_specification(self):
         crumbs = self.getBreadcrumbsForObject(self.specification)
         last_crumb = crumbs[-1]
-        self.assertEquals(last_crumb.url, self.specification_url)
-        self.assertEquals(
-            last_crumb.text, self.specification.title)
+        self.assertEqual(last_crumb.url, self.specification_url)
+        self.assertEqual(last_crumb.text, self.specification.title)

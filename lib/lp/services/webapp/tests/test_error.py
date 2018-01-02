@@ -56,17 +56,16 @@ class TestSystemErrorView(TestCase):
     def test_without_oops_id(self):
         request = LaunchpadTestRequest()
         SystemErrorView(Exception(), request)
-        self.assertEquals(500, request.response.getStatus())
-        self.assertEquals(
-            None,
+        self.assertEqual(500, request.response.getStatus())
+        self.assertIsNone(
             request.response.getHeader('X-Lazr-OopsId', literal=True))
 
     def test_with_oops_id(self):
         request = LaunchpadTestRequest()
         request.oopsid = 'OOPS-1X1'
         SystemErrorView(Exception(), request)
-        self.assertEquals(500, request.response.getStatus())
-        self.assertEquals(
+        self.assertEqual(500, request.response.getStatus())
+        self.assertEqual(
             'OOPS-1X1',
             request.response.getHeader('X-Lazr-OopsId', literal=True))
 
@@ -224,7 +223,7 @@ class TestDatabaseErrorViews(TestCase):
     def test_disconnectionerror_view(self):
         request = LaunchpadTestRequest()
         DisconnectionErrorView(DisconnectionError(), request)
-        self.assertEquals(503, request.response.getStatus())
+        self.assertEqual(503, request.response.getStatus())
 
     def test_operationalerror_view_integration(self):
         # Test setup.
@@ -246,4 +245,4 @@ class TestDatabaseErrorViews(TestCase):
     def test_operationalerror_view(self):
         request = LaunchpadTestRequest()
         OperationalErrorView(OperationalError(), request)
-        self.assertEquals(503, request.response.getStatus())
+        self.assertEqual(503, request.response.getStatus())

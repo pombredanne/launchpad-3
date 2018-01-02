@@ -31,11 +31,10 @@ class DtdFormatTestCase(unittest.TestCase):
         dtd_file = DtdFile('test.dtd', None, content)
 
         # There is a single message.
-        self.assertEquals(len(dtd_file.messages), 1)
+        self.assertEqual(len(dtd_file.messages), 1)
         message = dtd_file.messages[0]
 
-        self.assertEquals(
-            [u'\xbfQuieres? \xa1S\xed!'], message.translations)
+        self.assertEqual([u'\xbfQuieres? \xa1S\xed!'], message.translations)
 
     def test_Latin1DtdFileTest(self):
         """This test makes sure that we detect bad encodings."""

@@ -91,8 +91,8 @@ class TestPlacelessAuth(PlacelessSetup, testtools.TestCase):
 
     def test_unauthenticatedPrincipal(self):
         authsvc, request = self._make(None, None)
-        self.assert_(isinstance(authsvc.unauthenticatedPrincipal(),
-                                UnauthenticatedPrincipal))
+        self.assertTrue(isinstance(authsvc.unauthenticatedPrincipal(),
+                                   UnauthenticatedPrincipal))
 
     def test_unauthorized(self):
         authsvc, request = self._make('bruce', 'test')
@@ -127,7 +127,7 @@ class TestPlacelessAuth(PlacelessSetup, testtools.TestCase):
             exception = self.assertRaises(
                 AssertionError, authsvc._authenticateUsingBasicAuth,
                 credentials, request)
-            self.assertEquals(
+            self.assertEqual(
                 "Attempted to use basic auth when it is disabled",
                 str(exception))
         finally:

@@ -122,7 +122,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         self.assertEqual(
             build.build_farm_job, removeSecurityProxy(bq)._build_farm_job)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.assertEquals(
+        self.assertEqual(
             ubuntu.currentseries.nominatedarchindep.processor, bq.processor)
 
     def test_score(self):

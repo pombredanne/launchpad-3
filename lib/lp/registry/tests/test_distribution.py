@@ -151,7 +151,7 @@ class TestDistribution(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         spph = self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, sourcepackagename='my-package')
-        self.assertEquals(
+        self.assertEqual(
             spph.sourcepackagerelease.sourcepackagename,
             distroseries.distribution.guessPublishedSourcePackageName(
                 'my-package'))
@@ -164,7 +164,7 @@ class TestDistribution(TestCaseWithFactory):
             archive=distroseries.main_archive,
             binarypackagename='binary-package',
             source_package_release=spph.sourcepackagerelease)
-        self.assertEquals(
+        self.assertEqual(
             spph.sourcepackagerelease.sourcepackagename,
             distroseries.distribution.guessPublishedSourcePackageName(
                 'binary-package'))
@@ -188,7 +188,7 @@ class TestDistribution(TestCaseWithFactory):
         distroseries2 = self.factory.makeDistroSeries()
         spph = self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries1, sourcepackagename='my-package')
-        self.assertEquals(
+        self.assertEqual(
             spph.sourcepackagerelease.sourcepackagename,
             distroseries1.distribution.guessPublishedSourcePackageName(
                 'my-package'))
@@ -206,7 +206,7 @@ class TestDistribution(TestCaseWithFactory):
         self.factory.makeBinaryPackagePublishingHistory(
             archive=distroseries.main_archive,
             binarypackagename='my-package', sourcepackagename='other-package')
-        self.assertEquals(
+        self.assertEqual(
             my_spph.sourcepackagerelease.sourcepackagename,
             distroseries.distribution.guessPublishedSourcePackageName(
                 'my-package'))
@@ -223,7 +223,7 @@ class TestDistribution(TestCaseWithFactory):
             archive=distroseries.main_archive,
             sourcepackagename='new-source-name',
             binarypackagename='my-package')
-        self.assertEquals(
+        self.assertEqual(
             'new-source-name',
             distroseries.distribution.guessPublishedSourcePackageName(
                 'my-package').name)
@@ -235,7 +235,7 @@ class TestDistribution(TestCaseWithFactory):
             sourcepackagename='my-package')
         self.factory.makeRelatedBranchesForSourcePackage(
             sourcepackage=sourcepackage)
-        self.assertEquals(
+        self.assertEqual(
             'my-package',
             sourcepackage.distribution.guessPublishedSourcePackageName(
                 'my-package').name)
@@ -371,14 +371,14 @@ class SeriesByStatusTests(TestCaseWithFactory):
 
     def test_get_none(self):
         distro = self.factory.makeDistribution()
-        self.assertEquals([],
+        self.assertEqual([],
             list(distro.getSeriesByStatus(SeriesStatus.FROZEN)))
 
     def test_get_current(self):
         distro = self.factory.makeDistribution()
         series = self.factory.makeDistroSeries(distribution=distro,
             status=SeriesStatus.CURRENT)
-        self.assertEquals([series],
+        self.assertEqual([series],
             list(distro.getSeriesByStatus(SeriesStatus.CURRENT)))
 
 
@@ -396,13 +396,13 @@ class SeriesTests(TestCaseWithFactory):
         distro = self.factory.makeDistribution()
         series = self.factory.makeDistroSeries(distribution=distro,
             name="dappere")
-        self.assertEquals(series, distro.getSeries("dappere"))
+        self.assertEqual(series, distro.getSeries("dappere"))
 
     def test_get_by_version(self):
         distro = self.factory.makeDistribution()
         series = self.factory.makeDistroSeries(distribution=distro,
             name="dappere", version="42.6")
-        self.assertEquals(series, distro.getSeries("42.6"))
+        self.assertEqual(series, distro.getSeries("42.6"))
 
     def test_development_series_alias(self):
         distro = self.factory.makeDistribution()

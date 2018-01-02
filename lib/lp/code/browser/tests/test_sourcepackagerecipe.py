@@ -443,7 +443,7 @@ class TestSourcePackageRecipeAddViewMixin:
             self.makeBranchAndPackage(), '+new-recipe', user=self.chef)
         # The options for the owner include the Good Chefs team.
         options = browser.getControl(name='field.owner.owner').displayOptions
-        self.assertEquals(
+        self.assertEqual(
             ['Good Chefs (good-chefs)', 'Master Chef (chef)'],
             sorted([str(option) for option in options]))
 

@@ -292,8 +292,8 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         potemplate, pofile = self._getGuessedPOFile(
             'kde-l10n-sr', 'template')
         serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
-        self.assertEquals(potemplate, pofile.potemplate)
-        self.assertEquals(serbian, pofile.language)
+        self.assertEqual(potemplate, pofile.potemplate)
+        self.assertEqual(serbian, pofile.language)
 
     def test_KDE4_language_country(self):
         # If package name is kde-l10n-engb, it needs to be mapped
@@ -301,8 +301,8 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         potemplate, pofile = self._getGuessedPOFile(
             'kde-l10n-engb', 'template')
         real_english = getUtility(ILanguageSet).getLanguageByCode('en_GB')
-        self.assertEquals(potemplate, pofile.potemplate)
-        self.assertEquals(real_english, pofile.language)
+        self.assertEqual(potemplate, pofile.potemplate)
+        self.assertEqual(real_english, pofile.language)
 
     def test_KDE4_language_variant(self):
         # If package name is kde-l10n-ca-valencia, it needs to be mapped
@@ -311,8 +311,8 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
             'ca@valencia', 'Catalan Valencia')
         potemplate, pofile = self._getGuessedPOFile(
             'kde-l10n-ca-valencia', 'template')
-        self.assertEquals(potemplate, pofile.potemplate)
-        self.assertEquals(catalan_valencia, pofile.language)
+        self.assertEqual(potemplate, pofile.potemplate)
+        self.assertEqual(catalan_valencia, pofile.language)
 
     def test_KDE4_language_subvariant(self):
         # PO file 'sr@test/something.po' in a package named like
@@ -321,8 +321,8 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         serbian_test = self.factory.makeLanguage('sr@test')
         potemplate, pofile = self._getGuessedPOFile(
             'kde-l10n-sr', 'sr@test/template')
-        self.assertEquals(potemplate, pofile.potemplate)
-        self.assertEquals(serbian_test, pofile.language)
+        self.assertEqual(potemplate, pofile.potemplate)
+        self.assertEqual(serbian_test, pofile.language)
 
     def test_KDE4_language_at_sign(self):
         # PO file 'blah@test/something.po' in a package named like
@@ -331,8 +331,8 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         serbian = getUtility(ILanguageSet).getLanguageByCode('sr')
         potemplate, pofile = self._getGuessedPOFile(
             'kde-l10n-sr', 'source/blah@test/template')
-        self.assertEquals(potemplate, pofile.potemplate)
-        self.assertEquals(serbian, pofile.language)
+        self.assertEqual(potemplate, pofile.potemplate)
+        self.assertEqual(serbian, pofile.language)
 
 
 class TestProductOwnerEntryImporter(TestCaseWithFactory):
@@ -464,7 +464,7 @@ class TestTranslationImportQueue(TestCaseWithFactory):
             path=pofile.path, productseries=pot.productseries,
             potemplate=pot, pofile=pofile, uploader=uploader)
 
-        self.assertEquals(tiqe1, tiqe2)
+        self.assertEqual(tiqe1, tiqe2)
 
     def test_reportApprovalConflict_sets_error_output_just_once(self):
         # Repeated occurrence of the same approval conflict will not

@@ -51,17 +51,17 @@ class TestMenuBaseLinkCaching(TestCase):
         newInteraction()
         menu = TestMenu(object())
         menu._get_link('test_link')
-        self.assertEquals(menu.times_called, 1)
+        self.assertEqual(menu.times_called, 1)
         menu._get_link('test_link')
-        self.assertEquals(menu.times_called, 2)
+        self.assertEqual(menu.times_called, 2)
 
     def test_cache_when_there_is_a_request(self):
         login(ANONYMOUS)
         menu = TestMenu(object())
         menu._get_link('test_link')
-        self.assertEquals(menu.times_called, 1)
+        self.assertEqual(menu.times_called, 1)
         menu._get_link('test_link')
-        self.assertEquals(menu.times_called, 1)
+        self.assertEqual(menu.times_called, 1)
 
     def test_correct_value_is_cached(self):
         login(ANONYMOUS)
@@ -69,7 +69,7 @@ class TestMenuBaseLinkCaching(TestCase):
         link = menu._get_link('test_link')
         request = get_current_browser_request()
         cache = request.annotations.get(MENU_ANNOTATION_KEY)
-        self.assertEquals([link], cache.values())
+        self.assertEqual([link], cache.values())
 
     def test_cache_key_is_unique(self):
         # The cache key must include the link name, the context of the link
@@ -80,6 +80,6 @@ class TestMenuBaseLinkCaching(TestCase):
         menu._get_link('test_link')
         cache = get_current_browser_request().annotations.get(
             MENU_ANNOTATION_KEY)
-        self.assertEquals(len(cache.keys()), 1)
+        self.assertEqual(len(cache.keys()), 1)
         self.assertContentEqual(
             cache.keys()[0], (menu.__class__, context, 'test_link'))

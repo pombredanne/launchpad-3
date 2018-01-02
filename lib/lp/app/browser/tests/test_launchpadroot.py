@@ -84,7 +84,7 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
     def test_featured_projects_view_requires_edit(self):
         view = create_view(self.root, '+featuredprojects')
         checker = selectChecker(view)
-        self.assertEquals('launchpad.Edit', checker.permission_id('__call__'))
+        self.assertEqual('launchpad.Edit', checker.permission_id('__call__'))
 
     def test_featured_projects_manage_link_requires_edit(self):
         self.setUpRegistryExpert()

@@ -69,7 +69,7 @@ class TestLaunchpadBrowserPublication(TestCase):
         publication = LaunchpadBrowserPublication(None)
         publication.callTraversalHooks(request, obj1)
         publication.callTraversalHooks(request, obj2)
-        self.assertEquals(request.traversed_objects, [obj1, obj2])
+        self.assertEqual(request.traversed_objects, [obj1, obj2])
 
     def test_callTraversalHooks_appends_only_once_to_traversed_objects(self):
         # callTraversalHooks() may be called more than once for a given
@@ -80,7 +80,7 @@ class TestLaunchpadBrowserPublication(TestCase):
         publication = LaunchpadBrowserPublication(None)
         publication.callTraversalHooks(request, obj1)
         publication.callTraversalHooks(request, obj2)
-        self.assertEquals(request.traversed_objects, [obj1])
+        self.assertEqual(request.traversed_objects, [obj1])
 
 
 class TestWebServicePublication(TestCaseWithFactory):

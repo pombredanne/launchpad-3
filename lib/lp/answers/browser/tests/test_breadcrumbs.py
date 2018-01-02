@@ -37,21 +37,21 @@ class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersFacet(
         crumbs = self.getBreadcrumbsForObject(
             self.product, rootsite='answers')
         last_crumb = crumbs[-1]
-        self.assertEquals(last_crumb.url, self.product_questions_url)
-        self.assertEquals(last_crumb.text, 'Questions')
+        self.assertEqual(last_crumb.url, self.product_questions_url)
+        self.assertEqual(last_crumb.text, 'Questions')
 
     def test_project(self):
         crumbs = self.getBreadcrumbsForObject(
             self.project, rootsite='answers')
         last_crumb = crumbs[-1]
-        self.assertEquals(last_crumb.url, self.project_questions_url)
-        self.assertEquals(last_crumb.text, 'Questions')
+        self.assertEqual(last_crumb.url, self.project_questions_url)
+        self.assertEqual(last_crumb.text, 'Questions')
 
     def test_person(self):
         crumbs = self.getBreadcrumbsForObject(self.person, rootsite='answers')
         last_crumb = crumbs[-1]
-        self.assertEquals(last_crumb.url, self.person_questions_url)
-        self.assertEquals(last_crumb.text, 'Questions')
+        self.assertEqual(last_crumb.url, self.person_questions_url)
+        self.assertEqual(last_crumb.text, 'Questions')
 
 
 class TestAnswersBreadcrumb(BaseBreadcrumbTestCase):
@@ -68,11 +68,11 @@ class TestAnswersBreadcrumb(BaseBreadcrumbTestCase):
         self.question_url = canonical_url(self.question, rootsite='answers')
         crumbs = self.getBreadcrumbsForObject(self.question)
         last_crumb = crumbs[-1]
-        self.assertEquals(last_crumb.text, 'Question #%d' % self.question.id)
+        self.assertEqual(last_crumb.text, 'Question #%d' % self.question.id)
 
     def test_faq(self):
         self.faq = self.factory.makeFAQ(target=self.product, title='Seedless')
         self.faq_url = canonical_url(self.faq, rootsite='answers')
         crumbs = self.getBreadcrumbsForObject(self.faq)
         last_crumb = crumbs[-1]
-        self.assertEquals(last_crumb.text, 'FAQ #%d' % self.faq.id)
+        self.assertEqual(last_crumb.text, 'FAQ #%d' % self.faq.id)
