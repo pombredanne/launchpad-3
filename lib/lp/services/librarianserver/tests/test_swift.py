@@ -82,7 +82,7 @@ class TestFeedSwift(TestCase):
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
             path = swift.filesystem_path(lfc.id)
-            self.assert_(os.path.exists(path))
+            self.assertTrue(os.path.exists(path))
 
         # Copy all the files into Swift.
         swift.to_swift(log, remove_func=None)
@@ -90,7 +90,7 @@ class TestFeedSwift(TestCase):
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
             path = swift.filesystem_path(lfc.id)
-            self.assert_(os.path.exists(path))
+            self.assertTrue(os.path.exists(path))
 
         # Confirm all the files are also in Swift.
         swift_client = self.swift_fixture.connect()
@@ -113,7 +113,7 @@ class TestFeedSwift(TestCase):
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
             path = swift.filesystem_path(lfc.id)
-            self.assert_(os.path.exists(path))
+            self.assertTrue(os.path.exists(path))
 
         # Copy all the files into Swift.
         swift.to_swift(log, remove_func=swift.rename)
@@ -121,7 +121,7 @@ class TestFeedSwift(TestCase):
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
             path = swift.filesystem_path(lfc.id) + '.migrated'
-            self.assert_(os.path.exists(path))
+            self.assertTrue(os.path.exists(path))
 
         # Confirm all the files are also in Swift.
         swift_client = self.swift_fixture.connect()
@@ -144,7 +144,7 @@ class TestFeedSwift(TestCase):
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
             path = swift.filesystem_path(lfc.id)
-            self.assert_(os.path.exists(path))
+            self.assertTrue(os.path.exists(path))
 
         # Migrate all the files into Swift.
         swift.to_swift(log, remove_func=os.unlink)
@@ -200,7 +200,7 @@ class TestFeedSwift(TestCase):
         # to be done in multiple chunks, but small enough that it is
         # stored in Swift as a single object.
         size = LibrarianStorage.CHUNK_SIZE * 50
-        self.assert_(size > 1024 * 1024)
+        self.assertTrue(size > 1024 * 1024)
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
         lfa_id = self.add_file('hello_bigboy.xls', expected_content)
         lfc = IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id).content
@@ -222,7 +222,7 @@ class TestFeedSwift(TestCase):
         # to be done in multiple chunks, but small enough that it is
         # stored in Swift as a single object.
         size = LibrarianStorage.CHUNK_SIZE * 50 + 1
-        self.assert_(size > 1024 * 1024)
+        self.assertTrue(size > 1024 * 1024)
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
         lfa_id = self.add_file('hello_bigboy.xls', expected_content)
         lfc = IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id).content
@@ -241,7 +241,7 @@ class TestFeedSwift(TestCase):
         # Generate a blob large enough that Swift requires us to store
         # it as multiple objects plus a manifest.
         size = LibrarianStorage.CHUNK_SIZE * 50
-        self.assert_(size > 1024 * 1024)
+        self.assertTrue(size > 1024 * 1024)
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
         lfa_id = self.add_file('hello_bigboy.xls', expected_content)
         lfa = IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id)

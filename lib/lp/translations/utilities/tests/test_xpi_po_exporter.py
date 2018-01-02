@@ -97,7 +97,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
         (subject, body) = self.firefox_template.importFromQueue(entry)
 
         # The status is now IMPORTED:
-        self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
+        self.assertEqual(entry.status, RosettaImportStatus.IMPORTED)
 
     def test_Interface(self):
         """Check whether the object follows the interface."""

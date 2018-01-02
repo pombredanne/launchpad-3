@@ -242,9 +242,9 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
                 person.account, email=test_email)
         self.assertTrue(view.login_called)
         response = view.request.response
-        self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
-        self.assertEquals(view.request.form['starting_url'],
-                          response.getHeader('Location'))
+        self.assertEqual(httplib.TEMPORARY_REDIRECT, response.getStatus())
+        self.assertEqual(view.request.form['starting_url'],
+                         response.getHeader('Location'))
         # The 'last_write' flag was not updated (unlike in the other test
         # methods) because in this case we didn't have to create a
         # Person/Account entry, so it's ok for further requests to hit the
@@ -267,7 +267,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             'starting_url': 'http://launchpad.dev/after-login',
             'foo': 'bar',
         }
-        self.assertEquals(params, expected_params)
+        self.assertEqual(params, expected_params)
 
     def test_gather_params_with_unicode_data(self):
         # If the currently requested URL includes a query string, the
@@ -281,7 +281,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             environ={'PATH_INFO': '/'})
         view = OpenIDCallbackView(context=None, request=None)
         params = view._gather_params(request)
-        self.assertEquals(params['foo'], u'\u16dd')
+        self.assertEqual(params['foo'], u'\u16dd')
 
     def test_unexpected_multivalue_fields(self):
         # The parameter gatering doesn't expect to find multi-valued form
@@ -303,7 +303,7 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             form={'starting_url': 'http://launchpad.dev/after-login'})
         view = OpenIDCallbackView(context=None, request=None)
         url = view._get_requested_url(request)
-        self.assertEquals(url, 'http://example.com?foo=bar')
+        self.assertEqual(url, 'http://example.com?foo=bar')
 
     def test_open_id_callback_handles_query_string(self):
         # If the currently requested URL includes a query string, the
@@ -317,13 +317,13 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             environ={'PATH_INFO': '/'})
         view = FakeConsumerOpenIDCallbackView(object(), request)
         view.initialize()
-        self.assertEquals(
+        self.assertEqual(
             view.fake_consumer.params,
             {
                 'starting_url': 'http://launchpad.dev/after-login',
                 'foo': 'bar',
             })
-        self.assertEquals(
+        self.assertEqual(
             view.fake_consumer.requested_url, 'http://example.com?foo=bar')
 
     def test_unseen_identity(self):
@@ -343,12 +343,12 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         self.assertTrue(view.login_called)
         account = account_set.getByOpenIDIdentifier(identifier)
         self.assertIsNot(None, account)
-        self.assertEquals(AccountStatus.ACTIVE, account.status)
+        self.assertEqual(AccountStatus.ACTIVE, account.status)
         person = IPerson(account, None)
         self.assertIsNot(None, person)
-        self.assertEquals('Foo User', person.displayname)
-        self.assertEquals('non-existent@example.com',
-                          removeSecurityProxy(person.preferredemail).email)
+        self.assertEqual('Foo User', person.displayname)
+        self.assertEqual('non-existent@example.com',
+                         removeSecurityProxy(person.preferredemail).email)
 
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
@@ -382,12 +382,12 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         identifiers = [i.identifier for i in account.openid_identifiers]
         self.assertIn(identifier, identifiers)
 
-        self.assertEquals(AccountStatus.ACTIVE, account.status)
-        self.assertEquals(
+        self.assertEqual(AccountStatus.ACTIVE, account.status)
+        self.assertEqual(
             email, removeSecurityProxy(person.preferredemail).email)
         person = IPerson(account, None)
         self.assertIsNot(None, person)
-        self.assertEquals('Test account', person.displayname)
+        self.assertEqual('Test account', person.displayname)
 
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
@@ -411,11 +411,11 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             view, html = self._createAndRenderView(openid_response)
         self.assertTrue(view.login_called)
         response = view.request.response
-        self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
-        self.assertEquals(view.request.form['starting_url'],
-                          response.getHeader('Location'))
-        self.assertEquals(AccountStatus.ACTIVE, person.account.status)
-        self.assertEquals(email, person.preferredemail.email)
+        self.assertEqual(httplib.TEMPORARY_REDIRECT, response.getStatus())
+        self.assertEqual(view.request.form['starting_url'],
+                         response.getHeader('Location'))
+        self.assertEqual(AccountStatus.ACTIVE, person.account.status)
+        self.assertEqual(email, person.preferredemail.email)
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
         # stuff.
@@ -440,8 +440,8 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
         with SRegResponse_fromSuccessResponse_stubbed():
             view, html = self._createAndRenderView(openid_response)
         self.assertTrue(view.login_called)
-        self.assertEquals(AccountStatus.ACTIVE, person.account.status)
-        self.assertEquals(email, person.preferredemail.email)
+        self.assertEqual(AccountStatus.ACTIVE, person.account.status)
+        self.assertEqual(email, person.preferredemail.email)
         # We also update the last_write flag in the session, to make sure
         # further requests use the master DB and thus see the newly created
         # stuff.
@@ -579,9 +579,9 @@ class TestOpenIDCallbackView(TestCaseWithFactory):
             view_class=StubbedOpenIDCallbackViewLoggedIn)
         self.assertFalse(view.login_called)
         response = view.request.response
-        self.assertEquals(httplib.TEMPORARY_REDIRECT, response.getStatus())
-        self.assertEquals(view.request.form['starting_url'],
-                          response.getHeader('Location'))
+        self.assertEqual(httplib.TEMPORARY_REDIRECT, response.getStatus())
+        self.assertEqual(view.request.form['starting_url'],
+                         response.getHeader('Location'))
         notification_msg = view.request.response.notifications[0].message
         expected_msg = ('Your authentication failed but you were already '
                         'logged into Launchpad')
@@ -626,9 +626,9 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
             form={'starting_url': self.STARTING_URL})
         view.initialize()
         view._redirect()
-        self.assertEquals(
+        self.assertEqual(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
-        self.assertEquals(
+        self.assertEqual(
             view.request.response.getHeader('Location'), self.STARTING_URL)
 
     def test_open_id_callback_redirect_from_post(self):
@@ -640,9 +640,9 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
             QUERY_STRING='starting_url=' + self.STARTING_URL)
         view.initialize()
         view._redirect()
-        self.assertEquals(
+        self.assertEqual(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
-        self.assertEquals(
+        self.assertEqual(
             view.request.response.getHeader('Location'), self.STARTING_URL)
 
     def test_openid_callback_redirect_fallback(self):
@@ -652,9 +652,9 @@ class TestOpenIDCallbackRedirects(TestCaseWithFactory):
         view.request = LaunchpadTestRequest(SERVER_URL=self.APPLICATION_URL)
         view.initialize()
         view._redirect()
-        self.assertEquals(
+        self.assertEqual(
             httplib.TEMPORARY_REDIRECT, view.request.response.getStatus())
-        self.assertEquals(
+        self.assertEqual(
             view.request.response.getHeader('Location'), self.APPLICATION_URL)
 
 
@@ -694,7 +694,7 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         self.assertIn('body onload', browser.contents)
         browser.getControl('Continue').click()
 
-        self.assertEquals('Login', browser.title)
+        self.assertEqual('Login', browser.title)
         fill_login_form_and_submit(browser, 'test@canonical.com')
         login_status = extract_text(
             find_tag_by_id(browser.contents, 'logincontrol'))
@@ -710,10 +710,10 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
         replay_browser.open(callback_url)
         login_status = extract_text(
             find_tag_by_id(replay_browser.contents, 'logincontrol'))
-        self.assertEquals('Log in / Register', login_status)
+        self.assertEqual('Log in / Register', login_status)
         error_msg = find_tags_by_class(replay_browser.contents, 'error')[0]
-        self.assertEquals('Nonce already used or out of range',
-                          extract_text(error_msg))
+        self.assertEqual('Nonce already used or out of range',
+                         extract_text(error_msg))
 
 
 class FakeHTTPResponse:
@@ -743,8 +743,8 @@ class TestMissingServerShowsNiceErrorPage(TestCase):
         browser = TestBrowser()
         self.assertRaises(urllib2.HTTPError,
                           browser.open, 'http://launchpad.dev/+login')
-        self.assertEquals('503 Service Unavailable',
-                          browser.headers.get('status'))
+        self.assertEqual('503 Service Unavailable',
+                         browser.headers.get('status'))
         self.assertTrue(
             'OpenID Provider Is Unavailable at This Time' in browser.contents)
 
@@ -845,10 +845,10 @@ class TestOpenIDLogin(TestCaseWithFactory):
         self.assertIsNot(None, extensions)
         sreg_extension = extensions[0]
         self.assertIsInstance(sreg_extension, sreg.SRegRequest)
-        self.assertEquals(['email', 'fullname'],
-                          sorted(sreg_extension.allRequestedFields()))
-        self.assertEquals(sorted(sreg_extension.required),
-                          sorted(sreg_extension.allRequestedFields()))
+        self.assertEqual(['email', 'fullname'],
+                         sorted(sreg_extension.allRequestedFields()))
+        self.assertEqual(sorted(sreg_extension.required),
+                         sorted(sreg_extension.allRequestedFields()))
 
     def test_pape_extension_added_with_reauth_query(self):
         # We can signal that a request should be reauthenticated via
@@ -928,8 +928,8 @@ class TestOpenIDRealm(TestCaseWithFactory):
         # At this point browser.contents contains a hidden form which would've
         # been auto-submitted if we had in-browser JS support, but since we
         # don't we can easily inspect what's in the form.
-        self.assertEquals('%s/' % browser.rooturl,
-                          browser.getControl(name='openid.realm').value)
+        self.assertEqual('%s/' % browser.rooturl,
+                         browser.getControl(name='openid.realm').value)
 
     def test_realm_for_vhosts(self):
         browser = Browser()
@@ -937,9 +937,9 @@ class TestOpenIDRealm(TestCaseWithFactory):
         # At this point browser.contents contains a hidden form which would've
         # been auto-submitted if we had in-browser JS support, but since we
         # don't we can easily inspect what's in the form.
-        self.assertEquals('%s'
-                          % self.layer.appserver_root_url(ensureSlash=True),
-                          browser.getControl(name='openid.realm').value)
+        self.assertEqual('%s'
+                         % self.layer.appserver_root_url(ensureSlash=True),
+                         browser.getControl(name='openid.realm').value)
 
 
 def test_suite():

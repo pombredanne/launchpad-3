@@ -395,7 +395,7 @@ class TestIRCNicknameFormatterAPI(TestCaseWithFactory):
         ircID = ircset.new(person, "<b>irc.canonical.com</b>", "fred")
         expected_html = test_tales(
             'nick/fmt:formatted_displayname', nick=ircID)
-        self.assertEquals(
+        self.assertEqual(
             u'<strong>fred</strong>\n'
             '<span class="lesser"> on </span>\n'
             '<strong>&lt;b&gt;irc.canonical.com&lt;/b&gt;</strong>\n',

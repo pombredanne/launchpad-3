@@ -188,7 +188,7 @@ class TestFeatureFlags(TestCase):
         # no scopes need to be checked because it's just not in the database
         # and there's no point checking
         self.assertEqual({}, f._known_scopes._known)
-        self.assertEquals([], call_log)
+        self.assertEqual([], call_log)
         # however, this we have now negative-cached the flag
         self.assertEqual(dict(unknown=None), f.usedFlags())
         self.assertEqual(dict(), f.usedScopes())
@@ -215,14 +215,14 @@ class FeatureRuleSourceTestsMixin:
     def test_getAllRulesAsTuples(self):
         source = self.makeSource()
         source.setAllRules(test_rules_list)
-        self.assertEquals(
+        self.assertEqual(
             test_rules_list,
             list(source.getAllRulesAsTuples()))
 
     def test_getAllRulesAsText(self):
         source = self.makeSource()
         source.setAllRules(test_rules_list)
-        self.assertEquals(
+        self.assertEqual(
             """\
 %s\tbeta_user\t100\t%s
 ui.icing\tnormal_user\t500\t5.0
@@ -241,7 +241,7 @@ flag1   beta_user   200   alpha
 flag1   default     100   gamma with spaces
 flag2   default     0\ton
 """)
-        self.assertEquals({
+        self.assertEqual({
             'flag1': [
                 ('beta_user', 200, 'alpha'),
                 ('default', 100, 'gamma with spaces'),

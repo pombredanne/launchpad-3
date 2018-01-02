@@ -79,7 +79,7 @@ class TestBuildersCollection(TestCaseWithFactory):
         logout()
         results = self.webservice.named_get(
             '/builders', 'getBuildQueueSizes', api_version='devel')
-        self.assertEquals(
+        self.assertEqual(
             ['nonvirt', 'virt'], sorted(results.jsonBody().keys()))
 
     def test_getBuildersForQueue(self):
@@ -99,7 +99,7 @@ class TestBuildersCollection(TestCaseWithFactory):
             '/builders', 'getBuildersForQueue',
             processor=api_url(quantum), virtualized=True,
             api_version='devel').jsonBody()
-        self.assertEquals(
+        self.assertEqual(
             ['quantum_builder1', 'quantum_builder2'],
             sorted(builder['name'] for builder in results['entries']))
 

@@ -151,7 +151,7 @@ class TestPersonRepresentation(TestCaseWithFactory):
         self.assertEqual(response.status, 200)
 
         rendered_comment = response.body
-        self.assertEquals(
+        self.assertEqual(
             rendered_comment,
             '<a href="/~test-person" class="sprite person">Test Person</a>')
 

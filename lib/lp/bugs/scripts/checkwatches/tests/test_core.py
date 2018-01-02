@@ -244,7 +244,7 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         transaction.commit()
         master._updateBugTracker(bug_tracker)
         for bug_watch in bug_watches:
-            self.assertEquals(
+            self.assertEqual(
                 BugWatchActivityStatus.CONNECTION_ERROR,
                 bug_watch.last_error_type)
         self.assertEqual(
@@ -264,7 +264,7 @@ class TestCheckwatchesMaster(TestCaseWithFactory):
         transaction.commit()
         master._updateBugTracker(bug_tracker)
         for bug_watch in bug_watches:
-            self.assertEquals(
+            self.assertEqual(
                 BugWatchActivityStatus.UNKNOWN,
                 bug_watch.last_error_type)
         self.assertEqual(

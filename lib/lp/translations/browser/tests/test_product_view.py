@@ -58,7 +58,7 @@ class TestProduct(TestCaseWithFactory):
         self.factory.makePOTemplate(
             distroseries=sourcepackage.distroseries,
             sourcepackagename=sourcepackage.sourcepackagename)
-        self.assertEquals(None, view.primary_translatable)
+        self.assertIsNone(view.primary_translatable)
 
     def test_untranslatable_series(self):
         # Create a product that uses translations.

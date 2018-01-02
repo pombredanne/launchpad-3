@@ -261,7 +261,7 @@ class TestProberProtocolAndFactory(TrialTestCase):
 
         protocol.factory = FakeFactory('http://foo.bar/')
         protocol.makeConnection(FakeTransport())
-        self.assertEquals(
+        self.assertEqual(
             'Launchpad Mirror Prober ( https://launchpad.net/ )',
             headers['User-Agent'])
 
@@ -475,10 +475,10 @@ class TestMultiLock(TestCase):
         there's no task currently running.
         """
         self.multi_lock.run(self.callback)
-        self.assertEquals(self.count, 1, "self.callback should have run.")
+        self.assertEqual(self.count, 1, "self.callback should have run.")
 
         self.multi_lock.run(self.callback)
-        self.assertEquals(
+        self.assertEqual(
             self.count, 2, "self.callback should have run twice.")
 
     def test_run_waits_for_first_lock(self):
@@ -489,7 +489,7 @@ class TestMultiLock(TestCase):
 
         # Run self.callback when self.multi_lock is acquired.
         self.multi_lock.run(self.callback)
-        self.assertEquals(
+        self.assertEqual(
             self.count, 0, "self.callback should not have run yet.")
 
         # Release lock_one.
@@ -497,7 +497,7 @@ class TestMultiLock(TestCase):
 
         # multi_lock will now have been able to acquire both semaphores, and
         # so it will have run its task.
-        self.assertEquals(self.count, 1, "self.callback should have run.")
+        self.assertEqual(self.count, 1, "self.callback should have run.")
 
     def test_run_waits_for_second_lock(self):
         """MultiLock.run acquires the second lock before running functions."""
@@ -507,7 +507,7 @@ class TestMultiLock(TestCase):
 
         # Run self.callback when self.multi_lock is acquired.
         self.multi_lock.run(self.callback)
-        self.assertEquals(
+        self.assertEqual(
             self.count, 0, "self.callback should not have run yet.")
 
         # Release lock_two.
@@ -515,7 +515,7 @@ class TestMultiLock(TestCase):
 
         # multi_lock will now have been able to acquire both semaphores, and
         # so it will have run its task.
-        self.assertEquals(self.count, 1, "self.callback should have run.")
+        self.assertEqual(self.count, 1, "self.callback should have run.")
 
     def test_run_waits_for_current_task(self):
         """MultiLock.run waits the end of the current task before running the
@@ -527,7 +527,7 @@ class TestMultiLock(TestCase):
 
         # Run self.callback when self.multi_lock is acquired.
         self.multi_lock.run(self.callback)
-        self.assertEquals(
+        self.assertEqual(
             self.count, 0, "self.callback should not have run yet.")
 
         # Release lock_one.
@@ -535,7 +535,7 @@ class TestMultiLock(TestCase):
 
         # multi_lock will now have been able to acquire both semaphores, and
         # so it will have run its task.
-        self.assertEquals(self.count, 1, "self.callback should have run.")
+        self.assertEqual(self.count, 1, "self.callback should have run.")
 
 
 class TestRedirectAwareProberFactoryAndProtocol(TestCase):
@@ -879,28 +879,28 @@ class TestProbeFunctionSemaphores(TestCase):
         # Since we have a single mirror to probe we need to have a single
         # DeferredSemaphore with a limit of PER_HOST_REQUESTS, to ensure we
         # don't issue too many simultaneous connections on that host.
-        self.assertEquals(len(request_manager.host_locks), 1)
+        self.assertEqual(len(request_manager.host_locks), 1)
         multi_lock = request_manager.host_locks[mirror1_host]
-        self.assertEquals(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
+        self.assertEqual(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
         # Note that our multi_lock contains another semaphore to control the
         # overall number of requests.
-        self.assertEquals(multi_lock.overall_lock.limit, OVERALL_REQUESTS)
+        self.assertEqual(multi_lock.overall_lock.limit, OVERALL_REQUESTS)
 
         probe_function(mirror2, StringIO(), [], logging)
         # Now we have two mirrors to probe, but they have the same hostname,
         # so we'll still have a single semaphore in host_semaphores.
-        self.assertEquals(mirror2_host, mirror1_host)
-        self.assertEquals(len(request_manager.host_locks), 1)
+        self.assertEqual(mirror2_host, mirror1_host)
+        self.assertEqual(len(request_manager.host_locks), 1)
         multi_lock = request_manager.host_locks[mirror2_host]
-        self.assertEquals(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
+        self.assertEqual(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
 
         probe_function(mirror3, StringIO(), [], logging)
         # This third mirror is on a separate host, so we'll have a second
         # semaphore added to host_semaphores.
-        self.failUnless(mirror3_host != mirror1_host)
-        self.assertEquals(len(request_manager.host_locks), 2)
+        self.assertTrue(mirror3_host != mirror1_host)
+        self.assertEqual(len(request_manager.host_locks), 2)
         multi_lock = request_manager.host_locks[mirror3_host]
-        self.assertEquals(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
+        self.assertEqual(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
 
         # When using an http_proxy, even though we'll actually connect to the
         # proxy, we'll use the mirror's host as the key to find the semaphore
@@ -908,7 +908,7 @@ class TestProbeFunctionSemaphores(TestCase):
         orig_proxy = os.getenv('http_proxy')
         os.environ['http_proxy'] = 'http://squid.internal:3128/'
         probe_function(mirror3, StringIO(), [], logging)
-        self.assertEquals(len(request_manager.host_locks), 2)
+        self.assertEqual(len(request_manager.host_locks), 2)
         restore_http_proxy(orig_proxy)
 
 

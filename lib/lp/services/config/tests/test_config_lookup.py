@@ -113,7 +113,7 @@ class TestInstanceConfigDirLookup(ConfigTestCase):
 
     def test_find_config_dir(self):
         instance_config_dir = self.setUpInstanceConfig('an_instance')
-        self.assertEquals(
+        self.assertEqual(
             instance_config_dir, config.find_config_dir('an_instance'))
 
     def test_Config_uses_find_config_dir(self):
@@ -127,7 +127,7 @@ class TestInstanceConfigDirLookup(ConfigTestCase):
 
         # We don't care about ZConfig...
         cfg._setZConfig = lambda: None
-        self.assertEquals(2323, cfg.launchpad.default_batch_size)
+        self.assertEqual(2323, cfg.launchpad.default_batch_size)
 
 
 class TestGenerateOverrides(ConfigTestCase):

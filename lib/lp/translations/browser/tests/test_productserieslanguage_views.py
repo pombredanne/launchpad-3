@@ -76,7 +76,7 @@ class TestProductSeriesView(TestCaseWithFactory):
     def test_productserieslanguages_no_template(self):
         # With no POTemplates, no languages can be seen, either.
         view = self._createView()
-        self.assertEquals(None, view.productserieslanguages)
+        self.assertIsNone(view.productserieslanguages)
 
     def _getProductserieslanguages(self, view):
         return [psl.language for psl in view.productserieslanguages]
@@ -86,7 +86,7 @@ class TestProductSeriesView(TestCaseWithFactory):
         # of languages is empty.
         self.factory.makePOTemplate(productseries=self.productseries)
         view = self._createView()
-        self.assertEquals([], self._getProductserieslanguages(view))
+        self.assertEqual([], self._getProductserieslanguages(view))
 
     def test_productserieslanguages_with_pofile(self):
         # The `productserieslanguages` properperty has a list of the
@@ -95,7 +95,7 @@ class TestProductSeriesView(TestCaseWithFactory):
             productseries=self.productseries)
         pofile = self.factory.makePOFile(potemplate=potemplate)
         view = self._createView()
-        self.assertEquals(
+        self.assertEqual(
             [pofile.language], self._getProductserieslanguages(view))
 
     def _makePersonWithLanguage(self):
@@ -112,7 +112,7 @@ class TestProductSeriesView(TestCaseWithFactory):
         user, language = self._makePersonWithLanguage()
         login_person(user)
         view = self._createView()
-        self.assertEquals([language], self._getProductserieslanguages(view))
+        self.assertEqual([language], self._getProductserieslanguages(view))
 
     def test_productserieslanguages_preferred_language_with_pofile(self):
         # If the user has a preferred language, that language always in
@@ -138,7 +138,7 @@ class TestProductSeriesView(TestCaseWithFactory):
         self.factory.makePOFile(language=language1, potemplate=potemplate)
         self.factory.makePOFile(language=language2, potemplate=potemplate)
         view = self._createView()
-        self.assertEquals(
+        self.assertEqual(
             [language2, language1], self._getProductserieslanguages(view))
 
     def test_productserieslanguages_english(self):
@@ -148,12 +148,12 @@ class TestProductSeriesView(TestCaseWithFactory):
             productseries=self.productseries)
         self.factory.makePOFile('en', potemplate)
         view = self._createView()
-        self.assertEquals([], self._getProductserieslanguages(view))
+        self.assertEqual([], self._getProductserieslanguages(view))
 
         # It's not shown even with more than one POTemplate
         # (different code paths).
         self.factory.makePOTemplate(productseries=self.productseries)
-        self.assertEquals([], self._getProductserieslanguages(view))
+        self.assertEqual([], self._getProductserieslanguages(view))
 
 
 class TestProductSeriesViewBzrUsage(TestCaseWithFactory):
@@ -268,11 +268,11 @@ class TestProductSeriesLanguageView(TestCaseWithFactory):
 
     def test_translation_group_no_group(self):
         view = self._createView()
-        self.assertEquals(None, view.translation_group)
+        self.assertIsNone(view.translation_group)
 
     def test_translation_team_no_group_no_team(self):
         view = self._createView()
-        self.assertEquals(None, view.translation_team)
+        self.assertIsNone(view.translation_team)
 
     def _makeTranslationGroup(self):
         group = self.factory.makeTranslationGroup(
@@ -283,14 +283,14 @@ class TestProductSeriesLanguageView(TestCaseWithFactory):
     def test_translation_group(self):
         group = self._makeTranslationGroup()
         view = self._createView()
-        self.assertEquals(group, view.translation_group)
+        self.assertEqual(group, view.translation_group)
 
     def test_translation_team_no_translator(self):
         # Just having a group doesn't mean there's a translation
         # team as well.
         self._makeTranslationGroup()
         view = self._createView()
-        self.assertEquals(None, view.translation_team)
+        self.assertIsNone(view.translation_team)
 
     def test_translation_team(self):
         # Setting a translator for this languages makes it
@@ -299,4 +299,4 @@ class TestProductSeriesLanguageView(TestCaseWithFactory):
         translator = self.factory.makeTranslator(
             group=group, language=self.language)
         view = self._createView()
-        self.assertEquals(translator, view.translation_team)
+        self.assertEqual(translator, view.translation_team)

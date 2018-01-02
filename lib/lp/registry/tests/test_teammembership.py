@@ -277,7 +277,7 @@ class TeamParticipationTestCase(TestCaseWithFactory):
     def assertParticipantsEquals(self, participant_names, team):
         """Assert that the participants names in team are the expected ones.
         """
-        self.assertEquals(
+        self.assertEqual(
             sorted(participant_names),
             sorted([participant.name for participant in team.allmembers]))
 

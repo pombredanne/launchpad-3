@@ -729,7 +729,7 @@ class TestBugTaskDelta(TestCaseWithFactory):
         names = set(
             name for interface in providedBy(delta) for name in interface)
         for name in names:
-            self.assertEquals(getattr(delta, name), expected_delta.get(name))
+            self.assertEqual(getattr(delta, name), expected_delta.get(name))
 
     def test_get_bugwatch_delta(self):
         # Exercise getDelta() with a change to bugwatch.
@@ -1199,8 +1199,8 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
 
         # Get a debbugs watch.
         watch_debbugs_327452 = bugwatchset.get(9)
-        self.assertEquals(watch_debbugs_327452.bugtracker.name, "debbugs")
-        self.assertEquals(watch_debbugs_327452.remotebug, "327452")
+        self.assertEqual(watch_debbugs_327452.bugtracker.name, "debbugs")
+        self.assertEqual(watch_debbugs_327452.remotebug, "327452")
 
         # Associate the watch to a Fix Released task.
         debian = getUtility(IDistributionSet).getByName("debian")
@@ -2208,7 +2208,7 @@ class TestValidateTransitionToTarget(TestCaseWithFactory):
     def test_distribution_to_package_works(self):
         distro = self.factory.makeDistribution()
         dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
-        self.assertEquals(dsp.distribution, distro)
+        self.assertEqual(dsp.distribution, distro)
         self.assertTransitionWorks(distro, dsp)
 
     def test_package_to_package_works(self):

@@ -98,9 +98,9 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
     def test_getErrorRecipients_requester(self):
         _, _, job = self.makeJob()
         email = format_address_for_person(job.requester)
-        self.assertEquals([email], job.getErrorRecipients())
+        self.assertEqual([email], job.getErrorRecipients())
         removeSecurityProxy(job).requester = None
-        self.assertEquals([], job.getErrorRecipients())
+        self.assertEqual([], job.getErrorRecipients())
 
     def test_run(self):
         _, _, job = self.makeJob()

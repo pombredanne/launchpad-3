@@ -20,12 +20,12 @@ class TestStrJSONSerializer(TestCase):
     def test_toDataForJSON(self):
         serializer = StrJSONSerializer(
             timedelta(days=2, hours=2, seconds=5))
-        self.assertEquals(
+        self.assertEqual(
             '2 days, 2:00:05',
             serializer.toDataForJSON('application/json'))
 
     def test_timedelta_users_StrJSONSerializer(self):
         delta = timedelta(seconds=5)
         serializer = IJSONPublishable(delta)
-        self.assertEquals('0:00:05',
+        self.assertEqual('0:00:05',
             serializer.toDataForJSON('application/json'))

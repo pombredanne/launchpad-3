@@ -1751,7 +1751,7 @@ class TestBugActivityItem(TestCaseWithFactory):
             self.setAttribute(
                 task, 'assignee',
                 self.factory.makePerson(displayname="Foo &<>", name='foo'))
-        self.assertEquals(
+        self.assertEqual(
             "nobody &#8594; Foo &amp;&lt;&gt; (foo)",
             BugActivityItem(task.bug.activity[-1]).change_details)
 
@@ -1759,7 +1759,7 @@ class TestBugActivityItem(TestCaseWithFactory):
         with celebrity_logged_in('admin'):
             bug = self.factory.makeBug(title="foo")
             self.setAttribute(bug, 'title', "bar &<>")
-        self.assertEquals(
+        self.assertEqual(
             "- foo<br />+ bar &amp;&lt;&gt;",
             BugActivityItem(bug.activity[-1]).change_details)
 

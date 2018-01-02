@@ -60,24 +60,24 @@ class XpiSearchTestCase(unittest.TestCase):
         entry = self.setUpTranslationImportQueueForTemplate('en-US')
 
         # The status is now IMPORTED:
-        self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
+        self.assertEqual(entry.status, RosettaImportStatus.IMPORTED)
 
         potmsgsets = self.spanish_firefox.findPOTMsgSetsContaining(
             text='zilla')
         message_list = [message.singular_text for message in potmsgsets]
 
-        self.assertEquals([u'SomeZilla', u'FooZilla!',
-                           u'FooZilla Zilla Thingy'],
-                          message_list)
+        self.assertEqual([u'SomeZilla', u'FooZilla!',
+                          u'FooZilla Zilla Thingy'],
+                         message_list)
 
     def test_templateSearchingForMsgIDs(self):
         """Searching returns no results for internal msg IDs."""
         entry = self.setUpTranslationImportQueueForTemplate('en-US')
 
         # The status is now IMPORTED:
-        self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
+        self.assertEqual(entry.status, RosettaImportStatus.IMPORTED)
 
         potmsgsets = list(self.spanish_firefox.findPOTMsgSetsContaining(
             text='foozilla.title'))
 
-        self.assertEquals(potmsgsets, [])
+        self.assertEqual(potmsgsets, [])

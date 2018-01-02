@@ -27,7 +27,7 @@ class ProcessorSetTests(TestCaseWithFactory):
     def test_getByName(self):
         processor_set = getUtility(IProcessorSet)
         q1 = self.factory.makeProcessor(name='q1')
-        self.assertEquals(q1, processor_set.getByName('q1'))
+        self.assertEqual(q1, processor_set.getByName('q1'))
 
     def test_getByName_not_found(self):
         processor_set = getUtility(IProcessorSet)
@@ -42,7 +42,7 @@ class ProcessorSetTests(TestCaseWithFactory):
         self.factory.makeProcessor(name='q1')
         self.factory.makeProcessor(name='i686')
         self.factory.makeProcessor(name='g4')
-        self.assertEquals(
+        self.assertEqual(
             ['g4', 'i686', 'q1'],
             sorted(
             processor.name for processor in processor_set.getAll()
@@ -68,7 +68,7 @@ class ProcessorSetWebServiceTests(TestCaseWithFactory):
         processor = self.webservice.named_get(
             '/+processors', 'getByName', name='transmeta',
             api_version='devel').jsonBody()
-        self.assertEquals('transmeta', processor['name'])
+        self.assertEqual('transmeta', processor['name'])
 
     def test_default_collection(self):
         # Make it easy to filter out sample data
@@ -82,7 +82,7 @@ class ProcessorSetWebServiceTests(TestCaseWithFactory):
 
         collection = self.webservice.get(
             '/+processors?ws.size=10', api_version='devel').jsonBody()
-        self.assertEquals(
+        self.assertEqual(
             ['g4', 'i686', 'q1'],
             sorted(
             processor['name'] for processor in collection['entries']

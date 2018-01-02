@@ -102,7 +102,7 @@ class QuestionModifiedDefaultNotificationTestCase(TestCase):
 
     def test_getSubject(self):
         """getSubject() when there is no message added to the question."""
-        self.assertEquals(
+        self.assertEqual(
             'Re: [Question #1]: Question title',
             self.notification.getSubject())
 

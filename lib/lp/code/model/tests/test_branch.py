@@ -1240,8 +1240,8 @@ class TestBranchDeletion(TestCaseWithFactory):
         branch_id = self.branch.id
         branch_set = getUtility(IBranchLookup)
         self.branch.destroySelf()
-        self.assert_(branch_set.get(branch_id) is None,
-                     "The branch has not been deleted.")
+        self.assertIsNone(
+            branch_set.get(branch_id), "The branch has not been deleted.")
 
     def test_stackedBranchDisablesDeletion(self):
         # A branch that is stacked upon cannot be deleted.
