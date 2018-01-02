@@ -404,7 +404,6 @@ lxc-clean: clean_js clean_mailman clean_pip clean_logs
 		$(MAKE) -C sourcecode/mailman clean; \
 	fi
 	$(RM) -r env
-	$(RM) -r lib/subvertpy/*.so
 	$(RM) -r $(LP_BUILT_JS_ROOT)/*
 	$(RM) -r $(CODEHOSTING_ROOT)/*
 	$(RM) -r $(APIDOC_DIR)
