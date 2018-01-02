@@ -114,27 +114,27 @@ doc:
 	$(MAKE) -C doc/ html
 
 # Run by PQM.
-check_config: build
+check_config: build $(JS_BUILD_DIR)/.development
 	bin/test -m lp.services.config.tests -vvt test_config
 
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
-check: clean build
+check: clean build $(JS_BUILD_DIR)/.development
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
 	bzr status --no-pending
 
-check_mailman: build
+check_mailman: build $(JS_BUILD_DIR)/.development
 	# Run all tests, including the Mailman integration
 	# tests. test_on_merge.py takes care of setting up the database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
 		lp.services.mailman.tests
 
-lint: ${PY}
+lint: ${PY} $(JS_BUILD_DIR)/.development
 	@bash ./utilities/lint
 
-lint-verbose: ${PY}
+lint-verbose: ${PY} $(JS_BUILD_DIR)/.development
 	@bash ./utilities/lint -v
 
 logs:
@@ -190,13 +190,18 @@ $(YARN_BUILD): | $(JS_BUILD_DIR)
 	mv $@/tmp/yarn-v$(YARN_VERSION)/* $@
 	$(RM) -r $@/tmp
 
-yarn/node_modules/yui: yarn/package.json | $(YARN_BUILD)
-	$(YARN) install --offline --frozen-lockfile
+$(JS_BUILD_DIR)/.production: yarn/package.json | $(YARN_BUILD)
+	$(YARN) install --offline --frozen-lockfile --production
 	# We don't use YUI's Flash components and they have a bad security
 	# record. Kill them.
 	find yarn/node_modules/yui -name '*.swf' -delete
+	touch $@
 
-$(YUI_SYMLINK): yarn/node_modules/yui
+$(JS_BUILD_DIR)/.development: $(JS_BUILD_DIR)/.production
+	$(YARN) install --offline --frozen-lockfile
+	touch $@
+
+$(YUI_SYMLINK): $(JS_BUILD_DIR)/.production
 	ln -sfn ../../yarn/node_modules/yui $@
 
 $(LP_JS_BUILD): | $(JS_BUILD_DIR)
