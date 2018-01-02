@@ -255,30 +255,30 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
             getUtility(IWebServiceConfiguration).path_override, 'api',
             "Sanity check: The web service path override should be 'api'.")
 
-        self.assert_(
+        self.assertTrue(
             self.factory.isWebServicePath('/api'),
             "The factory should handle URLs that start with /api.")
 
-        self.assert_(
+        self.assertTrue(
             self.factory.isWebServicePath('/api/foo'),
             "The factory should handle URLs that start with /api.")
 
-        self.failIf(
+        self.assertFalse(
             self.factory.isWebServicePath('/foo'),
             "The factory should not handle URLs that do not start with "
             "/api.")
 
-        self.failIf(
+        self.assertFalse(
             self.factory.isWebServicePath('/'),
             "The factory should not handle URLs that do not start with "
             "/api.")
 
-        self.failIf(
+        self.assertFalse(
             self.factory.isWebServicePath('/apifoo'),
             "The factory should not handle URLs that do not start with "
             "/api.")
 
-        self.failIf(
+        self.assertFalse(
             self.factory.isWebServicePath('/foo/api'),
             "The factory should not handle URLs that do not start with "
             "/api.")
@@ -319,14 +319,14 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
         request = config.createRequest(data, env)
 
         stack = request.getTraversalStack()
-        self.assert_(config.path_override in stack,
+        self.assertIn(config.path_override, stack,
             "Sanity check: the API path should show up in the request's "
             "traversal stack: %r" % stack)
 
         request.traverse(None)
 
         stack = request.getTraversalStack()
-        self.failIf(config.path_override in stack,
+        self.assertNotIn(config.path_override, stack,
             "Web service paths should be dropped from the webservice "
             "request traversal stack: %r" % stack)
 

@@ -101,7 +101,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
 
     def test_Interface(self):
         """Check whether the object follows the interface."""
-        self.failUnless(
+        self.assertTrue(
             verifyObject(
                 ITranslationFormatExporter, self.translation_exporter),
             "XPIPOExporter doesn't follow the interface")

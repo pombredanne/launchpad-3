@@ -34,10 +34,10 @@ class TranslationExporterTestCase(unittest.TestCase):
 
     def testInterface(self):
         """Check whether the object follows the interface."""
-        self.failUnless(
+        self.assertTrue(
             verifyObject(ITranslationExporter, self.translation_exporter),
             "TranslationExporter doesn't follow the interface")
-        self.failUnless(
+        self.assertTrue(
             verifyObject(
                 IExportedTranslationFile,
                 ExportedTranslationFile(StringIO())),
@@ -50,16 +50,16 @@ class TranslationExporterTestCase(unittest.TestCase):
             translation_exporter.getExporterProducingTargetFileFormat(
                 TranslationFileFormat.PO))
 
-        self.failIf(
-            po_format_exporter is None,
+        self.assertIsNotNone(
+            po_format_exporter,
             'Expected PO file format exporter was not found')
 
         mo_format_exporter = (
             translation_exporter.getExporterProducingTargetFileFormat(
                 TranslationFileFormat.MO))
 
-        self.failIf(
-            mo_format_exporter is None,
+        self.assertIsNotNone(
+            mo_format_exporter,
             'Expected MO file format exporter was not found')
 
     def testGetTranslationFormatExportersForFileFormat(self):

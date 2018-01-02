@@ -13,7 +13,7 @@ class Filter_Logging(unittest.TestCase):
             Filter)
         from logging import Logger
         f = Filter()
-        self.failUnless(isinstance(f.log, Logger))
+        self.assertTrue(isinstance(f.log, Logger))
 
     def testCreatesChildLogger(self):
         """Filter creates a child logger if given a parent."""

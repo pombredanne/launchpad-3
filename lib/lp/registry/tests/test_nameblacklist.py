@@ -56,13 +56,13 @@ class TestNameBlacklist(TestCaseWithFactory):
         result = self.store.execute(
             "SELECT is_blacklisted_name(%s, %s)", (name, user_id))
         blacklisted = result.get_one()[0]
-        self.failIf(blacklisted is None, 'is_blacklisted_name returned NULL')
+        self.assertIsNotNone(blacklisted, 'is_blacklisted_name returned NULL')
         return bool(blacklisted)
 
     def test_name_blacklist_match(self):
 
         # A name that is not blacklisted returns NULL/None
-        self.failUnless(self.name_blacklist_match(u"bar") is None)
+        self.assertIsNone(self.name_blacklist_match(u"bar"))
 
         # A name that is blacklisted returns the id of the row in the
         # NameBlacklist table that matched. Rows are tried in order, and the
@@ -110,16 +110,16 @@ class TestNameBlacklist(TestCaseWithFactory):
             self.name_blacklist_match(u"foobar"),
             self.foo_exp.id)
         self.foo_exp.regexp = u'nomatch2'
-        self.failUnless(self.name_blacklist_match(u"foobar") is None)
+        self.assertIsNone(self.name_blacklist_match(u"foobar"))
 
     def test_is_blacklisted_name(self):
         # is_blacklisted_name() is just a wrapper around name_blacklist_match
         # that is friendlier to use in a boolean context.
-        self.failUnless(self.is_blacklisted_name(u"bar") is False)
-        self.failUnless(self.is_blacklisted_name(u"foo") is True)
+        self.assertFalse(self.is_blacklisted_name(u"bar"))
+        self.assertTrue(self.is_blacklisted_name(u"foo"))
         self.caret_foo_exp.regexp = u'bar'
         self.foo_exp.regexp = u'bar2'
-        self.failUnless(self.is_blacklisted_name(u"foo") is False)
+        self.assertFalse(self.is_blacklisted_name(u"foo"))
 
     def test_is_blacklisted_name_admin_false(self):
         # Users in the expression's admin team are will return False.
@@ -127,11 +127,11 @@ class TestNameBlacklist(TestCaseWithFactory):
         self.assertFalse(self.is_blacklisted_name(u"fnord", user.id))
 
     def test_case_insensitive(self):
-        self.failUnless(self.is_blacklisted_name(u"Foo") is True)
+        self.assertTrue(self.is_blacklisted_name(u"Foo"))
 
     def test_verbose(self):
         # Testing the VERBOSE flag is used when compiling the regexp
-        self.failUnless(self.is_blacklisted_name(u"verbose") is True)
+        self.assertTrue(self.is_blacklisted_name(u"verbose"))
 
 
 class TestNameBlacklistSet(TestCaseWithFactory):

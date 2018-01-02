@@ -363,7 +363,7 @@ class TestNoneFormatterAPI(TestCaseWithFactory):
         # Traversal of invalid names raises an exception.
         adapter = getAdapter(None, IPathAdapter, 'fmt')
         traverse = getattr(adapter, 'traverse', None)
-        self.failUnlessRaises(TraversalError, traverse, "foo", [])
+        self.assertRaises(TraversalError, traverse, "foo", [])
 
     def test_shorten_traversal(self):
         # Traversal of 'shorten' works as expected.

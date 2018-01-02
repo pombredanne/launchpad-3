@@ -68,7 +68,7 @@ class TestDistroSeriesBinaryPackage(TestCaseWithFactory):
                 self.distroseries, [self.binary_package_name],
                 distro_archive_2, logger)
 
-        self.failUnlessEqual(
+        self.assertEqual(
             'Foo is the best', self.distroseries_binary_package.summary)
 
     def test_none_cache_passed_at_init_counts_as_cached(self):

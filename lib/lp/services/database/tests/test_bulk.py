@@ -57,27 +57,27 @@ object_is_key = lambda thing: thing
 class TestBasicFunctions(TestCase):
 
     def test_collate_empty_list(self):
-        self.failUnlessEqual([], list(bulk.collate([], object_is_key)))
+        self.assertEqual([], list(bulk.collate([], object_is_key)))
 
     def test_collate_when_object_is_key(self):
-        self.failUnlessEqual(
+        self.assertEqual(
             [(1, [1])],
             list(bulk.collate([1], object_is_key)))
-        self.failUnlessEqual(
+        self.assertEqual(
             [(1, [1]), (2, [2, 2])],
             sorted(bulk.collate([1, 2, 2], object_is_key)))
 
     def test_collate_with_key_function(self):
-        self.failUnlessEqual(
+        self.assertEqual(
             [(4, ['fred', 'joss']), (6, ['barney'])],
             sorted(bulk.collate(['fred', 'barney', 'joss'], len)))
 
     def test_get_type(self):
-        self.failUnlessEqual(object, bulk.get_type(object()))
+        self.assertEqual(object, bulk.get_type(object()))
 
     def test_get_type_with_proxied_object(self):
         proxied_object = proxy.Proxy('fred', checker.Checker({}))
-        self.failUnlessEqual(str, bulk.get_type(proxied_object))
+        self.assertEqual(str, bulk.get_type(proxied_object))
 
 
 class TestLoaders(TestCaseWithFactory):
@@ -85,16 +85,16 @@ class TestLoaders(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_gen_reload_queries_with_empty_list(self):
-        self.failUnlessEqual([], list(bulk.gen_reload_queries([])))
+        self.assertEqual([], list(bulk.gen_reload_queries([])))
 
     def test_gen_reload_queries_with_single_object(self):
         # gen_reload_queries() should generate a single query for a
         # single object.
         db_objects = [self.factory.makeSourcePackageName()]
         db_queries = list(bulk.gen_reload_queries(db_objects))
-        self.failUnlessEqual(1, len(db_queries))
+        self.assertEqual(1, len(db_queries))
         db_query = db_queries[0]
-        self.failUnlessEqual(db_objects, list(db_query))
+        self.assertEqual(db_objects, list(db_query))
 
     def test_gen_reload_queries_with_multiple_similar_objects(self):
         # gen_reload_queries() should generate a single query to load
@@ -102,9 +102,9 @@ class TestLoaders(TestCaseWithFactory):
         db_objects = set(
             self.factory.makeSourcePackageName() for i in range(5))
         db_queries = list(bulk.gen_reload_queries(db_objects))
-        self.failUnlessEqual(1, len(db_queries))
+        self.assertEqual(1, len(db_queries))
         db_query = db_queries[0]
-        self.failUnlessEqual(db_objects, set(db_query))
+        self.assertEqual(db_objects, set(db_query))
 
     def test_gen_reload_queries_with_mixed_objects(self):
         # gen_reload_queries() should return one query for each
@@ -114,15 +114,15 @@ class TestLoaders(TestCaseWithFactory):
         db_objects.update(
             self.factory.makeComponent() for i in range(5))
         db_queries = list(bulk.gen_reload_queries(db_objects))
-        self.failUnlessEqual(2, len(db_queries))
+        self.assertEqual(2, len(db_queries))
         db_objects_loaded = set()
         for db_query in db_queries:
             objects = set(db_query)
             # None of these objects should have been loaded before.
-            self.failUnlessEqual(
+            self.assertEqual(
                 set(), objects.intersection(db_objects_loaded))
             db_objects_loaded.update(objects)
-        self.failUnlessEqual(db_objects, db_objects_loaded)
+        self.assertEqual(db_objects, db_objects_loaded)
 
     def test_gen_reload_queries_with_mixed_stores(self):
         # gen_reload_queries() returns one query for each distinct
@@ -136,15 +136,15 @@ class TestLoaders(TestCaseWithFactory):
             (IMasterStore(db_object).get(db_object_type, db_object.id),
              ISlaveStore(db_object).get(db_object_type, db_object.id)))
         db_queries = list(bulk.gen_reload_queries(db_objects))
-        self.failUnlessEqual(2, len(db_queries))
+        self.assertEqual(2, len(db_queries))
         db_objects_loaded = set()
         for db_query in db_queries:
             objects = set(db_query)
             # None of these objects should have been loaded before.
-            self.failUnlessEqual(
+            self.assertEqual(
                 set(), objects.intersection(db_objects_loaded))
             db_objects_loaded.update(objects)
-        self.failUnlessEqual(db_objects, db_objects_loaded)
+        self.assertEqual(db_objects, db_objects_loaded)
 
     def test_gen_reload_queries_with_non_Storm_objects(self):
         # gen_reload_queries() does not like non-Storm objects.
@@ -166,11 +166,11 @@ class TestLoaders(TestCaseWithFactory):
         db_object_naked = proxy.removeSecurityProxy(db_object)
         db_object_info = get_obj_info(db_object_naked)
         IStore(db_object).flush()
-        self.failUnlessEqual(None, db_object_info.get('invalidated'))
+        self.assertIsNone(db_object_info.get('invalidated'))
         IStore(db_object).invalidate(db_object)
-        self.failUnlessEqual(True, db_object_info.get('invalidated'))
+        self.assertEqual(True, db_object_info.get('invalidated'))
         bulk.reload([db_object])
-        self.failUnlessEqual(None, db_object_info.get('invalidated'))
+        self.assertIsNone(db_object_info.get('invalidated'))
 
     def test_load(self):
         # load() loads objects of the given type by their primary keys.

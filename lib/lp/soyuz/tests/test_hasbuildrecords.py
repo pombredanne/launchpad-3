@@ -172,17 +172,17 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
             BuildFarmJobType.RECIPEBRANCHBUILD, archive=self.context)
 
         builds = self.context.getBuildRecords(binary_only=True)
-        self.failUnlessEqual(3, builds.count())
+        self.assertEqual(3, builds.count())
 
         builds = self.context.getBuildRecords(binary_only=False)
-        self.failUnlessEqual(4, builds.count())
+        self.assertEqual(4, builds.count())
 
     def test_incompatible_arguments(self):
         # binary_only=False is incompatible with arch_tag and name.
-        self.failUnlessRaises(
+        self.assertRaises(
             IncompatibleArguments, self.context.getBuildRecords,
             binary_only=False, arch_tag="anything")
-        self.failUnlessRaises(
+        self.assertRaises(
             IncompatibleArguments, self.context.getBuildRecords,
             binary_only=False, name="anything")
 
@@ -225,10 +225,10 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
 
     def test_incompatible_arguments(self):
         # binary_only=False is incompatible with arch_tag and name.
-        self.failUnlessRaises(
+        self.assertRaises(
             IncompatibleArguments, self.context.getBuildRecords,
             binary_only=False, arch_tag="anything")
-        self.failUnlessRaises(
+        self.assertRaises(
             IncompatibleArguments, self.context.getBuildRecords,
             binary_only=False, name="anything")
 

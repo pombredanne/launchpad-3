@@ -121,9 +121,9 @@ class LibrarianWebTestCase(testtools.TestCase):
         fileObj = urlopen(url)
         mimetype = fileObj.headers['content-type']
         encoding = fileObj.headers['content-encoding']
-        self.failUnless(mimetype == "text/plain; charset=utf-8",
+        self.assertTrue(mimetype == "text/plain; charset=utf-8",
                         "Wrong mimetype. %s != 'text/plain'." % mimetype)
-        self.failUnless(encoding == "gzip",
+        self.assertTrue(encoding == "gzip",
                         "Wrong encoding. %s != 'gzip'." % encoding)
 
     def test_checkNoEncoding(self):
@@ -143,7 +143,7 @@ class LibrarianWebTestCase(testtools.TestCase):
         mimetype = fileObj.headers['content-type']
         self.assertRaises(KeyError, fileObj.headers.__getitem__,
                           'content-encoding')
-        self.failUnless(
+        self.assertTrue(
             mimetype == "application/x-tar",
             "Wrong mimetype. %s != 'application/x-tar'." % mimetype)
 
@@ -180,12 +180,12 @@ class LibrarianWebTestCase(testtools.TestCase):
         self.assertEqual(urlopen(url).read(), 'sample')
 
         # Change the aliasid and assert we get a 404
-        self.failUnless(str(aid) in url)
+        self.assertIn(str(aid), url)
         bad_id_url = uri_path_replace(url, str(aid), str(aid + 1))
         self.require404(bad_id_url)
 
         # Change the filename and assert we get a 404
-        self.failUnless(filename in url)
+        self.assertIn(filename, url)
         bad_name_url = uri_path_replace(url, filename, 'different.txt')
         self.require404(bad_name_url)
 
@@ -195,18 +195,18 @@ class LibrarianWebTestCase(testtools.TestCase):
         id1 = client.addFile(filename, 6, StringIO('sample'), 'text/plain')
         id2 = client.addFile(filename, 6, StringIO('sample'), 'text/plain')
 
-        self.failIfEqual(id1, id2, 'Got allocated the same id!')
+        self.assertNotEqual(id1, id2, 'Got allocated the same id!')
 
         self.commit()
 
-        self.failUnlessEqual(client.getFileByAlias(id1).read(), 'sample')
-        self.failUnlessEqual(client.getFileByAlias(id2).read(), 'sample')
+        self.assertEqual(client.getFileByAlias(id1).read(), 'sample')
+        self.assertEqual(client.getFileByAlias(id2).read(), 'sample')
 
     def test_robotsTxt(self):
         url = 'http://%s:%d/robots.txt' % (
             config.librarian.download_host, config.librarian.download_port)
         f = urlopen(url)
-        self.failUnless('Disallow: /' in f.read())
+        self.assertIn('Disallow: /', f.read())
 
     def test_headers(self):
         client = LibrarianClient()
@@ -235,10 +235,10 @@ class LibrarianWebTestCase(testtools.TestCase):
 
         # URLs point to the same content for ever, so we have a hardcoded
         # 1 year max-age cache policy.
-        self.failUnlessEqual(cache_control_header, 'max-age=31536000, public')
+        self.assertEqual(cache_control_header, 'max-age=31536000, public')
 
         # And we should have a correct Last-Modified header too.
-        self.failUnlessEqual(
+        self.assertEqual(
             last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
 
     def test_missing_storage(self):
@@ -427,9 +427,9 @@ class LibrarianWebTestCase(testtools.TestCase):
         last_modified_header = result.info()['Last-Modified']
         cache_control_header = result.info()['Cache-Control']
         # No caching for restricted files.
-        self.failUnlessEqual(cache_control_header, 'max-age=0, private')
+        self.assertEqual(cache_control_header, 'max-age=0, private')
         # And we should have a correct Last-Modified header too.
-        self.failUnlessEqual(
+        self.assertEqual(
             last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
         # Perhaps we should also set Expires to the Last-Modified.
 
@@ -439,7 +439,7 @@ class LibrarianWebTestCase(testtools.TestCase):
             urlopen(url)
             self.fail('404 not raised')
         except HTTPError as e:
-            self.failUnlessEqual(e.code, 404)
+            self.assertEqual(e.code, 404)
 
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
@@ -494,7 +494,7 @@ class DeletedContentTestCase(unittest.TestCase):
         # And it can be retrieved via the web
         url = alias.http_url
         retrieved_content = urlopen(url).read()
-        self.failUnlessEqual(retrieved_content, 'xxx\nxxx\n')
+        self.assertEqual(retrieved_content, 'xxx\nxxx\n')
 
         # But when we flag the content as deleted
         cur = cursor()
@@ -505,11 +505,11 @@ class DeletedContentTestCase(unittest.TestCase):
 
         # Things become not found
         alias = getUtility(ILibraryFileAliasSet)[alias_id]
-        self.failUnlessRaises(DownloadFailed, alias.open)
+        self.assertRaises(DownloadFailed, alias.open)
 
         # And people see a 404 page
         try:
             urlopen(url)
             self.fail('404 not raised')
         except HTTPError as x:
-            self.failUnlessEqual(x.code, 404)
+            self.assertEqual(x.code, 404)

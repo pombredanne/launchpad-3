@@ -171,4 +171,4 @@ class ServersToStart(testtools.TestCase):
         self.assertEqual([SERVICES['sftp']], services)
 
     def test_launchpad_systems_red(self):
-        self.failIf(config.launchpad.launch)
+        self.assertFalse(config.launchpad.launch)

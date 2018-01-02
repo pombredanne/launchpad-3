@@ -50,4 +50,4 @@ class SampleDataTestCase(TestCase):
             stdin=subprocess.PIPE)
         (stdout, stderr) = proc.communicate()
         rv = proc.wait()
-        self.failUnlessEqual(rv, 0, "Dump/Restore failed: %s" % stdout)
+        self.assertEqual(rv, 0, "Dump/Restore failed: %s" % stdout)

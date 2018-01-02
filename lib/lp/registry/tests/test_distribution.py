@@ -660,10 +660,10 @@ class TestWebService(WebServiceTestCase):
         ws_distro = self.wsObject(distro, distro.owner)
         now = datetime.datetime.now(tz=pytz.utc)
         day = datetime.timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             [oopsid],
             ws_distro.findReferencedOOPS(start_date=now - day, end_date=now))
-        self.failUnlessEqual(
+        self.assertEqual(
             [],
             ws_distro.findReferencedOOPS(
                 start_date=now + day, end_date=now + day))
@@ -678,6 +678,6 @@ class TestWebService(WebServiceTestCase):
         ws_distro = self.wsObject(distro, distro.owner)
         now = datetime.datetime.now(tz=pytz.utc)
         day = datetime.timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             [],
             ws_distro.findReferencedOOPS(start_date=now - day, end_date=now))

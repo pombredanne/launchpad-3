@@ -431,10 +431,8 @@ class POBasicTestCase(unittest.TestCase):
         # When it's the default one in Gettext (FULL NAME <EMAIL@ADDRESS>),
         # used in templates, we get a tuple with None values.
         name, email = template_file.header.getLastTranslator()
-        self.failUnless(name is None,
-            "Didn't detect default Last Translator name")
-        self.failUnless(email is None,
-            "Didn't detect default Last Translator email")
+        self.assertIsNone(name, "Didn't detect default Last Translator name")
+        self.assertIsNone(email, "Didn't detect default Last Translator email")
 
         translation_file = self.parser.parse('''
             msgid ""

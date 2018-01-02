@@ -822,7 +822,7 @@ class TestPersonStates(TestCaseWithFactory):
         sample_person = Person.byName('name12')
         login(sample_person.preferredemail.email)
         sample_person.deactivate(comment="blah!")
-        self.failUnlessEqual(sample_person.name, 'name12-deactivatedaccount')
+        self.assertEqual(sample_person.name, 'name12-deactivatedaccount')
         # Now that name12 is free Foo Bar can use it.
         foo_bar = Person.byName('name16')
         foo_bar.name = 'name12'
@@ -831,7 +831,7 @@ class TestPersonStates(TestCaseWithFactory):
         # in use.
         login(foo_bar.preferredemail.email)
         foo_bar.deactivate(comment="blah!")
-        self.failUnlessEqual(foo_bar.name, 'name12-deactivatedaccount1')
+        self.assertEqual(foo_bar.name, 'name12-deactivatedaccount1')
 
     def test_deactivate_reassigns_owner_and_driver(self):
         """Product owner and driver are reassigned.
@@ -860,9 +860,9 @@ class TestPersonStates(TestCaseWithFactory):
         # turn is a proposed member of Ubuntu Team. That means
         # sample_person._getDirectMemberIParticipateIn(ubuntu_team) will fail
         # with an AssertionError.
-        self.failUnless(sample_person in warty_team.activemembers)
-        self.failUnless(warty_team in ubuntu_team.invited_members)
-        self.failUnlessRaises(
+        self.assertIn(sample_person, warty_team.activemembers)
+        self.assertIn(warty_team, ubuntu_team.invited_members)
+        self.assertRaises(
             AssertionError, sample_person._getDirectMemberIParticipateIn,
             ubuntu_team)
 
@@ -871,8 +871,8 @@ class TestPersonStates(TestCaseWithFactory):
         # warty_team.
         login(warty_team.teamowner.preferredemail.email)
         warty_team.acceptInvitationToBeMemberOf(ubuntu_team, comment="foo")
-        self.failUnless(warty_team in ubuntu_team.activemembers)
-        self.failUnlessEqual(
+        self.assertIn(warty_team, ubuntu_team.activemembers)
+        self.assertEqual(
             sample_person._getDirectMemberIParticipateIn(ubuntu_team),
             warty_team)
 
@@ -1005,15 +1005,14 @@ class TestPersonRelatedBugTaskSearch(TestCaseWithFactory):
         self, params, assignee=None, bug_subscriber=None,
         owner=None, bug_commenter=None, bug_reporter=None,
         structural_subscriber=None):
-        self.failUnlessEqual(assignee, params.assignee)
+        self.assertEqual(assignee, params.assignee)
         # fromSearchForm() takes a bug_subscriber parameter, but saves
         # it as subscriber on the parameter object.
-        self.failUnlessEqual(bug_subscriber, params.subscriber)
-        self.failUnlessEqual(owner, params.owner)
-        self.failUnlessEqual(bug_commenter, params.bug_commenter)
-        self.failUnlessEqual(bug_reporter, params.bug_reporter)
-        self.failUnlessEqual(structural_subscriber,
-                             params.structural_subscriber)
+        self.assertEqual(bug_subscriber, params.subscriber)
+        self.assertEqual(owner, params.owner)
+        self.assertEqual(bug_commenter, params.bug_commenter)
+        self.assertEqual(bug_reporter, params.bug_reporter)
+        self.assertEqual(structural_subscriber, params.structural_subscriber)
 
     def test_get_person_bugtasks_search_params(self):
         # With no specified options, get_person_bugtasks_search_params()

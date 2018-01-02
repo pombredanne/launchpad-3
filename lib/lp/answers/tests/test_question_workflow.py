@@ -138,8 +138,8 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
                 self.setQuestionStatus(self.question, status)
             expected = status.name in statuses_expected_true
             allowed = getattr(self.question, guard_name)
-            self.failUnless(
-                expected == allowed, "%s != %s when status = %s" % (
+            self.assertEqual(
+                expected, allowed, "%s != %s when status = %s" % (
                     guard_name, expected, status.name))
 
     def _testValidTransition(self, statuses, transition_method,
@@ -224,7 +224,7 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
                 transition_method(*args, **kwargs)
             except InvalidQuestionStateError:
                 exceptionRaised = True
-            self.failUnless(exceptionRaised,
+            self.assertTrue(exceptionRaised,
                             "%s() when status = %s should raise an error" % (
                                 transition_method.__name__, status.name))
 
@@ -240,7 +240,7 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
         It also verifies that the question status, datelastquery (or
         datelastresponse) were updated to reflect the time of the message.
         """
-        self.failUnless(verifyObject(IQuestionMessage, message))
+        self.assertTrue(verifyObject(IQuestionMessage, message))
 
         self.assertEquals("Re: Help!", message.subject)
         self.assertEquals(expected_owner, message.owner)
@@ -268,42 +268,42 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
         def failure_msg(msg):
             return "From status %s: %s" % (status_name, msg)
 
-        self.failUnless(
+        self.assertTrue(
             len(self.collected_events) >= 1,
             failure_msg('failed to trigger an IObjectCreatedEvent'))
         created_event = self.collected_events[0]
         created_event_user = IPerson(created_event.user)
-        self.failUnless(
+        self.assertTrue(
             IObjectCreatedEvent.providedBy(created_event),
             failure_msg(
                 "%s doesn't provide IObjectCreatedEvent" % created_event))
-        self.failUnless(
+        self.assertTrue(
             created_event.object == message,
             failure_msg("IObjectCreatedEvent contains wrong message"))
-        self.failUnless(
+        self.assertTrue(
             created_event_user == message.owner,
             failure_msg("%s != %s" % (
                 created_event_user.displayname, message.owner.displayname)))
 
-        self.failUnless(
+        self.assertTrue(
             len(self.collected_events) == 2,
             failure_msg('failed to trigger an IObjectModifiedEvent'))
         modified_event = self.collected_events[1]
         modified_event_user = IPerson(modified_event.user)
-        self.failUnless(
+        self.assertTrue(
             IObjectModifiedEvent.providedBy(modified_event),
             failure_msg(
                 "%s doesn't provide IObjectModifiedEvent"
                 % modified_event))
-        self.failUnless(
+        self.assertTrue(
             modified_event.object == self.question,
             failure_msg("IObjectModifiedEvent contains wrong question"))
-        self.failUnless(
+        self.assertTrue(
             modified_event_user == message.owner,
             failure_msg("%s != %s" % (
                 modified_event_user.displayname, message.owner.displayname)))
         if edited_fields:
-            self.failUnless(
+            self.assertTrue(
                 set(modified_event.edited_fields) == set(edited_fields),
                 failure_msg("%s != %s" % (
                     set(modified_event.edited_fields), set(edited_fields))))
@@ -704,7 +704,7 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             question2.confirmAnswer('That worked!', answer=question1_answer)
         except AssertionError:
             answerRefused = True
-        self.failUnless(
+        self.assertTrue(
             answerRefused, 'confirmAnswer accepted a message from a different'
             'question')
 

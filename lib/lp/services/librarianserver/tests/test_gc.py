@@ -137,8 +137,8 @@ class TestLibrarianGarbageCollectionBase:
         f2 = LibraryFileAlias.get(f2_id)
 
         # Make sure the duplicates really are distinct
-        self.failIfEqual(f1_id, f2_id)
-        self.failIfEqual(f1.contentID, f2.contentID)
+        self.assertNotEqual(f1_id, f2_id)
+        self.assertNotEqual(f1.contentID, f2.contentID)
 
         f1.date_created = self.ancient_past
         f2.date_created = self.ancient_past
@@ -159,7 +159,7 @@ class TestLibrarianGarbageCollectionBase:
     def test_files_exist(self):
         # Confirm the files we expect created by the test harness
         # actually exist.
-        self.failUnless(self.file_exists(self.f1_id))
+        self.assertTrue(self.file_exists(self.f1_id))
 
     def test_MergeDuplicates(self):
         # Merge the duplicates
@@ -173,7 +173,7 @@ class TestLibrarianGarbageCollectionBase:
         self.ztm.begin()
         f1 = LibraryFileAlias.get(self.f1_id)
         f2 = LibraryFileAlias.get(self.f2_id)
-        self.failUnlessEqual(f1.contentID, f2.contentID)
+        self.assertEqual(f1.contentID, f2.contentID)
 
     def test_DeleteUnreferencedAliases(self):
         self.ztm.begin()
@@ -346,19 +346,19 @@ class TestLibrarianGarbageCollectionBase:
                 AND LibraryFileContent.id IN (%d, %d)
             """ % (self.f1_id, self.f2_id))
         results = cur.fetchall()
-        self.failUnlessEqual(len(results), 1)
+        self.assertEqual(len(results), 1)
         unreferenced_id = results[0][0]
 
         self.ztm.abort()
 
         # Make sure the file exists on disk
-        self.failUnless(self.file_exists(unreferenced_id))
+        self.assertTrue(self.file_exists(unreferenced_id))
 
         # Delete unreferenced content
         librariangc.delete_unreferenced_content(self.con)
 
         # Make sure the file is gone
-        self.failIf(self.file_exists(unreferenced_id))
+        self.assertFalse(self.file_exists(unreferenced_id))
 
         # delete_unreferenced_content should have committed
         self.ztm.begin()
@@ -373,7 +373,7 @@ class TestLibrarianGarbageCollectionBase:
             WHERE LibraryFileAlias.id IS NULL
             """)
         results = list(cur.fetchall())
-        self.failUnlessEqual(
+        self.assertEqual(
                 len(results), 0, 'Too many results %r' % (results,)
                 )
 
@@ -407,23 +407,23 @@ class TestLibrarianGarbageCollectionBase:
                 AND LibraryFileContent.id IN (%d, %d)
             """ % (self.f1_id, self.f2_id))
         results = cur.fetchall()
-        self.failUnlessEqual(len(results), 1)
+        self.assertEqual(len(results), 1)
         unreferenced_id = results[0][0]
 
         self.ztm.abort()
 
         # Make sure the file exists on disk
-        self.failUnless(self.file_exists(unreferenced_id))
+        self.assertTrue(self.file_exists(unreferenced_id))
 
         # Remove the file from disk
         self.remove_file(unreferenced_id)
-        self.failIf(self.file_exists(unreferenced_id))
+        self.assertFalse(self.file_exists(unreferenced_id))
 
         # Delete unreferenced content
         librariangc.delete_unreferenced_content(self.con)
 
         # Make sure the file is gone
-        self.failIf(self.file_exists(unreferenced_id))
+        self.assertFalse(self.file_exists(unreferenced_id))
 
         # delete_unreferenced_content should have committed
         self.ztm.begin()
@@ -438,7 +438,7 @@ class TestLibrarianGarbageCollectionBase:
             WHERE LibraryFileAlias.id IS NULL
             """)
         results = list(cur.fetchall())
-        self.failUnlessEqual(
+        self.assertEqual(
                 len(results), 0, 'Too many results %r' % (results,)
                 )
 
@@ -485,7 +485,7 @@ class TestLibrarianGarbageCollectionBase:
                 """, (content_id,))
         self.ztm.commit()
 
-        self.failUnless(self.file_exists(content_id))
+        self.assertTrue(self.file_exists(content_id))
 
         # Ensure delete_unreferenced_files does not remove the file, because
         # it will have just been created (has a recent date_created). There
@@ -493,14 +493,14 @@ class TestLibrarianGarbageCollectionBase:
         # bothering to remove the file to avoid the race condition where the
         # garbage collector is run whilst a file is being uploaded.
         librariangc.delete_unwanted_files(self.con)
-        self.failUnless(self.file_exists(content_id))
+        self.assertTrue(self.file_exists(content_id))
 
         # To test removal does occur when we want it to, we need to trick
         # the garbage collector into thinking it is tomorrow.
         with self.librariangc_thinking_it_is_tomorrow():
             librariangc.delete_unwanted_files(self.con)
 
-        self.failIf(self.file_exists(content_id))
+        self.assertFalse(self.file_exists(content_id))
 
         # Make sure nothing else has been removed from disk
         self.ztm.begin()
@@ -509,7 +509,7 @@ class TestLibrarianGarbageCollectionBase:
                 SELECT id FROM LibraryFileContent
                 """)
         for content_id in (row[0] for row in cur.fetchall()):
-            self.failUnless(self.file_exists(content_id))
+            self.assertTrue(self.file_exists(content_id))
 
     def test_delete_unwanted_files_bug437084(self):
         # There was a bug where delete_unwanted_files() would die
@@ -563,9 +563,9 @@ class TestLibrarianGarbageCollectionBase:
         cmd = [sys.executable, script_path, '-q']
         process = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
         (script_output, _empty) = process.communicate()
-        self.failUnlessEqual(
+        self.assertEqual(
             process.returncode, 0, 'Error: %s' % script_output)
-        self.failUnlessEqual(script_output, '')
+        self.assertEqual(script_output, '')
 
         # Make sure that our example files have been garbage collected
         self.ztm.begin()
@@ -577,10 +577,10 @@ class TestLibrarianGarbageCollectionBase:
         cur = cursor()
         cur.execute("SELECT count(*) FROM LibraryFileAlias")
         count = cur.fetchone()[0]
-        self.failIfEqual(count, 0)
+        self.assertNotEqual(count, 0)
         cur.execute("SELECT count(*) FROM LibraryFileContent")
         count = cur.fetchone()[0]
-        self.failIfEqual(count, 0)
+        self.assertNotEqual(count, 0)
 
     def test_confirm_no_clock_skew(self):
         # There should not be any clock skew when running the test suite.
@@ -951,21 +951,21 @@ class TestBlobCollection(TestCase):
             SELECT * FROM TemporaryBlobStorage WHERE id=%s
             """, (self.expired_blob_id,)
             )
-        self.failUnless(cur.fetchone() is None)
+        self.assertIsNone(cur.fetchone())
 
         # As should our expired blob linked elsewhere.
         cur.execute("""
             SELECT * FROM TemporaryBlobStorage WHERE id=%s
             """, (self.expired2_blob_id,)
             )
-        self.failUnless(cur.fetchone() is None)
+        self.assertIsNone(cur.fetchone())
 
         # But our unexpired blob is still hanging around.
         cur.execute("""
             SELECT * FROM TemporaryBlobStorage WHERE id=%s
             """, (self.unexpired_blob_id,)
             )
-        self.failUnless(cur.fetchone() is not None)
+        self.assertIsNotNone(cur.fetchone())
 
         # Now delete our unreferenced aliases and unreferenced content
         cur.execute(
@@ -983,11 +983,11 @@ class TestBlobCollection(TestCase):
         cur.execute("""
             SELECT * FROM LibraryFileAlias WHERE id=%s
             """, (self.expired_lfa_id,))
-        self.failUnless(cur.fetchone() is None)
+        self.assertIsNone(cur.fetchone())
         cur.execute("""
             SELECT * FROM LibraryFileContent WHERE id=%s
             """, (self.expired_lfc_id,))
-        self.failUnless(cur.fetchone() is None)
+        self.assertIsNone(cur.fetchone())
 
         # The second expired blob will has lost its LibraryFileAlias,
         # but the content is still hanging around because something else
@@ -995,21 +995,21 @@ class TestBlobCollection(TestCase):
         cur.execute("""
             SELECT * FROM LibraryFileAlias WHERE id=%s
             """, (self.expired2_lfa_id,))
-        self.failUnless(cur.fetchone() is None)
+        self.assertIsNone(cur.fetchone())
         cur.execute("""
             SELECT * FROM LibraryFileContent WHERE id=%s
             """, (self.expired2_lfc_id,))
-        self.failUnless(cur.fetchone() is not None)
+        self.assertIsNotNone(cur.fetchone())
 
         # The unexpired blob should be unaffected
         cur.execute("""
             SELECT * FROM LibraryFileAlias WHERE id=%s
             """, (self.unexpired_lfa_id,))
-        self.failUnless(cur.fetchone() is not None)
+        self.assertIsNotNone(cur.fetchone())
         cur.execute("""
             SELECT * FROM LibraryFileContent WHERE id=%s
             """, (self.unexpired_lfc_id,))
-        self.failUnless(cur.fetchone() is not None)
+        self.assertIsNotNone(cur.fetchone())
 
     def test_cronscript(self):
         # Run the cronscript
@@ -1019,16 +1019,16 @@ class TestBlobCollection(TestCase):
         cmd = [sys.executable, script_path, '-q']
         process = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
         (script_output, _empty) = process.communicate()
-        self.failUnlessEqual(
+        self.assertEqual(
             process.returncode, 0, 'Error: %s' % script_output)
-        self.failUnlessEqual(script_output, '')
+        self.assertEqual(script_output, '')
 
         cur = self.con.cursor()
 
         # Make sure that our blobs have been garbage collectd
         cur.execute("SELECT count(*) FROM TemporaryBlobStorage")
         count = cur.fetchone()[0]
-        self.failUnlessEqual(count, 1)
+        self.assertEqual(count, 1)
 
         cur.execute("""
             SELECT count(*) FROM LibraryFileAlias
@@ -1039,7 +1039,7 @@ class TestBlobCollection(TestCase):
                 self.unexpired_lfa_id
                 ))
         count = cur.fetchone()[0]
-        self.failUnlessEqual(count, 1)
+        self.assertEqual(count, 1)
 
         cur.execute("""
             SELECT count(*) FROM LibraryFileContent
@@ -1050,4 +1050,4 @@ class TestBlobCollection(TestCase):
                 self.unexpired_lfc_id
                 ))
         count = cur.fetchone()[0]
-        self.failIfEqual(count, 2)
+        self.assertNotEqual(count, 2)

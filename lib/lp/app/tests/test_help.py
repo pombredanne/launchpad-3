@@ -27,10 +27,10 @@ class TestHelpSystemSetup(unittest.TestCase):
     def assertHasHelpFolderView(self, name, expected_folder_path):
         """Assert that the named help folder has the right path."""
         view = create_view(getUtility(ILaunchpadApplication), name)
-        self.failUnless(
+        self.assertTrue(
             isinstance(view, ExportedFolder),
             'View should be an instance of ExportedFolder: %s' % view)
-        self.failUnless(
+        self.assertTrue(
             os.path.samefile(view.folder, expected_folder_path),
             "Expected help folder %s, got %s" % (
                 expected_folder_path, view.folder))

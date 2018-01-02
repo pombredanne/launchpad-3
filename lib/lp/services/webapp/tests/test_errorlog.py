@@ -529,7 +529,7 @@ class TestSensitiveRequestVariables(testtools.TestCase):
         request = TestRequest(
             environ={'SERVER_URL': 'http://api.launchpad.dev'},
             form={'oauth_signature': '&BTXPJ6pQTvh49r9p'})
-        self.failUnless(_is_sensitive(request, 'oauth_signature'))
+        self.assertTrue(_is_sensitive(request, 'oauth_signature'))
 
 
 @implementer(IUnauthenticatedPrincipal)

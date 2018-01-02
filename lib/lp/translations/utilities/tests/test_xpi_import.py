@@ -83,7 +83,7 @@ class XpiTestCase(unittest.TestCase):
         """Check whether invariant part of all messages are correct."""
         # msgid and singular_text are always different except for the keyboard
         # shortcuts which are the 'accesskey' and 'commandkey' ones.
-        self.failIf(
+        self.assertFalse(
             (message.msgid_singular.msgid == message.singular_text and
              message.msgid_singular.msgid not in (
                 u'foozilla.menu.accesskey', u'foozilla.menu.commandkey')),

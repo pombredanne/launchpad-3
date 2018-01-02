@@ -38,8 +38,8 @@ class TestTransactionDecorators(unittest.TestCase):
         def no_op():
             pass
         no_op()
-        self.failIf(
-            self.file_content is self._getTestFileContent(),
+        self.assertIsNot(
+            self.file_content, self._getTestFileContent(),
             "Store wasn't reset properly.")
 
     def test_write_transaction_reset_store(self):
@@ -48,8 +48,8 @@ class TestTransactionDecorators(unittest.TestCase):
         def no_op():
             pass
         no_op()
-        self.failIf(
-            self.file_content is self._getTestFileContent(),
+        self.assertIsNot(
+            self.file_content, self._getTestFileContent(),
             "Store wasn't reset properly.")
 
     def test_write_transaction_reset_store_with_raise(self):
@@ -58,8 +58,8 @@ class TestTransactionDecorators(unittest.TestCase):
         def no_op():
             raise RuntimeError('an error occured')
         self.assertRaises(RuntimeError, no_op)
-        self.failIf(
-            self.file_content is self._getTestFileContent(),
+        self.assertIsNot(
+            self.file_content, self._getTestFileContent(),
             "Store wasn't reset properly.")
 
     def test_writing_transaction_reset_store_on_commit_failure(self):
@@ -79,8 +79,8 @@ class TestTransactionDecorators(unittest.TestCase):
             def no_op():
                 pass
             self.assertRaises(RuntimeError, no_op)
-            self.failIf(
-                self.file_content is self._getTestFileContent(),
+            self.assertIsNot(
+                self.file_content, self._getTestFileContent(),
                 "Store wasn't reset properly.")
         finally:
             transaction.manager.unregisterSynch(aborter)
