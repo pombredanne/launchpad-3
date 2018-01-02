@@ -1319,7 +1319,8 @@ class TestArchiveTokens(TestCaseWithFactory):
             "://+%s:%s@" % (token.name, token.token), token.archive_url)
         self.assertDictEqual(
             {"token": token.token, "archive_url": token.archive_url},
-            removeSecurityProxy(res))
+            res
+            )
 
     def test_newNamedAuthToken_public_archive(self):
         public_ppa = self.factory.makeArchive(private=False)
@@ -1339,9 +1340,7 @@ class TestArchiveTokens(TestCaseWithFactory):
         res = self.private_ppa.newNamedAuthTokens(
             (u"name1", u"name2"), as_dict=True)
         tokens = self.private_ppa.getNamedAuthTokens()
-        self.assertDictEqual(
-            {tok.name: tok.asDict() for tok in tokens},
-            removeSecurityProxy(res))
+        self.assertDictEqual({tok.name: tok.asDict() for tok in tokens}, res)
 
     def test_newNamedAuthTokens_public_archive(self):
         public_ppa = self.factory.makeArchive(private=False)
@@ -1353,9 +1352,7 @@ class TestArchiveTokens(TestCaseWithFactory):
         res = self.private_ppa.newNamedAuthTokens(
             (u"tok1", u"tok2", u"tok3"), as_dict=True)
         tokens = self.private_ppa.getNamedAuthTokens()
-        self.assertDictEqual(
-            {tok.name: tok.asDict() for tok in tokens},
-            removeSecurityProxy(res))
+        self.assertDictEqual({tok.name: tok.asDict() for tok in tokens}, res)
 
     def test_newNamedAuthTokens_idempotent(self):
         names = (u"name1", u"name2", u"name3", u"name4", u"name5")
@@ -3720,8 +3717,7 @@ class TestCountersAndSummaries(TestCaseWithFactory):
             "total": 4,
             }
         self.assertDictEqual(
-            expected_counters,
-            removeSecurityProxy(cprov_archive.getBuildCounters()))
+            expected_counters, cprov_archive.getBuildCounters())
 
     def test_ubuntu_build_counters_in_sampledata(self):
         ubuntu_archive = getUtility(IDistributionSet)["ubuntu"].main_archive
@@ -3733,15 +3729,13 @@ class TestCountersAndSummaries(TestCaseWithFactory):
             "total": 18,
             }
         self.assertDictEqual(
-            expected_counters,
-            removeSecurityProxy(ubuntu_archive.getBuildCounters()))
+            expected_counters, ubuntu_archive.getBuildCounters())
         # include_needsbuild=False excludes builds in status NEEDSBUILD.
         expected_counters["pending"] -= 1
         expected_counters["total"] -= 1
         self.assertDictEqual(
             expected_counters,
-            removeSecurityProxy(
-                ubuntu_archive.getBuildCounters(include_needsbuild=False)))
+            ubuntu_archive.getBuildCounters(include_needsbuild=False))
 
     def assertBuildSummaryMatches(self, status, builds, summary):
         self.assertEqual(status, summary["status"])
