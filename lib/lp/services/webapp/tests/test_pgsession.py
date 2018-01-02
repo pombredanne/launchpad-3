@@ -55,8 +55,8 @@ class TestPgSession(TestCase):
     def test_sdc_basics(self):
         # Make sure we have the correct class and it provides the required
         # interface.
-        self.failUnless(isinstance(self.sdc, PGSessionDataContainer))
-        self.failUnless(ISessionDataContainer.providedBy(self.sdc))
+        self.assertTrue(isinstance(self.sdc, PGSessionDataContainer))
+        self.assertTrue(ISessionDataContainer.providedBy(self.sdc))
 
         client_id = 'Client Id'
 
@@ -70,8 +70,8 @@ class TestPgSession(TestCase):
 
         # Once __setitem__ is called, we can access the SessionData
         session_data = self.sdc[client_id]
-        self.failUnless(isinstance(session_data, PGSessionData))
-        self.failUnless(ISessionData.providedBy(session_data))
+        self.assertTrue(isinstance(session_data, PGSessionData))
+        self.assertTrue(ISessionData.providedBy(session_data))
 
     def test_storage(self):
         client_id1 = 'Client Id #1'
@@ -87,8 +87,8 @@ class TestPgSession(TestCase):
         # Set some values in the session
         session1a['key1'] = 'value1'
         session1a['key2'] = PicklingTest('value2')
-        self.failUnlessEqual(session1a['key1'], 'value1')
-        self.failUnlessEqual(session1a['key2'].value, 'value2')
+        self.assertEqual(session1a['key1'], 'value1')
+        self.assertEqual(session1a['key2'].value, 'value2')
 
         # Make sure no leakage between sessions
         session1b = self.sdc[client_id1][product_id2]
@@ -100,26 +100,26 @@ class TestPgSession(TestCase):
         session1a_dupe = self.sdc[client_id1][product_id1]
 
         # This new session should not be the same object
-        self.failIf(session1a is session1a_dupe)
+        self.assertIsNot(session1a, session1a_dupe)
 
         # But it should contain copies of the same data, unpickled from the
         # database
-        self.failUnlessEqual(session1a['key1'], session1a_dupe['key1'])
-        self.failUnlessEqual(session1a['key2'], session1a_dupe['key2'])
+        self.assertEqual(session1a['key1'], session1a_dupe['key1'])
+        self.assertEqual(session1a['key2'], session1a_dupe['key2'])
 
         # They must be copies - not the same object
-        self.failIf(session1a['key2'] is session1a_dupe['key2'])
+        self.assertIsNot(session1a['key2'], session1a_dupe['key2'])
 
         # Ensure the keys method works as it is suppsed to
-        self.failUnlessEqual(sorted(session1a.keys()), ['key1', 'key2'])
-        self.failUnlessEqual(session2a.keys(), [])
+        self.assertEqual(sorted(session1a.keys()), ['key1', 'key2'])
+        self.assertEqual(session2a.keys(), [])
 
         # Ensure we can delete and alter things from the session
         del session1a['key1']
         session1a['key2'] = 'new value2'
         self.assertRaises(KeyError, session1a.__getitem__, 'key1')
-        self.failUnlessEqual(session1a['key2'], 'new value2')
-        self.failUnlessEqual(session1a.keys(), ['key2'])
+        self.assertEqual(session1a['key2'], 'new value2')
+        self.assertEqual(session1a.keys(), ['key2'])
 
         # Note that deleting will not raise a KeyError
         del session1a['key1']
@@ -129,8 +129,8 @@ class TestPgSession(TestCase):
         # And ensure that these changes are persistent
         session1a_dupe = self.sdc[client_id1][product_id1]
         self.assertRaises(KeyError, session1a_dupe.__getitem__, 'key1')
-        self.failUnlessEqual(session1a_dupe['key2'], 'new value2')
-        self.failUnlessEqual(session1a_dupe.keys(), ['key2'])
+        self.assertEqual(session1a_dupe['key2'], 'new value2')
+        self.assertEqual(session1a_dupe.keys(), ['key2'])
 
     def test_session_only_stored_when_changed(self):
         # A record of the session is only stored in the database when

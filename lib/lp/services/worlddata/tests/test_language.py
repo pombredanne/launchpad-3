@@ -32,7 +32,7 @@ class TestLanguageWebservice(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_translators(self):
-        self.failUnless(
+        self.assertTrue(
             IDoNotSnapshot.providedBy(ILanguage['translators']),
             "ILanguage.translators should not be included in snapshots, "
             "see bug 553093.")

@@ -30,7 +30,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                 ON Distribution.id = PillarName.distribution
             WHERE Distribution.name != PillarName.name
             """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
         def is_in_sync(name):
             cur.execute("""
@@ -55,26 +55,26 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                     'whatever', 'whatever', 'whatever', 1, 1
                     )
             """)
-        self.failUnless(is_in_sync('whatever'))
+        self.assertTrue(is_in_sync('whatever'))
 
         # Updating the Distribution.name will propogate changes to PillarName
         cur.execute("""
             UPDATE Distribution SET name='whatever2' where name='whatever'
             """)
-        self.failUnless(is_in_sync('whatever2'))
+        self.assertTrue(is_in_sync('whatever2'))
 
         # Updating other fields won't do any harm.
         cur.execute("""
             UPDATE Distribution SET description='whatever2'
             WHERE name='whatever2'
             """)
-        self.failUnless(is_in_sync('whatever2'))
+        self.assertTrue(is_in_sync('whatever2'))
 
         # Deleting a Distribution removes the corresponding entry in
         # PillarName
         cur.execute("DELETE FROM Distribution WHERE name='whatever2'")
         cur.execute("SELECT COUNT(*) FROM PillarName WHERE name='whatever2'")
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
     def testProductTable(self):
         cur = cursor()
@@ -87,7 +87,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                 ON Product.id = PillarName.product
             WHERE Product.name != PillarName.name
             """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
         def is_in_sync(name):
             cur.execute("""
@@ -109,25 +109,25 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                 1, 1, 'whatever', 'whatever', 'whatever', 'whatever'
                 )
             """)
-        self.failUnless(is_in_sync('whatever'))
+        self.assertTrue(is_in_sync('whatever'))
 
         # Updating the Product.name will propogate changes to PillarName
         cur.execute("""
             UPDATE Product SET name='whatever2' where name='whatever'
             """)
-        self.failUnless(is_in_sync('whatever2'))
+        self.assertTrue(is_in_sync('whatever2'))
 
         # Updating other fields won't do any harm.
         cur.execute("""
             UPDATE Product SET summary='whatever2'
             WHERE name='whatever2'
             """)
-        self.failUnless(is_in_sync('whatever2'))
+        self.assertTrue(is_in_sync('whatever2'))
 
         # Deleting a Product removes the corresponding entry in PillarName
         cur.execute("DELETE FROM Product WHERE name='whatever2'")
         cur.execute("SELECT COUNT(*) FROM PillarName WHERE name='whatever2'")
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
     def testProjectTable(self):
         cur = cursor()
@@ -140,7 +140,7 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                 ON Project.id = PillarName.project
             WHERE Project.name != PillarName.name
             """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
         def is_in_sync(name):
             cur.execute("""
@@ -165,23 +165,23 @@ class PillarNameTriggersTestCase(unittest.TestCase):
                     'whatever', 'whatever'
                     )
             """)
-        self.failUnless(is_in_sync('whatever'))
+        self.assertTrue(is_in_sync('whatever'))
 
         # Updating the ProjectGroup.name will propogate changes to PillarName
         cur.execute("""
             UPDATE Project SET name='whatever2' where name='whatever'
             """)
-        self.failUnless(is_in_sync('whatever2'))
+        self.assertTrue(is_in_sync('whatever2'))
 
         # Updating other fields won't do any harm.
         cur.execute("""
             UPDATE Project SET description='whatever2'
             WHERE name='whatever2'
             """)
-        self.failUnless(is_in_sync('whatever2'))
+        self.assertTrue(is_in_sync('whatever2'))
 
         # Deleting a ProjectGroup removes the corresponding entry in
         # PillarName.
         cur.execute("DELETE FROM Project WHERE name='whatever2'")
         cur.execute("SELECT COUNT(*) FROM PillarName WHERE name='whatever2'")
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)

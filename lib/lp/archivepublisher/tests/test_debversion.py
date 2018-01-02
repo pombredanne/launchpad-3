@@ -123,7 +123,7 @@ class VersionTests(unittest.TestCase):
     def testComparisons(self):
         """Sample Version comparisons should pass."""
         for x, y in self.COMPARISONS:
-            self.failUnless(Version(x) < Version(y))
+            self.assertTrue(Version(x) < Version(y))
 
     def testNullEpochIsZero(self):
         """Version should treat an omitted epoch as a zero one."""
@@ -133,4 +133,4 @@ class VersionTests(unittest.TestCase):
         """Version should treat an omitted revision as being equal to zero.
         """
         self.assertEquals(Version("1.0"), Version("1.0-0"))
-        self.failUnless(Version("1.0") == Version("1.0-0"))
+        self.assertTrue(Version("1.0") == Version("1.0-0"))

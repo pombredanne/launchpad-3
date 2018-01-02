@@ -371,8 +371,8 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
-        self.failUnlessEqual('primary', build.archive.name)
-        self.failUnlessEqual('gedit', build.source_package_release.name)
+        self.assertEqual('primary', build.archive.name)
+        self.assertEqual('gedit', build.source_package_release.name)
 
         # Now even if we set the build building, we'll still get the
         # second non-ppa build for the same archive as the next candidate.
@@ -380,8 +380,8 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
         build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(next_job)
-        self.failUnlessEqual('primary', build.archive.name)
-        self.failUnlessEqual('firefox', build.source_package_release.name)
+        self.assertEqual('primary', build.archive.name)
+        self.assertEqual('firefox', build.source_package_release.name)
 
     def test_findBuildCandidate_for_recipe_build(self):
         # Recipe builds with a higher score are selected first.
@@ -405,7 +405,7 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
 
-        self.failUnlessEqual(recipe_build_job, next_job)
+        self.assertEqual(recipe_build_job, next_job)
 
 
 class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
@@ -446,4 +446,4 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
         next_job = removeSecurityProxy(
             self.frog_builder)._findBuildCandidate()
 
-        self.failUnlessEqual(self.bq2, next_job)
+        self.assertEqual(self.bq2, next_job)

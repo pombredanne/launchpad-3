@@ -684,7 +684,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             new_distroseries.hide_all_translations = False
         transaction.commit()
         translatables = self._get_translatables()
-        self.failUnlessEqual(
+        self.assertEqual(
             translatables, self._ref_translatables(),
             "A newly created distroseries should not be translatable but "
             "translatables() returns %r instead of %r." % (
@@ -696,7 +696,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             sourcepackagename=new_sourcepackagename)
         transaction.commit()
         translatables = self._get_translatables()
-        self.failUnlessEqual(
+        self.assertEqual(
             translatables, self._ref_translatables(u"sampleseries"),
             "After assigning a PO template, a distroseries should be "
             "translatable but translatables() returns %r instead of %r." % (
@@ -707,7 +707,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             new_distroseries.hide_all_translations = True
         transaction.commit()
         translatables = self._get_translatables()
-        self.failUnlessEqual(
+        self.assertEqual(
             translatables, self._ref_translatables(),
             "After hiding all translation, a distroseries should not be "
             "translatable but translatables() returns %r instead of %r." % (

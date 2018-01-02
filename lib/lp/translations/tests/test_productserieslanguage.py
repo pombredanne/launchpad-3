@@ -148,7 +148,7 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         # With no templates all counts are zero.
         psl = self.psl_set.getProductSeriesLanguage(
             self.productseries, self.language)
-        self.failUnless(verifyObject(IProductSeriesLanguage, psl))
+        self.assertTrue(verifyObject(IProductSeriesLanguage, psl))
         self.assertPSLStatistics(psl, (0, 0, 0, 0, 0, 0, None))
 
         # Adding a single template with 10 messages makes the total

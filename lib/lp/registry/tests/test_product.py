@@ -2181,10 +2181,10 @@ class TestWebService(WebServiceTestCase):
         ws_product = self.wsObject(product, product.owner)
         now = datetime.now(tz=pytz.utc)
         day = timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             [oopsid],
             ws_product.findReferencedOOPS(start_date=now - day, end_date=now))
-        self.failUnlessEqual(
+        self.assertEqual(
             [],
             ws_product.findReferencedOOPS(
                 start_date=now + day, end_date=now + day))
@@ -2199,7 +2199,7 @@ class TestWebService(WebServiceTestCase):
         ws_product = self.wsObject(product, product.owner)
         now = datetime.now(tz=pytz.utc)
         day = timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             [],
             ws_product.findReferencedOOPS(start_date=now - day, end_date=now))
 

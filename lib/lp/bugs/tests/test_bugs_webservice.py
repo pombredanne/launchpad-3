@@ -220,7 +220,7 @@ class TestBugScaling(TestCaseWithFactory):
         response = webservice.get(url)
         self.assertThat(collector, HasQueryCount(LessThan(24)))
         with_2_count = collector.count
-        self.failUnlessEqual(response.status, 200)
+        self.assertEqual(response.status, 200)
         login(USER_EMAIL)
         for i in range(5):
             self.factory.makeBugAttachment(self.bug)
@@ -255,7 +255,7 @@ class TestBugScaling(TestCaseWithFactory):
         response = webservice.get(url)
         self.assertThat(collector, HasQueryCount(LessThan(24)))
         with_2_count = collector.count
-        self.failUnlessEqual(response.status, 200)
+        self.assertEqual(response.status, 200)
         login(USER_EMAIL)
         for i in range(50):
             self.factory.makeBugComment(bug)
@@ -288,12 +288,12 @@ class TestBugMessages(TestCaseWithFactory):
         bug = self.webservice.load(api_url(self.bug))
         messages = bug.messages
         latest_message = [message for message in messages][-1]
-        self.failUnlessEqual(self.message2.subject, latest_message.subject)
+        self.assertEqual(self.message2.subject, latest_message.subject)
 
         # The parent_link for the latest message should be None
         # because the parent is not a member of this bug's messages
         # collection itself.
-        self.failUnlessEqual(None, latest_message.parent)
+        self.assertIsNone(latest_message.parent)
 
 
 class TestPostBugWithLargeCollections(TestCaseWithFactory):
@@ -319,7 +319,7 @@ class TestPostBugWithLargeCollections(TestCaseWithFactory):
             'subscriptions', 'users_affected', 'users_unaffected',
             'users_affected_with_dupes', 'messages', 'attachments',
             'activity'):
-            self.failUnless(
+            self.assertTrue(
                 IDoNotSnapshot.providedBy(IBug[field_name]),
                 'IBug.%s should not be included in snapshots, see bug 507642.'
                 % field_name)

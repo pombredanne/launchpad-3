@@ -2083,7 +2083,7 @@ class TestPOFile(TestCaseWithFactory):
         [self._createMessageSet(msg) for msg in self.TEST_MESSAGES]
         for rownum, row in enumerate(
             self.pofile.getTranslationRows()):
-            self.failUnlessEqual(
+            self.assertEqual(
                 row.sequence, self.EXPECTED_SEQUENCE[rownum],
                 "getTranslationRows does not sort obsolete messages "
                 "(sequence=0) to the end of the file.")

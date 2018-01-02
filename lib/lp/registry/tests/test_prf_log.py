@@ -15,7 +15,7 @@ class GetLogger(unittest.TestCase):
         """get_logger returns a Logger instance."""
         from lp.registry.scripts.productreleasefinder.log import get_logger
         from logging import Logger
-        self.failUnless(isinstance(get_logger("test"), Logger))
+        self.assertTrue(isinstance(get_logger("test"), Logger))
 
     def testNoParent(self):
         """get_logger works if no parent is given."""

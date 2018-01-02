@@ -82,7 +82,7 @@ class TestDistributionSourcePackageReleaseFiles(TestCaseWithFactory):
         # The snippet renders appropriately when there are no files.
         view = create_initialized_view(self.source_package_release, "+files")
         html = view.__call__()
-        self.failUnless('No files available for download.' in html)
+        self.assertIn('No files available for download.', html)
 
     def test_spr_files_one(self):
         # The snippet links to the file when present.
@@ -91,7 +91,7 @@ class TestDistributionSourcePackageReleaseFiles(TestCaseWithFactory):
         self.source_package_release.addFile(library_file)
         view = create_initialized_view(self.source_package_release, "+files")
         html = view.__call__()
-        self.failUnless('test_file.dsc' in html)
+        self.assertIn('test_file.dsc', html)
 
     def test_spr_files_deleted(self):
         # The snippet handles deleted files too.
@@ -101,4 +101,4 @@ class TestDistributionSourcePackageReleaseFiles(TestCaseWithFactory):
         removeSecurityProxy(library_file).content = None
         view = create_initialized_view(self.source_package_release, "+files")
         html = view.__call__()
-        self.failUnless('test_file.dsc (deleted)' in html)
+        self.assertIn('test_file.dsc (deleted)', html)

@@ -63,19 +63,19 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
 
     def testInterface(self):
         """Check whether the object follows the interface."""
-        self.failUnless(
+        self.assertTrue(
             verifyObject(ITranslationFormatExporter,
                          self.translation_exporter),
             "GettextPOExporter doesn't follow the interface")
 
     def testSupportedFormats(self):
         """Check that the exporter reports the correct formats."""
-        self.failUnlessEqual(
+        self.assertEqual(
             self.translation_exporter.format,
             TranslationFileFormat.PO,
             "Expected GettextPOExporter to provide PO format "
             "but got %r instead." % self.translation_exporter.format)
-        self.failUnlessEqual(
+        self.assertEqual(
             self.translation_exporter.supported_source_formats,
             [TranslationFileFormat.PO, TranslationFileFormat.KDEPO],
             "Expected GettextPOExporter to support PO and KDEPO source "

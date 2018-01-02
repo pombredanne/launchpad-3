@@ -258,7 +258,7 @@ class TestGuessPOFileCustomLanguageCode(TestCaseWithFactory,
 
         self.becomeTheGardener()
         el_file = entry.getGuessedPOFile()
-        self.failIfEqual(el_file, elx_file)
+        self.assertNotEqual(el_file, elx_file)
         self.assertEqual(el_file.language.code, 'el')
 
     def test_CustomLanguageCodeRedirectsMatch(self):

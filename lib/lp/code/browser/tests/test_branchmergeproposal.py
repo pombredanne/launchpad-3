@@ -501,7 +501,7 @@ class TestBranchMergeProposalVoteView(TestCaseWithFactory):
 
         view = getMultiAdapter(
             (self.bmp, LaunchpadTestRequest()), name='+votes')
-        self.failUnless(
+        self.assertTrue(
             isinstance(view, BranchMergeProposalVoteView),
             "The +votes page for a BranchMergeProposal is expected to be a "
             "BranchMergeProposalVoteView")

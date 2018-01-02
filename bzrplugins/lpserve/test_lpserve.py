@@ -740,10 +740,10 @@ class TestCaseWithLPForkingServiceDaemon(
         # The service should be up and responsive.
         response = self.send_message_to_service('hello\n')
         self.assertEqual('ok\nyep, still alive\n', response)
-        self.failUnless(os.path.isfile(self.service_pid_filename))
+        self.assertTrue(os.path.isfile(self.service_pid_filename))
         with open(self.service_pid_filename, 'rb') as f:
             content = f.read()
         self.assertEqualDiff('%d\n' % (self.service_process,), content)
         # We're done.  Shut it down.
         self.stop_service()
-        self.failIf(os.path.isfile(self.service_pid_filename))
+        self.assertFalse(os.path.isfile(self.service_pid_filename))

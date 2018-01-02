@@ -49,8 +49,8 @@ class TestFilesystem(TestCaseWithTransport):
         transport = self.getTransport('~%s/+junk' % self.requester.name)
         transport.mkdir('foo')
         transport.mkdir('bar')
-        self.failUnless(stat.S_ISDIR(transport.stat('foo').st_mode))
-        self.failUnless(stat.S_ISDIR(transport.stat('bar').st_mode))
+        self.assertTrue(stat.S_ISDIR(transport.stat('foo').st_mode))
+        self.assertTrue(stat.S_ISDIR(transport.stat('bar').st_mode))
 
         # Try to remove a branch directory, which is not allowed.
         self.assertRaises(

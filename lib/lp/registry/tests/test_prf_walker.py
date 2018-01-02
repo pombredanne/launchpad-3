@@ -22,7 +22,7 @@ class WalkerBase_Logging(TestCase):
         """WalkerBase creates a default logger."""
         from logging import Logger
         w = WalkerBase("/")
-        self.failUnless(isinstance(w.log, Logger))
+        self.assertTrue(isinstance(w.log, Logger))
 
     def testCreatesChildLogger(self):
         """WalkerBase creates a child logger if given a parent."""
