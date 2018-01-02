@@ -175,10 +175,10 @@ class TestProcessProtocolWithTwoStageKill(ProcessTestsMixin, TestCase):
         self.protocol.transport.only_sigkill_kills = True
         self.protocol.terminateProcess()
         saved_delayed_call = self.protocol._sigkill_delayed_call
-        self.failUnless(self.protocol._sigkill_delayed_call.active())
+        self.assertTrue(self.protocol._sigkill_delayed_call.active())
         self.simulateProcessExit(clean=False)
-        self.failUnless(self.protocol._sigkill_delayed_call is None)
-        self.failIf(saved_delayed_call.active())
+        self.assertIsNone(self.protocol._sigkill_delayed_call)
+        self.assertFalse(saved_delayed_call.active())
 
 
 class TestProcessMonitorProtocol(ProcessTestsMixin, TestCase):
@@ -267,7 +267,7 @@ class TestProcessMonitorProtocol(ProcessTestsMixin, TestCase):
         self.simulateProcessExit()
         notificaion_pending = True
         self.termination_deferred.addCallback(
-            lambda ignored: self.failIf(notificaion_pending))
+            lambda ignored: self.assertFalse(notificaion_pending))
         notificaion_pending = False
         deferred.callback(None)
         return self.termination_deferred

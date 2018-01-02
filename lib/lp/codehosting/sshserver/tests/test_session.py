@@ -164,7 +164,7 @@ class TestExecOnlySession(AvatarTestCase):
 
     def test_providesISession(self):
         # ExecOnlySession must provide ISession.
-        self.failUnless(ISession.providedBy(self.session),
+        self.assertTrue(ISession.providedBy(self.session),
                         "ExecOnlySession doesn't implement ISession")
 
     def test_closedDoesNothingWhenNoCommand(self):
@@ -247,7 +247,7 @@ class TestExecOnlySession(AvatarTestCase):
         from twisted.internet import reactor
         adapter = ExecOnlySession.getAvatarAdapter()
         session = adapter(self.avatar)
-        self.failUnless(isinstance(session, ExecOnlySession),
+        self.assertTrue(isinstance(session, ExecOnlySession),
                         "ISession(avatar) doesn't adapt to ExecOnlySession. "
                         "Got %r instead." % (session,))
         self.assertIs(self.avatar, session.avatar)
@@ -303,7 +303,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
     def test_makeRestrictedExecOnlySession(self):
         # A RestrictedExecOnlySession is constructed with an avatar, a reactor
         # and an expected command.
-        self.failUnless(
+        self.assertTrue(
             isinstance(self.session, RestrictedExecOnlySession),
             "%r not an instance of RestrictedExecOnlySession"
             % (self.session,))
@@ -353,7 +353,7 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         adapter = RestrictedExecOnlySession.getAvatarAdapter(
             lookup_template)
         session = adapter(self.avatar)
-        self.failUnless(
+        self.assertTrue(
             isinstance(session, RestrictedExecOnlySession),
             "ISession(avatar) doesn't adapt to RestrictedExecOnlySession. "
             "Got %r instead." % (session,))
@@ -377,7 +377,7 @@ class TestSessionIntegration(AvatarTestCase):
         # adapts to a RestrictedExecOnlySession. This means that a
         # RestrictedExecOnlySession handles any requests to execute a command.
         session = ISession(self.avatar)
-        self.failUnless(
+        self.assertTrue(
             isinstance(session, RestrictedExecOnlySession),
             "ISession(avatar) doesn't adapt to ExecOnlySession. "
             "Got %r instead." % (session,))
@@ -404,7 +404,7 @@ class TestSessionIntegration(AvatarTestCase):
             "[codehosting]\nuse_forking_daemon: False\n")
         self.addCleanup(config.pop, 'codehosting-no-forking')
         session = ISession(self.avatar)
-        self.failIf(isinstance(session, ForkingRestrictedExecOnlySession),
+        self.assertFalse(isinstance(session, ForkingRestrictedExecOnlySession),
             "ISession(avatar) shouldn't adapt to "
             " ForkingRestrictedExecOnlySession when forking is disabled. ")
 
@@ -413,7 +413,7 @@ class TestSessionIntegration(AvatarTestCase):
             "[codehosting]\nuse_forking_daemon: True\n")
         self.addCleanup(config.pop, 'codehosting-forking')
         session = ISession(self.avatar)
-        self.failUnless(
+        self.assertTrue(
             isinstance(session, ForkingRestrictedExecOnlySession),
             "ISession(avatar) doesn't adapt to "
             " ForkingRestrictedExecOnlySession. "

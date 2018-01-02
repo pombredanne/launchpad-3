@@ -52,7 +52,7 @@ class LibrarianStorageTestCase(unittest.TestCase):
 
     def test_hasFile_missing(self):
         # Make sure hasFile returns False when a file is missing
-        self.failIf(self.storage.hasFile(9999999))
+        self.assertFalse(self.storage.hasFile(9999999))
 
     def _sameFileTestHelper(self, data1, data2):
         # Make two temporary files
@@ -76,23 +76,26 @@ class LibrarianStorageTestCase(unittest.TestCase):
 
     def test_sameFile(self):
         # Make sure sameFile returns True when the files are the same
-        self.failUnless(self._sameFileTestHelper('data ' * 5000,
-                                                 'data ' * 5000))
+        self.assertTrue(
+            self._sameFileTestHelper('data ' * 5000, 'data ' * 5000))
 
     def test_notSameFile(self):
         # Make sure sameFile returns False when the files are different, even
         # if they are the same length.
-        self.failIf(self._sameFileTestHelper('data ' * 5000, 'fred ' * 5000))
+        self.assertFalse(
+            self._sameFileTestHelper('data ' * 5000, 'fred ' * 5000))
 
     def test_differentFileShorter(self):
         # Make sure sameFile returns False when the second file is shorter
         # than the first, even if they were the same up to that length.
-        self.failIf(self._sameFileTestHelper('data ' * 5000, 'data ' * 4999))
+        self.assertFalse(
+            self._sameFileTestHelper('data ' * 5000, 'data ' * 4999))
 
     def test_differentFileLonger(self):
         # Make sure sameFile returns False when the second file is longer than
         # the first, even if they were the same up to that length.
-        self.failIf(self._sameFileTestHelper('data ' * 5000, 'data ' * 5001))
+        self.assertFalse(
+            self._sameFileTestHelper('data ' * 5000, 'data ' * 5001))
 
     def test_prefixDirectories(self):
         # _relFileLocation splits eight hex digits across four path segments
@@ -133,8 +136,8 @@ class LibrarianStorageTestCase(unittest.TestCase):
         self.assertEqual(0x11111112, fileid2)
 
         # Did the files both get stored?
-        self.failUnless(self.storage.hasFile(fileid1))
-        self.failUnless(self.storage.hasFile(fileid2))
+        self.assertTrue(self.storage.hasFile(fileid1))
+        self.assertTrue(self.storage.hasFile(fileid2))
 
     def test_hashes(self):
         # Check that the MD5, SHA1 and SHA256 hashes are correct.

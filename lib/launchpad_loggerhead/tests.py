@@ -109,7 +109,7 @@ class TestLogout(TestCase):
         self.browser.open(
             config.codehosting.secure_codebrowse_root + 'favicon.ico')
         self.assertEqual(self.session['user'], 'bob')
-        self.failUnless(self.browser.cookies.get(self.cookie_name))
+        self.assertTrue(self.browser.cookies.get(self.cookie_name))
 
         # When we visit +logout, our session is gone.
         self.browser.open(

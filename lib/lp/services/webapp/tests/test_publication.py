@@ -99,7 +99,7 @@ class TestWebServicePublication(TestCaseWithFactory):
         # different.
         self.factory.makeAccount('Personless account')
         person = self.factory.makePerson()
-        self.failIfEqual(person.id, person.account.id)
+        self.assertNotEqual(person.id, person.account.id)
 
         # Create an access token for our new person.
         consumer = getUtility(IOAuthConsumerSet).new(u'test-consumer')
@@ -124,7 +124,7 @@ class TestWebServicePublication(TestCaseWithFactory):
         # having the same IDs as their associated person entries to work.
         request = self._getRequestForPersonAndAccountWithDifferentIDs()
         principal = WebServicePublication(None).getPrincipal(request)
-        self.failIf(principal is None)
+        self.assertIsNotNone(principal)
 
     def test_disconnect_logs_oops(self):
         # Ensure that OOPS reports are generated for database

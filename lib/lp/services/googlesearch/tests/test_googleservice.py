@@ -22,8 +22,9 @@ class TestServiceUtilities(unittest.TestCase):
     def test_stale_pid_file_cleanup(self):
         """The service should be able to clean up invalid PID files."""
         bogus_pid = 9999999
-        self.failIf(process_exists(bogus_pid),
-                    "There is already a process with PID '%d'." % bogus_pid)
+        self.assertFalse(
+            process_exists(bogus_pid),
+            "There is already a process with PID '%d'." % bogus_pid)
 
         # Create a stale/bogus PID file.
         filepath = pidfile_path(googletestservice.service_name)
@@ -33,8 +34,9 @@ class TestServiceUtilities(unittest.TestCase):
 
         # The PID clean-up code should silently remove the file and return.
         googletestservice.kill_running_process()
-        self.failIf(os.path.exists(filepath),
-                    "The PID file '%s' should have been deleted." % filepath)
+        self.assertFalse(
+            os.path.exists(filepath),
+            "The PID file '%s' should have been deleted." % filepath)
 
 
 def process_exists(pid):

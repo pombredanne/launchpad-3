@@ -156,9 +156,9 @@ class TestOneDistroSeriesOnly(TestCaseWithFactory):
     def testNoSelectorForOneSeries(self):
         # The selector should not be presented when there is only one series
 
-        self.failUnless(self.view.sources_in_more_than_one_series is False)
+        self.assertTrue(self.view.sources_in_more_than_one_series is False)
 
     def testDefaultDistroSeries(self):
         # When there is only one distro series it should always be the
         # default.
-        self.failUnless(self.view.default_series == self.series[0])
+        self.assertTrue(self.view.default_series == self.series[0])

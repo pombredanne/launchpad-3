@@ -62,7 +62,7 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         lfa = self.factory.makeLibraryFileAlias('mybuildlog.txt')
         self.package_build.setLog(lfa)
         log_url = self.package_build.log_url
-        self.failUnlessEqual(
+        self.assertEqual(
             'http://launchpad.dev/~joe/+archive/ubuntu/ppa/'
             '+recipebuild/%d/+files/mybuildlog.txt' % (
                 self.package_build.id),
@@ -72,8 +72,8 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         # The given content is uploaded to the librarian and linked as
         # the upload log.
         self.package_build.storeUploadLog("Some content")
-        self.failIfEqual(None, self.package_build.upload_log)
-        self.failUnlessEqual(
+        self.assertIsNotNone(self.package_build.upload_log)
+        self.assertEqual(
             hashlib.sha1("Some content").hexdigest(),
             self.package_build.upload_log.content.sha1)
 
@@ -83,16 +83,16 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         login('admin@canonical.com')
         self.package_build.archive.buildd_secret = 'sekrit'
         self.package_build.archive.private = True
-        self.failUnless(self.package_build.is_private)
+        self.assertTrue(self.package_build.is_private)
         self.package_build.storeUploadLog("Some content")
-        self.failUnless(self.package_build.upload_log.restricted)
+        self.assertTrue(self.package_build.upload_log.restricted)
 
     def test_storeUploadLog_unicode(self):
         # Unicode upload logs are uploaded as UTF-8.
         unicode_content = u"Some content \N{SNOWMAN}"
         self.package_build.storeUploadLog(unicode_content)
-        self.failIfEqual(None, self.package_build.upload_log)
-        self.failUnlessEqual(
+        self.assertIsNotNone(self.package_build.upload_log)
+        self.assertEqual(
             hashlib.sha1(unicode_content.encode('utf-8')).hexdigest(),
             self.package_build.upload_log.content.sha1)
 
@@ -101,7 +101,7 @@ class TestPackageBuildMixin(TestCaseWithFactory):
         Store.of(self.package_build).flush()
         self.package_build.storeUploadLog("Some content")
         log_url = self.package_build.upload_log_url
-        self.failUnlessEqual(
+        self.assertEqual(
             'http://launchpad.dev/~joe/+archive/ubuntu/ppa/'
             '+recipebuild/%d/+files/upload_%d_log.txt' % (
                 self.package_build.id, self.package_build.id),

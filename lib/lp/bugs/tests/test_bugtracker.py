@@ -168,48 +168,47 @@ class BugTrackerTestCase(TestCaseWithFactory):
             'watches_with_unpushed_comments',
             ]
         for attribute in attributes:
-            self.failUnless(
+            self.assertTrue(
                 getattr(original, attribute, marker) is not marker,
                 "Attribute %s missing from bug tracker." % attribute)
         snapshot = Snapshot(original, providing=IBugTracker)
         for attribute in attributes:
-            self.failUnless(
+            self.assertTrue(
                 getattr(snapshot, attribute, marker) is marker,
                 "Attribute %s not missing from snapshot." % attribute)
 
     def test_watches_ready_to_check(self):
         bug_tracker = self.factory.makeBugTracker()
         # Initially there are no watches, so none need to be checked.
-        self.failUnless(bug_tracker.watches_ready_to_check.is_empty())
+        self.assertTrue(bug_tracker.watches_ready_to_check.is_empty())
         # A bug watch without a next_check set is not ready either.
         bug_watch = self.factory.makeBugWatch(bugtracker=bug_tracker)
         removeSecurityProxy(bug_watch).next_check = None
-        self.failUnless(bug_tracker.watches_ready_to_check.is_empty())
+        self.assertTrue(bug_tracker.watches_ready_to_check.is_empty())
         # If we set its next_check date, it will be ready.
         removeSecurityProxy(bug_watch).next_check = (
             datetime.now(utc) - timedelta(hours=1))
-        self.failUnless(1, bug_tracker.watches_ready_to_check.count())
-        self.failUnlessEqual(
-            bug_watch, bug_tracker.watches_ready_to_check.one())
+        self.assertTrue(1, bug_tracker.watches_ready_to_check.count())
+        self.assertEqual(bug_watch, bug_tracker.watches_ready_to_check.one())
 
     def test_watches_with_unpushed_comments(self):
         bug_tracker = self.factory.makeBugTracker()
         # Initially there are no watches, so there are no unpushed
         # comments.
-        self.failUnless(bug_tracker.watches_with_unpushed_comments.is_empty())
+        self.assertTrue(bug_tracker.watches_with_unpushed_comments.is_empty())
         # A new bug watch has no comments, so the same again.
         bug_watch = self.factory.makeBugWatch(bugtracker=bug_tracker)
-        self.failUnless(bug_tracker.watches_with_unpushed_comments.is_empty())
+        self.assertTrue(bug_tracker.watches_with_unpushed_comments.is_empty())
         # A comment linked to the bug watch will be found.
         login_person(bug_watch.bug.owner)
         message = self.factory.makeMessage(owner=bug_watch.owner)
         bug_message = bug_watch.bug.linkMessage(message, bug_watch)
-        self.failUnless(1, bug_tracker.watches_with_unpushed_comments.count())
-        self.failUnlessEqual(
+        self.assertTrue(1, bug_tracker.watches_with_unpushed_comments.count())
+        self.assertEqual(
             bug_watch, bug_tracker.watches_with_unpushed_comments.one())
         # Once the comment has been pushed, it will no longer be found.
         removeSecurityProxy(bug_message).remote_comment_id = 'brains'
-        self.failUnless(bug_tracker.watches_with_unpushed_comments.is_empty())
+        self.assertTrue(bug_tracker.watches_with_unpushed_comments.is_empty())
 
     def _assertBugWatchesAreCheckedInTheFuture(self):
         """Check the dates of all self.bug_tracker.watches.

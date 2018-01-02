@@ -299,13 +299,13 @@ class TestBzrSync(BzrSyncTestCase):
 
     def assertInMainline(self, revision_id, db_branch):
         """Assert that `revision_id` is in the mainline of `db_branch`."""
-        self.failUnless(
+        self.assertTrue(
             self.isMainline(db_branch, revision_id),
             "%r not in mainline of %r" % (revision_id, db_branch))
 
     def assertNotInMainline(self, revision_id, db_branch):
         """Assert that `revision_id` is not in the mainline of `db_branch`."""
-        self.failIf(
+        self.assertFalse(
             self.isMainline(db_branch, revision_id),
             "%r in mainline of %r" % (revision_id, db_branch))
 

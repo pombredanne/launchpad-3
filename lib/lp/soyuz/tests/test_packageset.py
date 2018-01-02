@@ -53,7 +53,7 @@ class TestPackagesetSet(TestCaseWithFactory):
         packageset = self.ps_set.new(
             self.factory.getUniqueUnicode(), self.factory.getUniqueUnicode(),
             self.factory.makePerson(), distroseries=experimental_series)
-        self.failUnlessEqual(experimental_series, packageset.distroseries)
+        self.assertEqual(experimental_series, packageset.distroseries)
 
     def test_new_creates_new_packageset_group(self):
         # Creating a new packageset should also create a new packageset
@@ -63,7 +63,7 @@ class TestPackagesetSet(TestCaseWithFactory):
         packageset = self.ps_set.new(
             self.factory.getUniqueUnicode(), self.factory.getUniqueUnicode(),
             owner, distroseries=experimental_series)
-        self.failUnlessEqual(owner, packageset.packagesetgroup.owner)
+        self.assertEqual(owner, packageset.packagesetgroup.owner)
 
     def test_new_duplicate_name_for_same_distroseries(self):
         # Creating a packageset with a duplicate name for the
@@ -279,7 +279,7 @@ class TestPackageset(TestCaseWithFactory):
             u'kernel', u'Contains all OS kernel packages', self.person1,
             self.distroseries_current)
 
-        self.failUnlessEqual(packageset.relatedSets().count(), 0)
+        self.assertEqual(packageset.relatedSets().count(), 0)
 
     def test_related_set_found(self):
         # Creating a new package set while specifying a `related_set` should
@@ -315,7 +315,7 @@ class TestPackageset(TestCaseWithFactory):
 
         # Unsurprisingly, the unrelated package set is not associated with any
         # other package set.
-        self.failUnlessEqual(pset3.relatedSets().count(), 0)
+        self.assertEqual(pset3.relatedSets().count(), 0)
 
     def test_destroy(self):
         series = self.factory.makeDistroSeries()

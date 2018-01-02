@@ -44,11 +44,11 @@ class TestDistroSourcePackageReleaseFiles(TestCaseWithFactory):
         # The snippet links to the file when present.
         view = create_initialized_view(self.dspr, "+index")
         html = view.__call__()
-        self.failUnless('test_file.dsc' in html)
+        self.assertIn('test_file.dsc', html)
 
     def test_spr_files_deleted(self):
         # The snippet handles deleted files too.
         removeSecurityProxy(self.library_file).content = None
         view = create_initialized_view(self.dspr, "+index")
         html = view.__call__()
-        self.failUnless('test_file.dsc (deleted)' in html)
+        self.assertIn('test_file.dsc (deleted)', html)

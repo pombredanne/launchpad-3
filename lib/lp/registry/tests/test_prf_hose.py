@@ -21,7 +21,7 @@ class Hose_Logging(unittest.TestCase):
         from lp.registry.scripts.productreleasefinder.hose import Hose
         from logging import Logger
         h = Hose()
-        self.failUnless(isinstance(h.log, Logger))
+        self.assertTrue(isinstance(h.log, Logger))
 
     def testCreatesChildLogger(self):
         """Hose creates a child logger if given a parent."""
@@ -39,7 +39,7 @@ class Hose_Filter(unittest.TestCase):
         from lp.registry.scripts.productreleasefinder.filter import (
             Filter)
         h = Hose()
-        self.failUnless(isinstance(h.filter, Filter))
+        self.assertTrue(isinstance(h.filter, Filter))
 
     def testDefaultsFiltersToEmptyDict(self):
         """Hose creates Filter object with empty dictionary."""

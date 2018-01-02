@@ -37,11 +37,11 @@ class TestURLNamespace(TestCase):
         # First, we will verify that it is available as a namespace.
         namespace = self.sm.getMultiAdapter(
             (self.context, self.request), ITraversable, 'oops')
-        self.failUnless(isinstance(namespace, OopsNamespace))
+        self.assertTrue(isinstance(namespace, OopsNamespace))
         # However, it is not available as a view.
         not_a_namespace = self.sm.queryMultiAdapter(
             (self.context, self.request), Interface, 'oops')
-        self.failIf(isinstance(not_a_namespace, OopsNamespace))
+        self.assertFalse(isinstance(not_a_namespace, OopsNamespace))
 
     def test_no_namespaces_are_views(self):
         # This tests an abstract superset of test_oops_namespace_not_view.

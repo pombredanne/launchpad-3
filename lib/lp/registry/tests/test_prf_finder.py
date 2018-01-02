@@ -113,14 +113,14 @@ class GetFiltersTestCase(TestCaseWithFactory):
                 evo_filters = filters
 
         self.assertEqual(len(evo_filters), 1)
-        self.failUnless(isinstance(evo_filters[0], FilterPattern))
+        self.assertTrue(isinstance(evo_filters[0], FilterPattern))
         self.assertEqual(evo_filters[0].key, 'trunk')
         self.assertEqual(evo_filters[0].base_url,
             'http://ftp.gnome.org/pub/GNOME/sources/evolution/2.7/')
         self.assertEqual(evo_filters[0].urlglob,
             'http://ftp.gnome.org/pub/GNOME/sources/evolution/2.7/'
             'evolution-*.tar.gz')
-        self.failUnless(evo_filters[0].match(
+        self.assertTrue(evo_filters[0].match(
             'http://ftp.gnome.org/pub/GNOME/sources/evolution/2.7/'
             'evolution-2.7.1.tar.gz'))
 
@@ -258,7 +258,7 @@ class HandleReleaseTestCase(unittest.TestCase):
         self.assertEqual(fileinfo.libraryfile.filename, file_name)
 
         # verify that the fileinfo object is sane
-        self.failUnless(verifyObject(IProductReleaseFile, fileinfo))
+        self.assertTrue(verifyObject(IProductReleaseFile, fileinfo))
         for field in getFields(IProductReleaseFile).values():
             # XXX: BradCrittenden 2008-09-04 bug=264829:
             # Several interfaces have uploaded files as `Bytes` attributes but

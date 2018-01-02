@@ -37,7 +37,7 @@ class LibrarianStorageDBTests(unittest.TestCase):
         newfile.srcDigest = digest
         newfile.append(data)
         fileid, aliasid = newfile.store()
-        self.failUnless(self.storage.hasFile(fileid))
+        self.assertTrue(self.storage.hasFile(fileid))
 
     def test_addFiles_identical(self):
         # Start adding two files with identical data
@@ -55,7 +55,7 @@ class LibrarianStorageDBTests(unittest.TestCase):
 
         # But they are two different ids, because we leave duplicate handling
         # to the garbage collector
-        self.failIfEqual(id1, id2)
+        self.assertNotEqual(id1, id2)
 
     def test_badDigest(self):
         data = 'data ' * 50

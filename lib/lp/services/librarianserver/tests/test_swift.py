@@ -151,7 +151,7 @@ class TestFeedSwift(TestCase):
 
         # Confirm that all the files have gone from disk.
         for lfc in self.lfcs:
-            self.failIf(os.path.exists(swift.filesystem_path(lfc.id)))
+            self.assertFalse(os.path.exists(swift.filesystem_path(lfc.id)))
 
         # Confirm all the files are in Swift.
         swift_client = self.swift_fixture.connect()
@@ -211,7 +211,7 @@ class TestFeedSwift(TestCase):
 
         # Data round trips when served from Swift.
         swift.to_swift(BufferLogger(), remove_func=os.unlink)
-        self.failIf(os.path.exists(swift.filesystem_path(lfc.id)))
+        self.assertFalse(os.path.exists(swift.filesystem_path(lfc.id)))
         lfa = self.librarian_client.getFileByAlias(lfa_id)
         self.assertEqual(expected_content, lfa.read())
 
@@ -234,7 +234,7 @@ class TestFeedSwift(TestCase):
         # Data round trips when served from Swift.
         swift.to_swift(BufferLogger(), remove_func=os.unlink)
         lfa = self.librarian_client.getFileByAlias(lfa_id)
-        self.failIf(os.path.exists(swift.filesystem_path(lfc.id)))
+        self.assertFalse(os.path.exists(swift.filesystem_path(lfc.id)))
         self.assertEqual(expected_content, lfa.read())
 
     def test_large_file_to_swift(self):
