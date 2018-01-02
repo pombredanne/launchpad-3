@@ -469,6 +469,7 @@ copy-apache-config:
 		-e 's,%LISTEN_ADDRESS%,$(LISTEN_ADDRESS),' \
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/$$base
+	mkdir -p $(CODEHOSTING_ROOT)
 	touch $(CODEHOSTING_ROOT)/rewrite.log
 	chown -R $(SUDO_UID):$(SUDO_GID) $(CODEHOSTING_ROOT)
 	if [ ! -d /srv/launchpad.dev ]; then \
