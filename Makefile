@@ -398,7 +398,9 @@ lxc-clean: clean_js clean_mailman clean_pip clean_logs
 	# it does everything expected from a clean target.  When the
 	# referenced bug is fixed, this target may be reunited with
 	# the 'clean' target.
-	$(MAKE) -C sourcecode/pygettextpo clean
+	if test -f sourcecode/pygettextpo/Makefile; then \
+		$(MAKE) -C sourcecode/pygettextpo clean; \
+	fi
 	if test -f sourcecode/mailman/Makefile; then \
 		$(MAKE) -C sourcecode/mailman clean; \
 	fi
