@@ -399,10 +399,6 @@ lxc-clean: clean_js clean_mailman clean_pip clean_logs
 	# referenced bug is fixed, this target may be reunited with
 	# the 'clean' target.
 	$(MAKE) -C sourcecode/pygettextpo clean
-	# XXX gary 2009-11-16 bug 483782
-	# The pygettextpo Makefile should have this next line in it for its make
-	# clean, and then we should remove this line.
-	$(RM) sourcecode/pygpgme/gpgme/*.so
 	if test -f sourcecode/mailman/Makefile; then \
 		$(MAKE) -C sourcecode/mailman clean; \
 	fi
