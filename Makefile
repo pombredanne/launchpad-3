@@ -205,8 +205,7 @@ $(YUI_SYMLINK): $(JS_BUILD_DIR)/.production
 	ln -sfn ../../yarn/node_modules/yui $@
 
 $(LP_JS_BUILD): | $(JS_BUILD_DIR)
-	-mkdir $@
-	-mkdir $@/services
+	mkdir -p $@/services
 	for jsdir in lib/lp/*/javascript lib/lp/services/*/javascript; do \
 		app=$$(echo $$jsdir | sed -e 's,lib/lp/\(.*\)/javascript,\1,'); \
 		cp -a $$jsdir $@/$$app; \
