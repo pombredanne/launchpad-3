@@ -496,8 +496,8 @@ class LayerProcessControllerInvariantsTestCase(BaseTestCase):
         # Test that the app server is up and running.
         mainsite = LayerProcessController.appserver_config.vhost.mainsite
         home_page = urlopen(mainsite.rooturl).read()
-        self.assertIn(
-            'Is your project registered yet?', home_page,
+        self.assertTrue(
+            'Is your project registered yet?' in home_page,
             "Home page couldn't be retrieved:\n%s" % home_page)
 
     def testSMTPServerIsAvailable(self):

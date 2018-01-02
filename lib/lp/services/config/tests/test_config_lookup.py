@@ -149,7 +149,7 @@ class TestGenerateOverrides(ConfigTestCase):
         fh.close()
 
         magic_line = '<include files="%s/*.zcml" />' % instance_dir
-        self.assertIn(
-            magic_line, overrides,
+        self.assertTrue(
+            magic_line in overrides,
             "Overrides doesn't contain the magic include line (%s):\n%s" %
             (magic_line, overrides))
