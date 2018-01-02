@@ -3,7 +3,7 @@ PYTHON=python
 # the ones we test.  If we fix them all to have EITHER a good makefile
 # (build and check targets work), or no makefile we can reenable auto
 # detection.
-build_dirs:=cscvs pygettextpo pygpgme subvertpy
+build_dirs:=cscvs pygettextpo
 test_dirs:=cscvs pygettextpo
 
 TEST_ENV_VARS = PYTHON=$(PYTHON)
