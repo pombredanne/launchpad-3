@@ -319,14 +319,14 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
         request = config.createRequest(data, env)
 
         stack = request.getTraversalStack()
-        self.assertIn(config.path_override, stack,
+        self.assertTrue(config.path_override in stack,
             "Sanity check: the API path should show up in the request's "
             "traversal stack: %r" % stack)
 
         request.traverse(None)
 
         stack = request.getTraversalStack()
-        self.assertNotIn(config.path_override, stack,
+        self.assertFalse(config.path_override in stack,
             "Web service paths should be dropped from the webservice "
             "request traversal stack: %r" % stack)
 

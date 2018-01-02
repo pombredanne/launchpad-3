@@ -5128,8 +5128,8 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
         device_driver_links_in_submission = [
             submission_device.device_driver_link
             for submission_device in submission_devices]
-        self.assertIn(
-            device_driver_link, device_driver_links_in_submission,
+        self.assertTrue(
+            device_driver_link in device_driver_links_in_submission,
             'No entry in HWSubmissionDevice for bus %s, '
             'vendor %s, product %s, submission %s'
             % (bus, vendor_id, product_id, submission.submission_key))
@@ -5150,8 +5150,8 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
                 'No entry in HWDeviceDriverLink for bus %s, '
                 'vendor %s, product %s, driver %s'
                 % (bus, vendor_id, product_id, driver_name))
-            self.assertIn(
-                device_driver_link, device_driver_links_in_submission,
+            self.assertTrue(
+                device_driver_link in device_driver_links_in_submission,
                 'No entry in HWSubmissionDevice for bus %s, '
                 'vendor %s, product %s, driver %s, submission %s'
                 % (bus, vendor_id, product_id, driver_name,
