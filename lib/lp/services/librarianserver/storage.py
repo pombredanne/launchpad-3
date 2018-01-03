@@ -123,12 +123,8 @@ class LibrarianStorage:
             container, name = swift.swift_location(fileid)
             swift_connection = swift.connection_pool.get()
             try:
-                def get_object_quiet(*args, **kwargs):
-                    with swift.disable_swiftclient_logging():
-                        return swift_connection.get_object(*args, **kwargs)
-
                 headers, chunks = yield deferToThread(
-                    get_object_quiet,
+                    swift.quiet_swiftclient, swift_connection.get_object,
                     container, name, resp_chunk_size=self.CHUNK_SIZE)
                 swift_stream = TxSwiftStream(swift_connection, chunks)
                 defer.returnValue(swift_stream)

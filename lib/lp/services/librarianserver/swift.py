@@ -8,8 +8,8 @@ __all__ = [
     'SWIFT_CONTAINER_PREFIX',
     'connection',
     'connection_pool',
-    'disable_swiftclient_logging',
     'filesystem_path',
+    'quiet_swiftclient',
     'swift_location',
     'to_swift',
     ]
@@ -34,8 +34,7 @@ MAX_SWIFT_OBJECT_SIZE = 5 * 1024 ** 3  # 5GB Swift limit.
 ONE_DAY = 24 * 60 * 60
 
 
-@contextmanager
-def disable_swiftclient_logging():
+def quiet_swiftclient(func, *args, **kwargs):
     # XXX cjwatson 2018-01-02: swiftclient has some very rude logging
     # practices: the low-level API calls `logger.exception` when a request
     # fails, without considering whether the caller might handle it and
@@ -46,9 +45,11 @@ def disable_swiftclient_logging():
     # refer to the Logger instance actually being used by swiftclient, so we
     # have to use swiftclient.logger directly.
     old_disabled = swiftclient.logger.disabled
-    swiftclient.logger.disabled = True
-    yield
-    swiftclient.logger.disabled = old_disabled
+    try:
+        swiftclient.logger.disabled = True
+        return func(*args, **kwargs)
+    finally:
+        swiftclient.logger.disabled = old_disabled
 
 
 def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove_func=False):
@@ -140,8 +141,7 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove_func=False):
             container, obj_name = swift_location(lfc)
 
             try:
-                with disable_swiftclient_logging():
-                    swift_connection.head_container(container)
+                quiet_swiftclient(swift_connection.head_container, container)
                 log.debug2('{0} container already exists'.format(container))
             except swiftclient.ClientException as x:
                 if x.http_status != 404:
@@ -150,8 +150,8 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove_func=False):
                 swift_connection.put_container(container)
 
             try:
-                with disable_swiftclient_logging():
-                    headers = swift_connection.head_object(container, obj_name)
+                headers = quiet_swiftclient(
+                    swift_connection.head_object, container, obj_name)
                 log.debug(
                     "{0} already exists in Swift({1}, {2})".format(
                         lfc, container, obj_name))

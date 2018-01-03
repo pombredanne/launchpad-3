@@ -275,8 +275,8 @@ class TestFeedSwift(TestCase):
         _, obj2 = swift_client.get_object(container, '{0}/0001'.format(name))
         _, obj3 = swift_client.get_object(container, '{0}/0002'.format(name))
         self.assertRaises(
-            swiftclient.ClientException, swift_client.get_object,
-            container, '{0}/0003'.format(name))
+            swiftclient.ClientException, swift.quiet_swiftclient,
+            swift_client.get_object, container, '{0}/0003'.format(name))
 
         # Our object round tripped
         self.assertEqual(obj1 + obj2 + obj3, expected_content)
