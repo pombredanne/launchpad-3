@@ -1,4 +1,4 @@
-# Copyright 2009,2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -73,6 +73,7 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormbase import StormBase
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -238,6 +239,8 @@ class Builder(SQLBase):
 
         :return: A candidate job.
         """
+        logger = self._getSlaveScannerLogger()
+
         job_type_conditions = []
         job_sources = specific_build_farm_job_sources()
         for job_type, job_source in job_sources.iteritems():
@@ -248,6 +251,17 @@ class Builder(SQLBase):
                     Or(
                         BuildFarmJob.job_type != job_type,
                         Exists(SQL(query))))
+
+        score_conditions = []
+        minimum_score_str = getFeatureFlag('buildmaster.minimum_score')
+        if minimum_score_str is not None:
+            try:
+                minimum_score = int(minimum_score_str)
+            except ValueError:
+                logger.error(
+                    'invalid buildmaster.minimum_score %r', minimum_score_str)
+            else:
+                score_conditions.append(BuildQueue.lastscore >= minimum_score)
 
         store = IStore(self.__class__)
         candidate_jobs = store.using(BuildQueue, BuildFarmJob).find(
@@ -261,10 +275,9 @@ class Builder(SQLBase):
                 BuildQueue.processor == None),
             BuildQueue.virtualized == self.virtualized,
             BuildQueue.builder == None,
-            And(*job_type_conditions)
+            And(*(job_type_conditions + score_conditions))
             ).order_by(Desc(BuildQueue.lastscore), BuildQueue.id)
 
-        logger = self._getSlaveScannerLogger()
         # Only try the first handful of jobs. It's much easier on the
         # database, the chance of a large prefix of the queue being
         # bad candidates is negligible, and we want reasonably bounded
