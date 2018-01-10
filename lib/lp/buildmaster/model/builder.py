@@ -252,16 +252,28 @@ class Builder(SQLBase):
                         BuildFarmJob.job_type != job_type,
                         Exists(SQL(query))))
 
+        def get_int_feature_flag(flag):
+            value_str = getFeatureFlag(flag)
+            if value_str is not None:
+                try:
+                    return int(value_str)
+                except ValueError:
+                    logger.error('invalid %s %r', flag, value_str)
+
         score_conditions = []
-        minimum_score_str = getFeatureFlag('buildmaster.minimum_score')
-        if minimum_score_str is not None:
-            try:
-                minimum_score = int(minimum_score_str)
-            except ValueError:
-                logger.error(
-                    'invalid buildmaster.minimum_score %r', minimum_score_str)
-            else:
-                score_conditions.append(BuildQueue.lastscore >= minimum_score)
+        minimum_scores = set()
+        for processor in self.processors:
+            minimum_scores.add(get_int_feature_flag(
+                'buildmaster.minimum_score.%s' % processor.name))
+        minimum_scores.add(get_int_feature_flag('buildmaster.minimum_score'))
+        minimum_scores.discard(None)
+        # If there are minimum scores set for any of the processors
+        # supported by this builder, use the highest of them.  This is a bit
+        # weird and not completely ideal, but it's a safe conservative
+        # option and avoids substantially complicating the candidate query.
+        if minimum_scores:
+            score_conditions.append(
+                BuildQueue.lastscore >= max(minimum_scores))
 
         store = IStore(self.__class__)
         candidate_jobs = store.using(BuildQueue, BuildFarmJob).find(
