@@ -196,10 +196,12 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
         bq2.manualScore(99999)
         builder1 = removeSecurityProxy(
             self.factory.makeBuilder(
-                processors=[bq1.processor], virtualized=True))
+                processors=[bq1.processor, self.factory.makeProcessor()],
+                virtualized=True))
         builder2 = removeSecurityProxy(
             self.factory.makeBuilder(
-                processors=[bq2.processor], virtualized=True))
+                processors=[bq2.processor, self.factory.makeProcessor()],
+                virtualized=True))
 
         # By default, each builder has the appropriate one of the two builds
         # we just created as a candidate.
@@ -211,6 +213,26 @@ class TestFindBuildCandidateGeneralCases(TestFindBuildCandidateBase):
         with FeatureFixture({'buildmaster.minimum_score': '100000'}):
             self.assertEqual(bq1, builder1._findBuildCandidate())
             self.assertIsNone(builder2._findBuildCandidate())
+
+        # We can similarly set a minimum score for individual processors.
+        # The maximum of these for any processor supported by the builder is
+        # used.
+        cases = [
+            ({0: '99999'}, bq2),
+            ({1: '99999'}, bq2),
+            ({0: '100000'}, None),
+            ({1: '100000'}, None),
+            ({0: '99999', 1: '99999'}, bq2),
+            ({0: '99999', 1: '100000'}, None),
+            ({0: '100000', 1: '99999'}, None),
+            ]
+        for feature_spec, expected_bq in cases:
+            features = {
+                'buildmaster.minimum_score.%s' % builder2.processors[i].name:
+                    score
+                for i, score in feature_spec.items()}
+            with FeatureFixture(features):
+                self.assertEqual(expected_bq, builder2._findBuildCandidate())
 
         # If we set an invalid minimum score, buildd-manager doesn't
         # explode.
