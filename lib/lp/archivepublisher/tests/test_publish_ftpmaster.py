@@ -1,4 +1,4 @@
-# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test publish-ftpmaster cron script."""
@@ -32,7 +32,6 @@ from lp.archivepublisher.scripts.publish_ftpmaster import (
     get_working_dists,
     newer_mtime,
     PublishFTPMaster,
-    shell_quote,
     )
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -196,18 +195,6 @@ class TestPublishFTPMasterHelpers(TestCase):
 
     def test_compose_env_string_overrides_repeated_keys(self):
         self.assertEqual("A=2", compose_env_string({"A": "1"}, {"A": "2"}))
-
-    def test_shell_quote_quotes_string(self):
-        self.assertEqual('"x"', shell_quote("x"))
-
-    def test_shell_quote_escapes_string(self):
-        self.assertEqual('"\\\\"', shell_quote("\\"))
-
-    def test_shell_quote_does_not_escape_its_own_escapes(self):
-        self.assertEqual('"\\$"', shell_quote("$"))
-
-    def test_shell_quote_escapes_entire_string(self):
-        self.assertEqual('"\\$\\$\\$"', shell_quote("$$$"))
 
     def test_compose_shell_boolean_shows_True_as_yes(self):
         self.assertEqual("yes", compose_shell_boolean(True))

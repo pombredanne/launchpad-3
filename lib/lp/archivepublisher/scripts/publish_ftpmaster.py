@@ -1,4 +1,4 @@
-# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Master distro publishing script."""
@@ -11,6 +11,10 @@ __all__ = [
 from datetime import datetime
 import math
 import os
+try:
+    from shlex import quote as shell_quote
+except ImportError:
+    from pipes import quote as shell_quote
 import shutil
 
 from pytz import utc
@@ -68,22 +72,6 @@ def compose_shell_boolean(boolean_value):
         False: "no",
     }
     return boolean_text[boolean_value]
-
-
-def shell_quote(literal):
-    """Escape `literal` for use in a double-quoted shell string.
-
-    This is a pretty naive substitution: it doesn't deal well with
-    non-ASCII characters or special characters.
-    """
-    # Characters that need backslash-escaping.  Do the backslash itself
-    # first; any escapes we introduced *before* the backslash would have
-    # their own backslashes escaped afterwards when we got to the
-    # backslash itself.
-    special_characters = '\\"$`\n'
-    for escapee in special_characters:
-        literal = literal.replace(escapee, '\\' + escapee)
-    return '"%s"' % literal
 
 
 def compose_env_string(*env_dicts):
