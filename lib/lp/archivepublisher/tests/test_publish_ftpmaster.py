@@ -28,19 +28,16 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.scripts.publish_ftpmaster import (
-    execute_subprocess,
-    find_run_parts_dir,
     get_working_dists,
     newer_mtime,
     PublishFTPMaster,
-    run_parts,
     )
+from lp.archivepublisher.tests.test_run_parts import RunPartsMixin
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.config import config
 from lp.services.database.interfaces import IMasterStore
 from lp.services.log.logger import (
     BufferLogger,
@@ -131,26 +128,6 @@ def get_marker_files(script, distroseries):
 class HelpersMixin:
     """Helpers for the PublishFTPMaster tests."""
 
-    def enableRunParts(self, parts_directory=None):
-        """Set up for run-parts execution.
-
-        :param parts_directory: Base location for the run-parts directories.
-            If omitted, a temporary directory will be used.
-        """
-        if parts_directory is None:
-            parts_directory = self.makeTemporaryDirectory()
-            os.makedirs(os.path.join(
-                parts_directory, "ubuntu", "publish-distro.d"))
-            os.makedirs(os.path.join(parts_directory, "ubuntu", "finalize.d"))
-        self.parts_directory = parts_directory
-
-        config.push("run-parts", dedent("""\
-            [archivepublisher]
-            run_parts_location: %s
-            """ % parts_directory))
-
-        self.addCleanup(config.pop, "run-parts")
-
     def makeDistroWithPublishDirectory(self):
         """Create a `Distribution` for testing.
 
@@ -174,51 +151,6 @@ class HelpersMixin:
         pub_config = getUtility(IPublisherConfigSet).getByDistribution(distro)
         pub_config.root_dir = unicode(
             self.makeTemporaryDirectory())
-
-
-class TestPublishFTPMasterHelpers(TestCase, HelpersMixin):
-
-    def test_execute_subprocess_executes_shell_command(self):
-        marker = os.path.join(self.makeTemporaryDirectory(), "marker")
-        execute_subprocess(["touch", marker])
-        self.assertTrue(file_exists(marker))
-
-    def test_execute_subprocess_reports_failure_if_requested(self):
-        class ArbitraryFailure(Exception):
-            """Some exception that's not likely to come from elsewhere."""
-
-        self.assertRaises(
-            ArbitraryFailure,
-            execute_subprocess, ["/bin/false"], failure=ArbitraryFailure())
-
-    def test_execute_subprocess_does_not_report_failure_if_not_requested(self):
-        # The test is that this does not fail:
-        execute_subprocess(["/bin/false"])
-
-    def test_run_parts_runs_parts(self):
-        self.enableRunParts()
-        execute_subprocess_fixture = self.useFixture(MonkeyPatch(
-            "lp.archivepublisher.scripts.publish_ftpmaster.execute_subprocess",
-            FakeMethod()))
-        run_parts("ubuntu", "finalize.d", log=DevNullLogger(), env={})
-        self.assertEqual(1, execute_subprocess_fixture.new_value.call_count)
-        args, kwargs = execute_subprocess_fixture.new_value.calls[-1]
-        self.assertEqual(
-            (["run-parts", "--",
-              os.path.join(self.parts_directory, "ubuntu/finalize.d")],),
-            args)
-
-    def test_run_parts_passes_parameters(self):
-        self.enableRunParts()
-        execute_subprocess_fixture = self.useFixture(MonkeyPatch(
-            "lp.archivepublisher.scripts.publish_ftpmaster.execute_subprocess",
-            FakeMethod()))
-        key = self.factory.getUniqueString()
-        value = self.factory.getUniqueString()
-        run_parts(
-            "ubuntu", "finalize.d", log=DevNullLogger(), env={key: value})
-        args, kwargs = execute_subprocess_fixture.new_value.calls[-1]
-        self.assertThat(kwargs["env"], ContainsDict({key: Equals(value)}))
 
 
 class TestNewerMtime(TestCase):
@@ -261,29 +193,8 @@ class TestNewerMtime(TestCase):
         self.assertTrue(newer_mtime(self.a, self.b))
 
 
-class TestFindRunPartsDir(TestCase, HelpersMixin):
-
-    def test_find_run_parts_dir_finds_runparts_directory(self):
-        self.enableRunParts()
-        self.assertEqual(
-            os.path.join(
-                config.root, self.parts_directory, "ubuntu", "finalize.d"),
-            find_run_parts_dir("ubuntu", "finalize.d"))
-
-    def test_find_run_parts_dir_ignores_blank_config(self):
-        self.enableRunParts("")
-        self.assertIs(None, find_run_parts_dir("ubuntu", "finalize.d"))
-
-    def test_find_run_parts_dir_ignores_none_config(self):
-        self.enableRunParts("none")
-        self.assertIs(None, find_run_parts_dir("ubuntu", "finalize.d"))
-
-    def test_find_run_parts_dir_ignores_nonexistent_directory(self):
-        self.enableRunParts()
-        self.assertIs(None, find_run_parts_dir("nonexistent", "finalize.d"))
-
-
-class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
+class TestPublishFTPMasterScript(
+        TestCaseWithFactory, RunPartsMixin, HelpersMixin):
     layer = LaunchpadZopelessLayer
 
     # Location of shell script.

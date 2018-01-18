@@ -11,12 +11,7 @@ __all__ = [
 from datetime import datetime
 import math
 import os
-try:
-    from shlex import quote as shell_quote
-except ImportError:
-    from pipes import quote as shell_quote
 import shutil
-import subprocess
 
 from pytz import utc
 from zope.component import getUtility
@@ -27,6 +22,10 @@ from lp.archivepublisher.publishing import (
     cannot_modify_suite,
     GLOBAL_PUBLISHER_LOCK,
     )
+from lp.archivepublisher.run_parts import (
+    execute_subprocess,
+    run_parts,
+    )
 from lp.archivepublisher.scripts.processaccepted import ProcessAccepted
 from lp.archivepublisher.scripts.publishdistro import PublishDistro
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -35,7 +34,6 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.osutils import ensure_directory_exists
 from lp.services.scripts.base import (
@@ -88,78 +86,6 @@ def get_working_dists(archive_config):
     for publish-distro.  This method composes the temporary path.
     """
     return get_dists(archive_config) + ".in-progress"
-
-
-def find_run_parts_dir(distribution_name, parts):
-    """Find the requested run-parts directory, if it exists."""
-    run_parts_location = config.archivepublisher.run_parts_location
-    if not run_parts_location:
-        return
-
-    parts_dir = os.path.join(run_parts_location, distribution_name, parts)
-    if file_exists(parts_dir):
-        return parts_dir
-    else:
-        return None
-
-
-def extend_PATH(env):
-    """Extend $PATH in an environment dictionary.
-
-    Adds the Launchpad source tree's cronscripts/publishing to the
-    existing $PATH.
-    """
-    scripts_dir = os.path.join(config.root, "cronscripts", "publishing")
-    path_elements = env.get("PATH", "").split(os.pathsep)
-    path_elements.append(scripts_dir)
-    env["PATH"] = os.pathsep.join(path_elements)
-
-
-def execute_subprocess(args, log=None, failure=None, **kwargs):
-    """Run `args`, handling logging and failures.
-
-    :param args: Program argument array.
-    :param log: An optional logger.
-    :param failure: Raise `failure` as an exception if the command returns a
-        nonzero value.  If omitted, nonzero return values are ignored.
-    :param kwargs: Other keyword arguments passed on to `subprocess.call`.
-    """
-    if log is not None:
-        log.debug("Executing: %s", " ".join(shell_quote(arg) for arg in args))
-    retval = subprocess.call(args, **kwargs)
-    if retval != 0:
-        if log is not None:
-            log.debug("Command returned %d.", retval)
-        if failure is not None:
-            if log is not None:
-                log.debug("Command failed: %s", failure)
-            raise failure
-
-
-def run_parts(distribution_name, parts, log=None, env=None):
-    """Execute run-parts.
-
-    :param distribution_name: The name of the distribution to execute
-        run-parts scripts for.
-    :param parts: The run-parts directory to execute:
-        "publish-distro.d" or "finalize.d".
-    :param log: An optional logger.
-    :param env: A dict of additional environment variables to pass to the
-        scripts in the run-parts directory, or None.
-    """
-    parts_dir = find_run_parts_dir(distribution_name, parts)
-    if parts_dir is None:
-        if log is not None:
-            log.debug("Skipping run-parts %s: not configured.", parts)
-        return
-    cmd = ["run-parts", "--", parts_dir]
-    failure = LaunchpadScriptFailure(
-        "Failure while executing run-parts %s." % parts_dir)
-    full_env = dict(os.environ)
-    if env is not None:
-        full_env.update(env)
-    extend_PATH(full_env)
-    execute_subprocess(cmd, log=None, failure=failure, env=full_env)
 
 
 def map_distro_pubconfigs(distro):
