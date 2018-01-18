@@ -65,15 +65,6 @@ def get_publishable_archives(distribution):
             if archive.purpose in ARCHIVES_TO_PUBLISH]
 
 
-def compose_shell_boolean(boolean_value):
-    """Represent a boolean value as "yes" or "no"."""
-    boolean_text = {
-        True: "yes",
-        False: "no",
-    }
-    return boolean_text[boolean_value]
-
-
 def compose_env_string(*env_dicts):
     """Turn dict(s) into a series of shell parameter assignments.
 
@@ -517,7 +508,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             for archive_config in self.configs[distribution].itervalues()]))
 
         env = {
-            'SECURITY_UPLOAD_ONLY': compose_shell_boolean(security_only),
+            'SECURITY_UPLOAD_ONLY': 'yes' if security_only else 'no',
             'ARCHIVEROOTS': archive_roots,
         }
         self.runParts(distribution, 'finalize.d', env)

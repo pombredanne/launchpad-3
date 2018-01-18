@@ -27,7 +27,6 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.scripts.publish_ftpmaster import (
     compose_env_string,
-    compose_shell_boolean,
     find_run_parts_dir,
     get_working_dists,
     newer_mtime,
@@ -195,12 +194,6 @@ class TestPublishFTPMasterHelpers(TestCase):
 
     def test_compose_env_string_overrides_repeated_keys(self):
         self.assertEqual("A=2", compose_env_string({"A": "1"}, {"A": "2"}))
-
-    def test_compose_shell_boolean_shows_True_as_yes(self):
-        self.assertEqual("yes", compose_shell_boolean(True))
-
-    def test_compose_shell_boolean_shows_False_as_no(self):
-        self.assertEqual("no", compose_shell_boolean(False))
 
 
 class TestNewerMtime(TestCase):
