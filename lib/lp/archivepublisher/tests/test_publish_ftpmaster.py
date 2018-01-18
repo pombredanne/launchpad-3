@@ -13,6 +13,8 @@ import time
 from apt_pkg import TagFile
 from fixtures import MonkeyPatch
 from testtools.matchers import (
+    ContainsDict,
+    Equals,
     MatchesException,
     MatchesStructure,
     Not,
@@ -26,11 +28,12 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.scripts.publish_ftpmaster import (
-    compose_env_string,
+    execute_subprocess,
     find_run_parts_dir,
     get_working_dists,
     newer_mtime,
     PublishFTPMaster,
+    run_parts,
     )
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -58,10 +61,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.layers import (
-    LaunchpadZopelessLayer,
-    ZopelessDatabaseLayer,
-    )
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 def path_exists(*path_components):
@@ -176,24 +176,49 @@ class HelpersMixin:
             self.makeTemporaryDirectory())
 
 
-class TestPublishFTPMasterHelpers(TestCase):
+class TestPublishFTPMasterHelpers(TestCase, HelpersMixin):
 
-    def test_compose_env_string_iterates_env_dict(self):
-        env = {
-            "A": "1",
-            "B": "2",
-        }
-        env_string = compose_env_string(env)
-        self.assertIn(env_string, ["A=1 B=2", "B=2 A=1"])
+    def test_execute_subprocess_executes_shell_command(self):
+        marker = os.path.join(self.makeTemporaryDirectory(), "marker")
+        execute_subprocess(["touch", marker])
+        self.assertTrue(file_exists(marker))
 
-    def test_compose_env_string_combines_env_dicts(self):
-        env1 = {"A": "1"}
-        env2 = {"B": "2"}
-        env_string = compose_env_string(env1, env2)
-        self.assertIn(env_string, ["A=1 B=2", "B=2 A=1"])
+    def test_execute_subprocess_reports_failure_if_requested(self):
+        class ArbitraryFailure(Exception):
+            """Some exception that's not likely to come from elsewhere."""
 
-    def test_compose_env_string_overrides_repeated_keys(self):
-        self.assertEqual("A=2", compose_env_string({"A": "1"}, {"A": "2"}))
+        self.assertRaises(
+            ArbitraryFailure,
+            execute_subprocess, ["/bin/false"], failure=ArbitraryFailure())
+
+    def test_execute_subprocess_does_not_report_failure_if_not_requested(self):
+        # The test is that this does not fail:
+        execute_subprocess(["/bin/false"])
+
+    def test_run_parts_runs_parts(self):
+        self.enableRunParts()
+        execute_subprocess_fixture = self.useFixture(MonkeyPatch(
+            "lp.archivepublisher.scripts.publish_ftpmaster.execute_subprocess",
+            FakeMethod()))
+        run_parts("ubuntu", "finalize.d", log=DevNullLogger(), env={})
+        self.assertEqual(1, execute_subprocess_fixture.new_value.call_count)
+        args, kwargs = execute_subprocess_fixture.new_value.calls[-1]
+        self.assertEqual(
+            (["run-parts", "--",
+              os.path.join(self.parts_directory, "ubuntu/finalize.d")],),
+            args)
+
+    def test_run_parts_passes_parameters(self):
+        self.enableRunParts()
+        execute_subprocess_fixture = self.useFixture(MonkeyPatch(
+            "lp.archivepublisher.scripts.publish_ftpmaster.execute_subprocess",
+            FakeMethod()))
+        key = self.factory.getUniqueString()
+        value = self.factory.getUniqueString()
+        run_parts(
+            "ubuntu", "finalize.d", log=DevNullLogger(), env={key: value})
+        args, kwargs = execute_subprocess_fixture.new_value.calls[-1]
+        self.assertThat(kwargs["env"], ContainsDict({key: Equals(value)}))
 
 
 class TestNewerMtime(TestCase):
@@ -236,31 +261,26 @@ class TestNewerMtime(TestCase):
         self.assertTrue(newer_mtime(self.a, self.b))
 
 
-class TestFindRunPartsDir(TestCaseWithFactory, HelpersMixin):
-    layer = ZopelessDatabaseLayer
+class TestFindRunPartsDir(TestCase, HelpersMixin):
 
     def test_find_run_parts_dir_finds_runparts_directory(self):
         self.enableRunParts()
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.assertEqual(
             os.path.join(
                 config.root, self.parts_directory, "ubuntu", "finalize.d"),
-            find_run_parts_dir(ubuntu, "finalize.d"))
+            find_run_parts_dir("ubuntu", "finalize.d"))
 
     def test_find_run_parts_dir_ignores_blank_config(self):
         self.enableRunParts("")
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.assertIs(None, find_run_parts_dir(ubuntu, "finalize.d"))
+        self.assertIs(None, find_run_parts_dir("ubuntu", "finalize.d"))
 
     def test_find_run_parts_dir_ignores_none_config(self):
         self.enableRunParts("none")
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.assertIs(None, find_run_parts_dir(ubuntu, "finalize.d"))
+        self.assertIs(None, find_run_parts_dir("ubuntu", "finalize.d"))
 
     def test_find_run_parts_dir_ignores_nonexistent_directory(self):
         self.enableRunParts()
-        distro = self.factory.makeDistribution()
-        self.assertIs(None, find_run_parts_dir(distro, "finalize.d"))
+        self.assertIs(None, find_run_parts_dir("nonexistent", "finalize.d"))
 
 
 class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
@@ -532,12 +552,14 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
-        script.runParts = FakeMethod()
+        run_parts_fixture = self.useFixture(MonkeyPatch(
+            "lp.archivepublisher.scripts.publish_ftpmaster.run_parts",
+            FakeMethod()))
         script.publishDistroArchive(distro, distro.main_archive)
-        self.assertEqual(1, script.runParts.call_count)
-        args, kwargs = script.runParts.calls[0]
-        run_distro, parts_dir, env = args
-        self.assertEqual(distro, run_distro)
+        self.assertEqual(1, run_parts_fixture.new_value.call_count)
+        args, _ = run_parts_fixture.new_value.calls[0]
+        run_distro_name, parts_dir = args
+        self.assertEqual(distro.name, run_distro_name)
         self.assertEqual("publish-distro.d", parts_dir)
 
     def test_runPublishDistroParts_passes_parameters(self):
@@ -545,14 +567,19 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(distro)
         script.setUp()
         script.setUpDirs()
-        script.runParts = FakeMethod()
+        run_parts_fixture = self.useFixture(MonkeyPatch(
+            "lp.archivepublisher.scripts.publish_ftpmaster.run_parts",
+            FakeMethod()))
         script.runPublishDistroParts(distro, distro.main_archive)
-        args, kwargs = script.runParts.calls[0]
-        run_distro, parts_dir, env = args
-        required_parameters = set([
-            "ARCHIVEROOT", "DISTSROOT", "OVERRIDEROOT"])
-        missing_parameters = required_parameters.difference(set(env.keys()))
-        self.assertEqual(set(), missing_parameters)
+        _, kwargs = run_parts_fixture.new_value.calls[0]
+        distro_config = get_pub_config(distro)
+        self.assertThat(kwargs["env"], ContainsDict({
+            "ARCHIVEROOT": Equals(get_archive_root(distro_config)),
+            "DISTSROOT": Equals(
+                os.path.join(get_distscopy_root(distro_config), "dists")),
+            "OVERRIDEROOT": Equals(
+                get_archive_root(distro_config) + "-overrides"),
+            }))
 
     def test_clearEmptyDirs_cleans_up_empty_directories(self):
         distro = self.makeDistroWithPublishDirectory()
@@ -601,67 +628,16 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script.options.distribution = self.factory.getUniqueString()
         self.assertRaises(LaunchpadScriptFailure, script.processOptions)
 
-    def test_runParts_runs_parts(self):
-        self.enableRunParts()
-        script = self.makeScript(self.prepareUbuntu())
-        script.setUp()
-        distro = script.distributions[0]
-        script.executeShell = FakeMethod()
-        script.runParts(distro, "finalize.d", {})
-        self.assertEqual(1, script.executeShell.call_count)
-        args, kwargs = script.executeShell.calls[-1]
-        command_line, = args
-        self.assertIn("run-parts", command_line)
-        self.assertIn(
-            os.path.join(self.parts_directory, "ubuntu/finalize.d"),
-            command_line)
-
-    def test_runParts_passes_parameters(self):
-        self.enableRunParts()
-        script = self.makeScript(self.prepareUbuntu())
-        script.setUp()
-        distro = script.distributions[0]
-        script.executeShell = FakeMethod()
-        key = self.factory.getUniqueString()
-        value = self.factory.getUniqueString()
-        script.runParts(distro, "finalize.d", {key: value})
-        args, kwargs = script.executeShell.calls[-1]
-        command_line, = args
-        self.assertIn("%s=%s" % (key, value), command_line)
-
-    def test_executeShell_executes_shell_command(self):
-        distro = self.makeDistroWithPublishDirectory()
-        script = self.makeScript(distro)
-        marker = os.path.join(
-            get_pub_config(distro).root_dir, "marker")
-        script.executeShell("touch %s" % marker)
-        self.assertTrue(file_exists(marker))
-
-    def test_executeShell_reports_failure_if_requested(self):
-        distro = self.makeDistroWithPublishDirectory()
-        script = self.makeScript(distro)
-
-        class ArbitraryFailure(Exception):
-            """Some exception that's not likely to come from elsewhere."""
-
-        self.assertRaises(
-            ArbitraryFailure,
-            script.executeShell, "/bin/false", failure=ArbitraryFailure())
-
-    def test_executeShell_does_not_report_failure_if_not_requested(self):
-        distro = self.makeDistroWithPublishDirectory()
-        script = self.makeScript(distro)
-        # The test is that this does not fail:
-        script.executeShell("/bin/false")
-
     def test_runFinalizeParts_passes_parameters(self):
         script = self.makeScript(self.prepareUbuntu())
         script.setUp()
         distro = script.distributions[0]
-        script.runParts = FakeMethod()
+        run_parts_fixture = self.useFixture(MonkeyPatch(
+            "lp.archivepublisher.scripts.publish_ftpmaster.run_parts",
+            FakeMethod()))
         script.runFinalizeParts(distro)
-        args, kwargs = script.runParts.calls[0]
-        run_distro, parts_dir, env = args
+        _, kwargs = run_parts_fixture.new_value.calls[0]
+        env = kwargs["env"]
         required_parameters = set(["ARCHIVEROOTS", "SECURITY_UPLOAD_ONLY"])
         missing_parameters = required_parameters.difference(set(env.keys()))
         self.assertEqual(set(), missing_parameters)
@@ -778,15 +754,11 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertContentEqual(
             [distro.main_archive, partner_archive], published_archives)
 
-    def test_runFinalizeParts_quotes_archiveroots(self):
-        # Passing ARCHIVEROOTS to the finalize.d scripts is a bit
-        # difficult because the variable holds multiple values in a
-        # single, double-quoted string.  Escaping and quoting a sequence
-        # of escaped and quoted items won't work.
-        # This test establishes how a script can sanely deal with the
-        # list.  It'll probably go wrong if the configured archive root
-        # contains spaces and such, but should work with Unix-sensible
-        # paths.
+    def test_runFinalizeParts_passes_archiveroots_correctly(self):
+        # The ARCHIVEROOTS environment variable may contain spaces, and
+        # these are passed through correctly.  It'll go wrong if the
+        # configured archive root contains whitespace, but works with
+        # Unix-sensible paths.
         distro = self.makeDistroWithPublishDirectory()
         self.factory.makeArchive(
             distribution=distro, purpose=ArchivePurpose.PARTNER)
