@@ -1,4 +1,4 @@
-# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test debian-installer custom uploads.
@@ -8,7 +8,9 @@ high-level tests of debian-installer upload and queue manipulation.
 """
 
 import os
+from textwrap import dedent
 
+from testtools.matchers import DirContains
 from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
@@ -160,6 +162,26 @@ class TestDebianInstaller(TestCaseWithFactory):
             0o644, os.stat(self.getInstallerPath(filename)).st_mode & 0o777)
         self.assertEqual(
             0o755, os.stat(self.getInstallerPath(directory)).st_mode & 0o777)
+
+    def test_sign_with_external_run_parts(self):
+        parts_directory = self.makeTemporaryDirectory()
+        sign_directory = os.path.join(
+            parts_directory, self.distro.name, "sign.d")
+        os.makedirs(sign_directory)
+        with open(os.path.join(sign_directory, "10-sign"), "w") as f:
+            f.write(dedent("""\
+                #! /bin/sh
+                touch "$OUTPUT_PATH"
+                """))
+            os.fchmod(f.fileno(), 0o755)
+        self.pushConfig("archivepublisher", run_parts_location=parts_directory)
+        self.openArchive()
+        self.addFile("images/list", "a list")
+        self.addFile("images/SHA256SUMS", "a checksum")
+        self.process()
+        self.assertThat(
+            self.getInstallerPath("images"),
+            DirContains(["list", "SHA256SUMS", "SHA256SUMS.gpg"]))
 
     def test_getSeriesKey_extracts_architecture(self):
         # getSeriesKey extracts the architecture from an upload's filename.

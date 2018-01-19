@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `CustomUploads`."""
@@ -13,13 +13,40 @@ import tarfile
 import tempfile
 import unittest
 
+from fixtures import MonkeyPatch
+from testtools.deferredruntest import AsynchronousDeferredRunTest
+from testtools.matchers import (
+    Equals,
+    MatchesDict,
+    Not,
+    PathExists,
+    )
+from twisted.internet import defer
+from zope.component import getUtility
+
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import (
     CustomUpload,
     CustomUploadTarballBadFile,
     CustomUploadTarballBadSymLink,
     CustomUploadTarballInvalidFileType,
     )
-from lp.testing import TestCase
+from lp.archivepublisher.interfaces.archivesigningkey import (
+    IArchiveSigningKey,
+    )
+from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.archivepublisher.tests.test_run_parts import RunPartsMixin
+from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.osutils import write_file
+from lp.soyuz.enums import ArchivePurpose
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.fakemethod import FakeMethod
+from lp.testing.gpgkeys import gpgkeysdir
+from lp.testing.keyserver import InProcessKeyServerFixture
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestCustomUpload(unittest.TestCase):
@@ -198,3 +225,68 @@ class TestTarfileVerification(TestCase):
                 self.custom_processor.extract)
         finally:
             shutil.rmtree(self.tarfile_path)
+
+
+class TestSigning(TestCaseWithFactory, RunPartsMixin):
+
+    layer = LaunchpadZopelessLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
+
+    def setUp(self):
+        super(TestSigning, self).setUp()
+        self.temp_dir = self.makeTemporaryDirectory()
+        self.distro = self.factory.makeDistribution()
+        db_pubconf = getUtility(IPublisherConfigSet).getByDistribution(
+            self.distro)
+        db_pubconf.root_dir = unicode(self.temp_dir)
+        self.archive = self.factory.makeArchive(
+            distribution=self.distro, purpose=ArchivePurpose.PRIMARY)
+
+    def test_sign_without_signing_key(self):
+        filename = os.path.join(
+            getPubConfig(self.archive).archiveroot, "file")
+        self.assertIsNone(self.archive.signing_key)
+        custom_processor = CustomUpload()
+        custom_processor.sign(self.archive, "suite", filename)
+        self.assertThat("%s.gpg" % filename, Not(PathExists()))
+
+    @defer.inlineCallbacks
+    def test_sign_with_signing_key(self):
+        filename = os.path.join(
+            getPubConfig(self.archive).archiveroot, "file")
+        write_file(filename, "contents")
+        self.assertIsNone(self.archive.signing_key)
+        self.useFixture(InProcessKeyServerFixture()).start()
+        key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
+        yield IArchiveSigningKey(self.archive).setSigningKey(
+            key_path, async_keyserver=True)
+        self.assertIsNotNone(self.archive.signing_key)
+        custom_processor = CustomUpload()
+        custom_processor.sign(self.archive, "suite", filename)
+        with open(filename) as cleartext_file:
+            cleartext = cleartext_file.read()
+            with open("%s.gpg" % filename) as signature_file:
+                signature = getUtility(IGPGHandler).getVerifiedSignature(
+                    cleartext, signature_file.read())
+        self.assertEqual(
+            self.archive.signing_key.fingerprint, signature.fingerprint)
+
+    def test_sign_with_external_run_parts(self):
+        self.enableRunParts(distribution_name=self.distro.name)
+        filename = os.path.join(
+            getPubConfig(self.archive).archiveroot, "file")
+        write_file(filename, "contents")
+        self.assertIsNone(self.archive.signing_key)
+        run_parts_fixture = self.useFixture(MonkeyPatch(
+            "lp.archivepublisher.archivesigningkey.run_parts", FakeMethod()))
+        custom_processor = CustomUpload()
+        custom_processor.sign(self.archive, "suite", filename)
+        args, kwargs = run_parts_fixture.new_value.calls[0]
+        self.assertEqual((self.distro.name, "sign.d"), args)
+        self.assertThat(kwargs["env"], MatchesDict({
+            "INPUT_PATH": Equals(filename),
+            "OUTPUT_PATH": Equals("%s.gpg" % filename),
+            "MODE": Equals("detached"),
+            "DISTRIBUTION": Equals(self.distro.name),
+            "SUITE": Equals("suite"),
+            }))

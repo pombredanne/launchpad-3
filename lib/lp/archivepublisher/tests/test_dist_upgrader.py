@@ -1,4 +1,4 @@
-# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test dist-upgrader custom uploads.
@@ -8,7 +8,9 @@ tests of dist-upgrader upload and queue manipulation.
 """
 
 import os
+from textwrap import dedent
 
+from testtools.matchers import DirContains
 from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
@@ -108,6 +110,26 @@ class TestDistUpgrader(TestCaseWithFactory):
         self.openArchive("20070219.1234")
         self.tarfile.add_file("foobar/foobar/dapper.tar.gz", "")
         self.assertRaises(DistUpgraderBadVersion, self.process)
+
+    def test_sign_with_external_run_parts(self):
+        parts_directory = self.makeTemporaryDirectory()
+        sign_directory = os.path.join(
+            parts_directory, self.distro.name, "sign.d")
+        os.makedirs(sign_directory)
+        with open(os.path.join(sign_directory, "10-sign"), "w") as f:
+            f.write(dedent("""\
+                #! /bin/sh
+                touch "$OUTPUT_PATH"
+                """))
+            os.fchmod(f.fileno(), 0o755)
+        self.pushConfig("archivepublisher", run_parts_location=parts_directory)
+        self.openArchive("20060302.0120")
+        self.tarfile.add_file("20060302.0120/list", "a list")
+        self.tarfile.add_file("20060302.0120/foo.tar.gz", "a tarball")
+        self.process()
+        self.assertThat(
+            os.path.join(self.getUpgraderPath(), "20060302.0120"),
+            DirContains(["list", "foo.tar.gz", "foo.tar.gz.gpg"]))
 
     def test_getSeriesKey_extracts_architecture(self):
         # getSeriesKey extracts the architecture from an upload's filename.

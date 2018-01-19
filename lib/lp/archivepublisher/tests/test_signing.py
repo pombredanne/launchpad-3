@@ -13,9 +13,11 @@ from fixtures import MonkeyPatch
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     Contains,
+    Equals,
     FileContains,
     Matcher,
     MatchesAll,
+    MatchesDict,
     Mismatch,
     Not,
     StartsWith,
@@ -36,6 +38,7 @@ from lp.archivepublisher.signing import (
     SigningUpload,
     UefiUpload,
     )
+from lp.archivepublisher.tests.test_run_parts import RunPartsMixin
 from lp.services.osutils import write_file
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import ArchivePurpose
@@ -215,7 +218,7 @@ class TestSigningHelpers(TestCaseWithFactory):
         return os.path.join(pubconf.archiveroot, "dists", self.suite, "main")
 
 
-class TestSigning(TestSigningHelpers):
+class TestSigning(RunPartsMixin, TestSigningHelpers):
 
     def getSignedPath(self, loader_type, arch):
         return os.path.join(self.getDistsPath(), "signed",
@@ -933,6 +936,36 @@ class TestSigning(TestSigningHelpers):
                   "1.0/SHA256SUMS", "1.0/SHA256SUMS.gpg",
                   "1.0/signed.tar.gz",
                   ]]))
+
+    def test_checksumming_tree_signed_with_external_run_parts(self):
+        # Checksum files can be signed using an external run-parts helper.
+        # We disable subprocess.call because there's just too much going on,
+        # so we can't test this completely, but we can at least test that
+        # run_parts is called.
+        self.enableRunParts(distribution_name=self.distro.name)
+        run_parts_fixture = self.useFixture(MonkeyPatch(
+            "lp.archivepublisher.archivesigningkey.run_parts", FakeMethod()))
+        self.setUpUefiKeys()
+        self.setUpKmodKeys()
+        self.setUpOpalKeys()
+        self.openArchive("test", "1.0", "amd64")
+        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.opal", "")
+        self.process_emulate()
+        sha256file = os.path.join(self.getSignedPath("test", "amd64"),
+             "1.0", "SHA256SUMS")
+        self.assertTrue(os.path.exists(sha256file))
+        self.assertEqual(1, run_parts_fixture.new_value.call_count)
+        args, kwargs = run_parts_fixture.new_value.calls[-1]
+        self.assertEqual((self.distro.name, "sign.d"), args)
+        self.assertThat(kwargs["env"], MatchesDict({
+            "INPUT_PATH": Equals(sha256file),
+            "OUTPUT_PATH": Equals("%s.gpg" % sha256file),
+            "MODE": Equals("detached"),
+            "DISTRIBUTION": Equals(self.distro.name),
+            "SUITE": Equals(self.suite),
+            }))
 
 
 class TestUefi(TestSigningHelpers):
