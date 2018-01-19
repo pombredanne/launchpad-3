@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Infrastructure for handling custom uploads.
@@ -128,7 +128,7 @@ class CustomUpload:
             self.setTargetDirectory(archive, tarfile_path, suite)
             self.checkForConflicts()
             self.extract()
-            self.installFiles()
+            self.installFiles(archive, suite)
             self.fixCurrentSymlink()
         finally:
             self.cleanup()
@@ -268,7 +268,7 @@ class CustomUpload:
         if not os.path.isdir(parentdir):
             os.makedirs(parentdir, 0o755)
 
-    def installFiles(self):
+    def installFiles(self, archive, suite):
         """Install the files from the custom upload to the archive."""
         assert self.tmpdir is not None, "Must extract tarfile first"
         extracted = False

@@ -368,19 +368,19 @@ class SigningUpload(CustomUpload):
         if 'tarball' in self.signing_options:
             self.convertToTarball()
 
-    def installFiles(self):
+    def installFiles(self, archive, suite):
         """After installation hash and sign the installed result."""
         # Avoid circular import.
         from lp.archivepublisher.publishing import DirectoryHash
 
-        super(SigningUpload, self).installFiles()
+        super(SigningUpload, self).installFiles(archive, suite)
 
         versiondir = os.path.join(self.targetdir, self.version)
         with DirectoryHash(versiondir, self.temproot) as hasher:
             hasher.add_dir(versiondir)
         for checksum_path in hasher.checksum_paths:
-            if self.archive.signing_key is not None:
-                IArchiveSigningKey(self.archive).signFile(checksum_path)
+            if archive.signing_key is not None:
+                IArchiveSigningKey(archive).signFile(suite, checksum_path)
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)

@@ -30,17 +30,18 @@ from lp.testing.fakemethod import FakeMethod
 class RunPartsMixin:
     """Helper for run-parts tests."""
 
-    def enableRunParts(self, parts_directory=None):
+    def enableRunParts(self, parts_directory=None, distribution_name="ubuntu"):
         """Set up for run-parts execution.
 
         :param parts_directory: Base location for the run-parts directories.
             If omitted, a temporary directory will be used.
+        :param distribution_name: The name of the distribution to set up.
         """
         if parts_directory is None:
             parts_directory = self.makeTemporaryDirectory()
-            os.makedirs(os.path.join(
-                parts_directory, "ubuntu", "publish-distro.d"))
-            os.makedirs(os.path.join(parts_directory, "ubuntu", "finalize.d"))
+            for name in ("sign.d", "publish-distro.d", "finalize.d"):
+                os.makedirs(os.path.join(
+                    parts_directory, distribution_name, name))
         self.parts_directory = parts_directory
         self.pushConfig("archivepublisher", run_parts_location=parts_directory)
 
