@@ -1,4 +1,4 @@
-# Copyright 2012-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test UEFI custom uploads."""
@@ -13,10 +13,12 @@ from fixtures import MonkeyPatch
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     Contains,
+    FileContains,
     Matcher,
     MatchesAll,
     Mismatch,
     Not,
+    StartsWith,
     )
 from twisted.internet import defer
 from zope.component import getUtility
@@ -895,7 +897,10 @@ class TestSigning(TestSigningHelpers):
         sha256file = os.path.join(self.getSignedPath("test", "amd64"),
              "1.0", "SHA256SUMS")
         self.assertTrue(os.path.exists(sha256file))
-        self.assertTrue(os.path.exists(sha256file + '.gpg'))
+        self.assertThat(
+            sha256file + '.gpg',
+            FileContains(
+                matcher=StartsWith('-----BEGIN PGP SIGNATURE-----\n')))
 
     @defer.inlineCallbacks
     def test_checksumming_tree_signed_options_tarball(self):
@@ -915,7 +920,10 @@ class TestSigning(TestSigningHelpers):
         sha256file = os.path.join(self.getSignedPath("test", "amd64"),
              "1.0", "SHA256SUMS")
         self.assertTrue(os.path.exists(sha256file))
-        self.assertTrue(os.path.exists(sha256file + '.gpg'))
+        self.assertThat(
+            sha256file + '.gpg',
+            FileContains(
+                matcher=StartsWith('-----BEGIN PGP SIGNATURE-----\n')))
 
         tarfilename = os.path.join(self.getSignedPath("test", "amd64"),
             "1.0", "signed.tar.gz")
