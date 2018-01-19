@@ -67,6 +67,7 @@ from lp.archivepublisher.publishing import (
     I18nIndex,
     Publisher,
     )
+from lp.archivepublisher.tests.test_run_parts import RunPartsMixin
 from lp.archivepublisher.utils import RepositoryIndexFile
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -2925,7 +2926,7 @@ class TestUpdateByHashOverriddenDistsroot(TestUpdateByHash):
             os.rename(temporary_dists, original_dists)
 
 
-class TestPublisherRepositorySignatures(TestPublisherBase):
+class TestPublisherRepositorySignatures(RunPartsMixin, TestPublisherBase):
     """Testing `Publisher` signature behaviour."""
 
     run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
@@ -3057,6 +3058,54 @@ class TestPublisherRepositorySignatures(TestPublisherBase):
             inline_signature.fingerprint,
             cprov.archive.signing_key.fingerprint)
         self.assertEqual(release_content, inline_signature.plain_data)
+
+        # The publisher synchronises the various Release file timestamps.
+        self.assertEqual(1, self.archive_publisher._syncTimestamps.call_count)
+        sync_args = self.archive_publisher._syncTimestamps.extract_args()[0]
+        self.assertEqual(self.distroseries.name, sync_args[0])
+        self.assertThat(
+            sync_args[1], ContainsAll(['Release', 'Release.gpg', 'InRelease']))
+
+    def testRepositorySignatureWithExternalRunParts(self):
+        """Check publisher behaviour when signing repositories.
+
+        When a 'sign.d' run-parts directory is configured for the archive,
+        it is used to sign the Release file.
+        """
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        self.assertIsNone(cprov.archive.signing_key)
+        self.enableRunParts(distribution_name=cprov.archive.distribution.name)
+        sign_directory = os.path.join(
+            self.parts_directory, cprov.archive.distribution.name, 'sign.d')
+        with open(os.path.join(sign_directory, '10-sign'), 'w') as sign_script:
+            sign_script.write(dedent("""\
+                #! /bin/sh
+                echo "$MODE signature of $INPUT_PATH ($DISTRIBUTION/$SUITE)" \\
+                    >"$OUTPUT_PATH"
+                """))
+            os.fchmod(sign_script.fileno(), 0o755)
+
+        self.setupPublisher(cprov.archive)
+        self.archive_publisher._syncTimestamps = FakeMethod()
+
+        self._publishArchive(cprov.archive)
+
+        # Release exists.
+        self.assertThat(self.release_file_path, PathExists())
+
+        # Release.gpg and InRelease exist with suitable fake signatures.
+        # Note that the signatures are made before Release.new is renamed to
+        # to Release.
+        self.assertThat(
+            self.release_file_signature_path,
+            FileContains(
+                "detached signature of %s.new (%s/breezy-autotest)\n" %
+                (self.release_file_path, cprov.archive.distribution.name)))
+        self.assertThat(
+            self.inline_release_file_path,
+            FileContains(
+                "clear signature of %s.new (%s/breezy-autotest)\n" %
+                (self.release_file_path, cprov.archive.distribution.name)))
 
         # The publisher synchronises the various Release file timestamps.
         self.assertEqual(1, self.archive_publisher._syncTimestamps.call_count)
