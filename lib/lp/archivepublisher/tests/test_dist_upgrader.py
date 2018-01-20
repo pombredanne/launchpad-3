@@ -23,6 +23,7 @@ from lp.archivepublisher.dist_upgrader import (
     DistUpgraderUpload,
     )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.archivepublisher.tests.test_run_parts import RunPartsMixin
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
@@ -35,7 +36,7 @@ class FakeConfig:
         self.archiveroot = archiveroot
 
 
-class TestDistUpgrader(TestCaseWithFactory):
+class TestDistUpgrader(RunPartsMixin, TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
@@ -112,17 +113,15 @@ class TestDistUpgrader(TestCaseWithFactory):
         self.assertRaises(DistUpgraderBadVersion, self.process)
 
     def test_sign_with_external_run_parts(self):
-        parts_directory = self.makeTemporaryDirectory()
-        sign_directory = os.path.join(
-            parts_directory, self.distro.name, "sign.d")
-        os.makedirs(sign_directory)
-        with open(os.path.join(sign_directory, "10-sign"), "w") as f:
+        self.enableRunParts(distribution_name=self.distro.name)
+        with open(os.path.join(
+                self.parts_directory, self.distro.name, "sign.d",
+                "10-sign"), "w") as f:
             f.write(dedent("""\
                 #! /bin/sh
                 touch "$OUTPUT_PATH"
                 """))
             os.fchmod(f.fileno(), 0o755)
-        self.pushConfig("archivepublisher", run_parts_location=parts_directory)
         self.openArchive("20060302.0120")
         self.tarfile.add_file("20060302.0120/list", "a list")
         self.tarfile.add_file("20060302.0120/foo.tar.gz", "a tarball")

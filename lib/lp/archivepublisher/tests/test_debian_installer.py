@@ -20,13 +20,14 @@ from lp.archivepublisher.customupload import (
     )
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.archivepublisher.tests.test_run_parts import RunPartsMixin
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessDatabaseLayer
 
 
-class TestDebianInstaller(TestCaseWithFactory):
+class TestDebianInstaller(RunPartsMixin, TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
@@ -164,17 +165,15 @@ class TestDebianInstaller(TestCaseWithFactory):
             0o755, os.stat(self.getInstallerPath(directory)).st_mode & 0o777)
 
     def test_sign_with_external_run_parts(self):
-        parts_directory = self.makeTemporaryDirectory()
-        sign_directory = os.path.join(
-            parts_directory, self.distro.name, "sign.d")
-        os.makedirs(sign_directory)
-        with open(os.path.join(sign_directory, "10-sign"), "w") as f:
+        self.enableRunParts(distribution_name=self.distro.name)
+        with open(os.path.join(
+                self.parts_directory, self.distro.name, "sign.d",
+                "10-sign"), "w") as f:
             f.write(dedent("""\
                 #! /bin/sh
                 touch "$OUTPUT_PATH"
                 """))
             os.fchmod(f.fileno(), 0o755)
-        self.pushConfig("archivepublisher", run_parts_location=parts_directory)
         self.openArchive()
         self.addFile("images/list", "a list")
         self.addFile("images/SHA256SUMS", "a checksum")
