@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap packages."""
@@ -55,7 +55,10 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.sqlbase import flush_database_caches
-from lp.services.features.testing import FeatureFixture
+from lp.services.features.testing import (
+    FeatureFixture,
+    MemoryFeatureFixture,
+    )
 from lp.services.log.logger import BufferLogger
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import OAuthPermission
@@ -489,11 +492,13 @@ class TestSnap(TestCaseWithFactory):
             return build
 
         snap = self.factory.makeSnap()
-        recorder1, recorder2 = record_two_runs(
-            lambda: snap.getBuildSummariesForSnapBuildIds(
-                build.id for build in snap.builds),
-            lambda: snap_build_creator(snap),
-            1, 5)
+        # Use an in-memory feature controller to avoid feature flag queries.
+        with MemoryFeatureFixture({}):
+            recorder1, recorder2 = record_two_runs(
+                lambda: snap.getBuildSummariesForSnapBuildIds(
+                    build.id for build in snap.builds),
+                lambda: snap_build_creator(snap),
+                1, 5)
         self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 
