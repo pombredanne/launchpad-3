@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A file in an archive."""
@@ -33,6 +33,7 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
+from lp.services.database.sqlbase import convert_storm_clause_to_string
 from lp.services.database.stormexpr import BulkUpdate
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import (
@@ -175,22 +176,20 @@ class ArchiveFileSet:
         # XXX cjwatson 2016-03-30 bug=322972: Requires manual SQL due to
         # lack of support for DELETE FROM ... USING ... in Storm.
         clauses = [
-            "ArchiveFile.archive = ?",
-            "ArchiveFile.scheduled_deletion_date < "
-                "CURRENT_TIMESTAMP AT TIME ZONE 'UTC'",
-            "ArchiveFile.library_file = LibraryFileAlias.id",
-            "LibraryFileAlias.content = LibraryFileContent.id",
+            ArchiveFile.archive == archive,
+            ArchiveFile.scheduled_deletion_date < UTC_NOW,
+            ArchiveFile.library_file_id == LibraryFileAlias.id,
+            LibraryFileAlias.contentID == LibraryFileContent.id,
             ]
-        values = [archive.id]
         if container is not None:
-            clauses.append("ArchiveFile.container = ?")
-            values.append(container)
+            clauses.append(ArchiveFile.container == container)
+        where = convert_storm_clause_to_string(And(*clauses))
         return list(IMasterStore(ArchiveFile).execute("""
             DELETE FROM ArchiveFile
             USING LibraryFileAlias, LibraryFileContent
-            WHERE """ + " AND ".join(clauses) + """
+            WHERE """ + where + """
             RETURNING
                 ArchiveFile.container,
                 ArchiveFile.path,
                 LibraryFileContent.sha256
-            """, values))
+            """))
