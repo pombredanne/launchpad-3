@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -31,7 +31,6 @@ from zope.interface import (
     )
 
 from lp.app import versioninfo
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import IFinishReadOnlyRequestEvent
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import (
@@ -53,10 +52,7 @@ from lp.testing import (
     EventRecorder,
     TestCase,
     )
-from lp.testing.layers import (
-    FunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
+from lp.testing.layers import FunctionalLayer
 
 
 class SetInWSGIEnvironmentTestCase(TestCase):
@@ -699,7 +695,7 @@ class LoggingTransaction:
         self.log.append("ABORT")
 
 
-class TestFinishReadOnlyRequestMixin:
+class TestFinishReadOnlyRequest(TestCase):
     # Publications that have a finishReadOnlyRequest() method are obliged to
     # fire an IFinishReadOnlyRequestEvent.
 
@@ -730,35 +726,16 @@ class TestFinishReadOnlyRequestMixin:
         self.assertIs(fake_request, finish_event.request)
         self.assertIs(fake_object, finish_event.object)
 
-class TestFinishReadOnlyRequest(TestFinishReadOnlyRequestMixin, TestCase):
-
     def test_WebServicePub_fires_FinishReadOnlyRequestEvent(self):
         # WebServicePublication.finishReadOnlyRequest() issues an
-        # IFinishReadOnlyRequestEvent and commits the transaction.
+        # IFinishReadOnlyRequestEvent and aborts the transaction.
         publication = WebServicePublication(None)
-        self._test_publication(publication, ["COMMIT"])
+        self._test_publication(publication, ["ABORT"])
 
     def test_LaunchpadBrowserPub_fires_FinishReadOnlyRequestEvent(self):
         # LaunchpadBrowserPublication.finishReadOnlyRequest() issues an
         # IFinishReadOnlyRequestEvent and aborts the transaction.
         publication = LaunchpadBrowserPublication(None)
-        self._test_publication(publication, ["ABORT"])
-
-
-class TestFinishReadOnlyRequestFeatureFlag(
-        TestFinishReadOnlyRequestMixin, TestCase):
-
-    layer = ZopelessDatabaseLayer
-
-    def test_WebServicePub_aborts_if_read_only_commit_disabled(self):
-        # If the webservice.read_only_commit.disabled feature flag is set,
-        # WebServicePublication.finishReadOnlyRequest() behaves like
-        # LaunchpadBrowserPublication.finishReadOnlyRequest() and aborts the
-        # transaction.  (This is intended to be the default behaviour in
-        # future.)
-        self.useFixture(FeatureFixture(
-            {'webservice.read_only_commit.disabled': 'on'}))
-        publication = WebServicePublication(None)
         self._test_publication(publication, ["ABORT"])
 
 

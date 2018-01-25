@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Definition of the internet servers that Launchpad uses."""
@@ -31,7 +31,6 @@ from zope.app.publication.requestpublicationregistry import (
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import getUtility
-from zope.event import notify
 from zope.formlib.itemswidgets import MultiDataHelper
 from zope.formlib.widget import SimpleInputWidget
 from zope.interface import (
@@ -64,10 +63,7 @@ from lp.app import versioninfo
 from lp.app.errors import UnexpectedFormData
 import lp.layers
 from lp.services.config import config
-from lp.services.features import (
-    get_relevant_feature_controller,
-    getFeatureFlag,
-    )
+from lp.services.features import get_relevant_feature_controller
 from lp.services.features.flags import NullFeatureController
 from lp.services.feeds.interfaces.application import IFeedsApplication
 from lp.services.feeds.interfaces.feed import IFeed
@@ -87,7 +83,6 @@ from lp.services.webapp.authorization import (
     )
 from lp.services.webapp.errorlog import ErrorReportRequest
 from lp.services.webapp.interfaces import (
-    FinishReadOnlyRequestEvent,
     IBasicLaunchpadRequest,
     IBrowserFormNG,
     IFavicon,
@@ -1240,24 +1235,6 @@ class WebServicePublication(WebServicePublicationMixin,
             return ob
         else:
             return super(WebServicePublication, self).getResource(request, ob)
-
-    def finishReadOnlyRequest(self, request, ob, txn):
-        """Commit the transaction even though there should be no writes."""
-        if getFeatureFlag('webservice.read_only_commit.disabled'):
-            super(WebServicePublication, self).finishReadOnlyRequest(
-                request, ob, txn)
-        else:
-            # WebServicePublication used to commit on every request to store
-            # OAuthNonces to prevent replay attacks. But TLS prevents replay
-            # attacks too, so we don't bother with nonces any more. However,
-            # this commit will stay here until we can switch it off in a
-            # controlled test to ensure that nothing depends on it on prod.
-            notify(FinishReadOnlyRequestEvent(ob, request))
-            # Transaction commits usually need to be aware of the
-            # possibility of a doomed transaction.  We do not expect that
-            # this code will encounter doomed transactions.  If it does,
-            # this will need to be revisited.
-            txn.commit()
 
     def getPrincipal(self, request):
         """See `LaunchpadBrowserPublication`.
