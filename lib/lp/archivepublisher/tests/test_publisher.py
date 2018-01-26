@@ -2653,14 +2653,18 @@ class TestUpdateByHash(TestPublisherBase):
 
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
-        contents = set()
+        top_contents = set()
+        with open(suite_path('Release'), 'rb') as f:
+            top_contents.add(f.read())
+        main_contents = set()
         for name in ('Release', 'Sources.gz', 'Sources.bz2'):
             with open(suite_path('main', 'source', name), 'rb') as f:
-                contents.add(f.read())
+                main_contents.add(f.read())
 
+        self.assertThat(suite_path('by-hash'), ByHashHasContents(top_contents))
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
-            ByHashHasContents(contents))
+            ByHashHasContents(main_contents))
 
         archive_files = getUtility(IArchiveFileSet).getByArchive(
             self.ubuntutest.main_archive)
@@ -2682,8 +2686,11 @@ class TestUpdateByHash(TestPublisherBase):
 
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
+        top_contents = set()
         main_contents = set()
         universe_contents = set()
+        with open(suite_path('Release'), 'rb') as f:
+            top_contents.add(f.read())
         for name in ('Release', 'Sources.gz', 'Sources.bz2'):
             with open(suite_path('main', 'source', name), 'rb') as f:
                 main_contents.add(f.read())
@@ -2694,10 +2701,13 @@ class TestUpdateByHash(TestPublisherBase):
         self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
         flush_database_caches()
 
+        with open(suite_path('Release'), 'rb') as f:
+            top_contents.add(f.read())
         for name in ('Release', 'Sources.gz', 'Sources.bz2'):
             with open(suite_path('main', 'source', name), 'rb') as f:
                 main_contents.add(f.read())
 
+        self.assertThat(suite_path('by-hash'), ByHashHasContents(top_contents))
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
             ByHashHasContents(main_contents))
@@ -2708,7 +2718,8 @@ class TestUpdateByHash(TestPublisherBase):
         archive_files = getUtility(IArchiveFileSet).getByArchive(
             self.ubuntutest.main_archive)
         self.assertContentEqual(
-            ['dists/breezy-autotest/main/source/Sources.bz2',
+            ['dists/breezy-autotest/Release',
+             'dists/breezy-autotest/main/source/Sources.bz2',
              'dists/breezy-autotest/main/source/Sources.gz'],
             [archive_file.path for archive_file in archive_files
              if archive_file.scheduled_deletion_date is not None])
@@ -2724,6 +2735,10 @@ class TestUpdateByHash(TestPublisherBase):
             os.path.join, self.config.distsroot, 'breezy-autotest')
         self.setUpMockTime()
 
+        def get_release_contents():
+            with open(suite_path('Release')) as f:
+                return f.read()
+
         # Create the first file.
         with open_for_writing(suite_path('Contents-i386'), 'w') as f:
             f.write('A Contents file\n')
@@ -2731,9 +2746,13 @@ class TestUpdateByHash(TestPublisherBase):
             self.breezy_autotest, PackagePublishingPocket.RELEASE)
         self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
         flush_database_caches()
-        self.assertHasSuiteFiles(('Contents-*',), ('Contents-i386', None))
+        self.assertHasSuiteFiles(
+            ('Contents-*', 'Release'),
+            ('Contents-i386', None), ('Release', None))
+        releases = [get_release_contents()]
         self.assertThat(
-            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+            suite_path('by-hash'),
+            ByHashHasContents(['A Contents file\n'] + releases))
 
         # Add a second identical file.
         with open_for_writing(suite_path('Contents-hppa'), 'w') as f:
@@ -2742,10 +2761,13 @@ class TestUpdateByHash(TestPublisherBase):
         self.runSteps(publisher, step_d=True)
         flush_database_caches()
         self.assertHasSuiteFiles(
-            ('Contents-*',),
-            ('Contents-i386', None), ('Contents-hppa', None))
+            ('Contents-*', 'Release'),
+            ('Contents-i386', None), ('Contents-hppa', None),
+            ('Release', self.times[1]), ('Release', None))
+        releases.append(get_release_contents())
         self.assertThat(
-            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+            suite_path('by-hash'),
+            ByHashHasContents(['A Contents file\n'] + releases))
 
         # Delete the first file, but allow it its stay of execution.
         os.unlink(suite_path('Contents-i386'))
@@ -2753,23 +2775,32 @@ class TestUpdateByHash(TestPublisherBase):
         self.runSteps(publisher, step_d=True)
         flush_database_caches()
         self.assertHasSuiteFiles(
-            ('Contents-*',),
-            ('Contents-i386', self.times[2]), ('Contents-hppa', None))
+            ('Contents-*', 'Release'),
+            ('Contents-i386', self.times[2]), ('Contents-hppa', None),
+            ('Release', self.times[1]), ('Release', self.times[2]),
+            ('Release', None))
+        releases.append(get_release_contents())
         self.assertThat(
-            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+            suite_path('by-hash'),
+            ByHashHasContents(['A Contents file\n'] + releases))
 
         # A no-op run leaves the scheduled deletion date intact.
         self.advanceTime(delta=timedelta(hours=1))
         self.runSteps(publisher, step_d=True)
         flush_database_caches()
         self.assertHasSuiteFiles(
-            ('Contents-*',),
-            ('Contents-i386', self.times[2]), ('Contents-hppa', None))
+            ('Contents-*', 'Release'),
+            ('Contents-i386', self.times[2]), ('Contents-hppa', None),
+            ('Release', self.times[1]), ('Release', self.times[2]),
+            ('Release', self.times[3]), ('Release', None))
+        releases.append(get_release_contents())
         self.assertThat(
-            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+            suite_path('by-hash'),
+            ByHashHasContents(['A Contents file\n'] + releases))
 
         # Arrange for the first file to be pruned, and delete the second
-        # file.
+        # file.  This also puts us past the stay of execution of the first
+        # two Release files.
         i386_file = getUtility(IArchiveFileSet).getByArchive(
             self.ubuntutest.main_archive,
             path=u'dists/breezy-autotest/Contents-i386').one()
@@ -2779,11 +2810,17 @@ class TestUpdateByHash(TestPublisherBase):
         self.runSteps(publisher, step_d=True)
         flush_database_caches()
         self.assertHasSuiteFiles(
-            ('Contents-*',), ('Contents-hppa', self.times[4]))
+            ('Contents-*', 'Release'),
+            ('Contents-hppa', self.times[4]),
+            ('Release', self.times[3]), ('Release', self.times[4]),
+            ('Release', None))
+        releases.append(get_release_contents())
         self.assertThat(
-            suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
+            suite_path('by-hash'),
+            ByHashHasContents(['A Contents file\n'] + releases[2:]))
 
-        # Arrange for the second file to be pruned.
+        # Arrange for the second file to be pruned.  This also puts us past
+        # the stay of execution of the first two remaining Release files.
         hppa_file = getUtility(IArchiveFileSet).getByArchive(
             self.ubuntutest.main_archive,
             path=u'dists/breezy-autotest/Contents-hppa').one()
@@ -2791,8 +2828,11 @@ class TestUpdateByHash(TestPublisherBase):
             absolute=hppa_file.scheduled_deletion_date + timedelta(minutes=5))
         self.runSteps(publisher, step_d=True)
         flush_database_caches()
-        self.assertHasSuiteFiles(('Contents-*',))
-        self.assertThat(suite_path('by-hash'), Not(PathExists()))
+        self.assertHasSuiteFiles(
+            ('Contents-*', 'Release'),
+            ('Release', self.times[5]), ('Release', None))
+        releases.append(get_release_contents())
+        self.assertThat(suite_path('by-hash'), ByHashHasContents(releases[4:]))
 
     def test_reprieve(self):
         # If a newly-modified index file is identical to a
@@ -2861,11 +2901,14 @@ class TestUpdateByHash(TestPublisherBase):
 
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
+        top_contents = []
         main_contents = []
         for sourcename in ('foo', 'bar', 'baz'):
             self.getPubSource(
                 sourcename=sourcename, filecontent='Source: %s\n' % sourcename)
             self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
+            with open(suite_path('Release'), 'rb') as f:
+                top_contents.append(f.read())
             for name in ('Release', 'Sources.gz', 'Sources.bz2'):
                 with open(suite_path('main', 'source', name), 'rb') as f:
                     main_contents.append(f.read())
@@ -2877,10 +2920,13 @@ class TestUpdateByHash(TestPublisherBase):
         # that it doesn't change.
         expected_suite_files = (
             list(product(
-                ('main/source/Sources.gz', 'main/source/Sources.bz2'),
+                ('main/source/Sources.gz', 'main/source/Sources.bz2',
+                 'Release'),
                 (self.times[1], self.times[2], None))) +
             [('main/source/Release', None)])
-        self.assertHasSuiteFiles(('main/source/*',), *expected_suite_files)
+        self.assertHasSuiteFiles(
+            ('main/source/*', 'Release'), *expected_suite_files)
+        self.assertThat(suite_path('by-hash'), ByHashHasContents(top_contents))
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
             ByHashHasContents(main_contents))
@@ -2890,14 +2936,15 @@ class TestUpdateByHash(TestPublisherBase):
         self.advanceTime(
             absolute=self.times[1] + timedelta(
                 days=BY_HASH_STAY_OF_EXECUTION, hours=1))
+        del top_contents[0]
         del main_contents[:3]
 
-        return main_contents
+        return top_contents, main_contents
 
     def test_prune(self):
         # The publisher prunes files from by-hash that were condemned more
         # than a day ago.
-        main_contents = self.setUpPruneableSuite()
+        top_contents, main_contents = self.setUpPruneableSuite()
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
 
@@ -2915,8 +2962,11 @@ class TestUpdateByHash(TestPublisherBase):
             list(product(
                 ('main/source/Sources.gz', 'main/source/Sources.bz2'),
                 (self.times[2], None))) +
-            [('main/source/Release', None)])
-        self.assertHasSuiteFiles(('main/source/*',), *expected_suite_files)
+            [('main/source/Release', None),
+             ('Release', self.times[2]), ('Release', None)])
+        self.assertHasSuiteFiles(
+            ('main/source/*', 'Release'), *expected_suite_files)
+        self.assertThat(suite_path('by-hash'), ByHashHasContents(top_contents))
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
             ByHashHasContents(main_contents))
@@ -2924,7 +2974,7 @@ class TestUpdateByHash(TestPublisherBase):
     def test_prune_immutable(self):
         # The publisher prunes by-hash files from immutable suites, but
         # doesn't regenerate the Release file in that case.
-        main_contents = self.setUpPruneableSuite()
+        top_contents, main_contents = self.setUpPruneableSuite()
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
         release_path = suite_path('Release')
@@ -2946,8 +2996,11 @@ class TestUpdateByHash(TestPublisherBase):
             list(product(
                 ('main/source/Sources.gz', 'main/source/Sources.bz2'),
                 (self.times[2], None))) +
-            [('main/source/Release', None)])
-        self.assertHasSuiteFiles(('main/source/*',), *expected_suite_files)
+            [('main/source/Release', None),
+             ('Release', self.times[2]), ('Release', None)])
+        self.assertHasSuiteFiles(
+            ('main/source/*', 'Release'), *expected_suite_files)
+        self.assertThat(suite_path('by-hash'), ByHashHasContents(top_contents))
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
             ByHashHasContents(main_contents))
