@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the branch filesystem."""
@@ -254,19 +254,18 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, BzrTestCase):
         return LaunchpadServer(
             XMLRPCWrapper(codehosting_api), user_id, MemoryTransport())
 
+    @defer.inlineCallbacks
     def test_translateControlPath(self):
         branch = self.factory.makeProductBranch(owner=self.requester)
         self.factory.enableDefaultStackingForProduct(branch.product, branch)
-        deferred = self.server.translateVirtualPath(
+        transport, path = yield self.server.translateVirtualPath(
             '~%s/%s/.bzr/control.conf'
             % (branch.owner.name, branch.product.name))
+        self.assertEqual(
+            'default_stack_on = %s\n' % branch_id_alias(branch),
+            transport.get_bytes(path))
 
-        def check_control_file((transport, path)):
-            self.assertEqual(
-                'default_stack_on = %s\n' % branch_id_alias(branch),
-                transport.get_bytes(path))
-        return deferred.addCallback(check_control_file)
-
+    @defer.inlineCallbacks
     def test_translate_branch_path_hosted(self):
         # translateVirtualPath returns a writable transport like that returned
         # by TransportDispatch.makeTransport for branches we can write to.
@@ -277,30 +276,25 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, BzrTestCase):
             '.bzr/README'))
         expected_transport, expected_path = dispatch
 
-        deferred = self.server.translateVirtualPath(
+        transport, path = yield self.server.translateVirtualPath(
             '%s/.bzr/README' % (branch.unique_name,))
+        self.assertEqual(expected_path, path)
+        # Can't test for equality of transports, since URLs and object
+        # identity differ.
+        file_data = self.factory.getUniqueString()
+        transport.mkdir(os.path.dirname(path))
+        transport.put_bytes(path, file_data)
+        self.assertEqual(file_data, expected_transport.get_bytes(path))
 
-        def check_branch_transport((transport, path)):
-            self.assertEqual(expected_path, path)
-            # Can't test for equality of transports, since URLs and object
-            # identity differ.
-            file_data = self.factory.getUniqueString()
-            transport.mkdir(os.path.dirname(path))
-            transport.put_bytes(path, file_data)
-            self.assertEqual(file_data, expected_transport.get_bytes(path))
-        return deferred.addCallback(check_branch_transport)
-
+    @defer.inlineCallbacks
     def test_translate_branch_path_mirrored(self):
         # translateVirtualPath returns a read-only transport for branches we
         # can't write to.
         branch = self.factory.makeAnyBranch(branch_type=BranchType.HOSTED)
-        deferred = self.server.translateVirtualPath(
+        transport, path = yield self.server.translateVirtualPath(
             '%s/.bzr/README' % (branch.unique_name,))
-
-        def check_branch_transport((transport, path)):
-            self.assertEqual('.bzr/README', path)
-            self.assertEqual(True, transport.is_readonly())
-        return deferred.addCallback(check_branch_transport)
+        self.assertEqual('.bzr/README', path)
+        self.assertEqual(True, transport.is_readonly())
 
     def test_createBranch_error_translation(self):
         # createBranch raises PermissionDenied if we try to create a branch
@@ -328,6 +322,7 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, BzrTestCase):
 class LaunchpadInternalServerTests:
     """Tests for the internal server classes, used by e.g. the scanner."""
 
+    @defer.inlineCallbacks
     def test_translate_branch_path(self):
         branch = self.factory.makeAnyBranch()
         dispatch = self.server._transport_dispatch.makeTransport((
@@ -335,18 +330,15 @@ class LaunchpadInternalServerTests:
             '.bzr/README'))
         expected_transport, expected_path = dispatch
 
-        deferred = self.server.translateVirtualPath(
+        transport, path = yield self.server.translateVirtualPath(
             '/%s/.bzr/README' % (branch.unique_name,))
-
-        def check_branch_transport((transport, path)):
-            self.assertEqual(expected_path, path)
-            # Can't test for equality of transports, since URLs and object
-            # identity differ.
-            file_data = self.factory.getUniqueString()
-            transport.mkdir(os.path.dirname(path))
-            transport.put_bytes(path, file_data)
-            self.assertEqual(file_data, expected_transport.get_bytes(path))
-        return deferred.addCallback(check_branch_transport)
+        self.assertEqual(expected_path, path)
+        # Can't test for equality of transports, since URLs and object
+        # identity differ.
+        file_data = self.factory.getUniqueString()
+        transport.mkdir(os.path.dirname(path))
+        transport.put_bytes(path, file_data)
+        self.assertEqual(file_data, expected_transport.get_bytes(path))
 
     def test_translate_control_dir_path(self):
         self.server.start_server()
