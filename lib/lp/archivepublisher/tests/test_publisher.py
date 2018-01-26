@@ -15,9 +15,11 @@ from datetime import (
     datetime,
     timedelta,
     )
+from fnmatch import fnmatch
 from functools import partial
 import gzip
 import hashlib
+from itertools import product
 from operator import attrgetter
 import os
 import shutil
@@ -27,10 +29,12 @@ from textwrap import dedent
 import time
 
 from debian.deb822 import Release
+from fixtures import MonkeyPatch
 try:
     import lzma
 except ImportError:
     from backports import lzma
+import mock
 import pytz
 from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
@@ -60,6 +64,7 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
 from lp.archivepublisher.publishing import (
+    BY_HASH_STAY_OF_EXECUTION,
     ByHash,
     ByHashes,
     DirectoryHash,
@@ -2541,6 +2546,22 @@ class TestFtparchiveIndices(TestArchiveIndices):
 class TestUpdateByHash(TestPublisherBase):
     """Tests for handling of by-hash files."""
 
+    def setUpMockTime(self):
+        """Start simulating the advance of time in the publisher."""
+        self.times = [datetime.now(pytz.UTC)]
+        mock_datetime = mock.patch('lp.archivepublisher.publishing.datetime')
+        mocked_datetime = mock_datetime.start()
+        self.addCleanup(mock_datetime.stop)
+        mocked_datetime.utcnow = lambda: self.times[-1].replace(tzinfo=None)
+        self.useFixture(MonkeyPatch(
+            'lp.soyuz.model.archivefile._now', lambda: self.times[-1]))
+
+    def advanceTime(self, delta=None, absolute=None):
+        if delta is not None:
+            self.times.append(self.times[-1] + delta)
+        else:
+            self.times.append(absolute)
+
     def runSteps(self, publisher, step_a=False, step_a2=False, step_c=False,
                  step_d=False):
         """Run publisher steps."""
@@ -2552,6 +2573,33 @@ class TestUpdateByHash(TestPublisherBase):
             publisher.C_doFTPArchive(False)
         if step_d:
             publisher.D_writeReleaseFiles(False)
+
+    @classmethod
+    def _makeScheduledDeletionDateMatcher(cls, condemned_at):
+        if condemned_at is None:
+            return Is(None)
+        else:
+            return Equals(
+                condemned_at + timedelta(days=BY_HASH_STAY_OF_EXECUTION))
+
+    def assertHasSuiteFiles(self, patterns, *properties):
+        def is_interesting(path):
+            return any(
+                fnmatch(path, 'dists/breezy-autotest/%s' % pattern)
+                for pattern in patterns)
+
+        files = [
+            archive_file
+            for archive_file in getUtility(IArchiveFileSet).getByArchive(
+                self.ubuntutest.main_archive)
+            if is_interesting(archive_file.path)]
+        matchers = []
+        for path, condemned_at in properties:
+            matchers.append(MatchesStructure(
+                path=Equals('dists/breezy-autotest/%s' % path),
+                scheduled_deletion_date=self._makeScheduledDeletionDateMatcher(
+                    condemned_at)))
+        self.assertThat(files, MatchesSetwise(*matchers))
 
     def test_disabled(self):
         # The publisher does not create by-hash directories if it is
@@ -2674,11 +2722,7 @@ class TestUpdateByHash(TestPublisherBase):
             self.ubuntutest.main_archive)
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
-        get_contents_files = lambda: [
-            archive_file
-            for archive_file in getUtility(IArchiveFileSet).getByArchive(
-                self.ubuntutest.main_archive)
-            if archive_file.path.startswith('dists/breezy-autotest/Contents-')]
+        self.setUpMockTime()
 
         # Create the first file.
         with open_for_writing(suite_path('Contents-i386'), 'w') as f:
@@ -2687,59 +2731,55 @@ class TestUpdateByHash(TestPublisherBase):
             self.breezy_autotest, PackagePublishingPocket.RELEASE)
         self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
         flush_database_caches()
-        matchers = [
-            MatchesStructure(
-                path=Equals('dists/breezy-autotest/Contents-i386'),
-                scheduled_deletion_date=Is(None))]
-        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertHasSuiteFiles(('Contents-*',), ('Contents-i386', None))
         self.assertThat(
             suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
 
         # Add a second identical file.
         with open_for_writing(suite_path('Contents-hppa'), 'w') as f:
             f.write('A Contents file\n')
+        self.advanceTime(delta=timedelta(hours=1))
         self.runSteps(publisher, step_d=True)
         flush_database_caches()
-        matchers.append(
-            MatchesStructure(
-                path=Equals('dists/breezy-autotest/Contents-hppa'),
-                scheduled_deletion_date=Is(None)))
-        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertHasSuiteFiles(
+            ('Contents-*',),
+            ('Contents-i386', None), ('Contents-hppa', None))
         self.assertThat(
             suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
 
         # Delete the first file, but allow it its stay of execution.
         os.unlink(suite_path('Contents-i386'))
+        self.advanceTime(delta=timedelta(hours=1))
         self.runSteps(publisher, step_d=True)
         flush_database_caches()
-        matchers[0] = matchers[0].update(scheduled_deletion_date=Not(Is(None)))
-        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertHasSuiteFiles(
+            ('Contents-*',),
+            ('Contents-i386', self.times[2]), ('Contents-hppa', None))
         self.assertThat(
             suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
 
         # A no-op run leaves the scheduled deletion date intact.
-        i386_file = getUtility(IArchiveFileSet).getByArchive(
-            self.ubuntutest.main_archive,
-            path=u'dists/breezy-autotest/Contents-i386').one()
-        i386_date = i386_file.scheduled_deletion_date
+        self.advanceTime(delta=timedelta(hours=1))
         self.runSteps(publisher, step_d=True)
         flush_database_caches()
-        matchers[0] = matchers[0].update(
-            scheduled_deletion_date=Equals(i386_date))
-        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertHasSuiteFiles(
+            ('Contents-*',),
+            ('Contents-i386', self.times[2]), ('Contents-hppa', None))
         self.assertThat(
             suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
 
         # Arrange for the first file to be pruned, and delete the second
         # file.
-        now = datetime.now(pytz.UTC)
-        removeSecurityProxy(i386_file).scheduled_deletion_date = (
-            now - timedelta(hours=1))
+        i386_file = getUtility(IArchiveFileSet).getByArchive(
+            self.ubuntutest.main_archive,
+            path=u'dists/breezy-autotest/Contents-i386').one()
+        self.advanceTime(
+            absolute=i386_file.scheduled_deletion_date + timedelta(minutes=5))
         os.unlink(suite_path('Contents-hppa'))
         self.runSteps(publisher, step_d=True)
         flush_database_caches()
-        matchers = [matchers[1].update(scheduled_deletion_date=Not(Is(None)))]
-        self.assertThat(get_contents_files(), MatchesSetwise(*matchers))
+        self.assertHasSuiteFiles(
+            ('Contents-*',), ('Contents-hppa', self.times[4]))
         self.assertThat(
             suite_path('by-hash'), ByHashHasContents(['A Contents file\n']))
 
@@ -2747,11 +2787,11 @@ class TestUpdateByHash(TestPublisherBase):
         hppa_file = getUtility(IArchiveFileSet).getByArchive(
             self.ubuntutest.main_archive,
             path=u'dists/breezy-autotest/Contents-hppa').one()
-        removeSecurityProxy(hppa_file).scheduled_deletion_date = (
-            now - timedelta(hours=1))
+        self.advanceTime(
+            absolute=hppa_file.scheduled_deletion_date + timedelta(minutes=5))
         self.runSteps(publisher, step_d=True)
         flush_database_caches()
-        self.assertContentEqual([], get_contents_files())
+        self.assertHasSuiteFiles(('Contents-*',))
         self.assertThat(suite_path('by-hash'), Not(PathExists()))
 
     def test_reprieve(self):
@@ -2765,6 +2805,7 @@ class TestUpdateByHash(TestPublisherBase):
         publisher = Publisher(
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
+        self.setUpMockTime()
 
         # Publish empty index files.
         publisher.markPocketDirty(
@@ -2789,15 +2830,8 @@ class TestUpdateByHash(TestPublisherBase):
             ByHashHasContents(main_contents))
 
         # Make the empty Sources file ready to prune.
-        old_archive_files = []
-        for archive_file in getUtility(IArchiveFileSet).getByArchive(
-                self.ubuntutest.main_archive):
-            if ('main/source' in archive_file.path and
-                    archive_file.scheduled_deletion_date is not None):
-                old_archive_files.append(archive_file)
-        self.assertEqual(1, len(old_archive_files))
-        removeSecurityProxy(old_archive_files[0]).scheduled_deletion_date = (
-            datetime.now(pytz.UTC) - timedelta(hours=1))
+        self.advanceTime(
+            delta=timedelta(days=BY_HASH_STAY_OF_EXECUTION, hours=1))
 
         # Delete the source package so that Sources is empty again.  The
         # empty file is reprieved and the non-empty one is condemned.
@@ -2818,6 +2852,7 @@ class TestUpdateByHash(TestPublisherBase):
                 ]))
 
     def setUpPruneableSuite(self):
+        self.setUpMockTime()
         self.breezy_autotest.publish_by_hash = True
         self.breezy_autotest.advertise_by_hash = True
         publisher = Publisher(
@@ -2826,40 +2861,36 @@ class TestUpdateByHash(TestPublisherBase):
 
         suite_path = partial(
             os.path.join, self.config.distsroot, 'breezy-autotest')
-        main_contents = set()
-        for sourcename in ('foo', 'bar'):
+        main_contents = []
+        for sourcename in ('foo', 'bar', 'baz'):
             self.getPubSource(
                 sourcename=sourcename, filecontent='Source: %s\n' % sourcename)
             self.runSteps(publisher, step_a=True, step_c=True, step_d=True)
             for name in ('Release', 'Sources.gz', 'Sources.bz2'):
                 with open(suite_path('main', 'source', name), 'rb') as f:
-                    main_contents.add(f.read())
+                    main_contents.append(f.read())
+            self.advanceTime(delta=timedelta(hours=6))
         transaction.commit()
 
+        # We have two condemned sets of index files and one uncondemned set.
+        # main/source/Release contains a small enough amount of information
+        # that it doesn't change.
+        expected_suite_files = (
+            list(product(
+                ('main/source/Sources.gz', 'main/source/Sources.bz2'),
+                (self.times[1], self.times[2], None))) +
+            [('main/source/Release', None)])
+        self.assertHasSuiteFiles(('main/source/*',), *expected_suite_files)
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
             ByHashHasContents(main_contents))
-        old_archive_files = []
-        for archive_file in getUtility(IArchiveFileSet).getByArchive(
-                self.ubuntutest.main_archive):
-            if ('main/source' in archive_file.path and
-                    archive_file.scheduled_deletion_date is not None):
-                old_archive_files.append(archive_file)
-        self.assertEqual(2, len(old_archive_files))
 
-        now = datetime.now(pytz.UTC)
-        removeSecurityProxy(old_archive_files[0]).scheduled_deletion_date = (
-            now + timedelta(hours=12))
-        removeSecurityProxy(old_archive_files[1]).scheduled_deletion_date = (
-            now - timedelta(hours=12))
-        old_archive_files[1].library_file.open()
-        try:
-            main_contents.remove(old_archive_files[1].library_file.read())
-        finally:
-            old_archive_files[1].library_file.close()
-        self.assertThat(
-            suite_path('main', 'source', 'by-hash'),
-            Not(ByHashHasContents(main_contents)))
+        # Advance time to the point where the first condemned set of index
+        # files is scheduled for deletion.
+        self.advanceTime(
+            absolute=self.times[1] + timedelta(
+                days=BY_HASH_STAY_OF_EXECUTION, hours=1))
+        del main_contents[:3]
 
         return main_contents
 
@@ -2876,7 +2907,16 @@ class TestUpdateByHash(TestPublisherBase):
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
         self.runSteps(publisher, step_a2=True, step_c=True, step_d=True)
+        transaction.commit()
         self.assertEqual(set(), publisher.dirty_pockets)
+        # The condemned index files are removed, and no new Release file is
+        # generated.
+        expected_suite_files = (
+            list(product(
+                ('main/source/Sources.gz', 'main/source/Sources.bz2'),
+                (self.times[2], None))) +
+            [('main/source/Release', None)])
+        self.assertHasSuiteFiles(('main/source/*',), *expected_suite_files)
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
             ByHashHasContents(main_contents))
@@ -2897,8 +2937,17 @@ class TestUpdateByHash(TestPublisherBase):
             self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
         self.runSteps(publisher, step_a2=True, step_c=True, step_d=True)
+        transaction.commit()
         self.assertEqual(set(), publisher.dirty_pockets)
         self.assertEqual(release_mtime, os.stat(release_path).st_mtime)
+        # The condemned index files are removed, and no new Release file is
+        # generated.
+        expected_suite_files = (
+            list(product(
+                ('main/source/Sources.gz', 'main/source/Sources.bz2'),
+                (self.times[2], None))) +
+            [('main/source/Release', None)])
+        self.assertHasSuiteFiles(('main/source/*',), *expected_suite_files)
         self.assertThat(
             suite_path('main', 'source', 'by-hash'),
             ByHashHasContents(main_contents))

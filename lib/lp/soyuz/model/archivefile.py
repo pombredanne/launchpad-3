@@ -77,6 +77,15 @@ class ArchiveFile(Storm):
         self.scheduled_deletion_date = None
 
 
+def _now():
+    """Get the current transaction timestamp.
+
+    Tests can override this with a Storm expression or a `datetime` to
+    simulate time changes.
+    """
+    return UTC_NOW
+
+
 @implementer(IArchiveFileSet)
 class ArchiveFileSet:
     """See `IArchiveFileSet`."""
@@ -129,7 +138,7 @@ class ArchiveFileSet:
             ArchiveFile.library_file == LibraryFileAlias.id,
             LibraryFileAlias.content == LibraryFileContent.id,
             ]
-        new_date = UTC_NOW + stay_of_execution
+        new_date = _now() + stay_of_execution
         return_columns = [
             ArchiveFile.container, ArchiveFile.path, LibraryFileContent.sha256]
         return list(IMasterStore(ArchiveFile).execute(Returning(
@@ -163,7 +172,7 @@ class ArchiveFileSet:
     def getContainersToReap(archive, container_prefix=None):
         clauses = [
             ArchiveFile.archive == archive,
-            ArchiveFile.scheduled_deletion_date < UTC_NOW,
+            ArchiveFile.scheduled_deletion_date < _now(),
             ]
         if container_prefix is not None:
             clauses.append(ArchiveFile.container.startswith(container_prefix))
@@ -177,7 +186,7 @@ class ArchiveFileSet:
         # lack of support for DELETE FROM ... USING ... in Storm.
         clauses = [
             ArchiveFile.archive == archive,
-            ArchiveFile.scheduled_deletion_date < UTC_NOW,
+            ArchiveFile.scheduled_deletion_date < _now(),
             ArchiveFile.library_file_id == LibraryFileAlias.id,
             LibraryFileAlias.contentID == LibraryFileContent.id,
             ]
