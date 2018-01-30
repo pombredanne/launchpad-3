@@ -1284,18 +1284,13 @@ class WebServicePublication(WebServicePublicationMixin,
 
         if consumer is None:
             if anonymous_request:
-                # This is the first time anyone has tried to make an
-                # anonymous request using this consumer name (or user
-                # agent). Dynamically create the consumer.
-                #
-                # In the normal website this wouldn't be possible
-                # because GET requests have their transactions rolled
-                # back. But webservice requests always have their
-                # transactions committed so that we can keep track of
-                # the OAuth nonces and prevent replay attacks.
+                # Require a consumer key (or user agent) to be present, so
+                # that we can apply throttling if necessary.  But webservice
+                # GET requests have their transactions rolled back, and at
+                # the moment we don't do anything with the consumer in this
+                # case, so there's no point dynamically creating a consumer.
                 if consumer_key == '' or consumer_key is None:
                     raise TokenException("No consumer key specified.")
-                consumer = consumers.new(consumer_key, '')
             else:
                 # An unknown consumer can never make a non-anonymous
                 # request, because access tokens are registered with a
