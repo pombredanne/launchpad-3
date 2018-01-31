@@ -64,14 +64,6 @@
     </div>
   </div>
 
-  <div class="yui-g">
-    <div id="repository-branches" class="portlet"
-         tal:define="branches view/branches">
-      <h2>Branches</h2>
-      <tal:repository-branches replace="structure branches/@@+ref-listing" />
-    </div>
-  </div>
-
   <div class="yui-g" tal:condition="context/pending_updates">
     <div class="portlet">
       <div id="repository-pending-updates" class="pending-update">
@@ -81,6 +73,14 @@
           be available shortly. Reload to see the changes.
         </p>
       </div>
+    </div>
+  </div>
+
+  <div class="yui-g">
+    <div id="repository-branches" class="portlet"
+         tal:define="branches view/branches">
+      <h2>Branches</h2>
+      <tal:repository-branches replace="structure branches/@@+ref-listing" />
     </div>
   </div>
 
