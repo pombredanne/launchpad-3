@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -699,10 +699,7 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
 
     def getCodebrowseUrl(self, *extras):
         """See `IBranch`."""
-        if self.private:
-            root = config.codehosting.secure_codebrowse_root
-        else:
-            root = config.codehosting.codebrowse_root
+        root = config.codehosting.secure_codebrowse_root
         return urlutils.join(root, self.unique_name, *extras)
 
     def getCodebrowseUrlForRevision(self, revision):
