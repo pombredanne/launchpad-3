@@ -2,7 +2,7 @@
 
 `IGPGHandler` is a utility designed to handle OpenPGP (GPG) operations.
 
-The following operation are supported:
+The following operations are supported:
 
  * Importing public and secret keys;
  * Generating a new key;
@@ -258,29 +258,6 @@ The public key is also available.
 
     >>> print pub_key.can_sign
     True
-
-
-== Keyserver URLs ==
-
-The gpghandler can also provide us with convenient links to the
-keyserver web interface. By default the action is to display the index
-page. Notice that the fingerprint must be the 40-byte fingerprint,
-to avoid the retrieval of more than one key.
-
-    >>> fingerprint = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
-    >>> gpghandler.getURLForKeyInServer(fingerprint)
-    'http://localhost:11371/pks/lookup?fingerprint=on&op=index&search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543'
-
-But you can also specify your own action:
-
-    >>> gpghandler.getURLForKeyInServer(fingerprint, action="get")
-    'http://localhost:11371/pks/lookup?fingerprint=on&op=get&search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543'
-
-The method accepts a flag to retrieve a link to ubuntu's public
-keyserver web interface.
-
-    >>> gpghandler.getURLForKeyInServer(fingerprint, public=True)
-    'http://keyserver.ubuntu.com:11371/pks/lookup?fingerprint=on&op=index&search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 
 
 == Keyserver uploads ==
