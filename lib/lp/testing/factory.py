@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -4650,9 +4650,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                  name=None, branch=None, git_ref=None, auto_build=False,
                  auto_build_archive=None, auto_build_pocket=None,
                  is_stale=None, require_virtualized=True, processors=None,
-                 date_created=DEFAULT, private=False, store_upload=False,
-                 store_series=None, store_name=None, store_secrets=None,
-                 store_channels=None):
+                 date_created=DEFAULT, private=False, allow_network=True,
+                 store_upload=False, store_series=None, store_name=None,
+                 store_secrets=None, store_channels=None):
         """Make a new Snap."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4676,9 +4676,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_created=date_created, branch=branch, git_ref=git_ref,
             auto_build=auto_build, auto_build_archive=auto_build_archive,
             auto_build_pocket=auto_build_pocket, private=private,
-            store_upload=store_upload, store_series=store_series,
-            store_name=store_name, store_secrets=store_secrets,
-            store_channels=store_channels)
+            allow_network=allow_network, store_upload=store_upload,
+            store_series=store_series, store_name=store_name,
+            store_secrets=store_secrets, store_channels=store_channels)
         if is_stale is not None:
             removeSecurityProxy(snap).is_stale = is_stale
         IStore(snap).flush()

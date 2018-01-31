@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build behaviour."""
@@ -394,6 +394,15 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         self.assertThat(args["trusted_keys"], MatchesListwise([
             Base64KeyMatches("0D57E99656BEFB0897606EE9A022DD1F5001B46D"),
             ]))
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_disallow_network(self):
+        # If external network access is not allowed for the snap,
+        # _extraBuildArgs does not dispatch a proxy token.
+        job = self.makeJob(allow_network=False)
+        args = yield job._extraBuildArgs()
+        self.assertNotIn("proxy_url", args)
+        self.assertNotIn("revocation_endpoint", args)
 
     @defer.inlineCallbacks
     def test_composeBuildRequest_proxy_url_set(self):

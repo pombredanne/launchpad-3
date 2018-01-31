@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap package interfaces."""
@@ -580,6 +580,13 @@ class ISnapAdminAttributes(Interface):
             "The architectures for which the snap package should be built."),
         value_type=Reference(schema=IProcessor),
         readonly=False))
+
+    allow_network = exported(Bool(
+        title=_("Allow external network access"),
+        required=True, readonly=False,
+        description=_(
+            "Allow access to external network resources via a proxy.  "
+            "Resources hosted on Launchpad itself are always allowed.")))
 
 
 class ISnap(
