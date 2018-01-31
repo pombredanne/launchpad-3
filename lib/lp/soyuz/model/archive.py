@@ -870,6 +870,10 @@ class Archive(SQLBase):
                                 ordered=True, order_by_date=False,
                                 include_removed=True, eager_load=False):
         """See `IArchive`."""
+        # Circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+
         clauses, order_by = self._getBinaryPublishingBaseClauses(
             name=name, version=version, status=status, pocket=pocket,
             distroarchseries=distroarchseries, exact_match=exact_match,
@@ -889,6 +893,9 @@ class Archive(SQLBase):
             load_related(SourcePackageName, sprs, ['sourcepackagenameID'])
             load_related(Component, bpphs, ['componentID'])
             load_related(Section, bpphs, ['sectionID'])
+            dases = load_related(
+                DistroArchSeries, bpphs, ['distroarchseriesID'])
+            load_related(DistroSeries, dases, ['distroseriesID'])
         if eager_load:
             result = DecoratedResultSet(result, pre_iter_hook=eager_load_api)
         return result
