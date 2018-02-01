@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for GitRepositoryView."""
@@ -808,7 +808,7 @@ class TestGitRepositoryEditViewInformationTypes(TestCaseWithFactory):
         if user is None:
             user = removeSecurityProxy(repository).owner
         with person_logged_in(user):
-            view = create_initialized_view(repository, "+edit", user=user)
+            view = create_initialized_view(repository, "+edit", principal=user)
             self.assertContentEqual(types, view.getInformationTypesToShow())
 
     def test_public_repository(self):
