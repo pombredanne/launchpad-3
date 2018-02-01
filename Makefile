@@ -141,12 +141,18 @@ logs:
 	mkdir logs
 
 codehosting-dir:
+	mkdir -p $(CODEHOSTING_ROOT)
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
 	touch $(CODEHOSTING_ROOT)/rewrite.log
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
+ifneq ($(SUDO_UID),)
+	if [ "$$(id -u)" = 0 ]; then \
+		chown -R $(SUDO_UID):$(SUDO_GID) $(CODEHOSTING_ROOT); \
+	fi
+endif
 
 inplace: build logs clean_logs codehosting-dir
 	if [ -d /srv/launchpad.dev ]; then \
@@ -454,7 +460,7 @@ copy-certificates:
 	cp configs/development/launchpad.crt /etc/apache2/ssl/
 	cp configs/development/launchpad.key /etc/apache2/ssl/
 
-copy-apache-config:
+copy-apache-config: codehosting-dir
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	set -e; \
@@ -468,9 +474,6 @@ copy-apache-config:
 		-e 's,%LISTEN_ADDRESS%,$(LISTEN_ADDRESS),' \
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/$$base
-	mkdir -p $(CODEHOSTING_ROOT)
-	touch $(CODEHOSTING_ROOT)/rewrite.log
-	chown -R $(SUDO_UID):$(SUDO_GID) $(CODEHOSTING_ROOT)
 	if [ ! -d /srv/launchpad.dev ]; then \
 		mkdir /srv/launchpad.dev; \
 		chown $(SUDO_UID):$(SUDO_GID) /srv/launchpad.dev; \
