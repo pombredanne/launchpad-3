@@ -1,4 +1,4 @@
-# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test `DistroSeriesDifferenceJob` and utility."""
@@ -407,7 +407,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
             dsp.parent_series, pocket=PackagePublishingPocket.RELEASE)
         spn = spph.sourcepackagerelease.sourcepackagename
 
-        create_jobs = range(1, 3)
+        create_jobs = list(range(1, 3))
         for counter in create_jobs:
             self.getJobSource().createForSPPHs([spph])
 
