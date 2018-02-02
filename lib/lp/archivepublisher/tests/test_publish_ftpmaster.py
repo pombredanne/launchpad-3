@@ -1,7 +1,9 @@
-# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test publish-ftpmaster cron script."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -1306,7 +1308,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         have_fresh_series = script.prepareFreshSeries(distro)
         self.assertTrue(have_fresh_series)
         [copied_upload] = new_series.getPackageUploads(
-            name=u'debian-installer-images', exact_match=False)
+            name='debian-installer-images', exact_match=False)
         [copied_custom] = copied_upload.customfiles
         self.assertEqual(
             custom_upload.customfiles[0].libraryfilealias.filename,
