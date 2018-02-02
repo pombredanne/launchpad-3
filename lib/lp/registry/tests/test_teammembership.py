@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1320,7 +1320,7 @@ class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
         """
         # Create a deeply nested team and member structure.
         team = self.factory.makeTeam()
-        for num in xrange(10):
+        for num in range(10):
             another_team = self.factory.makeTeam()
             another_person = self.factory.makePerson()
             with person_logged_in(team.teamowner):

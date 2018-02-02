@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Packageset features."""
@@ -112,7 +112,7 @@ class TestPackagesetSet(TestCaseWithFactory):
         # IPackagesetSet.getBySeries() will return those package sets
         # associated with the given distroseries.
         package_sets_for_current_ubuntu = [
-            self.factory.makePackageset() for counter in xrange(2)]
+            self.factory.makePackageset() for counter in range(2)]
         self.factory.makePackageset(
             distroseries=self.makeExperimentalSeries())
         self.assertContentEqual(

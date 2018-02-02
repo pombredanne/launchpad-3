@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test views and helpers related to the contact person feature."""
 
@@ -256,7 +256,7 @@ class EmailToPersonViewTestCase(TestCaseWithFactory):
         sender = self.factory.makePerson(email='me@eg.dom')
         old_message = self.factory.makeSignedMessage(email_address='me@eg.dom')
         authorization = IDirectEmailAuthorization(sender)
-        for action in xrange(authorization.message_quota):
+        for action in range(authorization.message_quota):
             authorization.record(old_message)
         return sender
 

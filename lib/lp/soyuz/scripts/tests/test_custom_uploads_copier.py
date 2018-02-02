@@ -1,4 +1,4 @@
-# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test copying of custom package uploads for a new `DistroSeries`."""
@@ -212,7 +212,7 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         # XXX JeroenVermeulen 2011-08-17, bug=827967: Should compare by
         # Debian version string, not id.
         source_series = self.factory.makeDistroSeries()
-        for counter in xrange(5):
+        for counter in range(5):
             self.makeUpload(source_series)
         copier = CustomUploadsCopier(FakeDistroSeries())
         candidate_ids = [
@@ -273,7 +273,7 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         uploads = [
             self.makeUpload(
                 source_series, version='1.0.%d' % counter, arch='ppc')
-            for counter in xrange(3)]
+            for counter in range(3)]
 
         copier = CustomUploadsCopier(FakeDistroSeries())
         self.assertContentEqual(
@@ -286,7 +286,7 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         source_series = self.factory.makeDistroSeries()
         uploads = [
             self.makeUpload(source_series, arch='i386')
-            for counter in xrange(2)]
+            for counter in range(2)]
         copier = CustomUploadsCopier(FakeDistroSeries())
         self.assertContentEqual(
             uploads[-1:], copier.getLatestUploads(source_series).values())

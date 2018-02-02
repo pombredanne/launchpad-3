@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for sync package jobs."""
@@ -305,7 +305,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # getActiveJobs returns the oldest available job first.
         dsd = self.factory.makeDistroSeriesDifference()
         target_archive = dsd.derived_series.main_archive
-        jobs = [self.makeJob(dsd) for counter in xrange(2)]
+        jobs = [self.makeJob(dsd) for counter in range(2)]
         source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(jobs[0], source.getActiveJobs(target_archive)[0])
 
@@ -677,7 +677,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         dsds = [
             self.factory.makeDistroSeriesDifference(
                 derived_series=derived_series)
-            for counter in xrange(2)]
+            for counter in range(2)]
         jobs = map(self.makeJob, dsds)
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
@@ -688,7 +688,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # If there are multiple jobs for one package,
         # getPendingJobsPerPackage picks the oldest.
         dsd = self.factory.makeDistroSeriesDifference()
-        jobs = [self.makeJob(dsd) for counter in xrange(2)]
+        jobs = [self.makeJob(dsd) for counter in range(2)]
         job_source = getUtility(IPlainPackageCopyJobSource)
         self.assertEqual(
             {dsd.source_package_name.name: jobs[0]},
@@ -710,7 +710,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         job_source = getUtility(IPlainPackageCopyJobSource)
         target1_jobs = [
             self.makePPAJob(target_archive=target1)
-            for counter in xrange(2)]
+            for counter in range(2)]
         self.makePPAJob(target2)
 
         pending_jobs = list(job_source.getIncompleteJobsForArchive(target1))

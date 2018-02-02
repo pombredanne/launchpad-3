@@ -27,7 +27,7 @@ def make_friendly_plural_forms(expression, expected_forms):
     # Maximum number of examples per plural form.
     MAX_EXAMPLES = 6
 
-    for number in xrange(200):
+    for number in range(200):
         try:
             form = function(number)
         except ZeroDivisionError:
@@ -82,7 +82,7 @@ def make_plural_function(expression):
 
 def make_plurals_identity_map():
     """Return a dict mapping each plural form number onto itself."""
-    return dict(enumerate(xrange(TranslationConstants.MAX_PLURAL_FORMS)))
+    return dict(enumerate(range(TranslationConstants.MAX_PLURAL_FORMS)))
 
 
 def plural_form_mapper(first_expression, second_expression):
