@@ -1,5 +1,7 @@
-# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -127,7 +129,7 @@ class TestBuildNotify(TestCaseWithFactory):
             build.status.name, notification['X-Launchpad-Build-State'])
         self.assertEqual(
             build.archive.reference, notification['X-Launchpad-Archive'])
-        if ppa and build.archive.distribution.name == u'ubuntu':
+        if ppa and build.archive.distribution.name == 'ubuntu':
             self.assertEqual(
                 get_ppa_reference(self.ppa), notification['X-Launchpad-PPA'])
         body = notification.get_payload(decode=True)

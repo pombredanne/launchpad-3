@@ -1,7 +1,9 @@
-# Copyright 2014-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystem build behaviour."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -63,7 +65,7 @@ class TestLiveFSBuildBehaviourBase(TestCaseWithFactory):
 
     def setUp(self):
         super(TestLiveFSBuildBehaviourBase, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
 
     def makeJob(self, archive=None, pocket=PackagePublishingPocket.RELEASE,
                 **kwargs):
@@ -80,7 +82,7 @@ class TestLiveFSBuildBehaviourBase(TestCaseWithFactory):
             processor=processor)
         build = self.factory.makeLiveFSBuild(
             archive=archive, distroarchseries=distroarchseries, pocket=pocket,
-            name=u"test-livefs", **kwargs)
+            name="test-livefs", **kwargs)
         return IBuildFarmJobBehaviour(build)
 
 
@@ -256,13 +258,13 @@ class MakeLiveFSBuildMixin:
     """Provide the common makeBuild method returning a queued build."""
 
     def makeBuild(self):
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         build = self.factory.makeLiveFSBuild(status=BuildStatus.BUILDING)
         build.queueBuild()
         return build
 
     def makeUnmodifiableBuild(self):
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         build = self.factory.makeLiveFSBuild(status=BuildStatus.BUILDING)
         build.distro_series.status = SeriesStatus.OBSOLETE
         build.queueBuild()

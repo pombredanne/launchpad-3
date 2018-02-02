@@ -1,7 +1,9 @@
-# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test `DistroSeriesDifferenceJob` and utility."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -174,8 +176,8 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
 
         sourcepackagenameid = spph.sourcepackagerelease.sourcepackagename.id
         expected_metadata = {
-            u'sourcepackagename': sourcepackagenameid,
-            u'parent_series': dsp.parent_series.id}
+            'sourcepackagename': sourcepackagenameid,
+            'parent_series': dsp.parent_series.id}
         self.assertThat(job, MatchesStructure.byEquality(
             distribution=dsp.derived_series.distribution,
             distroseries=dsp.derived_series,
@@ -202,7 +204,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.assertContentEqual(
             [spph.sourcepackagerelease.sourcepackagename.id
                 for spph in spphs],
-            [job.metadata[u'sourcepackagename'] for job in jobs])
+            [job.metadata['sourcepackagename'] for job in jobs])
 
     def test_create_multiple_jobs_creates_waiting_jobs(self):
         dsp = self.factory.makeDistroSeriesParent()
