@@ -21,6 +21,7 @@ from lazr.restful.testing.webservice import (
     IGenericEntry,
     WebServiceTestCase,
     )
+import six
 from zope.component import (
     getGlobalSiteManager,
     getUtility,
@@ -47,6 +48,7 @@ from lp.services.webapp.servers import (
     WebServicePublication,
     WebServiceRequestPublicationFactory,
     WebServiceTestRequest,
+    wsgi_native_string,
     )
 from lp.testing import (
     EventRecorder,
@@ -351,6 +353,29 @@ class TestWebServiceRequest(WebServiceTestCase):
         request = WebServiceClientRequest(StringIO.StringIO(''), {})
         self.assertEqual(
             request.response.getHeader('Vary'), 'Accept')
+
+
+class TestWSGINativeString(TestCase):
+
+    def _toNative(self, s):
+        if six.PY3:
+            return s
+        else:
+            return s.encode('ISO-8859-1')
+
+    def test_not_bytes_or_unicode(self):
+        self.assertRaises(TypeError, wsgi_native_string, object())
+
+    def test_bytes_iso_8859_1(self):
+        self.assertEqual(
+            self._toNative(u'foo\xfe'), wsgi_native_string(b'foo\xfe'))
+
+    def test_unicode_iso_8859_1(self):
+        self.assertEqual(
+            self._toNative(u'foo\xfe'), wsgi_native_string(u'foo\xfe'))
+
+    def test_unicode_not_iso_8859_1(self):
+        self.assertRaises(UnicodeEncodeError, wsgi_native_string, u'foo\u2014')
 
 
 class TestBasicLaunchpadRequest(TestCase):

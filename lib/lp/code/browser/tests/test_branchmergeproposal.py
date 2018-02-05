@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposals."""
@@ -565,8 +565,8 @@ class TestRegisterBranchMergeProposalViewMixin:
         target_branch = self._makeTargetBranch()
         reviewer = self.factory.makePerson()
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
-        request = LaunchpadTestRequest(
-            method='POST', principal=owner, **extra)
+        request = LaunchpadTestRequest(method='POST', **extra)
+        request.setPrincipal(owner)
         view = self._createView(request=request)
         with person_logged_in(owner):
             result_data = view.register_action.success(self._getFormValues(
@@ -767,8 +767,8 @@ class TestRegisterBranchMergeProposalViewBzr(
             owner=owner, information_type=InformationType.USERDATA)
         reviewer = self.factory.makePerson()
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
-        request = LaunchpadTestRequest(
-            method='POST', principal=owner, **extra)
+        request = LaunchpadTestRequest(method='POST', **extra)
+        request.setPrincipal(owner)
         view = self._createView(request=request)
         with person_logged_in(owner):
             branches_to_check = [self.source_branch.unique_name,
@@ -796,12 +796,13 @@ class TestRegisterBranchMergeProposalViewBzr(
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
             request = LaunchpadTestRequest(
-                method='POST', principal=owner,
+                method='POST',
                 form={
                     'field.actions.register': 'Propose Merge',
                     'field.target_branch.target_branch':
                         target_branch.unique_name},
                 **extra)
+            request.setPrincipal(owner)
             view = create_initialized_view(
                 target_branch,
                 name='+register-merge',
@@ -856,8 +857,8 @@ class TestRegisterBranchMergeProposalViewGit(
             owner=owner, information_type=InformationType.USERDATA)
         reviewer = self.factory.makePerson()
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
-        request = LaunchpadTestRequest(
-            method='POST', principal=owner, **extra)
+        request = LaunchpadTestRequest(method='POST', **extra)
+        request.setPrincipal(owner)
         view = self._createView(request=request)
         with person_logged_in(owner):
             repositories_to_check = [
@@ -887,7 +888,7 @@ class TestRegisterBranchMergeProposalViewGit(
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
             request = LaunchpadTestRequest(
-                method='POST', principal=owner,
+                method='POST',
                 form={
                     'field.actions.register': 'Propose Merge',
                     'field.target_git_repository.target_git_repository':
@@ -895,6 +896,7 @@ class TestRegisterBranchMergeProposalViewGit(
                     'field.target_git_path': target_branch.path,
                     },
                 **extra)
+            request.setPrincipal(owner)
             view = create_initialized_view(
                 target_branch,
                 name='+register-merge',
@@ -916,7 +918,7 @@ class TestRegisterBranchMergeProposalViewGit(
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
             request = LaunchpadTestRequest(
-                method='POST', principal=owner,
+                method='POST',
                 form={
                     'field.actions.register': 'Propose Merge',
                     'field.target_git_repository.target_git_repository': '',
@@ -924,6 +926,7 @@ class TestRegisterBranchMergeProposalViewGit(
                     'field.target_git_path': 'master',
                     },
                 **extra)
+            request.setPrincipal(owner)
             view = create_initialized_view(
                 self.source_branch,
                 name='+register-merge',
@@ -946,13 +949,14 @@ class TestRegisterBranchMergeProposalViewGit(
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
             request = LaunchpadTestRequest(
-                method='POST', principal=owner,
+                method='POST',
                 form={
                     'field.actions.register': 'Propose Merge',
                     'field.target_git_repository.target_git_repository':
                         target_branch.repository.unique_name,
                     },
                 **extra)
+            request.setPrincipal(owner)
             view = create_initialized_view(
                 self.source_branch,
                 name='+register-merge',
@@ -979,7 +983,7 @@ class TestRegisterBranchMergeProposalViewGit(
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
             request = LaunchpadTestRequest(
-                method='POST', principal=owner,
+                method='POST',
                 form={
                     'field.actions.register': 'Propose Merge',
                     'field.target_git_repository.target_git_repository':
@@ -989,6 +993,7 @@ class TestRegisterBranchMergeProposalViewGit(
                         prerequisite_branch.repository.unique_name,
                     },
                 **extra)
+            request.setPrincipal(owner)
             view = create_initialized_view(
                 self.source_branch,
                 name='+register-merge',

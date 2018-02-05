@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for testing feeds."""
@@ -121,9 +121,9 @@ def validate_feed(content, content_type, base_uri):
                 # which column contains the error.
                 max_line_length = 66
                 wrapped_column_number = column_number % max_line_length
-                line_number_range = range(
+                line_number_range = list(range(
                     max(error_line_number - 2, 1),
-                    min(error_line_number + 3, len(lines)))
+                    min(error_line_number + 3, len(lines))))
                 for line_number in line_number_range:
                     unicode_line = unicode(
                         lines[line_number - 1], 'ascii', 'replace')

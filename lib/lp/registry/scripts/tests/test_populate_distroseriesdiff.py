@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the populate-distroseriesdiff script."""
@@ -521,15 +521,15 @@ class TestDSDUpdater(TestCase):
         self.assertFalse(self.makeFixer([1]).isDone())
 
     def test_cutChunk_one_cuts_exactly_one(self):
-        fixer = self.makeFixer(range(3))
+        fixer = self.makeFixer(list(range(3)))
         chunk = fixer._cutChunk(1)
         self.assertEqual([0], chunk)
         self.assertEqual(3 - 1, len(fixer.ids))
 
     def test_cutChunk_over_remaining_size_completes_loop(self):
-        fixer = self.makeFixer(range(3))
+        fixer = self.makeFixer(list(range(3)))
         chunk = fixer._cutChunk(100)
-        self.assertContentEqual(range(3), chunk)
+        self.assertContentEqual(list(range(3)), chunk)
         self.assertEqual([], fixer.ids)
 
     def test_updatesBaseVersion(self):

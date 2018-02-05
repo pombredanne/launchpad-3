@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -40,7 +40,7 @@ def make_friendly_plural_forms(expression, expected_forms):
             forms[form].append(number)
 
     found_forms = sorted(forms.keys())
-    if found_forms != range(expected_forms):
+    if found_forms != list(range(expected_forms)):
         raise BadPluralExpression(
             "Plural expression should produce forms 0..%d, "
             "but we found forms %s." % (expected_forms, found_forms))
@@ -108,7 +108,7 @@ def plural_form_mapper(first_expression, second_expression):
             return identity_map
 
         # Is either result out of range?
-        valid_forms = range(TranslationConstants.MAX_PLURAL_FORMS)
+        valid_forms = list(range(TranslationConstants.MAX_PLURAL_FORMS))
         if first_form not in valid_forms or second_form not in valid_forms:
             return identity_map
 

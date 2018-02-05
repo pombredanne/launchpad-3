@@ -1,7 +1,9 @@
-# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for TestP3APackages."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
@@ -396,7 +398,7 @@ class TestPPAPackagesJobNotifications(TestCaseWithFactory):
             soup.findAll(
                 'div', attrs={'class': 'pending-job', 'job_id': jobs[-1].id}))
         self.assertEqual(
-            [u'Showing 5 of 7'],
+            ['Showing 5 of 7'],
             soup.findAll('span', text=re.compile('Showing 5 of .')))
 
     def test_job_notifications_display_owner_is_team(self):

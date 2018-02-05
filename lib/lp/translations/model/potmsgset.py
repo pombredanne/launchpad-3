@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -567,8 +567,8 @@ class POTMsgSet(SQLBase):
                 clauses.append('msgstr%s=%s' % (
                     sqlvalues(pluralform, potranslations[pluralform])))
 
-        remaining_plural_forms = range(
-            pofile.plural_forms, TranslationConstants.MAX_PLURAL_FORMS)
+        remaining_plural_forms = list(range(
+            pofile.plural_forms, TranslationConstants.MAX_PLURAL_FORMS))
 
         # Prefer either shared or diverged messages, depending on
         # arguments.

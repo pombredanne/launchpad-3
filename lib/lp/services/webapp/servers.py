@@ -20,6 +20,7 @@ from lazr.restful.publisher import (
     )
 from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
+import six
 import transaction
 from transaction.interfaces import ISynchronizer
 from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
@@ -533,6 +534,31 @@ def get_query_string_params(request):
     return decoded_qs
 
 
+def wsgi_native_string(s):
+    """Make a native string suitable for use in WSGI.
+
+    PEP 3333 requires environment variables to be native strings that
+    contain only code points representable in ISO-8859-1.  To support
+    porting to Python 3 via an intermediate stage of Unicode literals in
+    Python 2, we enforce this here.
+    """
+    # Based on twisted.python.compat.nativeString, but using a different
+    # encoding.
+    if not isinstance(s, (bytes, unicode)):
+        raise TypeError('%r is neither bytes nor unicode' % s)
+    if six.PY3:
+        if isinstance(s, bytes):
+            return s.decode('ISO-8859-1')
+        else:
+            # Ensure we're limited to ISO-8859-1.
+            s.encode('ISO-8859-1')
+    else:
+        if isinstance(s, unicode):
+            return s.encode('ISO-8859-1')
+        # Bytes objects are always decodable as ISO-8859-1.
+    return s
+
+
 class LaunchpadBrowserRequestMixin:
     """Provides methods used for both API and web browser requests."""
 
@@ -927,9 +953,19 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET',
                  force_fresh_login_for_testing=False, **kw):
+        # PEP 3333 requires environment variables to be native strings that
+        # contain only code points representable in ISO-8859-1.  To support
+        # porting to Python 3 via an intermediate stage of Unicode literals
+        # in Python 2, we enforce this here.
+        native_kw = {}
+        for key, value in kw.items():
+            if value is not None:
+                value = wsgi_native_string(value)
+            native_kw[key] = value
         super(LaunchpadTestRequest, self).__init__(
             body_instream=body_instream, environ=environ, form=form,
-            skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
+            skin=skin, outstream=outstream,
+            REQUEST_METHOD=wsgi_native_string(method), **native_kw)
         self.traversed_objects = []
         # Use an existing feature controller if one exists, otherwise use the
         # null controller.

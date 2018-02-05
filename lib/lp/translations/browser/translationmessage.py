@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for ITranslationMessage interface."""
@@ -1067,7 +1067,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         # suggestion_blocks dictionary, keyed on plural form index; this
         # allows us later to just iterate over them in the view code
         # using a generic template.
-        self.pluralform_indices = range(self.context.plural_forms)
+        self.pluralform_indices = list(range(self.context.plural_forms))
 
         self._buildAllSuggestions()
 
