@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mock Build objects for tests soyuz buildd-system."""
@@ -127,15 +127,12 @@ class OkSlave:
         self.call_log.append('resume')
         return defer.succeed(("", "", 0))
 
+    @defer.inlineCallbacks
     def sendFileToSlave(self, sha1, url, username="", password="",
                         logger=None):
-        d = self.ensurepresent(sha1, url, username, password)
-
-        def check_present((present, info)):
-            if not present:
-                raise CannotFetchFile(url, info)
-
-        return d.addCallback(check_present)
+        present, info = yield self.ensurepresent(sha1, url, username, password)
+        if not present:
+            raise CannotFetchFile(url, info)
 
     def getURL(self, sha1):
         return urlappend(

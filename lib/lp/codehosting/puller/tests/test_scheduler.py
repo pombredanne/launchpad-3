@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -649,8 +649,8 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
         # contents of stderr are logged in an OOPS report.
         oops_logged = []
 
-        def new_oops_raising((type, value, tb), request):
-            oops_logged.append((type, value, tb))
+        def new_oops_raising(info, request):
+            oops_logged.append(info)
 
         old_oops_raising = errorlog.globalErrorUtility.raising
         errorlog.globalErrorUtility.raising = new_oops_raising
