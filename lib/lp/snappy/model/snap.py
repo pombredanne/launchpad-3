@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -189,6 +189,8 @@ class Snap(Storm, WebhookTargetMixin):
 
     auto_build_pocket = DBEnum(enum=PackagePublishingPocket, allow_none=True)
 
+    auto_build_channels = JSON('auto_build_channels', allow_none=True)
+
     is_stale = Bool(name='is_stale', allow_none=False)
 
     require_virtualized = Bool(name='require_virtualized')
@@ -209,9 +211,10 @@ class Snap(Storm, WebhookTargetMixin):
     def __init__(self, registrant, owner, distro_series, name,
                  description=None, branch=None, git_ref=None, auto_build=False,
                  auto_build_archive=None, auto_build_pocket=None,
-                 require_virtualized=True, date_created=DEFAULT,
-                 private=False, store_upload=False, store_series=None,
-                 store_name=None, store_secrets=None, store_channels=None):
+                 auto_build_channels=None, require_virtualized=True,
+                 date_created=DEFAULT, private=False, store_upload=False,
+                 store_series=None, store_name=None, store_secrets=None,
+                 store_channels=None):
         """Construct a `Snap`."""
         super(Snap, self).__init__()
         self.registrant = registrant
@@ -224,6 +227,7 @@ class Snap(Storm, WebhookTargetMixin):
         self.auto_build = auto_build
         self.auto_build_archive = auto_build_archive
         self.auto_build_pocket = auto_build_pocket
+        self.auto_build_channels = auto_build_channels
         self.require_virtualized = require_virtualized
         self.date_created = date_created
         self.date_last_modified = date_created
@@ -439,7 +443,8 @@ class Snap(Storm, WebhookTargetMixin):
             return False
         return True
 
-    def requestBuild(self, requester, archive, distro_arch_series, pocket):
+    def requestBuild(self, requester, archive, distro_arch_series, pocket,
+                     channels=None):
         """See `ISnap`."""
         if not requester.inTeam(self.owner):
             raise SnapNotOwner(
@@ -459,12 +464,14 @@ class Snap(Storm, WebhookTargetMixin):
             SnapBuild.archive_id == archive.id,
             SnapBuild.distro_arch_series_id == distro_arch_series.id,
             SnapBuild.pocket == pocket,
+            SnapBuild.channels == channels,
             SnapBuild.status == BuildStatus.NEEDSBUILD)
         if pending.any() is not None:
             raise SnapBuildAlreadyPending
 
         build = getUtility(ISnapBuildSet).new(
-            requester, self, archive, distro_arch_series, pocket)
+            requester, self, archive, distro_arch_series, pocket,
+            channels=channels)
         build.queueBuild()
         return build
 
@@ -484,7 +491,7 @@ class Snap(Storm, WebhookTargetMixin):
             try:
                 build = self.requestBuild(
                     self.owner, self.auto_build_archive, arch,
-                    self.auto_build_pocket)
+                    self.auto_build_pocket, self.auto_build_channels)
                 if logger is not None:
                     logger.debug(
                         " - %s/%s/%s: Build requested.",
@@ -659,9 +666,10 @@ class SnapSet:
             branch=None, git_repository=None, git_repository_url=None,
             git_path=None, git_ref=None, auto_build=False,
             auto_build_archive=None, auto_build_pocket=None,
-            require_virtualized=True, processors=None, date_created=DEFAULT,
-            private=False, store_upload=False, store_series=None,
-            store_name=None, store_secrets=None, store_channels=None):
+            auto_build_channels=None, require_virtualized=True,
+            processors=None, date_created=DEFAULT, private=False,
+            store_upload=False, store_series=None, store_name=None,
+            store_secrets=None, store_channels=None):
         """See `ISnapSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -702,6 +710,7 @@ class SnapSet:
             branch=branch, git_ref=git_ref, auto_build=auto_build,
             auto_build_archive=auto_build_archive,
             auto_build_pocket=auto_build_pocket,
+            auto_build_channels=auto_build_channels,
             require_virtualized=require_virtualized, date_created=date_created,
             private=private, store_upload=store_upload,
             store_series=store_series, store_name=store_name,
@@ -917,6 +926,15 @@ class SnapSet:
                     SnapBuild.snap_id == Snap.id,
                     SnapBuild.archive_id == Snap.auto_build_archive_id,
                     SnapBuild.pocket == Snap.auto_build_pocket,
+                    # These columns are nullable so require some care, since
+                    # a straightforward equality check will compile to
+                    # "SnapBuild.channels = Snap.auto_build_channels" which
+                    # is false if both are NULL.
+                    Or(
+                        And(
+                            SnapBuild.channels == None,
+                            Snap.auto_build_channels == None),
+                        SnapBuild.channels == Snap.auto_build_channels),
                     # We only want Snaps that haven't had an automatic
                     # SnapBuild dispatched for them recently.
                     SnapBuild.date_created >= threshold_date)),

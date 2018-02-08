@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build behaviour."""
@@ -394,6 +394,17 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         self.assertThat(args["trusted_keys"], MatchesListwise([
             Base64KeyMatches("0D57E99656BEFB0897606EE9A022DD1F5001B46D"),
             ]))
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_channels(self):
+        # If the build needs particular channels, _extraBuildArgs sends
+        # them.
+        job = self.makeJob(channels={"snapcraft": "edge"})
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
+        args = yield job._extraBuildArgs()
+        self.assertEqual({"snapcraft": "edge"}, args["channels"])
 
     @defer.inlineCallbacks
     def test_composeBuildRequest_proxy_url_set(self):

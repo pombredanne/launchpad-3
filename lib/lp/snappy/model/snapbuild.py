@@ -22,6 +22,7 @@ from storm.locals import (
     DateTime,
     Desc,
     Int,
+    JSON,
     Reference,
     Select,
     SQL,
@@ -142,6 +143,8 @@ class SnapBuild(PackageBuildMixin, Storm):
 
     pocket = DBEnum(enum=PackagePublishingPocket, allow_none=False)
 
+    channels = JSON('channels', allow_none=True)
+
     processor_id = Int(name='processor', allow_none=False)
     processor = Reference(processor_id, 'Processor.id')
     virtualized = Bool(name='virtualized')
@@ -171,7 +174,7 @@ class SnapBuild(PackageBuildMixin, Storm):
     failure_count = Int(name='failure_count', allow_none=False)
 
     def __init__(self, build_farm_job, requester, snap, archive,
-                 distro_arch_series, pocket, processor, virtualized,
+                 distro_arch_series, pocket, channels, processor, virtualized,
                  date_created):
         """Construct a `SnapBuild`."""
         super(SnapBuild, self).__init__()
@@ -181,6 +184,7 @@ class SnapBuild(PackageBuildMixin, Storm):
         self.archive = archive
         self.distro_arch_series = distro_arch_series
         self.pocket = pocket
+        self.channels = channels
         self.processor = processor
         self.virtualized = virtualized
         self.date_created = date_created
@@ -479,7 +483,7 @@ class SnapBuild(PackageBuildMixin, Storm):
 class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
 
     def new(self, requester, snap, archive, distro_arch_series, pocket,
-            date_created=DEFAULT):
+            channels=None, date_created=DEFAULT):
         """See `ISnapBuildSet`."""
         store = IMasterStore(SnapBuild)
         build_farm_job = getUtility(IBuildFarmJobSource).new(
@@ -487,7 +491,7 @@ class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
             archive)
         snapbuild = SnapBuild(
             build_farm_job, requester, snap, archive, distro_arch_series,
-            pocket, distro_arch_series.processor,
+            pocket, channels, distro_arch_series.processor,
             not distro_arch_series.processor.supports_nonvirtualized
             or snap.require_virtualized or archive.require_virtualized,
             date_created)
