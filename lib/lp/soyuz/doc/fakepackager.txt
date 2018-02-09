@@ -53,11 +53,16 @@ to the upstream version in the upstream_directory path.
     >>> os.path.exists(packager.upstream_directory)
     True
 
-    >>> print sorted(os.listdir(packager.sandbox_path))
-    ['biscuit-1.0']
+    >>> for name in sorted(os.listdir(packager.sandbox_path)):
+    ...     print(name)
+    biscuit-1.0
 
-    >>> print sorted(os.listdir(packager.debian_path))
-    ['changelog', 'control', 'copyright', 'rules']
+    >>> for name in sorted(os.listdir(packager.debian_path)):
+    ...     print(name)
+    changelog
+    control
+    copyright
+    rules
 
 We will instantiate a new packager so we can generate a new upstream
 directory with a corresponding original tarball.
@@ -65,11 +70,17 @@ directory with a corresponding original tarball.
     >>> packager = FakePackager('biscuit', '1.0')
     >>> packager.buildUpstream()
 
-    >>> print sorted(os.listdir(packager.sandbox_path))
-    ['biscuit-1.0', 'biscuit_1.0.orig.tar.gz']
+    >>> for name in sorted(os.listdir(packager.sandbox_path)):
+    ...     print(name)
+    biscuit-1.0
+    biscuit_1.0.orig.tar.gz
 
-    >>> print sorted(os.listdir(packager.debian_path))
-    ['changelog', 'control', 'copyright', 'rules']
+    >>> for name in sorted(os.listdir(packager.debian_path)):
+    ...     print(name)
+    changelog
+    control
+    copyright
+    rules
 
 Now we can build the source package using the generated tarball.
 
