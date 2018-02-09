@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`SQLObject` implementation of `IPOFile` interface."""
@@ -624,7 +624,7 @@ class POFile(SQLBase, POFileMixIn):
         clauses = self._getStormClausesForPOFileMessages()
         msgstr_clause = Or(*(
             getattr(TranslationMessage, 'msgstr%d' % form) != None
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)))
+            for form in range(TranslationConstants.MAX_PLURAL_FORMS)))
         clauses.extend([
             TranslationTemplateItem.potmsgsetID == POTMsgSet.id,
             Not(getattr(TranslationMessage, flag_name)),
@@ -853,7 +853,7 @@ class POFile(SQLBase, POFileMixIn):
             self.potemplate).flag_name
         suggestion_nonempty = "COALESCE(%s) IS NOT NULL" % ', '.join([
             'Suggestion.msgstr%d' % form
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+            for form in range(TranslationConstants.MAX_PLURAL_FORMS)])
         params = {
             'language': quote(self.language),
             'potemplate': quote(self.potemplate),
@@ -1198,7 +1198,7 @@ class POFile(SQLBase, POFileMixIn):
                 TranslationMessage.language = %(language)s
             """ % params
 
-        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+        for form in range(TranslationConstants.MAX_PLURAL_FORMS):
             alias = "potranslation%d" % form
             field = "TranslationMessage.msgstr%d" % form
             query += "LEFT JOIN POTranslation AS %s ON %s.id = %s\n" % (
@@ -1729,7 +1729,7 @@ class POFileToTranslationFileDataAdapter:
 
             forms = list(enumerate([
                 getattr(row, "translation%d" % form)
-                for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]))
+                for form in range(TranslationConstants.MAX_PLURAL_FORMS)]))
             max_forms = pofile.plural_forms
             for (pluralform, translation) in forms[:max_forms]:
                 if translation is not None:

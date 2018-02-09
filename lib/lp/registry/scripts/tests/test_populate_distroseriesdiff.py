@@ -186,7 +186,7 @@ class TestFindLatestSourcePackageReleases(TestCaseWithFactory, FactoryHelper):
         spr = self.factory.makeSourcePackageRelease(distroseries=distroseries)
         spphs = [
             self.makeSPPH(distroseries=distroseries, sourcepackagerelease=spr)
-            for counter in xrange(5)]
+            for counter in range(5)]
         query = compose_sql_find_latest_source_package_releases(distroseries)
         self.assertContentEqual(
             [self.getExpectedResultFor(spphs[-1])],
@@ -198,7 +198,7 @@ class TestFindLatestSourcePackageReleases(TestCaseWithFactory, FactoryHelper):
         sprs = [
             self.factory.makeSourcePackageRelease(
                 sourcepackagename=spn, distroseries=distroseries)
-            for counter in xrange(5)]
+            for counter in range(5)]
         spphs = [
             self.makeSPPH(distroseries=distroseries, sourcepackagerelease=spr)
             for spr in reversed(sprs)]
@@ -568,7 +568,7 @@ class TestPopulateDistroSeriesDiffScript(TestCaseWithFactory, FactoryHelper):
 
     def test_finds_all_distroseries(self):
         spphs = []
-        for counter in xrange(2):
+        for counter in range(2):
             dsp = self.makeDerivedDistroSeries()
             spphs.append(self.makeSPPH(dsp.derived_series))
         script = self.makeScript(['--all'])

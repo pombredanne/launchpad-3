@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Tests for construction bug notification emails for sending."""
 
@@ -1305,7 +1305,7 @@ class TestDeferredNotifications(TestCaseWithFactory):
         # Create some deferred notifications and show that processing them
         # puts then in the state where they are ready to send.
         num = 5
-        for i in xrange(num):
+        for i in range(num):
             self._make_deferred_notification()
         deferred = self.notification_set.getDeferredNotifications()
         self.assertEqual(num, deferred.count())

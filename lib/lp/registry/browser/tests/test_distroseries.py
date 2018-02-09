@@ -1,4 +1,4 @@
-# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `lp.registry.browser.distroseries`."""
@@ -913,7 +913,7 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
         login_person(self.simple_user)
 
         def add_differences(num):
-            for index in xrange(num):
+            for index in range(num):
                 version = self.factory.getUniqueInteger()
                 versions = {
                     'base': u'1.%d' % version,
@@ -1514,7 +1514,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertThat(recorder1, HasQueryCount(LessThan(12)))
 
         # The query count does not increase with the number of upgrades.
-        for index in xrange(3):
+        for index in range(3):
             self.makePackageUpgrade(derived_series=derived_series)
         flush_database_caches()
         with StormStatementRecorder() as recorder2:

@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Model tests for the DistroSeriesDifferenceComment class."""
@@ -151,7 +151,7 @@ class TestDistroSeriesDifferenceCommentSource(TestCaseWithFactory):
         series = self.factory.makeDistroSeries()
         dsds = randomize_list([
             self.factory.makeDistroSeriesDifference(derived_series=series)
-            for counter in xrange(5)])
+            for counter in range(5)])
         comments = [
             self.factory.makeDistroSeriesDifferenceComment(dsd)
             for dsd in dsds]

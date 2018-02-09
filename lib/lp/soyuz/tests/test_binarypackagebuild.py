@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -423,7 +423,7 @@ class TestBuildSet(TestCaseWithFactory):
                 sprb.build_farm_job))
 
     def test_getByBuildFarmJobs_works(self):
-        bpbs = [self.factory.makeBinaryPackageBuild() for i in xrange(10)]
+        bpbs = [self.factory.makeBinaryPackageBuild() for i in range(10)]
         self.assertContentEqual(
             bpbs,
             getUtility(IBinaryPackageBuildSet).getByBuildFarmJobs(

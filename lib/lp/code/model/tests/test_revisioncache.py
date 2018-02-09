@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests relating to the revision cache."""
@@ -357,7 +357,7 @@ class TestRevisionCache(TestCaseWithFactory):
         # If there are multiple revisions with the same revision author text,
         # but not linked to a Launchpad person, then that revision_text is
         # counted as one author.
-        for counter in xrange(4):
+        for counter in range(4):
             self.makeCachedRevision(revision=self.factory.makeRevision(
                 author="Foo <foo@example.com>"))
         revision_cache = getUtility(IRevisionCache)

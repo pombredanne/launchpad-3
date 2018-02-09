@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for `TranslationMessage`."""
@@ -849,7 +849,7 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
 
         self.translation_strings = [
             'foe%d' % form
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+            for form in range(TranslationConstants.MAX_PLURAL_FORMS)]
 
         self.message = self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,

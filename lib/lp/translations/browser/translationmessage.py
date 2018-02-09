@@ -741,7 +741,7 @@ class BaseTranslationView(LaunchpadView):
         # Extract the translations from the form, and store them in
         # self.form_posted_translations. We try plural forms in turn,
         # starting at 0.
-        for pluralform in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+        for pluralform in range(TranslationConstants.MAX_PLURAL_FORMS):
             msgset_ID_LANGCODE_translation_PLURALFORM_new = '%s%d_new' % (
                 msgset_ID_LANGCODE_translation_, pluralform)
             if msgset_ID_LANGCODE_translation_PLURALFORM_new not in form:

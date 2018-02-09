@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1461,7 +1461,7 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         """Produce a POTranslations dict of random translations."""
         return dict(
             (form, self.factory.getUniqueString())
-            for form in xrange(forms))
+            for form in range(forms))
 
     def test_baseline(self):
         # setCurrentTranslation sets the current translation
