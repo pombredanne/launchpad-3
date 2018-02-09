@@ -1,5 +1,7 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -67,7 +69,7 @@ class TestBuildDepWait(TestCaseWithFactory):
             # Commit to make sure stuff hits the database.
             transaction.commit()
         build.updateDependencies()
-        self.assertEqual(u'', build.dependencies)
+        self.assertEqual('', build.dependencies)
 
     def test_update_dependancies_respects_component(self):
         # Since main can only utilise packages that are published in main,
@@ -98,4 +100,4 @@ class TestBuildDepWait(TestCaseWithFactory):
             transaction.commit()
         # Now that we have moved it main, we can see it.
         build.updateDependencies()
-        self.assertEqual(u'', build.dependencies)
+        self.assertEqual('', build.dependencies)

@@ -3,6 +3,8 @@
 
 """Test Build features."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 from datetime import (
     datetime,
     timedelta,
@@ -229,7 +231,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         [depwait_build] = depwait_source.createMissingBuilds()
         depwait_build.updateStatus(
             BuildStatus.MANUALDEPWAIT,
-            slave_status={'dependencies': u'dep-bin'})
+            slave_status={'dependencies': 'dep-bin'})
         return depwait_build
 
     def testUpdateDependenciesWorks(self):
@@ -257,13 +259,13 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.assertRaisesUnparsableDependencies(depwait_build, None)
 
         # Missing 'name'.
-        self.assertRaisesUnparsableDependencies(depwait_build, u'(>> version)')
+        self.assertRaisesUnparsableDependencies(depwait_build, '(>> version)')
 
         # Missing 'version'.
-        self.assertRaisesUnparsableDependencies(depwait_build, u'name (>>)')
+        self.assertRaisesUnparsableDependencies(depwait_build, 'name (>>)')
 
         # Missing comma between dependencies.
-        self.assertRaisesUnparsableDependencies(depwait_build, u'name1 name2')
+        self.assertRaisesUnparsableDependencies(depwait_build, 'name1 name2')
 
     def testBug378828(self):
         # `IBinaryPackageBuild.updateDependencies` copes with the
@@ -293,14 +295,14 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         depwait_build.updateStatus(
             BuildStatus.MANUALDEPWAIT,
-            slave_status={'dependencies': u'dep-bin (>> 666)'})
+            slave_status={'dependencies': 'dep-bin (>> 666)'})
         depwait_build.updateDependencies()
-        self.assertEqual(depwait_build.dependencies, u'dep-bin (>> 666)')
+        self.assertEqual(depwait_build.dependencies, 'dep-bin (>> 666)')
         depwait_build.updateStatus(
             BuildStatus.MANUALDEPWAIT,
-            slave_status={'dependencies': u'dep-bin (>= 666)'})
+            slave_status={'dependencies': 'dep-bin (>= 666)'})
         depwait_build.updateDependencies()
-        self.assertEqual(depwait_build.dependencies, u'')
+        self.assertEqual(depwait_build.dependencies, '')
 
     def testVersionedDependencyOnOldPublication(self):
         # `IBinaryPackageBuild.updateDependencies` doesn't just consider
@@ -316,24 +318,24 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         depwait_build.updateStatus(
             BuildStatus.MANUALDEPWAIT,
-            slave_status={'dependencies': u'dep-bin (= 666)'})
+            slave_status={'dependencies': 'dep-bin (= 666)'})
         depwait_build.updateDependencies()
-        self.assertEqual(depwait_build.dependencies, u'')
+        self.assertEqual(depwait_build.dependencies, '')
         depwait_build.updateStatus(
             BuildStatus.MANUALDEPWAIT,
-            slave_status={'dependencies': u'dep-bin (= 999)'})
+            slave_status={'dependencies': 'dep-bin (= 999)'})
         depwait_build.updateDependencies()
-        self.assertEqual(depwait_build.dependencies, u'')
+        self.assertEqual(depwait_build.dependencies, '')
 
     def testStrictInequalities(self):
         depwait_build = self._setupSimpleDepwaitContext()
         self.layer.txn.commit()
 
         for dep, expected in (
-                (u'dep-bin (<< 444)', u'dep-bin (<< 444)'),
-                (u'dep-bin (>> 444)', u''),
-                (u'dep-bin (<< 888)', u''),
-                (u'dep-bin (>> 888)', u'dep-bin (>> 888)'),
+                ('dep-bin (<< 444)', 'dep-bin (<< 444)'),
+                ('dep-bin (>> 444)', ''),
+                ('dep-bin (<< 888)', ''),
+                ('dep-bin (>> 888)', 'dep-bin (>> 888)'),
                 ):
             depwait_build.updateStatus(
                 BuildStatus.MANUALDEPWAIT, slave_status={'dependencies': dep})
@@ -349,10 +351,10 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build.updateStatus(
             BuildStatus.MANUALDEPWAIT,
             slave_status={
-                'dependencies': u'dep-bin (>= 999) | alt-bin, dep-tools'})
+                'dependencies': 'dep-bin (>= 999) | alt-bin, dep-tools'})
         depwait_build.updateDependencies()
         self.assertEqual(
-            u'dep-bin (>= 999) | alt-bin, dep-tools',
+            'dep-bin (>= 999) | alt-bin, dep-tools',
             depwait_build.dependencies)
 
         self.publisher.getPubBinaries(
@@ -360,7 +362,7 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.layer.txn.commit()
 
         depwait_build.updateDependencies()
-        self.assertEqual(u'dep-tools', depwait_build.dependencies)
+        self.assertEqual('dep-tools', depwait_build.dependencies)
 
     def testAptVersionConstraints(self):
         # launchpad-buildd can return apt-style version constraints
@@ -370,14 +372,14 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         depwait_build.updateStatus(
             BuildStatus.MANUALDEPWAIT,
-            slave_status={'dependencies': u'dep-bin (> 666), dep-bin (< 777)'})
+            slave_status={'dependencies': 'dep-bin (> 666), dep-bin (< 777)'})
         depwait_build.updateDependencies()
-        self.assertEqual(depwait_build.dependencies, u'dep-bin (> 666)')
+        self.assertEqual(depwait_build.dependencies, 'dep-bin (> 666)')
         depwait_build.updateStatus(
             BuildStatus.MANUALDEPWAIT,
-            slave_status={'dependencies': u'dep-bin (> 665)'})
+            slave_status={'dependencies': 'dep-bin (> 665)'})
         depwait_build.updateDependencies()
-        self.assertEqual(depwait_build.dependencies, u'')
+        self.assertEqual(depwait_build.dependencies, '')
 
 
 class BaseTestCaseWithThreeBuilds(TestCaseWithFactory):
