@@ -426,7 +426,7 @@ class POTMsgSet(SQLBase):
         # distinct translations per form.
         msgstrs = ', '.join([
             'COALESCE(msgstr%d, -1)' % form
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+            for form in range(TranslationConstants.MAX_PLURAL_FORMS)])
         ids_query_params = {
             'msgstrs': msgstrs,
             'where': '(' + ' OR '.join(lang_used) + ')',
@@ -518,7 +518,7 @@ class POTMsgSet(SQLBase):
         """Find all POTranslation records for passed `translations`."""
         potranslations = {}
         # Set all POTranslations we can have (up to MAX_PLURAL_FORMS)
-        for pluralform in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+        for pluralform in range(TranslationConstants.MAX_PLURAL_FORMS):
             translation = translations.get(pluralform)
             if translation is not None:
                 # Find or create a POTranslation for the specified text

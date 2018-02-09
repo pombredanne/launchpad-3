@@ -315,7 +315,7 @@ class TestCurrentTranslationMessagePageView(TestCaseWithFactory):
             base_field_name = 'msgset_%d_%s_translation_' % (
                 message.potmsgset.id, pofile.language.code)
             # Add the expected plural forms fields.
-            for plural_form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+            for plural_form in range(TranslationConstants.MAX_PLURAL_FORMS):
                 field_name = '%s%d_new' % (base_field_name, plural_form)
                 form[field_name] = u'snarf'
         url = '/%s/%s/%s/+translate' % (
@@ -397,7 +397,7 @@ class TestHelpers(TestCaseWithFactory):
         self.assertFalse(contains_translations({}))
 
     def test_contains_translations_finds_any_translations(self):
-        for plural_form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+        for plural_form in range(TranslationConstants.MAX_PLURAL_FORMS):
             self.assertTrue(
                 contains_translations({plural_form: self.getUniqueString()}))
 

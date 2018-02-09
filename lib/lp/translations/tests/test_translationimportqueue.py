@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -474,7 +474,7 @@ class TestTranslationImportQueue(TestCaseWithFactory):
         templates = [
             self.factory.makePOTemplate(
                 productseries=series, translation_domain=domain)
-            for counter in xrange(3)]
+            for counter in range(3)]
         entry = removeSecurityProxy(
             self.factory.makeTranslationImportQueueEntry())
 
