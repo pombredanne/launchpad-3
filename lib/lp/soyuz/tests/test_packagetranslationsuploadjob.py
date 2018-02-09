@@ -1,10 +1,12 @@
-# Copyright 2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-import transaction
 from testtools.content import text_content
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 

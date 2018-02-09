@@ -1,7 +1,9 @@
-# Copyright 2014-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystem build features."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -90,7 +92,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
 
     def setUp(self):
         super(TestLiveFSBuild, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         self.build = self.factory.makeLiveFSBuild()
 
     def test_implements_interfaces(self):
@@ -238,7 +240,7 @@ class TestLiveFSBuild(TestCaseWithFactory):
             distroseries=distroseries, architecturetag="i386",
             processor=processor)
         build = self.factory.makeLiveFSBuild(
-            name=u"livefs-1", requester=person, owner=person,
+            name="livefs-1", requester=person, owner=person,
             distroarchseries=distroarchseries,
             date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC),
             status=BuildStatus.FAILEDTOBUILD,
@@ -291,7 +293,7 @@ class TestLiveFSBuildSet(TestCaseWithFactory):
 
     def setUp(self):
         super(TestLiveFSBuildSet, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
 
     def test_getByBuildFarmJob_works(self):
         build = self.factory.makeLiveFSBuild()
@@ -323,7 +325,7 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
 
     def setUp(self):
         super(TestLiveFSBuildWebservice, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         self.person = self.factory.makePerson()
         self.webservice = webservice_for_person(
             self.person, permission=OAuthPermission.WRITE_PRIVATE)
@@ -336,7 +338,7 @@ class TestLiveFSBuildWebservice(TestCaseWithFactory):
     def test_properties(self):
         # The basic properties of a LiveFSBuild are sensible.
         db_build = self.factory.makeLiveFSBuild(
-            requester=self.person, unique_key=u"foo",
+            requester=self.person, unique_key="foo",
             metadata_override={"image_format": "plain"},
             date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC))
         build_url = api_url(db_build)

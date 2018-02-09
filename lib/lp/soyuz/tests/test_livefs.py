@@ -1,7 +1,9 @@
-# Copyright 2014-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystems."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -81,7 +83,7 @@ class TestLiveFS(TestCaseWithFactory):
 
     def setUp(self):
         super(TestLiveFS, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
 
     def test_implements_interfaces(self):
         # LiveFS implements ILiveFS.
@@ -246,8 +248,8 @@ class TestLiveFS(TestCaseWithFactory):
         build.updateStatus(BuildStatus.FULLYBUILT)
         build = livefs.requestBuild(
             livefs.owner, livefs.distro_series.main_archive, distroarchseries,
-            PackagePublishingPocket.RELEASE, version=u"20150101")
-        self.assertEqual(u"20150101", build.version)
+            PackagePublishingPocket.RELEASE, version="20150101")
+        self.assertEqual("20150101", build.version)
 
     def test_getBuilds(self):
         # Test the various getBuilds methods.
@@ -302,13 +304,13 @@ class TestLiveFS(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         livefs = self.factory.makeLiveFS(
             registrant=owner, owner=owner, distroseries=distroseries,
-            name=u"condemned")
+            name="condemned")
         self.assertTrue(
-            getUtility(ILiveFSSet).exists(owner, distroseries, u"condemned"))
+            getUtility(ILiveFSSet).exists(owner, distroseries, "condemned"))
         with person_logged_in(livefs.owner):
             livefs.destroySelf()
         self.assertFalse(
-            getUtility(ILiveFSSet).exists(owner, distroseries, u"condemned"))
+            getUtility(ILiveFSSet).exists(owner, distroseries, "condemned"))
 
     def test_delete_with_builds(self):
         # A live filesystem with builds cannot be deleted.
@@ -316,14 +318,14 @@ class TestLiveFS(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         livefs = self.factory.makeLiveFS(
             registrant=owner, owner=owner, distroseries=distroseries,
-            name=u"condemned")
+            name="condemned")
         self.factory.makeLiveFSBuild(livefs=livefs)
         self.assertTrue(
-            getUtility(ILiveFSSet).exists(owner, distroseries, u"condemned"))
+            getUtility(ILiveFSSet).exists(owner, distroseries, "condemned"))
         with person_logged_in(livefs.owner):
             self.assertRaises(CannotDeleteLiveFS, livefs.destroySelf)
         self.assertTrue(
-            getUtility(ILiveFSSet).exists(owner, distroseries, u"condemned"))
+            getUtility(ILiveFSSet).exists(owner, distroseries, "condemned"))
 
 
 class TestLiveFSSet(TestCaseWithFactory):
@@ -332,7 +334,7 @@ class TestLiveFSSet(TestCaseWithFactory):
 
     def setUp(self):
         super(TestLiveFSSet, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
 
     def test_class_implements_interfaces(self):
         # The LiveFSSet class implements ILiveFSSet.
@@ -350,7 +352,7 @@ class TestLiveFSSet(TestCaseWithFactory):
             registrant=registrant,
             owner=self.factory.makeTeam(owner=registrant),
             distro_series=self.factory.makeDistroSeries(),
-            name=self.factory.getUniqueString(u"livefs-name"),
+            name=self.factory.getUniqueString("livefs-name"),
             metadata=metadata)
 
     def test_creation(self):
@@ -380,7 +382,7 @@ class TestLiveFSSet(TestCaseWithFactory):
                 livefs.owner, self.factory.makeDistroSeries(), livefs.name))
         self.assertFalse(
             getUtility(ILiveFSSet).exists(
-                livefs.owner, livefs.distro_series, u"different"))
+                livefs.owner, livefs.distro_series, "different"))
 
     def test_getByPerson(self):
         # ILiveFSSet.getByPerson returns all LiveFSes with the given owner.
@@ -427,7 +429,7 @@ class TestLiveFSWebservice(TestCaseWithFactory):
 
     def setUp(self):
         super(TestLiveFSWebservice, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         self.person = self.factory.makePerson(displayname="Test Person")
         self.webservice = webservice_for_person(
             self.person, permission=OAuthPermission.WRITE_PUBLIC)
