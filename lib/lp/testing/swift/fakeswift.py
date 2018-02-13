@@ -557,17 +557,33 @@ class Root(resource.Resource):
         """Compute service catalog for the given request and tenant."""
         port = request.transport.socket.getsockname()[1]
         tenant_id = self.tenants[tenant]["id"]
-        base_url = "http://%s:%d/swift/v1" % (self.hostname, port)
+        base_url = "http://%s:%d" % (self.hostname, port)
+        keystone_base_url = "%s/keystone/v2.0" % base_url
+        swift_base_url = "%s/swift/v1" % base_url
         catalog = [
-            {"endpoints": [
-                {"adminURL": base_url,
-                 "id": uuid.uuid4().hex,
-                 "internalURL": base_url + "/AUTH_" + tenant_id,
-                 "publicURL": base_url + "/AUTH_" + tenant_id,
-                 "region": DEFAULT_REGION}
-                ],
-             "endpoints_links": [],
-             "name": "swift",
-             "type": "object-store"
-             }]
+            {
+                "endpoints": [{
+                    "adminURL": keystone_base_url,
+                    "id": uuid.uuid4().hex,
+                    "internalURL": keystone_base_url,
+                    "publicURL": keystone_base_url,
+                    "region": DEFAULT_REGION,
+                    }],
+                "endpoints_links": [],
+                "name": "keystone",
+                "type": "identity",
+                },
+            {
+                "endpoints": [{
+                    "adminURL": swift_base_url,
+                    "id": uuid.uuid4().hex,
+                    "internalURL": swift_base_url + "/AUTH_" + tenant_id,
+                    "publicURL": swift_base_url + "/AUTH_" + tenant_id,
+                    "region": DEFAULT_REGION,
+                    }],
+                "endpoints_links": [],
+                "name": "swift",
+                "type": "object-store",
+                },
+            ]
         return catalog
