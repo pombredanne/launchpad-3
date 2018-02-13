@@ -91,9 +91,13 @@ def silence_swiftclient_logger():
     Logger, which is unfortunate as we disable them in the handler. Not
     only does swiftclient then emit lots of noise, but it also turns
     keystoneclient debugging on.
+
+    keystoneclient logs credentials at DEBUG.
     """
     swiftclient_logger = logging.getLogger('swiftclient')
     swiftclient_logger.setLevel(logging.INFO)
+    keystoneclient_logger = logging.getLogger('keystoneclient')
+    keystoneclient_logger.setLevel(logging.INFO)
 
 
 def silence_zcml_logger():

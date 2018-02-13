@@ -8,9 +8,10 @@ __all__ = []
 
 from datetime import datetime
 from hashlib import md5
-import httplib
 
+from requests.exceptions import ConnectionError
 from swiftclient import client as swiftclient
+from swiftclient.exceptions import ClientException
 from testtools.matchers import (
     GreaterThan,
     LessThan,
@@ -200,14 +201,14 @@ class TestSwiftFixture(TestCase):
         # authenticated.
         self.swift_fixture.shutdown()
         self.assertRaises(
-            httplib.HTTPException,
+            ConnectionError,
             client.get_object, "size", str(size))
 
         # And even if we bring it back up, existing connections
         # continue to fail
         self.swift_fixture.startup()
         self.assertRaises(
-            httplib.HTTPException,
+            ClientException,
             client.get_object, "size", str(size))
 
         # But fresh connections are fine.
