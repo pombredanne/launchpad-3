@@ -35,6 +35,7 @@ def build_mailman():
     mailman_path = configure_prefix(config.mailman.build_prefix)
     mailman_bin = os.path.join(mailman_path, 'bin')
     var_dir = os.path.abspath(config.mailman.build_var_dir)
+    executable = os.path.abspath('bin/py')
 
     # If we can import the package, we assume Mailman is properly built at
     # the least.  This does not catch re-installs that might be necessary
@@ -45,6 +46,25 @@ def build_mailman():
         need_build = need_install = True
     else:
         need_build = need_install = False
+        # Make sure that the configure prefix is correct, in case this tree
+        # was moved after building Mailman.
+        try:
+            from Mailman import Defaults
+        except ImportError:
+            need_build = need_install = True
+        else:
+            if Defaults.PYTHON != executable:
+                need_build = need_install = True
+                # We'll need to remove this; "make install" won't overwrite
+                # the existing file, and then installation will fail due to
+                # it having the wrong sys.path.
+                try:
+                    os.unlink(
+                        os.path.join(mailman_path, 'Mailman', 'mm_cfg.py'))
+                except OSError as e:
+                    if e.errno != errno.ENOENT:
+                        raise
+    if not need_install:
         # Also check for Launchpad-specific bits stuck into the source tree by
         # monkey_patch(), in case this is half-installed.  See
         # <https://bugs.launchpad.net/launchpad-registry/+bug/683486>.
@@ -97,7 +117,6 @@ def build_mailman():
 
     # Build and install the Mailman software.  Note that we don't care about
     # --with-cgi-gid because we're not going to use that Mailman subsystem.
-    executable = os.path.abspath('bin/py')
     configure_args = (
         './configure',
         '--prefix', mailman_path,

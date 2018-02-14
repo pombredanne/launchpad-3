@@ -40,9 +40,9 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
             self.dsl, LaunchpadTestRequest())
 
     def test_empty_view(self):
-        self.assertEquals(self.view.translation_group, None)
-        self.assertEquals(self.view.translation_team, None)
-        self.assertEquals(self.view.context, self.dsl)
+        self.assertIsNone(self.view.translation_group)
+        self.assertIsNone(self.view.translation_team)
+        self.assertEqual(self.view.context, self.dsl)
 
     def test_translation_group(self):
         group = self.factory.makeTranslationGroup(
@@ -51,7 +51,7 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         self.view = DistroSeriesLanguageView(
             self.dsl, LaunchpadTestRequest())
         self.view.initialize()
-        self.assertEquals(self.view.translation_group, group)
+        self.assertEqual(self.view.translation_group, group)
 
     def test_translation_team(self):
         # Just having a group doesn't mean there's a translation
@@ -59,7 +59,7 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         group = self.factory.makeTranslationGroup(
             self.distroseries.distribution.owner, url=None)
         self.distroseries.distribution.translationgroup = group
-        self.assertEquals(self.view.translation_team, None)
+        self.assertIsNone(self.view.translation_team)
 
         # Setting a translator for this languages makes it
         # appear as the translation_team.
@@ -70,7 +70,7 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         self.view = DistroSeriesLanguageView(
             self.dsl, LaunchpadTestRequest())
         self.view.initialize()
-        self.assertEquals(self.view.translation_team, translator)
+        self.assertEqual(self.view.translation_team, translator)
 
     def test_sourcepackagenames_bulk_loaded(self):
         # SourcePackageName records referenced by POTemplates

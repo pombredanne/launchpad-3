@@ -47,6 +47,6 @@ class TestRegistration(TestCase):
         # Responses to requests to answers pages have the 'Vary' header set to
         # include Accept-Language.
         request = AnswersBrowserRequest(io.StringIO(''), {})
-        self.assertEquals(
+        self.assertEqual(
             request.response.getHeader('Vary'),
             'Cookie, Authorization, Accept-Language')

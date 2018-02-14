@@ -172,7 +172,7 @@ class LibrarianClientTestCase(unittest.TestCase):
         client = InstrumentedLibrarianClient()
         client.addFile(
             'sample.txt', 6, StringIO('sample'), 'text/plain')
-        self.failUnless(client.sentDatabaseName,
+        self.assertTrue(client.sentDatabaseName,
             "Database-Name header not sent by addFile")
 
     def test_remoteAddFileDoesntSendDatabaseName(self):
@@ -184,7 +184,7 @@ class LibrarianClientTestCase(unittest.TestCase):
         DatabaseLayer.force_dirty_database()
         client.remoteAddFile('sample.txt', 6, StringIO('sample'),
                                    'text/plain')
-        self.failUnless(client.sentDatabaseName,
+        self.assertTrue(client.sentDatabaseName,
             "Database-Name header not sent by remoteAddFile")
 
     def test_clientWrongDatabase(self):
@@ -197,7 +197,7 @@ class LibrarianClientTestCase(unittest.TestCase):
             client.addFile('sample.txt', 6, StringIO('sample'), 'text/plain')
         except UploadFailed as e:
             msg = e.args[0]
-            self.failUnless(
+            self.assertTrue(
                 msg.startswith('Server said: 400 Wrong database'),
                 'Unexpected UploadFailed error: ' + msg)
         else:
@@ -281,7 +281,7 @@ class LibrarianClientTestCase(unittest.TestCase):
             # download_port.
             expected_host = 'http://example.org:1234/'
             download_url = client._getURLForDownload(alias_id)
-            self.failUnless(download_url.startswith(expected_host),
+            self.assertTrue(download_url.startswith(expected_host),
                             'expected %s to start with %s' % (download_url,
                                                               expected_host))
             # If the alias has been deleted, _getURLForDownload returns None.
@@ -317,7 +317,7 @@ class LibrarianClientTestCase(unittest.TestCase):
             # download_port.
             expected_host = 'http://example.com:5678/'
             download_url = client._getURLForDownload(alias_id)
-            self.failUnless(download_url.startswith(expected_host),
+            self.assertTrue(download_url.startswith(expected_host),
                             'expected %s to start with %s' % (download_url,
                                                               expected_host))
             # If the alias has been deleted, _getURLForDownload returns None.
@@ -339,11 +339,11 @@ class LibrarianClientTestCase(unittest.TestCase):
         alias_id = client.addFile(
             'sample.txt', 6, StringIO('sample'), 'text/plain')
         transaction.commit()  # Make sure the file is in the "remote" database.
-        self.failIf(client.called_getURLForDownload)
+        self.assertFalse(client.called_getURLForDownload)
         # (Test:)
         f = client.getFileByAlias(alias_id)
         self.assertEqual(f.read(), 'sample')
-        self.failUnless(client.called_getURLForDownload)
+        self.assertTrue(client.called_getURLForDownload)
 
     def test_getFileByAliasLookupError(self):
         # The Librarian server can return a 404 HTTPError;

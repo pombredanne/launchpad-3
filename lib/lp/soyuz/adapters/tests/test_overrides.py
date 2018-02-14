@@ -1,4 +1,4 @@
-# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test generic override policy classes."""
@@ -144,7 +144,7 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
         spns = []
         distroseries = self.factory.makeDistroSeries()
         pocket = self.factory.getAnyPocket()
-        for i in xrange(10):
+        for i in range(10):
             spph = self.factory.makeSourcePackagePublishingHistory(
                 distroseries=distroseries, archive=distroseries.main_archive,
                 pocket=pocket)
@@ -354,7 +354,7 @@ class TestFromExistingOverridePolicy(TestCaseWithFactory):
         distroseries = distroarchseries.distroseries
         distroseries.nominatedarchindep = distroarchseries
         pocket = self.factory.getAnyPocket()
-        for i in xrange(10):
+        for i in range(10):
             bpph = self.factory.makeBinaryPackagePublishingHistory(
                 distroarchseries=distroarchseries,
                 archive=distroseries.main_archive, pocket=pocket)
@@ -519,7 +519,7 @@ class TestFallbackOverridePolicy(TestCaseWithFactory):
         expected = {spns[0]: SourceOverride(component=universe, new=True)}
         distroseries = self.factory.makeDistroSeries()
         pocket = self.factory.getAnyPocket()
-        for i in xrange(8):
+        for i in range(8):
             spph = self.factory.makeSourcePackagePublishingHistory(
                 distroseries=distroseries, archive=distroseries.main_archive,
                 pocket=pocket)
@@ -549,7 +549,7 @@ class TestFallbackOverridePolicy(TestCaseWithFactory):
         bpn = self.factory.makeBinaryPackageName()
         bpns = []
         expected = {}
-        for i in xrange(3):
+        for i in range(3):
             distroarchseries = self.factory.makeDistroArchSeries(
                 distroseries=distroseries)
             bpb = self.factory.makeBinaryPackageBuild(
@@ -566,7 +566,7 @@ class TestFallbackOverridePolicy(TestCaseWithFactory):
                     component=bpph.component, section=bpph.section,
                     priority=bpph.priority, new=False,
                     version=bpph.binarypackagerelease.version))
-        for i in xrange(2):
+        for i in range(2):
             distroarchseries = self.factory.makeDistroArchSeries(
                 distroseries=distroseries)
             bpns.append((bpn, distroarchseries.architecturetag))

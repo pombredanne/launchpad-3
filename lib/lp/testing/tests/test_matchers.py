@@ -138,7 +138,7 @@ class ProvidesTests(TestCase):
         obj, mismatch = self.match_does_not_verify()
         try:
             verifyObject(ITestInterface, obj)
-            self.assert_("verifyObject did not raise an exception.")
+            self.assertTrue("verifyObject did not raise an exception.")
         except BrokenImplementation as e:
             extra = str(e)
         self.assertEqual(extra, mismatch.extra)
@@ -376,7 +376,7 @@ class EqualsIgnoringWhitespaceTests(TestCase):
         matcher = EqualsIgnoringWhitespace("one \t two \n three")
         mismatch = matcher.match(" one \r three ")
         self.assertEqual(
-            "'one two three' != 'one three'",
+            "'one three' != 'one two three'",
             mismatch.describe())
 
     def test_match_unicode(self):
@@ -387,7 +387,7 @@ class EqualsIgnoringWhitespaceTests(TestCase):
         matcher = EqualsIgnoringWhitespace(u"one \t two \n \u1234  ")
         mismatch = matcher.match(u" one \r \u1234 ")
         self.assertEqual(
-            u"u'one two \\u1234' != u'one \\u1234'",
+            u"u'one \\u1234' != u'one two \\u1234'",
             mismatch.describe())
 
     def test_match_non_string(self):

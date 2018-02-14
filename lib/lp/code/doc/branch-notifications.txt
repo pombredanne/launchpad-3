@@ -209,7 +209,7 @@ to allow email filtering.
 
 We need to create some sufficiently large diffs to compare against.
 
-    >>> diff = '\n'.join([str(value) for value in xrange(6000)])
+    >>> diff = '\n'.join([str(value) for value in range(6000)])
     >>> message = 'Test message.\n'
 
 Send the revision notifications.
@@ -287,7 +287,7 @@ Mark's unsubscription link is to his personal branch subscription.
 
 And just to be sure, lets create one with 800 lines.
 
-    >>> diff = '\n'.join([str(value) for value in xrange(800)])
+    >>> diff = '\n'.join([str(value) for value in range(800)])
     >>> BranchMailer.forRevision(
     ...     branch, 'no-reply@canonical.com', message, diff,
     ...     None, revno=1234).sendAll()

@@ -1778,7 +1778,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "rejected" in str(msg), "Failed to upload bar source:\n%s" % msg)
         spph = self.publishPackage("bar", "1.0-1")
 
-        self.assertEquals(
+        self.assertEqual(
             sorted((sprf.libraryfile.filename, sprf.filetype)
                    for sprf in spph.sourcepackagerelease.files),
             [('bar_1.0-1.debian.tar.bz2',
@@ -1819,11 +1819,11 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Upload another source sharing the same (component) orig.
         upload_dir = self.queueUpload("bar_1.0-2_3.0-quilt_without_orig")
-        self.assertEquals(
+        self.assertEqual(
             self.processUpload(uploadprocessor, upload_dir), ['accepted'])
 
         queue_item = uploadprocessor.last_processed_upload.queue_root
-        self.assertEquals(
+        self.assertEqual(
             sorted((sprf.libraryfile.filename, sprf.filetype) for sprf
                    in queue_item.sources[0].sourcepackagerelease.files),
             [('bar_1.0-2.debian.tar.bz2',
@@ -1859,7 +1859,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "rejected" in str(msg), "Failed to upload bar source:\n%s" % msg)
         spph = self.publishPackage("bar", "1.0")
 
-        self.assertEquals(
+        self.assertEqual(
             sorted((sprf.libraryfile.filename, sprf.filetype)
                    for sprf in spph.sourcepackagerelease.files),
             [('bar_1.0.dsc',
@@ -2194,10 +2194,9 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.options.builds = True
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
-        self.assertEquals(1, len(self.oopses))
-        self.assertEquals(
-            BuildStatus.FAILEDTOUPLOAD, build.status)
-        self.assertEquals(builder, build.builder)
+        self.assertEqual(1, len(self.oopses))
+        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, build.status)
+        self.assertEqual(builder, build.builder)
         self.assertIsNot(None, build.duration)
         log_contents = build.upload_log.read()
         self.assertTrue('ERROR Exception while processing upload '
@@ -2254,7 +2253,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
             distroseries=self.breezy, archive=archive,
             requester=archive.owner)
-        self.assertEquals(archive.owner, build.requester)
+        self.assertEqual(archive.owner, build.requester)
         self.switchToUploader()
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
@@ -2279,8 +2278,8 @@ class TestUploadHandler(TestUploadProcessorBase):
         # Properly uploaded source packages should result in the
         # build status changing to FULLYBUILT.
         build = self.doSuccessRecipeBuild()
-        self.assertEquals(BuildStatus.FULLYBUILT, build.status)
-        self.assertEquals(None, build.builder)
+        self.assertEqual(BuildStatus.FULLYBUILT, build.status)
+        self.assertIsNone(build.builder)
         self.assertIsNot(None, build.duration)
         # Upon full build the upload log is unset.
         self.assertIs(None, build.upload_log)
@@ -2319,8 +2318,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
     def testSourcePackageRecipeBuild_fail(self):
         build = self.doFailureRecipeBuild()
-        self.assertEquals(BuildStatus.FAILEDTOUPLOAD, build.status)
-        self.assertEquals(None, build.builder)
+        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, build.status)
+        self.assertIsNone(build.builder)
         self.assertIsNot(None, build.duration)
         self.assertIsNot(None, build.upload_log)
 
@@ -2366,8 +2365,8 @@ class TestUploadHandler(TestUploadProcessorBase):
 
     def testSourcePackageRecipeBuild_deleted_recipe(self):
         build = self.doDeletedRecipeBuild()
-        self.assertEquals(BuildStatus.FAILEDTOUPLOAD, build.status)
-        self.assertEquals(None, build.builder)
+        self.assertEqual(BuildStatus.FAILEDTOUPLOAD, build.status)
+        self.assertIsNone(build.builder)
         self.assertIsNot(None, build.duration)
         self.assertIs(None, build.upload_log)
 
@@ -2437,7 +2436,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         # The build status is not changed
         self.assertTrue(
             os.path.exists(os.path.join(self.incoming_folder, leaf_name)))
-        self.assertEquals(BuildStatus.BUILDING, build.status)
+        self.assertEqual(BuildStatus.BUILDING, build.status)
         self.assertLogContains("Build status is BUILDING. Ignoring.")
 
     def testBuildWithInvalidStatus(self):
@@ -2451,7 +2450,7 @@ class TestUploadHandler(TestUploadProcessorBase):
             os.path.exists(os.path.join(self.incoming_folder, leaf_name)))
         self.assertTrue(
             os.path.exists(os.path.join(self.failed_folder, leaf_name)))
-        self.assertEquals(BuildStatus.NEEDSBUILD, build.status)
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
         self.assertLogContains(
             "Expected build status to be UPLOADING or BUILDING, was "
             "NEEDSBUILD.")
@@ -2486,7 +2485,7 @@ class ParseBuildUploadLeafNameTests(TestCase):
     """Tests for parse_build_upload_leaf_name."""
 
     def test_valid(self):
-        self.assertEquals(
+        self.assertEqual(
             ('PACKAGEBUILD', 60),
             parse_build_upload_leaf_name("20100812-PACKAGEBUILD-60"))
 

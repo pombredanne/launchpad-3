@@ -18,8 +18,7 @@ class MemcacheFixture(fixtures.Fixture):
     def __init__(self):
         self._cache = {}
 
-    def setUp(self):
-        super(MemcacheFixture, self).setUp()
+    def _setUp(self):
         self.useFixture(ZopeUtilityFixture(self, IMemcacheClient))
 
     def get(self, key):

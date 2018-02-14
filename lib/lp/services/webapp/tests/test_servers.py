@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -21,6 +21,7 @@ from lazr.restful.testing.webservice import (
     IGenericEntry,
     WebServiceTestCase,
     )
+import six
 from zope.component import (
     getGlobalSiteManager,
     getUtility,
@@ -31,7 +32,6 @@ from zope.interface import (
     )
 
 from lp.app import versioninfo
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import IFinishReadOnlyRequestEvent
 from lp.services.webapp.publication import LaunchpadBrowserPublication
 from lp.services.webapp.servers import (
@@ -48,15 +48,13 @@ from lp.services.webapp.servers import (
     WebServicePublication,
     WebServiceRequestPublicationFactory,
     WebServiceTestRequest,
+    wsgi_native_string,
     )
 from lp.testing import (
     EventRecorder,
     TestCase,
     )
-from lp.testing.layers import (
-    FunctionalLayer,
-    ZopelessDatabaseLayer,
-    )
+from lp.testing.layers import FunctionalLayer
 
 
 class SetInWSGIEnvironmentTestCase(TestCase):
@@ -111,11 +109,11 @@ class TestApplicationServerSettingRequestFactory(TestCase):
         factory = ApplicationServerSettingRequestFactory(
             LaunchpadBrowserRequest, 'launchpad.dev', 'https', 443)
         request = factory(StringIO.StringIO(), {'HTTP_HOST': 'launchpad.dev'})
-        self.assertEquals(
+        self.assertEqual(
             request.get('HTTPS'), 'on', "factory didn't set the HTTPS env")
         # This is a sanity check ensuring that effect of this works as
         # expected with the Zope request implementation.
-        self.assertEquals(request.getURL(), 'https://launchpad.dev')
+        self.assertEqual(request.getURL(), 'https://launchpad.dev')
 
     def test___call___should_not_set_HTTPS(self):
         # Ensure that the factory doesn't put an HTTPS variable in the
@@ -123,7 +121,7 @@ class TestApplicationServerSettingRequestFactory(TestCase):
         factory = ApplicationServerSettingRequestFactory(
             LaunchpadBrowserRequest, 'launchpad.dev', 'http', 80)
         request = factory(StringIO.StringIO(), {})
-        self.assertEquals(
+        self.assertEqual(
             request.get('HTTPS'), None,
             "factory should not have set HTTPS env")
 
@@ -170,7 +168,7 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
         # Necessary preamble and sanity check.  We need to call
         # the factory's canHandle() method with an appropriate
         # WSGI environment before it can produce a request object for us.
-        self.assert_(self.factory.canHandle(env),
+        self.assertTrue(self.factory.canHandle(env),
             "Sanity check: The factory should be able to handle requests.")
 
         wrapped_factory, publication_factory = self.factory()
@@ -192,7 +190,7 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
         web service.
         """
         env = self.wsgi_env(self.non_api_path)
-        self.assert_(self.factory.canHandle(env),
+        self.assertTrue(self.factory.canHandle(env),
             "Sanity check: The factory should be able to handle requests.")
 
         wrapped_factory, publication_factory = self.factory()
@@ -216,11 +214,11 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
 
         for method in allowed_methods:
             env = self.wsgi_env(self.api_path, method)
-            self.assert_(self.factory.canHandle(env),
-                "Sanity check")
+            self.assertTrue(self.factory.canHandle(env), "Sanity check")
             # Returns a tuple of (request_factory, publication_factory).
             rfactory, pfactory = self.factory.checkRequest(env)
-            self.assert_(rfactory is None,
+            self.assertIsNone(
+                rfactory,
                 "The '%s' HTTP method should be handled by the factory."
                 % method)
 
@@ -237,10 +235,11 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
 
         for method in denied_methods:
             env = self.wsgi_env(self.non_api_path, method)
-            self.assert_(self.factory.canHandle(env), "Sanity check")
+            self.assertTrue(self.factory.canHandle(env), "Sanity check")
             # Returns a tuple of (request_factory, publication_factory).
             rfactory, pfactory = self.factory.checkRequest(env)
-            self.assert_(rfactory is not None,
+            self.assertIsNotNone(
+                rfactory,
                 "The '%s' HTTP method should be rejected by the factory."
                 % method)
 
@@ -255,30 +254,30 @@ class TestVhostWebserviceFactory(WebServiceTestCase):
             getUtility(IWebServiceConfiguration).path_override, 'api',
             "Sanity check: The web service path override should be 'api'.")
 
-        self.assert_(
+        self.assertTrue(
             self.factory.isWebServicePath('/api'),
             "The factory should handle URLs that start with /api.")
 
-        self.assert_(
+        self.assertTrue(
             self.factory.isWebServicePath('/api/foo'),
             "The factory should handle URLs that start with /api.")
 
-        self.failIf(
+        self.assertFalse(
             self.factory.isWebServicePath('/foo'),
             "The factory should not handle URLs that do not start with "
             "/api.")
 
-        self.failIf(
+        self.assertFalse(
             self.factory.isWebServicePath('/'),
             "The factory should not handle URLs that do not start with "
             "/api.")
 
-        self.failIf(
+        self.assertFalse(
             self.factory.isWebServicePath('/apifoo'),
             "The factory should not handle URLs that do not start with "
             "/api.")
 
-        self.failIf(
+        self.assertFalse(
             self.factory.isWebServicePath('/foo/api'),
             "The factory should not handle URLs that do not start with "
             "/api.")
@@ -319,14 +318,14 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
         request = config.createRequest(data, env)
 
         stack = request.getTraversalStack()
-        self.assert_(config.path_override in stack,
+        self.assertTrue(config.path_override in stack,
             "Sanity check: the API path should show up in the request's "
             "traversal stack: %r" % stack)
 
         request.traverse(None)
 
         stack = request.getTraversalStack()
-        self.failIf(config.path_override in stack,
+        self.assertFalse(config.path_override in stack,
             "Web service paths should be dropped from the webservice "
             "request traversal stack: %r" % stack)
 
@@ -352,8 +351,31 @@ class TestWebServiceRequest(WebServiceTestCase):
 
     def test_response_should_vary_based_on_content_type(self):
         request = WebServiceClientRequest(StringIO.StringIO(''), {})
-        self.assertEquals(
+        self.assertEqual(
             request.response.getHeader('Vary'), 'Accept')
+
+
+class TestWSGINativeString(TestCase):
+
+    def _toNative(self, s):
+        if six.PY3:
+            return s
+        else:
+            return s.encode('ISO-8859-1')
+
+    def test_not_bytes_or_unicode(self):
+        self.assertRaises(TypeError, wsgi_native_string, object())
+
+    def test_bytes_iso_8859_1(self):
+        self.assertEqual(
+            self._toNative(u'foo\xfe'), wsgi_native_string(b'foo\xfe'))
+
+    def test_unicode_iso_8859_1(self):
+        self.assertEqual(
+            self._toNative(u'foo\xfe'), wsgi_native_string(u'foo\xfe'))
+
+    def test_unicode_not_iso_8859_1(self):
+        self.assertRaises(UnicodeEncodeError, wsgi_native_string, u'foo\u2014')
 
 
 class TestBasicLaunchpadRequest(TestCase):
@@ -364,26 +386,26 @@ class TestBasicLaunchpadRequest(TestCase):
     def test_baserequest_response_should_vary(self):
         """Test that our base response has a proper vary header."""
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
-        self.assertEquals(
+        self.assertEqual(
             request.response.getHeader('Vary'), 'Cookie, Authorization')
 
     def test_baserequest_response_should_vary_after_retry(self):
         """Test that our base response has a proper vary header."""
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
         retried_request = request.retry()
-        self.assertEquals(
+        self.assertEqual(
             retried_request.response.getHeader('Vary'),
             'Cookie, Authorization')
 
     def test_baserequest_security_headers(self):
         response = LaunchpadBrowserRequest(StringIO.StringIO(''), {}).response
-        self.assertEquals(
+        self.assertEqual(
             response.getHeader('X-Frame-Options'), 'SAMEORIGIN')
-        self.assertEquals(
+        self.assertEqual(
             response.getHeader('X-Content-Type-Options'), 'nosniff')
-        self.assertEquals(
+        self.assertEqual(
             response.getHeader('X-XSS-Protection'), '1; mode=block')
-        self.assertEquals(
+        self.assertEqual(
             response.getHeader(
                 'Strict-Transport-Security'), 'max-age=15552000')
 
@@ -399,7 +421,7 @@ class TestBasicLaunchpadRequest(TestCase):
         bad_path = 'fnord/trunk\xE4'
         env = {'PATH_INFO': bad_path}
         request = LaunchpadBrowserRequest(StringIO.StringIO(''), env)
-        self.assertEquals(u'fnord/trunk\ufffd', request.getHeader('PATH_INFO'))
+        self.assertEqual(u'fnord/trunk\ufffd', request.getHeader('PATH_INFO'))
 
     def test_request_with_invalid_query_string_recovers(self):
         # When the query string has invalid utf-8, it is decoded with
@@ -591,8 +613,8 @@ class TestLaunchpadBrowserRequest_getNearest(TestCase):
         # interfaces are passed to getNearest().
         request = self.request
         request.traversed_objects.extend([self.thing_set, self.thing])
-        self.assertEquals(request.getNearest(IThing), (self.thing, IThing))
-        self.assertEquals(
+        self.assertEqual(request.getNearest(IThing), (self.thing, IThing))
+        self.assertEqual(
             request.getNearest(IThingSet), (self.thing_set, IThingSet))
 
     def test_multiple_traversed_objects_with_common_interface(self):
@@ -601,13 +623,13 @@ class TestLaunchpadBrowserRequest_getNearest(TestCase):
         thing2 = Thing()
         self.request.traversed_objects.extend(
             [self.thing_set, self.thing, thing2])
-        self.assertEquals(self.request.getNearest(IThing), (thing2, IThing))
+        self.assertEqual(self.request.getNearest(IThing), (thing2, IThing))
 
     def test_interface_not_traversed(self):
         # If a particular interface has not been traversed, the tuple
         # (None, None) is returned.
         self.request.traversed_objects.extend([self.thing_set])
-        self.assertEquals(self.request.getNearest(IThing), (None, None))
+        self.assertEqual(self.request.getNearest(IThing), (None, None))
 
 
 class TestLaunchpadBrowserRequest(TestCase):
@@ -698,7 +720,7 @@ class LoggingTransaction:
         self.log.append("ABORT")
 
 
-class TestFinishReadOnlyRequestMixin:
+class TestFinishReadOnlyRequest(TestCase):
     # Publications that have a finishReadOnlyRequest() method are obliged to
     # fire an IFinishReadOnlyRequestEvent.
 
@@ -729,35 +751,16 @@ class TestFinishReadOnlyRequestMixin:
         self.assertIs(fake_request, finish_event.request)
         self.assertIs(fake_object, finish_event.object)
 
-class TestFinishReadOnlyRequest(TestFinishReadOnlyRequestMixin, TestCase):
-
     def test_WebServicePub_fires_FinishReadOnlyRequestEvent(self):
         # WebServicePublication.finishReadOnlyRequest() issues an
-        # IFinishReadOnlyRequestEvent and commits the transaction.
+        # IFinishReadOnlyRequestEvent and aborts the transaction.
         publication = WebServicePublication(None)
-        self._test_publication(publication, ["COMMIT"])
+        self._test_publication(publication, ["ABORT"])
 
     def test_LaunchpadBrowserPub_fires_FinishReadOnlyRequestEvent(self):
         # LaunchpadBrowserPublication.finishReadOnlyRequest() issues an
         # IFinishReadOnlyRequestEvent and aborts the transaction.
         publication = LaunchpadBrowserPublication(None)
-        self._test_publication(publication, ["ABORT"])
-
-
-class TestFinishReadOnlyRequestFeatureFlag(
-        TestFinishReadOnlyRequestMixin, TestCase):
-
-    layer = ZopelessDatabaseLayer
-
-    def test_WebServicePub_aborts_if_read_only_commit_disabled(self):
-        # If the webservice.read_only_commit.disabled feature flag is set,
-        # WebServicePublication.finishReadOnlyRequest() behaves like
-        # LaunchpadBrowserPublication.finishReadOnlyRequest() and aborts the
-        # transaction.  (This is intended to be the default behaviour in
-        # future.)
-        self.useFixture(FeatureFixture(
-            {'webservice.read_only_commit.disabled': 'on'}))
-        publication = WebServicePublication(None)
         self._test_publication(publication, ["ABORT"])
 
 

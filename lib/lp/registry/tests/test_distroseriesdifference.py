@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Model tests for the DistroSeriesDifference class."""
@@ -436,7 +436,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         packagesets = self._setupPackageSets(
             ds_diff, ds_diff.parent_series, 5)
         parent_packagesets = ds_diff.parent_packagesets
-        self.assertEquals(
+        self.assertEqual(
             sorted([packageset.name for packageset in packagesets]),
             [packageset.name for packageset in parent_packagesets])
 
@@ -445,7 +445,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         ds_diff = self.factory.makeDistroSeriesDifference()
         packagesets = self._setupPackageSets(
             ds_diff, ds_diff.derived_series, 5)
-        self.assertEquals(
+        self.assertEqual(
             sorted([packageset.name for packageset in packagesets]),
             [packageset.name for packageset in ds_diff.packagesets])
 
@@ -1133,7 +1133,7 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         names = [
             self.factory.makeDistroSeriesDifference(
                 series).source_package_name.name
-            for counter in xrange(10)]
+            for counter in range(10)]
 
         results = getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(series)
@@ -1147,7 +1147,7 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         derived_series = self.factory.makeDistroSeries()
         dsps = [
             self.factory.makeDistroSeriesParent(derived_series=derived_series)
-            for counter in xrange(2)]
+            for counter in range(2)]
         dsds = [
             self.factory.makeDistroSeriesDifference(
                 parent_series=dsp.parent_series,
@@ -1174,7 +1174,7 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         dsd = self.factory.makeDistroSeriesDifference()
         packagesets = [
             self.factory.makePackageset(distroseries=dsd.derived_series)
-            for counter in xrange(2)]
+            for counter in range(2)]
         Store.of(dsd).add(PackagesetSources(
             packageset=packagesets[0],
             sourcepackagename=dsd.source_package_name))
@@ -1308,7 +1308,7 @@ class TestMostRecentComments(TestCaseWithFactory):
         dsp = self.factory.makeDistroSeriesParent()
         dsds = set(
             self.factory.makeDistroSeriesDifference(
-                derived_series=dsp.derived_series) for index in xrange(5))
+                derived_series=dsp.derived_series) for index in range(5))
         expected_comments = set()
         for dsd in dsds:
             # Add a couple of comments.

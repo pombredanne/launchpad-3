@@ -89,13 +89,13 @@ class UpdateStatsTest(unittest.TestCase):
         (stdout, empty_stderr) = process.communicate()
 
         # Ensure it returned a success code
-        self.failUnlessEqual(
+        self.assertEqual(
             process.returncode, 0,
             'update-stats.py exited with return code %d. Output was %r' % (
                 process.returncode, stdout))
         # With the -q option, it should produce no output if things went
         # well.
-        self.failUnlessEqual(
+        self.assertEqual(
             stdout, '',
             'update-stats.py was noisy. Emitted:\n%s' % stdout)
 
@@ -106,11 +106,11 @@ class UpdateStatsTest(unittest.TestCase):
         # Make sure all DistroSeries.messagecount entries are updated
         cur.execute(
             "SELECT COUNT(*) FROM DistroSeries WHERE messagecount=-1")
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
         # Make sure we have created missing DistroSeriesLanguage entries
         cur.execute("SELECT COUNT(*) FROM DistroSeriesLanguage")
-        self.failUnless(cur.fetchone()[0] > num_distroserieslanguage)
+        self.assertTrue(cur.fetchone()[0] > num_distroserieslanguage)
 
         # Make sure existing DistroSeriesLangauge entries have been updated.
         cur.execute("""
@@ -118,35 +118,35 @@ class UpdateStatsTest(unittest.TestCase):
             WHERE DistroSeriesLanguage.language = Language.id AND
                   Language.visible = TRUE AND currentcount = -1
             """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
         cur.execute("""
             SELECT COUNT(*) FROM DistroSeriesLanguage, Language
             WHERE DistroSeriesLanguage.language = Language.id AND
                   Language.visible = TRUE AND updatescount = -1
             """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
         cur.execute("""
             SELECT COUNT(*) FROM DistroSeriesLanguage, Language
             WHERE DistroSeriesLanguage.language = Language.id AND
                   Language.visible = TRUE AND rosettacount = -1
             """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
         cur.execute("""
             SELECT COUNT(*) FROM DistroSeriesLanguage, Language
             WHERE DistroSeriesLanguage.language = Language.id AND
                   Language.visible = TRUE AND unreviewed_count = -1
             """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
         cur.execute("""
             SELECT COUNT(*) FROM DistroSeriesLanguage, Language
             WHERE DistroSeriesLanguage.language = Language.id AND
                   Language.visible = TRUE AND contributorcount = -1
             """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
         cur.execute("""
             SELECT COUNT(*) FROM DistroSeriesLanguage, Language
@@ -154,19 +154,19 @@ class UpdateStatsTest(unittest.TestCase):
                   Language.visible = TRUE AND
                   dateupdated < now() - '2 days'::interval
             """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
         # All LaunchpadStatistic rows should have been updated
         cur.execute("""
             SELECT COUNT(*) FROM LaunchpadStatistic
             WHERE value=-1
             """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
         cur.execute("""
             SELECT COUNT(*) FROM LaunchpadStatistic
             WHERE dateupdated < now() - '2 days'::interval
             """)
-        self.failUnlessEqual(cur.fetchone()[0], 0)
+        self.assertEqual(cur.fetchone()[0], 0)
 
         keys = [
             'potemplate_count', 'pofile_count', 'pomsgid_count',
@@ -184,8 +184,8 @@ class UpdateStatsTest(unittest.TestCase):
                 SELECT value from LaunchpadStatistic WHERE name=%(key)s
                 """, dict(key=key))
             row = cur.fetchone()
-            self.failIf(row is None, '%s not updated' % key)
-            self.failUnless(row[0] >= 0, '%s is invalid' % key)
+            self.assertIsNotNone(row, '%s not updated' % key)
+            self.assertTrue(row[0] >= 0, '%s is invalid' % key)
 
 
 class UpdateTranslationStatsTest(unittest.TestCase):
@@ -220,7 +220,7 @@ class UpdateTranslationStatsTest(unittest.TestCase):
             if template.distroseries == hoary:
                 pmount_template = template
 
-        self.failIfEqual(pmount_template, None)
+        self.assertIsNotNone(pmount_template)
 
         # Let's calculate the statistics ourselves so we can check that cached
         # values are the right ones.
@@ -236,14 +236,13 @@ class UpdateTranslationStatsTest(unittest.TestCase):
                 spanish).count()
 
         # The amount of messages to translate in Hoary is the expected.
-        self.failUnlessEqual(hoary.messagecount, messagecount)
+        self.assertEqual(hoary.messagecount, messagecount)
 
         # And the same for translations and contributors.
-        self.failUnlessEqual(spanish_hoary.currentCount(), currentcount)
+        self.assertEqual(spanish_hoary.currentCount(), currentcount)
         # XXX Danilo Segan 2010-08-06: we should not assert that
         # sampledata is correct. Bug #614397.
-        #self.failUnlessEqual(spanish_hoary.contributor_count,
-        #    contributor_count)
+        #self.assertEqual(spanish_hoary.contributor_count, contributor_count)
 
         # Let's set 'pmount' template as not current for Hoary.
         pmount_template.iscurrent = False
@@ -271,7 +270,7 @@ class UpdateTranslationStatsTest(unittest.TestCase):
         (stdout, empty_stderr) = process.communicate()
 
         # Ensure it returned a success code
-        self.failUnlessEqual(
+        self.assertEqual(
             process.returncode, 0,
             'update-stats.py exited with return code %d. Output was %r' % (
                 process.returncode, stdout))
@@ -304,22 +303,22 @@ class UpdateTranslationStatsTest(unittest.TestCase):
 
         # The amount of messages to translate in Hoary is now lower because we
         # don't count anymore pmount messages.
-        self.failUnlessEqual(hoary.messagecount, new_messagecount)
-        self.failIf(messagecount <= new_messagecount)
-        self.failUnlessEqual(messagecount - pmount_messages, new_messagecount)
+        self.assertEqual(hoary.messagecount, new_messagecount)
+        self.assertFalse(messagecount <= new_messagecount)
+        self.assertEqual(messagecount - pmount_messages, new_messagecount)
 
         # The amount of messages translate into Spanish is also lower now
         # because we don't count Spanish translations for pmount anymore.
-        self.failUnlessEqual(spanish_hoary.currentCount(), new_currentcount)
-        self.failIf(currentcount <= new_currentcount)
-        self.failUnlessEqual(currentcount - pmount_spanish_translated,
+        self.assertEqual(spanish_hoary.currentCount(), new_currentcount)
+        self.assertFalse(currentcount <= new_currentcount)
+        self.assertEqual(currentcount - pmount_spanish_translated,
             new_currentcount)
 
         # Also, there are two Spanish translators that only did contributions
         # to pmount, so they are gone now.
-        self.failUnlessEqual(
+        self.assertEqual(
             spanish_hoary.contributor_count, new_contributor_count)
-        self.failIf(contributor_count <= new_contributor_count)
+        self.assertFalse(contributor_count <= new_contributor_count)
 
     def test_english(self):
         """Test that English is handled correctly by DistroSeries.
@@ -338,11 +337,10 @@ class UpdateTranslationStatsTest(unittest.TestCase):
         for template in moz_templates:
             if template.distroseries == hoary:
                 moz_template = template
-        self.failIfEqual(
-            moz_template, None,
-            'The pkgconf-mozilla template for hoary is None.')
+        self.assertIsNotNone(
+            moz_template, 'The pkgconf-mozilla template for hoary is None.')
         moz_english_count = moz_template.getPOFileByLang('en').messageCount()
-        self.failIf(
+        self.assertFalse(
             0 == moz_english_count,
             'moz_english_pofile should have messages translated')
 
@@ -353,7 +351,7 @@ class UpdateTranslationStatsTest(unittest.TestCase):
             cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT)
         (stdout, empty_stderr) = process.communicate()
-        self.failUnlessEqual(
+        self.assertEqual(
             process.returncode, 0,
             'update-stats.py exited with return code %d. Output was %r' % (
                 process.returncode, stdout))
@@ -362,6 +360,6 @@ class UpdateTranslationStatsTest(unittest.TestCase):
         # of the moz_english_pofile template.
         english = self.languageset['en']
         english_dsl = hoary.getDistroSeriesLanguage(english)
-        self.failUnlessEqual(
+        self.assertEqual(
             None, english_dsl, 'The English DistroSeriesLangauge must '
             'not exist.')

@@ -391,8 +391,8 @@ class TestParsedFilesDetection(TestCase):
 
     def test_sorts_by_mtime(self):
         # Files are sorted by ascending mtime.
-        root = self.useFixture(TempDir()).path
-        file_paths = [os.path.join(root, str(name)) for name in range(3)]
+        root = self.useFixture(TempDir())
+        file_paths = [root.join(str(name)) for name in range(3)]
         now = time.time()
         for i, path in enumerate(file_paths):
             write_file(path, '%s\n' % i)
@@ -418,7 +418,7 @@ class TestParsedFilesDetection(TestCase):
         ParsedApacheLog(first_line, len(fd.read()))
 
         files_to_parse = get_files_to_parse([self.file_path])
-        self.failUnlessEqual(list(files_to_parse), [])
+        self.assertEqual(list(files_to_parse), [])
 
     def test_parsed_file_with_new_content(self):
         # A file that has been parsed already but in which new content was
@@ -452,7 +452,7 @@ class TestParsedFilesDetection(TestCase):
         fd.close()
         files_to_parse = get_files_to_parse([new_path])
         positions = map(itemgetter(1), files_to_parse)
-        self.failUnlessEqual(positions, [0])
+        self.assertEqual(positions, [0])
 
     def test_fresh_gzipped_file(self):
         # get_files_to_parse() handles gzipped files just like uncompressed
@@ -472,7 +472,7 @@ class TestParsedFilesDetection(TestCase):
         ParsedApacheLog(first_line, len(first_line))
         files_to_parse = get_files_to_parse([gz_path])
         positions = map(itemgetter(1), files_to_parse)
-        self.failUnlessEqual(positions, [len(first_line)])
+        self.assertEqual(positions, [len(first_line)])
 
 
 class Test_create_or_update_parsedlog_entry(TestCase):

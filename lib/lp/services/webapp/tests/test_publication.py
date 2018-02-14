@@ -69,7 +69,7 @@ class TestLaunchpadBrowserPublication(TestCase):
         publication = LaunchpadBrowserPublication(None)
         publication.callTraversalHooks(request, obj1)
         publication.callTraversalHooks(request, obj2)
-        self.assertEquals(request.traversed_objects, [obj1, obj2])
+        self.assertEqual(request.traversed_objects, [obj1, obj2])
 
     def test_callTraversalHooks_appends_only_once_to_traversed_objects(self):
         # callTraversalHooks() may be called more than once for a given
@@ -80,7 +80,7 @@ class TestLaunchpadBrowserPublication(TestCase):
         publication = LaunchpadBrowserPublication(None)
         publication.callTraversalHooks(request, obj1)
         publication.callTraversalHooks(request, obj2)
-        self.assertEquals(request.traversed_objects, [obj1])
+        self.assertEqual(request.traversed_objects, [obj1])
 
 
 class TestWebServicePublication(TestCaseWithFactory):
@@ -99,7 +99,7 @@ class TestWebServicePublication(TestCaseWithFactory):
         # different.
         self.factory.makeAccount('Personless account')
         person = self.factory.makePerson()
-        self.failIfEqual(person.id, person.account.id)
+        self.assertNotEqual(person.id, person.account.id)
 
         # Create an access token for our new person.
         consumer = getUtility(IOAuthConsumerSet).new(u'test-consumer')
@@ -124,7 +124,7 @@ class TestWebServicePublication(TestCaseWithFactory):
         # having the same IDs as their associated person entries to work.
         request = self._getRequestForPersonAndAccountWithDifferentIDs()
         principal = WebServicePublication(None).getPrincipal(request)
-        self.failIf(principal is None)
+        self.assertIsNotNone(principal)
 
     def test_disconnect_logs_oops(self):
         # Ensure that OOPS reports are generated for database

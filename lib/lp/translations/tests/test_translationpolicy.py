@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test `TranslationPolicyMixin`."""
@@ -48,8 +48,7 @@ class TestTranslationPolicy(TestCaseWithFactory):
 
     def _makeTranslationGroups(self, count):
         """Return a list of `count` freshly minted `TranslationGroup`s."""
-        return [
-            self.factory.makeTranslationGroup() for number in xrange(count)]
+        return [self.factory.makeTranslationGroup() for number in range(count)]
 
     def _makeTranslator(self, language, for_policy=None):
         """Create a translator for a policy object.

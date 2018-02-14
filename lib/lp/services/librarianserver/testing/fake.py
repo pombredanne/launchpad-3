@@ -70,9 +70,8 @@ class FakeLibrarian(Fixture):
     utility.
     """
 
-    def setUp(self):
+    def _setUp(self):
         """Fixture API: install as the librarian."""
-        Fixture.setUp(self)
         self.aliases = {}
         self.download_url = config.librarian.download_url
         transaction.manager.registerSynch(self)

@@ -479,7 +479,7 @@ class TestBugChanges(TestCaseWithFactory):
         for bug_task in self.bug.bugtasks:
             bug_task.transitionToStatus(
                 BugTaskStatus.FIXRELEASED, user=self.user)
-        self.failUnless(self.bug.is_complete)
+        self.assertTrue(self.bug.is_complete)
         self.saveOldChanges()
         branch = self.factory.makeBranch()
         self.bug.linkBranch(branch, self.user)
@@ -532,7 +532,7 @@ class TestBugChanges(TestCaseWithFactory):
         for bug_task in self.bug.bugtasks:
             bug_task.transitionToStatus(
                 BugTaskStatus.FIXRELEASED, user=self.user)
-        self.failUnless(self.bug.is_complete)
+        self.assertTrue(self.bug.is_complete)
         branch = self.factory.makeBranch()
         self.bug.linkBranch(branch, self.user)
         self.saveOldChanges()

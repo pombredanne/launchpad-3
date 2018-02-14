@@ -95,20 +95,19 @@ class TestLaunchpadConfig(testtools.TestCase):
         # The launchpad.config_overlay_dir setting can be used to load
         # extra config files over the top. This is useful for overlaying
         # non-version-controlled secrets.
-        config_dir = self.useFixture(TempDir(rootdir='configs')).path
-        config_name = os.path.basename(config_dir)
-        overlay_dir = self.useFixture(TempDir(rootdir='configs')).path
-        with open(os.path.join(config_dir, 'launchpad-lazr.conf'), 'w') as f:
+        config_dir = self.useFixture(TempDir(rootdir='configs'))
+        config_name = os.path.basename(config_dir.path)
+        overlay_dir = self.useFixture(TempDir(rootdir='configs'))
+        with open(config_dir.join('launchpad-lazr.conf'), 'w') as f:
             f.write("""
                 [meta]
                 extends: ../testrunner/launchpad-lazr.conf
 
                 [launchpad]
                 config_overlay_dir: ../%s
-                """ % os.path.basename(overlay_dir))
+                """ % os.path.basename(overlay_dir.path))
         os.symlink(
-            '../testrunner/launchpad.conf',
-            os.path.join(config_dir, 'launchpad.conf'))
+            '../testrunner/launchpad.conf', config_dir.join('launchpad.conf'))
 
         config = lp.services.config.config
 
@@ -116,7 +115,7 @@ class TestLaunchpadConfig(testtools.TestCase):
             self.assertEqual('launchpad_main', config.launchpad.dbuser)
             self.assertEqual('', config.launchpad.site_message)
 
-        with open(os.path.join(overlay_dir, '00-test-lazr.conf'), 'w') as f:
+        with open(overlay_dir.join('00-test-lazr.conf'), 'w') as f:
             f.write("""
                 [launchpad]
                 dbuser: overlay-user
@@ -126,7 +125,7 @@ class TestLaunchpadConfig(testtools.TestCase):
             self.assertEqual('overlay-user', config.launchpad.dbuser)
             self.assertEqual('An overlay!', config.launchpad.site_message)
 
-        with open(os.path.join(overlay_dir, '01-test-lazr.conf'), 'w') as f:
+        with open(overlay_dir.join('01-test-lazr.conf'), 'w') as f:
             f.write("""
                 [launchpad]
                 site_message: Another overlay!
@@ -135,7 +134,7 @@ class TestLaunchpadConfig(testtools.TestCase):
             self.assertEqual('overlay-user', config.launchpad.dbuser)
             self.assertEqual('Another overlay!', config.launchpad.site_message)
 
-        os.unlink(os.path.join(overlay_dir, '00-test-lazr.conf'))
+        os.unlink(overlay_dir.join('00-test-lazr.conf'))
         with ConfigUseFixture(config_name):
             self.assertEqual('launchpad_main', config.launchpad.dbuser)
             self.assertEqual('Another overlay!', config.launchpad.site_message)

@@ -44,7 +44,7 @@ class TestKarmaCacheUpdater(unittest.TestCase):
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         (out, err) = process.communicate()
-        self.failUnless(process.returncode == 0, (out, err))
+        self.assertTrue(process.returncode == 0, (out, err))
 
     # This is a quite long test, but it's better this way because the
     # karmacache updater script takes quite a while to run and changes/deletes
@@ -58,9 +58,9 @@ class TestKarmaCacheUpdater(unittest.TestCase):
         # will delete the cache entries for Sample Person.
         sample_person = self.personset.getByName('name12')
         cache_entries = self._getCacheEntriesByPerson(sample_person)
-        self.failUnless(not cache_entries.is_empty())
+        self.assertFalse(cache_entries.is_empty())
         for cache in cache_entries:
-            self.failIf(cache.karmavalue <= 0)
+            self.assertFalse(cache.karmavalue <= 0)
 
         # As we can see, Foo Bar already has some karmacache entries. We'll
         # now add some fresh Karma entries for them and later we'll check that
@@ -69,9 +69,9 @@ class TestKarmaCacheUpdater(unittest.TestCase):
         foobar = self.personset.getByName('name16')
         cache_entries = self._getCacheEntriesByPerson(foobar)
         foobar_original_entries_count = cache_entries.count()
-        self.failUnless(foobar_original_entries_count > 0)
+        self.assertTrue(foobar_original_entries_count > 0)
         for cache in cache_entries:
-            self.failIf(cache.karmavalue <= 0)
+            self.assertFalse(cache.karmavalue <= 0)
         firefox = getUtility(IProductSet)['firefox']
         foobar.assignKarma('bugcreated', firefox)
 
@@ -79,7 +79,7 @@ class TestKarmaCacheUpdater(unittest.TestCase):
         # add some fresh Karma entries to them, our cache-updater script
         # will have to create new KarmaCache entries for them.
         nopriv = self.personset.getByName('no-priv')
-        self.failUnless(self._getCacheEntriesByPerson(nopriv).count() == 0)
+        self.assertTrue(self._getCacheEntriesByPerson(nopriv).count() == 0)
         nopriv.assignKarma('bugcreated', firefox)
 
         transaction.commit()
@@ -91,7 +91,7 @@ class TestKarmaCacheUpdater(unittest.TestCase):
 
         # Check that Sample Person has no KarmaCache entries at all
         sample_person = self.personset.getByName('name12')
-        self.failUnless(
+        self.assertTrue(
             self._getCacheEntriesByPerson(sample_person).count() == 0)
 
         # Check that Foo Bar had their KarmaCache entries updated.
@@ -99,7 +99,7 @@ class TestKarmaCacheUpdater(unittest.TestCase):
         # The cache entries that would have their karmavalue updated to 0 are
         # instead deleted from the DB; that's why the new count can be smaller
         # than the original one.
-        self.failUnless(entries_count <= foobar_original_entries_count)
+        self.assertTrue(entries_count <= foobar_original_entries_count)
 
         # And finally, ensure that No Priv got some new KarmaCache entries.
-        self.failUnless(not self._getCacheEntriesByPerson(nopriv).is_empty())
+        self.assertFalse(self._getCacheEntriesByPerson(nopriv).is_empty())

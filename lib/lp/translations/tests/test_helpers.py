@@ -39,7 +39,7 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
         tm = make_translationmessage(self.factory, pofile=self.pofile,
                                      potmsgset=self.potmsgset,
                                      translations=translations)
-        self.assertEquals(translations, tm.translations)
+        self.assertEqual(translations, tm.translations)
 
     def test_summarize_current_translations_baseline(self):
         # The trivial case for summarize_current_translations: no
@@ -49,7 +49,7 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
         self.assertIs(None, current_shared)
         self.assertIs(None, current_diverged)
         self.assertIs(None, other)
-        self.assertEquals([], divergences)
+        self.assertEqual([], divergences)
 
     def test_summarize_current_translations_current_shared(self):
         # summarize_current_translations when there is a single, shared
@@ -59,10 +59,10 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
             ubuntu=True, upstream=False, diverged=False)
         current_shared, current_diverged, other, divergences = (
             summarize_current_translations(self.pofile, self.potmsgset))
-        self.assertEquals(tm, current_shared)
+        self.assertEqual(tm, current_shared)
         self.assertIs(None, current_diverged)
         self.assertIs(None, other)
-        self.assertEquals([], divergences)
+        self.assertEqual([], divergences)
 
     def test_summarize_current_translations_current_both(self):
         # summarize_current_translations when there is a single message
@@ -72,10 +72,10 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
             ubuntu=True, upstream=True, diverged=False)
         current_shared, current_diverged, other, divergences = (
             summarize_current_translations(self.pofile, self.potmsgset))
-        self.assertEquals(tm, current_shared)
+        self.assertEqual(tm, current_shared)
         self.assertIs(None, current_diverged)
-        self.assertEquals(tm, other)
-        self.assertEquals([], divergences)
+        self.assertEqual(tm, other)
+        self.assertEqual([], divergences)
 
     def test_summarize_current_translations_current_both_same(self):
         # summarize_current_translations when there are identical but
@@ -92,14 +92,14 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
 
         self.assertIn(current_shared, (tm_ubuntu, tm_upstream))
         if self.pofile.potemplate.distroseries is not None:
-            self.assertEquals(tm_ubuntu, current_shared)
+            self.assertEqual(tm_ubuntu, current_shared)
         else:
-            self.assertEquals(tm_upstream, current_shared)
+            self.assertEqual(tm_upstream, current_shared)
 
         self.assertIs(None, current_diverged)
         self.assertIn(other, (tm_ubuntu, tm_upstream))
         self.assertNotEqual(current_shared, other)
-        self.assertEquals([], divergences)
+        self.assertEqual([], divergences)
 
     def test_summarize_current_translations_current_2_different(self):
         # summarize_current_translations when there are different
@@ -112,10 +112,10 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
             ubuntu=False, upstream=True, diverged=False)
         current_shared, current_diverged, other, divergences = (
             summarize_current_translations(self.pofile, self.potmsgset))
-        self.assertEquals(tm_this, current_shared)
+        self.assertEqual(tm_this, current_shared)
         self.assertIs(None, current_diverged)
-        self.assertEquals(tm_other, other)
-        self.assertEquals([], divergences)
+        self.assertEqual(tm_other, other)
+        self.assertEqual([], divergences)
 
     def test_summarize_current_translations_current_3_different(self):
         # summarize_current_translations when there are different
@@ -132,10 +132,10 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
             ubuntu=True, upstream=False, diverged=True)
         current_shared, current_diverged, other, divergences = (
             summarize_current_translations(self.pofile, self.potmsgset))
-        self.assertEquals(tm_this, current_shared)
-        self.assertEquals(tm_diverged, current_diverged)
-        self.assertEquals(tm_other, other)
-        self.assertEquals([], divergences)
+        self.assertEqual(tm_this, current_shared)
+        self.assertEqual(tm_diverged, current_diverged)
+        self.assertEqual(tm_other, other)
+        self.assertEqual([], divergences)
 
     def test_summarize_current_translations_current_3_diverged_elsewh(self):
         # summarize_current_translations when there are different
@@ -146,15 +146,15 @@ class TestTranslationMessageHelpers(TestCaseWithFactory):
             self.factory, pofile=self.other_pofile, potmsgset=self.potmsgset,
             ubuntu=True, upstream=False, diverged=True)
         self.assertTrue(tm_diverged.is_current_ubuntu)
-        self.assertEquals(
+        self.assertEqual(
             tm_diverged.potemplate, self.other_pofile.potemplate)
-        self.assertEquals(self.potmsgset, tm_diverged.potmsgset)
+        self.assertEqual(self.potmsgset, tm_diverged.potmsgset)
         current_shared, current_diverged, other, divergences = (
             summarize_current_translations(self.pofile, self.potmsgset))
         self.assertIs(None, current_shared)
         self.assertIs(None, current_diverged)
         self.assertIs(None, other)
-        self.assertEquals([tm_diverged], divergences)
+        self.assertEqual([tm_diverged], divergences)
 
     def test_summarize_current_translations_multiple_divergences_elsewh(self):
         # summarize_current_translations when there are diverged

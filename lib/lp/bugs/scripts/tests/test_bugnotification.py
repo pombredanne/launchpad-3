@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Tests for construction bug notification emails for sending."""
 
@@ -439,20 +439,20 @@ class TestNotificationCommentBatches(unittest.TestCase):
 
     def test_with_nothing(self):
         # Nothing is generated if an empty list is passed in.
-        self.assertEquals([], list(notification_comment_batches([])))
+        self.assertEqual([], list(notification_comment_batches([])))
 
     def test_with_one_non_comment_notification(self):
         # Given a single non-comment notification, a single tuple is
         # generated.
         notification = FakeNotification(False)
-        self.assertEquals(
+        self.assertEqual(
             [(1, notification)],
             list(notification_comment_batches([notification])))
 
     def test_with_one_comment_notification(self):
         # Given a single comment notification, a single tuple is generated.
         notification = FakeNotification(True)
-        self.assertEquals(
+        self.assertEqual(
             [(1, notification)],
             list(notification_comment_batches([notification])))
 
@@ -462,7 +462,7 @@ class TestNotificationCommentBatches(unittest.TestCase):
         notification1 = FakeNotification(True)
         notification2 = FakeNotification(False)
         notifications = [notification1, notification2]
-        self.assertEquals(
+        self.assertEqual(
             [(1, notification1), (1, notification2)],
             list(notification_comment_batches(notifications)))
 
@@ -472,7 +472,7 @@ class TestNotificationCommentBatches(unittest.TestCase):
         notification1 = FakeNotification(False)
         notification2 = FakeNotification(True)
         notifications = [notification1, notification2]
-        self.assertEquals(
+        self.assertEqual(
             [(1, notification1), (1, notification2)],
             list(notification_comment_batches(notifications)))
 
@@ -483,7 +483,7 @@ class TestNotificationCommentBatches(unittest.TestCase):
         notification2 = FakeNotification(True)
         notification3 = FakeNotification(False)
         notifications = [notification1, notification2, notification3]
-        self.assertEquals(
+        self.assertEqual(
             [(1, notification1), (1, notification2), (1, notification3)],
             list(notification_comment_batches(notifications)))
 
@@ -500,7 +500,7 @@ class TestNotificationCommentBatches(unittest.TestCase):
             notification1, notification2,
             notification3, notification4,
             ]
-        self.assertEquals(
+        self.assertEqual(
             [(1, notification1), (1, notification2),
              (1, notification3), (2, notification4)],
             list(notification_comment_batches(notifications)))
@@ -511,20 +511,20 @@ class TestNotificationBatches(unittest.TestCase):
 
     def test_with_nothing(self):
         # Nothing is generated if an empty list is passed in.
-        self.assertEquals([], list(notification_batches([])))
+        self.assertEqual([], list(notification_batches([])))
 
     def test_with_one_non_comment_notification(self):
         # Given a single non-comment notification, a single batch is
         # generated.
         notification = FakeNotification(False)
-        self.assertEquals(
+        self.assertEqual(
             [[notification]],
             list(notification_batches([notification])))
 
     def test_with_one_comment_notification(self):
         # Given a single comment notification, a single batch is generated.
         notification = FakeNotification(True)
-        self.assertEquals(
+        self.assertEqual(
             [[notification]],
             list(notification_batches([notification])))
 
@@ -534,7 +534,7 @@ class TestNotificationBatches(unittest.TestCase):
         notification1 = FakeNotification(True)
         notification2 = FakeNotification(False)
         notifications = [notification1, notification2]
-        self.assertEquals(
+        self.assertEqual(
             [[notification1, notification2]],
             list(notification_batches(notifications)))
 
@@ -544,7 +544,7 @@ class TestNotificationBatches(unittest.TestCase):
         notification1 = FakeNotification(False)
         notification2 = FakeNotification(True)
         notifications = [notification1, notification2]
-        self.assertEquals(
+        self.assertEqual(
             [[notification1, notification2]],
             list(notification_batches(notifications)))
 
@@ -555,7 +555,7 @@ class TestNotificationBatches(unittest.TestCase):
         notification2 = FakeNotification(True)
         notification3 = FakeNotification(False)
         notifications = [notification1, notification2, notification3]
-        self.assertEquals(
+        self.assertEqual(
             [[notification1, notification2, notification3]],
             list(notification_batches(notifications)))
 
@@ -571,7 +571,7 @@ class TestNotificationBatches(unittest.TestCase):
             notification1, notification2,
             notification3, notification4,
             ]
-        self.assertEquals(
+        self.assertEqual(
             [[notification1, notification2, notification3], [notification4]],
             list(notification_batches(notifications)))
 
@@ -579,20 +579,20 @@ class TestNotificationBatches(unittest.TestCase):
         # Batches are grouped by bug.
         notifications = [FakeNotification(bug=1) for number in range(5)]
         observed = list(notification_batches(notifications))
-        self.assertEquals([notifications], observed)
+        self.assertEqual([notifications], observed)
 
     def test_notifications_for_different_bugs(self):
         # Batches are grouped by bug.
         notifications = [FakeNotification(bug=number) for number in range(5)]
         expected = [[notification] for notification in notifications]
         observed = list(notification_batches(notifications))
-        self.assertEquals(expected, observed)
+        self.assertEqual(expected, observed)
 
     def test_notifications_for_same_owner(self):
         # Batches are grouped by owner.
         notifications = [FakeNotification(owner=1) for number in range(5)]
         observed = list(notification_batches(notifications))
-        self.assertEquals([notifications], observed)
+        self.assertEqual([notifications], observed)
 
     def test_notifications_for_different_owners(self):
         # Batches are grouped by owner.
@@ -600,7 +600,7 @@ class TestNotificationBatches(unittest.TestCase):
             FakeNotification(owner=number) for number in range(5)]
         expected = [[notification] for notification in notifications]
         observed = list(notification_batches(notifications))
-        self.assertEquals(expected, observed)
+        self.assertEqual(expected, observed)
 
     def test_notifications_with_mixed_bugs_and_owners(self):
         # Batches are grouped by bug and owner.
@@ -612,7 +612,7 @@ class TestNotificationBatches(unittest.TestCase):
             ]
         expected = [[notification] for notification in notifications]
         observed = list(notification_batches(notifications))
-        self.assertEquals(expected, observed)
+        self.assertEqual(expected, observed)
 
     def test_notifications_with_mixed_bugs_and_owners_2(self):
         # Batches are grouped by bug and owner.
@@ -624,7 +624,7 @@ class TestNotificationBatches(unittest.TestCase):
             ]
         expected = [notifications[0:2], notifications[2:4]]
         observed = list(notification_batches(notifications))
-        self.assertEquals(expected, observed)
+        self.assertEqual(expected, observed)
 
     def test_notifications_with_mixed_bugs_owners_and_comments(self):
         # Batches are grouped by bug, owner and comments.
@@ -636,7 +636,7 @@ class TestNotificationBatches(unittest.TestCase):
             ]
         expected = [notifications[0:3], notifications[3:4]]
         observed = list(notification_batches(notifications))
-        self.assertEquals(expected, observed)
+        self.assertEqual(expected, observed)
 
 
 class EmailNotificationTestBase(TestCaseWithFactory):
@@ -1122,7 +1122,7 @@ class TestEmailNotificationsWithFilters(TestCaseWithFactory):
         self.addFilter(u"Test filter")
 
         the_subscriber = self.subscription.subscriber
-        self.assertEquals(
+        self.assertEqual(
             {other_person.preferredemail.email: [u"Someone's filter"],
              the_subscriber.preferredemail.email: [u"Test filter"]},
             self.getSubscriptionEmailHeaders(by_person=True))
@@ -1305,7 +1305,7 @@ class TestDeferredNotifications(TestCaseWithFactory):
         # Create some deferred notifications and show that processing them
         # puts then in the state where they are ready to send.
         num = 5
-        for i in xrange(num):
+        for i in range(num):
             self._make_deferred_notification()
         deferred = self.notification_set.getDeferredNotifications()
         self.assertEqual(num, deferred.count())

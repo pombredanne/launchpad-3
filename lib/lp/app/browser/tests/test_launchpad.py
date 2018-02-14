@@ -77,10 +77,10 @@ class TraversalMixin:
 
         notifications = request.notifications
         if notification is None:
-            self.assertEquals(len(notifications), 0)
+            self.assertEqual(len(notifications), 0)
             return
         self.assertEqual(len(notifications), 1)
-        self.assertEquals(notifications[0].level, level)
+        self.assertEqual(notifications[0].level, level)
         self.assertEqual(notification, notifications[0].message)
 
     def assertDisplaysNotification(

@@ -11,8 +11,8 @@ import os.path
 import shutil
 import tempfile
 
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import MatchesListwise
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -128,7 +128,7 @@ class TestRecipeBuilder(TestRecipeBuilderBase):
         job.setBuilder(builder, OkSlave())
         logger = BufferLogger()
         job.verifyBuildRequest(logger)
-        self.assertEquals("", logger.getLogBuffer())
+        self.assertEqual("", logger.getLogBuffer())
 
     def test_verifyBuildRequest_non_virtual(self):
         # verifyBuildRequest will raise if a non-virtual builder is proposed.

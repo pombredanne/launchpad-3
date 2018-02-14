@@ -1,7 +1,9 @@
-# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BinaryPackageBuildBehaviour."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -11,8 +13,8 @@ import shutil
 import tempfile
 
 from storm.store import Store
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import MatchesListwise
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -258,7 +260,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             interactor.getBuildBehaviour(bq, builder, slave), BufferLogger())
         yield self.assertExpectedInteraction(
             slave.call_log, builder, build, lf, archive, ArchivePurpose.PPA,
-            extra_uploads=[(sprf_url, 'buildd', u'sekrit')],
+            extra_uploads=[(sprf_url, 'buildd', 'sekrit')],
             filemap_names=[sprf.libraryfile.filename])
 
     @defer.inlineCallbacks

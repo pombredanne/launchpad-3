@@ -76,8 +76,7 @@ class BaseLayerIsolator(Fixture):
         super(BaseLayerIsolator, self).__init__()
         self.with_persistent = with_persistent
 
-    def setUp(self):
-        super(BaseLayerIsolator, self).setUp()
+    def _setUp(self):
         if self.with_persistent:
             env_value = ''
         else:
@@ -103,8 +102,7 @@ class LayerFixture(Fixture):
         super(LayerFixture, self).__init__()
         self.layer = layer
 
-    def setUp(self):
-        super(LayerFixture, self).setUp()
+    def _setUp(self):
         self.layer.setUp()
         self.addCleanup(self.layer.tearDown)
 
@@ -174,28 +172,24 @@ class BaseTestCase(testtools.TestCase):
     want_rabbitmq = False
 
     def testBaseIsSetUpFlag(self):
-        self.failUnlessEqual(BaseLayer.isSetUp, True)
+        self.assertEqual(BaseLayer.isSetUp, True)
 
     def testFunctionalIsSetUp(self):
-        self.failUnlessEqual(
-                FunctionalLayer.isSetUp, self.want_functional_flag
-                )
+        self.assertEqual(FunctionalLayer.isSetUp, self.want_functional_flag)
 
     def testZopelessIsSetUp(self):
-        self.failUnlessEqual(
-                ZopelessLayer.isSetUp, self.want_zopeless_flag
-                )
+        self.assertEqual(ZopelessLayer.isSetUp, self.want_zopeless_flag)
 
     def testComponentArchitecture(self):
         try:
             getUtility(ILibrarianClient)
         except ComponentLookupError:
-            self.failIf(
+            self.assertFalse(
                     self.want_component_architecture,
                     'Component Architecture should be available.'
                     )
         else:
-            self.failUnless(
+            self.assertTrue(
                     self.want_component_architecture,
                     'Component Architecture should not be available.'
                     )
@@ -207,12 +201,12 @@ class BaseTestCase(testtools.TestCase):
         # not currently available.
         try:
             urlopen(config.librarian.download_url).read()
-            self.failUnless(
+            self.assertTrue(
                     self.want_librarian_running,
                     'Librarian should not be running.'
                     )
         except IOError:
-            self.failIf(
+            self.assertFalse(
                     self.want_librarian_running,
                     'Librarian should be running.'
                     )
@@ -232,20 +226,20 @@ class BaseTestCase(testtools.TestCase):
                     'foo.txt', len(data), StringIO(data), 'text/plain'
                     )
         except UploadFailed:
-            self.failIf(
+            self.assertFalse(
                     want_librarian_working,
                     'Librarian should be fully operational'
                     )
         # Since we use IMasterStore that doesn't throw either AttributeError
         # or ComponentLookupError.
         except TypeError:
-            self.failIf(
+            self.assertFalse(
                     want_librarian_working,
                     'Librarian not operational as component architecture '
                     'not loaded'
                     )
         else:
-            self.failUnless(
+            self.assertTrue(
                     want_librarian_working,
                     'Librarian should not be operational'
                     )
@@ -357,7 +351,7 @@ class LibrarianResetTestCase(testtools.TestCase):
                 self.sample_data, len(self.sample_data),
                 StringIO(self.sample_data), 'text/plain'
                 )
-        self.failUnlessEqual(
+        self.assertEqual(
                 urlopen(LibrarianTestCase.url).read(), self.sample_data
                 )
         # Perform the librarian specific between-test code:
@@ -367,7 +361,7 @@ class LibrarianResetTestCase(testtools.TestCase):
         # XXX: StuartBishop 2006-06-30 Bug=51370:
         # We should get a DownloadFailed exception here.
         data = urlopen(LibrarianTestCase.url).read()
-        self.failIfEqual(data, self.sample_data)
+        self.assertNotEqual(data, self.sample_data)
 
 
 class LibrarianHideTestCase(testtools.TestCase):
@@ -417,7 +411,7 @@ class DatabaseTestCase(BaseTestCase):
         con = DatabaseLayer.connect()
         cur = con.cursor()
         cur.execute("DELETE FROM Wikiname")
-        self.failUnlessEqual(self.getWikinameCount(con), 0)
+        self.assertEqual(self.getWikinameCount(con), 0)
         con.commit()
         # Run the per-test code for the Database layer.
         DatabaseLayer.testTearDown()
@@ -500,7 +494,7 @@ class LayerProcessControllerInvariantsTestCase(BaseTestCase):
         # Test that the app server is up and running.
         mainsite = LayerProcessController.appserver_config.vhost.mainsite
         home_page = urlopen(mainsite.rooturl).read()
-        self.failUnless(
+        self.assertTrue(
             'Is your project registered yet?' in home_page,
             "Home page couldn't be retrieved:\n%s" % home_page)
 
@@ -543,9 +537,10 @@ class LayerProcessControllerTestCase(testtools.TestCase):
                                 LayerProcessController.appserver_config)
         LayerProcessController.stopAppServer()
         self.assertRaises(OSError, os.kill, pid, 0)
-        self.failIf(os.path.exists(pid_file), "PID file wasn't removed")
-        self.failUnless(LayerProcessController.appserver is None,
-                        "appserver class attribute wasn't reset")
+        self.assertFalse(os.path.exists(pid_file), "PID file wasn't removed")
+        self.assertIsNone(
+            LayerProcessController.appserver,
+            "appserver class attribute wasn't reset")
 
     def test_postTestInvariants(self):
         # A LayerIsolationError should be raised if the app server dies in the
@@ -566,14 +561,14 @@ class LayerProcessControllerTestCase(testtools.TestCase):
         # XXX: Robert Collins 2010-10-17 bug=661967 - this isn't a reset, its
         # a flag that it *needs* a reset, which is actually quite different;
         # the lack of a teardown will leak databases.
-        self.assertEquals(True, LaunchpadTestSetup()._reset_db)
+        self.assertEqual(True, LaunchpadTestSetup()._reset_db)
 
 
 class TestNameTestCase(testtools.TestCase):
     layer = BaseLayer
 
     def testTestName(self):
-        self.failUnlessEqual(
+        self.assertEqual(
                 BaseLayer.test_name,
                 "testTestName "
                 "(lp.testing.tests.test_layers_functional.TestNameTestCase)")

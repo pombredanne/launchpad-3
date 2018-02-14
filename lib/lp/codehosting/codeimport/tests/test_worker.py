@@ -253,7 +253,7 @@ class TestBazaarBranchStore(WorkerTest):
         target_url = store._getMirrorURL(self.arbitrary_branch_id)
         knit_format = format_registry.get('knit')()
         tree = create_branch_with_one_revision(target_url, format=knit_format)
-        self.assertNotEquals(
+        self.assertNotEqual(
             tree.bzrdir._format.repository_format.network_name(),
             default_format.repository_format.network_name())
 
@@ -261,8 +261,8 @@ class TestBazaarBranchStore(WorkerTest):
         new_branch = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
         # Make sure backup.bzr is removed, as it interferes with CSCVS.
-        self.assertEquals(os.listdir(self.temp_dir), [".bzr"])
-        self.assertEquals(new_branch.repository._format.network_name(),
+        self.assertEqual(os.listdir(self.temp_dir), [".bzr"])
+        self.assertEqual(new_branch.repository._format.network_name(),
             default_format.repository_format.network_name())
 
     def test_pushUpgradesFormat(self):
@@ -292,13 +292,13 @@ class TestBazaarBranchStore(WorkerTest):
         # Only .bzr is left behind. The scanner removes branches
         # in which invalid directories (such as .bzr.retire.
         # exist). (bug #798560)
-        self.assertEquals(
+        self.assertEqual(
             target_branch.user_transport.list_dir("."),
             [".bzr"])
         self.assertEqual(
             default_format.get_branch_format(),
             target_branch._format)
-        self.assertEquals(
+        self.assertEqual(
             target_branch.last_revision_info(),
             new_branch.last_revision_info())
 
@@ -461,7 +461,7 @@ class TestImportDataStore(WorkerTest):
         store = ImportDataStore(transport, source_details)
         local_name = '%s.tar.gz' % (self.factory.getUniqueString('tarball'),)
         store.fetch(local_name)
-        self.assertEquals(content, open(local_name).read())
+        self.assertEqual(content, open(local_name).read())
 
     def test_fetch_with_dest_transport(self):
         # The second, optional, argument to fetch is the transport in which to
@@ -478,7 +478,7 @@ class TestImportDataStore(WorkerTest):
         self.get_transport(local_prefix).ensure_base()
         local_name = '%s.tar.gz' % (self.factory.getUniqueString(),)
         store.fetch(local_name, self.get_transport(local_prefix))
-        self.assertEquals(
+        self.assertEqual(
             content, open(os.path.join(local_prefix, local_name)).read())
 
     def test_put_copiesFileToTransport(self):
@@ -494,7 +494,7 @@ class TestImportDataStore(WorkerTest):
         # That the remote name is like this is part of the interface of
         # ImportDataStore.
         remote_name = '%08x.tar.gz' % (source_details.target_id,)
-        self.assertEquals(content, transport.get_bytes(remote_name))
+        self.assertEqual(content, transport.get_bytes(remote_name))
 
     def test_put_ensures_base(self):
         # Put ensures that the directory pointed to by the transport exists.
@@ -522,7 +522,7 @@ class TestImportDataStore(WorkerTest):
         # That the remote name is like this is part of the interface of
         # ImportDataStore.
         remote_name = '%08x.tar.gz' % (source_details.target_id,)
-        self.assertEquals(content, transport.get_bytes(remote_name))
+        self.assertEqual(content, transport.get_bytes(remote_name))
 
 
 class MockForeignWorkingTree:
@@ -1110,7 +1110,7 @@ class PullingImportWorkerTests:
         # There should only be one revision there, the other
         # one is in the stacked-on repository.
         self.addCleanup(stacked_on.lock_read().unlock)
-        self.assertEquals(
+        self.assertEqual(
             base_rev_count,
             len(stacked_on.repository.revisions.keys()))
         worker = self.makeImportWorker(
@@ -1120,15 +1120,15 @@ class PullingImportWorkerTests:
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS, worker.run())
         branch = self.getStoredBazaarBranch(worker)
-        self.assertEquals(
+        self.assertEqual(
             base_rev_count,
             len(stacked_on.repository.revisions.keys()))
         # There should only be one revision there, the other
         # one is in the stacked-on repository.
         self.addCleanup(branch.lock_read().unlock)
-        self.assertEquals(1,
+        self.assertEqual(1,
              len(branch.repository.revisions.without_fallbacks().keys()))
-        self.assertEquals(stacked_on.base, branch.get_stacked_on_url())
+        self.assertEqual(stacked_on.base, branch.get_stacked_on_url())
 
 
 class TestGitImport(WorkerTest, TestActualImportMixin,
@@ -1197,7 +1197,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         source_details.url = urlutils.join_segment_parameters(
                 source_details.url, {"branch": "other"})
         source_transport = get_transport_from_url(source_details.url)
-        self.assertEquals(
+        self.assertEqual(
             {"branch": "other"},
             source_transport.get_segment_parameters())
         worker = self.makeImportWorker(source_details,
@@ -1207,7 +1207,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
             CodeImportWorkerExitCode.SUCCESS, worker.run())
         branch = worker.getBazaarBranch()
         lastrev = branch.repository.get_revision(branch.last_revision())
-        self.assertEquals(lastrev.message, "Message for other")
+        self.assertEqual(lastrev.message, "Message for other")
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
@@ -1266,12 +1266,12 @@ class TestBzrImport(WorkerTest, TestActualImportMixin,
             stacked_on_url=stacked_on_url)
 
     def test_partial(self):
-        self.skip(
+        self.skipTest(
             "Partial fetching is not supported for native bzr branches "
             "at the moment.")
 
     def test_unsupported_feature(self):
-        self.skip("All Bazaar features are supported by Bazaar.")
+        self.skipTest("All Bazaar features are supported by Bazaar.")
 
     def test_reject_branch_reference(self):
         # Branch references are allowed in the BzrImporter, but their URL
@@ -1311,7 +1311,7 @@ class CodeImportBranchOpenPolicyTests(TestCase):
         self.policy = CodeImportBranchOpenPolicy("bzr", "bzr")
 
     def test_follows_references(self):
-        self.assertEquals(True, self.policy.shouldFollowReferences())
+        self.assertEqual(True, self.policy.shouldFollowReferences())
 
     def assertBadUrl(self, url):
         self.assertRaises(BadUrl, self.policy.checkOneURL, url)
@@ -1378,7 +1378,7 @@ class RedirectTests(http_utils.TestCaseWithRedirectedWebserver, TestCase):
         branch_url = self.bazaar_store._getMirrorURL(
             worker.source_details.target_id)
         branch = Branch.open(branch_url)
-        self.assertEquals(self.revid, branch.last_revision())
+        self.assertEqual(self.revid, branch.last_revision())
 
     def test_redirect_to_forbidden_url(self):
         class NewUrlBlacklistPolicy(BranchOpenPolicy):

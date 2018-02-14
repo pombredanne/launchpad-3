@@ -189,7 +189,7 @@ class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):
 
     def test_should_be_profile_page_when_delegating(self):
         """The profile page is the OpenID identifier in normal situation."""
-        self.assertEquals(
+        self.assertEqual(
             'http://launchpad.dev/~eris', self.view.openid_identity_url)
 
     def test_should_be_production_profile_page_when_not_delegating(self):
@@ -202,7 +202,7 @@ class PersonViewOpenidIdentityUrlTestCase(TestCaseWithFactory):
             [launchpad]
             non_restricted_hostname: prod.launchpad.dev
             '''))
-        self.assertEquals(
+        self.assertEqual(
             'http://prod.launchpad.dev/~eris', self.view.openid_identity_url)
 
 
@@ -439,7 +439,7 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
         # authorised to view the PPA.
         login(ANONYMOUS)
         person_view = PersonView(self.owner, LaunchpadTestRequest())
-        self.failUnless(person_view.should_show_ppa_section)
+        self.assertTrue(person_view.should_show_ppa_section)
 
     def test_viewing_person_without_ppa(self):
         # If the context person does not have a ppa then the section
@@ -447,28 +447,28 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
         login(ANONYMOUS)
         person_without_ppa = self.factory.makePerson()
         person_view = PersonView(person_without_ppa, LaunchpadTestRequest())
-        self.failIf(person_view.should_show_ppa_section)
+        self.assertFalse(person_view.should_show_ppa_section)
 
     def test_viewing_self(self):
         # If the current user has edit access to the context person then
         # the section should always display.
         login_person(self.owner)
         person_view = PersonView(self.owner, LaunchpadTestRequest())
-        self.failUnless(person_view.should_show_ppa_section)
+        self.assertTrue(person_view.should_show_ppa_section)
 
         # If the ppa is private, the section is still displayed to
         # a user with edit access to the person.
         self.make_ppa_private(self.person_ppa)
         login_person(self.owner)
         person_view = PersonView(self.owner, LaunchpadTestRequest())
-        self.failUnless(person_view.should_show_ppa_section)
+        self.assertTrue(person_view.should_show_ppa_section)
 
         # Even a person without a PPA will see the section when viewing
         # themselves.
         person_without_ppa = self.factory.makePerson()
         login_person(person_without_ppa)
         person_view = PersonView(person_without_ppa, LaunchpadTestRequest())
-        self.failUnless(person_view.should_show_ppa_section)
+        self.assertTrue(person_view.should_show_ppa_section)
 
     def test_anon_viewing_person_with_private_ppa(self):
         # If the ppa is private, the ppa section will not be displayed
@@ -476,13 +476,13 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
         self.make_ppa_private(self.person_ppa)
         login(ANONYMOUS)
         person_view = PersonView(self.owner, LaunchpadTestRequest())
-        self.failIf(person_view.should_show_ppa_section)
+        self.assertFalse(person_view.should_show_ppa_section)
 
         # But if the context person has a second ppa that is public,
         # then anon users will see the section.
         self.factory.makeArchive(owner=self.owner)
         person_view = PersonView(self.owner, LaunchpadTestRequest())
-        self.failUnless(person_view.should_show_ppa_section)
+        self.assertTrue(person_view.should_show_ppa_section)
 
     def test_viewing_team_with_private_ppa(self):
         # If a team PPA is private, the ppa section will be displayed
@@ -495,18 +495,18 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
 
         # So the member will see the section.
         person_view = PersonView(self.team, LaunchpadTestRequest())
-        self.failUnless(person_view.should_show_ppa_section)
+        self.assertTrue(person_view.should_show_ppa_section)
 
         # But other users who are not members will not.
         non_member = self.factory.makePerson()
         login_person(non_member)
         person_view = PersonView(self.team, LaunchpadTestRequest())
-        self.failIf(person_view.should_show_ppa_section)
+        self.assertFalse(person_view.should_show_ppa_section)
 
         # Unless the team also has another ppa which is public.
         self.factory.makeArchive(owner=self.team)
         person_view = PersonView(self.team, LaunchpadTestRequest())
-        self.failUnless(person_view.should_show_ppa_section)
+        self.assertTrue(person_view.should_show_ppa_section)
 
 
 class TestPersonRenameFormMixin:

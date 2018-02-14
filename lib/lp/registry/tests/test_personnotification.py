@@ -87,7 +87,7 @@ class TestPersonNotificationManager(TestCaseWithFactory):
             user, 'subject', 'body')
         unsent = self.manager.sendNotifications()
         self.assertEqual(None, unsent)
-        self.failIf(notification.date_emailed is None)
+        self.assertIsNotNone(notification.date_emailed)
 
     def test_sendNotifications_unsent(self):
         user = self.factory.makePerson()
@@ -105,7 +105,7 @@ class TestPersonNotificationManager(TestCaseWithFactory):
             team, 'subject', 'body')
         unsent = self.manager.sendNotifications()
         self.assertEqual(None, unsent)
-        self.failIf(notification.date_emailed is None)
+        self.assertIsNotNone(notification.date_emailed)
 
     def test_purgeNotifications_old(self):
         user = self.factory.makePerson()

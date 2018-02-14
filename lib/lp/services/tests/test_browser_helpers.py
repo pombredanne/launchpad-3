@@ -22,8 +22,8 @@ class TestGetUserAgentDistroSeries(unittest.TestCase):
                       'Firefox/3.0.10')
 
         version = get_user_agent_distroseries(user_agent)
-        self.failUnlessEqual('10.09', version,
-                             "Incorrect version string returned.")
+        self.assertEqual('10.09', version,
+                         "Incorrect version string returned.")
 
     def test_get_user_agent_distroseries_when_invalid(self):
         """None should be returned when the version is not matched."""
@@ -33,5 +33,5 @@ class TestGetUserAgentDistroSeries(unittest.TestCase):
                       'Firefox/3.0.10')
 
         version = get_user_agent_distroseries(user_agent)
-        self.failUnless(version is None,
-                        "None should be returned when the match fails.")
+        self.assertIsNone(
+            version, "None should be returned when the match fails.")

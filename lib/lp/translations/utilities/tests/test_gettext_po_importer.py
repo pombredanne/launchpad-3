@@ -83,7 +83,7 @@ class GettextPOImporterTestCase(unittest.TestCase):
 
     def testInterface(self):
         """Check whether the object follows the interface."""
-        self.failUnless(
+        self.assertTrue(
             verifyObject(ITranslationFormatImporter, self.template_importer),
             "GettextPOImporter doesn't conform to ITranslationFormatImporter"
                 "interface.")
@@ -91,6 +91,6 @@ class GettextPOImporterTestCase(unittest.TestCase):
     def testFormat(self):
         # GettextPOImporter reports that it handles the PO file format.
         format = self.template_importer.getFormat(BytesIO(test_template))
-        self.failUnless(
+        self.assertTrue(
             format == TranslationFileFormat.PO,
             'GettextPOImporter format expected PO but got %s' % format.name)

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import with_statement
@@ -315,7 +315,7 @@ class TestCurrentTranslationMessagePageView(TestCaseWithFactory):
             base_field_name = 'msgset_%d_%s_translation_' % (
                 message.potmsgset.id, pofile.language.code)
             # Add the expected plural forms fields.
-            for plural_form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+            for plural_form in range(TranslationConstants.MAX_PLURAL_FORMS):
                 field_name = '%s%d_new' % (base_field_name, plural_form)
                 form[field_name] = u'snarf'
         url = '/%s/%s/%s/+translate' % (
@@ -397,7 +397,7 @@ class TestHelpers(TestCaseWithFactory):
         self.assertFalse(contains_translations({}))
 
     def test_contains_translations_finds_any_translations(self):
-        for plural_form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+        for plural_form in range(TranslationConstants.MAX_PLURAL_FORMS):
             self.assertTrue(
                 contains_translations({plural_form: self.getUniqueString()}))
 
@@ -416,7 +416,7 @@ class TestHelpers(TestCaseWithFactory):
             revert_unselected_translations(translations, None, [0]))
 
     def test_revert_unselected_translations_handles_plurals(self):
-        translated_forms = range(3)
+        translated_forms = list(range(3))
         translations = dict(
             (form, self.getUniqueString()) for form in translated_forms)
 

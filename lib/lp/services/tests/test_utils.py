@@ -200,7 +200,7 @@ class TestDecorateWith(TestCase):
         def function():
             pass
         function()
-        self.assertEquals(['before', 'after'], calls)
+        self.assertEqual(['before', 'after'], calls)
 
     def test_decorate_with_function(self):
         # The original function is actually called when we call the result of
@@ -211,7 +211,7 @@ class TestDecorateWith(TestCase):
         def function():
             calls.append('foo')
         function()
-        self.assertEquals(['foo'], calls)
+        self.assertEqual(['foo'], calls)
 
     def test_decorate_with_call_twice(self):
         # A function decorated with decorate_with can be called twice.
@@ -222,7 +222,7 @@ class TestDecorateWith(TestCase):
             calls.append('foo')
         function()
         function()
-        self.assertEquals(['foo', 'foo'], calls)
+        self.assertEqual(['foo', 'foo'], calls)
 
     def test_decorate_with_arguments(self):
         # decorate_with passes through arguments.
@@ -232,7 +232,7 @@ class TestDecorateWith(TestCase):
         def function(*args, **kwargs):
             calls.append((args, kwargs))
         function('foo', 'bar', qux=4)
-        self.assertEquals([(('foo', 'bar'), {'qux': 4})], calls)
+        self.assertEqual([(('foo', 'bar'), {'qux': 4})], calls)
 
     def test_decorate_with_name_and_docstring(self):
         # decorate_with preserves function names and docstrings.
@@ -340,8 +340,7 @@ class TestBZ2Pickle(TestCase):
 
     def test_save_and_load(self):
         data = {1: 2, "room": 101}
-        tempdir = self.useFixture(TempDir()).path
-        tempfile = os.path.join(tempdir, "dump")
+        tempfile = self.useFixture(TempDir()).join("dump")
         save_bz2_pickle(data, tempfile)
         self.assertEqual(data, load_bz2_pickle(tempfile))
 

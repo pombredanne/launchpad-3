@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
@@ -104,7 +104,7 @@ def test_shortlist_returns_all_elements():
     UserWarning: shortlist() should not...
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-    >>> shortlist(xrange(10), longest_expected=5) #doctest: +ELLIPSIS
+    >>> shortlist(iter(range(10)), longest_expected=5) #doctest: +ELLIPSIS
     UserWarning: shortlist() should not...
     [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -145,7 +145,7 @@ def test_english_list():
         >>> english_list('12345')
         '1, 2, 3, 4, and 5'
 
-        >>> english_list(str(i) for i in xrange(5))
+        >>> english_list(str(i) for i in range(5))
         '0, 1, 2, 3, and 4'
 
     It does not convert non-string elements:

@@ -90,7 +90,7 @@ class TestCombo(ComboTestBase):
 
     def test_parse_url_keeps_order(self):
         """Parsing a combo loader URL returns an ordered list of filenames."""
-        self.assertEquals(
+        self.assertEqual(
             parse_url(("http://yui.yahooapis.com/combo?"
                        "3.0.0/build/yui/yui-min.js&"
                        "3.0.0/build/oop/oop-min.js&"
@@ -124,7 +124,7 @@ class TestCombo(ComboTestBase):
                               "** oop-min **",
                               "// event-custom/event-custom-min.js",
                               "** event-custom-min **"))
-        self.assertEquals(
+        self.assertEqual(
             "".join(combine_files(["yui/yui-min.js",
                                    "oop/oop-min.js",
                                    "event-custom/event-custom-min.js"],
@@ -163,7 +163,7 @@ class TestCombo(ComboTestBase):
              "/* editor/assets/skins/sam/editor.css */",
              ".yui-editor{background:url(editor/assets/skins/sam/img/bg.png)}",
              ))
-        self.assertEquals(
+        self.assertEqual(
             "".join(combine_files(["widget/assets/skins/sam/widget.css",
                                    "editor/assets/skins/sam/editor.css"],
                                   root=test_dir)).strip(),
@@ -225,7 +225,7 @@ class TestCombo(ComboTestBase):
              "/* editor/assets/skins/sam/editor.css */",
              ".yui-editor{background:url(http://foo/static/img/bg.png)}",
              ))
-        self.assertEquals(
+        self.assertEqual(
             "".join(combine_files(["widget/assets/skins/sam/widget.css",
                                    "editor/assets/skins/sam/editor.css"],
                                   root=test_dir)).strip(),
@@ -263,7 +263,7 @@ class TestCombo(ComboTestBase):
              '/* editor/assets/skins/sam/editor.css */',
              '.yui-editor{background:url("data:image/gif;base64,base64-data")}',
              ))
-        self.assertEquals(
+        self.assertEqual(
             "".join(combine_files(["widget/assets/skins/sam/widget.css",
                                    "editor/assets/skins/sam/editor.css"],
                                   root=test_dir)).strip(),
@@ -306,7 +306,7 @@ class TestCombo(ComboTestBase):
              "   background: url(editor/assets/skins/sam/img/bg.png);",
              "}",
              ))
-        self.assertEquals(
+        self.assertEqual(
             "".join(combine_files(["widget/assets/skins/sam/widget.css",
                                    "editor/assets/skins/sam/editor.css"],
                                   root=test_dir, minify_css=False)).strip(),
@@ -344,7 +344,7 @@ class TestCombo(ComboTestBase):
              "/* editor/assets/skins/sam/editor.css */",
              ".yui-editor{background:url(img/bg.png)}",
              ))
-        self.assertEquals(
+        self.assertEqual(
             "".join(combine_files(["widget/assets/skins/sam/widget.css",
                                    "editor/assets/skins/sam/editor.css"],
                                   root=test_dir, rewrite_urls=False)).strip(),
@@ -388,7 +388,7 @@ class TestCombo(ComboTestBase):
              '   background: url("img/bg.png");',
              '}',
              ))
-        self.assertEquals(
+        self.assertEqual(
             "".join(combine_files(["widget/assets/skins/sam/widget.css",
                                    "editor/assets/skins/sam/editor.css"],
                                   root=test_dir,
@@ -431,7 +431,7 @@ class TestCombo(ComboTestBase):
              ".yui-editor{background:url(" +
              "/static/editor/assets/skins/sam/img/bg.png)}",
              ))
-        self.assertEquals(
+        self.assertEqual(
             "".join(combine_files(["widget/assets/skins/sam/widget.css",
                                    "editor/assets/skins/sam/editor.css"],
                                   root=test_dir,
@@ -459,7 +459,7 @@ class TestCombo(ComboTestBase):
                               "// [missing]",
                               "// event-custom/event-custom-min.js",
                               "** event-custom-min **"))
-        self.assertEquals(
+        self.assertEqual(
             "".join(combine_files(["yui/yui-min.js",
                                    "oop/oop-min.js",
                                    "event-custom/event-custom-min.js"],
@@ -482,7 +482,7 @@ class TestCombo(ComboTestBase):
 
         expected = "\n".join(("// ../../oop/oop-min.js",
                               "// [missing]"))
-        self.assertEquals(
+        self.assertEqual(
             "".join(combine_files([hack], root=root)).strip(),
             expected)
 
@@ -498,7 +498,7 @@ class TestCombo(ComboTestBase):
 
         expected = "\n".join(("/* yui/base/base.css */",
                               ".foo{background-image:url(img.png)}"))
-        self.assertEquals(
+        self.assertEqual(
             "".join(combine_files(files, root=test_dir)).strip(),
             expected)
 
@@ -510,7 +510,7 @@ class TestCombo(ComboTestBase):
         self.assertTrue(os.path.exists("/etc/passwd"))
 
         expected = ""
-        self.assertEquals(
+        self.assertEqual(
             "".join(combine_files([hack], root=test_dir)).strip(),
             expected)
 
@@ -548,8 +548,8 @@ class TestWSGICombo(ComboTestBase):
             ["yui/yui-min.js",
              "oop/oop-min.js",
              "event-custom/event-custom-min.js"]), status=200)
-        self.assertEquals(res.headers, [("Content-Type", "text/javascript")])
-        self.assertEquals(res.body.strip(), expected)
+        self.assertEqual(res.headers, [("Content-Type", "text/javascript")])
+        self.assertEqual(res.body.strip(), expected)
 
     def test_combo_app_sets_content_type_for_css(self):
         """The WSGI App should set a proper Content-Type for CSS."""
@@ -562,11 +562,11 @@ class TestWSGICombo(ComboTestBase):
 
         res = self.app.get("/?" + "&".join(
             ["widget/skin/sam/widget.css"]), status=200)
-        self.assertEquals(res.headers, [("Content-Type", "text/css")])
-        self.assertEquals(res.body.strip(), expected)
+        self.assertEqual(res.headers, [("Content-Type", "text/css")])
+        self.assertEqual(res.body.strip(), expected)
 
     def test_no_filename_gives_404(self):
         """If no filename is included, a 404 should be returned."""
         res = self.app.get("/", status=404)
-        self.assertEquals(res.headers, [("Content-Type", "text/plain")])
-        self.assertEquals(res.body, "Not Found")
+        self.assertEqual(res.headers, [("Content-Type", "text/plain")])
+        self.assertEqual(res.body, "Not Found")

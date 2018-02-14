@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for Git listing views."""
@@ -163,7 +163,7 @@ class TestTargetGitListingView:
         # But someone who can see the repo gets the normal view.
         with person_logged_in(self.owner):
             owner_view = create_initialized_view(
-                self.target, '+git', user=self.owner)
+                self.target, '+git', principal=self.owner)
             self.assertEqual(invisible_repo, owner_view.default_git_repository)
             self.assertContentEqual(
                 [invisible_repo, other_repo],
@@ -291,7 +291,7 @@ class TestPersonTargetGitListingView:
         # But someone who can see the repo gets the normal view.
         with person_logged_in(self.owner):
             owner_view = create_initialized_view(
-                self.owner_target, '+git', user=self.owner)
+                self.owner_target, '+git', principal=self.owner)
             self.assertEqual(invisible_repo, owner_view.default_git_repository)
             self.assertContentEqual(
                 [invisible_repo, other_repo],
@@ -434,7 +434,7 @@ class TestPlainGitListingView:
         # But someone who can see the repo gets the full view.
         with person_logged_in(self.user):
             owner_view = create_initialized_view(
-                self.context, '+git', user=self.user)
+                self.context, '+git', principal=self.user)
             self.assertContentEqual(
                 [invisible_repo, other_repo],
                 owner_view.repo_collection.getRepositories())

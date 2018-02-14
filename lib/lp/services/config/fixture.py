@@ -48,8 +48,7 @@ class ConfigFixture(Fixture):
         if config.instance_name == self.instance_name:
             config._invalidateConfig()
 
-    def setUp(self):
-        super(ConfigFixture, self).setUp()
+    def _setUp(self):
         root = os.path.join(config.root, 'configs', self.instance_name)
         os.mkdir(root)
         self.absroot = os.path.abspath(root)
@@ -70,7 +69,6 @@ class ConfigUseFixture(Fixture):
     def __init__(self, instance_name):
         self.instance_name = instance_name
 
-    def setUp(self):
-        super(ConfigUseFixture, self).setUp()
+    def _setUp(self):
         self.addCleanup(config.setInstance, config.instance_name)
         config.setInstance(self.instance_name)

@@ -270,8 +270,8 @@ class TestMailController(TestCase):
                 'from@example.com', to_addresses,
                 subject, 'body', {'key': 'value'})
             ctrl.send()
-        self.assertEquals(fake_mailer.from_addr, 'bounces@canonical.com')
-        self.assertEquals(fake_mailer.to_addr, to_addresses)
+        self.assertEqual(fake_mailer.from_addr, 'bounces@canonical.com')
+        self.assertEqual(fake_mailer.to_addr, to_addresses)
         self.checkTimelineHasOneMailAction(ctl.timeline, subject=subject)
 
     def test_sendmail_with_email_header(self):
@@ -290,16 +290,16 @@ class TestMailController(TestCase):
         message.add_header('To', 'dest@example.com')
         with CaptureTimeline() as ctl:
             sendmail.sendmail(message)
-        self.assertEquals(fake_mailer.from_addr, 'bounces@canonical.com')
-        self.assertEquals(fake_mailer.to_addr, ['dest@example.com'])
+        self.assertEqual(fake_mailer.from_addr, 'bounces@canonical.com')
+        self.assertEqual(fake_mailer.to_addr, ['dest@example.com'])
         self.checkTimelineHasOneMailAction(ctl.timeline, subject=subject_str)
 
     def checkTimelineHasOneMailAction(self, timeline, subject):
         actions = timeline.actions
-        self.assertEquals(len(actions), 1)
+        self.assertEqual(len(actions), 1)
         a0 = actions[0]
-        self.assertEquals(a0.category, 'sendmail')
-        self.assertEquals(a0.detail, subject)
+        self.assertEqual(a0.category, 'sendmail')
+        self.assertEqual(a0.detail, subject)
         self.assertIsInstance(a0.detail, basestring)
 
 

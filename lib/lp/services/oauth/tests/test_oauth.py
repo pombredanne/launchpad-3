@@ -33,7 +33,7 @@ class BaseOAuthTestCase(unittest.TestCase):
         screen won't probably find the new request token on the slave store.
         """
         zstorm = getUtility(IZStorm)
-        self.assertEquals(
+        self.assertEqual(
             '%s-%s' % (MAIN_STORE, MASTER_FLAVOR),
             zstorm.get_name(self.class_._getStore()))
 

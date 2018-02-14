@@ -343,7 +343,7 @@ class TestBugWatch(TestCaseWithFactory):
         watch = self.factory.makeBugWatch(bug=bug)
         product_task.bugwatch = watch
         # For a single-task bug the bug task is eligible for update.
-        self.failUnlessEqual(
+        self.assertEqual(
             [product_task], list(
                 removeSecurityProxy(watch).bugtasks_to_update))
         # If we add a task such that the existing task becomes a
@@ -352,14 +352,14 @@ class TestBugWatch(TestCaseWithFactory):
         product_series_task = self.factory.makeBugTask(
             bug=bug, target=product.development_focus)
         product_series_task.bugwatch = watch
-        self.failUnlessEqual(
+        self.assertEqual(
             [product_series_task], list(
                 removeSecurityProxy(watch).bugtasks_to_update))
         # But once the bug is marked as a duplicate,
         # bugtasks_to_update yields nothing.
         bug.markAsDuplicate(
             self.factory.makeBug(target=product, owner=product.owner))
-        self.failUnlessEqual(
+        self.assertEqual(
             [], list(removeSecurityProxy(watch).bugtasks_to_update))
 
     def test_updateStatus_with_duplicate_bug(self):
@@ -371,14 +371,14 @@ class TestBugWatch(TestCaseWithFactory):
         bug_task = bug.default_bugtask
         bug_task.bugwatch = self.factory.makeBugWatch()
         bug_task_initial_status = bug_task.status
-        self.failIfEqual(BugTaskStatus.INPROGRESS, bug_task.status)
+        self.assertNotEqual(BugTaskStatus.INPROGRESS, bug_task.status)
         bug_task.bugwatch.updateStatus('foo', BugTaskStatus.INPROGRESS)
-        self.failUnlessEqual(bug_task_initial_status, bug_task.status)
+        self.assertEqual(bug_task_initial_status, bug_task.status)
         # Once the task is no longer linked to a duplicate bug, the
         # status will get updated.
         bug.markAsDuplicate(None)
         bug_task.bugwatch.updateStatus('foo', BugTaskStatus.INPROGRESS)
-        self.failUnlessEqual(BugTaskStatus.INPROGRESS, bug_task.status)
+        self.assertEqual(BugTaskStatus.INPROGRESS, bug_task.status)
 
     def test_updateImportance_with_duplicate_bug(self):
         # Calling BugWatch.updateImportance() will not update the
@@ -389,27 +389,27 @@ class TestBugWatch(TestCaseWithFactory):
         bug_task = bug.default_bugtask
         bug_task.bugwatch = self.factory.makeBugWatch()
         bug_task_initial_importance = bug_task.importance
-        self.failIfEqual(BugTaskImportance.HIGH, bug_task.importance)
+        self.assertNotEqual(BugTaskImportance.HIGH, bug_task.importance)
         bug_task.bugwatch.updateImportance('foo', BugTaskImportance.HIGH)
-        self.failUnlessEqual(bug_task_initial_importance, bug_task.importance)
+        self.assertEqual(bug_task_initial_importance, bug_task.importance)
         # Once the task is no longer linked to a duplicate bug, the
         # importance will get updated.
         bug.markAsDuplicate(None)
         bug_task.bugwatch.updateImportance('foo', BugTaskImportance.HIGH)
-        self.failUnlessEqual(BugTaskImportance.HIGH, bug_task.importance)
+        self.assertEqual(BugTaskImportance.HIGH, bug_task.importance)
 
     def test_get_bug_watch_ids(self):
         # get_bug_watch_ids() yields the IDs for the given bug
         # watches.
         bug_watches = [self.factory.makeBugWatch()]
-        self.failUnlessEqual(
+        self.assertEqual(
             [bug_watch.id for bug_watch in bug_watches],
             list(get_bug_watch_ids(bug_watches)))
 
     def test_get_bug_watch_ids_with_iterator(self):
         # get_bug_watch_ids() can also accept an iterator.
         bug_watches = [self.factory.makeBugWatch()]
-        self.failUnlessEqual(
+        self.assertEqual(
             [bug_watch.id for bug_watch in bug_watches],
             list(get_bug_watch_ids(iter(bug_watches))))
 
@@ -417,7 +417,7 @@ class TestBugWatch(TestCaseWithFactory):
         # If something resembling an ID is found, get_bug_watch_ids()
         # yields it unaltered.
         bug_watches = [1, 2, 3]
-        self.failUnlessEqual(
+        self.assertEqual(
             bug_watches, list(get_bug_watch_ids(bug_watches)))
 
     def test_get_bug_watch_ids_with_mixed_list(self):
@@ -425,7 +425,7 @@ class TestBugWatch(TestCaseWithFactory):
         # objects are a mix of bug watches and IDs.
         bug_watch = self.factory.makeBugWatch()
         bug_watches = [1234, bug_watch]
-        self.failUnlessEqual(
+        self.assertEqual(
             [1234, bug_watch.id], list(get_bug_watch_ids(bug_watches)))
 
     def test_get_bug_watch_ids_with_others_in_list(self):
@@ -475,16 +475,16 @@ class TestBugWatchSet(TestCaseWithFactory):
         bug_watch_set = getUtility(IBugWatchSet)
         # Passing in the remote bug ID gets us every bug watch that
         # refers to that remote bug.
-        self.failUnlessEqual(
+        self.assertEqual(
             set(bug_watches_alice),
             set(bug_watch_set.getBugWatchesForRemoteBug('alice')))
-        self.failUnlessEqual(
+        self.assertEqual(
             set(bug_watches_bob),
             set(bug_watch_set.getBugWatchesForRemoteBug('bob')))
         # The search can be narrowed by passing in a list or other
         # iterable collection of bug watch IDs.
         bug_watches_limited = bug_watches_alice + bug_watches_bob[:1]
-        self.failUnlessEqual(
+        self.assertEqual(
             set(bug_watches_bob[:1]),
             set(bug_watch_set.getBugWatchesForRemoteBug('bob', [
                         bug_watch.id for bug_watch in bug_watches_limited])))
@@ -509,11 +509,11 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
     def _checkStatusOfBugWatches(
         self, last_checked_is_null, next_check_is_null, last_error_type):
         for bug_watch in self.bug_watches:
-            self.failUnlessEqual(
+            self.assertEqual(
                 last_checked_is_null, bug_watch.lastchecked is None)
-            self.failUnlessEqual(
+            self.assertEqual(
                 next_check_is_null, bug_watch.next_check is None)
-            self.failUnlessEqual(
+            self.assertEqual(
                 last_error_type, bug_watch.last_error_type)
 
     def test_bulkSetError(self):
@@ -532,9 +532,9 @@ class TestBugWatchSetBulkOperations(TestCaseWithFactory):
     def _checkActivityForBugWatches(self, result, message, oops_id):
         for bug_watch in self.bug_watches:
             latest_activity = bug_watch.activity.first()
-            self.failUnlessEqual(result, latest_activity.result)
-            self.failUnlessEqual(message, latest_activity.message)
-            self.failUnlessEqual(oops_id, latest_activity.oops_id)
+            self.assertEqual(result, latest_activity.result)
+            self.assertEqual(message, latest_activity.message)
+            self.assertEqual(oops_id, latest_activity.oops_id)
 
     def test_bulkAddActivity(self):
         # Called with only bug watches, bulkAddActivity() adds
@@ -629,7 +629,7 @@ class TestBugWatchActivityPruner(TestCaseWithFactory):
         # start of this test.
         messages = [activity.message for activity in self.bug_watch.activity]
         for i in range(MAX_SAMPLE_SIZE):
-            self.failUnless("Activity %s" % i in messages)
+            self.assertIn("Activity %s" % i, messages)
 
 
 class TestBugWatchResetting(TestCaseWithFactory):

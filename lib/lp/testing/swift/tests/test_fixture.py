@@ -8,9 +8,10 @@ __all__ = []
 
 from datetime import datetime
 from hashlib import md5
-import httplib
 
+from requests.exceptions import ConnectionError
 from swiftclient import client as swiftclient
+from swiftclient.exceptions import ClientException
 from testtools.matchers import (
     GreaterThan,
     LessThan,
@@ -193,27 +194,27 @@ class TestSwiftFixture(TestCase):
         # Things work fine when the Swift server is up.
         self.swift_fixture.startup()
         headers, body = client.get_object("size", str(size))
-        self.assertEquals(body, "0" * size)
+        self.assertEqual(body, "0" * size)
 
         # But if the Swift server goes away again, we end up with
         # different failures since the connection has already
         # authenticated.
         self.swift_fixture.shutdown()
         self.assertRaises(
-            httplib.HTTPException,
+            ConnectionError,
             client.get_object, "size", str(size))
 
         # And even if we bring it back up, existing connections
         # continue to fail
         self.swift_fixture.startup()
         self.assertRaises(
-            httplib.HTTPException,
+            ClientException,
             client.get_object, "size", str(size))
 
         # But fresh connections are fine.
         client = self.swift_fixture.connect()
         headers, body = client.get_object("size", str(size))
-        self.assertEquals(body, "0" * size)
+        self.assertEqual(body, "0" * size)
 
     def test_env(self):
         self.assertEqual(

@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Definition of the internet servers that Launchpad uses."""
@@ -20,6 +20,7 @@ from lazr.restful.publisher import (
     )
 from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
+import six
 import transaction
 from transaction.interfaces import ISynchronizer
 from zc.zservertracelog.tracelog import Server as ZServerTracelogServer
@@ -31,7 +32,6 @@ from zope.app.publication.requestpublicationregistry import (
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
 from zope.component import getUtility
-from zope.event import notify
 from zope.formlib.itemswidgets import MultiDataHelper
 from zope.formlib.widget import SimpleInputWidget
 from zope.interface import (
@@ -64,10 +64,7 @@ from lp.app import versioninfo
 from lp.app.errors import UnexpectedFormData
 import lp.layers
 from lp.services.config import config
-from lp.services.features import (
-    get_relevant_feature_controller,
-    getFeatureFlag,
-    )
+from lp.services.features import get_relevant_feature_controller
 from lp.services.features.flags import NullFeatureController
 from lp.services.feeds.interfaces.application import IFeedsApplication
 from lp.services.feeds.interfaces.feed import IFeed
@@ -87,7 +84,6 @@ from lp.services.webapp.authorization import (
     )
 from lp.services.webapp.errorlog import ErrorReportRequest
 from lp.services.webapp.interfaces import (
-    FinishReadOnlyRequestEvent,
     IBasicLaunchpadRequest,
     IBrowserFormNG,
     IFavicon,
@@ -538,6 +534,31 @@ def get_query_string_params(request):
     return decoded_qs
 
 
+def wsgi_native_string(s):
+    """Make a native string suitable for use in WSGI.
+
+    PEP 3333 requires environment variables to be native strings that
+    contain only code points representable in ISO-8859-1.  To support
+    porting to Python 3 via an intermediate stage of Unicode literals in
+    Python 2, we enforce this here.
+    """
+    # Based on twisted.python.compat.nativeString, but using a different
+    # encoding.
+    if not isinstance(s, (bytes, unicode)):
+        raise TypeError('%r is neither bytes nor unicode' % s)
+    if six.PY3:
+        if isinstance(s, bytes):
+            return s.decode('ISO-8859-1')
+        else:
+            # Ensure we're limited to ISO-8859-1.
+            s.encode('ISO-8859-1')
+    else:
+        if isinstance(s, unicode):
+            return s.encode('ISO-8859-1')
+        # Bytes objects are always decodable as ISO-8859-1.
+    return s
+
+
 class LaunchpadBrowserRequestMixin:
     """Provides methods used for both API and web browser requests."""
 
@@ -932,9 +953,19 @@ class LaunchpadTestRequest(LaunchpadBrowserRequestMixin,
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET',
                  force_fresh_login_for_testing=False, **kw):
+        # PEP 3333 requires environment variables to be native strings that
+        # contain only code points representable in ISO-8859-1.  To support
+        # porting to Python 3 via an intermediate stage of Unicode literals
+        # in Python 2, we enforce this here.
+        native_kw = {}
+        for key, value in kw.items():
+            if value is not None:
+                value = wsgi_native_string(value)
+            native_kw[key] = value
         super(LaunchpadTestRequest, self).__init__(
             body_instream=body_instream, environ=environ, form=form,
-            skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
+            skin=skin, outstream=outstream,
+            REQUEST_METHOD=wsgi_native_string(method), **native_kw)
         self.traversed_objects = []
         # Use an existing feature controller if one exists, otherwise use the
         # null controller.
@@ -1241,24 +1272,6 @@ class WebServicePublication(WebServicePublicationMixin,
         else:
             return super(WebServicePublication, self).getResource(request, ob)
 
-    def finishReadOnlyRequest(self, request, ob, txn):
-        """Commit the transaction even though there should be no writes."""
-        if getFeatureFlag('webservice.read_only_commit.disabled'):
-            super(WebServicePublication, self).finishReadOnlyRequest(
-                request, ob, txn)
-        else:
-            # WebServicePublication used to commit on every request to store
-            # OAuthNonces to prevent replay attacks. But TLS prevents replay
-            # attacks too, so we don't bother with nonces any more. However,
-            # this commit will stay here until we can switch it off in a
-            # controlled test to ensure that nothing depends on it on prod.
-            notify(FinishReadOnlyRequestEvent(ob, request))
-            # Transaction commits usually need to be aware of the
-            # possibility of a doomed transaction.  We do not expect that
-            # this code will encounter doomed transactions.  If it does,
-            # this will need to be revisited.
-            txn.commit()
-
     def getPrincipal(self, request):
         """See `LaunchpadBrowserPublication`.
 
@@ -1307,18 +1320,13 @@ class WebServicePublication(WebServicePublicationMixin,
 
         if consumer is None:
             if anonymous_request:
-                # This is the first time anyone has tried to make an
-                # anonymous request using this consumer name (or user
-                # agent). Dynamically create the consumer.
-                #
-                # In the normal website this wouldn't be possible
-                # because GET requests have their transactions rolled
-                # back. But webservice requests always have their
-                # transactions committed so that we can keep track of
-                # the OAuth nonces and prevent replay attacks.
+                # Require a consumer key (or user agent) to be present, so
+                # that we can apply throttling if necessary.  But webservice
+                # GET requests have their transactions rolled back, and at
+                # the moment we don't do anything with the consumer in this
+                # case, so there's no point dynamically creating a consumer.
                 if consumer_key == '' or consumer_key is None:
                     raise TokenException("No consumer key specified.")
-                consumer = consumers.new(consumer_key, '')
             else:
                 # An unknown consumer can never make a non-anonymous
                 # request, because access tokens are registered with a

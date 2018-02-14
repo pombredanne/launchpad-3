@@ -42,7 +42,7 @@ class TestInlineEditPickerWidget(TestCaseWithFactory):
         # Make sure that when given a vocabulary which supports vocab filters,
         # the vocab filters are include in the widget config.
         widget = self.getWidget(vocabulary='ValidPersonOrTeam')
-        self.assertEquals([
+        self.assertEqual([
             {'name': 'ALL',
              'title': 'All',
              'description': 'Display all search results'},
@@ -87,13 +87,13 @@ class TestInlinePersonEditPickerWidget(TestCaseWithFactory):
         # The widget has the correct meta value for a person value.
         widget_value = self.factory.makePerson()
         widget = self.getWidget(widget_value, vocabulary='ValidPersonOrTeam')
-        self.assertEquals('person', widget.config['selected_value_metadata'])
+        self.assertEqual('person', widget.config['selected_value_metadata'])
 
     def test_team_selected_value_meta(self):
         # The widget has the correct meta value for a team value.
         widget_value = self.factory.makeTeam()
         widget = self.getWidget(widget_value, vocabulary='ValidPersonOrTeam')
-        self.assertEquals('team', widget.config['selected_value_metadata'])
+        self.assertEqual('team', widget.config['selected_value_metadata'])
 
     def test_required_fields_dont_have_a_remove_link(self):
         widget = self.getWidget(
