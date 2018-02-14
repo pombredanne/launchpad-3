@@ -140,7 +140,7 @@ RestrictedPython==3.6.0
 setuptools==36.4.0
 Sphinx==1.0.8
 #testtools==0.9.12
-testtools==0.9.30
+testtools==2.3.0
 transaction==1.1.1
 z3c.recipe.sphinxdoc==0.0.8
 zc.buildout==1.7.1
@@ -246,10 +246,10 @@ dnspython==1.10.0
 dulwich==0.18.6
 elementtree==1.2.6-20050316
 epydoc==3.0.1
-extras==0.0.3
+extras==1.0.0
 feedparser==4.1
 feedvalidator==0.0.0DEV-r1049
-fixtures==0.3.9
+fixtures==3.0.0
 FormEncode==1.2.4
 grokcore.component==1.6
 html5browser==0.0.9
@@ -344,7 +344,7 @@ txfixtures==0.1.4
 txlongpoll==0.2.12
 txlongpollfixture==0.1.3
 txpkgupload==0.2
-unittest2==0.5.1
+unittest2==1.1.0
 van.testing==3.0.0
 virtualenv-tools3==2.0.0
 wadllib==1.3.2

@@ -41,7 +41,6 @@ from bzrlib.urlutils import (
 from testtools.deferredruntest import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
-    run_with_log_observers,
     )
 from twisted.internet import defer
 
@@ -1005,6 +1004,8 @@ class TestBranchChangedNotification(TestCaseWithTransport):
 class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
     """Test handling of errors when branchChange is called."""
 
+    run_tests_with = AsynchronousDeferredRunTest
+
     def setUp(self):
         super(TestBranchChangedErrorHandling, self).setUp()
         self._server = None
@@ -1057,8 +1058,7 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
         # endpoint. We will then check the error handling.
         db_branch = self.factory.makeAnyBranch(
             branch_type=BranchType.HOSTED, owner=self.requester)
-        branch = run_with_log_observers(
-            [], self.make_branch, db_branch.unique_name)
+        branch = self.make_branch(db_branch.unique_name)
         branch.lock_write()
         branch.unlock()
         stderr_text = sys.stderr.getvalue()
