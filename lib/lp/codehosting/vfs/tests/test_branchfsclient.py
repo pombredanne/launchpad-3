@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from testtools.deferredruntest import AsynchronousDeferredRunTest
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 from twisted.internet import defer
 
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT

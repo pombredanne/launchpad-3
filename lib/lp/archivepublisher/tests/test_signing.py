@@ -10,7 +10,6 @@ import stat
 import tarfile
 
 from fixtures import MonkeyPatch
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     Contains,
     Matcher,
@@ -18,6 +17,7 @@ from testtools.matchers import (
     Mismatch,
     Not,
     )
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 from twisted.internet import defer
 from zope.component import getUtility
 

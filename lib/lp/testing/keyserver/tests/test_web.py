@@ -8,7 +8,7 @@ __metaclass__ = type
 import os
 import shutil
 
-from testtools.deferredruntest import AsynchronousDeferredRunTest
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 from twisted.internet.endpoints import serverFromString
 from twisted.python.failure import Failure
 from twisted.web.client import getPage

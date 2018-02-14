@@ -14,7 +14,7 @@ from bzrlib.tests import TestCaseInTempDir
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryTransport
 from lazr.sshserver.sftp import FileIsADirectory
-from testtools.deferredruntest import (
+from testtools.twistedsupport import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )

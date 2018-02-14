@@ -32,7 +32,6 @@ try:
 except ImportError:
     from backports import lzma
 import pytz
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     ContainsAll,
     DirContains,
@@ -49,6 +48,7 @@ from testtools.matchers import (
     PathExists,
     SamePath,
     )
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
 from zope.component import getUtility

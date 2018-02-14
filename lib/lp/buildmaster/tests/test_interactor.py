@@ -15,16 +15,16 @@ import xmlrpclib
 
 from lpbuildd.slave import BuilderStatus
 from lpbuildd.tests.harness import BuilddSlaveTestSetup
-from testtools.deferredruntest import (
-    assert_fails_with,
-    AsynchronousDeferredRunTest,
-    AsynchronousDeferredRunTestForBrokenTwisted,
-    SynchronousDeferredRunTest,
-    )
 from testtools.matchers import (
     ContainsAll,
     HasLength,
     MatchesDict,
+    )
+from testtools.twistedsupport import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    AsynchronousDeferredRunTestForBrokenTwisted,
+    SynchronousDeferredRunTest,
     )
 from testtools.testcase import ExpectedException
 from twisted.internet import (
