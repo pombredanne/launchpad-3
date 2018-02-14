@@ -12,8 +12,8 @@ import os.path
 
 import fixtures
 import pytz
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import MatchesListwise
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase

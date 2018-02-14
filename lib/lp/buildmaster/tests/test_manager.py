@@ -12,12 +12,12 @@ import signal
 import time
 import xmlrpclib
 
-from testtools.deferredruntest import (
+from testtools.matchers import Equals
+from testtools.testcase import ExpectedException
+from testtools.twistedsupport import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )
-from testtools.matchers import Equals
-from testtools.testcase import ExpectedException
 import transaction
 from twisted.internet import (
     defer,

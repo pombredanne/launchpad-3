@@ -8,7 +8,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import os
 import pickle
 import re
 import subprocess
@@ -1288,9 +1287,9 @@ class TestCheckTeamParticipationScript(TestCase):
         logger = BufferLogger()
         self.addDetail("log", logger.content)
         info = fetch_team_participation_info(logger)
-        tempdir = self.useFixture(TempDir()).path
-        filename_in = os.path.join(tempdir, "info.in")
-        filename_out = os.path.join(tempdir, "info.out")
+        tempdir = self.useFixture(TempDir())
+        filename_in = tempdir.join("info.in")
+        filename_out = tempdir.join("info.out")
         fout = bz2.BZ2File(filename_in, "w")
         try:
             pickle.dump(info, fout, pickle.HIGHEST_PROTOCOL)

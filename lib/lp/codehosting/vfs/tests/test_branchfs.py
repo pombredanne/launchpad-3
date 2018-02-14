@@ -38,7 +38,7 @@ from bzrlib.urlutils import (
     escape,
     local_path_to_url,
     )
-from testtools.deferredruntest import (
+from testtools.twistedsupport import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )
