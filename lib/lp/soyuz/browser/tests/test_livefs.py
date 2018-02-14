@@ -1,7 +1,9 @@
-# Copyright 2014-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystem views."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -67,7 +69,7 @@ class TestLiveFSNavigation(TestCaseWithFactory):
 
     def setUp(self):
         super(TestLiveFSNavigation, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
 
     def test_canonical_url(self):
         owner = self.factory.makePerson(name="person")
@@ -77,7 +79,7 @@ class TestLiveFSNavigation(TestCaseWithFactory):
             distribution=distribution, name="unstable")
         livefs = self.factory.makeLiveFS(
             registrant=owner, owner=owner, distroseries=distroseries,
-            name=u"livefs")
+            name="livefs")
         self.assertEqual(
             "http://launchpad.dev/~person/+livefs/distro/unstable/livefs",
             canonical_url(livefs))
@@ -109,7 +111,7 @@ class TestLiveFSAddView(BrowserTestCase):
 
     def setUp(self):
         super(TestLiveFSAddView, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         self.useFixture(FakeLogger())
         self.person = self.factory.makePerson(
             name="test-person", displayname="Test Person")
@@ -188,7 +190,7 @@ class TestLiveFSAdminView(BrowserTestCase):
 
     def setUp(self):
         super(TestLiveFSAdminView, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         self.useFixture(FakeLogger())
         self.person = self.factory.makePerson(
             name="test-person", displayname="Test Person")
@@ -243,7 +245,7 @@ class TestLiveFSEditView(BrowserTestCase):
 
     def setUp(self):
         super(TestLiveFSEditView, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         self.useFixture(FakeLogger())
         self.person = self.factory.makePerson(
             name="test-person", displayname="Test Person")
@@ -290,7 +292,7 @@ class TestLiveFSEditView(BrowserTestCase):
             view.initialize()
             view.request_action.success({
                 "owner": livefs.owner,
-                "name": u"changed",
+                "name": "changed",
                 "distro_series": livefs.distro_series,
                 "metadata": "{}",
                 })
@@ -303,10 +305,10 @@ class TestLiveFSEditView(BrowserTestCase):
             displayname="Grumpy")
         livefs = self.factory.makeLiveFS(
             registrant=self.person, owner=self.person,
-            distroseries=distroseries, name=u"one")
+            distroseries=distroseries, name="one")
         self.factory.makeLiveFS(
             registrant=self.person, owner=self.person,
-            distroseries=distroseries, name=u"two")
+            distroseries=distroseries, name="two")
         browser = self.getViewBrowser(livefs, user=self.person)
         browser.getLink("Edit live filesystem").click()
         browser.getControl("Name").value = "two"
@@ -323,7 +325,7 @@ class TestLiveFSDeleteView(BrowserTestCase):
 
     def setUp(self):
         super(TestLiveFSDeleteView, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         self.person = self.factory.makePerson(
             name="test-person", displayname="Test Person")
 
@@ -373,7 +375,7 @@ class TestLiveFSView(BrowserTestCase):
 
     def setUp(self):
         super(TestLiveFSView, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.distroseries = self.factory.makeDistroSeries(
             distribution=self.ubuntu, name="shiny", displayname="Shiny")
@@ -388,7 +390,7 @@ class TestLiveFSView(BrowserTestCase):
     def makeLiveFS(self):
         return self.factory.makeLiveFS(
             registrant=self.person, owner=self.person,
-            distroseries=self.distroseries, name=u"livefs-name",
+            distroseries=self.distroseries, name="livefs-name",
             metadata={"project": "ubuntu-test"})
 
     def makeBuild(self, livefs=None, archive=None, date_created=None,

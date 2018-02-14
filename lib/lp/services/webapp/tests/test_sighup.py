@@ -31,8 +31,8 @@ class SIGHUPTestCase(TestCase):
     def test_sighup(self):
         # Sending SIGHUP should switch the PID
         os.kill(os.getpid(), signal.SIGHUP)
-        self.assertEquals(not self.original_flag, haproxy.going_down_flag)
+        self.assertEqual(not self.original_flag, haproxy.going_down_flag)
 
         # Sending again should switch again.
         os.kill(os.getpid(), signal.SIGHUP)
-        self.assertEquals(self.original_flag, haproxy.going_down_flag)
+        self.assertEqual(self.original_flag, haproxy.going_down_flag)

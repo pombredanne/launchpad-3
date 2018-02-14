@@ -630,14 +630,14 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         john_doe = self.factory.makePerson()
         with person_logged_in(john_doe):
-            self.failIf(
+            self.assertFalse(
                 checkPermission('launchpad.Edit', sourcepackage),
                 "Random user shouldn't have launchpad.Edit on source "
                 "packages.")
 
     def test_cannot_setBranch(self):
         sourcepackage = self.factory.makeSourcePackage()
-        self.failIf(
+        self.assertFalse(
             canAccess(sourcepackage, 'setBranch'),
             "setBranch should only be available to admins and uploaders")
 

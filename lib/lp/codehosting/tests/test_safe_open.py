@@ -79,9 +79,8 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         # When branch references are forbidden, checkAndFollowBranchReference
         # does not raise on non-references.
         opener = self.makeBranchOpener(False, ['a', None])
-        self.assertEquals(
-            'a', opener.checkAndFollowBranchReference('a'))
-        self.assertEquals(['a'], opener.follow_reference_calls)
+        self.assertEqual('a', opener.checkAndFollowBranchReference('a'))
+        self.assertEqual(['a'], opener.follow_reference_calls)
 
     def testBranchReferenceForbidden(self):
         # checkAndFollowBranchReference raises BranchReferenceForbidden if
@@ -91,16 +90,15 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         self.assertRaises(
             BranchReferenceForbidden,
             opener.checkAndFollowBranchReference, 'a')
-        self.assertEquals(['a'], opener.follow_reference_calls)
+        self.assertEqual(['a'], opener.follow_reference_calls)
 
     def testAllowedReference(self):
         # checkAndFollowBranchReference does not raise if following references
         # is allowed and the source URL points to a branch reference to a
         # permitted location.
         opener = self.makeBranchOpener(True, ['a', 'b', None])
-        self.assertEquals(
-            'b', opener.checkAndFollowBranchReference('a'))
-        self.assertEquals(['a', 'b'], opener.follow_reference_calls)
+        self.assertEqual('b', opener.checkAndFollowBranchReference('a'))
+        self.assertEqual(['a', 'b'], opener.follow_reference_calls)
 
     def testCheckReferencedURLs(self):
         # checkAndFollowBranchReference checks if the URL a reference points
@@ -109,7 +107,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
             True, ['a', 'b', None], unsafe_urls=set('b'))
         self.assertRaises(
             BadUrl, opener.checkAndFollowBranchReference, 'a')
-        self.assertEquals(['a'], opener.follow_reference_calls)
+        self.assertEqual(['a'], opener.follow_reference_calls)
 
     def testSelfReferencingBranch(self):
         # checkAndFollowBranchReference raises BranchReferenceLoopError if
@@ -118,7 +116,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         opener = self.makeBranchOpener(True, ['a', 'a'])
         self.assertRaises(
             BranchLoopError, opener.checkAndFollowBranchReference, 'a')
-        self.assertEquals(['a'], opener.follow_reference_calls)
+        self.assertEqual(['a'], opener.follow_reference_calls)
 
     def testBranchReferenceLoop(self):
         # checkAndFollowBranchReference raises BranchReferenceLoopError if
@@ -128,7 +126,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         opener = self.makeBranchOpener(True, references)
         self.assertRaises(
             BranchLoopError, opener.checkAndFollowBranchReference, 'a')
-        self.assertEquals(['a', 'b'], opener.follow_reference_calls)
+        self.assertEqual(['a', 'b'], opener.follow_reference_calls)
 
 
 class TrackingProber(BzrProber):
@@ -166,7 +164,7 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         opener = self.makeBranchOpener([b.base], probers=[])
         self.assertRaises(NotBranchError, opener.open, b.base)
         opener = self.makeBranchOpener([b.base], probers=[BzrProber])
-        self.assertEquals(b.base, opener.open(b.base).base)
+        self.assertEqual(b.base, opener.open(b.base).base)
 
     def testDefaultProbers(self):
         # If no probers are specified to the constructor
@@ -180,18 +178,18 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         TrackingProber.seen_urls = []
         opener = self.makeBranchOpener(["."], probers=[TrackingProber])
         self.assertRaises(NotBranchError, opener.open, ".")
-        self.assertEquals(1, len(TrackingProber.seen_urls))
+        self.assertEqual(1, len(TrackingProber.seen_urls))
         TrackingProber.seen_urls = []
         # And make sure it's registered in such a way that BzrDir.open would
         # use it.
         self.assertRaises(NotBranchError, BzrDir.open, ".")
-        self.assertEquals(1, len(TrackingProber.seen_urls))
+        self.assertEqual(1, len(TrackingProber.seen_urls))
         TrackingProber.seen_urls = []
         # Make sure that SafeBranchOpener doesn't use it if no
         # probers were specified
         opener = self.makeBranchOpener(["."])
         self.assertRaises(NotBranchError, opener.open, ".")
-        self.assertEquals(0, len(TrackingProber.seen_urls))
+        self.assertEqual(0, len(TrackingProber.seen_urls))
 
     def testAllowedURL(self):
         # checkSource does not raise an exception for branches stacked on
@@ -289,8 +287,7 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         opener = self.makeBranchOpener(
             [a.base, b.base], probers=[TrackingProber])
         opener.open(b.base)
-        self.assertEquals(
-            set(TrackingProber.seen_urls), set([b.base, a.base]))
+        self.assertEqual(set(TrackingProber.seen_urls), set([b.base, a.base]))
 
     def testCustomOpenerWithBranchReference(self):
         # A custom function for opening a control dir can be specified.
@@ -301,8 +298,7 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         opener = self.makeBranchOpener(
             [a.base, b.base], probers=[TrackingProber])
         opener.open(b.base)
-        self.assertEquals(
-            set(TrackingProber.seen_urls), set([b.base, a.base]))
+        self.assertEqual(set(TrackingProber.seen_urls), set([b.base, a.base]))
 
     def test_ignore_fallbacks(self):
         """"Cross-format stacking doesn't error with ignore_fallbacks."""

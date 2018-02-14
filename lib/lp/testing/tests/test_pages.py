@@ -39,7 +39,7 @@ class TestMakeStoryTest(unittest.TestCase):
         # The test directory is looked up relative to the calling
         # module's path.
         suite = PageTestSuite(os.path.basename(self.tempdir))
-        self.failUnless(isinstance(suite, unittest.TestSuite))
+        self.assertTrue(isinstance(suite, unittest.TestSuite))
         tests = list(iter_suite_tests(suite))
 
         # Each unnumbered file appears as an independent test.

@@ -114,7 +114,7 @@ class TestFeaturesIntoOops(TestCaseWithFactory):
             with CaptureOops() as capture:
                 request = LaunchpadTestRequest()
 
-                self.assertEquals(getFeatureFlag('feature_name'), 'value')
+                self.assertEqual(getFeatureFlag('feature_name'), 'value')
 
                 # Simulate an oops here.
                 globalErrorUtility.raising(None, request=request)
@@ -122,5 +122,5 @@ class TestFeaturesIntoOops(TestCaseWithFactory):
                 oops = capture.oopses[0]
                 self.assertTrue('features.usedScopes' in oops)
                 self.assertTrue('features.usedFlags' in oops)
-                self.assertEquals(oops['features.usedFlags'],
-                    u"{'feature_name': u'value'}")
+                self.assertEqual(
+                    oops['features.usedFlags'], u"{'feature_name': u'value'}")

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`TranslationTemplatesBuild` tests."""
@@ -122,7 +122,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         self.assertEqual(
             build.build_farm_job, removeSecurityProxy(bq)._build_farm_job)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.assertEquals(
+        self.assertEqual(
             ubuntu.currentseries.nominatedarchindep.processor, bq.processor)
 
     def test_score(self):
@@ -233,7 +233,7 @@ class TestTranslationTemplatesBuild(TestCaseWithFactory):
         source = getUtility(ITranslationTemplatesBuildSource)
         build_farm_jobs = []
         builds = []
-        for i in xrange(10):
+        for i in range(10):
             branch = self.factory.makeBranch()
             build = source.create(branch)
             builds.append(build)

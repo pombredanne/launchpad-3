@@ -22,7 +22,7 @@ class XpiManifestTestCase(unittest.TestCase):
         self.assertEqual(len(manifest._locales), 1)
         chrome_path, locale = manifest.getChromePathAndLocale(
             'directory/file.dtd')
-        self.failIf(chrome_path is None, "Failed to match simple path")
+        self.assertIsNotNone(chrome_path, "Failed to match simple path")
         self.assertEqual(
             chrome_path, "chromepath/file.dtd", "Bad chrome path")
 
@@ -31,8 +31,8 @@ class XpiManifestTestCase(unittest.TestCase):
         manifest = XpiManifest("locale chromepath en-US directory/")
         chrome_path, locale = manifest.getChromePathAndLocale(
             'nonexistent/file')
-        self.failIf(chrome_path is not None, "Unexpected path match.")
-        self.failIf(locale is not None, "Got locale without a match.")
+        self.assertIsNone(chrome_path, "Unexpected path match.")
+        self.assertIsNone(locale, "Got locale without a match.")
 
     def test_NoUsefulLines(self):
         # Parse manifest without useful data.  Lines that don't match what
@@ -44,16 +44,16 @@ class XpiManifestTestCase(unittest.TestCase):
             """.lstrip())
         self.assertEqual(len(manifest._locales), 0)
         chrome_path, locale = manifest.getChromePathAndLocale('lines')
-        self.failIf(chrome_path is not None, "Empty manifest matched a path.")
+        self.assertIsNone(chrome_path, "Empty manifest matched a path.")
         chrome_path, locale = manifest.getChromePathAndLocale('')
-        self.failIf(chrome_path is not None, "Matched empty path.")
+        self.assertIsNone(chrome_path, "Matched empty path.")
 
     def _checkSortOrder(self, manifest):
         """Verify that manifest is sorted by increasing path length."""
         last_entry = None
         for entry in manifest._locales:
             if last_entry is not None:
-                self.failIf(len(entry.path) < len(last_entry.path),
+                self.assertFalse(len(entry.path) < len(last_entry.path),
                     "Manifest entries not sorted by increasing path length.")
             last_entry = entry
 
@@ -113,7 +113,7 @@ class XpiManifestTestCase(unittest.TestCase):
             """.lstrip())
         self.assertEqual(len(manifest._locales), 1)
         chrome_path, locale = manifest.getChromePathAndLocale('foodir/x')
-        self.failIf(chrome_path is None, "Garbage lines messed up match.")
+        self.assertIsNotNone(chrome_path, "Garbage lines messed up match.")
         self.assertEqual(chrome_path, "okay/x", "Matched wrong line.")
         self.assertEqual(locale, "fr", "Inexplicably mismatched locale.")
 
@@ -129,7 +129,7 @@ class XpiManifestTestCase(unittest.TestCase):
         """Helper: look up `path` in `manifest`, expect given output."""
         found_chrome_path, found_locale = manifest.getChromePathAndLocale(
             path)
-        self.failIf(found_chrome_path is None, "No match found for " + path)
+        self.assertIsNotNone(found_chrome_path, "No match found for " + path)
         self.assertEqual(found_chrome_path, chrome_path)
         self.assertEqual(found_locale, locale)
 
@@ -258,14 +258,14 @@ class XpiManifestTestCase(unittest.TestCase):
         # Jar files need to be descended into if any locale line mentions a
         # path inside them.
         manifest = XpiManifest("locale in my jar:x/foo.jar!/y")
-        self.failIf(not manifest.containsLocales("jar:x/foo.jar!/"))
-        self.failIf(manifest.containsLocales("jar:zzz/foo.jar!/"))
+        self.assertTrue(manifest.containsLocales("jar:x/foo.jar!/"))
+        self.assertFalse(manifest.containsLocales("jar:zzz/foo.jar!/"))
 
     def test_NormalizeContainsLocales(self):
         # "containsLocales" lookup is normalized, just like chrome path
         # lookup, so it's not fazed by syntactical misspellings.
         manifest = XpiManifest("locale main kh jar:/x/foo.jar!bar.jar!")
-        self.failIf(not manifest.containsLocales("x/foo.jar!//bar.jar!/"))
+        self.assertTrue(manifest.containsLocales("x/foo.jar!//bar.jar!/"))
 
     def test_ReverseMapping(self):
         # Test "reverse mapping" from chrome path to XPI path.

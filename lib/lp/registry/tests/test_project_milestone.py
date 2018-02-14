@@ -331,7 +331,7 @@ class TestDuplicateProductReleases(TestCaseWithFactory):
         try:
             milestone.createProductRelease(1, now)
         except MultipleProductReleases as e:
-            self.assert_(
+            self.assertTrue(
                 str(e), 'A milestone can only have one ProductRelease.')
 
     def test_inappropriate_deactivation_does_not_cause_an_OOPS(self):

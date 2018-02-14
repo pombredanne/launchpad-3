@@ -1,4 +1,4 @@
-# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test upload and queue manipulation of debian-installer custom uploads.
@@ -6,6 +6,8 @@
 See also lp.archivepublisher.tests.test_debian_installer for detailed tests
 of debian-installer custom upload extraction.
 """
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from itertools import chain
 import os

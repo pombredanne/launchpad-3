@@ -21,7 +21,7 @@ class TestIsolation(TestCase):
 
     def createTransaction(self):
         stores = list(store for _, store in getUtility(IZStorm).iterstores())
-        self.failUnless(len(stores) > 0, "No stores to test.")
+        self.assertTrue(len(stores) > 0, "No stores to test.")
         # One or more of the stores may be set to auto-commit. The transaction
         # status remains unchanged for these stores hence they are not useful
         # for these tests, so execute a query in every store; one of them will
@@ -35,11 +35,11 @@ class TestIsolation(TestCase):
         transaction.abort()
         for name, status in isolation.gen_store_statuses():
             self.assertIsInstance(name, (str, unicode))
-            self.failUnless(status in (None, TRANSACTION_STATUS_IDLE))
+            self.assertIn(status, (None, TRANSACTION_STATUS_IDLE))
         # At least one store will not be idle when a transaction has
         # begun.
         self.createTransaction()
-        self.failUnless(
+        self.assertTrue(
             any(status not in (None, TRANSACTION_STATUS_IDLE)
                 for _, status in isolation.gen_store_statuses()))
 
@@ -47,11 +47,11 @@ class TestIsolation(TestCase):
         # is_transaction_in_progress() returns False when all
         # transactions have been aborted.
         transaction.abort()
-        self.failIf(isolation.is_transaction_in_progress())
+        self.assertFalse(isolation.is_transaction_in_progress())
         # is_transaction_in_progress() returns True when a
         # transactions has begun.
         self.createTransaction()
-        self.failUnless(isolation.is_transaction_in_progress())
+        self.assertTrue(isolation.is_transaction_in_progress())
 
     def test_check_no_transaction(self):
         # check_no_transaction() should be a no-op when there are no
@@ -75,7 +75,7 @@ class TestIsolation(TestCase):
         # echo() will just return the given args no transaction is in
         # progress.
         transaction.abort()
-        self.failUnlessEqual(
+        self.assertEqual(
             ((1, 2, 3), {'a': 4, 'b': 5, 'c': 6}),
             echo(1, 2, 3, a=4, b=5, c=6))
         # echo() will break with TransactionInProgress when a

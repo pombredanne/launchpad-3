@@ -30,19 +30,19 @@ class MozillaXpiImporterTestCase(unittest.TestCase):
 
     def testInterface(self):
         """Check whether the object follows the interface."""
-        self.failUnless(
+        self.assertTrue(
             verifyObject(ITranslationFormatImporter, self.importer))
 
     def testFormat(self):
         """Check that MozillaXpiImporter handles the XPI file format."""
         format = self.importer.getFormat(BytesIO(b''))
-        self.failUnless(
+        self.assertTrue(
             format == TranslationFileFormat.XPI,
             'MozillaXpiImporter format expected XPI but got %s' % format.name)
 
     def testHasAlternativeMsgID(self):
         """Check that MozillaXpiImporter has an alternative msgid."""
-        self.failUnless(
+        self.assertTrue(
             self.importer.uses_source_string_msgids,
             "MozillaXpiImporter format says it's not using alternative msgid"
             " when it really does!")

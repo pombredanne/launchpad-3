@@ -52,24 +52,25 @@ class TestDistributionMirror(TestCaseWithFactory):
         removeSecurityProxy(bin_mirror).freshness = freshness
 
     def test_archive_mirror_without_content_should_be_disabled(self):
-        self.failUnless(self.archive_mirror.shouldDisable())
+        self.assertTrue(self.archive_mirror.shouldDisable())
 
     def test_archive_mirror_with_any_content_should_not_be_disabled(self):
         self._create_source_mirror(
             self.hoary, PackagePublishingPocket.RELEASE,
             self.hoary.components[0], MirrorFreshness.UP)
         flush_database_updates()
-        self.failIf(self.archive_mirror.shouldDisable())
+        self.assertFalse(self.archive_mirror.shouldDisable())
 
     def test_cdimage_mirror_not_missing_content_should_not_be_disabled(self):
         expected_file_count = 1
         self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='ubuntu')
-        self.failIf(self.cdimage_mirror.shouldDisable(expected_file_count))
+        self.assertFalse(
+            self.cdimage_mirror.shouldDisable(expected_file_count))
 
     def test_cdimage_mirror_missing_content_should_be_disabled(self):
         expected_file_count = 1
-        self.failUnless(
+        self.assertTrue(
             self.cdimage_mirror.shouldDisable(expected_file_count))
 
     def test_delete_all_mirror_cdimage_series(self):
@@ -82,9 +83,9 @@ class TestDistributionMirror(TestCaseWithFactory):
         self.assertEqual(0, len(self.cdimage_mirror.cdimage_series))
 
     def test_archive_mirror_without_content_freshness(self):
-        self.failIf(self.archive_mirror.source_series or
-                    self.archive_mirror.arch_series)
-        self.failUnlessEqual(
+        self.assertFalse(self.archive_mirror.source_series)
+        self.assertFalse(self.archive_mirror.arch_series)
+        self.assertEqual(
             self.archive_mirror.getOverallFreshness(),
             MirrorFreshness.UNKNOWN)
 
@@ -96,7 +97,7 @@ class TestDistributionMirror(TestCaseWithFactory):
             self.hoary, PackagePublishingPocket.RELEASE,
             self.hoary.components[1], MirrorFreshness.TWODAYSBEHIND)
         flush_database_updates()
-        self.failUnlessEqual(
+        self.assertEqual(
             removeSecurityProxy(self.archive_mirror).source_mirror_freshness,
             MirrorFreshness.TWODAYSBEHIND)
 
@@ -108,7 +109,7 @@ class TestDistributionMirror(TestCaseWithFactory):
             self.hoary_i386, PackagePublishingPocket.RELEASE,
             self.hoary.components[1], MirrorFreshness.ONEHOURBEHIND)
         flush_database_updates()
-        self.failUnlessEqual(
+        self.assertEqual(
             removeSecurityProxy(self.archive_mirror).arch_mirror_freshness,
             MirrorFreshness.ONEHOURBEHIND)
 
@@ -120,7 +121,7 @@ class TestDistributionMirror(TestCaseWithFactory):
             self.hoary, PackagePublishingPocket.RELEASE,
             self.hoary.components[1], MirrorFreshness.TWODAYSBEHIND)
         flush_database_updates()
-        self.failUnlessEqual(
+        self.assertEqual(
             self.archive_mirror.getOverallFreshness(),
             MirrorFreshness.TWODAYSBEHIND)
 
@@ -132,7 +133,7 @@ class TestDistributionMirror(TestCaseWithFactory):
             self.hoary_i386, PackagePublishingPocket.RELEASE,
             self.hoary.components[1], MirrorFreshness.ONEHOURBEHIND)
         flush_database_updates()
-        self.failUnlessEqual(
+        self.assertEqual(
             self.archive_mirror.getOverallFreshness(),
             MirrorFreshness.ONEHOURBEHIND)
 
@@ -152,7 +153,7 @@ class TestDistributionMirror(TestCaseWithFactory):
             self.hoary.components[1], MirrorFreshness.TWODAYSBEHIND)
         flush_database_updates()
 
-        self.failUnlessEqual(
+        self.assertEqual(
             self.archive_mirror.getOverallFreshness(),
             MirrorFreshness.TWODAYSBEHIND)
 
@@ -164,19 +165,19 @@ class TestDistributionMirror(TestCaseWithFactory):
         # notified when it's disabled --it doesn't matter whether it was
         # previously enabled or disabled.
         self.factory.makeMirrorProbeRecord(mirror)
-        self.failUnless(mirror.enabled)
+        self.assertTrue(mirror.enabled)
         log = 'Got a 404 on http://foo/baz'
         mirror.disable(notify_owner=True, log=log)
         # A notification was sent to the owner and other to the mirror admins.
         transaction.commit()
-        self.failUnlessEqual(len(stub.test_emails), 2)
+        self.assertEqual(len(stub.test_emails), 2)
         stub.test_emails = []
 
         mirror.disable(notify_owner=True, log=log)
         # Again, a notification was sent to the owner and other to the mirror
         # admins.
         transaction.commit()
-        self.failUnlessEqual(len(stub.test_emails), 2)
+        self.assertEqual(len(stub.test_emails), 2)
         stub.test_emails = []
 
         # For mirrors that have been probed more than once, we'll only notify
@@ -186,7 +187,7 @@ class TestDistributionMirror(TestCaseWithFactory):
         mirror.disable(notify_owner=True, log=log)
         # A notification was sent to the owner and other to the mirror admins.
         transaction.commit()
-        self.failUnlessEqual(len(stub.test_emails), 2)
+        self.assertEqual(len(stub.test_emails), 2)
         stub.test_emails = []
 
         # We can always disable notifications to the owner by passing
@@ -194,14 +195,14 @@ class TestDistributionMirror(TestCaseWithFactory):
         mirror.enabled = True
         mirror.disable(notify_owner=False, log=log)
         transaction.commit()
-        self.failUnlessEqual(len(stub.test_emails), 1)
+        self.assertEqual(len(stub.test_emails), 1)
         stub.test_emails = []
 
         mirror.enabled = False
         mirror.disable(notify_owner=True, log=log)
         # No notifications were sent this time
         transaction.commit()
-        self.failUnlessEqual(len(stub.test_emails), 0)
+        self.assertEqual(len(stub.test_emails), 0)
         stub.test_emails = []
 
     def test_no_email_sent_to_uncontactable_owner(self):
@@ -221,7 +222,7 @@ class TestDistributionMirror(TestCaseWithFactory):
         self.factory.makeMirrorProbeRecord(mirror)
         mirror.disable(notify_owner=True, log="It broke.")
         transaction.commit()
-        self.failUnlessEqual(len(stub.test_emails), 1)
+        self.assertEqual(len(stub.test_emails), 1)
 
 
 class TestDistributionMirrorSet(TestCase):
@@ -235,7 +236,7 @@ class TestDistributionMirrorSet(TestCase):
             This function ensures the orderBy argument given to it contains
             the 'random' string in its first item.
             """
-            self.failUnlessEqual(kw['orderBy'][0].name, 'random')
+            self.assertEqual(kw['orderBy'][0].name, 'random')
             return [1, 2, 3]
 
         orig_select = DistributionMirror.select
@@ -256,11 +257,11 @@ class TestDistributionMirrorSet(TestCase):
         main_mirror = getUtility(ILaunchpadCelebrities).ubuntu_archive_mirror
         mirrors = getUtility(IDistributionMirrorSet).getBestMirrorsForCountry(
             france, MirrorContent.ARCHIVE)
-        self.failUnless(len(mirrors) > 1, "Not enough mirrors")
-        self.failUnlessEqual(main_mirror, mirrors[-1])
+        self.assertTrue(len(mirrors) > 1, "Not enough mirrors")
+        self.assertEqual(main_mirror, mirrors[-1])
 
         main_mirror = getUtility(ILaunchpadCelebrities).ubuntu_cdimage_mirror
         mirrors = getUtility(IDistributionMirrorSet).getBestMirrorsForCountry(
             france, MirrorContent.RELEASE)
-        self.failUnless(len(mirrors) > 1, "Not enough mirrors")
-        self.failUnlessEqual(main_mirror, mirrors[-1])
+        self.assertTrue(len(mirrors) > 1, "Not enough mirrors")
+        self.assertEqual(main_mirror, mirrors[-1])

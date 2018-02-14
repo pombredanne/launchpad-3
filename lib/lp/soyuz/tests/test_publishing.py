@@ -1,7 +1,9 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native publication workflow for Soyuz. """
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 import datetime
 import operator
@@ -154,7 +156,7 @@ class SoyuzTestPublisher:
         self.breezy_autotest_i386 = self.breezy_autotest['i386']
         self.breezy_autotest_hppa = self.breezy_autotest['hppa']
 
-    def addMockFile(self, filename, filecontent='nothing', restricted=False):
+    def addMockFile(self, filename, filecontent=b'nothing', restricted=False):
         """Add a mock file in Librarian.
 
         Returns a ILibraryFileAlias corresponding to the file uploaded.
@@ -167,7 +169,7 @@ class SoyuzTestPublisher:
     def addPackageUpload(self, archive, distroseries,
                          pocket=PackagePublishingPocket.RELEASE,
                          changes_file_name="foo_666_source.changes",
-                         changes_file_content="fake changes file content",
+                         changes_file_content=b"fake changes file content",
                          upload_status=PackageUploadStatus.DONE):
         signing_key = self.person.gpg_keys[0]
         package_upload = distroseries.createQueueEntry(
@@ -187,8 +189,8 @@ class SoyuzTestPublisher:
 
     def getPubSource(self, sourcename=None, version=None, component='main',
                      filename=None, section='base',
-                     filecontent='I do not care about sources.',
-                     changes_file_content="Fake: fake changes file content",
+                     filecontent=b'I do not care about sources.',
+                     changes_file_content=b"Fake: fake changes file content",
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
                      urgency=SourcePackageUrgency.LOW,
@@ -299,8 +301,8 @@ class SoyuzTestPublisher:
                        shlibdep=None, depends=None, recommends=None,
                        suggests=None, conflicts=None, replaces=None,
                        provides=None, pre_depends=None, enhances=None,
-                       breaks=None, filecontent='bbbiiinnnaaarrryyy',
-                       changes_file_content="Fake: fake changes file",
+                       breaks=None, filecontent=b'bbbiiinnnaaarrryyy',
+                       changes_file_content=b"Fake: fake changes file",
                        status=PackagePublishingStatus.PENDING,
                        pocket=PackagePublishingPocket.RELEASE,
                        format=BinaryPackageFormat.DEB,
@@ -376,7 +378,7 @@ class SoyuzTestPublisher:
             published_binaries, key=operator.attrgetter('id'), reverse=True)
 
     def uploadBinaryForBuild(
-        self, build, binaryname, filecontent="anything",
+        self, build, binaryname, filecontent=b"anything",
         summary="summary", description="description", shlibdep=None,
         depends=None, recommends=None, suggests=None, conflicts=None,
         replaces=None, provides=None, pre_depends=None, enhances=None,
@@ -448,7 +450,7 @@ class SoyuzTestPublisher:
         if not build.log:
             build.setLog(
                 self.addMockFile(
-                    buildlog_filename, filecontent='Built!',
+                    buildlog_filename, filecontent=b'Built!',
                     restricted=build.archive.private))
 
         return binarypackagerelease
@@ -674,7 +676,7 @@ class TestNativePublishing(TestNativePublishingBase):
     def test_publish_source(self):
         # Source publications result in a PUBLISHED publishing record and
         # the corresponding files are dumped in the disk pool/.
-        pub_source = self.getPubSource(filecontent='Hello world')
+        pub_source = self.getPubSource(filecontent=b'Hello world')
         pub_source.publish(self.disk_pool, self.logger)
         self.assertEqual(PackagePublishingStatus.PUBLISHED, pub_source.status)
         pool_path = "%s/main/f/foo/foo_666.dsc" % self.pool_dir
@@ -683,7 +685,7 @@ class TestNativePublishing(TestNativePublishingBase):
     def test_publish_binaries(self):
         # Binary publications result in a PUBLISHED publishing record and
         # the corresponding files are dumped in the disk pool/.
-        pub_binary = self.getPubBinaries(filecontent='Hello world')[0]
+        pub_binary = self.getPubBinaries(filecontent=b'Hello world')[0]
         pub_binary.publish(self.disk_pool, self.logger)
         self.assertEqual(PackagePublishingStatus.PUBLISHED, pub_binary.status)
         pool_path = "%s/main/f/foo/foo-bin_666_all.deb" % self.pool_dir
@@ -694,7 +696,7 @@ class TestNativePublishing(TestNativePublishingBase):
         # Archive.publish_debug_symbols is false just sets PUBLISHED,
         # without a file in the pool.
         pubs = self.getPubBinaries(
-            binaryname='dbg', filecontent='Hello world', with_debug=True)
+            binaryname='dbg', filecontent=b'Hello world', with_debug=True)
 
         def publish_everything():
             existence_map = {}
@@ -707,13 +709,13 @@ class TestNativePublishing(TestNativePublishingBase):
             return existence_map
 
         self.assertEqual(
-            {u'dbg_666_all.deb': True, u'dbg-dbgsym_666_all.ddeb': False},
+            {'dbg_666_all.deb': True, 'dbg-dbgsym_666_all.ddeb': False},
             publish_everything())
 
         pubs[0].archive.publish_debug_symbols = True
 
         self.assertEqual(
-            {u'dbg_666_all.deb': True, u'dbg-dbgsym_666_all.ddeb': True},
+            {'dbg_666_all.deb': True, 'dbg-dbgsym_666_all.ddeb': True},
             publish_everything())
 
     def testPublishingOverwriteFileInPool(self):
@@ -730,7 +732,7 @@ class TestNativePublishing(TestNativePublishingBase):
         with open(foo_dsc_path, 'w') as foo_dsc:
             foo_dsc.write('Hello world')
 
-        pub_source = self.getPubSource(filecontent="Something")
+        pub_source = self.getPubSource(filecontent=b"Something")
         pub_source.publish(self.disk_pool, self.logger)
 
         # And an oops should be filed for the error.
@@ -742,7 +744,7 @@ class TestNativePublishing(TestNativePublishingBase):
 
     def testPublishingDifferentContents(self):
         """Test if publishOne refuses to overwrite its own publication."""
-        pub_source = self.getPubSource(filecontent='foo is happy')
+        pub_source = self.getPubSource(filecontent=b'foo is happy')
         pub_source.publish(self.disk_pool, self.logger)
         self.layer.commit()
 
@@ -754,7 +756,7 @@ class TestNativePublishing(TestNativePublishingBase):
         # try to publish 'foo' again with a different content, it
         # raises internally and keeps the files with the original
         # content.
-        pub_source2 = self.getPubSource(filecontent='foo is depressing')
+        pub_source2 = self.getPubSource(filecontent=b'foo is depressing')
         pub_source2.publish(self.disk_pool, self.logger)
         self.layer.commit()
 
@@ -769,7 +771,7 @@ class TestNativePublishing(TestNativePublishingBase):
         mark it as PUBLISHED.
         """
         pub_source = self.getPubSource(
-            sourcename='bar', filecontent='bar is good')
+            sourcename='bar', filecontent=b'bar is good')
         pub_source.publish(self.disk_pool, self.logger)
         self.layer.commit()
         bar_name = "%s/main/b/bar/bar_666.dsc" % self.pool_dir
@@ -778,7 +780,7 @@ class TestNativePublishing(TestNativePublishingBase):
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
         pub_source2 = self.getPubSource(
-            sourcename='bar', filecontent='bar is good')
+            sourcename='bar', filecontent=b'bar is good')
         pub_source2.publish(self.disk_pool, self.logger)
         self.layer.commit()
         pub_source2.sync()
@@ -790,7 +792,7 @@ class TestNativePublishing(TestNativePublishingBase):
         After check if the pool file contents as the same, it should
         create a symlink in the new pointing to the original file.
         """
-        content = 'am I a file or a symbolic link ?'
+        content = b'am I a file or a symbolic link ?'
         # publish sim.dsc in main and re-publish in universe
         pub_source = self.getPubSource(sourcename='sim', filecontent=content)
         pub_source2 = self.getPubSource(
@@ -813,7 +815,7 @@ class TestNativePublishing(TestNativePublishingBase):
         # remains pending.
         pub_source3 = self.getPubSource(
             sourcename='sim', component='restricted',
-            filecontent='It is all my fault')
+            filecontent=b'It is all my fault')
         pub_source3.publish(self.disk_pool, self.logger)
         self.layer.commit()
 
@@ -832,7 +834,7 @@ class TestNativePublishing(TestNativePublishingBase):
         test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
 
         pub_source = self.getPubSource(
-            sourcename="foo", filecontent='Am I a PPA Record ?',
+            sourcename="foo", filecontent=b'Am I a PPA Record ?',
             archive=cprov.archive)
         pub_source.publish(test_disk_pool, self.logger)
         self.layer.commit()

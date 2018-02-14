@@ -63,28 +63,28 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
         login_person(self.expert)
 
     def test_anonymous_cannot_edit(self):
-        self.failIf(check_permission('launchpad.Edit', self.root),
+        self.assertFalse(check_permission('launchpad.Edit', self.root),
             "Anonymous user shouldn't have launchpad.Edit on ILaunchpadRoot")
 
     def test_regular_user_cannot_edit(self):
         login_person(self.factory.makePerson())
-        self.failIf(check_permission('launchpad.Edit', self.root),
+        self.assertFalse(check_permission('launchpad.Edit', self.root),
             "Regular users shouldn't have launchpad.Edit on ILaunchpadRoot")
 
     def test_registry_expert_can_edit(self):
         self.setUpRegistryExpert()
-        self.failUnless(check_permission('launchpad.Edit', self.root),
+        self.assertTrue(check_permission('launchpad.Edit', self.root),
             "Registry experts should have launchpad.Edit on ILaunchpadRoot")
 
     def test_admins_can_edit(self):
         login_person(self.admin)
-        self.failUnless(check_permission('launchpad.Edit', self.root),
+        self.assertTrue(check_permission('launchpad.Edit', self.root),
             "Admins should have launchpad.Edit on ILaunchpadRoot")
 
     def test_featured_projects_view_requires_edit(self):
         view = create_view(self.root, '+featuredprojects')
         checker = selectChecker(view)
-        self.assertEquals('launchpad.Edit', checker.permission_id('__call__'))
+        self.assertEqual('launchpad.Edit', checker.permission_id('__call__'))
 
     def test_featured_projects_manage_link_requires_edit(self):
         self.setUpRegistryExpert()
@@ -94,7 +94,7 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
         # urlfetch.
         view.getRecentBlogPosts = lambda: []
         content = BeautifulSoup(view(), parseOnlyThese=SoupStrainer('a'))
-        self.failUnless(
+        self.assertTrue(
             content.find('a', href='+featuredprojects'),
             "Cannot find the +featuredprojects link on the first page")
 

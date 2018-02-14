@@ -1,4 +1,4 @@
-# Copyright 2011-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test error views."""
@@ -56,17 +56,16 @@ class TestSystemErrorView(TestCase):
     def test_without_oops_id(self):
         request = LaunchpadTestRequest()
         SystemErrorView(Exception(), request)
-        self.assertEquals(500, request.response.getStatus())
-        self.assertEquals(
-            None,
+        self.assertEqual(500, request.response.getStatus())
+        self.assertIsNone(
             request.response.getHeader('X-Lazr-OopsId', literal=True))
 
     def test_with_oops_id(self):
         request = LaunchpadTestRequest()
         request.oopsid = 'OOPS-1X1'
         SystemErrorView(Exception(), request)
-        self.assertEquals(500, request.response.getStatus())
-        self.assertEquals(
+        self.assertEqual(500, request.response.getStatus())
+        self.assertEqual(
             'OOPS-1X1',
             request.response.getHeader('X-Lazr-OopsId', literal=True))
 
@@ -105,7 +104,7 @@ class TestDatabaseErrorViews(TestCase):
         Return the file-like object returned by *urllib2.urlopen(url)*.
         Raise a TimeoutException if the connection can not be established.
         """
-        for i in xrange(retries):
+        for i in range(retries):
             try:
                 return urllib2.urlopen(url)
             except urllib2.HTTPError as e:
@@ -224,7 +223,7 @@ class TestDatabaseErrorViews(TestCase):
     def test_disconnectionerror_view(self):
         request = LaunchpadTestRequest()
         DisconnectionErrorView(DisconnectionError(), request)
-        self.assertEquals(503, request.response.getStatus())
+        self.assertEqual(503, request.response.getStatus())
 
     def test_operationalerror_view_integration(self):
         # Test setup.
@@ -246,4 +245,4 @@ class TestDatabaseErrorViews(TestCase):
     def test_operationalerror_view(self):
         request = LaunchpadTestRequest()
         OperationalErrorView(OperationalError(), request)
-        self.assertEquals(503, request.response.getStatus())
+        self.assertEqual(503, request.response.getStatus())

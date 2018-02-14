@@ -100,7 +100,7 @@ class TestUserSliceScope(TestCase):
             name = 'userslice:%d,%d' % (i, checks)
             if scope.lookup(name):
                 matches.append(name)
-        self.assertEquals(len(matches), 1, matches)
+        self.assertEqual(len(matches), 1, matches)
 
 
 class TestUserSliceScopeIntegration(TestCaseWithFactory):
@@ -123,5 +123,5 @@ class TestUserSliceScopeIntegration(TestCaseWithFactory):
                 value=u'not_value'),
             ]):
             with person_logged_in(person):
-                self.assertEquals(getFeatureFlag('test_feature'), 'on')
-                self.assertEquals(getFeatureFlag('test_not'), None)
+                self.assertEqual(getFeatureFlag('test_feature'), 'on')
+                self.assertEqual(getFeatureFlag('test_not'), None)

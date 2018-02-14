@@ -120,22 +120,22 @@ class TestProberProtocolAndFactory(TrialTestCase):
     def test_environment_http_proxy_is_handled_correctly(self):
         os.environ['http_proxy'] = 'http://squid.internal:3128'
         prober = ProberFactory(self.urls['200'])
-        self.failUnlessEqual(prober.request_host, 'localhost')
-        self.failUnlessEqual(prober.request_port, self.port)
-        self.failUnlessEqual(prober.request_path, '/valid-mirror')
-        self.failUnlessEqual(prober.connect_host, 'squid.internal')
-        self.failUnlessEqual(prober.connect_port, 3128)
-        self.failUnlessEqual(prober.connect_path, self.urls['200'])
+        self.assertEqual(prober.request_host, 'localhost')
+        self.assertEqual(prober.request_port, self.port)
+        self.assertEqual(prober.request_path, '/valid-mirror')
+        self.assertEqual(prober.connect_host, 'squid.internal')
+        self.assertEqual(prober.connect_port, 3128)
+        self.assertEqual(prober.connect_path, self.urls['200'])
 
     def test_connect_cancels_existing_timeout_call(self):
         prober = ProberFactory(self.urls['200'])
         prober.timeoutCall = reactor.callLater(
             30, prober.failWithTimeoutError)
         old_timeout_call = prober.timeoutCall
-        self.failUnless(old_timeout_call.active())
+        self.assertTrue(old_timeout_call.active())
         prober.connect()
-        self.failIf(old_timeout_call.active())
-        self.failUnless(prober.timeoutCall.active())
+        self.assertFalse(old_timeout_call.active())
+        self.assertTrue(prober.timeoutCall.active())
         return prober._deferred
 
     def _test_connect_to_host(self, url, host):
@@ -153,7 +153,7 @@ class TestProberProtocolAndFactory(TrialTestCase):
         reactor.connectTCP = fakeConnect
 
         def restore_connect(result, orig_connect):
-            self.failUnlessEqual(prober.connecting_to, host)
+            self.assertEqual(prober.connecting_to, host)
             reactor.connectTCP = orig_connect
             return None
 
@@ -173,23 +173,23 @@ class TestProberProtocolAndFactory(TrialTestCase):
 
     def test_probe_sets_up_timeout_call(self):
         prober = ProberFactory(self.urls['200'])
-        self.failUnless(getattr(prober, 'timeoutCall', None) is None)
+        self.assertIsNone(getattr(prober, 'timeoutCall', None))
         deferred = prober.probe()
-        self.failUnless(getattr(prober, 'timeoutCall', None) is not None)
+        self.assertIsNotNone(getattr(prober, 'timeoutCall', None))
         return deferred
 
     def test_RedirectAwareProber_follows_http_redirect(self):
         url = 'http://localhost:%s/redirect-to-valid-mirror/file' % self.port
         prober = RedirectAwareProberFactory(url)
-        self.failUnless(prober.redirection_count == 0)
-        self.failUnless(prober.url == url)
+        self.assertTrue(prober.redirection_count == 0)
+        self.assertTrue(prober.url == url)
         deferred = prober.probe()
 
         def got_result(result):
-            self.failUnless(prober.redirection_count == 1)
+            self.assertTrue(prober.redirection_count == 1)
             new_url = 'http://localhost:%s/valid-mirror/file' % self.port
-            self.failUnless(prober.url == new_url)
-            self.failUnless(result == str(httplib.OK))
+            self.assertTrue(prober.url == new_url)
+            self.assertTrue(result == str(httplib.OK))
 
         return deferred.addCallback(got_result)
 
@@ -209,7 +209,7 @@ class TestProberProtocolAndFactory(TrialTestCase):
         d = self._createProberAndProbe(self.urls['200'])
 
         def got_result(result):
-            self.failUnless(
+            self.assertTrue(
                 result == str(httplib.OK),
                 "Expected a '200' status but got '%s'" % result)
 
@@ -218,20 +218,20 @@ class TestProberProtocolAndFactory(TrialTestCase):
     def test_success_cancel_timeout_call(self):
         prober = ProberFactory(self.urls['200'])
         deferred = prober.probe()
-        self.failUnless(prober.timeoutCall.active())
+        self.assertTrue(prober.timeoutCall.active())
 
         def check_timeout_call(result):
-            self.failIf(prober.timeoutCall.active())
+            self.assertFalse(prober.timeoutCall.active())
 
         return deferred.addCallback(check_timeout_call)
 
     def test_failure_cancel_timeout_call(self):
         prober = ProberFactory(self.urls['500'])
         deferred = prober.probe()
-        self.failUnless(prober.timeoutCall.active())
+        self.assertTrue(prober.timeoutCall.active())
 
         def check_timeout_call(result):
-            self.failIf(prober.timeoutCall.active())
+            self.assertFalse(prober.timeoutCall.active())
 
         return deferred.addErrback(check_timeout_call)
 
@@ -261,7 +261,7 @@ class TestProberProtocolAndFactory(TrialTestCase):
 
         protocol.factory = FakeFactory('http://foo.bar/')
         protocol.makeConnection(FakeTransport())
-        self.assertEquals(
+        self.assertEqual(
             'Launchpad Mirror Prober ( https://launchpad.net/ )',
             headers['User-Agent'])
 
@@ -347,10 +347,10 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         requests = MIN_REQUESTS_TO_CONSIDER_RATIO - 1
         timeouts = requests
         prober = self._createProberStubConnectAndProbe(requests, timeouts)
-        self.failUnless(prober.connectCalled)
+        self.assertTrue(prober.connectCalled)
         # Ensure the number of requests and timeouts we're using should
         # _NOT_ cause a given host to be skipped.
-        self.failIf(should_skip_host(self.host))
+        self.assertFalse(should_skip_host(self.host))
 
     def test_connect_is_not_called_after_too_many_timeouts(self):
         """If we get a small requests/timeouts ratio on a given host, we'll
@@ -362,10 +362,10 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         timeouts = (
             (MIN_REQUESTS_TO_CONSIDER_RATIO / MIN_REQUEST_TIMEOUT_RATIO) + 2)
         prober = self._createProberStubConnectAndProbe(requests, timeouts)
-        self.failIf(prober.connectCalled)
+        self.assertFalse(prober.connectCalled)
         # Ensure the number of requests and timeouts we're using should
         # actually cause a given host to be skipped.
-        self.failUnless(should_skip_host(self.host))
+        self.assertTrue(should_skip_host(self.host))
 
     def test_connect_is_called_if_not_many_timeouts(self):
         # If the ratio is not too small we consider it's safe to keep
@@ -374,10 +374,10 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         timeouts = (
             (MIN_REQUESTS_TO_CONSIDER_RATIO / MIN_REQUEST_TIMEOUT_RATIO) - 2)
         prober = self._createProberStubConnectAndProbe(requests, timeouts)
-        self.failUnless(prober.connectCalled)
+        self.assertTrue(prober.connectCalled)
         # Ensure the number of requests and timeouts we're using should
         # _NOT_ cause a given host to be skipped.
-        self.failIf(should_skip_host(self.host))
+        self.assertFalse(should_skip_host(self.host))
 
 
 class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
@@ -422,9 +422,9 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
             u'http://%s:%s/timeout' % (host, self.port))
 
         def got_error(error):
-            self.failUnlessEqual(
+            self.assertEqual(
                 {host: 1}, distributionmirror_prober.host_requests)
-            self.failUnlessEqual(
+            self.assertEqual(
                 {host: 1}, distributionmirror_prober.host_timeouts)
 
         return d.addErrback(got_error)
@@ -435,9 +435,9 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
             u'http://%s:%s/valid-mirror' % (host, self.port))
 
         def got_result(result):
-            self.failUnlessEqual(
+            self.assertEqual(
                 {host: 1}, distributionmirror_prober.host_requests)
-            self.failUnlessEqual(
+            self.assertEqual(
                 {host: 0}, distributionmirror_prober.host_timeouts)
 
         return d.addCallback(got_result)
@@ -451,7 +451,7 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
         distributionmirror_prober.host_timeouts = {host: timeouts}
         # Ensure the number of requests and timeouts we're using should
         # cause a given host to be skipped.
-        self.failUnless(should_skip_host(host))
+        self.assertTrue(should_skip_host(host))
 
         d = self._createProberAndProbe(
             u'http://%s:%s/timeout' % (host, self.port))
@@ -475,10 +475,10 @@ class TestMultiLock(TestCase):
         there's no task currently running.
         """
         self.multi_lock.run(self.callback)
-        self.assertEquals(self.count, 1, "self.callback should have run.")
+        self.assertEqual(self.count, 1, "self.callback should have run.")
 
         self.multi_lock.run(self.callback)
-        self.assertEquals(
+        self.assertEqual(
             self.count, 2, "self.callback should have run twice.")
 
     def test_run_waits_for_first_lock(self):
@@ -489,7 +489,7 @@ class TestMultiLock(TestCase):
 
         # Run self.callback when self.multi_lock is acquired.
         self.multi_lock.run(self.callback)
-        self.assertEquals(
+        self.assertEqual(
             self.count, 0, "self.callback should not have run yet.")
 
         # Release lock_one.
@@ -497,7 +497,7 @@ class TestMultiLock(TestCase):
 
         # multi_lock will now have been able to acquire both semaphores, and
         # so it will have run its task.
-        self.assertEquals(self.count, 1, "self.callback should have run.")
+        self.assertEqual(self.count, 1, "self.callback should have run.")
 
     def test_run_waits_for_second_lock(self):
         """MultiLock.run acquires the second lock before running functions."""
@@ -507,7 +507,7 @@ class TestMultiLock(TestCase):
 
         # Run self.callback when self.multi_lock is acquired.
         self.multi_lock.run(self.callback)
-        self.assertEquals(
+        self.assertEqual(
             self.count, 0, "self.callback should not have run yet.")
 
         # Release lock_two.
@@ -515,7 +515,7 @@ class TestMultiLock(TestCase):
 
         # multi_lock will now have been able to acquire both semaphores, and
         # so it will have run its task.
-        self.assertEquals(self.count, 1, "self.callback should have run.")
+        self.assertEqual(self.count, 1, "self.callback should have run.")
 
     def test_run_waits_for_current_task(self):
         """MultiLock.run waits the end of the current task before running the
@@ -527,7 +527,7 @@ class TestMultiLock(TestCase):
 
         # Run self.callback when self.multi_lock is acquired.
         self.multi_lock.run(self.callback)
-        self.assertEquals(
+        self.assertEqual(
             self.count, 0, "self.callback should not have run yet.")
 
         # Release lock_one.
@@ -535,7 +535,7 @@ class TestMultiLock(TestCase):
 
         # multi_lock will now have been able to acquire both semaphores, and
         # so it will have run its task.
-        self.assertEquals(self.count, 1, "self.callback should have run.")
+        self.assertEqual(self.count, 1, "self.callback should have run.")
 
 
 class TestRedirectAwareProberFactoryAndProtocol(TestCase):
@@ -549,9 +549,9 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         prober = RedirectAwareProberFactory('http://foo.bar')
         prober.timeoutCall = FakeTimeOutCall()
         prober.connect = lambda: None
-        self.failIf(prober.timeoutCall.resetCalled)
+        self.assertFalse(prober.timeoutCall.resetCalled)
         prober.redirect('http://bar.foo')
-        self.failUnless(prober.timeoutCall.resetCalled)
+        self.assertTrue(prober.timeoutCall.resetCalled)
 
     def _createFactoryAndStubConnectAndTimeoutCall(self, url=None):
         if url is None:
@@ -575,7 +575,7 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
 
         prober.failed = failed
         prober.redirect('http://foo.bar/baz/boo/notfound?file=package.deb')
-        self.failUnless(prober.has_failed)
+        self.assertTrue(prober.has_failed)
 
     def test_does_not_raise_if_redirected_to_reencoded_file(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall(
@@ -597,9 +597,9 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
             """
         config.push('localhost_only_conf', localhost_only_conf)
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
-        self.failUnless(prober.connect_host != 'localhost')
+        self.assertTrue(prober.connect_host != 'localhost')
         prober.probe()
-        self.failIf(prober.connectCalled)
+        self.assertFalse(prober.connectCalled)
         # Restore the config.
         config.pop('localhost_only_conf')
 
@@ -612,7 +612,7 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         config.push('remote_conf', remote_conf)
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         prober.probe()
-        self.failUnless(prober.connectCalled)
+        self.assertTrue(prober.connectCalled)
         # Restore the config.
         config.pop('remote_conf')
 
@@ -621,18 +621,18 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         prober.failed = lambda error: None
         prober.redirection_count = MAX_REDIRECTS
         prober.redirect('http://bar.foo')
-        self.failIf(prober.connectCalled)
+        self.assertFalse(prober.connectCalled)
 
     def test_noconnection_is_made_when_url_scheme_is_not_http_or_ftp(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         prober.failed = lambda error: None
         prober.redirect('ssh://bar.foo')
-        self.failIf(prober.connectCalled)
+        self.assertFalse(prober.connectCalled)
 
     def test_connection_is_made_on_successful_redirect(self):
         prober = self._createFactoryAndStubConnectAndTimeoutCall()
         prober.redirect('http://bar.foo')
-        self.failUnless(prober.connectCalled)
+        self.assertTrue(prober.connectCalled)
 
     def test_connection_is_closed_on_redirect(self):
         protocol = RedirectAwareProberProtocol()
@@ -644,7 +644,7 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
             "Length: 0\r\n"
             "\r\n")
         self.assertEqual('http://foo.baz/', protocol.factory.redirectedTo)
-        self.failUnless(protocol.transport.disconnecting)
+        self.assertTrue(protocol.transport.disconnecting)
 
 
 class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
@@ -722,10 +722,10 @@ class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
                 [(defer.FAILURE, Failure(exception))])
             # Twisted callbacks may raise or return a failure; that's why we
             # check the return value.
-            self.failIf(isinstance(failure, Failure))
+            self.assertFalse(isinstance(failure, Failure))
             # Also, these failures are not logged to stdout/stderr since
             # they're expected to happen.
-            self.failIf(logger.errorCalled)
+            self.assertFalse(logger.errorCalled)
 
     def test_unexpected_failures_are_logged_but_not_raised(self):
         # Errors which are not expected as logged using the
@@ -737,10 +737,10 @@ class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
             [(defer.FAILURE, Failure(ZeroDivisionError()))])
         # Twisted callbacks may raise or return a failure; that's why we
         # check the return value.
-        self.failIf(isinstance(failure, Failure))
+        self.assertFalse(isinstance(failure, Failure))
         # Unlike the expected failures, these ones must be logged as errors to
         # stdout/stderr.
-        self.failUnless(logger.errorCalled)
+        self.assertTrue(logger.errorCalled)
 
 
 class TestArchiveMirrorProberCallbacks(TestCaseWithFactory):
@@ -879,28 +879,28 @@ class TestProbeFunctionSemaphores(TestCase):
         # Since we have a single mirror to probe we need to have a single
         # DeferredSemaphore with a limit of PER_HOST_REQUESTS, to ensure we
         # don't issue too many simultaneous connections on that host.
-        self.assertEquals(len(request_manager.host_locks), 1)
+        self.assertEqual(len(request_manager.host_locks), 1)
         multi_lock = request_manager.host_locks[mirror1_host]
-        self.assertEquals(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
+        self.assertEqual(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
         # Note that our multi_lock contains another semaphore to control the
         # overall number of requests.
-        self.assertEquals(multi_lock.overall_lock.limit, OVERALL_REQUESTS)
+        self.assertEqual(multi_lock.overall_lock.limit, OVERALL_REQUESTS)
 
         probe_function(mirror2, StringIO(), [], logging)
         # Now we have two mirrors to probe, but they have the same hostname,
         # so we'll still have a single semaphore in host_semaphores.
-        self.assertEquals(mirror2_host, mirror1_host)
-        self.assertEquals(len(request_manager.host_locks), 1)
+        self.assertEqual(mirror2_host, mirror1_host)
+        self.assertEqual(len(request_manager.host_locks), 1)
         multi_lock = request_manager.host_locks[mirror2_host]
-        self.assertEquals(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
+        self.assertEqual(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
 
         probe_function(mirror3, StringIO(), [], logging)
         # This third mirror is on a separate host, so we'll have a second
         # semaphore added to host_semaphores.
-        self.failUnless(mirror3_host != mirror1_host)
-        self.assertEquals(len(request_manager.host_locks), 2)
+        self.assertTrue(mirror3_host != mirror1_host)
+        self.assertEqual(len(request_manager.host_locks), 2)
         multi_lock = request_manager.host_locks[mirror3_host]
-        self.assertEquals(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
+        self.assertEqual(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
 
         # When using an http_proxy, even though we'll actually connect to the
         # proxy, we'll use the mirror's host as the key to find the semaphore
@@ -908,7 +908,7 @@ class TestProbeFunctionSemaphores(TestCase):
         orig_proxy = os.getenv('http_proxy')
         os.environ['http_proxy'] = 'http://squid.internal:3128/'
         probe_function(mirror3, StringIO(), [], logging)
-        self.assertEquals(len(request_manager.host_locks), 2)
+        self.assertEqual(len(request_manager.host_locks), 2)
         restore_http_proxy(orig_proxy)
 
 
@@ -917,8 +917,8 @@ class TestCDImageFileListFetching(TestCase):
     def test_no_cache(self):
         url = 'http://releases.ubuntu.com/.manifest'
         request = _build_request_for_cdimage_file_list(url)
-        self.failUnlessEqual(request.headers['Pragma'], 'no-cache')
-        self.failUnlessEqual(request.headers['Cache-control'], 'no-cache')
+        self.assertEqual(request.headers['Pragma'], 'no-cache')
+        self.assertEqual(request.headers['Cache-control'], 'no-cache')
 
 
 class TestLoggingMixin(TestCase):
@@ -940,7 +940,7 @@ class TestLoggingMixin(TestCase):
         logger.logMessage("Ubuntu Warty Released")
         logger.log_file.seek(0)
         message = logger.log_file.read()
-        self.failUnlessEqual(
+        self.assertEqual(
             'Wed Oct 20 12:00:00 2004: Ubuntu Warty Released',
             message)
 

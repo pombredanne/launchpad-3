@@ -105,11 +105,11 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
         # answer_contacts_with_languages is not part of its public API.
         answer_contacts = removeSecurityProxy(
             product).answer_contacts_with_languages
-        self.failUnlessEqual(answer_contacts, [answer_contact])
+        self.assertEqual(answer_contacts, [answer_contact])
         langs = [
             lang.englishname for lang in answer_contact.getLanguagesCache()]
         # The languages cache has been filled in the correct order.
-        self.failUnlessEqual(langs, ['English', 'Portuguese (Brazil)'])
+        self.assertEqual(langs, ['English', 'Portuguese (Brazil)'])
 
     def test_SourcePackage_implementation_should_prefill_cache(self):
         # Remove the answer contact's security proxy because we need to call
@@ -128,11 +128,11 @@ class TestQuestionTarget_answer_contacts_with_languages(TestCaseWithFactory):
         # answer_contacts_with_languages is not part of its public API.
         answer_contacts = removeSecurityProxy(
             source_package).answer_contacts_with_languages
-        self.failUnlessEqual(answer_contacts, [answer_contact])
+        self.assertEqual(answer_contacts, [answer_contact])
         langs = [
             lang.englishname for lang in answer_contact.getLanguagesCache()]
         # The languages cache has been filled in the correct order.
-        self.failUnlessEqual(langs, ['English', 'Portuguese (Brazil)'])
+        self.assertEqual(langs, ['English', 'Portuguese (Brazil)'])
 
 
 class TestQuestionTargetCreateQuestionFromBug(TestCaseWithFactory):

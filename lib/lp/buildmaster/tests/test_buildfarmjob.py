@@ -104,7 +104,7 @@ class TestBuildFarmJob(TestBuildFarmJobBase, TestCaseWithFactory):
         build_farm_job = getUtility(IBuildFarmJobSource).new(
             job_type=BuildFarmJobType.PACKAGEBUILD,
             date_created=ten_years_ago)
-        self.failUnlessEqual(
+        self.assertEqual(
             ten_years_ago, removeSecurityProxy(build_farm_job).date_created)
 
 
@@ -139,11 +139,11 @@ class TestBuildFarmJobMixin(TestCaseWithFactory):
             BuildStatus.BUILDING, date_started=now)
         self.build_farm_job.updateStatus(
             BuildStatus.FULLYBUILT, date_finished=now + duration)
-        self.failUnlessEqual(duration, self.build_farm_job.duration)
+        self.assertEqual(duration, self.build_farm_job.duration)
 
     def test_view_build_farm_job(self):
         # Anonymous access can read public builds, but not edit.
-        self.failUnlessEqual(
+        self.assertEqual(
             BuildStatus.NEEDSBUILD, self.build_farm_job.status)
         self.assertRaises(
             Unauthorized, getattr, self.build_farm_job, 'retry')

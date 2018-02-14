@@ -1,15 +1,9 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import cStringIO
-import errno
-import logging
-import re
-import socket
 import urllib
 
 import lazr.uri
-from paste import httpserver
 from paste.httpexceptions import HTTPExceptionHandler
 import wsgi_intercept
 from wsgi_intercept.urllib2_intercept import (
@@ -17,7 +11,6 @@ from wsgi_intercept.urllib2_intercept import (
     uninstall_opener,
     )
 import wsgi_intercept.zope_testbrowser
-import zope.event
 
 from launchpad_loggerhead.app import RootApp
 from launchpad_loggerhead.session import SessionHandler
@@ -37,14 +30,14 @@ SECRET = 'secret'
 def session_scribbler(app, test):
     """Squirrel away the session variable."""
     def scribble(environ, start_response):
-        test.session = environ[SESSION_VAR] # Yay for mutables.
+        test.session = environ[SESSION_VAR]  # Yay for mutables.
         return app(environ, start_response)
     return scribble
 
 
 def dummy_destination(environ, start_response):
     """Return a fake response."""
-    start_response('200 OK', [('Content-type','text/plain')])
+    start_response('200 OK', [('Content-type', 'text/plain')])
     return ['This is a dummy destination.\n']
 
 
@@ -52,7 +45,7 @@ class SimpleLogInRootApp(RootApp):
     """A mock root app that doesn't require open id."""
     def _complete_login(self, environ, start_response):
         environ[SESSION_VAR]['user'] = 'bob'
-        start_response('200 OK', [('Content-type','text/plain')])
+        start_response('200 OK', [('Content-type', 'text/plain')])
         return ['\n']
 
 
@@ -85,7 +78,6 @@ class TestLogout(TestCase):
         app = HTTPExceptionHandler(app)
         app = SessionHandler(app, SESSION_VAR, SECRET)
         self.cookie_name = app.cookie_handler.cookie_name
-        self.intercept(config.codehosting.codebrowse_root, app)
         self.intercept(config.codehosting.secure_codebrowse_root, app)
         self.intercept(allvhosts.configs['mainsite'].rooturl,
                        dummy_destination)
@@ -109,7 +101,7 @@ class TestLogout(TestCase):
         self.browser.open(
             config.codehosting.secure_codebrowse_root + 'favicon.ico')
         self.assertEqual(self.session['user'], 'bob')
-        self.failUnless(self.browser.cookies.get(self.cookie_name))
+        self.assertTrue(self.browser.cookies.get(self.cookie_name))
 
         # When we visit +logout, our session is gone.
         self.browser.open(

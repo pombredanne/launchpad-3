@@ -40,14 +40,14 @@ class TestPOTemplate(TestCaseWithFactory):
         # Avoid circular imports.
         from lp.translations.model.pofile import DummyPOFile
 
-        self.assertEquals(DummyPOFile, type(pofile))
+        self.assertEqual(DummyPOFile, type(pofile))
 
     def test_composePOFilePath(self):
         esperanto = getUtility(ILanguageSet).getLanguageByCode('eo')
         self.potemplate.path = "testdir/messages.pot"
         expected = "testdir/testdomain-eo.po"
         result = self.potemplate._composePOFilePath(esperanto)
-        self.failUnlessEqual(expected, result,
+        self.assertEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "directory and language code. "
             "(Expected: '%s' Got: '%s')" % (expected, result))
@@ -57,7 +57,7 @@ class TestPOTemplate(TestCaseWithFactory):
         esperanto_variant = self.factory.makeLanguage(
             'eo@variant', 'Esperanto Variant')
         result = self.potemplate._composePOFilePath(esperanto_variant)
-        self.failUnlessEqual(expected, result,
+        self.assertEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "directory, language code and variant. "
             "(Expected: '%s' Got: '%s')" % (expected, result))
@@ -65,7 +65,7 @@ class TestPOTemplate(TestCaseWithFactory):
         self.potemplate.path = "/messages.pot"
         expected = "/testdomain-eo.po"
         result = self.potemplate._composePOFilePath(esperanto)
-        self.failUnlessEqual(expected, result,
+        self.assertEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "leading slash and language code. "
             "(Expected: '%s' Got: '%s')" % (expected, result))
@@ -73,7 +73,7 @@ class TestPOTemplate(TestCaseWithFactory):
         self.potemplate.path = "messages.pot"
         expected = "testdomain-eo.po"
         result = self.potemplate._composePOFilePath(esperanto)
-        self.failUnlessEqual(expected, result,
+        self.assertEqual(expected, result,
             "_composePOFilePath does not create a correct file name with "
             "missing directory and language code. "
             "(Expected: '%s' Got: '%s')" % (expected, result))
@@ -667,7 +667,7 @@ class TestPOTemplateUbuntuUpstreamSharingMixin:
         this_potemplate = self.makeThisSidePOTemplate()
         other_potemplate = self.makeOtherSidePOTemplate()
         self._setPackagingLink()
-        self.assertEquals(
+        self.assertEqual(
             other_potemplate, this_potemplate.getOtherSidePOTemplate())
 
 

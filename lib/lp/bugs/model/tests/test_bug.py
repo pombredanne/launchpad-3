@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -202,7 +202,7 @@ class TestBug(TestCaseWithFactory):
     def test_get_direct_subscribers_query_count(self):
         bug = self.factory.makeBug()
         # Make lots of subscribers.
-        for i in xrange(10):
+        for i in range(10):
             subscriber = self.factory.makePerson()
             with person_logged_in(subscriber):
                 bug.subscribe(subscriber, subscriber)
@@ -216,10 +216,10 @@ class TestBug(TestCaseWithFactory):
         bug = self.factory.makeBug()
         # Make lots of duplicate bugs.
         previous_dup = None
-        for i in xrange(10):
+        for i in range(10):
             dup = self.factory.makeBug()
             # Make lots of subscribers.
-            for j in xrange(10):
+            for j in range(10):
                 subscriber = self.factory.makePerson()
                 with person_logged_in(subscriber):
                     dup.subscribe(subscriber, subscriber)
@@ -246,7 +246,7 @@ class TestBug(TestCaseWithFactory):
         return self._get_notifications(BugNotificationStatus.DEFERRED)
 
     def _add_subscribers(self, bug, number):
-        for i in xrange(number):
+        for i in range(number):
             subscriber = self.factory.makePerson()
             with person_logged_in(subscriber):
                 bug.subscribe(subscriber, subscriber)
@@ -259,7 +259,7 @@ class TestBug(TestCaseWithFactory):
         self.store = Store.of(bug)
         duplicates = []
         # Make a few duplicate bugs.
-        for i in xrange(3):
+        for i in range(3):
             duplicates.append(self.factory.makeBug(title="bug-%d" % (i + 1)))
 
         # Pending messages exist for the bug creation.

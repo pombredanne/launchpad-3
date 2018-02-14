@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone related test helper."""
@@ -38,7 +38,7 @@ class MilestoneTagTest(TestCaseWithFactory):
 
     def test_no_tags(self):
         # Ensure a newly created milestone does not have associated tags.
-        self.assertEquals([], self.milestone.getTags())
+        self.assertEqual([], self.milestone.getTags())
 
     def test_tags_setting_and_retrieval(self):
         # Ensure tags are correctly saved and retrieved from the db.
@@ -59,7 +59,7 @@ class MilestoneTagTest(TestCaseWithFactory):
         with person_logged_in(self.person):
             self.milestone.setTags(self.tags, self.person)
             self.milestone.setTags([], self.person)
-        self.assertEquals([], self.milestone.getTags())
+        self.assertEqual([], self.milestone.getTags())
 
     def test_user_metadata(self):
         # Ensure the correct user metadata is created when tags are added.
@@ -113,7 +113,7 @@ class ProjectGroupMilestoneTagTest(TestCaseWithFactory):
     def _create_bugtasks(self, num, milestone=None):
         bugtasks = []
         with person_logged_in(self.owner):
-            for n in xrange(num):
+            for n in range(num):
                 bugtask = self.factory.makeBugTask(
                     target=self.product,
                     owner=self.owner)
@@ -125,7 +125,7 @@ class ProjectGroupMilestoneTagTest(TestCaseWithFactory):
     def _create_specifications(self, num, milestone=None):
         specifications = []
         with person_logged_in(self.owner):
-            for n in xrange(num):
+            for n in range(num):
                 specification = self.factory.makeSpecification(
                     product=self.product,
                     owner=self.owner,

@@ -90,7 +90,7 @@ Each of the revision numbers are anchors to codebrowse.
     >>> revision = find_tags_by_class(
     ...         user_browser.contents, 'revision-details', only_first=True)
     >>> print revision.a
-    <a href="http://bazaar.launchpad.dev/~eric/fooix/trunk/revision/5">5</a>
+    <a href="https://bazaar.launchpad.dev/~eric/fooix/trunk/revision/5">5</a>
 
 
 Commit messages
@@ -302,7 +302,7 @@ view in codebrowse.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> print browser.getLink('All revisions').url
-    http://bazaar.launchpad.dev/~name12/+junk/junk.dev/changes
+    https://bazaar.launchpad.dev/~name12/+junk/junk.dev/changes
 
 If the branch is private, the browse code link is not shown. In order to
 see the private branch, we need to log in as a user that is able to see

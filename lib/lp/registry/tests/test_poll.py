@@ -28,4 +28,4 @@ class TestPoll(TestCaseWithFactory):
         poll.storeSimpleVote(owner, None)
         # Force closing of the poll so that we can call getWinners().
         poll.datecloses = datetime.now(pytz.UTC)
-        self.failUnless(poll.getWinners() is None, poll.getWinners())
+        self.assertIsNone(poll.getWinners(), poll.getWinners())

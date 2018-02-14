@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
@@ -1046,7 +1046,7 @@ class TestBranchEditView(TestCaseWithFactory):
             browser.contents,
             Contains('Public branches are not allowed for target Commercial.'))
         with person_logged_in(owner):
-            self.assertEquals(initial_target, branch.target.context)
+            self.assertEqual(initial_target, branch.target.context)
 
     def test_information_type_in_ui(self):
         # The information_type of a branch can be changed via the UI by an
@@ -1109,7 +1109,7 @@ class TestBranchEditViewInformationTypes(TestCaseWithFactory):
         if user is None:
             user = removeSecurityProxy(branch).owner
         with person_logged_in(user):
-            view = create_initialized_view(branch, '+edit', user=user)
+            view = create_initialized_view(branch, '+edit', principal=user)
             self.assertContentEqual(types, view.getInformationTypesToShow())
 
     def test_public_branch(self):

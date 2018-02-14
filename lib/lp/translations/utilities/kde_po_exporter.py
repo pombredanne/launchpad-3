@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Export module for KDE legacy .po file format.
@@ -57,7 +57,7 @@ class KdePOExporter(GettextPOExporter):
         elif translation_message.msgid_plural is not None:
             # Also, let's handle legacy KDE plural forms.
             translations = translation_message.translations
-            for pluralform_index in xrange(len(translations)):
+            for pluralform_index in range(len(translations)):
                 if translations[pluralform_index] is None:
                     translations[pluralform_index] = ''
             translation_message._translations = ["\n".join(translations)]

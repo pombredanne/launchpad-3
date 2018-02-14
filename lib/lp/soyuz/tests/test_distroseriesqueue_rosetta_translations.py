@@ -1,4 +1,4 @@
-# Copyright 2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test upload and queue manipulation of Rosetta Translations' tarballs.
@@ -7,10 +7,13 @@ See also lp.archivepublisher.tests.test_rosetta_translations for detailed
 tests of rosetta-translations handling.
 """
 
-import transaction
+from __future__ import absolute_import, print_function, unicode_literals
+
 from os.path import relpath
-from storm.expr import Desc
 from tarfile import TarFile
+
+from storm.expr import Desc
+import transaction
 from zope.component import getUtility
 
 from lp.archiveuploader.nascentupload import NascentUpload
@@ -36,10 +39,10 @@ from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing.dbuser import dbuser
 from lp.testing.gpgkeys import import_public_test_keys
 from lp.testing.layers import LaunchpadZopelessLayer
+from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
-from lp.translations.enums import RosettaImportStatus
 from lp.translations.scripts.import_queue_gardener import ImportQueueGardener
 from lp.translations.scripts.po_import import TranslationsImport
 
@@ -172,7 +175,7 @@ class TestDistroSeriesQueueRosettaTranslationsTarball(
         self.assertTrue(upload.do_accept())
 
         self.assertEqual(upload.queue_root.status, PackageUploadStatus.DONE)
-        spph = self.name16.archive.getPublishedSources(name=u"pmount").one()
+        spph = self.name16.archive.getPublishedSources(name="pmount").one()
         self.assertIsNotNone(spph)
         transaction.commit()
 
@@ -228,8 +231,7 @@ class TestDistroSeriesQueueRosettaTranslationsTarball(
         with dbuser('copy_packages'):
             copy_job.run()
 
-        published_source = target_archive.getPublishedSources(
-            name=u'pmount')[0]
+        published_source = target_archive.getPublishedSources(name='pmount')[0]
         self.assertIsNotNone(published_source)
         self.assertEqual(
             published_source.sourcepackagerelease.upload_archive.displayname,

@@ -1,7 +1,9 @@
-# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for QueueItemsView."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -173,7 +175,7 @@ class TestAcceptRejectQueueUploads(TestCaseWithFactory):
         request.method = 'POST'
         view = self.setupQueueView(request)
 
-        self.assertEquals(
+        self.assertEqual(
             html_escape(
                 "FAILED: partner-upload (You have no rights to accept "
                 "component(s) 'partner')"),
@@ -221,7 +223,7 @@ class TestAcceptRejectQueueUploads(TestCaseWithFactory):
         request.method = 'POST'
         view = self.setupQueueView(request)
 
-        self.assertEquals(
+        self.assertEqual(
             html_escape(
                 "FAILED: main-upload (You have no rights to accept "
                 "component(s) 'main')"),
@@ -482,7 +484,7 @@ class TestCompletePackageUpload(TestCaseWithFactory):
         distroseries = complete_upload.distroseries
         complete_upload.package_sets = [
             self.factory.makePackageset(distroseries=distroseries, name=name)
-            for name in [u'ccc', u'aaa', u'bbb']]
+            for name in ['ccc', 'aaa', 'bbb']]
         self.assertEqual("aaa bbb ccc", complete_upload.display_package_sets)
 
     def test_display_component_returns_source_upload_component_name(self):

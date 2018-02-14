@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad test fixtures that have no better home."""
@@ -137,7 +137,7 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         """Start PGBouncer, waiting for it to accept connections if neccesary.
         """
         super(PGBouncerFixture, self).start()
-        for i in xrange(retries):
+        for i in range(retries):
             try:
                 socket.create_connection((self.host, self.port))
             except socket.error:

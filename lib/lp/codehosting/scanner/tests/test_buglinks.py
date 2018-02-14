@@ -61,7 +61,7 @@ class RevisionPropertyParsing(TestCase):
         # Parsing a single line should give a dict with a single entry,
         # mapping the bug_id to the status.
         bugs = self.extractBugInfo("https://launchpad.net/bugs/9999 fixed")
-        self.assertEquals(bugs, {9999: 'fixed'})
+        self.assertEqual(bugs, {9999: 'fixed'})
 
     def test_multiple(self):
         # Information about more than one bug can be specified. Make sure that
@@ -69,39 +69,39 @@ class RevisionPropertyParsing(TestCase):
         bugs = self.extractBugInfo(
             "https://launchpad.net/bugs/9999 fixed\n"
             "https://launchpad.net/bugs/8888 fixed")
-        self.assertEquals(bugs, {9999: 'fixed',
-                                 8888: 'fixed'})
+        self.assertEqual(bugs, {9999: 'fixed',
+                                8888: 'fixed'})
 
     def test_empty(self):
         # If the property is empty, then return an empty dict.
         bugs = self.extractBugInfo('')
-        self.assertEquals(bugs, {})
+        self.assertEqual(bugs, {})
 
     def test_bad_bug(self):
         # If the given bug is not a valid integer, then skip it, generate an
         # OOPS and continue processing.
         bugs = self.extractBugInfo('https://launchpad.net/~jml fixed')
-        self.assertEquals(bugs, {})
+        self.assertEqual(bugs, {})
 
     def test_non_launchpad_bug(self):
         # References to bugs on sites other than launchpad are ignored.
         bugs = self.extractBugInfo('http://bugs.debian.org/1234 fixed')
-        self.assertEquals(bugs, {})
+        self.assertEqual(bugs, {})
 
     def test_duplicated_line(self):
         # If a particular line is duplicated, silently ignore the duplicates.
         bugs = self.extractBugInfo(
             'https://launchpad.net/bugs/9999 fixed\n'
             'https://launchpad.net/bugs/9999 fixed')
-        self.assertEquals(bugs, {9999: 'fixed'})
+        self.assertEqual(bugs, {9999: 'fixed'})
 
     def test_strict_url_checking(self):
         # Ignore URLs that look like a Launchpad bug URL but aren't.
         bugs = self.extractBugInfo('https://launchpad.net/people/1234 fixed')
-        self.assertEquals(bugs, {})
+        self.assertEqual(bugs, {})
         bugs = self.extractBugInfo(
             'https://launchpad.net/bugs/foo/1234 fixed')
-        self.assertEquals(bugs, {})
+        self.assertEqual(bugs, {})
 
 
 class TestBugLinking(BzrSyncTestCase):

@@ -450,7 +450,7 @@ class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(TestCase):
         """Principal's access level is used when no scope is given."""
         self.principal.access_level = AccessLevel.WRITE_PUBLIC
         self.principal.scope_url = None
-        self.failUnlessEqual(
+        self.assertEqual(
             self.security._getPrincipalsAccessLevel(
                 self.principal, LoneObject()),
             self.principal.access_level)
@@ -460,7 +460,7 @@ class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(TestCase):
         obj = LoneObject()
         self.principal.access_level = AccessLevel.WRITE_PUBLIC
         self.principal.scope_url = '/+loneobject/%d' % obj.id
-        self.failUnlessEqual(
+        self.assertEqual(
             self.security._getPrincipalsAccessLevel(self.principal, obj),
             self.principal.access_level)
 
@@ -471,17 +471,17 @@ class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(TestCase):
         self.principal.scope_url = '/+loneobject/%d' % obj.id
 
         self.principal.access_level = AccessLevel.WRITE_PUBLIC
-        self.failUnlessEqual(
+        self.assertEqual(
             self.security._getPrincipalsAccessLevel(self.principal, obj2),
             AccessLevel.READ_PUBLIC)
 
         self.principal.access_level = AccessLevel.READ_PRIVATE
-        self.failUnlessEqual(
+        self.assertEqual(
             self.security._getPrincipalsAccessLevel(self.principal, obj2),
             AccessLevel.READ_PUBLIC)
 
         self.principal.access_level = AccessLevel.WRITE_PRIVATE
-        self.failUnlessEqual(
+        self.assertEqual(
             self.security._getPrincipalsAccessLevel(self.principal, obj2),
             AccessLevel.READ_PUBLIC)
 

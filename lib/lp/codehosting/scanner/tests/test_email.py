@@ -66,13 +66,6 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         LaunchpadZopelessLayer.txn.commit()
         return branch
 
-    def assertTextIn(self, expected, text):
-        """Assert that expected is in text.
-
-        Report expected and text in case of failure.
-        """
-        self.failUnless(expected in text, '%r not in %r' % (expected, text))
-
     def test_empty_branch(self):
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         JobRunner.fromReady(getUtility(IRevisionMailJobSource)).runAll()
@@ -81,7 +74,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         expected = 'First scan of the branch detected 0 revisions'
         message = email.message_from_string(initial_email[2])
         email_body = message.get_payload()
-        self.assertTextIn(expected, email_body)
+        self.assertIn(expected, email_body)
         self.assertEmailHeadersEqual(
             '[Branch %s] 0 revisions' % self.db_branch.unique_name,
             message['Subject'])
@@ -96,7 +89,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
                     ' in the revision history of the=\n branch.')
         message = email.message_from_string(initial_email[2])
         email_body = message.get_payload()
-        self.assertTextIn(expected, email_body)
+        self.assertIn(expected, email_body)
         self.assertEmailHeadersEqual(
             '[Branch %s] 1 revision' % self.db_branch.unique_name,
             message['Subject'])
@@ -114,7 +107,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         expected = '1 revision was removed from the branch.'
         message = email.message_from_string(uncommit_email[2])
         email_body = message.get_payload()
-        self.assertTextIn(expected, email_body)
+        self.assertIn(expected, email_body)
         self.assertEmailHeadersEqual(
             '[Branch %s] 1 revision removed' % self.db_branch.unique_name,
             message['Subject'])
@@ -139,10 +132,10 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         [recommit_email, uncommit_email] = stub.test_emails
         uncommit_email_body = uncommit_email[2]
         expected = '1 revision was removed from the branch.'
-        self.assertTextIn(expected, uncommit_email_body)
+        self.assertIn(expected, uncommit_email_body)
         subject = (
             'Subject: [Branch %s] Test branch' % self.db_branch.unique_name)
-        self.assertTextIn(expected, uncommit_email_body)
+        self.assertIn(expected, uncommit_email_body)
 
         recommit_email_msg = email.message_from_string(recommit_email[2])
         recommit_email_body = recommit_email_msg.get_payload()[0].get_payload(
@@ -157,7 +150,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             'added:\n  hello.txt',
             ]
         for bit in body_bits:
-            self.assertTextIn(bit, recommit_email_body)
+            self.assertIn(bit, recommit_email_body)
 
 
 class TestViaCelery(TestCaseWithFactory):

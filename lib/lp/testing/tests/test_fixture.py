@@ -209,7 +209,7 @@ class TestPGBouncerFixtureWithoutCA(TestCase):
             return False
 
     def test_install_fixture(self):
-        self.assert_(self.is_db_available())
+        self.assertTrue(self.is_db_available())
 
         with PGBouncerFixture() as pgbouncer:
             self.assertTrue(self.is_db_available())
@@ -222,7 +222,7 @@ class TestPGBouncerFixtureWithoutCA(TestCase):
         self.assertTrue(self.is_db_available())
 
     def test_install_fixture_with_restart(self):
-        self.assert_(self.is_db_available())
+        self.assertTrue(self.is_db_available())
 
         with PGBouncerFixture() as pgbouncer:
             self.assertTrue(self.is_db_available())

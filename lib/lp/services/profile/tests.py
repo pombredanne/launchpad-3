@@ -209,7 +209,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/++profile++show/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertEquals(set(profile._profilers.actions), set(('show', )))
+        self.assertEqual(set(profile._profilers.actions), set(('show', )))
 
     def test_optional_profiling_with_callgrind_request_starts_profiling(self):
         # If profiling is allowed and a request with the "callgrind" marker
@@ -217,7 +217,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/++profile++callgrind/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertEquals(
+        self.assertEqual(
             set(profile._profilers.actions), set(('callgrind', )))
 
     def test_optional_profiling_with_log_request_starts_profiling(self):
@@ -226,7 +226,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/++profile++log/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertEquals(
+        self.assertEqual(
             set(profile._profilers.actions), set(('callgrind', )))
 
     def test_optional_profiling_with_combined_request_starts_profiling(self):
@@ -236,7 +236,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         profile.start_request(
             self._get_start_event('/++profile++callgrind&show/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertEquals(
+        self.assertEqual(
             set(profile._profilers.actions), set(('callgrind', 'show')))
 
     def test_optional_profiling_with_reversed_request_starts_profiling(self):
@@ -249,7 +249,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         profile.start_request(
             self._get_start_event('/++profile++show&callgrind'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertEquals(
+        self.assertEqual(
             set(profile._profilers.actions), set(('callgrind', 'show')))
 
     def test_optional_profiling_with_pstats_request_starts_profiling(self):
@@ -260,7 +260,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
             self._get_start_event('/++profile++pstats/'))
         self.assertIsInstance(profile._profilers.profiler,
                               profile.Profiler)
-        self.assertEquals(set(profile._profilers.actions), set(('pstats',)))
+        self.assertEqual(set(profile._profilers.actions), set(('pstats',)))
 
     def test_optional_profiling_with_log_pstats(self):
         # If profiling is allowed and a request with the "log" and "pstats"
@@ -270,7 +270,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         profile.start_request(
             self._get_start_event('/++profile++log&pstats/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertEquals(
+        self.assertEqual(
             set(profile._profilers.actions), set(('callgrind', 'pstats',)))
 
     def test_optional_profiling_with_callgrind_pstats(self):
@@ -282,7 +282,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
             self._get_start_event('/++profile++pstats&callgrind/'))
         self.assertIsInstance(profile._profilers.profiler,
                               profile.Profiler)
-        self.assertEquals(
+        self.assertEqual(
             set(profile._profilers.actions), set(('pstats', 'callgrind')))
 
     def test_forced_profiling_registers_action(self):
@@ -291,7 +291,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
             profiling_allowed='True', profile_all_requests='True')
         profile.start_request(self._get_start_event('/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertEquals(
+        self.assertEqual(
             set(profile._profilers.actions), set(('callgrind', )))
 
     def test_optional_profiling_with_wrong_request_helps(self):
@@ -300,7 +300,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/++profile++/'))
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
-        self.assertEquals(set(profile._profilers.actions), set(('help', )))
+        self.assertEqual(set(profile._profilers.actions), set(('help', )))
 
     def test_forced_profiling_with_wrong_request_helps(self):
         # If profiling is forced and a request with the marker URL segment
@@ -309,7 +309,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
             profiling_allowed='True', profile_all_requests='True')
         profile.start_request(self._get_start_event('/++profile++/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
-        self.assertEquals(
+        self.assertEqual(
             set(profile._profilers.actions), set(('help', 'callgrind')))
 
     def test_memory_profile_start(self):
@@ -336,14 +336,14 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/++profile++sqltrace/'))
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
-        self.assertEquals(profile._profilers.actions, dict(sql=True))
+        self.assertEqual(profile._profilers.actions, dict(sql=True))
         self.assertEqual([], da.stop_sql_logging())
 
     def test_sql_start(self):
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/++profile++sql/'))
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
-        self.assertEquals(profile._profilers.actions, dict(sql=False))
+        self.assertEqual(profile._profilers.actions, dict(sql=False))
         self.assertEqual([], da.stop_sql_logging())
 
     def test_sqltrace_filtered_start(self):
@@ -351,7 +351,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         profile.start_request(self._get_start_event(
             '/++profile++sqltrace:includes bugsubscription/'))
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
-        self.assertEquals(set(profile._profilers.actions), set(('sql', )))
+        self.assertEqual(set(profile._profilers.actions), set(('sql', )))
         data = profile._profilers.actions['sql']
         self.assertTrue(data['condition']('SELECT BUGSUBSCRIPTION FROM FOO'))
         self.assertEqual([], da.stop_sql_logging())
@@ -665,7 +665,7 @@ class TestOOPSRequestEndHandler(BaseRequestEndHandlerTest):
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/++profile++show/no-such-file',
                                   KeyError('foo'))
-        self.assertEquals(request.oops['type'], 'KeyError')
+        self.assertEqual(request.oops['type'], 'KeyError')
         response = self.getAddedResponse(request)
         self.assertIn('Exception-Type: KeyError', response)
         self.assertCleanProfilerState()
@@ -696,7 +696,7 @@ class TestBeforeTraverseHandler(TestCleanupProfiler):
             self.assertTrue(profile._profilers.profiling)
             self.assertIsInstance(
                 profile._profilers.profiler, profile.Profiler)
-            self.assertEquals(
+            self.assertEqual(
                 set(('show', 'callgrind', 'memory_profile_start')),
                 set(profile._profilers.actions))
 

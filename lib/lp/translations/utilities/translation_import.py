@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -99,14 +99,14 @@ def is_identical_translation(existing_msg, new_msg):
         return False
     length_overlap = min(
         len(existing_msg.translations), len(new_msg.translations))
-    for pluralform_index in xrange(length_overlap):
+    for pluralform_index in range(length_overlap):
         # Plural forms that both messages have.  Translations for each
         # must match.
         existing_text = existing_msg.translations[pluralform_index]
         new_text = new_msg.translations[pluralform_index]
         if existing_text != new_text:
             return False
-    for pluralform_index in xrange(length_overlap, len(new_msg.translations)):
+    for pluralform_index in range(length_overlap, len(new_msg.translations)):
         # Plural forms that exist in new_translations but not in
         # existing_translations.  That's okay, as long as all of them are
         # None.
@@ -144,11 +144,11 @@ class ExistingPOFileInDatabase:
         msgstr_joins = [
             "LEFT OUTER JOIN POTranslation AS pt%d "
             "ON pt%d.id = TranslationMessage.msgstr%d" % (form, form, form)
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+            for form in range(TranslationConstants.MAX_PLURAL_FORMS)]
 
         translations = [
             "pt%d.translation AS translation%d" % (form, form)
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+            for form in range(TranslationConstants.MAX_PLURAL_FORMS)]
 
         substitutions = {
             'translation_columns': ', '.join(translations),
@@ -233,7 +233,7 @@ class ExistingPOFileInDatabase:
                 message.msgid_singular = msgid
                 message.msgid_plural = msgid_plural
 
-            for plural in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+            for plural in range(TranslationConstants.MAX_PLURAL_FORMS):
                 msgstr = msgstrs.get(plural, None)
                 if (msgstr is not None and
                     ((len(message.translations) > plural and

@@ -32,7 +32,7 @@ class TestLanguageWebservice(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_translators(self):
-        self.failUnless(
+        self.assertTrue(
             IDoNotSnapshot.providedBy(ILanguage['translators']),
             "ILanguage.translators should not be included in snapshots, "
             "see bug 553093.")
@@ -69,8 +69,8 @@ class TestTranslatorsCounts(TestCaseWithFactory):
 
     def test_translators_count(self):
         # translators_count works.
-        self.assertEquals(3, self.translated_lang.translators_count)
-        self.assertEquals(0, self.untranslated_lang.translators_count)
+        self.assertEqual(3, self.translated_lang.translators_count)
+        self.assertEqual(0, self.untranslated_lang.translators_count)
 
     def test_translators_count_queries(self):
         # translators_count issues a single query.
@@ -83,6 +83,6 @@ class TestTranslatorsCounts(TestCaseWithFactory):
         list(getUtility(ILanguageSet).getAllLanguages(
             want_translators_count=True))
         with StormStatementRecorder() as recorder:
-            self.assertEquals(3, self.translated_lang.translators_count)
-            self.assertEquals(0, self.untranslated_lang.translators_count)
+            self.assertEqual(3, self.translated_lang.translators_count)
+            self.assertEqual(0, self.untranslated_lang.translators_count)
         self.assertThat(recorder, HasQueryCount(Equals(0)))

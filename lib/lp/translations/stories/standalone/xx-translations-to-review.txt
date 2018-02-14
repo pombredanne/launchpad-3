@@ -136,7 +136,7 @@ Unlike the listing on the main page, the full listing does not cut off
 at 10 entries.
 
     >>> login(ANONYMOUS)
-    >>> for count in xrange(9):
+    >>> for count in range(9):
     ...     pofile = add_unreviewed_pofile(translationgroup)
     ...     work_on(user, pofile)
     >>> logout()

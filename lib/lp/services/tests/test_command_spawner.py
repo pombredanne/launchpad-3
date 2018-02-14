@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `CommandSpawner`."""
@@ -287,7 +287,7 @@ class TestCommandSpawnerAcceptance(TestCase):
 
         processes = 10
         seconds = 0.2
-        for counter in xrange(processes):
+        for counter in range(processes):
             spawner.start(["/bin/sleep", str(seconds)])
 
         before = datetime.now(utc)

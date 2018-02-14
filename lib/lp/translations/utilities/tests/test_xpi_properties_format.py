@@ -26,7 +26,7 @@ class PropertyFileFormatTestCase(unittest.TestCase):
                     u'default-last-title-mac': [u'Conclusi\xf3n']}
         parsed = dict([(message.msgid_singular, message.translations)
                    for message in property_file.messages])
-        self.assertEquals(expected, parsed)
+        self.assertEqual(expected, parsed)
 
     def test_UTF8PropertyFileTest(self):
         """This test makes sure that we handle UTF-8 encoding files."""
@@ -79,7 +79,7 @@ ucci\u00F3n
         expected = {u'default-first-title-mac': [u'Introducci\xf3n']}
         parsed = dict([(message.msgid_singular, message.translations)
                    for message in property_file.messages])
-        self.assertEquals(expected, parsed)
+        self.assertEqual(expected, parsed)
 
     def test_EscapedQuotesPropertyFileTest(self):
         """Test whether escaped quotes are well handled.
@@ -93,7 +93,7 @@ ucci\u00F3n
         expected = {u'default-first-title-mac': [u'\'Something\' \"more\"']}
         parsed = dict([(message.msgid_singular, message.translations)
                    for message in property_file.messages])
-        self.assertEquals(expected, parsed)
+        self.assertEqual(expected, parsed)
 
     def test_WholeLineCommentPropertyFileTest(self):
         """Test whether whole line comments are well handled."""
@@ -111,7 +111,7 @@ ucci\u00F3n
                     u'foo': None}
         parsed = dict([(message.msgid_singular, message.source_comment)
                    for message in property_file.messages])
-        self.assertEquals(expected, parsed)
+        self.assertEqual(expected, parsed)
 
     def test_EndOfLineCommentPropertyFileTest(self):
         """Test whether end of line comments are well handled."""
@@ -132,7 +132,7 @@ ucci\u00F3n
             [(message.msgid_singular, message.source_comment)
              for message in property_file.messages])
 
-        self.assertEquals(expected_comments, parsed_comments)
+        self.assertEqual(expected_comments, parsed_comments)
 
         expected_translations = {
             u'default-first-title-mac': [u'blah'],
@@ -142,7 +142,7 @@ ucci\u00F3n
                                      message.translations)
                    for message in property_file.messages])
 
-        self.assertEquals(expected_translations, parsed_translations)
+        self.assertEqual(expected_translations, parsed_translations)
 
     def test_MultiLineCommentPropertyFileTest(self):
         """Test whether multiline comments are well handled."""
@@ -173,7 +173,7 @@ ucci\u00F3n
             }
         parsed = dict([(message.msgid_singular, message.source_comment)
                    for message in property_file.messages])
-        self.assertEquals(expected, parsed)
+        self.assertEqual(expected, parsed)
 
     def test_URLNotComment(self):
         """Double slash in a URL is not treated as end-of-line comment."""
@@ -183,13 +183,12 @@ ucci\u00F3n
         property_file = PropertyFile('test.properties', None, dedent(content))
         message = None
         for entry in property_file.messages:
-            self.assertEquals(message, None, "More messages than expected.")
+            self.assertEqual(message, None, "More messages than expected.")
             message = entry
 
-        self.assertEquals(message.msgid_singular, u"url")
-        self.assertEquals(
-            message.singular_text, u"https://admin.example.com/")
-        self.assertEquals(message.source_comment, u"Double slash in URL!\n")
+        self.assertEqual(message.msgid_singular, u"url")
+        self.assertEqual(message.singular_text, u"https://admin.example.com/")
+        self.assertEqual(message.source_comment, u"Double slash in URL!\n")
 
     def test_InvalidLinePropertyFileTest(self):
         """Test whether an invalid line is ignored."""
@@ -207,7 +206,7 @@ ucci\u00F3n
                     u'foo': None}
         parsed = dict([(message.msgid_singular, message.source_comment)
                    for message in property_file.messages])
-        self.assertEquals(expected, parsed)
+        self.assertEqual(expected, parsed)
 
     def test_MultilinePropertyFileTest(self):
         """Test parsing of multiline entries."""
@@ -220,7 +219,7 @@ ucci\u00F3n
             }
         parsed = dict([(message.msgid_singular, message.translations)
                    for message in property_file.messages])
-        self.assertEquals(expected, parsed)
+        self.assertEqual(expected, parsed)
 
     def test_WhiteSpaceBeforeComment(self):
         """Test that single line comment is detected even with white space."""
@@ -230,7 +229,7 @@ ucci\u00F3n
         expected = {}
         parsed = dict([(message.msgid_singular, message.translations)
                    for message in property_file.messages])
-        self.assertEquals(expected, parsed)
+        self.assertEqual(expected, parsed)
 
 
 class MockFile:

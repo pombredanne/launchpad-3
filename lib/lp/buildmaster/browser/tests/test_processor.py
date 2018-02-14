@@ -16,7 +16,7 @@ class TestProcessorNavigation(TestCaseWithFactory):
 
     def test_processor_url(self):
         quantum = self.factory.makeProcessor('quantum')
-        self.assertEquals(
+        self.assertEqual(
             '/+processors/quantum',
             canonical_url(quantum, force_local_path=True))
 
@@ -24,4 +24,4 @@ class TestProcessorNavigation(TestCaseWithFactory):
         quantum = self.factory.makeProcessor('quantum')
         obj, view, request = test_traverse(
             'http://api.launchpad.dev/devel/+processors/quantum')
-        self.assertEquals(quantum, obj)
+        self.assertEqual(quantum, obj)
