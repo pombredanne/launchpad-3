@@ -40,6 +40,7 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
+    Text,
     TextLine,
     )
 
@@ -211,6 +212,15 @@ class ISnapBuildView(IPackageBuild):
         description=_(
             "The error message, if any, from the last attempt to upload "
             "this snap build to the store."),
+        required=False, readonly=True))
+
+    store_upload_error_messages = exported(Text(
+        title=_("Store upload error messages"),
+        description=_(
+            "A list of dict(message, link) where message is an error "
+            "description and link, if any, is an external link to extra "
+            "details, from the last attempt to upload this snap build "
+            "to the store."),
         required=False, readonly=True))
 
     def getFiles():
