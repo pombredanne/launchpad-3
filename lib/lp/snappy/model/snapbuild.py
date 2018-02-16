@@ -459,7 +459,7 @@ class SnapBuild(PackageBuildMixin, Storm):
     @property
     def store_upload_error_messages(self):
         job = self.last_store_upload_job
-        return job and job.error_messages
+        return job and job.error_messages or []
 
     def scheduleStoreUpload(self):
         """See `ISnapBuild`."""

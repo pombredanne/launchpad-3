@@ -14,7 +14,7 @@ from mechanize import LinkNotFoundError
 from pymacaroons import Macaroon
 import soupmatchers
 from storm.locals import Store
-from testtools.matchers import StartsWith
+from testtools.matchers import Not, StartsWith
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -129,6 +129,38 @@ class TestSnapBuildView(TestCaseWithFactory):
                 attrs={"id": "store-upload-status"},
                 text=re.compile(
                     r"^\s*Store upload failed:\s+Scan failed.\s*$"))))
+
+    def test_store_upload_status_failed_with_extended_error_message(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        naked_job = removeSecurityProxy(job)
+        naked_job.job._status = JobStatus.FAILED
+        naked_job.error_message = "This should not be shown."
+        naked_job.error_messages = [
+            {"message": "Scan failed.", "link": "link1"},
+            {"message": "Classic not allowed.", "link": "link2"}]
+        build_view = create_initialized_view(build, "+index")
+        built_view = build_view()
+        self.assertThat(built_view, Not(soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "store upload status", "li",
+                attrs={"id": "store-upload-status"},
+                text=re.compile('.*This should not be shown.*')))))
+        self.assertThat(built_view, soupmatchers.HTMLContains(
+            soupmatchers.Within(
+                soupmatchers.Tag(
+                    "store upload status", "li",
+                    attrs={"id": "store-upload-status"}),
+                soupmatchers.Within(
+                    soupmatchers.Tag(
+                        "store upload error messages", "ul",
+                        attrs={"id": "store-upload-error-messages"}),
+                    soupmatchers.Within(
+                        soupmatchers.Tag(
+                            "store upload error message", "li"),
+                        soupmatchers.Tag(
+                            "store upload error link", "a",
+                            text="What does this mean?"))))))
 
     def test_store_upload_status_release_failed(self):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)

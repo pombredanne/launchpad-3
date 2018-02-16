@@ -177,7 +177,15 @@
         <tal:failed-upload
             condition="context/store_upload_status/enumvalue:FAILEDTOUPLOAD">
           Store upload failed:
-          <tal:error-message replace="context/store_upload_error_message" />
+          <tal:error-message
+            condition="not: context/store_upload_error_messages"
+            replace="context/store_upload_error_message" />
+          <ul id="store-upload-error-messages">
+            <li tal:repeat="error context/store_upload_error_messages">
+              <span tal:replace="error/message"/>
+              <a tal:condition="error/link" tal:attributes="href error/link">What does this mean?</a>
+            </li>
+          </ul>
           <form action="" method="POST">
             <input type="submit" name="field.actions.upload" value="Retry" />
           </form>
