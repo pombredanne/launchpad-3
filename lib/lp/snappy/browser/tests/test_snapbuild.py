@@ -154,16 +154,33 @@ class TestSnapBuildView(TestCaseWithFactory):
                 soupmatchers.Tag(
                     "store upload status", "li",
                     attrs={"id": "store-upload-status"}),
+                soupmatchers.Tag(
+                    "store upload error messages", "ul",
+                    attrs={"id": "store-upload-error-messages"}))))
+        self.assertThat(built_view, soupmatchers.HTMLContains(
+            soupmatchers.Within(
+                soupmatchers.Tag(
+                    "store upload error messages", "ul",
+                    attrs={"id": "store-upload-error-messages"}),
                 soupmatchers.Within(
                     soupmatchers.Tag(
-                        "store upload error messages", "ul",
-                        attrs={"id": "store-upload-error-messages"}),
-                    soupmatchers.Within(
-                        soupmatchers.Tag(
-                            "store upload error message", "li"),
-                        soupmatchers.Tag(
-                            "store upload error link", "a",
-                            text="What does this mean?"))))))
+                        "store upload error message", "li",
+                        text=re.compile(".*Scan failed\..*")),
+                    soupmatchers.Tag(
+                        "store upload error link", "a",
+                        attrs={"href": "link1"}, text="(?)")))))
+        self.assertThat(built_view, soupmatchers.HTMLContains(
+            soupmatchers.Within(
+                soupmatchers.Tag(
+                    "store upload error messages", "ul",
+                    attrs={"id": "store-upload-error-messages"}),
+                soupmatchers.Within(
+                    soupmatchers.Tag(
+                        "store upload error message", "li",
+                        text=re.compile(".*Classic not allowed\..*")),
+                    soupmatchers.Tag(
+                        "store upload error link", "a",
+                        attrs={"href": "link2"}, text="(?)")))))
 
     def test_store_upload_status_release_failed(self):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
