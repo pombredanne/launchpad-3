@@ -316,9 +316,12 @@ class SnapStoreClient:
             elif "errors" in response_data:
                 error_message = "\n".join(
                     error["message"] for error in response_data["errors"])
-                error_messages = [
-                    {"message": error["message"], "link": error.get("link")}
-                    for error in response_data["errors"]]
+                error_messages = []
+                for error in response_data["errors"]:
+                    error_detail = {"message": error["message"]}
+                    if "link" in error:
+                        error_detail["link"] = error["link"]
+                    error_messages.append(error_detail)
                 raise ScanFailedResponse(
                     error_message, messages=error_messages)
             elif not response_data["can_release"]:
