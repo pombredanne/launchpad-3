@@ -581,6 +581,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
                     "errors": [
                         {"code": None,
                          "message": "You cannot use that reserved namespace.",
+                         "link": "http://example.com"
                          }],
                     }}
 
