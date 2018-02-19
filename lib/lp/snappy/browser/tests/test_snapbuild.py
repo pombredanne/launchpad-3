@@ -14,7 +14,10 @@ from mechanize import LinkNotFoundError
 from pymacaroons import Macaroon
 import soupmatchers
 from storm.locals import Store
-from testtools.matchers import Not, StartsWith
+from testtools.matchers import (
+    Not,
+    StartsWith,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized

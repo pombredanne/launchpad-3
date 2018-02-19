@@ -31,9 +31,9 @@ from lp.snappy.interfaces.snapbuildjob import (
     )
 from lp.snappy.interfaces.snapstoreclient import (
     BadRefreshResponse,
-    ScanFailedResponse,
     ISnapStoreClient,
     ReleaseFailedResponse,
+    ScanFailedResponse,
     UnauthorizedUploadResponse,
     UploadFailedResponse,
     UploadNotScannedYetResponse,
