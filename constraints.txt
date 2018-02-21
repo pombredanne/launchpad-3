@@ -274,7 +274,7 @@ lazr.delegates==2.0.4
 lazr.enum==1.1.3
 lazr.jobrunner==0.13
 lazr.lifecycle==1.1
-lazr.restful==0.20.0
+lazr.restful==0.20.1
 lazr.restfulclient==0.13.2
 lazr.smtptest==1.3
 lazr.sshserver==0.1.3
