@@ -1,4 +1,4 @@
-# Copyright 2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,16 +8,17 @@ __all__ = [
     'PackageTranslationsUploadJob',
     ]
 
+import json
+
 from lazr.delegates import delegate_to
-import simplejson
 from zope.component import getUtility
 from zope.interface import (
     implementer,
     provider,
     )
 
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.job.interfaces.job import JobType
@@ -88,7 +89,7 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
         job = Job(
             base_job_type=JobType.UPLOAD_PACKAGE_TRANSLATIONS,
             requester=requester,
-            base_json_data=simplejson.dumps(
+            base_json_data=json.dumps(
                 {'distroseries': distroseries.id,
                  'libraryfilealias': libraryfilealias.id,
                  'sourcepackagename': sourcepackagename.id,
@@ -116,15 +117,15 @@ class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
 
     @property
     def distroseries_id(self):
-        return simplejson.loads(self.base_json_data)['distroseries']
+        return json.loads(self.base_json_data)['distroseries']
 
     @property
     def libraryfilealias_id(self):
-        return simplejson.loads(self.base_json_data)['libraryfilealias']
+        return json.loads(self.base_json_data)['libraryfilealias']
 
     @property
     def sourcepackagename_id(self):
-        return simplejson.loads(self.base_json_data)['sourcepackagename']
+        return json.loads(self.base_json_data)['sourcepackagename']
 
     @property
     def distroseries(self):
