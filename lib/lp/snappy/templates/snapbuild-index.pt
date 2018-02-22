@@ -185,7 +185,7 @@
               <span tal:replace="error/message"/>
               <a tal:condition="error/link"
                   tal:attributes="href error/link"
-                  target="help"
+                  target="_blank"
                   class="sprite maybe action-icon">(?)</a>
             </li>
           </ul>
