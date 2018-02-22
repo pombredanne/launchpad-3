@@ -83,6 +83,13 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
         self.job = job
         self.context = self
 
+    def __repr__(self):
+        return "<%(job_class)s for %(source)s in %(series)s>" % {
+            "job_class": self.__class__.__name__,
+            "source": self.sourcepackagename.name,
+            "series": self.distroseries,
+            }
+
     @classmethod
     def create(cls, distroseries, libraryfilealias, sourcepackagename,
                requester):
@@ -110,11 +117,6 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
             return [format_address_for_person(self.requester)]
         return []
 
-
-@implementer(IPackageTranslationsUploadJob)
-@provider(IPackageTranslationsUploadJobSource)
-class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
-
     @property
     def distroseries_id(self):
         return json.loads(self.base_json_data)['distroseries']
@@ -138,6 +140,11 @@ class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
     @property
     def sourcepackagename(self):
         return getUtility(ISourcePackageNameSet).get(self.sourcepackagename_id)
+
+
+@implementer(IPackageTranslationsUploadJob)
+@provider(IPackageTranslationsUploadJobSource)
+class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
 
     def attachTranslationFiles(self, by_maintainer):
         distroseries = self.distroseries
