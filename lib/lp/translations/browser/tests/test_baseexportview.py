@@ -61,12 +61,12 @@ class BaseExportViewMixin(TestCaseWithFactory):
 
     def test_getDefaultFormat(self):
         # With no templates in an object, default format is None.
-        self.assertEquals(None, self.view.getDefaultFormat())
+        self.assertIsNone(self.view.getDefaultFormat())
 
         # With one template added, it's format is returned.
         template1 = self.createTranslationTemplate("one")
         template1.source_file_format = TranslationFileFormat.XPI
-        self.assertEquals(
+        self.assertEqual(
             TranslationFileFormat.XPI,
             self.view.getDefaultFormat())
 
@@ -74,13 +74,13 @@ class BaseExportViewMixin(TestCaseWithFactory):
         # if they are different, where PO (1) < XPI (3).
         template2 = self.createTranslationTemplate("two")
         template2.source_file_format = TranslationFileFormat.PO
-        self.assertEquals(
+        self.assertEqual(
             TranslationFileFormat.PO,
             self.view.getDefaultFormat())
 
         # Obsolete templates do not affect default file format.
         template2.iscurrent = False
-        self.assertEquals(
+        self.assertEqual(
             TranslationFileFormat.XPI,
             self.view.getDefaultFormat())
 
@@ -88,33 +88,31 @@ class BaseExportViewMixin(TestCaseWithFactory):
         # With no templates, empty ResultSet is returned for templates,
         # and None for PO files.
         templates, translations = self.view.processForm()
-        self.assertEquals(([], None),
-                          (list(templates), None))
+        self.assertEqual(([], None), (list(templates), None))
 
         # With just obsolete templates, empty results are returned again.
         template1 = self.createTranslationTemplate("one")
         template1.iscurrent = False
         templates, translations = self.view.processForm()
-        self.assertEquals(([], None),
-                          (list(templates), None))
+        self.assertEqual(([], None), (list(templates), None))
 
     def test_processForm_templates(self):
         # With a template, a ResultSet is returned for it.
         template1 = self.createTranslationTemplate("one", priority=1)
         templates, translations = self.view.processForm()
-        self.assertEquals([template1.id], list(templates))
+        self.assertEqual([template1.id], list(templates))
 
         # With more than one template, they are both returned
         # ordered by decreasing priority.
         template2 = self.createTranslationTemplate("two", priority=2)
         templates, translations = self.view.processForm()
-        self.assertEquals([template2.id, template1.id], list(templates))
+        self.assertEqual([template2.id, template1.id], list(templates))
 
     def test_processForm_translations(self):
         # With a template, but no PO files, None is returned for translations.
         template1 = self.createTranslationTemplate("one")
         templates, translations = self.view.processForm()
-        self.assertEquals(translations, None)
+        self.assertIsNone(translations)
 
         # Adding a PO file to this template makes it returned.
         pofile_sr = self.factory.makePOFile('sr', potemplate=template1)

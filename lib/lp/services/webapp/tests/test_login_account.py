@@ -45,7 +45,7 @@ class TestLoginAndLogout(TestCaseWithFactory):
         getUtility(IAccountSet).new(
             AccountCreationRationale.UNKNOWN, 'Dummy name')
         person = self.factory.makePerson('foo.bar@example.com')
-        self.failIfEqual(person.id, person.account.id)
+        self.assertNotEqual(person.id, person.account.id)
         self.principal = LaunchpadPrincipal(
             person.account.id, person.displayname,
             person.displayname, person)
@@ -63,7 +63,7 @@ class TestLoginAndLogout(TestCaseWithFactory):
         session = ISession(self.request)
         # logInPrincipal() stores the account ID in a variable named
         # 'accountid'.
-        self.failUnlessEqual(
+        self.assertEqual(
             session['launchpad.authenticateduser']['accountid'],
             int(self.principal.id))
 
@@ -74,13 +74,13 @@ class TestLoginAndLogout(TestCaseWithFactory):
 
         principal = getUtility(IPlacelessAuthUtility).authenticate(
             self.request)
-        self.failUnlessEqual(self.principal.id, principal.id)
+        self.assertEqual(self.principal.id, principal.id)
 
         logoutPerson(self.request)
 
         principal = getUtility(IPlacelessAuthUtility).authenticate(
             self.request)
-        self.failUnless(principal is None)
+        self.assertIsNone(principal)
 
     def test_CookieLogoutPage(self):
         # This test shows that the CookieLogoutPage redirects as we expect:
@@ -115,27 +115,26 @@ class TestLoginAndLogout(TestCaseWithFactory):
 
         principal = getUtility(IPlacelessAuthUtility).authenticate(
             self.request)
-        self.failUnless(principal is None)
+        self.assertIsNone(principal)
 
         # The view should have redirected us, with no actual response body.
 
-        self.assertEquals(self.request.response.getStatus(), 302)
-        self.assertEquals(result, '')
+        self.assertEqual(self.request.response.getStatus(), 302)
+        self.assertEqual(result, '')
 
         # We are redirecting to Loggerhead, to ask it to logout.
 
         location = lazr.uri.URI(self.request.response.getHeader('location'))
-        self.assertEquals(location.host, 'bazaar.launchpad.dev')
-        self.assertEquals(location.scheme, 'https')
-        self.assertEquals(location.path, '/+logout')
+        self.assertEqual(location.host, 'bazaar.launchpad.dev')
+        self.assertEqual(location.scheme, 'https')
+        self.assertEqual(location.path, '/+logout')
 
         # That page should then redirect to our OpenId provider to logout,
         # which we provide in our query string.  See
         # launchpad_loggerhead.tests.TestLogout for the pertinent tests.
 
         query = cgi.parse_qs(location.query)
-        self.assertEquals(
-            query['next_to'][0], 'http://testopenid.dev/+logout')
+        self.assertEqual(query['next_to'][0], 'http://testopenid.dev/+logout')
 
     def test_logging_in_and_logging_out_the_old_way(self):
         # A test showing that we can authenticate a request that had the
@@ -162,11 +161,11 @@ class TestLoginAndLogout(TestCaseWithFactory):
 
         principal = getUtility(IPlacelessAuthUtility).authenticate(
             self.request)
-        self.failUnlessEqual(self.principal.id, principal.id)
-        self.failUnlessEqual(self.principal.person, principal.person)
+        self.assertEqual(self.principal.id, principal.id)
+        self.assertEqual(self.principal.person, principal.person)
 
         logoutPerson(self.request)
 
         principal = getUtility(IPlacelessAuthUtility).authenticate(
             self.request)
-        self.failUnless(principal is None)
+        self.assertIsNone(principal)

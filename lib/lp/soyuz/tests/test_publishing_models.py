@@ -1,7 +1,9 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test model and set utilities used for publishing."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -107,9 +109,9 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
             self.publishing_set.getChangesFileLFA(hist.sourcepackagerelease)
             for hist in self.sources)
         urls = [lfa.http_url for lfa in lfas]
-        self.assert_(urls[0].endswith('/foo_666_source.changes'))
-        self.assert_(urls[1].endswith('/bar_666_source.changes'))
-        self.assert_(urls[2].endswith('/baz_666_source.changes'))
+        self.assertTrue(urls[0].endswith('/foo_666_source.changes'))
+        self.assertTrue(urls[1].endswith('/bar_666_source.changes'))
+        self.assertTrue(urls[2].endswith('/baz_666_source.changes'))
 
 
 class TestSourcePackagePublishingHistory(TestCaseWithFactory):
@@ -121,7 +123,7 @@ class TestSourcePackagePublishingHistory(TestCaseWithFactory):
         ancestor = self.factory.makeSourcePackagePublishingHistory()
         spph = self.factory.makeSourcePackagePublishingHistory(
             ancestor=ancestor)
-        self.assertEquals(spph.ancestor.displayname, ancestor.displayname)
+        self.assertEqual(spph.ancestor.displayname, ancestor.displayname)
 
     def test_changelogUrl_missing(self):
         spr = self.factory.makeSourcePackageRelease(changelog=None)

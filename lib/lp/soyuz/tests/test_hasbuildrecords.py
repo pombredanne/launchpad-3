@@ -1,7 +1,9 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test implementations of the IHasBuildRecords interface."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -120,7 +122,7 @@ class TestDistributionHasBuildRecords(TestCaseWithFactory):
     def test_get_build_records(self):
         # A Distribution also implements IHasBuildRecords.
         builds = self.distribution.getBuildRecords().count()
-        self.assertEquals(10, builds)
+        self.assertEqual(10, builds)
 
 
 class TestDistroSeriesHasBuildRecords(TestHasBuildRecordsInterface):
@@ -142,19 +144,19 @@ class TestDistroArchSeriesHasBuildRecords(TestDistributionHasBuildRecords):
     def test_distroarchseries(self):
         # We can fetch builds records from a DistroArchSeries.
         builds = self.das_one.getBuildRecords().count()
-        self.assertEquals(5, builds)
+        self.assertEqual(5, builds)
         builds = self.das_one.getBuildRecords(
             build_state=BuildStatus.FULLYBUILT).count()
-        self.assertEquals(4, builds)
+        self.assertEqual(4, builds)
         spn = self.builds[0].source_package_release.sourcepackagename.name
         builds = self.das_one.getBuildRecords(name=spn).count()
-        self.assertEquals(1, builds)
+        self.assertEqual(1, builds)
         builds = self.das_one.getBuildRecords(
             pocket=PackagePublishingPocket.RELEASE).count()
-        self.assertEquals(5, builds)
+        self.assertEqual(5, builds)
         builds = self.das_one.getBuildRecords(
             pocket=PackagePublishingPocket.UPDATES).count()
-        self.assertEquals(0, builds)
+        self.assertEqual(0, builds)
 
 
 class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
@@ -172,17 +174,17 @@ class TestArchiveHasBuildRecords(TestHasBuildRecordsInterface):
             BuildFarmJobType.RECIPEBRANCHBUILD, archive=self.context)
 
         builds = self.context.getBuildRecords(binary_only=True)
-        self.failUnlessEqual(3, builds.count())
+        self.assertEqual(3, builds.count())
 
         builds = self.context.getBuildRecords(binary_only=False)
-        self.failUnlessEqual(4, builds.count())
+        self.assertEqual(4, builds.count())
 
     def test_incompatible_arguments(self):
         # binary_only=False is incompatible with arch_tag and name.
-        self.failUnlessRaises(
+        self.assertRaises(
             IncompatibleArguments, self.context.getBuildRecords,
             binary_only=False, arch_tag="anything")
-        self.failUnlessRaises(
+        self.assertRaises(
             IncompatibleArguments, self.context.getBuildRecords,
             binary_only=False, name="anything")
 
@@ -225,10 +227,10 @@ class TestBuilderHasBuildRecords(TestHasBuildRecordsInterface):
 
     def test_incompatible_arguments(self):
         # binary_only=False is incompatible with arch_tag and name.
-        self.failUnlessRaises(
+        self.assertRaises(
             IncompatibleArguments, self.context.getBuildRecords,
             binary_only=False, arch_tag="anything")
-        self.failUnlessRaises(
+        self.assertRaises(
             IncompatibleArguments, self.context.getBuildRecords,
             binary_only=False, name="anything")
 
@@ -261,13 +263,13 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         # We can fetch builds records from a SourcePackage.
         builds = self.context.getBuildRecords(
             build_state=BuildStatus.FULLYBUILT).count()
-        self.assertEquals(3, builds)
+        self.assertEqual(3, builds)
         builds = self.context.getBuildRecords(
             pocket=PackagePublishingPocket.RELEASE).count()
-        self.assertEquals(2, builds)
+        self.assertEqual(2, builds)
         builds = self.context.getBuildRecords(
             pocket=PackagePublishingPocket.UPDATES).count()
-        self.assertEquals(0, builds)
+        self.assertEqual(0, builds)
 
     def test_ordering_date(self):
         # Build records returned are ordered by creation date.
@@ -291,7 +293,7 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
         build1.buildqueue_record.lastscore = 10
         build2.buildqueue_record.lastscore = 1000
         builds = list(source_package.getBuildRecords())
-        self.assertEquals([build2, build1], builds)
+        self.assertEqual([build2, build1], builds)
 
     def test_copy_archive_without_leak(self):
         # If source publications are copied to a .COPY archive, they don't
@@ -322,8 +324,8 @@ class TestSourcePackageHasBuildRecords(TestHasBuildRecordsInterface):
             distroseries, PackagePublishingPocket.RELEASE, copy)
         [copy_build] = copy_spph.createMissingBuilds()
         builds = copy.getBuildRecords()
-        self.assertEquals([copy_build], list(builds))
+        self.assertEqual([copy_build], list(builds))
         source = SourcePackage(spn, spph.distroseries)
         # SourcePackage.getBuildRecords() doesn't have two build records.
         builds = source.getBuildRecords().count()
-        self.assertEquals(1, builds)
+        self.assertEqual(1, builds)

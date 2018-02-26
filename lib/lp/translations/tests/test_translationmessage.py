@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for `TranslationMessage`."""
@@ -85,7 +85,7 @@ class TestTranslationMessage(TestCaseWithFactory):
         language = self.factory.makeLanguage('sr@test')
         pofile = self.factory.makePOFile(language.code)
         tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
-        self.assertEquals(pofile, tm.getOnePOFile())
+        self.assertEqual(pofile, tm.getOnePOFile())
 
     def test_getOnePOFile_shared(self):
         language = self.factory.makeLanguage('sr@test')
@@ -103,7 +103,7 @@ class TestTranslationMessage(TestCaseWithFactory):
         pofile = self.factory.makePOFile(language.code)
         tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
         tm.potmsgset.setSequence(pofile.potemplate, 0)
-        self.assertEquals(None, tm.getOnePOFile())
+        self.assertIsNone(tm.getOnePOFile())
 
     def test_clone(self):
         """Cloning a translation should produce a near-identical copy."""
@@ -849,7 +849,7 @@ class TestTranslationMessageFindIdenticalMessage(TestCaseWithFactory):
 
         self.translation_strings = [
             'foe%d' % form
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+            for form in range(TranslationConstants.MAX_PLURAL_FORMS)]
 
         self.message = self.factory.makeCurrentTranslationMessage(
             pofile=self.pofile, potmsgset=self.potmsgset,

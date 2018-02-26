@@ -1,4 +1,4 @@
-# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Loggers."""
@@ -22,7 +22,7 @@ from lp.services.log import loglevels
 
 LEVEL_PREFIXES = dict(
     (debug_level, "DEBUG%d" % (1 + debug_level - loglevels.DEBUG))
-    for debug_level in xrange(loglevels.DEBUG9, loglevels.DEBUG))
+    for debug_level in range(loglevels.DEBUG9, loglevels.DEBUG))
 
 LEVEL_PREFIXES.update({
     loglevels.DEBUG: 'DEBUG',

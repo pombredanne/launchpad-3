@@ -76,7 +76,7 @@ class TestDscFile(TestCase):
         file.write(copyright)
         file.close()
 
-        self.assertEquals(
+        self.assertEqual(
             copyright, find_copyright(self.tmpdir, DevNullLogger()))
 
     def testBadDebianChangelog(self):
@@ -98,7 +98,7 @@ class TestDscFile(TestCase):
         file.write(changelog)
         file.close()
 
-        self.assertEquals(
+        self.assertEqual(
             changelog, find_changelog(self.tmpdir, DevNullLogger()))
 
     def testOversizedFile(self):
@@ -252,7 +252,7 @@ class BaseTestSourceFileVerification(TestCase):
             DEBIAN_TARBALL: 0,
             }
         full_files.update(files)
-        self.assertEquals(
+        self.assertEqual(
             expected,
             [str(e) for e in format_to_file_checker_map[self.format](
                 'foo_1.dsc', full_files, components, component_signatures,
@@ -408,7 +408,7 @@ class UnpackedDirTests(TestCase):
         unpacked_dir = unpack_source(
             datadir(os.path.join('suite', 'bar_1.0-1', 'bar_1.0-1.dsc')))
         try:
-            self.assertEquals(["bar-1.0"], os.listdir(unpacked_dir))
+            self.assertEqual(["bar-1.0"], os.listdir(unpacked_dir))
             self.assertContentEqual(
                 ["THIS_IS_BAR", "debian"],
                 os.listdir(os.path.join(unpacked_dir, "bar-1.0")))

@@ -654,7 +654,7 @@ class TestBugMessageAddFormView(TestCaseWithFactory):
         view = create_initialized_view(
             bug.default_bugtask, '+addcomment', form=form)
         expected_error = u'Either a comment or attachment must be provided.'
-        self.assertEquals(view.errors[0], expected_error)
+        self.assertEqual(view.errors[0], expected_error)
 
     def test_whitespaces_message_with_attached_file(self):
         # If the message only contains whitespaces but a file

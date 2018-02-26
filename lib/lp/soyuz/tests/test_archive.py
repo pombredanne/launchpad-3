@@ -1,7 +1,9 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from datetime import (
     date,
@@ -12,6 +14,7 @@ import doctest
 import os.path
 
 from pytz import UTC
+import six
 from testtools.matchers import (
     AllMatch,
     DocTestMatches,
@@ -1272,15 +1275,15 @@ class TestNamedAuthTokenFeatureFlag(TestCaseWithFactory):
     def test_feature_flag_disabled(self):
         # With feature flag disabled, we will not create new named auth tokens.
         private_ppa = self.factory.makeArchive(private=True)
-        with FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u""}):
+        with FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: ""}):
             self.assertRaises(NamedAuthTokenFeatureDisabled,
-                              private_ppa.newNamedAuthToken, u"tokenname")
+                              private_ppa.newNamedAuthToken, "tokenname")
 
     def test_feature_flag_disabled_by_default(self):
          # Without a feature flag, we will not create new named auth tokens.
         private_ppa = self.factory.makeArchive(private=True)
         self.assertRaises(NamedAuthTokenFeatureDisabled,
-            private_ppa.newNamedAuthToken, u"tokenname")
+            private_ppa.newNamedAuthToken, "tokenname")
 
 
 class TestArchiveTokens(TestCaseWithFactory):
@@ -1292,7 +1295,7 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.private_ppa = self.factory.makeArchive(owner=owner, private=True)
         self.joe = self.factory.makePerson(name='joe')
         self.private_ppa.newSubscription(self.joe, owner)
-        self.useFixture(FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: "on"}))
 
     def test_getAuthToken_with_no_token(self):
         self.assertIsNone(self.private_ppa.getAuthToken(self.joe))
@@ -1308,8 +1311,8 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.assertEqual(token.archive_url, url)
 
     def test_newNamedAuthToken_private_archive(self):
-        res = self.private_ppa.newNamedAuthToken(u"tokenname", as_dict=True)
-        token = self.private_ppa.getNamedAuthToken(u"tokenname")
+        res = self.private_ppa.newNamedAuthToken("tokenname", as_dict=True)
+        token = self.private_ppa.getNamedAuthToken("tokenname")
         self.assertIsNotNone(token)
         self.assertIsNone(token.person)
         self.assertEqual("tokenname", token.name)
@@ -1319,46 +1322,43 @@ class TestArchiveTokens(TestCaseWithFactory):
             "://+%s:%s@" % (token.name, token.token), token.archive_url)
         self.assertDictEqual(
             {"token": token.token, "archive_url": token.archive_url},
-            removeSecurityProxy(res))
+            res
+            )
 
     def test_newNamedAuthToken_public_archive(self):
         public_ppa = self.factory.makeArchive(private=False)
         self.assertRaises(ArchiveNotPrivate,
-            public_ppa.newNamedAuthToken, u"tokenname")
+            public_ppa.newNamedAuthToken, "tokenname")
 
     def test_newNamedAuthToken_duplicate_name(self):
-        self.private_ppa.newNamedAuthToken(u"tokenname")
+        self.private_ppa.newNamedAuthToken("tokenname")
         self.assertRaises(DuplicateTokenName,
-            self.private_ppa.newNamedAuthToken, u"tokenname")
+            self.private_ppa.newNamedAuthToken, "tokenname")
 
     def test_newNamedAuthToken_with_custom_secret(self):
-        token = self.private_ppa.newNamedAuthToken(u"tokenname", u"secret")
-        self.assertEqual(u"secret", token.token)
+        token = self.private_ppa.newNamedAuthToken("tokenname", "secret")
+        self.assertEqual("secret", token.token)
 
     def test_newNamedAuthTokens_private_archive(self):
         res = self.private_ppa.newNamedAuthTokens(
-            (u"name1", u"name2"), as_dict=True)
+            ("name1", "name2"), as_dict=True)
         tokens = self.private_ppa.getNamedAuthTokens()
-        self.assertDictEqual(
-            {tok.name: tok.asDict() for tok in tokens},
-            removeSecurityProxy(res))
+        self.assertDictEqual({tok.name: tok.asDict() for tok in tokens}, res)
 
     def test_newNamedAuthTokens_public_archive(self):
         public_ppa = self.factory.makeArchive(private=False)
         self.assertRaises(ArchiveNotPrivate,
-            public_ppa.newNamedAuthTokens, (u"name1", u"name2"))
+            public_ppa.newNamedAuthTokens, ("name1", "name2"))
 
     def test_newNamedAuthTokens_duplicate_name(self):
-        self.private_ppa.newNamedAuthToken(u"tok1")
+        self.private_ppa.newNamedAuthToken("tok1")
         res = self.private_ppa.newNamedAuthTokens(
-            (u"tok1", u"tok2", u"tok3"), as_dict=True)
+            ("tok1", "tok2", "tok3"), as_dict=True)
         tokens = self.private_ppa.getNamedAuthTokens()
-        self.assertDictEqual(
-            {tok.name: tok.asDict() for tok in tokens},
-            removeSecurityProxy(res))
+        self.assertDictEqual({tok.name: tok.asDict() for tok in tokens}, res)
 
     def test_newNamedAuthTokens_idempotent(self):
-        names = (u"name1", u"name2", u"name3", u"name4", u"name5")
+        names = ("name1", "name2", "name3", "name4", "name5")
         res1 = self.private_ppa.newNamedAuthTokens(names, as_dict=True)
         res2 = self.private_ppa.newNamedAuthTokens(names, as_dict=True)
         self.assertEqual(res1, res2)
@@ -1367,32 +1367,32 @@ class TestArchiveTokens(TestCaseWithFactory):
         # Preload feature flag so it is cached.
         getFeatureFlag(NAMED_AUTH_TOKEN_FEATURE_FLAG)
         with StormStatementRecorder() as recorder1:
-            self.private_ppa.newNamedAuthTokens((u"tok1"))
+            self.private_ppa.newNamedAuthTokens(("tok1"))
         with StormStatementRecorder() as recorder2:
-            self.private_ppa.newNamedAuthTokens((u"tok1", u"tok2", u"tok3"))
+            self.private_ppa.newNamedAuthTokens(("tok1", "tok2", "tok3"))
         self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_getNamedAuthToken_with_no_token(self):
         self.assertRaises(
-            NotFoundError, self.private_ppa.getNamedAuthToken, u"tokenname")
+            NotFoundError, self.private_ppa.getNamedAuthToken, "tokenname")
 
     def test_getNamedAuthToken_with_token(self):
-        res = self.private_ppa.newNamedAuthToken(u"tokenname", as_dict=True)
+        res = self.private_ppa.newNamedAuthToken("tokenname", as_dict=True)
         self.assertEqual(
-            self.private_ppa.getNamedAuthToken(u"tokenname", as_dict=True),
+            self.private_ppa.getNamedAuthToken("tokenname", as_dict=True),
             res)
 
     def test_revokeNamedAuthToken_with_token(self):
-        token = self.private_ppa.newNamedAuthToken(u"tokenname")
-        self.private_ppa.revokeNamedAuthToken(u"tokenname")
+        token = self.private_ppa.newNamedAuthToken("tokenname")
+        self.private_ppa.revokeNamedAuthToken("tokenname")
         self.assertIsNotNone(token.date_deactivated)
 
     def test_revokeNamedAuthToken_with_no_token(self):
         self.assertRaises(
-            NotFoundError, self.private_ppa.revokeNamedAuthToken, u"tokenname")
+            NotFoundError, self.private_ppa.revokeNamedAuthToken, "tokenname")
 
     def test_revokeNamedAuthTokens(self):
-        names = (u"name1", u"name2", u"name3", u"name4", u"name5")
+        names = ("name1", "name2", "name3", "name4", "name5")
         tokens = self.private_ppa.newNamedAuthTokens(names)
         self.assertThat(
             tokens, AllMatch(MatchesPredicate(
@@ -1403,10 +1403,10 @@ class TestArchiveTokens(TestCaseWithFactory):
                 lambda x: x.date_deactivated, '%s is active.')))
 
     def test_revokeNamedAuthTokens_with_previously_revoked_token(self):
-        names = (u"name1", u"name2", u"name3", u"name4", u"name5")
+        names = ("name1", "name2", "name3", "name4", "name5")
         self.private_ppa.newNamedAuthTokens(names)
-        token1 = self.private_ppa.getNamedAuthToken(u"name1")
-        token2 = self.private_ppa.getNamedAuthToken(u"name2")
+        token1 = self.private_ppa.getNamedAuthToken("name1")
+        token2 = self.private_ppa.getNamedAuthToken("name2")
 
         # Revoke token1.
         deactivation_time_1 = datetime.now(UTC) - timedelta(seconds=90)
@@ -1420,34 +1420,34 @@ class TestArchiveTokens(TestCaseWithFactory):
         self.assertLess(token1.date_deactivated, token2.date_deactivated)
 
     def test_revokeNamedAuthTokens_idempotent(self):
-        names = (u"name1", u"name2", u"name3", u"name4", u"name5")
+        names = ("name1", "name2", "name3", "name4", "name5")
         res1 = self.private_ppa.revokeNamedAuthTokens(names)
         res2 = self.private_ppa.revokeNamedAuthTokens(names)
         self.assertEqual(res1, res2)
 
     def test_getNamedAuthToken_with_revoked_token(self):
-        self.private_ppa.newNamedAuthToken(u"tokenname")
-        self.private_ppa.revokeNamedAuthToken(u"tokenname")
+        self.private_ppa.newNamedAuthToken("tokenname")
+        self.private_ppa.revokeNamedAuthToken("tokenname")
         self.assertRaises(
-            NotFoundError, self.private_ppa.getNamedAuthToken, u"tokenname")
+            NotFoundError, self.private_ppa.getNamedAuthToken, "tokenname")
 
     def test_getNamedAuthTokens(self):
-        res1 = self.private_ppa.newNamedAuthToken(u"tokenname1", as_dict=True)
-        res2 = self.private_ppa.newNamedAuthToken(u"tokenname2", as_dict=True)
-        self.private_ppa.newNamedAuthToken(u"tokenname3")
-        self.private_ppa.revokeNamedAuthToken(u"tokenname3")
+        res1 = self.private_ppa.newNamedAuthToken("tokenname1", as_dict=True)
+        res2 = self.private_ppa.newNamedAuthToken("tokenname2", as_dict=True)
+        self.private_ppa.newNamedAuthToken("tokenname3")
+        self.private_ppa.revokeNamedAuthToken("tokenname3")
         self.assertContentEqual(
             [res1, res2],
             self.private_ppa.getNamedAuthTokens(as_dict=True))
 
     def test_getNamedAuthTokens_with_names(self):
-        res1 = self.private_ppa.newNamedAuthToken(u"tokenname1", as_dict=True)
-        res2 = self.private_ppa.newNamedAuthToken(u"tokenname2", as_dict=True)
-        self.private_ppa.newNamedAuthToken(u"tokenname3")
+        res1 = self.private_ppa.newNamedAuthToken("tokenname1", as_dict=True)
+        res2 = self.private_ppa.newNamedAuthToken("tokenname2", as_dict=True)
+        self.private_ppa.newNamedAuthToken("tokenname3")
         self.assertContentEqual(
             [res1, res2],
             self.private_ppa.getNamedAuthTokens(
-                (u"tokenname1", u"tokenname2"), as_dict=True))
+                ("tokenname1", "tokenname2"), as_dict=True))
 
 
 class TestGetBinaryPackageRelease(TestCaseWithFactory):
@@ -1973,14 +1973,14 @@ class TestOverlays(TestCaseWithFactory):
     def _createDep(self, test_publisher, derived_series, parent_series,
                    parent_distro, component_name=None, pocket=None,
                    overlay=True, arch_tag='i386',
-                   publish_base_url=u'http://archive.launchpad.dev/'):
+                   publish_base_url='http://archive.launchpad.dev/'):
         # Helper to create a parent/child relationship.
-        if type(parent_distro) == str:
+        if isinstance(parent_distro, six.string_types):
             depdistro = self.factory.makeDistribution(parent_distro,
                 publish_base_url=publish_base_url)
         else:
             depdistro = parent_distro
-        if type(parent_series) == str:
+        if isinstance(parent_series, six.string_types):
             depseries = self.factory.makeDistroSeries(
                 name=parent_series, distribution=depdistro)
             self.factory.makeDistroArchSeries(
@@ -2457,20 +2457,20 @@ class TestGetPublishedSources(TestCaseWithFactory):
             found.append((title, pub_ds))
         self.assertEqual(expected, found)
         self.assertEqual(1,
-            cprov_archive.getPublishedSources(name=u'cd').count())
+            cprov_archive.getPublishedSources(name='cd').count())
         self.assertEqual(1,
-            cprov_archive.getPublishedSources(name=u'ice').count())
+            cprov_archive.getPublishedSources(name='ice').count())
         self.assertEqual(1, cprov_archive.getPublishedSources(
-            name=u'iceweasel', exact_match=True).count())
+            name='iceweasel', exact_match=True).count())
         self.assertEqual(0, cprov_archive.getPublishedSources(
-            name=u'ice', exact_match=True).count())
+            name='ice', exact_match=True).count())
         self.assertRaises(VersionRequiresName,
             cprov_archive.getPublishedSources,
             version='1.0')
         self.assertEqual(1, cprov_archive.getPublishedSources(
-            name=u'ice', version='1.0').count())
+            name='ice', version='1.0').count())
         self.assertEqual(0, cprov_archive.getPublishedSources(
-            name=u'ice', version='666').count())
+            name='ice', version='666').count())
         self.assertEqual(3, cprov_archive.getPublishedSources(
             status=PackagePublishingStatus.PUBLISHED).count())
         self.assertEqual(3, cprov_archive.getPublishedSources(
@@ -2490,9 +2490,9 @@ class TestGetPublishedSources(TestCaseWithFactory):
             distroseries=warty,
             pocket=PackagePublishingPocket.UPDATES).count())
         self.assertEqual(1, cprov_archive.getPublishedSources(
-            name=u'ice', distroseries=warty).count())
+            name='ice', distroseries=warty).count())
         self.assertEqual(0, cprov_archive.getPublishedSources(
-            name=u'ice', distroseries=breezy_autotest).count())
+            name='ice', distroseries=breezy_autotest).count())
         mid_2007 = datetime(year=2007, month=7, day=9, hour=14, tzinfo=UTC)
         self.assertEqual(0, cprov_archive.getPublishedSources(
             created_since_date=mid_2007).count())
@@ -3386,7 +3386,7 @@ class TestGetPPAOwnedByPerson(TestCaseWithFactory):
         self.assertIs(
             None,
             self.set.getPPAOwnedByPerson(
-                archive.owner, archive.distribution, archive.name + u'lol'))
+                archive.owner, archive.distribution, archive.name + 'lol'))
         self.assertIs(
             None,
             self.set.getPPAOwnedByPerson(
@@ -3720,8 +3720,7 @@ class TestCountersAndSummaries(TestCaseWithFactory):
             "total": 4,
             }
         self.assertDictEqual(
-            expected_counters,
-            removeSecurityProxy(cprov_archive.getBuildCounters()))
+            expected_counters, cprov_archive.getBuildCounters())
 
     def test_ubuntu_build_counters_in_sampledata(self):
         ubuntu_archive = getUtility(IDistributionSet)["ubuntu"].main_archive
@@ -3733,15 +3732,13 @@ class TestCountersAndSummaries(TestCaseWithFactory):
             "total": 18,
             }
         self.assertDictEqual(
-            expected_counters,
-            removeSecurityProxy(ubuntu_archive.getBuildCounters()))
+            expected_counters, ubuntu_archive.getBuildCounters())
         # include_needsbuild=False excludes builds in status NEEDSBUILD.
         expected_counters["pending"] -= 1
         expected_counters["total"] -= 1
         self.assertDictEqual(
             expected_counters,
-            removeSecurityProxy(
-                ubuntu_archive.getBuildCounters(include_needsbuild=False)))
+            ubuntu_archive.getBuildCounters(include_needsbuild=False))
 
     def assertBuildSummaryMatches(self, status, builds, summary):
         self.assertEqual(status, summary["status"])

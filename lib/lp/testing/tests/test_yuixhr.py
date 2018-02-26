@@ -65,7 +65,7 @@ class TestYUITestFixtureController(TestCase):
         object, view, request = test_traverse(
             'http://launchpad.dev/+yuitest/'
             'lib/lp/testing/tests/test_yuixhr_fixture.js')
-        self.assertEquals(
+        self.assertEqual(
             'lib/lp/testing/tests/test_yuixhr_fixture.js',
             removeSecurityProxy(view).traversed_path)
 
@@ -73,13 +73,13 @@ class TestYUITestFixtureController(TestCase):
         view = create_traversed_view(
             path_info='/+yuitest/lp/testing/tests/test_yuixhr_fixture.js')
         view.initialize()
-        self.assertEquals(view.JAVASCRIPT, view.action)
+        self.assertEqual(view.JAVASCRIPT, view.action)
 
     def test_request_is_html(self):
         view = create_traversed_view(
             path_info='/+yuitest/lp/testing/tests/test_yuixhr_fixture')
         view.initialize()
-        self.assertEquals(view.HTML, view.action)
+        self.assertEqual(view.HTML, view.action)
 
     def test_request_is_setup(self):
         view = create_traversed_view(
@@ -87,8 +87,8 @@ class TestYUITestFixtureController(TestCase):
             form={'action': 'setup', 'fixtures': 'base_line'},
             method='POST')
         view.initialize()
-        self.assertEquals(view.SETUP, view.action)
-        self.assertEquals(['base_line'], view.fixtures)
+        self.assertEqual(view.SETUP, view.action)
+        self.assertEqual(['base_line'], view.fixtures)
 
     def test_request_is_teardown(self):
         view = create_traversed_view(
@@ -96,8 +96,8 @@ class TestYUITestFixtureController(TestCase):
             form={'action': 'teardown', 'fixtures': 'base_line'},
             method='POST')
         view.initialize()
-        self.assertEquals(view.TEARDOWN, view.action)
-        self.assertEquals(['base_line'], view.fixtures)
+        self.assertEqual(view.TEARDOWN, view.action)
+        self.assertEqual(['base_line'], view.fixtures)
 
     def test_page(self):
         view = create_traversed_view(
@@ -173,8 +173,7 @@ class TestYUITestFixtureController(TestCase):
             form={'action': 'setup', 'fixtures': 'baseline'},
             method='POST')
         view.initialize()
-        self.assertEquals(
-            test_yuixhr_fixture._fixtures_, view.get_fixtures())
+        self.assertEqual(test_yuixhr_fixture._fixtures_, view.get_fixtures())
 
     def make_example_setup_function_module(self):
         module = types.ModuleType(TEST_MODULE_NAME)
@@ -193,7 +192,7 @@ class TestYUITestFixtureController(TestCase):
         fixture = setup(module.baseline)
         self.assertTrue('_fixtures_' in module.__dict__)
         self.assertTrue('baseline' in module._fixtures_)
-        self.assertEquals(fixture, module._fixtures_['baseline'])
+        self.assertEqual(fixture, module._fixtures_['baseline'])
         self.assertTrue(getattr(fixture, 'add_cleanup', None) is not None)
         self.assertTrue(getattr(fixture, 'teardown', None) is not None)
         self.assertTrue(getattr(fixture, 'extend', None) is not None)
@@ -259,9 +258,9 @@ class TestYUITestFixtureController(TestCase):
 
         def my_teardown(request, data):
             result.append('foo')
-        self.assertEquals(fixture, fixture.add_cleanup(my_teardown))
+        self.assertEqual(fixture, fixture.add_cleanup(my_teardown))
         fixture.teardown(None, None)
-        self.assertEquals(['foo'], result)
+        self.assertEqual(['foo'], result)
 
     def test_add_cleanup_decorator_twice(self):
         fixture = setup(self.make_example_setup_function_module().baseline)
@@ -272,10 +271,10 @@ class TestYUITestFixtureController(TestCase):
 
         def my_other_teardown(request, data):
             result.append('bar')
-        self.assertEquals(fixture, fixture.add_cleanup(my_teardown))
-        self.assertEquals(fixture, fixture.add_cleanup(my_other_teardown))
+        self.assertEqual(fixture, fixture.add_cleanup(my_teardown))
+        self.assertEqual(fixture, fixture.add_cleanup(my_other_teardown))
         fixture.teardown(None, None)
-        self.assertEquals(['bar', 'foo'], result)
+        self.assertEqual(['bar', 'foo'], result)
 
     def test_do_teardown(self):
         del test_yuixhr_fixture._received[:]
@@ -392,11 +391,11 @@ class TestYUITestFixtureController(TestCase):
         third_fixture.add_cleanup(
             lambda request, data: called.append('third'))
         third_fixture.teardown(None, dict())
-        self.assertEquals(['third', 'second', 'original'], called)
+        self.assertEqual(['third', 'second', 'original'], called)
 
         del called[:]
         original_fixture.teardown(None, dict())
-        self.assertEquals(['original'], called)
+        self.assertEqual(['original'], called)
 
     def test_python_fixture_does_not_reload_by_default(self):
         # Even though the dangers of Python's "reload" are subtle and
@@ -413,7 +412,7 @@ class TestYUITestFixtureController(TestCase):
                       'test_yuixhr_fixture')
         view.initialize()
         view.render()
-        self.assertEquals(
+        self.assertEqual(
             'hello', test_yuixhr_fixture._fixtures_['baseline'].scribble)
 
     def test_python_fixture_does_not_reload_without_environ_var(self):
@@ -430,7 +429,7 @@ class TestYUITestFixtureController(TestCase):
                       'test_yuixhr_fixture', form=dict(reload='1'))
         view.initialize()
         view.render()
-        self.assertEquals(
+        self.assertEqual(
             'hello', test_yuixhr_fixture._fixtures_['baseline'].scribble)
 
     def test_python_fixture_can_reload(self):
@@ -444,12 +443,11 @@ class TestYUITestFixtureController(TestCase):
             # reloading only happens at render time, so the scribble is
             # still there for now.
             view.initialize()
-            self.assertEquals(
+            self.assertEqual(
                 'hello', test_yuixhr_fixture._fixtures_['baseline'].scribble)
             # After a render of the html view, the module is reloaded.
             view.render()
-            self.assertEquals(
-                None,
+            self.assertIsNone(
                 getattr(test_yuixhr_fixture._fixtures_['baseline'],
                         'scribble',
                         None))
@@ -467,8 +465,7 @@ class TestYUITestFixtureController(TestCase):
             view.initialize()
             # After a render of the html view, the module is reloaded.
             view.render()
-            self.assertEquals(
-                None,
+            self.assertIsNone(
                 test_yuixhr_fixture._fixtures_.get('extra_scribble'))
 
     def test_python_fixture_reload_in_html(self):
@@ -481,8 +478,7 @@ class TestYUITestFixtureController(TestCase):
             view.initialize()
             # After a render of the html view, the module is reloaded.
             view.renderHTML()
-            self.assertEquals(
-                None,
+            self.assertIsNone(
                 test_yuixhr_fixture._fixtures_.get('extra_scribble'))
 
     def test_index_page(self):

@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import base64
@@ -145,7 +145,7 @@ class TestGPGHandler(TestCase):
     def test_non_ascii_filter(self):
         """localKeys should not error if passed non-ascii unicode strings."""
         filtered_keys = self.gpg_handler.localKeys(u'non-ascii \u8463')
-        self.failUnlessRaises(StopIteration, filtered_keys.next)
+        self.assertRaises(StopIteration, filtered_keys.next)
 
     def testTestkeyrings(self):
         """Do we have the expected test keyring files"""
@@ -206,6 +206,47 @@ class TestGPGHandler(TestCase):
         self.assertRaises(
             GPGKeyDoesNotExistOnServer,
             removeSecurityProxy(self.gpg_handler)._getPubKey, fingerprint)
+
+    def test_getURLForKeyInServer_default(self):
+        # By default the action is to display the key's index page.  Notice
+        # that the fingerprint must be the 40-byte fingerprint, to avoid the
+        # retrieval of more than one key.
+        fingerprint = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
+        self.assertEqual(
+            "http://localhost:11371/pks/lookup?fingerprint=on&"
+            "op=index&search=0x%s" % fingerprint,
+            self.gpg_handler.getURLForKeyInServer(fingerprint))
+
+    def test_getURLForKeyInServer_different_action(self):
+        # The caller can specify a different action.
+        fingerprint = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
+        self.assertEqual(
+            "http://localhost:11371/pks/lookup?fingerprint=on&"
+            "op=get&search=0x%s" % fingerprint,
+            self.gpg_handler.getURLForKeyInServer(fingerprint, action="get"))
+
+    def test_getURLForKeyInServer_public_http(self):
+        # The caller can request a link to the public keyserver web
+        # interface.  If the configuration item gpghandler.public_https is
+        # false, then this uses HTTP and gpghandler.port.
+        self.pushConfig("gpghandler", public_https=False)
+        fingerprint = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
+        self.assertEqual(
+            "http://keyserver.ubuntu.com:11371/pks/lookup?fingerprint=on&"
+            "op=index&search=0x%s" % fingerprint,
+            self.gpg_handler.getURLForKeyInServer(fingerprint, public=True))
+
+    def test_getURLForKeyInServer_public_https(self):
+        # The caller can request a link to the public keyserver web
+        # interface.  If the configuration item gpghandler.public_https is
+        # true, then this uses HTTPS and the default HTTPS port.
+        # This is the testrunner default, but let's be explicit here.
+        self.pushConfig("gpghandler", public_https=True)
+        fingerprint = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
+        self.assertEqual(
+            "https://keyserver.ubuntu.com/pks/lookup?fingerprint=on&"
+            "op=index&search=0x%s" % fingerprint,
+            self.gpg_handler.getURLForKeyInServer(fingerprint, public=True))
 
     def test_signContent_uses_sha512_digests(self):
         secret_keys = [

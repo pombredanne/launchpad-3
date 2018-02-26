@@ -44,7 +44,7 @@ class TestConfigLookup(TestCase):
 
         os.environ['LPCONFIG'] = 'from_env'
 
-        self.failUnlessEqual(config.find_instance_name(), 'from_env')
+        self.assertEqual(config.find_instance_name(), 'from_env')
 
     def testByFile(self):
         # Create the lookup file.
@@ -53,14 +53,13 @@ class TestConfigLookup(TestCase):
         # Trash the environment variable so it doesn't override.
         del os.environ['LPCONFIG']
 
-        self.failUnlessEqual(config.find_instance_name(), 'from_disk')
+        self.assertEqual(config.find_instance_name(), 'from_disk')
 
     def testByDefault(self):
         # Trash the environment variable so it doesn't override.
         del os.environ['LPCONFIG']
 
-        self.failUnlessEqual(
-            config.find_instance_name(), config.DEFAULT_CONFIG)
+        self.assertEqual(config.find_instance_name(), config.DEFAULT_CONFIG)
 
 
 class ConfigTestCase(TestCase):
@@ -114,7 +113,7 @@ class TestInstanceConfigDirLookup(ConfigTestCase):
 
     def test_find_config_dir(self):
         instance_config_dir = self.setUpInstanceConfig('an_instance')
-        self.assertEquals(
+        self.assertEqual(
             instance_config_dir, config.find_config_dir('an_instance'))
 
     def test_Config_uses_find_config_dir(self):
@@ -128,7 +127,7 @@ class TestInstanceConfigDirLookup(ConfigTestCase):
 
         # We don't care about ZConfig...
         cfg._setZConfig = lambda: None
-        self.assertEquals(2323, cfg.launchpad.default_batch_size)
+        self.assertEqual(2323, cfg.launchpad.default_batch_size)
 
 
 class TestGenerateOverrides(ConfigTestCase):
@@ -142,7 +141,7 @@ class TestGenerateOverrides(ConfigTestCase):
         cfg.root = self.temp_config_root_dir
         cfg.generate_overrides()
         override_file = os.path.join(cfg.root, 'zcml/+config-overrides.zcml')
-        self.failUnless(
+        self.assertTrue(
             os.path.isfile(override_file), "Overrides file wasn't created.")
 
         fh = open(override_file)
@@ -150,7 +149,7 @@ class TestGenerateOverrides(ConfigTestCase):
         fh.close()
 
         magic_line = '<include files="%s/*.zcml" />' % instance_dir
-        self.failUnless(
+        self.assertTrue(
             magic_line in overrides,
             "Overrides doesn't contain the magic include line (%s):\n%s" %
             (magic_line, overrides))

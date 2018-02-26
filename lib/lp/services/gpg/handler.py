@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -478,9 +478,12 @@ class GPGHandler:
             host = config.gpghandler.public_host
         else:
             host = config.gpghandler.host
-        return 'http://%s:%s/pks/lookup?%s' % (
-            host, config.gpghandler.port,
-            urllib.urlencode(sorted(params.items())))
+        if public and config.gpghandler.public_https:
+            base = 'https://%s' % host
+        else:
+            base = 'http://%s:%s' % (host, config.gpghandler.port)
+        return '%s/pks/lookup?%s' % (
+            base, urllib.urlencode(sorted(params.items())))
 
     def _getPubKey(self, fingerprint):
         """See IGPGHandler for further information."""

@@ -135,7 +135,7 @@ class TestDistroSeriesParentSecurity(TestCaseWithFactory):
 
     def assertCanEdit(self, dsp):
         dsp.initialized = False
-        self.assertEquals(False, dsp.initialized)
+        self.assertEqual(False, dsp.initialized)
 
     def test_distroseries_drivers_can_edit(self):
         # Test that distroseries drivers can edit the data.

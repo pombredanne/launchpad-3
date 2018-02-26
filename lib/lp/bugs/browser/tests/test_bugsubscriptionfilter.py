@@ -251,7 +251,7 @@ class TestBugSubscriptionFilterView(
         self.assertEqual([], self.view.conditions)
 
     def test_not_filters_everything_normally(self):
-        self.failIf(self.view.filters_everything)
+        self.assertFalse(self.view.filters_everything)
 
     def test_conditions_for_COMMENTS_events(self):
         # If we are subscribed to comments, that is all-inclusive: no

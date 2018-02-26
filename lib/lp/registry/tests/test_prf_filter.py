@@ -13,7 +13,7 @@ class Filter_Logging(unittest.TestCase):
             Filter)
         from logging import Logger
         f = Filter()
-        self.failUnless(isinstance(f.log, Logger))
+        self.assertTrue(isinstance(f.log, Logger))
 
     def testCreatesChildLogger(self):
         """Filter creates a child logger if given a parent."""
@@ -22,7 +22,7 @@ class Filter_Logging(unittest.TestCase):
         from logging import getLogger
         parent = getLogger("foo")
         f = Filter(log_parent=parent)
-        self.assertEquals(f.log.parent, parent)
+        self.assertEqual(f.log.parent, parent)
 
 
 class Filter_Init(unittest.TestCase):
@@ -31,15 +31,15 @@ class Filter_Init(unittest.TestCase):
         from lp.registry.scripts.productreleasefinder.filter import (
             Filter)
         f = Filter()
-        self.assertEquals(f.filters, [])
+        self.assertEqual(f.filters, [])
 
     def testFiltersPropertyGiven(self):
         """Filter constructor accepts argument to set filters property."""
         from lp.registry.scripts.productreleasefinder.filter import (
             Filter)
         f = Filter(["wibble"])
-        self.assertEquals(len(f.filters), 1)
-        self.assertEquals(f.filters[0], "wibble")
+        self.assertEqual(len(f.filters), 1)
+        self.assertEqual(f.filters[0], "wibble")
 
 
 class Filter_CheckUrl(unittest.TestCase):
@@ -48,7 +48,7 @@ class Filter_CheckUrl(unittest.TestCase):
         from lp.registry.scripts.productreleasefinder.filter import (
             Filter)
         f = Filter()
-        self.assertEquals(f.check("file:///subdir/file"), None)
+        self.assertEqual(f.check("file:///subdir/file"), None)
 
     def makeFilter(self, key, urlglob):
         from lp.registry.scripts.productreleasefinder.filter import (
@@ -59,27 +59,27 @@ class Filter_CheckUrl(unittest.TestCase):
     def testNotMatching(self):
         """Filter.check returns None if doesn't match a filter."""
         f = self.makeFilter("foo", "file:///subdir/w*")
-        self.assertEquals(f.check("file:///subdir/file"), None)
+        self.assertEqual(f.check("file:///subdir/file"), None)
 
     def testNoMatchingSlashes(self):
         """Filter.check that the glob does not match slashes."""
         f = self.makeFilter("foo", "file:///*l*")
-        self.assertEquals(f.check("file:///subdir/file"), None)
+        self.assertEqual(f.check("file:///subdir/file"), None)
 
     def testReturnsMatching(self):
         """Filter.check returns the matching keyword."""
         f = self.makeFilter("foo", "file:///subdir/f*e")
-        self.assertEquals(f.check("file:///subdir/file"), "foo")
+        self.assertEqual(f.check("file:///subdir/file"), "foo")
 
     def testGlobSubdir(self):
         # Filter.glob can contain slashes to match subdirs
         f = self.makeFilter("foo", "file:///sub*/f*e")
-        self.assertEquals(f.check("file:///subdir/file"), "foo")
+        self.assertEqual(f.check("file:///subdir/file"), "foo")
 
     def testReturnsNonMatchingBase(self):
         """Filter.check returns None if the base does not match."""
         f = self.makeFilter("foo", "http:f*e")
-        self.assertEquals(f.check("file:///subdir/file"), None)
+        self.assertEqual(f.check("file:///subdir/file"), None)
 
 
 class Filter_IsPossibleParentUrl(unittest.TestCase):

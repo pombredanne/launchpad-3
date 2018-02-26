@@ -155,6 +155,7 @@ setup(
         'dkimpy',
         # Required for dkimpy
         'dnspython',
+        'dulwich',
         'FeedParser',
         'feedvalidator',
         'fixtures',
@@ -218,7 +219,7 @@ setup(
         'testtools',
         'timeline',
         'transaction',
-        'Twisted',
+        'Twisted[conch,tls]',
         'txfixtures',
         'txlongpoll',
         'txlongpollfixture',

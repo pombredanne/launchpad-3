@@ -75,7 +75,7 @@ def check_estimate(test, job, delay_in_seconds):
     time_stamp = job.date_started or datetime.now(utc)
     estimate = job.getEstimatedJobStartTime(now=time_stamp)
     if delay_in_seconds is None:
-        test.assertEquals(
+        test.assertEqual(
             delay_in_seconds, estimate,
             "An estimate should not be possible at present but one was "
             "returned (%s) nevertheless." % estimate)
@@ -509,7 +509,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
             builder.builderok = False
 
         # No builders capable of running the job at hand are available now.
-        self.assertEquals(0, builders_for_job(apg_job))
+        self.assertEqual(0, builders_for_job(apg_job))
         # The "minimum time to builder" estimation logic is not aware of this
         # though.
         check_mintime_to_builder(self, apg_job, 0)
@@ -526,7 +526,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
 
         # All native builders are disabled now.  No builders capable of
         # running the job at hand are available.
-        self.assertEquals(0, builders_for_job(job))
+        self.assertEqual(0, builders_for_job(job))
         # The "minimum time to builder" estimation logic is not aware of the
         # fact that no builders capable of running the job are available.
         check_mintime_to_builder(self, job, 0)
@@ -678,7 +678,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
             builder.builderok = False
 
         # No builders capable of running the job at hand are available now.
-        self.assertEquals(0, builders_for_job(apg_job))
+        self.assertEqual(0, builders_for_job(apg_job))
         check_mintime_to_builder(self, apg_job, 0)
 
         # Let's add a processor-independent job to the mix.
@@ -687,7 +687,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
             sourcename='my-recipe-digikam', score=9999)
         # There are still builders available for the processor-independent
         # job.
-        self.assertEquals(6, builders_for_job(job))
+        self.assertEqual(6, builders_for_job(job))
         # Even free ones.
         self.assertTrue(
             bq._getFreeBuildersCount(job.processor, job.virtualized) > 0,
@@ -702,7 +702,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
 
         # There are no builders capable of running even the processor
         # independent jobs now.
-        self.assertEquals(0, builders_for_job(job))
+        self.assertEqual(0, builders_for_job(job))
         check_mintime_to_builder(self, job, 0)
 
         # Re-enable the native hppa builders.
@@ -840,9 +840,9 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         check_delay_for_job(self, zsh_job, 0)
 
         # Assign the zsh job to a builder.
-        self.assertEquals((None, False), bash_job._getHeadJobPlatform())
+        self.assertEqual((None, False), bash_job._getHeadJobPlatform())
         assign_to_builder(self, 'xx-recipe-zsh', 1, None)
-        self.assertEquals((1, False), bash_job._getHeadJobPlatform())
+        self.assertEqual((1, False), bash_job._getHeadJobPlatform())
 
         # Now that the highest-scored job is out of the way, the estimation
         # for the 'bash' recipe build is 222 seconds shorter.
@@ -858,7 +858,7 @@ class TestMultiArchJobDelayEstimation(MultiArchBuildsBase):
         # Also, the platform of the postgres job is returned since it *is*
         # the head job now.
         pg_platform = (postgres_job.processor.id, postgres_job.virtualized)
-        self.assertEquals(pg_platform, postgres_job._getHeadJobPlatform())
+        self.assertEqual(pg_platform, postgres_job._getHeadJobPlatform())
 
 
 class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
@@ -948,7 +948,7 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         #   processor-independent jobs:
         #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47 + 9:14)/6  = 831
         check_estimate(self, gcc_job, 1671)
-        self.assertEquals(5, builders_for_job(gcc_job))
+        self.assertEqual(5, builders_for_job(gcc_job))
 
     def test_proc_indep_virtual_true(self):
         xxr_build, xxr_job = find_job(self, 'xxr-apt-build', None)
@@ -1029,8 +1029,8 @@ class TestJobDispatchTimeEstimation(MultiArchBuildsBase):
         #   processor-independent jobs :
         #       (12:56 + 11:05 + 18:30 + 16:38 + 14:47)/5         =  887
         # waiting time for next builder:                          =  120
-        self.assertEquals(2, builders_for_job(vim_job))
-        self.assertEquals(9, builders_for_job(xxr_job))
+        self.assertEqual(2, builders_for_job(vim_job))
+        self.assertEqual(9, builders_for_job(xxr_job))
         check_estimate(self, vim_job, 2747)
 
     def test_estimation_binary_virtual_headjob(self):

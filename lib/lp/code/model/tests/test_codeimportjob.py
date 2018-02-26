@@ -137,7 +137,7 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
         """Assert that the expected job is chosen by getJobForMachine."""
         observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
             self.machine.hostname, worker_limit=10)
-        self.assert_(observed_job is not None, "No job was selected.")
+        self.assertIsNotNone(observed_job, "No job was selected.")
         self.assertEqual(desired_job, observed_job,
                          "Expected job not selected.")
 
@@ -145,7 +145,7 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
         """Assert that no job is selected."""
         observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
             'machine', worker_limit=10)
-        self.assert_(observed_job is None, "Job unexpectedly selected.")
+        self.assertIsNone(observed_job, "Job unexpectedly selected.")
 
     def test_nothingSelectedIfNothingCreated(self):
         # There are no due jobs pending if we don't create any (this
@@ -775,7 +775,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
         new_job = code_import.import_job
-        self.assert_(new_job is not None)
+        self.assertIsNotNone(new_job)
         self.assertEqual(new_job.state, CodeImportJobState.PENDING)
         self.assertEqual(new_job.machine, None)
         self.assertEqual(
@@ -791,7 +791,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS_PARTIAL, None)
         new_job = code_import.import_job
-        self.assert_(new_job is not None)
+        self.assertIsNotNone(new_job)
         self.assertEqual(new_job.state, CodeImportJobState.PENDING)
         self.assertEqual(new_job.machine, None)
         self.assertSqlAttributeEqualsDate(new_job, 'date_due', UTC_NOW)

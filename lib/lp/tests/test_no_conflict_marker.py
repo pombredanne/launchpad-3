@@ -36,7 +36,8 @@ class NoSpuriousConlictsMarkerTest(unittest.TestCase):
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             env=new_env)
         out, err = process.communicate()
-        self.failIf(len(out), 'Found spurious conflicts marker:\n%s' % out)
+        self.assertFalse(
+            len(out), 'Found spurious conflicts marker:\n%s' % out)
 
 
 def test_suite():

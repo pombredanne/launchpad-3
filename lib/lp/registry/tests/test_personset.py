@@ -95,8 +95,8 @@ class TestPersonSet(TestCaseWithFactory):
     def test_isNameBlacklisted(self):
         cursor().execute(
             "INSERT INTO NameBlacklist(id, regexp) VALUES (-100, 'foo')")
-        self.failUnless(self.person_set.isNameBlacklisted('foo'))
-        self.failIf(self.person_set.isNameBlacklisted('bar'))
+        self.assertTrue(self.person_set.isNameBlacklisted('foo'))
+        self.assertFalse(self.person_set.isNameBlacklisted('bar'))
 
     def test_isNameBlacklisted_user_is_admin(self):
         team = self.factory.makeTeam()
@@ -110,13 +110,13 @@ class TestPersonSet(TestCaseWithFactory):
     def test_getByEmail_ignores_case_and_whitespace(self):
         person1_email = 'foo.bar@canonical.com'
         person1 = self.person_set.getByEmail(person1_email)
-        self.failIf(
-            person1 is None,
+        self.assertIsNotNone(
+            person1,
             "PersonSet.getByEmail() could not find %r" % person1_email)
 
         person2 = self.person_set.getByEmail('  foo.BAR@canonICAL.com  ')
-        self.failIf(
-            person2 is None,
+        self.assertIsNotNone(
+            person2,
             "PersonSet.getByEmail() should ignore case and whitespace.")
         self.assertEqual(person1, person2)
 
@@ -569,7 +569,7 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
 
         ensured_person = self.person_set.ensurePerson(
             self.email_address, self.displayname, self.rationale)
-        self.assertEquals(testing_person.id, ensured_person.id)
+        self.assertEqual(testing_person.id, ensured_person.id)
         self.assertIsNot(
             ensured_person.displayname, self.displayname,
             'Person.displayname should not be overridden.')
@@ -655,10 +655,10 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
             u'other-openid-identifier', 'a@b.com')
 
         self.assertEqual(other_person, person)
-        self.assert_(
-            u'other-openid-identifier' in [
-                identifier.identifier for identifier in removeSecurityProxy(
-                    person.account).openid_identifiers])
+        self.assertIn(
+            u'other-openid-identifier',
+            [identifier.identifier for identifier in removeSecurityProxy(
+                person.account).openid_identifiers])
 
 
 class TestPersonSetGetOrCreateSoftwareCenterCustomer(TestCaseWithFactory):

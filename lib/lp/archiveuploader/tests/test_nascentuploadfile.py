@@ -124,7 +124,7 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
         # The mime type gets set according to PackageUploadCustomFormat.
         uploadfile = self.createCustomUploadFile(
             "bla.txt", "data", "main/raw-installer", "extra")
-        self.assertEquals(
+        self.assertEqual(
             PackageUploadCustomFormat.DEBIAN_INSTALLER,
             uploadfile.custom_type)
 
@@ -132,10 +132,10 @@ class CustomUploadFileTests(NascentUploadFileTestCase):
         # storeInDatabase creates a library file.
         uploadfile = self.createCustomUploadFile(
             "bla.txt", "data", "main/raw-installer", "extra")
-        self.assertEquals("application/octet-stream", uploadfile.content_type)
+        self.assertEqual("application/octet-stream", uploadfile.content_type)
         libraryfile = uploadfile.storeInDatabase()
-        self.assertEquals("bla.txt", libraryfile.filename)
-        self.assertEquals("application/octet-stream", libraryfile.mimetype)
+        self.assertEqual("bla.txt", libraryfile.filename)
+        self.assertEqual("application/octet-stream", libraryfile.mimetype)
 
     def test_debian_installer_verify(self):
         # debian-installer uploads are required to have sensible filenames.
@@ -236,7 +236,7 @@ class DSCFileTests(PackageUploadFileTestCase):
                       priority_name, package, version, changes):
         (path, md5, sha1, size) = self.writeUploadFile(filename, dsc.dump())
         if changes:
-            self.assertEquals([], list(changes.processAddresses()))
+            self.assertEqual([], list(changes.processAddresses()))
         return DSCFile(
             path, dict(MD5=md5), size, component_and_section, priority_name,
             package, version, changes, self.policy, self.logger)
@@ -246,7 +246,7 @@ class DSCFileTests(PackageUploadFileTestCase):
         dsc = self.getBaseDsc()
         uploadfile = self.createDSCFile(
             "foo.dsc", dsc, "main/net", "extra", "dulwich", "0.42", None)
-        self.assertEquals(
+        self.assertEqual(
             "text/x-debian-source-package", uploadfile.content_type)
 
     def test_storeInDatabase(self):
@@ -260,8 +260,8 @@ class DSCFileTests(PackageUploadFileTestCase):
         uploadfile.changelog = "DUMMY"
         uploadfile.files = []
         release = uploadfile.storeInDatabase(None)
-        self.assertEquals("0.42", release.version)
-        self.assertEquals("dpkg, bzr", release.builddepends)
+        self.assertEqual("0.42", release.version)
+        self.assertEqual("dpkg, bzr", release.builddepends)
 
     def test_storeInDatabase_case_sensitivity(self):
         # storeInDatabase supports field names with different cases,
@@ -275,7 +275,7 @@ class DSCFileTests(PackageUploadFileTestCase):
         uploadfile.files = []
         uploadfile.changelog = "DUMMY"
         release = uploadfile.storeInDatabase(None)
-        self.assertEquals("dpkg, bzr", release.builddepends)
+        self.assertEqual("dpkg, bzr", release.builddepends)
 
     def test_user_defined_fields(self):
         # storeInDatabase updates user_defined_fields.
@@ -289,7 +289,7 @@ class DSCFileTests(PackageUploadFileTestCase):
         uploadfile.files = []
         release = uploadfile.storeInDatabase(None)
         # DSCFile lowercases the field names
-        self.assertEquals(
+        self.assertEqual(
             [["Python-Version", u"2.5"]], release.user_defined_fields)
 
     def test_homepage(self):
@@ -303,7 +303,7 @@ class DSCFileTests(PackageUploadFileTestCase):
         uploadfile.changelog = "DUMMY"
         uploadfile.files = []
         release = uploadfile.storeInDatabase(None)
-        self.assertEquals(u"http://samba.org/~jelmer/bzr", release.homepage)
+        self.assertEqual(u"http://samba.org/~jelmer/bzr", release.homepage)
 
     def test_checkBuild(self):
         # checkBuild() verifies consistency with a build.
@@ -320,7 +320,7 @@ class DSCFileTests(PackageUploadFileTestCase):
         uploadfile.checkBuild(build)
         # checkBuild() sets the build status to FULLYBUILT and
         # removes the upload log.
-        self.assertEquals(BuildStatus.FULLYBUILT, build.status)
+        self.assertEqual(BuildStatus.FULLYBUILT, build.status)
         self.assertIs(None, build.upload_log)
 
     def test_checkBuild_inconsistent(self):
@@ -399,7 +399,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         # Unknown priorities automatically get changed to 'extra'.
         uploadfile = self.createDebBinaryUploadFile(
             "foo_0.42_i386.deb", "main/net", "unknown", "mypkg", "0.42", None)
-        self.assertEquals("extra", uploadfile.priority_name)
+        self.assertEqual("extra", uploadfile.priority_name)
 
     def test_parseControl(self):
         # parseControl sets various fields on DebBinaryUploadFile.
@@ -408,10 +408,10 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             None)
         control = self.getBaseControl()
         uploadfile.parseControl(control)
-        self.assertEquals("python", uploadfile.section_name)
-        self.assertEquals("dulwich", uploadfile.source_name)
-        self.assertEquals("0.42", uploadfile.source_version)
-        self.assertEquals("0.42", uploadfile.control_version)
+        self.assertEqual("python", uploadfile.section_name)
+        self.assertEqual("dulwich", uploadfile.source_name)
+        self.assertEqual("0.42", uploadfile.source_version)
+        self.assertEqual("0.42", uploadfile.control_version)
 
     def test_verifyFormat_control_xz(self):
         # verifyFormat accepts .debs with an xz-compressed control member.
@@ -452,15 +452,15 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         uploadfile.parseControl(control)
         build = self.factory.makeBinaryPackageBuild()
         bpr = uploadfile.storeInDatabase(build)
-        self.assertEquals(u'python (<< 2.7), python (>= 2.5)', bpr.depends)
-        self.assertEquals(
+        self.assertEqual(u'python (<< 2.7), python (>= 2.5)', bpr.depends)
+        self.assertEqual(
             u"Dulwich is a Python implementation of the file formats "
             u"and protocols", bpr.description)
-        self.assertEquals(False, bpr.essential)
-        self.assertEquals(524, bpr.installedsize)
-        self.assertEquals(True, bpr.architecturespecific)
-        self.assertEquals(u"", bpr.recommends)
-        self.assertEquals("0.42", bpr.version)
+        self.assertEqual(False, bpr.essential)
+        self.assertEqual(524, bpr.installedsize)
+        self.assertEqual(True, bpr.architecturespecific)
+        self.assertEqual(u"", bpr.recommends)
+        self.assertEqual("0.42", bpr.version)
 
     def test_user_defined_fields(self):
         # storeInDatabase stores user defined fields.
@@ -472,7 +472,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         uploadfile.parseControl(control)
         build = self.factory.makeBinaryPackageBuild()
         bpr = uploadfile.storeInDatabase(build)
-        self.assertEquals(
+        self.assertEqual(
             [[u"Python-Version", u"2.5"]], bpr.user_defined_fields)
 
     def test_user_defined_fields_newlines(self):
@@ -485,7 +485,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         uploadfile.parseControl(control)
         build = self.factory.makeBinaryPackageBuild()
         bpr = uploadfile.storeInDatabase(build)
-        self.assertEquals(
+        self.assertEqual(
             [
                 [u"RandomData", u"Foo\nbar\nbla\n"],
             ], bpr.user_defined_fields)
@@ -500,7 +500,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         uploadfile.parseControl(control)
         build = self.factory.makeBinaryPackageBuild()
         bpr = uploadfile.storeInDatabase(build)
-        self.assertEquals(
+        self.assertEqual(
             u"http://samba.org/~jelmer/dulwich", bpr.homepage)
 
     def test_checkBuild(self):
@@ -516,7 +516,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         uploadfile.checkBuild(build)
         # checkBuild() sets the build status to FULLYBUILT and
         # removes the upload log.
-        self.assertEquals(BuildStatus.FULLYBUILT, build.status)
+        self.assertEqual(BuildStatus.FULLYBUILT, build.status)
         self.assertIs(None, build.upload_log)
 
     def test_checkBuild_inconsistent(self):
@@ -549,7 +549,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         control = self.getBaseControl()
         control["Source"] = "foo"
         uploadfile.parseControl(control)
-        self.assertEquals(
+        self.assertEqual(
             spph.sourcepackagerelease, uploadfile.findSourcePackageRelease())
 
     def test_findSourcePackageRelease_no_spph(self):
@@ -594,5 +594,5 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
         control = self.getBaseControl()
         control["Source"] = "foo"
         uploadfile.parseControl(control)
-        self.assertEquals(
+        self.assertEqual(
             spph2.sourcepackagerelease, uploadfile.findSourcePackageRelease())

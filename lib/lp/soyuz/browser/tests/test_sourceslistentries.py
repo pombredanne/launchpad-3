@@ -1,7 +1,9 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for SourceListEntriesView."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
@@ -51,7 +53,7 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
                                 'Firefox/3.0.10'))
         view.initialize()
 
-        self.assertEqual(u'getsy', view.default_series_name)
+        self.assertEqual('getsy', view.default_series_name)
 
         # Ubuntu version 9.04 in the user-agent should display as feasty
         view = SourcesListEntriesView(
@@ -63,7 +65,7 @@ class TestDefaultSelectedSeries(TestCaseWithFactory):
                                 'Firefox/3.0.10'))
         view.initialize()
 
-        self.assertEqual(u'feasty', view.default_series_name)
+        self.assertEqual('feasty', view.default_series_name)
 
     def testDefaultWithoutUserAgent(self):
         # If there is no user-agent setting, then we force the user
@@ -156,9 +158,9 @@ class TestOneDistroSeriesOnly(TestCaseWithFactory):
     def testNoSelectorForOneSeries(self):
         # The selector should not be presented when there is only one series
 
-        self.failUnless(self.view.sources_in_more_than_one_series is False)
+        self.assertTrue(self.view.sources_in_more_than_one_series is False)
 
     def testDefaultDistroSeries(self):
         # When there is only one distro series it should always be the
         # default.
-        self.failUnless(self.view.default_series == self.series[0])
+        self.assertTrue(self.view.default_series == self.series[0])

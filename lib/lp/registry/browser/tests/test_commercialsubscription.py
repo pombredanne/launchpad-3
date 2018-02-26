@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test views that manage commercial subscriptions."""
@@ -31,7 +31,7 @@ class PersonVouchersViewTestCase(FakeAdapterMixin, TestCaseWithFactory):
             voucher_proxy = TestSalesforceVoucherProxy()
         self.registerUtility(voucher_proxy, ISalesforceVoucherProxy)
         vouchers = []
-        for n in xrange(number):
+        for n in range(number):
             vouchers.append(voucher_proxy.grantVoucher(user, user, user, 12))
         return vouchers
 

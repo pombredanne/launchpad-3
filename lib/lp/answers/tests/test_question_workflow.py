@@ -138,8 +138,8 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
                 self.setQuestionStatus(self.question, status)
             expected = status.name in statuses_expected_true
             allowed = getattr(self.question, guard_name)
-            self.failUnless(
-                expected == allowed, "%s != %s when status = %s" % (
+            self.assertEqual(
+                expected, allowed, "%s != %s when status = %s" % (
                     guard_name, expected, status.name))
 
     def _testValidTransition(self, statuses, transition_method,
@@ -224,7 +224,7 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
                 transition_method(*args, **kwargs)
             except InvalidQuestionStateError:
                 exceptionRaised = True
-            self.failUnless(exceptionRaised,
+            self.assertTrue(exceptionRaised,
                             "%s() when status = %s should raise an error" % (
                                 transition_method.__name__, status.name))
 
@@ -240,21 +240,20 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
         It also verifies that the question status, datelastquery (or
         datelastresponse) were updated to reflect the time of the message.
         """
-        self.failUnless(verifyObject(IQuestionMessage, message))
+        self.assertTrue(verifyObject(IQuestionMessage, message))
 
-        self.assertEquals("Re: Help!", message.subject)
-        self.assertEquals(expected_owner, message.owner)
-        self.assertEquals(expected_action, message.action)
-        self.assertEquals(expected_status, message.new_status)
+        self.assertEqual("Re: Help!", message.subject)
+        self.assertEqual(expected_owner, message.owner)
+        self.assertEqual(expected_action, message.action)
+        self.assertEqual(expected_status, message.new_status)
 
-        self.assertEquals(message, self.question.messages[-1])
-        self.assertEquals(expected_status, self.question.status)
+        self.assertEqual(message, self.question.messages[-1])
+        self.assertEqual(expected_status, self.question.status)
 
         if expected_owner == self.question.owner:
-            self.assertEquals(message.datecreated,
-                              self.question.datelastquery)
+            self.assertEqual(message.datecreated, self.question.datelastquery)
         else:
-            self.assertEquals(
+            self.assertEqual(
                 message.datecreated, self.question.datelastresponse)
 
     def checkTransitionEvents(self, message, edited_fields, status_name):
@@ -268,42 +267,42 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
         def failure_msg(msg):
             return "From status %s: %s" % (status_name, msg)
 
-        self.failUnless(
+        self.assertTrue(
             len(self.collected_events) >= 1,
             failure_msg('failed to trigger an IObjectCreatedEvent'))
         created_event = self.collected_events[0]
         created_event_user = IPerson(created_event.user)
-        self.failUnless(
+        self.assertTrue(
             IObjectCreatedEvent.providedBy(created_event),
             failure_msg(
                 "%s doesn't provide IObjectCreatedEvent" % created_event))
-        self.failUnless(
+        self.assertTrue(
             created_event.object == message,
             failure_msg("IObjectCreatedEvent contains wrong message"))
-        self.failUnless(
+        self.assertTrue(
             created_event_user == message.owner,
             failure_msg("%s != %s" % (
                 created_event_user.displayname, message.owner.displayname)))
 
-        self.failUnless(
+        self.assertTrue(
             len(self.collected_events) == 2,
             failure_msg('failed to trigger an IObjectModifiedEvent'))
         modified_event = self.collected_events[1]
         modified_event_user = IPerson(modified_event.user)
-        self.failUnless(
+        self.assertTrue(
             IObjectModifiedEvent.providedBy(modified_event),
             failure_msg(
                 "%s doesn't provide IObjectModifiedEvent"
                 % modified_event))
-        self.failUnless(
+        self.assertTrue(
             modified_event.object == self.question,
             failure_msg("IObjectModifiedEvent contains wrong question"))
-        self.failUnless(
+        self.assertTrue(
             modified_event_user == message.owner,
             failure_msg("%s != %s" % (
                 modified_event_user.displayname, message.owner.displayname)))
         if edited_fields:
-            self.failUnless(
+            self.assertTrue(
                 set(modified_event.edited_fields) == set(edited_fields),
                 failure_msg("%s != %s" % (
                     set(modified_event.edited_fields), set(edited_fields))))
@@ -487,9 +486,9 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             """Check additional attributes set when the owner gives the
             answers.
             """
-            self.assertEquals(None, self.question.answer)
-            self.assertEquals(self.owner, self.question.answerer)
-            self.assertEquals(message.datecreated, self.question.date_solved)
+            self.assertIsNone(self.question.answer)
+            self.assertEqual(self.owner, self.question.answerer)
+            self.assertEqual(message.datecreated, self.question.date_solved)
 
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
@@ -538,7 +537,7 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
         # changes based on departure state.
         def checkFAQ(message):
             """Check that the FAQ attribute was set correctly."""
-            self.assertEquals(self.question.faq, self.faq)
+            self.assertEqual(self.question.faq, self.faq)
 
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
@@ -559,8 +558,8 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
             answers.
             """
             checkFAQ(message)
-            self.assertEquals(self.owner, self.question.answerer)
-            self.assertEquals(message.datecreated, self.question.date_solved)
+            self.assertEqual(self.owner, self.question.answerer)
+            self.assertEqual(message.datecreated, self.question.date_solved)
 
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
@@ -642,9 +641,9 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
 
         def checkAnswerMessage(message):
             # Check the attributes that are set when an answer is confirmed.
-            self.assertEquals(answer_message, self.question.answer)
-            self.assertEquals(self.answerer, self.question.answerer)
-            self.assertEquals(message.datecreated, self.question.date_solved)
+            self.assertEqual(answer_message, self.question.answer)
+            self.assertEqual(self.answerer, self.question.answerer)
+            self.assertEqual(message.datecreated, self.question.date_solved)
 
         self._testValidTransition(
             [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
@@ -672,13 +671,13 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
         self.question.giveAnswer(
             self.owner, 'I solved my own problem.',
             datecreated=self.nowPlus(2))
-        self.assertEquals(self.question.status, QuestionStatus.SOLVED)
+        self.assertEqual(self.question.status, QuestionStatus.SOLVED)
 
         def checkAnswerMessage(message):
             # Check the attributes that are set when an answer is confirmed.
-            self.assertEquals(answer_message, self.question.answer)
-            self.assertEquals(self.answerer, self.question.answerer)
-            self.assertEquals(message.datecreated, self.question.date_solved)
+            self.assertEqual(answer_message, self.question.answer)
+            self.assertEqual(self.answerer, self.question.answerer)
+            self.assertEqual(message.datecreated, self.question.date_solved)
 
         self._testValidTransition(
             [QuestionStatus.SOLVED],
@@ -704,7 +703,7 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             question2.confirmAnswer('That worked!', answer=question1_answer)
         except AssertionError:
             answerRefused = True
-        self.failUnless(
+        self.assertTrue(
             answerRefused, 'confirmAnswer accepted a message from a different'
             'question')
 
@@ -765,7 +764,7 @@ class ReopenTestCase(BaseAnswerTrackerWorkflowTestCase):
         self.question.giveAnswer(
             self.owner, 'I solved my own problem.',
             datecreated=self.nowPlus(0))
-        self.assertEquals(self.question.status, QuestionStatus.SOLVED)
+        self.assertEqual(self.question.status, QuestionStatus.SOLVED)
 
         # Clear previous events.
         self.collected_events = []
@@ -793,7 +792,7 @@ class ReopenTestCase(BaseAnswerTrackerWorkflowTestCase):
             self.answerer, 'Press the any key.', datecreated=self.nowPlus(0))
         self.question.confirmAnswer("That answer worked!.",
             answer=answer_message, datecreated=self.nowPlus(1))
-        self.assertEquals(self.question.status, QuestionStatus.SOLVED)
+        self.assertEqual(self.question.status, QuestionStatus.SOLVED)
 
         # Clear previous events.
         self.collected_events = []
@@ -890,9 +889,9 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         def checkRejectMessageIsAnAnswer(message):
             # Check that the rejection message was considered answering
             # the question.
-            self.assertEquals(message, self.question.answer)
-            self.assertEquals(self.answerer, self.question.answerer)
-            self.assertEquals(message.datecreated, self.question.date_solved)
+            self.assertEqual(message, self.question.answer)
+            self.assertEqual(self.answerer, self.question.answerer)
+            self.assertEqual(message.datecreated, self.question.date_solved)
 
         self._testValidTransition(
             valid_statuses,

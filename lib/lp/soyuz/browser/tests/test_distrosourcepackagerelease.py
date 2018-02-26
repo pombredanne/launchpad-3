@@ -1,7 +1,9 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for DistroSourcePackageRelease pages."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -44,11 +46,11 @@ class TestDistroSourcePackageReleaseFiles(TestCaseWithFactory):
         # The snippet links to the file when present.
         view = create_initialized_view(self.dspr, "+index")
         html = view.__call__()
-        self.failUnless('test_file.dsc' in html)
+        self.assertIn('test_file.dsc', html)
 
     def test_spr_files_deleted(self):
         # The snippet handles deleted files too.
         removeSecurityProxy(self.library_file).content = None
         view = create_initialized_view(self.dspr, "+index")
         html = view.__call__()
-        self.failUnless('test_file.dsc (deleted)' in html)
+        self.assertIn('test_file.dsc (deleted)', html)

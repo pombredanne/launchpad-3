@@ -2354,13 +2354,13 @@ class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
         self.factory.makeRevisionsForBranch(bmp.source_branch, count=5)
         r1 = bmp.source_branch.getBranchRevision(sequence=1)
         initial_revisions = list(bmp.getUnlandedSourceBranchRevisions())
-        self.assertEquals(5, len(initial_revisions))
+        self.assertEqual(5, len(initial_revisions))
         self.assertIn(r1, initial_revisions)
         # If we push one of the revisions into the target, it disappears
         # from the unlanded list.
         bmp.target_branch.createBranchRevision(1, r1.revision)
         partial_revisions = list(bmp.getUnlandedSourceBranchRevisions())
-        self.assertEquals(4, len(partial_revisions))
+        self.assertEqual(4, len(partial_revisions))
         self.assertNotIn(r1, partial_revisions)
 
 

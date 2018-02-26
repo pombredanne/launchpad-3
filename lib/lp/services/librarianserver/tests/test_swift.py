@@ -85,7 +85,7 @@ class TestFeedSwift(TestCase):
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
             path = swift.filesystem_path(lfc.id)
-            self.assert_(os.path.exists(path))
+            self.assertTrue(os.path.exists(path))
 
         # Copy all the files into Swift.
         swift.to_swift(log, remove_func=None)
@@ -93,7 +93,7 @@ class TestFeedSwift(TestCase):
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
             path = swift.filesystem_path(lfc.id)
-            self.assert_(os.path.exists(path))
+            self.assertTrue(os.path.exists(path))
 
         # Confirm all the files are also in Swift.
         swift_client = self.swift_fixture.connect()
@@ -116,7 +116,7 @@ class TestFeedSwift(TestCase):
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
             path = swift.filesystem_path(lfc.id)
-            self.assert_(os.path.exists(path))
+            self.assertTrue(os.path.exists(path))
 
         # Copy all the files into Swift.
         swift.to_swift(log, remove_func=swift.rename)
@@ -124,7 +124,7 @@ class TestFeedSwift(TestCase):
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
             path = swift.filesystem_path(lfc.id) + '.migrated'
-            self.assert_(os.path.exists(path))
+            self.assertTrue(os.path.exists(path))
 
         # Confirm all the files are also in Swift.
         swift_client = self.swift_fixture.connect()
@@ -147,14 +147,14 @@ class TestFeedSwift(TestCase):
         # Confirm that files exist on disk where we expect to find them.
         for lfc in self.lfcs:
             path = swift.filesystem_path(lfc.id)
-            self.assert_(os.path.exists(path))
+            self.assertTrue(os.path.exists(path))
 
         # Migrate all the files into Swift.
         swift.to_swift(log, remove_func=os.unlink)
 
         # Confirm that all the files have gone from disk.
         for lfc in self.lfcs:
-            self.failIf(os.path.exists(swift.filesystem_path(lfc.id)))
+            self.assertFalse(os.path.exists(swift.filesystem_path(lfc.id)))
 
         # Confirm all the files are in Swift.
         swift_client = self.swift_fixture.connect()
@@ -203,7 +203,7 @@ class TestFeedSwift(TestCase):
         # to be done in multiple chunks, but small enough that it is
         # stored in Swift as a single object.
         size = LibrarianStorage.CHUNK_SIZE * 50
-        self.assert_(size > 1024 * 1024)
+        self.assertTrue(size > 1024 * 1024)
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
         lfa_id = self.add_file('hello_bigboy.xls', expected_content)
         lfc = IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id).content
@@ -214,7 +214,7 @@ class TestFeedSwift(TestCase):
 
         # Data round trips when served from Swift.
         swift.to_swift(BufferLogger(), remove_func=os.unlink)
-        self.failIf(os.path.exists(swift.filesystem_path(lfc.id)))
+        self.assertFalse(os.path.exists(swift.filesystem_path(lfc.id)))
         lfa = self.librarian_client.getFileByAlias(lfa_id)
         self.assertEqual(expected_content, lfa.read())
 
@@ -225,7 +225,7 @@ class TestFeedSwift(TestCase):
         # to be done in multiple chunks, but small enough that it is
         # stored in Swift as a single object.
         size = LibrarianStorage.CHUNK_SIZE * 50 + 1
-        self.assert_(size > 1024 * 1024)
+        self.assertTrue(size > 1024 * 1024)
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
         lfa_id = self.add_file('hello_bigboy.xls', expected_content)
         lfc = IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id).content
@@ -237,14 +237,14 @@ class TestFeedSwift(TestCase):
         # Data round trips when served from Swift.
         swift.to_swift(BufferLogger(), remove_func=os.unlink)
         lfa = self.librarian_client.getFileByAlias(lfa_id)
-        self.failIf(os.path.exists(swift.filesystem_path(lfc.id)))
+        self.assertFalse(os.path.exists(swift.filesystem_path(lfc.id)))
         self.assertEqual(expected_content, lfa.read())
 
     def test_large_file_to_swift(self):
         # Generate a blob large enough that Swift requires us to store
         # it as multiple objects plus a manifest.
         size = LibrarianStorage.CHUNK_SIZE * 50
-        self.assert_(size > 1024 * 1024)
+        self.assertTrue(size > 1024 * 1024)
         expected_content = ''.join(chr(i % 256) for i in range(0, size))
         lfa_id = self.add_file('hello_bigboy.xls', expected_content)
         lfa = IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id)
@@ -275,8 +275,8 @@ class TestFeedSwift(TestCase):
         _, obj2 = swift_client.get_object(container, '{0}/0001'.format(name))
         _, obj3 = swift_client.get_object(container, '{0}/0002'.format(name))
         self.assertRaises(
-            swiftclient.ClientException, swift_client.get_object,
-            container, '{0}/0003'.format(name))
+            swiftclient.ClientException, swift.quiet_swiftclient,
+            swift_client.get_object, container, '{0}/0003'.format(name))
 
         # Our object round tripped
         self.assertEqual(obj1 + obj2 + obj3, expected_content)

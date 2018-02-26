@@ -1,5 +1,7 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -59,7 +61,7 @@ class TestBuildPrivacy(TestCaseWithFactory):
         with person_logged_in(self.admin):
             private = getUtility(IArchiveSet).get(self.private_archive.id)
             [build] = private.getBuildRecords()
-            self.assertEquals(self.expected_title, build.title)
+            self.assertEqual(self.expected_title, build.title)
 
     def test_owner_can_see_own_private_builds(self):
         # The owner of the private archive is able to see all builds that
@@ -67,7 +69,7 @@ class TestBuildPrivacy(TestCaseWithFactory):
         with person_logged_in(self.private_archive.owner):
             private = getUtility(IArchiveSet).get(self.private_archive.id)
             [build] = private.getBuildRecords()
-            self.assertEquals(self.expected_title, build.title)
+            self.assertEqual(self.expected_title, build.title)
 
     def test_buildd_admin_cannot_see_private_builds(self):
         # Admins that look after the builders ("buildd-admins"), can not see

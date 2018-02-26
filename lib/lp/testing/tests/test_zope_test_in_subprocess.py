@@ -107,14 +107,14 @@ class TestZopeTestInSubProcess(ZopeTestInSubProcess, unittest.TestCase):
     def setUp(self):
         # Runs in the child process.
         super(TestZopeTestInSubProcess, self).setUp()
-        self.failUnlessEqual(
+        self.assertEqual(
             self.layer.pid_in_testSetUp, self.pid_in_setUp,
             "setUp() not called in same process as layer.testSetUp().")
 
     @record_pid
     def test(self):
         # Runs in the child process.
-        self.failUnlessEqual(
+        self.assertEqual(
             self.pid_in_setUp, self.pid_in_test,
             "test method not run in same process as setUp().")
 
@@ -122,6 +122,6 @@ class TestZopeTestInSubProcess(ZopeTestInSubProcess, unittest.TestCase):
     def tearDown(self):
         # Runs in the child process.
         super(TestZopeTestInSubProcess, self).tearDown()
-        self.failUnlessEqual(
+        self.assertEqual(
             self.pid_in_setUp, self.pid_in_tearDown,
             "tearDown() not run in same process as setUp().")

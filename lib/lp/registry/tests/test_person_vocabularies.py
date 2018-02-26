@@ -108,7 +108,7 @@ class ValidPersonOrTeamVocabularyMixin(VocabularyTestBase):
         """
         if expected is not None:
             expected = expected % context.id
-        self.assertEquals(
+        self.assertEqual(
             expected,
             removeSecurityProxy(
                 self.getVocabulary(context))._karma_context_constraint)
@@ -233,7 +233,7 @@ class TestValidPersonOrTeamPreloading(VocabularyTestBase,
 
         results = list(self.searchVocabulary(None, u'foobar'))
         with StormStatementRecorder() as recorder:
-            self.assertEquals(4, len(results))
+            self.assertEqual(4, len(results))
             for person in results:
                 self.assertEqual(
                     expected_nicks[person.id], person.ircnicknames)

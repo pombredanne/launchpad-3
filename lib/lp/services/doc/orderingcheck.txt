@@ -19,7 +19,7 @@ functions.
 
     >>> checker = OrderingCheck(key=sort_key)
 
-    >>> for number in xrange(3):
+    >>> for number in range(3):
     ...     checker.check(number)
 
 

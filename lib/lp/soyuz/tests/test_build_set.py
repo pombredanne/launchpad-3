@@ -1,5 +1,7 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -124,28 +126,28 @@ class TestBuildSet(TestCaseWithFactory):
         self.setUpBuilds()
         set = getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
             self.distribution)
-        self.assertEquals(set.count(), 10)
+        self.assertEqual(set.count(), 10)
 
     def test_get_for_distro_distroseries(self):
         # Test fetching builds for a distroseries' main archives
         self.setUpBuilds()
         set = getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
             self.distroseries)
-        self.assertEquals(set.count(), 10)
+        self.assertEqual(set.count(), 10)
 
     def test_get_for_distro_distroarchseries(self):
         # Test fetching builds for a distroarchseries' main archives
         self.setUpBuilds()
         set = getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
             self.das_one)
-        self.assertEquals(set.count(), 5)
+        self.assertEqual(set.count(), 5)
 
     def test_get_for_distro_filter_build_status(self):
         # The result can be filtered based on the build status
         self.setUpBuilds()
         set = getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
             self.distribution, status=BuildStatus.FULLYBUILT)
-        self.assertEquals(set.count(), 8)
+        self.assertEqual(set.count(), 8)
 
     def test_get_for_distro_filter_name(self):
         # The result can be filtered based on the name
@@ -153,24 +155,24 @@ class TestBuildSet(TestCaseWithFactory):
         spn = self.builds[2].source_package_release.sourcepackagename.name
         set = getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
             self.distribution, name=spn)
-        self.assertEquals(set.count(), 2)
+        self.assertEqual(set.count(), 2)
 
     def test_get_for_distro_filter_pocket(self):
         # The result can be filtered based on the pocket of the build
         self.setUpBuilds()
         set = getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
             self.distribution, pocket=PackagePublishingPocket.RELEASE)
-        self.assertEquals(set.count(), 10)
+        self.assertEqual(set.count(), 10)
         set = getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
             self.distribution, pocket=PackagePublishingPocket.UPDATES)
-        self.assertEquals(set.count(), 0)
+        self.assertEqual(set.count(), 0)
 
     def test_get_for_distro_filter_arch_tag(self):
         # The result can be filtered based on the archtag of the build
         self.setUpBuilds()
         set = getUtility(IBinaryPackageBuildSet).getBuildsForDistro(
             self.distribution, arch_tag=self.das_one.architecturetag)
-        self.assertEquals(set.count(), 5)
+        self.assertEqual(set.count(), 5)
 
     def test_get_status_summary_for_builds(self):
         # We can query for the status summary of a number of builds
@@ -179,8 +181,8 @@ class TestBuildSet(TestCaseWithFactory):
         summary = getUtility(
             IBinaryPackageBuildSet).getStatusSummaryForBuilds(
                 relevant_builds)
-        self.assertEquals(summary['status'], BuildSetStatus.FAILEDTOBUILD)
-        self.assertEquals(summary['builds'], [self.builds[-2]])
+        self.assertEqual(summary['status'], BuildSetStatus.FAILEDTOBUILD)
+        self.assertEqual(summary['builds'], [self.builds[-2]])
 
     def test_preload_data(self):
         # The BuildSet class allows data to be preloaded
@@ -190,7 +192,7 @@ class TestBuildSet(TestCaseWithFactory):
         build_ids = [self.builds[i] for i in (0, 1, 2, 3)]
         rset = removeSecurityProxy(
             getUtility(IBinaryPackageBuildSet))._prefetchBuildData(build_ids)
-        self.assertEquals(len(rset), 4)
+        self.assertEqual(len(rset), 4)
 
     def test_get_builds_by_source_package_release(self):
         # We are able to return all of the builds for the source package
@@ -210,7 +212,7 @@ class TestBuildSet(TestCaseWithFactory):
                         self.distroseries.distribution.name,
                         self.distroseries.name))
         build_titles = [build.title for build in builds]
-        self.assertEquals(sorted(expected_titles), sorted(build_titles))
+        self.assertEqual(sorted(expected_titles), sorted(build_titles))
 
     def test_get_builds_by_source_package_release_filtering(self):
         self.setUpBuilds()
@@ -227,21 +229,21 @@ class TestBuildSet(TestCaseWithFactory):
                     self.distroseries.distribution.name,
                     self.distroseries.name))
         build_titles = [build.title for build in builds]
-        self.assertEquals(sorted(expected_titles), sorted(build_titles))
+        self.assertEqual(sorted(expected_titles), sorted(build_titles))
         builds = getUtility(
             IBinaryPackageBuildSet).getBuildsBySourcePackageRelease(
                 ids, buildstate=BuildStatus.CHROOTWAIT)
-        self.assertEquals([], list(builds))
+        self.assertEqual([], list(builds))
 
     def test_no_get_builds_by_source_package_release(self):
         # If no ids or None are passed into .getBuildsBySourcePackageRelease,
         # an empty list is returned.
         builds = getUtility(
             IBinaryPackageBuildSet).getBuildsBySourcePackageRelease(None)
-        self.assertEquals([], builds)
+        self.assertEqual([], builds)
         builds = getUtility(
             IBinaryPackageBuildSet).getBuildsBySourcePackageRelease([])
-        self.assertEquals([], builds)
+        self.assertEqual([], builds)
 
     def test_getBySourceAndLocation(self):
         self.setUpBuilds()

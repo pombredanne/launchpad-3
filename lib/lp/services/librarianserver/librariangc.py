@@ -55,8 +55,8 @@ def file_exists(content_id):
         swift_connection = swift.connection_pool.get()
         container, name = swift.swift_location(content_id)
         try:
-            with swift.disable_swiftclient_logging():
-                swift_connection.head_object(container, name)
+            swift.quiet_swiftclient(
+                swift_connection.head_object, container, name)
             return True
         except swiftclient.ClientException as x:
             if x.http_status != 404:
@@ -80,9 +80,9 @@ def open_stream(content_id):
         try:
             swift_connection = swift.connection_pool.get()
             container, name = swift.swift_location(content_id)
-            with swift.disable_swiftclient_logging():
-                chunks = swift_connection.get_object(
-                    container, name, resp_chunk_size=STREAM_CHUNK_SIZE)[1]
+            chunks = swift.quiet_swiftclient(
+                swift_connection.get_object,
+                container, name, resp_chunk_size=STREAM_CHUNK_SIZE)[1]
             return swift.SwiftStream(swift_connection, chunks)
         except swiftclient.ClientException as x:
             if x.http_status != 404:
@@ -564,8 +564,8 @@ class UnreferencedContentPruner:
                 container, name = swift.swift_location(content_id)
                 with swift.connection() as swift_connection:
                     try:
-                        with swift.disable_swiftclient_logging():
-                            swift_connection.delete_object(container, name)
+                        swift.quiet_swiftclient(
+                            swift_connection.delete_object, container, name)
                         removed.append('Swift')
                     except swiftclient.ClientException as x:
                         if x.http_status != 404:
@@ -742,11 +742,11 @@ def swift_files(max_lfc_id):
             container_num += 1
             container = swift.SWIFT_CONTAINER_PREFIX + str(container_num)
             try:
-                with swift.disable_swiftclient_logging():
-                    names = sorted(
-                        swift_connection.get_container(
-                            container, full_listing=True)[1],
-                        key=lambda x: map(int, x['name'].split('/')))
+                names = sorted(
+                    swift.quiet_swiftclient(
+                        swift_connection.get_container,
+                        container, full_listing=True)[1],
+                    key=lambda x: map(int, x['name'].split('/')))
                 for name in names:
                     yield (container, name)
             except swiftclient.ClientException as x:

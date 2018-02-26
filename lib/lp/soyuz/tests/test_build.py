@@ -1,5 +1,7 @@
-# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -70,7 +72,7 @@ class TestBuild(TestCaseWithFactory):
             self.das.architecturetag, spph.source_package_name,
             spph.source_package_version, self.distroseries.distribution.name,
             self.distroseries.name)
-        self.assertEquals(expected_title, build.title)
+        self.assertEqual(expected_title, build.title)
 
     def test_linking(self):
         # A build directly links to the archive, distribution, distroseries,
@@ -81,14 +83,14 @@ class TestBuild(TestCaseWithFactory):
             version="%s.1" % self.factory.getUniqueInteger(),
             distroseries=self.distroseries)
         [build] = spph.createMissingBuilds()
-        self.assertEquals(self.distroseries.main_archive, build.archive)
-        self.assertEquals(self.distroseries.distribution, build.distribution)
-        self.assertEquals(self.distroseries, build.distro_series)
-        self.assertEquals(self.das, build.distro_arch_series)
-        self.assertEquals(PackagePublishingPocket.RELEASE, build.pocket)
-        self.assertEquals(self.das.architecturetag, build.arch_tag)
+        self.assertEqual(self.distroseries.main_archive, build.archive)
+        self.assertEqual(self.distroseries.distribution, build.distribution)
+        self.assertEqual(self.distroseries, build.distro_series)
+        self.assertEqual(self.das, build.distro_arch_series)
+        self.assertEqual(PackagePublishingPocket.RELEASE, build.pocket)
+        self.assertEqual(self.das.architecturetag, build.arch_tag)
         self.assertTrue(build.virtualized)
-        self.assertEquals(
+        self.assertEqual(
             '%s - %s' % (spph.source_package_name,
                 spph.source_package_version),
             build.source_package_release.title)
@@ -109,30 +111,30 @@ class TestBuild(TestCaseWithFactory):
                 version=version, builder=self.builder)
         build = binary[0].binarypackagerelease.build
         self.assertTrue(build.was_built)
-        self.assertEquals(
+        self.assertEqual(
             PackageUploadStatus.DONE, build.package_upload.status)
-        self.assertEquals(
+        self.assertEqual(
             datetime(2008, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             build.date_started)
-        self.assertEquals(
+        self.assertEqual(
             datetime(2008, 1, 1, 0, 5, 0, tzinfo=pytz.UTC),
             build.date_finished)
-        self.assertEquals(timedelta(minutes=5), build.duration)
+        self.assertEqual(timedelta(minutes=5), build.duration)
         expected_buildlog = 'buildlog_%s-%s-%s.%s_%s_FULLYBUILT.txt.gz' % (
             self.distroseries.distribution.name, self.distroseries.name,
             self.das.architecturetag, spn, version)
-        self.assertEquals(expected_buildlog, build.log.filename)
+        self.assertEqual(expected_buildlog, build.log.filename)
         url_start = (
             'http://launchpad.dev/%s/+source/%s/%s/+build/%s/+files' % (
                 self.distroseries.distribution.name, spn, version, build.id))
         expected_buildlog_url = '%s/%s' % (url_start, expected_buildlog)
-        self.assertEquals(expected_buildlog_url, build.log_url)
+        self.assertEqual(expected_buildlog_url, build.log_url)
         expected_changesfile = '%s_%s_%s.changes' % (
             spn, version, self.das.architecturetag)
-        self.assertEquals(
+        self.assertEqual(
             expected_changesfile, build.upload_changesfile.filename)
         expected_changesfile_url = '%s/%s' % (url_start, expected_changesfile)
-        self.assertEquals(expected_changesfile_url, build.changesfile_url)
+        self.assertEqual(expected_changesfile_url, build.changesfile_url)
         # Since this build was sucessful, it can not be retried
         self.assertFalse(build.can_be_retried)
 
@@ -145,11 +147,11 @@ class TestBuild(TestCaseWithFactory):
             version="%s.1" % self.factory.getUniqueInteger(),
             distroseries=self.distroseries)
         [build] = spph.createMissingBuilds()
-        self.assertEquals('main', build.current_component.name)
+        self.assertEqual('main', build.current_component.name)
         # It may not be the same as
-        self.assertEquals('main', build.source_package_release.component.name)
+        self.assertEqual('main', build.source_package_release.component.name)
         # If the package has no uploads, its package_upload is None
-        self.assertEquals(None, build.package_upload)
+        self.assertIsNone(build.package_upload)
 
     def test_current_component_when_unpublished(self):
         # Production has some buggy builds without source publications.
@@ -235,17 +237,17 @@ class TestBuild(TestCaseWithFactory):
             version="%s.1" % self.factory.getUniqueInteger(),
             distroseries=self.distroseries)
         [build] = spph.createMissingBuilds()
-        self.assertEquals(None, build.upload_log)
-        self.assertEquals(None, build.upload_log_url)
+        self.assertIsNone(build.upload_log)
+        self.assertIsNone(build.upload_log_url)
         build.storeUploadLog('sample upload log')
         expected_filename = 'upload_%s_log.txt' % build.id
-        self.assertEquals(expected_filename, build.upload_log.filename)
+        self.assertEqual(expected_filename, build.upload_log.filename)
         url_start = (
             'http://launchpad.dev/%s/+source/%s/%s/+build/%s/+files' % (
                 self.distroseries.distribution.name, spph.source_package_name,
                 spph.source_package_version, build.id))
         expected_url = '%s/%s' % (url_start, expected_filename)
-        self.assertEquals(expected_url, build.upload_log_url)
+        self.assertEqual(expected_url, build.upload_log_url)
 
     def test_retry_resets_state(self):
         # Retrying a build resets most of the state attributes, but does
@@ -256,11 +258,11 @@ class TestBuild(TestCaseWithFactory):
         build.gotFailure()
         with person_logged_in(self.admin):
             build.retry()
-        self.assertEquals(BuildStatus.NEEDSBUILD, build.status)
-        self.assertEquals(self.now, build.date_first_dispatched)
-        self.assertEquals(None, build.log)
-        self.assertEquals(None, build.upload_log)
-        self.assertEquals(0, build.failure_count)
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
+        self.assertEqual(self.now, build.date_first_dispatched)
+        self.assertIsNone(build.log)
+        self.assertIsNone(build.upload_log)
+        self.assertEqual(0, build.failure_count)
 
     def test_retry_resets_virtualized(self):
         # Retrying a build recalculates its virtualization.
@@ -294,8 +296,8 @@ class TestBuild(TestCaseWithFactory):
             section=spph.sourcepackagerelease.section.id,
             priority=PackagePublishingPriority.STANDARD, installedsize=0,
             architecturespecific=False)
-        self.assertEquals(1, build.binarypackages.count())
-        self.assertEquals([binary], list(build.binarypackages))
+        self.assertEqual(1, build.binarypackages.count())
+        self.assertEqual([binary], list(build.binarypackages))
 
     def test_multiple_create_bpr(self):
         # We can create multiple BPRs from a build
@@ -316,11 +318,11 @@ class TestBuild(TestCaseWithFactory):
                 section=spph.sourcepackagerelease.section.id,
                 priority=PackagePublishingPriority.STANDARD, installedsize=0,
                 architecturespecific=False)
-        self.assertEquals(15, build.binarypackages.count())
+        self.assertEqual(15, build.binarypackages.count())
         bin_names = [b.name for b in build.binarypackages]
         # Verify .binarypackages returns sorted by name
         expected_names.sort()
-        self.assertEquals(expected_names, bin_names)
+        self.assertEqual(expected_names, bin_names)
 
     def test_cannot_rescore_non_needsbuilds_builds(self):
         # If a build record isn't in NEEDSBUILD, it can not be rescored.
@@ -340,12 +342,12 @@ class TestBuild(TestCaseWithFactory):
             version="%s.1" % self.factory.getUniqueInteger(),
             distroseries=self.distroseries)
         [build] = spph.createMissingBuilds()
-        self.assertEquals(BuildStatus.NEEDSBUILD, build.status)
-        self.assertEquals(2505, build.buildqueue_record.lastscore)
+        self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
+        self.assertEqual(2505, build.buildqueue_record.lastscore)
         with person_logged_in(self.admin):
             build.rescore(5000)
             transaction.commit()
-        self.assertEquals(5000, build.buildqueue_record.lastscore)
+        self.assertEqual(5000, build.buildqueue_record.lastscore)
 
     def test_source_publication_override(self):
         # Components can be overridden in builds.
@@ -354,13 +356,13 @@ class TestBuild(TestCaseWithFactory):
             version="%s.1" % self.factory.getUniqueInteger(),
             distroseries=self.distroseries)
         [build] = spph.createMissingBuilds()
-        self.assertEquals(spph, build.current_source_publication)
+        self.assertEqual(spph, build.current_source_publication)
         universe = getUtility(IComponentSet)['universe']
         overridden_spph = spph.changeOverride(new_component=universe)
         # We can now see current source publication points to the overridden
         # publication.
-        self.assertNotEquals(spph, build.current_source_publication)
-        self.assertEquals(overridden_spph, build.current_source_publication)
+        self.assertNotEqual(spph, build.current_source_publication)
+        self.assertEqual(overridden_spph, build.current_source_publication)
 
     def test_estimated_duration(self):
         # Builds will have an estimated duration that is set to a
@@ -370,7 +372,7 @@ class TestBuild(TestCaseWithFactory):
             sourcename=spn, status=PackagePublishingStatus.PUBLISHED)
         [build] = spph.createMissingBuilds()
         # Duration is based on package size if there is no previous build.
-        self.assertEquals(
+        self.assertEqual(
             timedelta(0, 60), build.buildqueue_record.estimated_duration)
         # Set the build as done, and its duration.
         build.updateStatus(
@@ -382,7 +384,7 @@ class TestBuild(TestCaseWithFactory):
             sourcename=spn, status=PackagePublishingStatus.PUBLISHED)
         [new_build] = new_spph.createMissingBuilds()
         # The duration for this build is now 72 minutes.
-        self.assertEquals(
+        self.assertEqual(
             timedelta(0, 72 * 60),
             new_build.buildqueue_record.estimated_duration)
 

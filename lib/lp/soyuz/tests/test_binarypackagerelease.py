@@ -1,7 +1,9 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test BinaryPackageRelease."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -44,22 +46,22 @@ class TestBinaryPackageRelease(TestCaseWithFactory):
                 user_defined_fields=[
                     ("Python-Version", ">= 2.4"),
                     ("Other", "Bla")])
-        self.assertEquals([
+        self.assertEqual([
             ["Python-Version", ">= 2.4"],
             ["Other", "Bla"]], release.user_defined_fields)
 
     def test_homepage_default(self):
         # By default, no homepage is set.
         bpr = self.factory.makeBinaryPackageRelease()
-        self.assertEquals(None, bpr.homepage)
+        self.assertIsNone(bpr.homepage)
 
     def test_homepage_empty(self):
         # The homepage field can be empty.
         bpr = self.factory.makeBinaryPackageRelease(homepage="")
-        self.assertEquals("", bpr.homepage)
+        self.assertEqual("", bpr.homepage)
 
     def test_homepage_set_invalid(self):
         # As the homepage field is inherited from the .deb, the URL
         # does not have to be valid.
         bpr = self.factory.makeBinaryPackageRelease(homepage="<invalid<url")
-        self.assertEquals("<invalid<url", bpr.homepage)
+        self.assertEqual("<invalid<url", bpr.homepage)

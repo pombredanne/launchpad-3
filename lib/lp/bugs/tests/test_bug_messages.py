@@ -46,7 +46,7 @@ class TestBugIndexedMessages(TestCaseWithFactory):
         # the parent isn't linked to the same bug as the
         # IIndexedMessage.
         for indexed_message in self.bug_2.indexed_messages:
-            self.failUnlessEqual(None, indexed_message.parent)
+            self.assertIsNone(indexed_message.parent)
 
 
 class TestUserCanSetCommentVisibility(TestCaseWithFactory):
