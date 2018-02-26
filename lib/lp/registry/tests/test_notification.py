@@ -1,4 +1,4 @@
-# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test notification classes and functions."""
@@ -59,7 +59,7 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
         recipients_set = NotificationRecipientSet()
         old_message = self.factory.makeSignedMessage(email_address='me@eg.dom')
         authorization = IDirectEmailAuthorization(user)
-        for action in xrange(authorization.message_quota):
+        for action in range(authorization.message_quota):
             authorization.record(old_message)
         self.assertRaises(
             QuotaReachedError, send_direct_contact_email,
@@ -73,7 +73,7 @@ class SendDirectContactEmailTestCase(TestCaseWithFactory):
         recipients_set = NotificationRecipientSet()
         old_message = self.factory.makeSignedMessage(email_address='me@eg.dom')
         authorization = IDirectEmailAuthorization(user)
-        for action in xrange(authorization.message_quota - 1):
+        for action in range(authorization.message_quota - 1):
             authorization.record(old_message)
         pop_notifications()
         send_direct_contact_email(

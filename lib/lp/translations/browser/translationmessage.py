@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for ITranslationMessage interface."""
@@ -741,7 +741,7 @@ class BaseTranslationView(LaunchpadView):
         # Extract the translations from the form, and store them in
         # self.form_posted_translations. We try plural forms in turn,
         # starting at 0.
-        for pluralform in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+        for pluralform in range(TranslationConstants.MAX_PLURAL_FORMS):
             msgset_ID_LANGCODE_translation_PLURALFORM_new = '%s%d_new' % (
                 msgset_ID_LANGCODE_translation_, pluralform)
             if msgset_ID_LANGCODE_translation_PLURALFORM_new not in form:
@@ -1067,7 +1067,7 @@ class CurrentTranslationMessageView(LaunchpadView):
         # suggestion_blocks dictionary, keyed on plural form index; this
         # allows us later to just iterate over them in the view code
         # using a generic template.
-        self.pluralform_indices = range(self.context.plural_forms)
+        self.pluralform_indices = list(range(self.context.plural_forms))
 
         self._buildAllSuggestions()
 

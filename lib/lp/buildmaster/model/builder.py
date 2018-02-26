@@ -1,4 +1,4 @@
-# Copyright 2009,2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -73,6 +73,7 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.sqlbase import SQLBase
 from lp.services.database.stormbase import StormBase
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -238,6 +239,8 @@ class Builder(SQLBase):
 
         :return: A candidate job.
         """
+        logger = self._getSlaveScannerLogger()
+
         job_type_conditions = []
         job_sources = specific_build_farm_job_sources()
         for job_type, job_source in job_sources.iteritems():
@@ -248,6 +251,29 @@ class Builder(SQLBase):
                     Or(
                         BuildFarmJob.job_type != job_type,
                         Exists(SQL(query))))
+
+        def get_int_feature_flag(flag):
+            value_str = getFeatureFlag(flag)
+            if value_str is not None:
+                try:
+                    return int(value_str)
+                except ValueError:
+                    logger.error('invalid %s %r', flag, value_str)
+
+        score_conditions = []
+        minimum_scores = set()
+        for processor in self.processors:
+            minimum_scores.add(get_int_feature_flag(
+                'buildmaster.minimum_score.%s' % processor.name))
+        minimum_scores.add(get_int_feature_flag('buildmaster.minimum_score'))
+        minimum_scores.discard(None)
+        # If there are minimum scores set for any of the processors
+        # supported by this builder, use the highest of them.  This is a bit
+        # weird and not completely ideal, but it's a safe conservative
+        # option and avoids substantially complicating the candidate query.
+        if minimum_scores:
+            score_conditions.append(
+                BuildQueue.lastscore >= max(minimum_scores))
 
         store = IStore(self.__class__)
         candidate_jobs = store.using(BuildQueue, BuildFarmJob).find(
@@ -261,10 +287,9 @@ class Builder(SQLBase):
                 BuildQueue.processor == None),
             BuildQueue.virtualized == self.virtualized,
             BuildQueue.builder == None,
-            And(*job_type_conditions)
+            And(*(job_type_conditions + score_conditions))
             ).order_by(Desc(BuildQueue.lastscore), BuildQueue.id)
 
-        logger = self._getSlaveScannerLogger()
         # Only try the first handful of jobs. It's much easier on the
         # database, the chance of a large prefix of the queue being
         # bad candidates is negligible, and we want reasonably bounded

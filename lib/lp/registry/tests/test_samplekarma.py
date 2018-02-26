@@ -21,5 +21,4 @@ class KarmaSampleDataTestCase(unittest.TestCase):
             WHERE datecreated > '2002-01-01 00:00'::timestamp
             """)
         dud_rows = cur.fetchone()[0]
-        self.failUnlessEqual(
-                dud_rows, 0, 'Karma time bombs added to sampledata')
+        self.assertEqual(dud_rows, 0, 'Karma time bombs added to sampledata')

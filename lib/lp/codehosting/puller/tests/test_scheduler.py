@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -93,7 +93,7 @@ class TestJobScheduler(TestCase):
         manager = self.makeJobScheduler()
         manager.lockfilename = self.masterlock
         manager.lock()
-        self.failUnless(os.path.exists(self.masterlock))
+        self.assertTrue(os.path.exists(self.masterlock))
         manager.unlock()
 
     def testManagerEnforcesLocks(self):
@@ -103,7 +103,7 @@ class TestJobScheduler(TestCase):
         anothermanager = self.makeJobScheduler()
         anothermanager.lockfilename = self.masterlock
         self.assertRaises(scheduler.LockError, anothermanager.lock)
-        self.failUnless(os.path.exists(self.masterlock))
+        self.assertTrue(os.path.exists(self.masterlock))
         manager.unlock()
 
     def test_run_calls_acquireBranchToPull(self):
@@ -162,9 +162,8 @@ class TestPullerWireProtocol(TestCase):
 
         The failure is asserted to contain an exception of type
         `exception_type`."""
-        self.failUnless(self.puller_protocol.failure is not None)
-        self.failUnless(
-            self.puller_protocol.failure.check(exception_type))
+        self.assertIsNotNone(self.puller_protocol.failure)
+        self.assertTrue(self.puller_protocol.failure.check(exception_type))
 
     def assertProtocolInState0(self):
         """Assert that the protocol is in state 0."""
@@ -650,8 +649,8 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
         # contents of stderr are logged in an OOPS report.
         oops_logged = []
 
-        def new_oops_raising((type, value, tb), request):
-            oops_logged.append((type, value, tb))
+        def new_oops_raising(info, request):
+            oops_logged.append(info)
 
         old_oops_raising = errorlog.globalErrorUtility.raising
         errorlog.globalErrorUtility.raising = new_oops_raising

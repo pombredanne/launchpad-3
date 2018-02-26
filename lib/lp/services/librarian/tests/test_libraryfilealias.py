@@ -38,10 +38,10 @@ class TestLibraryFileAlias(unittest.TestCase):
     def test_file_is_closed_at_the_end_of_transaction(self):
         """Non-DB instance state should be reset on transaction boundaries."""
         self.file_alias.open()
-        self.assertEquals(self.text_content[0:4], self.file_alias.read(4))
+        self.assertEqual(self.text_content[0:4], self.file_alias.read(4))
         # This should reset the file pointer.
         transaction.commit()
         # If the file pointer isn't reset, the next call to read() will return
         # the remaining content. If it's reset, the file will be auto-opened
         # and its whole content will be returned.
-        self.assertEquals(self.text_content, self.file_alias.read())
+        self.assertEqual(self.text_content, self.file_alias.read())

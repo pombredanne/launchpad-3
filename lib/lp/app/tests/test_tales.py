@@ -363,7 +363,7 @@ class TestNoneFormatterAPI(TestCaseWithFactory):
         # Traversal of invalid names raises an exception.
         adapter = getAdapter(None, IPathAdapter, 'fmt')
         traverse = getattr(adapter, 'traverse', None)
-        self.failUnlessRaises(TraversalError, traverse, "foo", [])
+        self.assertRaises(TraversalError, traverse, "foo", [])
 
     def test_shorten_traversal(self):
         # Traversal of 'shorten' works as expected.
@@ -395,7 +395,7 @@ class TestIRCNicknameFormatterAPI(TestCaseWithFactory):
         ircID = ircset.new(person, "<b>irc.canonical.com</b>", "fred")
         expected_html = test_tales(
             'nick/fmt:formatted_displayname', nick=ircID)
-        self.assertEquals(
+        self.assertEqual(
             u'<strong>fred</strong>\n'
             '<span class="lesser"> on </span>\n'
             '<strong>&lt;b&gt;irc.canonical.com&lt;/b&gt;</strong>\n',

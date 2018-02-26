@@ -111,17 +111,17 @@ class TestPPAReport(unittest.TestCase):
         # objects representing the PPAs with active publications.
         # Supports filtering by a specific PPA owner name.
         reporter = self.getReporter()
-        self.assertEquals(
+        self.assertEqual(
             [ppa.owner.name for ppa in reporter.ppas],
             ['cprov', 'mark'])
 
         reporter = self.getReporter(ppa_owner='cprov')
-        self.assertEquals(
+        self.assertEqual(
             [ppa.owner.name for ppa in reporter.ppas],
             ['cprov'])
 
         reporter = self.getReporter(ppa_owner='foobar')
-        self.assertEquals(
+        self.assertEqual(
             [ppa.owner.name for ppa in reporter.ppas],
             [])
 
@@ -133,7 +133,7 @@ class TestPPAReport(unittest.TestCase):
         reporter = self.getReporter()
         reporter.setOutput()
         reporter.reportOverQuota()
-        self.assertEquals(
+        self.assertEqual(
             reporter.output.getvalue().splitlines(), [
                 '= PPAs over 80.00% of their quota =',
                 '',
@@ -143,7 +143,7 @@ class TestPPAReport(unittest.TestCase):
         reporter = self.getReporter(quota_threshold=.01)
         reporter.setOutput()
         reporter.reportOverQuota()
-        self.assertEquals(
+        self.assertEqual(
             reporter.output.getvalue().splitlines(), [
                 '= PPAs over 0.01% of their quota =',
                 'http://launchpad.dev/~cprov/+archive/ubuntu/ppa | 1024 | 9',
@@ -158,7 +158,7 @@ class TestPPAReport(unittest.TestCase):
         reporter = self.getReporter()
         reporter.setOutput()
         reporter.reportUserEmails()
-        self.assertEquals(
+        self.assertEqual(
             reporter.output.getvalue().splitlines(), [
                 '= PPA user emails =',
                 'cprov | Celso Providelo | celso.providelo@canonical.com',
@@ -170,7 +170,7 @@ class TestPPAReport(unittest.TestCase):
         reporter = self.getReporter(ppa_owner='cprov')
         reporter.setOutput()
         reporter.reportUserEmails()
-        self.assertEquals(
+        self.assertEqual(
             reporter.output.getvalue().splitlines(), [
                 '= PPA user emails =',
                 'cprov | Celso Providelo | celso.providelo@canonical.com',
@@ -184,7 +184,7 @@ class TestPPAReport(unittest.TestCase):
         reporter = self.getReporter()
         reporter.setOutput()
         reporter.reportOrphanRepos()
-        self.assertEquals(
+        self.assertEqual(
             reporter.output.getvalue().splitlines(), [
                 '= Orphan PPA repositories =',
                 '',
@@ -198,7 +198,7 @@ class TestPPAReport(unittest.TestCase):
         reporter = self.getReporter()
         reporter.setOutput()
         reporter.reportOrphanRepos()
-        self.assertEquals(
+        self.assertEqual(
             reporter.output.getvalue().splitlines(), [
                 '= Orphan PPA repositories =',
                 '/var/tmp/ppa.test/orphan',
@@ -214,7 +214,7 @@ class TestPPAReport(unittest.TestCase):
         reporter = self.getReporter()
         reporter.setOutput()
         reporter.reportMissingRepos()
-        self.assertEquals(
+        self.assertEqual(
             reporter.output.getvalue().splitlines(), [
                 '= Missing PPA repositories =',
                 '/var/tmp/ppa.test/cprov',
@@ -234,7 +234,7 @@ class TestPPAReport(unittest.TestCase):
         reporter = self.getReporter()
         reporter.setOutput()
         reporter.reportMissingRepos()
-        self.assertEquals(
+        self.assertEqual(
             reporter.output.getvalue().splitlines(), [
                 '= Missing PPA repositories =',
                 '',
@@ -252,7 +252,7 @@ class TestPPAReport(unittest.TestCase):
         reporter = self.getReporter(
             gen_missing_repos=True, output=output_path)
         reporter.main()
-        self.assertEquals(
+        self.assertEqual(
             open(output_path).read().splitlines(), [
                 '= Missing PPA repositories =',
                 '/var/tmp/ppa.test/cprov',
@@ -269,7 +269,7 @@ class TestPPAReport(unittest.TestCase):
             gen_over_quota=True, gen_orphan_repos=True,
             gen_missing_repos=True)
         reporter.main()
-        self.assertEquals(
+        self.assertEqual(
             reporter.output.getvalue().splitlines(), [
                 '= PPAs over 80.00% of their quota =',
                 '',
@@ -283,7 +283,7 @@ class TestPPAReport(unittest.TestCase):
         # Another run for generating user emails report
         reporter = self.getReporter(gen_user_emails=True)
         reporter.main()
-        self.assertEquals(
+        self.assertEqual(
             reporter.output.getvalue().splitlines(), [
                 '= PPA user emails =',
                 'cprov | Celso Providelo | celso.providelo@canonical.com',

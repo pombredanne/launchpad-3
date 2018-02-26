@@ -222,7 +222,7 @@ class TestDistroSeries(TestCaseWithFactory):
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag='i386',
             processor=processor)
-        self.assertEquals(
+        self.assertEqual(
             distroarchseries,
             distroseries.getDistroArchSeriesByProcessor(processor))
 
@@ -236,7 +236,7 @@ class TestDistroSeries(TestCaseWithFactory):
 
     def test_getDerivedSeries(self):
         dsp = self.factory.makeDistroSeriesParent()
-        self.assertEquals(
+        self.assertEqual(
             [dsp.derived_series], dsp.parent_series.getDerivedSeries())
 
     def test_registrant_owner_differ(self):
@@ -244,8 +244,8 @@ class TestDistroSeries(TestCaseWithFactory):
         # distribution's owner.
         registrant = self.factory.makePerson()
         distroseries = self.factory.makeDistroSeries(registrant=registrant)
-        self.assertEquals(distroseries.distribution.owner, distroseries.owner)
-        self.assertEquals(registrant, distroseries.registrant)
+        self.assertEqual(distroseries.distribution.owner, distroseries.owner)
+        self.assertEqual(registrant, distroseries.registrant)
         self.assertNotEqual(distroseries.registrant, distroseries.owner)
 
     def test_isDerivedSeries(self):
@@ -684,7 +684,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             new_distroseries.hide_all_translations = False
         transaction.commit()
         translatables = self._get_translatables()
-        self.failUnlessEqual(
+        self.assertEqual(
             translatables, self._ref_translatables(),
             "A newly created distroseries should not be translatable but "
             "translatables() returns %r instead of %r." % (
@@ -696,7 +696,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             sourcepackagename=new_sourcepackagename)
         transaction.commit()
         translatables = self._get_translatables()
-        self.failUnlessEqual(
+        self.assertEqual(
             translatables, self._ref_translatables(u"sampleseries"),
             "After assigning a PO template, a distroseries should be "
             "translatable but translatables() returns %r instead of %r." % (
@@ -707,7 +707,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             new_distroseries.hide_all_translations = True
         transaction.commit()
         translatables = self._get_translatables()
-        self.failUnlessEqual(
+        self.assertEqual(
             translatables, self._ref_translatables(),
             "After hiding all translation, a distroseries should not be "
             "translatable but translatables() returns %r instead of %r." % (

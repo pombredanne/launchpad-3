@@ -39,10 +39,10 @@ class TestOopsReferences(TestCaseWithFactory):
         self.store.flush()
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
-        self.failUnlessEqual(
+        self.assertEqual(
             set(),
             referenced_oops(now + day, now + day, "product=1", {}))
 
@@ -53,10 +53,10 @@ class TestOopsReferences(TestCaseWithFactory):
         self.store.flush()
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
-        self.failUnlessEqual(
+        self.assertEqual(
             set(),
             referenced_oops(now + day, now + day, "product=1", {}))
 
@@ -68,10 +68,10 @@ class TestOopsReferences(TestCaseWithFactory):
         self.store.flush()
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
-        self.failUnlessEqual(
+        self.assertEqual(
             set(),
             referenced_oops(now + day, now + day, "product=1", {}))
 
@@ -83,10 +83,10 @@ class TestOopsReferences(TestCaseWithFactory):
         self.store.flush()
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             set([oopsid]),
             referenced_oops(now - day, now, "product=1", {}))
-        self.failUnlessEqual(
+        self.assertEqual(
             set(),
             referenced_oops(now + day, now + day, "product=1", {}))
 
@@ -96,11 +96,11 @@ class TestOopsReferences(TestCaseWithFactory):
         self.store.flush()
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             set([oopsid]),
             referenced_oops(now - day, now, "product=%(product)s",
             {'product': question.product.id}))
-        self.failUnlessEqual(
+        self.assertEqual(
             set([]),
             referenced_oops(now + day, now + day, "product=%(product)s",
             {'product': question.product.id}))
@@ -112,7 +112,7 @@ class TestOopsReferences(TestCaseWithFactory):
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
         self.store.flush()
-        self.failUnlessEqual(
+        self.assertEqual(
             set(),
             referenced_oops(now - day, now, "product=%(product)s",
             {'product': question.product.id + 1}))
@@ -124,11 +124,11 @@ class TestOopsReferences(TestCaseWithFactory):
         self.store.flush()
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             set([oopsid]),
             referenced_oops(now - day, now, "product=%(product)s",
             {'product': question.product.id}))
-        self.failUnlessEqual(
+        self.assertEqual(
             set([]),
             referenced_oops(now + day, now + day, "product=%(product)s",
             {'product': question.product.id}))
@@ -141,11 +141,11 @@ class TestOopsReferences(TestCaseWithFactory):
             self.store.flush()
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             set([oopsid]),
             referenced_oops(now - day, now, "product=%(product)s",
             {'product': question.product.id}))
-        self.failUnlessEqual(
+        self.assertEqual(
             set([]),
             referenced_oops(now + day, now + day, "product=%(product)s",
             {'product': question.product.id}))
@@ -159,11 +159,11 @@ class TestOopsReferences(TestCaseWithFactory):
             self.store.flush()
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             set([oopsid]),
             referenced_oops(now - day, now, "distribution=%(distribution)s",
             {'distribution': distro.id}))
-        self.failUnlessEqual(
+        self.assertEqual(
             set([]),
             referenced_oops(now + day, now + day,
             "distribution=%(distribution)s", {'distribution': distro.id}))
@@ -188,9 +188,9 @@ class TestOopsReferences(TestCaseWithFactory):
         self.store.flush()
         now = datetime.now(tz=utc)
         day = timedelta(days=1)
-        self.failUnlessEqual(
+        self.assertEqual(
             set([oopsid_old, oopsid_new]),
             referenced_oops(now - day, now, "product=1", {}))
-        self.failUnlessEqual(
+        self.assertEqual(
             set([]),
             referenced_oops(now + day, now + day, "product=1", {}))

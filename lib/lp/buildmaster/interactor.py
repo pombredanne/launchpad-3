@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,6 +10,8 @@ __all__ = [
 
 from collections import namedtuple
 import logging
+import os.path
+import tempfile
 from urlparse import urlparse
 
 import transaction
@@ -67,7 +69,9 @@ class FileWritingProtocol(Protocol):
 
     def dataReceived(self, data):
         if self.file is None:
-            self.file = open(self.filename, "wb")
+            self.file = tempfile.NamedTemporaryFile(
+                mode="wb", prefix=os.path.basename(self.filename) + "_",
+                dir=os.path.dirname(self.filename), delete=False)
         try:
             self.file.write(data)
         except IOError:
@@ -82,6 +86,8 @@ class FileWritingProtocol(Protocol):
         try:
             if self.file is not None:
                 self.file.close()
+            if self.filename is not None and reason.check(ResponseDone):
+                os.rename(self.file.name, self.filename)
         except IOError:
             self.finished.errback()
         else:
@@ -379,7 +385,8 @@ class BuilderInteractor(object):
 
         d = slave.resume()
 
-        def got_resume_ok((stdout, stderr, returncode)):
+        def got_resume_ok(args):
+            stdout, stderr, returncode = args
             return stdout, stderr
 
         def got_resume_bad(failure):

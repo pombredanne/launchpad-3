@@ -83,7 +83,7 @@ class XpiTestCase(unittest.TestCase):
         """Check whether invariant part of all messages are correct."""
         # msgid and singular_text are always different except for the keyboard
         # shortcuts which are the 'accesskey' and 'commandkey' ones.
-        self.failIf(
+        self.assertFalse(
             (message.msgid_singular.msgid == message.singular_text and
              message.msgid_singular.msgid not in (
                 u'foozilla.menu.accesskey', u'foozilla.menu.commandkey')),
@@ -92,16 +92,16 @@ class XpiTestCase(unittest.TestCase):
 
         # Plural forms should be None as this format is not able to handle
         # them.
-        self.assertEquals(message.msgid_plural, None)
-        self.assertEquals(message.plural_text, None)
+        self.assertIsNone(message.msgid_plural)
+        self.assertIsNone(message.plural_text)
 
         # There is no way to know whether a comment is from a
         # translator or a developer comment, so we have comenttext
         # always as None and store all comments as source comments.
-        self.assertEquals(message.commenttext, u'')
+        self.assertEqual(message.commenttext, u'')
 
         # This format doesn't support any functionality like .po flags.
-        self.assertEquals(message.flagscomment, u'')
+        self.assertEqual(message.flagscomment, u'')
 
     def test_TemplateImport(self):
         """Test XPI template file import."""
@@ -109,7 +109,7 @@ class XpiTestCase(unittest.TestCase):
         entry = self.setUpTranslationImportQueueForTemplate('en-US')
 
         # The status is now IMPORTED:
-        self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
+        self.assertEqual(entry.status, RosettaImportStatus.IMPORTED)
 
         # Let's validate the content of the messages.
         potmsgsets = list(self.firefox_template.getPOTMsgSets())
@@ -124,65 +124,65 @@ class XpiTestCase(unittest.TestCase):
             if message.msgid_singular.msgid == u'foozilla.name':
                 # It's a normal message that lacks any comment.
 
-                self.assertEquals(message.singular_text, u'FooZilla!')
-                self.assertEquals(
+                self.assertEqual(message.singular_text, u'FooZilla!')
+                self.assertEqual(
                     message.filereferences,
                     u'jar:chrome/en-US.jar!/test1.dtd(foozilla.name)')
-                self.assertEquals(message.sourcecomment, None)
+                self.assertIsNone(message.sourcecomment)
 
             elif message.msgid_singular.msgid == u'foozilla.play.fire':
                 # This one is also a normal message that has a comment.
 
-                self.assertEquals(
+                self.assertEqual(
                     message.singular_text, u'Do you want to play with fire?')
-                self.assertEquals(
+                self.assertEqual(
                     message.filereferences,
                     u'jar:chrome/en-US.jar!/test1.dtd(foozilla.play.fire)')
-                self.assertEquals(
+                self.assertEqual(
                     message.sourcecomment,
                     u" Translators, don't play with fire! \n")
 
             elif message.msgid_singular.msgid == u'foozilla.utf8':
                 # Now, we can see that special UTF-8 chars are extracted
                 # correctly.
-                self.assertEquals(
+                self.assertEqual(
                     message.singular_text, u'\u0414\u0430\u043d=Day')
-                self.assertEquals(
+                self.assertEqual(
                     message.filereferences,
                     u'jar:chrome/en-US.jar!/test1.properties:5' +
                         u'(foozilla.utf8)')
-                self.assertEquals(message.sourcecomment, None)
+                self.assertIsNone(message.sourcecomment)
             elif message.msgid_singular.msgid == u'foozilla.menu.accesskey':
                 # access key is a special notation that is supposed to be
                 # translated with a key shortcut.
-                self.assertEquals(
+                self.assertEqual(
                     message.singular_text, u'M')
-                self.assertEquals(
+                self.assertEqual(
                     message.filereferences,
                     u'jar:chrome/en-US.jar!/subdir/test2.dtd' +
                         u'(foozilla.menu.accesskey)')
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
-                self.assertEquals(
+                self.assertEqual(
                     unwrap(message.sourcecomment),
                     unwrap(access_key_source_comment))
             elif message.msgid_singular.msgid == u'foozilla.menu.commandkey':
                 # command key is a special notation that is supposed to be
                 # translated with a key shortcut.
-                self.assertEquals(
+                self.assertEqual(
                     message.singular_text, u'm')
-                self.assertEquals(
+                self.assertEqual(
                     message.filereferences,
                     u'jar:chrome/en-US.jar!/subdir/test2.dtd' +
                         u'(foozilla.menu.commandkey)')
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
-                self.assertEquals(
+                self.assertEqual(
                     unwrap(message.sourcecomment),
                     unwrap(command_key_source_comment))
 
         # Check that we got all messages.
-        self.assertEquals(
+        self.assertEqual(
             [u'foozilla.happytitle', u'foozilla.menu.accesskey',
              u'foozilla.menu.commandkey', u'foozilla.menu.title',
              u'foozilla.name', u'foozilla.nocomment', u'foozilla.play.fire',
@@ -196,7 +196,7 @@ class XpiTestCase(unittest.TestCase):
         entry = self.setUpTranslationImportQueueForTemplate('en-US')
 
         # The status is now IMPORTED:
-        self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
+        self.assertEqual(entry.status, RosettaImportStatus.IMPORTED)
 
         # Retrieve the number of messages we got in this initial import.
         first_import_potmsgsets = self.firefox_template.getPOTMsgSets(
@@ -213,7 +213,7 @@ class XpiTestCase(unittest.TestCase):
             ).count()
 
         # Both must match.
-        self.assertEquals(first_import_potmsgsets, second_import_potmsgsets)
+        self.assertEqual(first_import_potmsgsets, second_import_potmsgsets)
 
     def test_TranslationImport(self):
         """Test XPI translation file import."""
@@ -223,16 +223,16 @@ class XpiTestCase(unittest.TestCase):
             'en-US')
 
         # The status is now IMPORTED:
-        self.assertEquals(
+        self.assertEqual(
             translation_entry.status, RosettaImportStatus.IMPORTED)
-        self.assertEquals(template_entry.status, RosettaImportStatus.IMPORTED)
+        self.assertEqual(template_entry.status, RosettaImportStatus.IMPORTED)
 
         # Let's validate the content of the messages.
         potmsgsets = list(self.firefox_template.getPOTMsgSets())
 
         messages = [message.msgid_singular.msgid for message in potmsgsets]
         messages.sort()
-        self.assertEquals(
+        self.assertEqual(
             [u'foozilla.happytitle',
              u'foozilla.menu.accesskey',
              u'foozilla.menu.commandkey',
@@ -253,10 +253,10 @@ class XpiTestCase(unittest.TestCase):
             self.firefox_template.translation_side)
 
         # It's a normal message that lacks any comment.
-        self.assertEquals(potmsgset.singular_text, u'FooZilla!')
+        self.assertEqual(potmsgset.singular_text, u'FooZilla!')
 
         # With this first import, upstream and Ubuntu translations must match.
-        self.assertEquals(
+        self.assertEqual(
             translation.translations,
             potmsgset.getOtherTranslation(
                 self.spanish_firefox.language,
@@ -267,14 +267,14 @@ class XpiTestCase(unittest.TestCase):
 
         # access key is a special notation that is supposed to be
         # translated with a key shortcut.
-        self.assertEquals(potmsgset.singular_text, u'M')
+        self.assertEqual(potmsgset.singular_text, u'M')
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
-        self.assertEquals(
+        self.assertEqual(
             unwrap(potmsgset.sourcecomment),
             unwrap(access_key_source_comment))
         # But for the translation import, we get the key directly.
-        self.assertEquals(
+        self.assertEqual(
             potmsgset.getOtherTranslation(
                 self.spanish_firefox.language,
                 self.firefox_template.translation_side).translations,
@@ -284,15 +284,15 @@ class XpiTestCase(unittest.TestCase):
             u'foozilla.menu.commandkey', context='main/subdir/test2.dtd')
         # command key is a special notation that is supposed to be
         # translated with a key shortcut.
-        self.assertEquals(
+        self.assertEqual(
             potmsgset.singular_text, u'm')
         # The comment shows the key used when there is no translation,
         # which is noted as the en_US translation.
-        self.assertEquals(
+        self.assertEqual(
             unwrap(potmsgset.sourcecomment),
             unwrap(command_key_source_comment))
         # But for the translation import, we get the key directly.
-        self.assertEquals(
+        self.assertEqual(
             potmsgset.getOtherTranslation(
                 self.spanish_firefox.language,
                 self.firefox_template.translation_side).translations,
@@ -321,7 +321,7 @@ class XpiTestCase(unittest.TestCase):
         messages = sorted([
             (message.msgid_singular, message.context, message.singular_text)
             for message in template.messages])
-        self.assertEquals(
+        self.assertEqual(
             [
              (u'foozilla.clashing.key',
               u'mac/extra.dtd',

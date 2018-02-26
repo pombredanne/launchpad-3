@@ -32,14 +32,14 @@ class RoUserTestCase(unittest.TestCase):
 
         # Except on sequences
         cur.execute("SAVEPOINT attempt")
-        self.failUnlessRaises(
+        self.assertRaises(
                 psycopg2.Error, cur.execute, "SELECT nextval('person_id_seq')"
                 )
         cur.execute("ROLLBACK TO SAVEPOINT attempt")
 
         # UPDATES should fail
         cur.execute("SAVEPOINT attempt")
-        self.failUnlessRaises(
+        self.assertRaises(
                 psycopg2.Error, cur.execute, "UPDATE Person SET password=NULL"
                 )
         cur.execute("ROLLBACK TO SAVEPOINT attempt")
@@ -47,7 +47,7 @@ class RoUserTestCase(unittest.TestCase):
         # DELETES should fail.
         # We need to use a table with no FK references to it
         cur.execute("SAVEPOINT attempt")
-        self.failUnlessRaises(
+        self.assertRaises(
                 psycopg2.Error, cur.execute, "DELETE FROM WikiName"
                 )
         cur.execute("ROLLBACK TO SAVEPOINT attempt")

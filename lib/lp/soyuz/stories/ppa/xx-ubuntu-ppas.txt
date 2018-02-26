@@ -581,7 +581,7 @@ keyserver.
 
     >>> print anon_browser.getLink(
     ...     '1024D/ABCDEF0123456789ABCDDCBA0000111112345678').url
-    http://keyserver.ubuntu.com:11371/pks/lookup?fingerprint=on&op=index&search=0xABCDEF0123456789ABCDDCBA0000111112345678
+    https://keyserver.ubuntu.com/pks/lookup?fingerprint=on&op=index&search=0xABCDEF0123456789ABCDDCBA0000111112345678
 
 Using software from a PPA can be hard for novices. We offer two
 links to the same help pop-up that describes how to add a PPA and

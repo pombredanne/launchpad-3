@@ -243,7 +243,7 @@ class TestBugNominationEditView(TestCaseWithFactory):
         return view
 
     def assertApproves(self, nomination):
-        self.assertEquals(
+        self.assertEqual(
             302,
             self.getNominationEditView(
                 nomination,

@@ -1276,12 +1276,12 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # The new series has been derived from previous_series.
         published_sources = child.main_archive.getPublishedSources(
             distroseries=child)
-        self.assertEquals(2, published_sources.count())
+        self.assertEqual(2, published_sources.count())
         pub_sources = sorted(
             [(s.sourcepackagerelease.sourcepackagename.name,
               s.sourcepackagerelease.version)
                 for s in published_sources])
-        self.assertEquals(
+        self.assertEqual(
             [(u'p1', u'1.2'), (u'p2', u'1.5')],
             pub_sources)
 
@@ -1492,7 +1492,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             source_package_name_str=u'p2')
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         # No DSDs for the child yet.
-        self.assertEquals(0, dsd_source.getForDistroSeries(child).count())
+        self.assertEqual(0, dsd_source.getForDistroSeries(child).count())
         self._fullInitialize([], child=child)
 
         self.assertContentEqual(

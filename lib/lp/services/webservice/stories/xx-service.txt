@@ -76,13 +76,6 @@ doesn't recognize the client.
     >>> print response.getheader('status')
     200 Ok
 
-Launchpad automatically adds new consumer keys it sees to its database.
-
-    >>> login(ANONYMOUS)
-    >>> print consumer_set.getByKey(u'another-new-consumer').key
-    another-new-consumer
-    >>> logout()
-
 Anonymous requests can't access certain data.
 
     >>> response = anon_webservice.get(body['me_link'])
@@ -122,23 +115,6 @@ request, with the OAuth consumer name being equal to the User-Agent.
     ...                "Host: api.launchpad.dev"
     ...                "%s\n\n") % (url, agent_string)
     ...     return http(request)
-
-    >>> response = request_with_user_agent(agent)
-    >>> print response.getOutput()
-    HTTP/1.1 200 Ok
-    ...
-    {...}
-
-Here, too, the OAuth consumer name is automatically registered if it
-doesn't exist.
-
-    >>> login(ANONYMOUS)
-    >>> print consumer_set.getByKey(agent).key
-    unsigned-user-agent
-    >>> logout()
-
-Here's another request now that the User-Agent has been registered as
-a consumer name.
 
     >>> response = request_with_user_agent(agent)
     >>> print response.getOutput()

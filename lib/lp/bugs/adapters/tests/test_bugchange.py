@@ -71,8 +71,7 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
 
         change = list(get_bug_changes(bug_delta))[0]
         self.assertTrue(isinstance(change, BugDescriptionChange))
-        self.assertEquals(
-            BugNotificationLevel.METADATA, change.change_level)
+        self.assertEqual(BugNotificationLevel.METADATA, change.change_level)
 
     def test_change_level_lifecycle_status_closing(self):
         # Changing a bug task status from NEW to FIXRELEASED makes this
@@ -87,8 +86,7 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
             bugtask_deltas=bugtask_delta)
 
         change = list(get_bug_changes(bug_delta))[0]
-        self.assertEquals(
-            BugNotificationLevel.LIFECYCLE, change.change_level)
+        self.assertEqual(BugNotificationLevel.LIFECYCLE, change.change_level)
 
     def test_change_level_lifecycle_status_reopening(self):
         # Changing a bug task status from FIXRELEASED to TRIAGED makes this
@@ -103,9 +101,7 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
             bugtask_deltas=bugtask_delta)
 
         change = list(get_bug_changes(bug_delta))[0]
-        self.assertEquals(
-            BugNotificationLevel.LIFECYCLE,
-            change.change_level)
+        self.assertEqual(BugNotificationLevel.LIFECYCLE, change.change_level)
 
     def test_change_level_metadata_status_worked_on(self):
         # Changing a bug task status from TRIAGED to FIXCOMMITTED makes this
@@ -120,8 +116,7 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
             bugtask_deltas=bugtask_delta)
 
         change = list(get_bug_changes(bug_delta))[0]
-        self.assertEquals(
-            BugNotificationLevel.METADATA, change.change_level)
+        self.assertEqual(BugNotificationLevel.METADATA, change.change_level)
 
     def test_change_level_metadata_status_stays_closed(self):
         # Changing a bug task status from OPINION to WONTFIX makes this
@@ -136,8 +131,7 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
             bugtask_deltas=bugtask_delta)
 
         change = list(get_bug_changes(bug_delta))[0]
-        self.assertEquals(
-            BugNotificationLevel.METADATA, change.change_level)
+        self.assertEqual(BugNotificationLevel.METADATA, change.change_level)
 
     def test_change_level_metadata_duplicate_of_unresolved(self):
         # Marking a bug as a duplicate of an unresolved bug is a
@@ -153,8 +147,7 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
                 })
 
         change = list(get_bug_changes(bug_delta))[0]
-        self.assertEquals(
-            BugNotificationLevel.METADATA, change.change_level)
+        self.assertEqual(BugNotificationLevel.METADATA, change.change_level)
 
     def test_change_level_lifecycle_duplicate_of_resolved(self):
         # Marking a bug as a duplicate of a resolved bug is
@@ -170,8 +163,7 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
                 })
 
         change = list(get_bug_changes(bug_delta))[0]
-        self.assertEquals(
-            BugNotificationLevel.LIFECYCLE, change.change_level)
+        self.assertEqual(BugNotificationLevel.LIFECYCLE, change.change_level)
 
     def test_change_level_metadata_not_duplicate_of_unresolved(self):
         # Un-marking a bug as a duplicate of an unresolved bug is a
@@ -187,8 +179,7 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
                 })
 
         change = list(get_bug_changes(bug_delta))[0]
-        self.assertEquals(
-            BugNotificationLevel.METADATA, change.change_level)
+        self.assertEqual(BugNotificationLevel.METADATA, change.change_level)
 
     def test_change_level_lifecycle_not_duplicate_of_resolved(self):
         # Un-marking a bug as a duplicate of a resolved bug is
@@ -203,5 +194,4 @@ class BugChangeLevelTestCase(TestCaseWithFactory):
                 'old': duplicate_of})
 
         change = list(get_bug_changes(bug_delta))[0]
-        self.assertEquals(
-            BugNotificationLevel.LIFECYCLE, change.change_level)
+        self.assertEqual(BugNotificationLevel.LIFECYCLE, change.change_level)

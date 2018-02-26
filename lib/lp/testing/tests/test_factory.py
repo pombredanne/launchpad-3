@@ -147,30 +147,30 @@ class TestFactory(TestCaseWithFactory):
     def test_makeBinaryPackagePublishingHistory_uses_status(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             status=PackagePublishingStatus.PENDING)
-        self.assertEquals(PackagePublishingStatus.PENDING, bpph.status)
+        self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED)
-        self.assertEquals(PackagePublishingStatus.PUBLISHED, bpph.status)
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, bpph.status)
 
     def test_makeBinaryPackagePublishingHistory_uses_dateremoved(self):
         dateremoved = datetime.now(pytz.UTC)
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             dateremoved=dateremoved)
-        self.assertEquals(dateremoved, bpph.dateremoved)
+        self.assertEqual(dateremoved, bpph.dateremoved)
 
     def test_makeBinaryPackagePublishingHistory_scheduleddeletiondate(self):
         scheduleddeletiondate = datetime.now(pytz.UTC)
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             scheduleddeletiondate=scheduleddeletiondate)
-        self.assertEquals(scheduleddeletiondate, bpph.scheduleddeletiondate)
+        self.assertEqual(scheduleddeletiondate, bpph.scheduleddeletiondate)
 
     def test_makeBinaryPackagePublishingHistory_uses_priority(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             priority=PackagePublishingPriority.OPTIONAL)
-        self.assertEquals(PackagePublishingPriority.OPTIONAL, bpph.priority)
+        self.assertEqual(PackagePublishingPriority.OPTIONAL, bpph.priority)
         bpph = self.factory.makeBinaryPackagePublishingHistory(
             priority=PackagePublishingPriority.EXTRA)
-        self.assertEquals(PackagePublishingPriority.EXTRA, bpph.priority)
+        self.assertEqual(PackagePublishingPriority.EXTRA, bpph.priority)
 
     def test_makeBinaryPackagePublishingHistory_sets_datecreated(self):
         bpph = self.factory.makeBinaryPackagePublishingHistory()
@@ -429,15 +429,14 @@ class TestFactory(TestCaseWithFactory):
         self.assertTrue(ILanguage.providedBy(language))
         self.assertTrue(language.code.startswith('lang'))
         # And name is constructed from code as 'Language %(code)s'.
-        self.assertEquals('Language %s' % language.code,
-                          language.englishname)
+        self.assertEqual('Language %s' % language.code, language.englishname)
 
     def test_makeLanguage_with_code(self):
         # With language code passed in, that's used for the language.
         language = self.factory.makeLanguage('sr@test')
-        self.assertEquals('sr@test', language.code)
+        self.assertEqual('sr@test', language.code)
         # And name is constructed from code as 'Language %(code)s'.
-        self.assertEquals('Language sr@test', language.englishname)
+        self.assertEqual('Language sr@test', language.englishname)
 
     def test_makeLanguage_with_name(self):
         # Language name can be passed in to makeLanguage (useful for
@@ -446,7 +445,7 @@ class TestFactory(TestCaseWithFactory):
         self.assertTrue(ILanguage.providedBy(language))
         self.assertTrue(language.code.startswith('lang'))
         # And name is constructed from code as 'Language %(code)s'.
-        self.assertEquals('Test language', language.englishname)
+        self.assertEqual('Test language', language.englishname)
 
     def test_makeLanguage_with_pluralforms(self):
         # makeLanguage takes a number of plural forms for the language.
@@ -477,38 +476,38 @@ class TestFactory(TestCaseWithFactory):
         spr = self.factory.makeSourcePackageRelease()
         spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr)
-        self.assertEquals(spr, spph.sourcepackagerelease)
+        self.assertEqual(spr, spph.sourcepackagerelease)
 
     def test_makeSourcePackagePublishingHistory_uses_status(self):
         spph = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PENDING)
-        self.assertEquals(PackagePublishingStatus.PENDING, spph.status)
+        self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
         spph = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED)
-        self.assertEquals(PackagePublishingStatus.PUBLISHED, spph.status)
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, spph.status)
 
     def test_makeSourcePackagePublishingHistory_uses_date_uploaded(self):
         date_uploaded = datetime.now(pytz.UTC)
         spph = self.factory.makeSourcePackagePublishingHistory(
             date_uploaded=date_uploaded)
-        self.assertEquals(date_uploaded, spph.datecreated)
+        self.assertEqual(date_uploaded, spph.datecreated)
 
     def test_makeSourcePackagePublishingHistory_uses_dateremoved(self):
         dateremoved = datetime.now(pytz.UTC)
         spph = self.factory.makeSourcePackagePublishingHistory(
             dateremoved=dateremoved)
-        self.assertEquals(dateremoved, spph.dateremoved)
+        self.assertEqual(dateremoved, spph.dateremoved)
 
     def test_makeSourcePackagePublishingHistory_scheduleddeletiondate(self):
         scheduleddeletiondate = datetime.now(pytz.UTC)
         spph = self.factory.makeSourcePackagePublishingHistory(
             scheduleddeletiondate=scheduleddeletiondate)
-        self.assertEquals(scheduleddeletiondate, spph.scheduleddeletiondate)
+        self.assertEqual(scheduleddeletiondate, spph.scheduleddeletiondate)
 
     def test_makeSourcePackagePublishingHistory_datepublished_PENDING(self):
         spph = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PENDING)
-        self.assertEquals(None, spph.datepublished)
+        self.assertIsNone(spph.datepublished)
 
     def test_makeSourcePackagePublishingHistory_datepublished_PUBLISHED(self):
         spph = self.factory.makeSourcePackagePublishingHistory(

@@ -52,7 +52,7 @@ class TestMatchDDEBs(TestCase):
         return file
 
     def assertMatchDDEBErrors(self, error_list):
-        self.assertEquals(
+        self.assertEqual(
             error_list, [str(e) for e in self.upload._matchDDEBs()])
 
     def testNoLinksWithNoBinaries(self):

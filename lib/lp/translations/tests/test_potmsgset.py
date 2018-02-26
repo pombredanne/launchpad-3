@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -79,8 +79,8 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         devel_potmsgsets = list(self.devel_potemplate.getPOTMsgSets())
         stable_potmsgsets = list(self.stable_potemplate.getPOTMsgSets())
 
-        self.assertEquals(devel_potmsgsets, [self.potmsgset])
-        self.assertEquals(devel_potmsgsets, stable_potmsgsets)
+        self.assertEqual(devel_potmsgsets, [self.potmsgset])
+        self.assertEqual(devel_potmsgsets, stable_potmsgsets)
 
     def test_POTMsgSetInIncompatiblePOTemplates(self):
         # Make sure a POTMsgSet cannot be used in two POTemplates with
@@ -100,7 +100,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         devel_potmsgsets = list(self.devel_potemplate.getPOTMsgSets())
         stable_potmsgsets = list(self.stable_potemplate.getPOTMsgSets())
-        self.assertEquals(devel_potmsgsets, stable_potmsgsets)
+        self.assertEqual(devel_potmsgsets, stable_potmsgsets)
 
         # We hack the POTemplate manually to make data inconsistent
         # in database.
@@ -194,11 +194,11 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         devel_translation = self.potmsgset.getCurrentTranslation(
             self.devel_potemplate, serbian,
             self.devel_potemplate.translation_side)
-        self.assertEquals(devel_translation, shared_translation)
+        self.assertEqual(devel_translation, shared_translation)
         stable_translation = self.potmsgset.getCurrentTranslation(
             self.stable_potemplate, serbian,
             self.stable_potemplate.translation_side)
-        self.assertEquals(stable_translation, shared_translation)
+        self.assertEqual(stable_translation, shared_translation)
 
         # Adding a diverged translation in one template makes that one
         # current in it.
@@ -207,11 +207,11 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         devel_translation = self.potmsgset.getCurrentTranslation(
             self.devel_potemplate, serbian,
             self.devel_potemplate.translation_side)
-        self.assertEquals(devel_translation, diverged_translation)
+        self.assertEqual(devel_translation, diverged_translation)
         stable_translation = self.potmsgset.getCurrentTranslation(
             self.stable_potemplate, serbian,
             self.stable_potemplate.translation_side)
-        self.assertEquals(stable_translation, shared_translation)
+        self.assertEqual(stable_translation, shared_translation)
 
     def test_getOtherTranslation(self):
         # Get the translation on the other side.
@@ -229,20 +229,20 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # A shared translation is current on both sides.
         shared_translation = self.factory.makeCurrentTranslationMessage(
             pofile=pofile, potmsgset=self.potmsgset, current_other=True)
-        self.assertEquals(self.potmsgset.getCurrentTranslation(
+        self.assertEqual(self.potmsgset.getCurrentTranslation(
             ubuntu_potemplate, ubuntu_pofile.language,
             ubuntu_potemplate.translation_side), shared_translation)
-        self.assertEquals(self.potmsgset.getOtherTranslation(
+        self.assertEqual(self.potmsgset.getOtherTranslation(
             pofile.language, self.devel_potemplate.translation_side),
             shared_translation)
 
         # A diverted translation on the other side is not returned.
         diverged_translation = self.factory.makeCurrentTranslationMessage(
             pofile=ubuntu_pofile, potmsgset=self.potmsgset, diverged=True)
-        self.assertEquals(self.potmsgset.getCurrentTranslation(
+        self.assertEqual(self.potmsgset.getCurrentTranslation(
             ubuntu_potemplate, ubuntu_pofile.language,
             ubuntu_potemplate.translation_side), diverged_translation)
-        self.assertEquals(self.potmsgset.getOtherTranslation(
+        self.assertEqual(self.potmsgset.getOtherTranslation(
             pofile.language, self.devel_potemplate.translation_side),
             shared_translation)
 
@@ -255,7 +255,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # A shared translation matches the current one.
         shared_translation = self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset)
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getSharedTranslation(
                 serbian, self.stable_potemplate.translation_side),
             shared_translation)
@@ -263,7 +263,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Adding a diverged translation doesn't break getSharedTM.
         self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset, diverged=True)
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getSharedTranslation(
                 serbian, self.stable_potemplate.translation_side),
             shared_translation)
@@ -359,10 +359,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # When there is no translation for the external POTMsgSet,
         # no externally used suggestions are returned.
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [])
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
                 used_languages=[language])[language].used,
             [])
@@ -374,10 +374,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         transaction.commit()
 
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [])
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
                 used_languages=[language])[language].used,
             [])
@@ -390,10 +390,10 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         transaction.commit()
 
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallyUsedTranslationMessages(language),
             [other_translation])
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
                 used_languages=[language])[language].used,
             [other_translation])
@@ -432,11 +432,11 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         # When there is no translation for the external POTMsgSet,
         # no externally used suggestions are returned.
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
             [])
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
                 suggested_languages=[language])[language].suggested,
             [])
@@ -448,11 +448,11 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         transaction.commit()
 
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
             [external_suggestion])
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
                 suggested_languages=[language])[language].suggested,
             [external_suggestion])
@@ -464,11 +464,11 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         removeSecurityProxy(other_translation).is_current_ubuntu = True
         transaction.commit()
 
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
             [external_suggestion])
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
                 suggested_languages=[language])[language].suggested,
             [external_suggestion])
@@ -480,11 +480,11 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
 
         transaction.commit()
 
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallySuggestedTranslationMessages(
                 language),
             [external_suggestion])
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.getExternallySuggestedOrUsedTranslationMessages(
                 suggested_languages=[language])[language].suggested,
             [external_suggestion])
@@ -496,7 +496,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         serbian = sr_pofile.language
 
         # When there is no translation, it's not considered changed.
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
             False)
@@ -505,7 +505,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # changed in Ubuntu.
         self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset)
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
             False)
@@ -515,7 +515,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         imported_shared = self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset,
             current_other=True)
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
             False)
@@ -524,7 +524,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # non-current one, it's changed in Ubuntu.
         self.factory.makeCurrentTranslationMessage(
             pofile=sr_pofile, potmsgset=self.potmsgset, diverged=True)
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
             True)
@@ -535,7 +535,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             pofile=sr_pofile, potmsgset=self.potmsgset)
         self.assertTrue(current.is_current_upstream)
         self.assertTrue(imported_shared.is_current_ubuntu)
-        self.assertEquals(
+        self.assertEqual(
             self.potmsgset.hasTranslationChangedInLaunchpad(
                 self.devel_potemplate, serbian),
             True)
@@ -550,7 +550,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             self.devel_potemplate, sr_pofile.language,
             TranslationSide.UPSTREAM)
         self.assertNotEqual(None, current)
-        self.assertEquals(
+        self.assertEqual(
             RosettaTranslationOrigin.LAUNCHPAD_GENERATED, current.origin)
 
     def test_setTranslationCreditsToTranslated_noop_when_translated(self):
@@ -565,7 +565,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         current = credits_potmsgset.getCurrentTranslation(
             self.devel_potemplate, sr_pofile.language,
             TranslationSide.UPSTREAM)
-        self.assertEquals(old_credits, current)
+        self.assertEqual(old_credits, current)
 
     def test_setTranslationCreditsToTranslated_noop_when_not_credits(self):
         """Test that translation doesn't change on a non-credits message."""
@@ -596,7 +596,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             sr_pofile.potemplate, sr_pofile.language,
             sr_pofile.potemplate.translation_side)
         self.assertTrue(test_diverged_credits.is_current_upstream)
-        self.assertEquals(
+        self.assertEqual(
             sr_pofile.potemplate, test_diverged_credits.potemplate)
 
         credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
@@ -604,7 +604,7 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Shared translation is generated.
         shared = credits_potmsgset.getSharedTranslation(
             sr_pofile.language, sr_pofile.potemplate.translation_side)
-        self.assertNotEquals(diverged_credits, shared)
+        self.assertNotEqual(diverged_credits, shared)
         self.assertIsNot(None, shared)
 
     def test_setTranslationCreditsToTranslated_submitter(self):
@@ -1002,7 +1002,7 @@ class TestPOTMsgSetText(TestCaseWithFactory):
         english_msgid = self.factory.getUniqueString()
         potmsgset = self._makePOTMsgSet(
             english_msgid, TranslationFileFormat.PO)
-        self.assertEquals(english_msgid, potmsgset.singular_text)
+        self.assertEqual(english_msgid, potmsgset.singular_text)
 
     def test_singular_text_xpi(self):
         # Mozilla XPI format uses English strings as msgids if no English
@@ -1010,7 +1010,7 @@ class TestPOTMsgSetText(TestCaseWithFactory):
         symbolic_msgid = self.factory.getUniqueString()
         potmsgset = self._makePOTMsgSet(
             symbolic_msgid, TranslationFileFormat.XPI)
-        self.assertEquals(symbolic_msgid, potmsgset.singular_text)
+        self.assertEqual(symbolic_msgid, potmsgset.singular_text)
 
     def test_singular_text_xpi_english(self):
         # Mozilla XPI format uses English strings as msgids if no English
@@ -1025,7 +1025,7 @@ class TestPOTMsgSetText(TestCaseWithFactory):
             pofile=en_pofile, potmsgset=potmsgset,
             translations=[english_msgid])
 
-        self.assertEquals(english_msgid, potmsgset.singular_text)
+        self.assertEqual(english_msgid, potmsgset.singular_text)
 
     def test_singular_text_xpi_english_diverged(self):
         # A diverged (translation.potemplate != None) English translation
@@ -1043,7 +1043,7 @@ class TestPOTMsgSetText(TestCaseWithFactory):
             pofile=en_pofile, potmsgset=potmsgset,
             translations=[diverged_msgid], diverged=True)
 
-        self.assertEquals(english_msgid, potmsgset.singular_text)
+        self.assertEqual(english_msgid, potmsgset.singular_text)
 
     def _setUpSharingWithUbuntu(self):
         """Create a potmsgset shared in upstream and Ubuntu."""
@@ -1091,7 +1091,7 @@ class TestPOTMsgSetText(TestCaseWithFactory):
         # upstream msgid, causing the test to pass even without the
         # Ubuntu message being present.
         del get_property_cache(self.potmsgset).singular_text
-        self.assertEquals(upstream_msgid, self.potmsgset.singular_text)
+        self.assertEqual(upstream_msgid, self.potmsgset.singular_text)
 
     def test_singular_text_xpi_english_falls_back_to_ubuntu(self):
         # POTMsgSet singular_text is read from the Ubuntu English
@@ -1106,7 +1106,7 @@ class TestPOTMsgSetText(TestCaseWithFactory):
             pofile=self.ubuntu_pofile, potmsgset=self.potmsgset,
             translations=[ubuntu_msgid])
 
-        self.assertEquals(ubuntu_msgid, self.potmsgset.singular_text)
+        self.assertEqual(ubuntu_msgid, self.potmsgset.singular_text)
 
 
 class TestPOTMsgSetTranslationCredits(TestCaseWithFactory):
@@ -1461,7 +1461,7 @@ class TestSetCurrentTranslation(TestCaseWithFactory):
         """Produce a POTranslations dict of random translations."""
         return dict(
             (form, self.factory.getUniqueString())
-            for form in xrange(forms))
+            for form in range(forms))
 
     def test_baseline(self):
         # setCurrentTranslation sets the current translation
@@ -1607,12 +1607,12 @@ class BaseTestGetCurrentTranslation(object):
             pofile_other, pofile_other.potemplate.owner,
             translations_other, origin)
 
-        self.assertEquals(
+        self.assertEqual(
             current_translation,
             potmsgset.getCurrentTranslation(
                 pofile_other.potemplate, pofile_other.language,
                 self.this_side))
-        self.assertEquals(
+        self.assertEqual(
             other_translation,
             potmsgset.getCurrentTranslation(
                 pofile.potemplate, pofile.language, self.other_side))
@@ -1636,7 +1636,7 @@ class BaseTestGetCurrentTranslation(object):
 
         current = potmsgset.getCurrentTranslation(
             pofile.potemplate, pofile.language, self.this_side)
-        self.assertEquals(diverged_message, current)
+        self.assertEqual(diverged_message, current)
 
     def test_shared_when_requested(self):
         # getCurrentTranslation returns a shared translation even with
@@ -1657,7 +1657,7 @@ class BaseTestGetCurrentTranslation(object):
 
         current = potmsgset.getCurrentTranslation(
             None, pofile.language, self.this_side)
-        self.assertEquals(shared_message, current)
+        self.assertEqual(shared_message, current)
 
 
 class TestGetCurrentTranslationForUpstreams(BaseTestGetCurrentTranslation,

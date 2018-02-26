@@ -1,4 +1,4 @@
-# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Master distro publishing script."""
@@ -22,6 +22,10 @@ from lp.archivepublisher.publishing import (
     cannot_modify_suite,
     GLOBAL_PUBLISHER_LOCK,
     )
+from lp.archivepublisher.run_parts import (
+    execute_subprocess,
+    run_parts,
+    )
 from lp.archivepublisher.scripts.processaccepted import ProcessAccepted
 from lp.archivepublisher.scripts.publishdistro import PublishDistro
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -30,7 +34,6 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.config import config
 from lp.services.database.bulk import load_related
 from lp.services.osutils import ensure_directory_exists
 from lp.services.scripts.base import (
@@ -61,43 +64,6 @@ def get_publishable_archives(distribution):
             if archive.purpose in ARCHIVES_TO_PUBLISH]
 
 
-def compose_shell_boolean(boolean_value):
-    """Represent a boolean value as "yes" or "no"."""
-    boolean_text = {
-        True: "yes",
-        False: "no",
-    }
-    return boolean_text[boolean_value]
-
-
-def shell_quote(literal):
-    """Escape `literal` for use in a double-quoted shell string.
-
-    This is a pretty naive substitution: it doesn't deal well with
-    non-ASCII characters or special characters.
-    """
-    # Characters that need backslash-escaping.  Do the backslash itself
-    # first; any escapes we introduced *before* the backslash would have
-    # their own backslashes escaped afterwards when we got to the
-    # backslash itself.
-    special_characters = '\\"$`\n'
-    for escapee in special_characters:
-        literal = literal.replace(escapee, '\\' + escapee)
-    return '"%s"' % literal
-
-
-def compose_env_string(*env_dicts):
-    """Turn dict(s) into a series of shell parameter assignments.
-
-    Values in later dicts override any values with the same respective
-    keys in earlier dicts.
-    """
-    env = {}
-    for env_dict in env_dicts:
-        env.update(env_dict)
-    return ' '.join(['='.join(pair) for pair in env.iteritems()])
-
-
 def get_backup_dists(archive_config):
     """Return the path of an archive's backup dists directory."""
     return os.path.join(archive_config.archiveroot + "-distscopy", "dists")
@@ -120,31 +86,6 @@ def get_working_dists(archive_config):
     for publish-distro.  This method composes the temporary path.
     """
     return get_dists(archive_config) + ".in-progress"
-
-
-def extend_PATH():
-    """Produce env dict for extending $PATH.
-
-    Adds the Launchpad source tree's cronscripts/publishing to the
-    existing $PATH.
-
-    :return: a dict suitable for passing to compose_env_string.
-    """
-    scripts_dir = os.path.join(config.root, "cronscripts", "publishing")
-    return {"PATH": '"$PATH":%s' % shell_quote(scripts_dir)}
-
-
-def find_run_parts_dir(distro, parts):
-    """Find the requested run-parts directory, if it exists."""
-    run_parts_location = config.archivepublisher.run_parts_location
-    if not run_parts_location:
-        return
-
-    parts_dir = os.path.join(run_parts_location, distro.name, parts)
-    if file_exists(parts_dir):
-        return parts_dir
-    else:
-        return None
 
 
 def map_distro_pubconfigs(distro):
@@ -237,26 +178,6 @@ class PublishFTPMaster(LaunchpadCronScript):
                 raise LaunchpadScriptFailure(
                     "Distribution %s not found." % self.options.distribution)
             self.distributions = [distro]
-
-    def executeShell(self, command_line, failure=None):
-        """Run `command_line` through a shell.
-
-        This won't just load an external program and run it; the command
-        line goes through the full shell treatment including variable
-        substitutions, output redirections, and so on.
-
-        :param command_line: Shell command.
-        :param failure: Raise `failure` as an exception if the shell
-            command returns a nonzero value.  If omitted, nonzero return
-            values are ignored.
-        """
-        self.logger.debug("Executing: %s" % command_line)
-        retval = os.system(command_line)
-        if retval != 0:
-            self.logger.debug("Command returned %d.", retval)
-            if failure is not None:
-                self.logger.debug("Command failed: %s", failure)
-                raise failure
 
     def getConfigs(self):
         """Set up configuration objects for archives to be published.
@@ -370,8 +291,9 @@ class PublishFTPMaster(LaunchpadCronScript):
         for purpose, archive_config in self.configs[distribution].iteritems():
             dists = get_dists(archive_config)
             backup_dists = get_backup_dists(archive_config)
-            self.executeShell(
-                "rsync -aH --delete '%s/' '%s'" % (dists, backup_dists),
+            execute_subprocess(
+                ["rsync", "-aH", "--delete", "%s/" % dists, backup_dists],
+                log=self.logger,
                 failure=LaunchpadScriptFailure(
                     "Failed to rsync new dists for %s." % purpose.title))
 
@@ -469,12 +391,13 @@ class PublishFTPMaster(LaunchpadCronScript):
         """Execute the publish-distro hooks."""
         archive_config = self.configs[distribution][archive.purpose]
         env = {
-            'ARCHIVEROOT': shell_quote(archive_config.archiveroot),
-            'DISTSROOT': shell_quote(get_backup_dists(archive_config)),
+            'ARCHIVEROOT': archive_config.archiveroot,
+            'DISTSROOT': get_backup_dists(archive_config),
             }
         if archive_config.overrideroot is not None:
-            env["OVERRIDEROOT"] = shell_quote(archive_config.overrideroot)
-        self.runParts(distribution, 'publish-distro.d', env)
+            env["OVERRIDEROOT"] = archive_config.overrideroot
+        run_parts(
+            distribution.name, 'publish-distro.d', log=self.logger, env=env)
 
     def installDists(self, distribution):
         """Put the new dists into place, as near-atomically as possible.
@@ -499,40 +422,22 @@ class PublishFTPMaster(LaunchpadCronScript):
     def clearEmptyDirs(self, distribution):
         """Clear out any redundant empty directories."""
         for archive_config in self.configs[distribution].itervalues():
-            self.executeShell(
-                "find '%s' -type d -empty | xargs -r rmdir"
-                % archive_config.archiveroot)
-
-    def runParts(self, distribution, parts, env):
-        """Execute run-parts.
-
-        :param distribution: `Distribution` to execute run-parts scripts for.
-        :param parts: The run-parts directory to execute:
-            "publish-distro.d" or "finalize.d".
-        :param env: A dict of environment variables to pass to the
-            scripts in the run-parts directory.
-        """
-        parts_dir = find_run_parts_dir(distribution, parts)
-        if parts_dir is None:
-            self.logger.debug("Skipping run-parts %s: not configured.", parts)
-            return
-        env_string = compose_env_string(env, extend_PATH())
-        self.executeShell(
-            "env %s run-parts -- '%s'" % (env_string, parts_dir),
-            failure=LaunchpadScriptFailure(
-                "Failure while executing run-parts %s." % parts_dir))
+            execute_subprocess(
+                ["find", archive_config.archiveroot, "-type", "d", "-empty",
+                 "-delete"],
+                log=self.logger)
 
     def runFinalizeParts(self, distribution, security_only=False):
         """Run the finalize.d parts to finalize publication."""
-        archive_roots = shell_quote(' '.join([
+        archive_roots = ' '.join([
             archive_config.archiveroot
-            for archive_config in self.configs[distribution].itervalues()]))
+            for archive_config in self.configs[distribution].itervalues()])
 
         env = {
-            'SECURITY_UPLOAD_ONLY': compose_shell_boolean(security_only),
+            'SECURITY_UPLOAD_ONLY': 'yes' if security_only else 'no',
             'ARCHIVEROOTS': archive_roots,
         }
-        self.runParts(distribution, 'finalize.d', env)
+        run_parts(distribution.name, 'finalize.d', log=self.logger, env=env)
 
     def publishSecurityUploads(self, distribution):
         """Quickly process just the pending security uploads.

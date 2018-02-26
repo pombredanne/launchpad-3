@@ -269,7 +269,7 @@ class TestHandleStatusMixin:
             result=True)
 
     def assertResultCount(self, count, result):
-        self.assertEquals(
+        self.assertEqual(
             1, len(os.listdir(os.path.join(self.upload_root, result))))
 
     @defer.inlineCallbacks

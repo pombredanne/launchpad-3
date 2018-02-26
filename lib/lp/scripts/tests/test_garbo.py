@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -153,16 +153,16 @@ class TestGarboScript(TestCase):
         """Ensure garbo-daily.py actually runs."""
         rv, out, err = run_script(
             "cronscripts/garbo-daily.py", ["-q"], expect_returncode=0)
-        self.failIf(out.strip(), "Output to stdout: %s" % out)
-        self.failIf(err.strip(), "Output to stderr: %s" % err)
+        self.assertFalse(out.strip(), "Output to stdout: %s" % out)
+        self.assertFalse(err.strip(), "Output to stderr: %s" % err)
         DatabaseLayer.force_dirty_database()
 
     def test_hourly_script(self):
         """Ensure garbo-hourly.py actually runs."""
         rv, out, err = run_script(
             "cronscripts/garbo-hourly.py", ["-q"], expect_returncode=0)
-        self.failIf(out.strip(), "Output to stdout: %s" % out)
-        self.failIf(err.strip(), "Output to stderr: %s" % err)
+        self.assertFalse(out.strip(), "Output to stdout: %s" % out)
+        self.assertFalse(err.strip(), "Output to stderr: %s" % err)
         DatabaseLayer.force_dirty_database()
 
 
@@ -466,7 +466,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         store = IMasterStore(OpenIDConsumerNonce)
 
         # Make sure we start with 0 nonces.
-        self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 0)
+        self.assertEqual(store.find(OpenIDConsumerNonce).count(), 0)
 
         for timestamp in timestamps:
             store.add(OpenIDConsumerNonce(
@@ -474,7 +474,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         transaction.commit()
 
         # Make sure we have 4 nonces now.
-        self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 4)
+        self.assertEqual(store.find(OpenIDConsumerNonce).count(), 4)
 
         # Run the garbage collector.
         self.runFrequently(maximum_chunk_size=60)  # 1 minute maximum chunks.
@@ -482,11 +482,11 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         store = IMasterStore(OpenIDConsumerNonce)
 
         # We should now have 2 nonces.
-        self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 2)
+        self.assertEqual(store.find(OpenIDConsumerNonce).count(), 2)
 
         # And none of them are older than 1 day
         earliest = store.find(Min(OpenIDConsumerNonce.timestamp)).one()
-        self.failUnless(
+        self.assertTrue(
             earliest >= now - 24 * 60 * 60, 'Still have old nonces')
 
     def test_CodeImportResultPruner(self):
@@ -522,26 +522,26 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # Nothing is removed, because we always keep the
         # ``results_to_keep_count`` latest.
         store = IMasterStore(CodeImportResult)
-        self.failUnlessEqual(
+        self.assertEqual(
             results_to_keep_count,
             store.find(CodeImportResult).count())
 
         new_code_import_result(now - timedelta(days=31))
         self.runDaily()
         store = IMasterStore(CodeImportResult)
-        self.failUnlessEqual(
+        self.assertEqual(
             results_to_keep_count,
             store.find(CodeImportResult).count())
 
         new_code_import_result(now - timedelta(days=29))
         self.runDaily()
         store = IMasterStore(CodeImportResult)
-        self.failUnlessEqual(
+        self.assertEqual(
             results_to_keep_count,
             store.find(CodeImportResult).count())
 
         # We now have no CodeImportResults older than 30 days
-        self.failUnless(
+        self.assertTrue(
             store.find(
                 Min(CodeImportResult.date_created)).one().replace(tzinfo=UTC)
             >= now - timedelta(days=30))
@@ -570,7 +570,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         events = list(machine.events)
         self.assertEqual(3, len(events))
         # We now have no CodeImportEvents older than 30 days
-        self.failUnless(
+        self.assertTrue(
             store.find(
                 Min(CodeImportEvent.date_created)).one().replace(tzinfo=UTC)
             >= now - timedelta(days=30))
@@ -595,7 +595,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             SELECT COUNT(*) FROM %s
             WHERE issued + lifetime < %f
             """ % (table_name, now)).get_one()[0]
-        self.failUnless(num_expired > 0)
+        self.assertTrue(num_expired > 0)
 
         # Expire all those expirable rows, and possibly a few more if this
         # test is running slow.
@@ -610,13 +610,13 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             SELECT COUNT(*) FROM %s
             WHERE issued + lifetime < %f
             """ % (table_name, now)).get_one()[0]
-        self.failUnlessEqual(num_expired, 0)
+        self.assertEqual(num_expired, 0)
 
         # Confirm that we haven't expired everything. This test will fail
         # if it has taken 10 seconds to get this far.
         num_unexpired = store.execute(
             "SELECT COUNT(*) FROM %s" % table_name).get_one()[0]
-        self.failUnless(num_unexpired > 0)
+        self.assertTrue(num_unexpired > 0)
 
     def test_PreviewDiffPruner(self):
         switch_dbuser('testadmin')
@@ -1189,7 +1189,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # between calls.
         switch_dbuser('testadmin')
         potmsgset_pofile = {}
-        for n in xrange(4):
+        for n in range(4):
             pofile = self.factory.makePOFile()
             translation_message = self.factory.makeCurrentTranslationMessage(
                 pofile=pofile)

@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Branches."""
@@ -1240,8 +1240,8 @@ class TestBranchDeletion(TestCaseWithFactory):
         branch_id = self.branch.id
         branch_set = getUtility(IBranchLookup)
         self.branch.destroySelf()
-        self.assert_(branch_set.get(branch_id) is None,
-                     "The branch has not been deleted.")
+        self.assertIsNone(
+            branch_set.get(branch_id), "The branch has not been deleted.")
 
     def test_stackedBranchDisablesDeletion(self):
         # A branch that is stacked upon cannot be deleted.
@@ -2281,14 +2281,14 @@ class TestCodebrowse(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_simple(self):
-        # The basic codebrowse URL for a public branch is a 'http' url.
+        # The basic codebrowse URL for a public branch is an 'https' URL.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
-            'http://bazaar.launchpad.dev/' + branch.unique_name,
+            'https://bazaar.launchpad.dev/' + branch.unique_name,
             branch.getCodebrowseUrl())
 
     def test_private(self):
-        # The codebrowse URL for a private branch is a 'https' url.
+        # The codebrowse URL for a private branch is an 'https' URL.
         owner = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(
             owner=owner, information_type=InformationType.USERDATA)
@@ -2301,7 +2301,7 @@ class TestCodebrowse(TestCaseWithFactory):
         # Any arguments to getCodebrowseUrl are appended to the URL.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
-            'http://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
+            'https://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
             branch.getCodebrowseUrl('a', 'b'))
 
     def test_source_code_url(self):

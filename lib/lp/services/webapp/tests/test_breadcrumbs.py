@@ -67,14 +67,14 @@ class TestBreadcrumb(TestCase):
         # Breadcrumb adapter will use 'mainsite' as the rootsite.
         cookbook = Cookbook()
         self.assertIs(cookbook.rootsite, None)
-        self.assertEquals(Breadcrumb(cookbook).rootsite, 'mainsite')
+        self.assertEqual(Breadcrumb(cookbook).rootsite, 'mainsite')
 
     def test_urldata_rootsite_is_honored(self):
         # When a class' ICanonicalUrlData defines a rootsite, our Breadcrumb
         # adapter will use it.
         cookbook = Cookbook()
         cookbook.rootsite = 'cooking'
-        self.assertEquals(Breadcrumb(cookbook).rootsite, 'cooking')
+        self.assertEqual(Breadcrumb(cookbook).rootsite, 'cooking')
 
 
 class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
@@ -94,20 +94,20 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
     def test_non_default_page(self):
         crumbs = self.getBreadcrumbsForObject(self.product, '+download')
         downloads_url = "%s/+download" % self.product_url
-        self.assertEquals(
+        self.assertEqual(
             [self.product_url, downloads_url],
             [crumb.url for crumb in crumbs])
-        self.assertEquals(
+        self.assertEqual(
             '%s project files' % self.product.displayname,
             crumbs[-1].text)
 
     def test_facet_default_page(self):
         crumbs = self.getBreadcrumbsForObject(self.product, '+bugs')
         bugs_url = self.product_url.replace('launchpad', 'bugs.launchpad')
-        self.assertEquals(
+        self.assertEqual(
             [self.product_url, bugs_url],
             [crumb.url for crumb in crumbs])
-        self.assertEquals('Bugs', crumbs[-1].text)
+        self.assertEqual('Bugs', crumbs[-1].text)
 
     def test_zope_i18n_Messages_are_interpolated(self):
         # Views can use zope.i18nmessageid.Message as their title when they
@@ -124,7 +124,7 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
         request.traversed_objects = [self.product, test_view]
         hierarchy_view = Hierarchy(test_view, request)
         [breadcrumb] = hierarchy_view.makeBreadcrumbsForRequestedPage()
-        self.assertEquals(breadcrumb.text, 'breadcrumb test')
+        self.assertEqual(breadcrumb.text, 'breadcrumb test')
 
 
 class TestExtraFacetBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
@@ -151,14 +151,14 @@ class TestExtraFacetBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):
 
     def test_root_on_mainsite(self):
         crumbs = self.getBreadcrumbsForUrl('http://launchpad.dev/')
-        self.assertEquals(crumbs, [])
+        self.assertEqual(crumbs, [])
 
     def test_product_on_mainsite(self):
         self.assertBreadcrumbUrls([self.product_url], self.product)
 
     def test_root_on_vhost(self):
         crumbs = self.getBreadcrumbsForUrl('http://bugs.launchpad.dev/')
-        self.assertEquals(crumbs, [])
+        self.assertEqual(crumbs, [])
 
     def test_product_on_vhost(self):
         self.assertBreadcrumbUrls(

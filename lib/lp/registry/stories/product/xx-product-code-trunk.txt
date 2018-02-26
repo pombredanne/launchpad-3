@@ -119,7 +119,7 @@ The owner is taken back to the project page.
         Configure code for this project
         (http://launchpad.dev/fooix/+configure-code)
       Browse the code
-        (http://bazaar.launchpad.dev/~eric/fooix/trunk/files)
+        (https://bazaar.launchpad.dev/~eric/fooix/trunk/files)
 
 
 Projects with development focus branches
@@ -142,7 +142,7 @@ branch.
     Links:
       lp://dev/fooix (http://code.launchpad.dev/~eric/fooix/trunk)
       Browse the code
-        (http://bazaar.launchpad.dev/~eric/fooix/trunk/files)
+        (https://bazaar.launchpad.dev/~eric/fooix/trunk/files)
 
     >>> owner_browser.open('http://launchpad.dev/fooix')
     >>> print_development_focus(owner_browser)
@@ -159,7 +159,7 @@ branch.
         Configure code for this project
         (http://launchpad.dev/fooix/+configure-code)
       Browse the code
-        (http://bazaar.launchpad.dev/~eric/fooix/trunk/files)
+        (https://bazaar.launchpad.dev/~eric/fooix/trunk/files)
 
 
 Private development focus branches

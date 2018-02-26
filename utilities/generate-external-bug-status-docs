@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # Generates documentation of mapping from remote bug tracker statuses
@@ -94,7 +94,7 @@ def generate_tables():
     """Generate all the tables."""
     documentable_classes = sorted(
         generate_documentable_classes(),
-        key=(lambda (typ, cls): typ.title))
+        key=(lambda typ_cls: typ_cls[0].title))
     return chain(
         *(chain(generate_table(typ, cls),
                 generate_blank_lines(2))

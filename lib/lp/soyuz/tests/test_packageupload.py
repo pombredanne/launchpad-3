@@ -1,7 +1,9 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from datetime import timedelta
 from urllib2 import (
@@ -316,7 +318,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
 
         # There are now duplicate uploads in UNAPPROVED.
         unapproved = distroseries.getPackageUploads(
-            status=PackageUploadStatus.UNAPPROVED, name=u"cnews")
+            status=PackageUploadStatus.UNAPPROVED, name="cnews")
         self.assertEqual(2, unapproved.count())
 
         # Accepting one of them works.  (Since it's a single source upload,
@@ -806,13 +808,13 @@ class TestPackageUploadSet(TestCaseWithFactory):
     def test_getAll_without_exact_match_escapes_name(self):
         distroseries = self.factory.makeDistroSeries()
         self.assertContentEqual(
-            [], self.upload_set.getAll(distroseries, name=u"'"))
+            [], self.upload_set.getAll(distroseries, name="'"))
 
     def test_getAll_with_exact_match_escapes_name(self):
         distroseries = self.factory.makeDistroSeries()
         self.assertContentEqual(
             [], self.upload_set.getAll(
-                distroseries, name=u"'", exact_match=True))
+                distroseries, name="'", exact_match=True))
 
     def test_getAll_matches_source_upload_by_version(self):
         distroseries = self.factory.makeDistroSeries()

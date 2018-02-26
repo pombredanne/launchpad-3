@@ -73,7 +73,7 @@ class ImplicitDatabasePolicyTestCase(TestCase):
     def test_dbusers(self):
         store_selector = getUtility(IStoreSelector)
         main_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
-        self.failUnlessEqual(self.getDBUser(main_store), 'launchpad_main')
+        self.assertEqual(self.getDBUser(main_store), 'launchpad_main')
 
     def getDBUser(self, store):
         return store.execute(
@@ -129,7 +129,7 @@ class SlaveOnlyDatabasePolicyTestCase(SlaveDatabasePolicyTestCase):
 
     def test_master_allowed(self):
         for store in ALL_STORES:
-            self.failUnlessRaises(
+            self.assertRaises(
                 DisallowedStore,
                 getUtility(IStoreSelector).get, store, MASTER_FLAVOR)
 
@@ -149,7 +149,7 @@ class MasterDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
             SERVER_URL='http://xmlrpc-private.launchpad.dev')
         setFirstLayer(request, IXMLRPCRequest)
         policy = getAdapter(request, IDatabasePolicy)
-        self.failUnless(
+        self.assertTrue(
             isinstance(policy, MasterDatabasePolicy),
             "Expected MasterDatabasePolicy, not %s." % policy)
 

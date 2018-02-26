@@ -114,39 +114,45 @@ doc:
 	$(MAKE) -C doc/ html
 
 # Run by PQM.
-check_config: build
+check_config: build $(JS_BUILD_DIR)/.development
 	bin/test -m lp.services.config.tests -vvt test_config
 
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
-check: clean build
+check: clean build $(JS_BUILD_DIR)/.development
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
 	bzr status --no-pending
 
-check_mailman: build
+check_mailman: build $(JS_BUILD_DIR)/.development
 	# Run all tests, including the Mailman integration
 	# tests. test_on_merge.py takes care of setting up the database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS) \
 		lp.services.mailman.tests
 
-lint: ${PY}
+lint: ${PY} $(JS_BUILD_DIR)/.development
 	@bash ./utilities/lint
 
-lint-verbose: ${PY}
+lint-verbose: ${PY} $(JS_BUILD_DIR)/.development
 	@bash ./utilities/lint -v
 
 logs:
 	mkdir logs
 
 codehosting-dir:
+	mkdir -p $(CODEHOSTING_ROOT)
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
 	touch $(CODEHOSTING_ROOT)/rewrite.log
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
+ifneq ($(SUDO_UID),)
+	if [ "$$(id -u)" = 0 ]; then \
+		chown -R $(SUDO_UID):$(SUDO_GID) $(CODEHOSTING_ROOT); \
+	fi
+endif
 
 inplace: build logs clean_logs codehosting-dir
 	if [ -d /srv/launchpad.dev ]; then \
@@ -190,18 +196,22 @@ $(YARN_BUILD): | $(JS_BUILD_DIR)
 	mv $@/tmp/yarn-v$(YARN_VERSION)/* $@
 	$(RM) -r $@/tmp
 
-yarn/node_modules/yui: yarn/package.json | $(YARN_BUILD)
-	$(YARN) install --offline --frozen-lockfile
+$(JS_BUILD_DIR)/.production: yarn/package.json | $(YARN_BUILD)
+	$(YARN) install --offline --frozen-lockfile --production
 	# We don't use YUI's Flash components and they have a bad security
 	# record. Kill them.
 	find yarn/node_modules/yui -name '*.swf' -delete
+	touch $@
 
-$(YUI_SYMLINK): yarn/node_modules/yui
+$(JS_BUILD_DIR)/.development: $(JS_BUILD_DIR)/.production
+	$(YARN) install --offline --frozen-lockfile
+	touch $@
+
+$(YUI_SYMLINK): $(JS_BUILD_DIR)/.production
 	ln -sfn ../../yarn/node_modules/yui $@
 
 $(LP_JS_BUILD): | $(JS_BUILD_DIR)
-	-mkdir $@
-	-mkdir $@/services
+	mkdir -p $@/services
 	for jsdir in lib/lp/*/javascript lib/lp/services/*/javascript; do \
 		app=$$(echo $$jsdir | sed -e 's,lib/lp/\(.*\)/javascript,\1,'); \
 		cp -a $$jsdir $@/$$app; \
@@ -393,16 +403,13 @@ lxc-clean: clean_js clean_mailman clean_pip clean_logs
 	# it does everything expected from a clean target.  When the
 	# referenced bug is fixed, this target may be reunited with
 	# the 'clean' target.
-	$(MAKE) -C sourcecode/pygettextpo clean
-	# XXX gary 2009-11-16 bug 483782
-	# The pygettextpo Makefile should have this next line in it for its make
-	# clean, and then we should remove this line.
-	$(RM) sourcecode/pygpgme/gpgme/*.so
+	if test -f sourcecode/pygettextpo/Makefile; then \
+		$(MAKE) -C sourcecode/pygettextpo clean; \
+	fi
 	if test -f sourcecode/mailman/Makefile; then \
 		$(MAKE) -C sourcecode/mailman clean; \
 	fi
 	$(RM) -r env
-	$(RM) -r lib/subvertpy/*.so
 	$(RM) -r $(LP_BUILT_JS_ROOT)/*
 	$(RM) -r $(CODEHOSTING_ROOT)/*
 	$(RM) -r $(APIDOC_DIR)
@@ -453,7 +460,7 @@ copy-certificates:
 	cp configs/development/launchpad.crt /etc/apache2/ssl/
 	cp configs/development/launchpad.key /etc/apache2/ssl/
 
-copy-apache-config:
+copy-apache-config: codehosting-dir
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	set -e; \
@@ -467,8 +474,6 @@ copy-apache-config:
 		-e 's,%LISTEN_ADDRESS%,$(LISTEN_ADDRESS),' \
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/$$base
-	touch $(CODEHOSTING_ROOT)/rewrite.log
-	chown -R $(SUDO_UID):$(SUDO_GID) $(CODEHOSTING_ROOT)
 	if [ ! -d /srv/launchpad.dev ]; then \
 		mkdir /srv/launchpad.dev; \
 		chown $(SUDO_UID):$(SUDO_GID) /srv/launchpad.dev; \
