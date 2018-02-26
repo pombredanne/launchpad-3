@@ -219,7 +219,7 @@ setup(
         'testtools',
         'timeline',
         'transaction',
-        'Twisted',
+        'Twisted[conch,tls]',
         'txfixtures',
         'txlongpoll',
         'txlongpollfixture',
