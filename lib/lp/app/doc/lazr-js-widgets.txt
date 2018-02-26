@@ -37,8 +37,8 @@ content.
 
     >>> print widget()
     <h1 id="edit-display_name">
-    <span style="max-width: 90%;"
-          class="yui3-editable_text-text ellipsis">
+    <span class="yui3-editable_text-text ellipsis"
+          style="max-width: 90%;">
         Widgets &gt; important
     </span>
     </h1>
@@ -50,8 +50,8 @@ link into an AJAX control when JS is available:
     >>> ignored = login_person(product.owner)
     >>> print widget()
     <h1 id="edit-display_name">
-    <span style="max-width: 90%;"
-          class="yui3-editable_text-text ellipsis">
+    <span class="yui3-editable_text-text ellipsis"
+          style="max-width: 90%;">
         Widgets &gt; important
     </span>
         <a class="yui3-editable_text-trigger sprite edit action-icon"
@@ -151,7 +151,7 @@ With no-one logged in, there are no edit buttons.
     >>> login(ANONYMOUS)
     >>> print widget()
     <div>
-      <div id="edit-description" class="lazr-multiline-edit">
+      <div class="lazr-multiline-edit" id="edit-description">
         <div class="clearfix">
           <h3>A title</h3>
         </div>
@@ -170,7 +170,7 @@ editor.
     >>> ignored = login_person(eric)
     >>> print widget()
     <div>
-      <div id="edit-description" class="lazr-multiline-edit">
+      <div class="lazr-multiline-edit" id="edit-description">
         <div class="clearfix">
           <div class="edit-controls">
             <a class="yui3-editable_text-trigger sprite edit action-icon"
@@ -209,7 +209,7 @@ tag.
     >>> clear_property_cache(widget)
     >>> print widget()
     <div>
-    <div id="edit-description" class="lazr-multiline-edit hidden">
+    <div class="lazr-multiline-edit hidden" id="edit-description">
     ...
 
 This behaviour can be overridden by setting the "hide_empty" parameter to
@@ -219,7 +219,7 @@ False.
     ...     archive, description, 'A title', hide_empty=False)
     >>> print widget()
     <div>
-    <div id="edit-description" class="lazr-multiline-edit">
+    <div class="lazr-multiline-edit" id="edit-description">
     ...
 
 
