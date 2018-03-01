@@ -55,6 +55,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp import canonical_url
 from lp.snappy.interfaces.snap import SnapBuildArchiveOwnerMismatch
 from lp.snappy.model.snapbuildbehaviour import SnapBuildBehaviour
 from lp.soyuz.adapters.archivedependencies import (
@@ -276,6 +277,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archives": expected_archives,
             "arch_tag": "i386",
             "branch": branch.bzr_identity,
+            "build_url": canonical_url(job.build),
             "name": "test-snap",
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
@@ -297,6 +299,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_url": canonical_url(job.build),
             "git_repository": ref.repository.git_https_url,
             "git_path": ref.name,
             "name": "test-snap",
@@ -321,6 +324,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_url": canonical_url(job.build),
             "git_repository": ref.repository.git_https_url,
             "name": "test-snap",
             "proxy_url": self.proxy_url,
@@ -345,6 +349,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_url": canonical_url(job.build),
             "git_repository": url,
             "git_path": "master",
             "name": "test-snap",
@@ -369,6 +374,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_url": canonical_url(job.build),
             "git_repository": url,
             "name": "test-snap",
             "proxy_url": self.proxy_url,

@@ -44,6 +44,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp import canonical_url
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
@@ -187,6 +188,7 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
             'archives': expected_archives,
             'author_email': 'requester@ubuntu.com',
             'author_name': 'Joe User',
+            'build_url': canonical_url(job.build),
             'distroseries_name': job.build.distroseries.name,
             'ogrecomponent': 'universe',
             'recipe_text':
@@ -281,6 +283,7 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
             'archives': expected_archives,
             'author_email': 'requester@ubuntu.com',
             'author_name': 'Joe User',
+            'build_url': canonical_url(job.build),
             'distroseries_name': job.build.distroseries.name,
             'ogrecomponent': 'universe',
             'recipe_text':
@@ -323,6 +326,7 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
             'archives': expected_archives,
             'author_email': 'requester@ubuntu.com',
             'author_name': 'Joe User',
+            'build_url': canonical_url(job.build),
             'distroseries_name': job.build.distroseries.name,
             'git': True,
             'ogrecomponent': 'universe',

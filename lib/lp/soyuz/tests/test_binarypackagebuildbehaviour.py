@@ -58,6 +58,7 @@ from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.config import config
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp import canonical_url
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
@@ -140,6 +141,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             'archive_purpose': archive_purpose.name,
             'archives': archives,
             'build_debug_symbols': archive.build_debug_symbols,
+            'build_url': canonical_url(build),
             'distribution': das.distroseries.distribution.name,
             'ogrecomponent': component,
             'series': ds_name,
