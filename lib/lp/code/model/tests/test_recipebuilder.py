@@ -181,20 +181,21 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
             0, "deb http://foo %s main" % job.build.distroseries.name)
         args = yield job._extraBuildArgs(distroarchseries)
         self.assertEqual({
-            'archive_private': False,
             'arch_tag': 'i386',
-            'author_email': 'requester@ubuntu.com',
-            'series': job.build.distroseries.name,
-            'suite': 'mydistro',
-            'author_name': 'Joe User',
+            'archive_private': False,
             'archive_purpose': 'PPA',
+            'archives': expected_archives,
+            'author_email': 'requester@ubuntu.com',
+            'author_name': 'Joe User',
+            'distroseries_name': job.build.distroseries.name,
             'ogrecomponent': 'universe',
             'recipe_text':
-            '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
-            'lp://dev/~joe/someapp/pkg\n',
-            'archives': expected_archives,
+                '# bzr-builder format 0.3 '
+                'deb-version {debupstream}-0~{revno}\n'
+                'lp://dev/~joe/someapp/pkg\n',
+            'series': job.build.distroseries.name,
+            'suite': 'mydistro',
             'trusted_keys': expected_trusted_keys,
-            'distroseries_name': job.build.distroseries.name,
         }, args)
 
     @defer.inlineCallbacks
@@ -274,20 +275,21 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
         logger = BufferLogger()
         extra_args = yield job._extraBuildArgs(distroarchseries, logger)
         self.assertEqual({
-            'archive_private': False,
             'arch_tag': 'i386',
-            'author_email': 'requester@ubuntu.com',
-            'series': job.build.distroseries.name,
-            'suite': 'mydistro',
-            'author_name': 'Joe User',
+            'archive_private': False,
             'archive_purpose': 'PPA',
+            'archives': expected_archives,
+            'author_email': 'requester@ubuntu.com',
+            'author_name': 'Joe User',
+            'distroseries_name': job.build.distroseries.name,
             'ogrecomponent': 'universe',
             'recipe_text':
-            '# bzr-builder format 0.3 deb-version {debupstream}-0~{revno}\n'
-            'lp://dev/~joe/someapp/pkg\n',
-            'archives': expected_archives,
+                '# bzr-builder format 0.3 '
+                'deb-version {debupstream}-0~{revno}\n'
+                'lp://dev/~joe/someapp/pkg\n',
+            'series': job.build.distroseries.name,
+            'suite': 'mydistro',
             'trusted_keys': expected_trusted_keys,
-            'distroseries_name': job.build.distroseries.name,
             }, extra_args)
         self.assertIn(
             "Exception processing build tools sources.list entry:",
@@ -315,22 +317,22 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
                 job.build, distroarchseries, None))
         extra_args = yield job._extraBuildArgs(distroarchseries)
         self.assertEqual({
-            'archive_private': False,
             'arch_tag': 'i386',
-            'author_email': 'requester@ubuntu.com',
-            'series': job.build.distroseries.name,
-            'suite': 'mydistro',
-            'author_name': 'Joe User',
+            'archive_private': False,
             'archive_purpose': 'PPA',
+            'archives': expected_archives,
+            'author_email': 'requester@ubuntu.com',
+            'author_name': 'Joe User',
+            'distroseries_name': job.build.distroseries.name,
+            'git': True,
             'ogrecomponent': 'universe',
             'recipe_text':
                 '# git-build-recipe format 0.4 deb-version '
                 '{debupstream}-0~{revtime}\n'
                 'lp:~joe/someapp/+git/pkg packaging\n',
-            'archives': expected_archives,
+            'series': job.build.distroseries.name,
+            'suite': 'mydistro',
             'trusted_keys': expected_trusted_keys,
-            'distroseries_name': job.build.distroseries.name,
-            'git': True,
             }, extra_args)
 
     @defer.inlineCallbacks
