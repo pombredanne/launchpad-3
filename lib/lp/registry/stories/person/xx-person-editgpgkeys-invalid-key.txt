@@ -20,10 +20,10 @@ The following keys are used in these tests:
         Key fingerprint = 84D2 05F0 3E1E 6709 6CB5  4E26 2BE8 3793 AACC D97C
   uid                  Revoked Key <revoked.key@canonical.com>
 
-  pub   1024D/046C6D63 2005-10-12 [expired: 2005-10-13]
-        Key fingerprint = ECA5 B797 586F 2E27 381A  16CF DE6C 9167 046C 6D63
+  pub   1024D/02F53CC6 2005-10-12 [expires: 2005-10-13]
+        Key fingerprint = 0DD6 4D28 E5F4 1138 5334  9520 0E3D B4D4 02F5 3CC6
   uid                  Expired Key <expired.key@canonical.com>
-  sub   2048g/D501190D 2005-10-12 [expired: 2005-10-13]
+  sub   1024g/86163BC7 2005-10-12 [expires: 2005-10-13]
 
 
 Attempts to claim a revoked OpenPGP key fail:
@@ -51,12 +51,12 @@ Attempts to claim an expired OpenPGP key also fail:
 
     >>> browser.getControl(
     ...     name='fingerprint').value = (
-    ...     'ECA5B797586F2E27381A16CFDE6C9167046C6D63')
+    ...     '0DD64D28E5F41138533495200E3DB4D402F53CC6')
     >>> browser.getControl('Import Key').click()
     >>> for tag in find_tags_by_class(browser.contents, 'error message'):
     ...     print tag.renderContents()
     <BLANKLINE>
-    The key ECA5B797586F2E27381A16CFDE6C9167046C6D63 cannot be validated
+    The key 0DD64D28E5F41138533495200E3DB4D402F53CC6 cannot be validated
     because it has expired. Change the expiry date (in a terminal, enter
     <kbd>gpg --edit-key <var>your@email.address</var></kbd> then enter
     <kbd>expire</kbd>), and try again.
@@ -78,7 +78,7 @@ will create login tokens for the revoked and expired test keys:
     >>> logintoken = tokenset.new(
     ...     person, 'test@canonical.com', 'test@canonical.com',
     ...     LoginTokenType.VALIDATEGPG,
-    ...     'ECA5B797586F2E27381A16CFDE6C9167046C6D63')
+    ...     '0DD64D28E5F41138533495200E3DB4D402F53CC6')
     >>> expired_key_token = logintoken.token.encode('ascii')
     >>> logout()
 
@@ -107,7 +107,7 @@ Try to validate the revoked OpenPGP key:
     >>> for tag in find_tags_by_class(browser.contents, 'error message'):
     ...     print tag.renderContents()
     There is 1 error.
-    The key ECA5B797586F2E27381A16CFDE6C9167046C6D63 cannot be validated
+    The key 0DD64D28E5F41138533495200E3DB4D402F53CC6 cannot be validated
     because it has expired. Change the expiry date (in a terminal, enter
     <kbd>gpg --edit-key <var>your@email.address</var></kbd> then enter
     <kbd>expire</kbd>), and try again.

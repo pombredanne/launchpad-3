@@ -16,8 +16,8 @@ Some information on the keys in this directory:
     - 0xAACCD97C is a revoked GPG key
       fingerprint: 84D2 05F0 3E1E 6709 6CB5  4E26 2BE8 3793 AACC D97C
 
-    - 0x046C6D63 is an expired GPG key
-      fingerprint: ECA5 B797 586F 2E27 381A  16CF DE6C 9167 046C 6D63
+    - 0x02F53CC6 is an expired GPG key
+      fingerprint: 0DD6 4D28 E5F4 1138 5334  9520 0E3D B4D4 02F5 3CC6
 
 Here's a summary of the key information obtained by piping the files into gpg:
 
@@ -26,8 +26,8 @@ uid                            Sample Person (revoked) <sample.revoked@canonical
 uid                            Sample Person <test@canonical.com>
 sub  1024g/2D28D2AB 2005-04-13
 sub  1024D/02BA5EF6 2005-08-01
-pub  1024D/046C6D63 2005-10-12 Expired Key <expired.key@canonical.com>
-sub  2048g/D501190D 2005-10-12 [expires: 2005-10-13]
+pub  1024D/02F53CC6 2005-10-12 Expired Key <expired.key@canonical.com>
+sub  1024g/86163BC7 2005-10-12 [expires: 2005-10-13]
 pub  1024D/17B05A8F 2005-10-12 Sign Only <sign.only@canonical.com>
 pub  1024D/20687895 2000-05-12 Daniel Silverstone (DOB: 1980-04-09) <dsilvers@digital-scurf.org>
 uid                            Daniel Silverstone <dsilvers@digital-scurf.demon.co.uk>
