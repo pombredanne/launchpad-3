@@ -24,6 +24,7 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
     BuildFarmJobBehaviourBase,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.webapp import canonical_url
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
@@ -94,6 +95,7 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
             yield get_sources_list_for_building(
                 build, build.distro_arch_series, None, logger=logger))
         args["archive_private"] = build.archive.private
+        args["build_url"] = canonical_url(build)
         defer.returnValue(args)
 
     @defer.inlineCallbacks
