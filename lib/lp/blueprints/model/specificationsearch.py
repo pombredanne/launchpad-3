@@ -1,4 +1,4 @@
-# Copyright 2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper methods to search specifications."""
@@ -16,11 +16,14 @@ from collections import defaultdict
 from storm.expr import (
     And,
     Coalesce,
+    Column,
     Join,
     LeftJoin,
     Not,
     Or,
     Select,
+    Table,
+    With,
     )
 from storm.locals import (
     Desc,
@@ -81,12 +84,27 @@ def search_specifications(context, base_clauses, user, sort=None,
     if not tables:
         tables = [Specification]
     clauses = base_clauses
-    product_table, product_clauses = get_specification_active_product_filter(
+    product_tables, product_clauses = get_specification_active_product_filter(
         context)
-    tables.extend(product_table)
-    for extend in (get_specification_privacy_filter(user),
-        get_specification_filters(spec_filter), product_clauses):
-        clauses.extend(extend)
+    tables.extend(product_tables)
+    clauses.extend(product_clauses)
+    # If there are any base or product clauses, they typically have good
+    # selectivity, so use a CTE to force PostgreSQL to calculate them
+    # up-front rather than doing a sequential scan for visible
+    # specifications.
+    if clauses:
+        RelevantSpecification = Table('RelevantSpecification')
+        relevant_specification_cte = With(
+            RelevantSpecification.name,
+            Select(Specification.id, And(clauses), tables=tables))
+        store = store.with_(relevant_specification_cte)
+        tables = [Specification]
+        clauses = [
+            Specification.id.is_in(
+                Select(Column('id', RelevantSpecification))),
+            ]
+    clauses.extend(get_specification_privacy_filter(user))
+    clauses.extend(get_specification_filters(spec_filter))
 
     # Sort by priority descending, by default.
     if sort is None or sort == SpecificationSort.PRIORITY:
