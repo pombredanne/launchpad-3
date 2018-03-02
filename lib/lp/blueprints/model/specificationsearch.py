@@ -1,4 +1,4 @@
-# Copyright 2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper methods to search specifications."""
@@ -16,11 +16,14 @@ from collections import defaultdict
 from storm.expr import (
     And,
     Coalesce,
+    Column,
     Join,
     LeftJoin,
     Not,
     Or,
     Select,
+    Table,
+    With,
     )
 from storm.locals import (
     Desc,
@@ -80,7 +83,18 @@ def search_specifications(context, base_clauses, user, sort=None,
 
     if not tables:
         tables = [Specification]
-    clauses = base_clauses
+    clauses = []
+    # If there are any base clauses, they typically have good selectivity,
+    # so use a CTE to force PostgreSQL to calculate them up-front rather
+    # than doing a sequential scan for visible specifications.
+    if base_clauses:
+        RelevantSpecification = Table('RelevantSpecification')
+        relevant_specification_cte = With(
+            RelevantSpecification.name,
+            Select(Specification.id, And(base_clauses)))
+        store = store.with_(relevant_specification_cte)
+        clauses.append(Specification.id.is_in(
+            Select(Column('id', RelevantSpecification))))
     product_table, product_clauses = get_specification_active_product_filter(
         context)
     tables.extend(product_table)
