@@ -1,6 +1,6 @@
 
-Keys in lib/canonical/launchpad/ftests/gpgkeys should be symlinked to entries
-in lib/lp/testing/keyserver/tests/keys. There should be symlinks for each
+Keys in lib/lp/testing/gpgkeys/data/ should be symlinked to entries in
+lib/lp/testing/keyserver/tests/keys/. There should be symlinks for each
 individual subkey ID; for instance, for a regular sign-and-encrypt key there
 will be a symlink for the main signing subkey and one for the encryption
 subkey.
@@ -75,6 +75,8 @@ uid                            Sample Person (revoked) <sample.revoked@canonical
 uid                            Sample Person <test@canonical.com>
 sub  1024g/2D28D2AB 2005-04-13
 sub  1024D/02BA5EF6 2005-08-01
+
+All secret keys are either passwordless or have the password "test".
 
 To look at further information you'll need to gpg --import each key and then
 browse them using gpg itself. Good luck!
