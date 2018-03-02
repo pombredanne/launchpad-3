@@ -133,8 +133,8 @@ class GPGHandler:
         """See IGPGHandler."""
         try:
             return self.getVerifiedSignature(content, signature)
-        except GPGVerificationError:
-            # Swallow GPG Verification Errors
+        except (GPGVerificationError, GPGKeyExpired):
+            # Swallow GPG verification errors
             pass
         return None
 
@@ -214,17 +214,26 @@ class GPGHandler:
                                        'found multiple signatures')
 
         signature = signatures[0]
+        expired = False
         # signature.status == 0 means "Ok"
         if signature.status is not None:
-            raise GPGVerificationError(signature.status.args)
+            if signature.status.code == gpgme.ERR_KEY_EXPIRED:
+                expired = True
+            else:
+                raise GPGVerificationError(signature.status.args)
 
-        # supporting subkeys by retriving the full key from the
-        # keyserver and use the master key fingerprint.
+        # Support subkeys by retrieving the full key from the keyserver and
+        # using the master key fingerprint.
         try:
             key = self.retrieveKey(signature.fpr)
         except GPGKeyNotFoundError:
             raise GPGVerificationError(
                 "Unable to map subkey: %s" % signature.fpr)
+
+        if expired:
+            # This should already be set, but let's make sure.
+            key.expired = True
+            raise GPGKeyExpired(key)
 
         # return the signature container
         return PymeSignature(

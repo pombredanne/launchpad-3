@@ -212,11 +212,10 @@ class IGPGHandler(Interface):
     def getVerifiedSignatureResilient(content, signature=None):
         """Wrapper for getVerifiedSignature.
 
-        It calls the target method exactly 3 times.
-
-        Return the result if it succeed during the cycle, otherwise
-        capture the errors and emits at the end GPGVerificationError
-        with the stored error information.
+        This calls the target method up to three times.  Successful results
+        are returned immediately, and GPGKeyExpired errors are raised
+        immediately.  Otherwise, captures the errors and raises
+        GPGVerificationError with the accumulated error information.
         """
 
     def getVerifiedSignature(content, signature=None):
@@ -229,13 +228,12 @@ class IGPGHandler(Interface):
         content and signature must be 8-bit encoded str objects. It's up to
         the caller to encode or decode as appropriate.
 
-        The only exception likely to be propogated out is GPGVerificationError
-
         :param content: The content to be verified as string;
         :param signature: The signature as string (or None if content is
             clearsigned)
 
         :raise GPGVerificationError: if the signature cannot be verified.
+        :raise GPGKeyExpired: if the signature was made with an expired key.
         :return: a `PymeSignature` object.
         """
 
