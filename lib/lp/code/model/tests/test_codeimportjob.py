@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeImportJob and CodeImportJobWorkflow."""
@@ -17,19 +17,27 @@ import StringIO
 from pymacaroons import Macaroon
 from pytz import UTC
 from testtools.matchers import (
+    Equals,
+    Matcher,
     MatchesListwise,
     MatchesStructure,
+    Mismatch,
     )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from lp.app.enums import InformationType
 from lp.code.enums import (
     CodeImportEventType,
     CodeImportJobState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
     TargetRevisionControlSystems,
+    )
+from lp.code.interfaces.codehosting import (
+    branch_id_alias,
+    compose_public_url,
     )
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
@@ -74,6 +82,106 @@ def login_for_code_imports():
     the vcs-imports team and can access the objects freely.
     """
     return login_celebrity('vcs_imports')
+
+
+class CodeImportJobMacaroonVerifies(Matcher):
+    """Matches if a code-import-job macaroon can be verified."""
+
+    def __init__(self, code_import):
+        self.code_import = code_import
+
+    def match(self, macaroon_raw):
+        issuer = getUtility(IMacaroonIssuer, 'code-import-job')
+        macaroon = Macaroon.deserialize(macaroon_raw)
+        if not issuer.verifyMacaroon(macaroon, self.code_import.import_job):
+            return Mismatch("Macaroon '%s' does not verify" % macaroon_raw)
+
+
+class TestCodeImportJob(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestCodeImportJob, self).setUp()
+        login_for_code_imports()
+
+    def assertArgumentsMatch(self, code_import, matcher, start_job=False):
+        job = self.factory.makeCodeImportJob(code_import=code_import)
+        if start_job:
+            machine = self.factory.makeCodeImportMachine(set_online=True)
+            getUtility(ICodeImportJobWorkflow).startJob(job, machine)
+        self.assertThat(job.makeWorkerArguments(), matcher)
+
+    def test_bzr_arguments(self):
+        code_import = self.factory.makeCodeImport(
+            bzr_branch_url="http://example.com/foo")
+        self.assertArgumentsMatch(
+            code_import, Equals([
+                str(code_import.branch.id), 'bzr:bzr',
+                'http://example.com/foo']))
+
+    def test_git_arguments(self):
+        code_import = self.factory.makeCodeImport(
+            git_repo_url="git://git.example.com/project.git")
+        self.assertArgumentsMatch(
+            code_import, Equals([
+                str(code_import.branch.id), 'git:bzr',
+                'git://git.example.com/project.git']))
+
+    def test_git_to_git_arguments(self):
+        self.pushConfig('codeimport', macaroon_secret_key='some-secret')
+        self.useFixture(GitHostingFixture())
+        code_import = self.factory.makeCodeImport(
+            git_repo_url="git://git.example.com/project.git",
+            target_rcs_type=TargetRevisionControlSystems.GIT)
+        self.assertArgumentsMatch(
+            code_import, MatchesListwise([
+                Equals(code_import.git_repository.unique_name),
+                Equals('git:git'), Equals('git://git.example.com/project.git'),
+                CodeImportJobMacaroonVerifies(code_import)]),
+            # Start the job so that the macaroon can be verified.
+            start_job=True)
+
+    def test_cvs_arguments(self):
+        code_import = self.factory.makeCodeImport(
+            cvs_root=':pserver:foo@example.com/bar', cvs_module='bar')
+        self.assertArgumentsMatch(
+            code_import, Equals([
+                str(code_import.branch.id), 'cvs:bzr',
+                ':pserver:foo@example.com/bar', 'bar']))
+
+    def test_bzr_svn_arguments(self):
+        code_import = self.factory.makeCodeImport(
+            svn_branch_url='svn://svn.example.com/trunk')
+        self.assertArgumentsMatch(
+            code_import, Equals([
+                str(code_import.branch.id), 'bzr-svn:bzr',
+                'svn://svn.example.com/trunk']))
+
+    def test_bzr_stacked(self):
+        devfocus = self.factory.makeAnyBranch()
+        code_import = self.factory.makeCodeImport(
+            bzr_branch_url='bzr://bzr.example.com/foo',
+            context=devfocus.target.context)
+        code_import.branch.stacked_on = devfocus
+        self.assertArgumentsMatch(
+            code_import, Equals([
+                str(code_import.branch.id), 'bzr:bzr',
+                'bzr://bzr.example.com/foo',
+                compose_public_url('http', branch_id_alias(devfocus))]))
+
+    def test_bzr_stacked_private(self):
+        # Code imports can't be stacked on private branches.
+        devfocus = self.factory.makeAnyBranch(
+            information_type=InformationType.USERDATA)
+        code_import = self.factory.makeCodeImport(
+            context=removeSecurityProxy(devfocus).target.context,
+            bzr_branch_url='bzr://bzr.example.com/foo')
+        branch = removeSecurityProxy(code_import.branch)
+        branch.stacked_on = devfocus
+        self.assertArgumentsMatch(
+            code_import, Equals([
+                str(branch.id), 'bzr:bzr', 'bzr://bzr.example.com/foo']))
 
 
 class TestCodeImportJobSet(TestCaseWithFactory):
