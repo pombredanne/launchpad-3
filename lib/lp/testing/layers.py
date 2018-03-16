@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Layers used by Launchpad tests.
@@ -23,6 +23,8 @@ __all__ = [
     'AppServerLayer',
     'AuditorLayer',
     'BaseLayer',
+    'BingLaunchpadFunctionalLayer',
+    'BingServiceLayer',
     'DatabaseFunctionalLayer',
     'DatabaseLayer',
     'FunctionalLayer',
@@ -126,6 +128,9 @@ from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
 from lp.services.rabbit.server import RabbitServer
 from lp.services.scripts import execute_zcml_for_scripts
+from lp.services.sitesearch.tests.bingserviceharness import (
+    BingServiceTestSetup,
+    )
 from lp.services.sitesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
@@ -1259,6 +1264,31 @@ class GoogleServiceLayer(BaseLayer):
         pass
 
 
+class BingServiceLayer(BaseLayer):
+    """Tests for Bing web service integration."""
+
+    @classmethod
+    def setUp(cls):
+        bing = BingServiceTestSetup()
+        bing.setUp()
+
+    @classmethod
+    def tearDown(cls):
+        BingServiceTestSetup().tearDown()
+
+    @classmethod
+    def testSetUp(self):
+        # We need to override BaseLayer.testSetUp(), or else we will
+        # get a LayerIsolationError.
+        pass
+
+    @classmethod
+    def testTearDown(self):
+        # We need to override BaseLayer.testTearDown(), or else we will
+        # get a LayerIsolationError.
+        pass
+
+
 class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
     """Provides the database and the Zope3 application server environment."""
 
@@ -1361,6 +1391,31 @@ class AuditorLayer(LaunchpadFunctionalLayer):
 class GoogleLaunchpadFunctionalLayer(LaunchpadFunctionalLayer,
                                      GoogleServiceLayer):
     """Provides Google service in addition to LaunchpadFunctionalLayer."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
+class BingLaunchpadFunctionalLayer(LaunchpadFunctionalLayer,
+                                   BingServiceLayer):
+    """Provides Bing service in addition to LaunchpadFunctionalLayer."""
 
     @classmethod
     @profiled
@@ -1541,7 +1596,7 @@ class MockHTTPTask:
         return self.request._orig_env
 
 
-class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
+class PageTestLayer(LaunchpadFunctionalLayer, BingServiceLayer):
     """Environment for page tests.
     """
 

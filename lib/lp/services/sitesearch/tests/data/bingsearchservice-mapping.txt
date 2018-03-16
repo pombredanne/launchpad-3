@@ -1,0 +1,24 @@
+# This file defines a mapping of Bing search service URLs to the JSON
+# files that should be returned by them.
+#
+# The format is 'url JSONfile'. Blank lines and lines starting with '#'
+# are ignored.
+#
+# The special URL, '*', is returned for all un-mapped URLs.
+
+* bingsearchservice-no-results.json
+
+/bingcustomsearch/v7.0/search?q=bug&customconfig=1234567890&mkt=en-US&safesearch=Moderate&count=20&q=bug&offset=0 bingsearchservice-bugs-1.json
+
+/bingcustomsearch/v7.0/search?q=bug&customconfig=1234567890&mkt=en-US&safesearch=Moderate&count=20&q=bug&offset=20 bingsearchservice-bugs-2.json
+
+/bingcustomsearch/v7.0/search?q=bug&customconfig=1234567890&mkt=en-US&safesearch=Moderate&count=20&q=launchpad&offset=0 bingsearchservice-bugs-1.json
+
+/bingcustomsearch/v7.0/search?q=bug&customconfig=1234567890&mkt=en-US&safesearch=Moderate&count=20&q=launchpad&offset=20 bingsearchservice-bugs-2.json
+
+/bingcustomsearch/v7.0/search?q=bug&customconfig=1234567890&mkt=en-US&safesearch=Moderate&count=20&q=gnomebaker&offset=0 bingsearchservice-incomplete-response.json
+
+/bingcustomsearch/v7.0/search?q=bug&customconfig=1234567890&mkt=en-US&safesearch=Moderate&count=20&q=no-meaningful&offset=0 bingsearchservice-no-meaningful-results.json
+
+# This stub service is also used to impersonate the Blog feed
+/blog-feed blog.launchpad.net-feed.json

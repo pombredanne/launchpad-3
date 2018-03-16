@@ -284,6 +284,8 @@ setup(
     },
     entry_points=dict(
         console_scripts=[  # `console_scripts` is a magic name to setuptools
+            'bingtestservice = '
+                'lp.services.sitesearch.bingtestservice:main',
             'build-twisted-plugin-cache = '
                 'lp.services.twistedsupport.plugincache:main',
             'combine-css = lp.scripts.utilities.js.combinecss:main',

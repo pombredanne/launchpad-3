@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for searching and working with results."""
@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BingResponseError',
     'ISearchResult',
     'ISearchResults',
     'ISearchService',
@@ -75,7 +76,11 @@ class GoogleWrongGSPVersion(ValueError):
 
 
 class GoogleResponseError(SyntaxError):
-    """Raised when Google's response is not contain valid XML."""
+    """Raised when Google's response does not contain valid XML."""
+
+
+class BingResponseError(ValueError):
+    """Raised when Bing's response does not contain valid JSON."""
 
 
 class ISearchService(Interface):

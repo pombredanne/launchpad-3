@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Browser code for the Launchpad root page."""
 
@@ -42,6 +42,13 @@ from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.propertycache import cachedproperty
 from lp.services.sitesearch.interfaces import (
+    GoogleResponseError,
+    ISearchService,
+    )
+from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.propertycache import cachedproperty
+from lp.services.sitesearch.interfaces import (
+    BingResponseError,
     GoogleResponseError,
     ISearchService,
     )
@@ -510,24 +517,24 @@ class LaunchpadSearchView(LaunchpadFormView):
     def searchPages(self, query_terms, start=0):
         """Return the up to 20 pages that match the query_terms, or None.
 
-        :param query_terms: The unescaped terms to query Google.
+        :param query_terms: The unescaped terms to query for.
         :param start: The index of the page that starts the set of pages.
-        :return: A GooglBatchNavigator or None.
+        :return: A SearchResultsBatchNavigator or None.
         """
         if query_terms in [None, '']:
             return None
-        google_search = getUtility(ISearchService)
+        site_search = getUtility(ISearchService)
         try:
-            page_matches = google_search.search(
+            page_matches = site_search.search(
                 terms=query_terms, start=start)
-        except GoogleResponseError:
-            # There was a connectivity or Google service issue that means
+        except (BingResponseError, GoogleResponseError):
+            # There was a connectivity or the search service issue that means
             # there is no data available at this moment.
             self.has_page_service = False
             return None
         if len(page_matches) == 0:
             return None
-        navigator = GoogleBatchNavigator(
+        navigator = SearchResultsBatchNavigator(
             page_matches, self.request, start=start)
         navigator.setHeadings(*self.batch_heading)
         return navigator
@@ -589,7 +596,7 @@ class WindowedListBatch(batch._Batch):
         return self.start + len(self.list._window)
 
 
-class GoogleBatchNavigator(BatchNavigator):
+class SearchResultsBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
 
     _batch_factory = WindowedListBatch
@@ -614,7 +621,7 @@ class GoogleBatchNavigator(BatchNavigator):
         :param callback: Not used.
         """
         results = WindowedList(results, start, results.total)
-        super(GoogleBatchNavigator, self).__init__(results, request,
+        super(SearchResultsBatchNavigator, self).__init__(results, request,
             start=start, size=size, callback=callback,
             transient_parameters=transient_parameters,
             force_start=force_start, range_factory=range_factory)

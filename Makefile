@@ -61,6 +61,7 @@ API_INDEX = $(APIDOC_DIR)/index.html
 # NB: It's important PIP_BIN only mentions things genuinely produced by pip.
 PIP_BIN = \
     $(PY) \
+    bin/bingtestservice \
     bin/build-twisted-plugin-cache \
     bin/combine-css \
     bin/googletestservice \
@@ -284,7 +285,7 @@ ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
 run: build inplace stop
-	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll \
+	bin/run -r librarian,bing-webservice,memcached,rabbitmq,txlongpoll \
 	-i $(LPCONFIG)
 
 run-testapp: LPCONFIG=testrunner-appserver
@@ -297,12 +298,12 @@ run.gdb:
 
 start-gdb: build inplace stop support_files run.gdb
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
-		-r librarian,google-webservice
+		-r librarian,bing-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: build inplace stop
 	bin/run \
-	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,\
+	 -r librarian,sftp,forker,mailman,codebrowse,bing-webservice,\
 	memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
 run_codebrowse: compile

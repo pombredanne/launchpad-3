@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -11,7 +11,7 @@ import unittest
 
 from lp.testing.layers import (
     DatabaseFunctionalLayer,
-    GoogleLaunchpadFunctionalLayer,
+    BingLaunchpadFunctionalLayer,
     )
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
@@ -26,7 +26,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 # that require something special like the librarian or mailman must run
 # on a layer that sets those services up.
 special_test_layer = {
-    'launchpad-search-pages.txt': GoogleLaunchpadFunctionalLayer,
+    'launchpad-search-pages.txt': BingLaunchpadFunctionalLayer,
     }
 
 
