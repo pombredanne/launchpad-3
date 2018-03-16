@@ -12,8 +12,8 @@ from requests.exceptions import (
     HTTPError,
     )
 
-from lp.services.googlesearch import GoogleSearchService
-from lp.services.googlesearch.interfaces import GoogleResponseError
+from lp.services.sitesearch import GoogleSearchService
+from lp.services.sitesearch.interfaces import GoogleResponseError
 from lp.services.timeout import TimeoutError
 from lp.testing import TestCase
 from lp.testing.layers import LaunchpadFunctionalLayer

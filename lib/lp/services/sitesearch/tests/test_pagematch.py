@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from lp.services.googlesearch import PageMatch
+from lp.services.sitesearch import PageMatch
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 

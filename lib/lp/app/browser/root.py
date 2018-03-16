@@ -39,7 +39,7 @@ from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
-from lp.services.googlesearch.interfaces import (
+from lp.services.sitesearch.interfaces import (
     GoogleResponseError,
     ISearchService,
     )

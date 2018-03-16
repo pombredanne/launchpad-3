@@ -113,7 +113,7 @@ from lp.services.config.fixture import (
     )
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import session_store
-from lp.services.googlesearch.tests.googleserviceharness import (
+from lp.services.sitesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
 from lp.services.job.tests import celery_worker

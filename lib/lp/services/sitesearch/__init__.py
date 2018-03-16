@@ -24,7 +24,7 @@ import requests
 from zope.interface import implementer
 
 from lp.services.config import config
-from lp.services.googlesearch.interfaces import (
+from lp.services.sitesearch.interfaces import (
     GoogleResponseError,
     GoogleWrongGSPVersion,
     ISearchResult,

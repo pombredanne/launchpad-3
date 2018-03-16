@@ -19,7 +19,7 @@ from zope.app.server.main import main
 
 from lp.services.config import config
 from lp.services.daemons import tachandler
-from lp.services.googlesearch import googletestservice
+from lp.services.sitesearch import googletestservice
 from lp.services.mailman import runmailman
 from lp.services.osutils import ensure_directory_exists
 from lp.services.pidfile import (
