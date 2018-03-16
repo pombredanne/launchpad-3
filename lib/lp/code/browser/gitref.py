@@ -206,13 +206,16 @@ class GitRefRegisterMergeProposalSchema(Interface):
     prerequisite_git_repository = Choice(
         title=_("Prerequisite repository"),
         vocabulary="GitRepository", required=False, readonly=True,
-        description=_("The repository that the source will be merged into."))
+        description=_(
+            "A repository containing a branch that should be merged before "
+            "this one.  (Its changes will not be shown in the diff.)"))
 
     prerequisite_git_path = TextLine(
         title=_("Prerequisite branch"), required=False, readonly=True,
         description=_(
-            "The branch within the target repository that the source will "
-            "be merged into."))
+            "A branch within the prerequisite repository that should be "
+            "merged before this one.  (Its changes will not be shown in the "
+            "diff.)"))
 
     comment = Text(
         title=_('Description of the change'), required=False,
