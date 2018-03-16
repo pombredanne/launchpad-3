@@ -11,7 +11,6 @@
   <include package=".feeds" />
   <include package=".fields" />
   <include package=".geoip" />
-  <include package=".sitesearch" />
   <include package=".gpg" />
   <include package=".identity" />
   <include package=".inlinehelp" file="meta.zcml" />
@@ -28,6 +27,7 @@
   <include package=".salesforce" />
   <include package=".scripts" />
   <include package=".session" />
+  <include package=".sitesearch" />
   <include package=".statistics" />
   <include package=".temporaryblobstorage" />
   <include package=".verification" />
