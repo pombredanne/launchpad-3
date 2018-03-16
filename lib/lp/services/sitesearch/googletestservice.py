@@ -124,7 +124,6 @@ def wait_for_service(timeout=15.0):
         for possible timeout values.
     """
     host, port = get_service_endpoint()
-    print(host, port)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(timeout)  # Block for at most X seconds.
 
