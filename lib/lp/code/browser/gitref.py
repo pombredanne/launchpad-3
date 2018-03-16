@@ -198,9 +198,9 @@ class GitRefRegisterMergeProposalSchema(Interface):
         description=_("The repository that the source will be merged into."))
 
     target_git_path = TextLine(
-        title=_("Target reference path"), required=True, readonly=True,
+        title=_("Target branch"), required=True, readonly=True,
         description=_(
-            "The reference within the target repository that the source will "
+            "The branch within the target repository that the source will "
             "be merged into."))
 
     prerequisite_git_repository = Choice(
@@ -209,9 +209,9 @@ class GitRefRegisterMergeProposalSchema(Interface):
         description=_("The repository that the source will be merged into."))
 
     prerequisite_git_path = TextLine(
-        title=_("Prerequisite reference path"), required=False, readonly=True,
+        title=_("Prerequisite branch"), required=False, readonly=True,
         description=_(
-            "The reference within the target repository that the source will "
+            "The branch within the target repository that the source will "
             "be merged into."))
 
     comment = Text(
