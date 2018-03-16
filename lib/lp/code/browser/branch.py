@@ -1142,20 +1142,20 @@ class BranchReviewerEditView(BranchEditFormView):
 class RegisterProposalSchema(Interface):
     """The schema to define the form for registering a new merge proposal."""
     target_branch = Choice(
-        title=_('Target Branch'),
+        title=_('Target branch'),
         vocabulary='Branch', required=True, readonly=True,
         description=_(
             "The branch that the source branch will be merged into."))
 
     prerequisite_branch = Choice(
-        title=_('Prerequisite Branch'),
+        title=_('Prerequisite branch'),
         vocabulary='Branch', required=False, readonly=False,
         description=_(
             'A branch that should be merged before this one.  (Its changes'
             ' will not be shown in the diff.)'))
 
     comment = Text(
-        title=_('Description of the Change'), required=False,
+        title=_('Description of the change'), required=False,
         description=_('Describe what changes your branch introduces, '
                       'what bugs it fixes, or what features it implements. '
                       'Ideally include rationale and how to test. '

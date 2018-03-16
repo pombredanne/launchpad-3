@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The interface for branch merge proposals."""
@@ -136,12 +136,12 @@ class IBranchMergeProposalPublic(IPrivacy):
 
     source_branch = exported(
         ReferenceChoice(
-            title=_('Source Branch'), schema=IBranch, vocabulary='Branch',
+            title=_('Source branch'), schema=IBranch, vocabulary='Branch',
             required=False, readonly=True,
             description=_("The branch that has code to land.")))
     source_git_repository = exported(
         ReferenceChoice(
-            title=_('Source Git Repository'), schema=IGitRepository,
+            title=_('Source Git repository'), schema=IGitRepository,
             vocabulary='GitRepository', required=False, readonly=True,
             description=_("The Git repository that has code to land.")))
     source_git_path = exported(
@@ -157,13 +157,13 @@ class IBranchMergeProposalPublic(IPrivacy):
 
     target_branch = exported(
         ReferenceChoice(
-            title=_('Target Branch'),
+            title=_('Target branch'),
             schema=IBranch, vocabulary='Branch', required=False, readonly=True,
             description=_(
                 "The branch that the source branch will be merged into.")))
     target_git_repository = exported(
         ReferenceChoice(
-            title=_('Target Git Repository'), schema=IGitRepository,
+            title=_('Target Git repository'), schema=IGitRepository,
             vocabulary='GitRepository', required=False, readonly=True,
             description=_(
                 "The Git repository that the source branch will be merged "
@@ -182,7 +182,7 @@ class IBranchMergeProposalPublic(IPrivacy):
 
     prerequisite_branch = exported(
         ReferenceChoice(
-            title=_('Prerequisite Branch'),
+            title=_('Prerequisite branch'),
             schema=IBranch, vocabulary='Branch', required=False,
             readonly=True, description=_(
                 "The branch that the source branch branched from. "
@@ -190,7 +190,7 @@ class IBranchMergeProposalPublic(IPrivacy):
                 "leave this field blank.")))
     prerequisite_git_repository = exported(
         ReferenceChoice(
-            title=_('Prerequisite Git Repository'), schema=IGitRepository,
+            title=_('Prerequisite Git repository'), schema=IGitRepository,
             vocabulary='GitRepository', required=False, readonly=True,
             description=_(
                 "The Git repository containing the branch that the source "
@@ -284,14 +284,14 @@ class IBranchMergeProposalView(Interface):
 
     commit_message = exported(
         Summary(
-            title=_("Commit Message"), required=False,
+            title=_("Commit message"), required=False,
             description=_("The commit message that should be used when "
                           "merging the source branch."),
             strip_text=True))
 
     merged_revno = exported(
         Int(
-            title=_("Merged Revision Number"), required=False,
+            title=_("Merged revision number"), required=False,
             readonly=True,
             description=_(
                 "The revision number on the target branch which contains the "
@@ -299,7 +299,7 @@ class IBranchMergeProposalView(Interface):
 
     merged_revision_id = exported(
         TextLine(
-            title=_("Merged Revision ID"), required=False, readonly=True,
+            title=_("Merged revision ID"), required=False, readonly=True,
             description=_(
                 "The revision ID on the target branch which contains the "
                 "merge from the source branch (currently Git only).")))
@@ -310,7 +310,7 @@ class IBranchMergeProposalView(Interface):
 
     date_merged = exported(
         Datetime(
-            title=_('Date Merged'), required=False,
+            title=_('Date merged'), required=False,
             readonly=True,
             description=_("The date that the source branch was merged into "
                           "the target branch")))
@@ -322,7 +322,7 @@ class IBranchMergeProposalView(Interface):
 
     merge_reporter = exported(
         PublicPersonChoice(
-            title=_("Merge Reporter"), vocabulary="ValidPerson",
+            title=_("Merge reporter"), vocabulary="ValidPerson",
             required=False, readonly=True,
             description=_("The user that marked the branch as merged.")))
 
@@ -334,20 +334,20 @@ class IBranchMergeProposalView(Interface):
                           "supersedes.")))
     superseded_by = exported(
         Reference(
-            title=_("Superseded By"), schema=Interface,
+            title=_("Superseded by"), schema=Interface,
             required=False, readonly=True,
             description=_(
                 "The branch merge proposal that supersedes this one.")))
 
     date_created = exported(
         Datetime(
-            title=_('Date Created'), required=True, readonly=True))
+            title=_('Date created'), required=True, readonly=True))
     date_review_requested = exported(
         Datetime(
-            title=_('Date Review Requested'), required=False, readonly=True))
+            title=_('Date review requested'), required=False, readonly=True))
     date_reviewed = exported(
         Datetime(
-            title=_('Date Reviewed'), required=False, readonly=True))
+            title=_('Date reviewed'), required=False, readonly=True))
     root_message_id = Text(
         title=_('The email message id from the first message'),
         required=False)

@@ -215,7 +215,7 @@ class GitRefRegisterMergeProposalSchema(Interface):
             "be merged into."))
 
     comment = Text(
-        title=_('Description of the Change'), required=False,
+        title=_('Description of the change'), required=False,
         description=_('Describe what changes your branch introduces, '
                       'what bugs it fixes, or what features it implements. '
                       'Ideally include rationale and how to test. '
