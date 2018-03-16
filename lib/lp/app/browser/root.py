@@ -39,12 +39,12 @@ from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
-from lp.services.googlesearch.interfaces import (
+from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.propertycache import cachedproperty
+from lp.services.sitesearch.interfaces import (
     GoogleResponseError,
     ISearchService,
     )
-from lp.services.memcache.interfaces import IMemcacheClient
-from lp.services.propertycache import cachedproperty
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.timeout import urlfetch
 from lp.services.webapp import LaunchpadView
