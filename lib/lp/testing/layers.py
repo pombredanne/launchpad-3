@@ -113,9 +113,6 @@ from lp.services.config.fixture import (
     )
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import session_store
-from lp.services.sitesearch.tests.googleserviceharness import (
-    GoogleServiceTestSetup,
-    )
 from lp.services.job.tests import celery_worker
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.librarianserver.testing.server import LibrarianServerFixture
@@ -129,6 +126,9 @@ from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
 from lp.services.rabbit.server import RabbitServer
 from lp.services.scripts import execute_zcml_for_scripts
+from lp.services.sitesearch.tests.googleserviceharness import (
+    GoogleServiceTestSetup,
+    )
 from lp.services.testing.profiled import profiled
 from lp.services.timeout import (
     get_default_timeout_function,
