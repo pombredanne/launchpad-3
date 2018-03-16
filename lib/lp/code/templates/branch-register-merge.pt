@@ -16,6 +16,10 @@
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:widget>
 
+            <tal:widget define="widget nocall:view/widgets/commit_message">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+
             <tal:widget define="widget nocall:view/widgets/comment">
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:widget>
@@ -34,10 +38,6 @@
                 <legend>Extra options</legend>
                 <div class="hide-on-load"><!-- hidden by default -->
                 <table class="extra-options">
-                  <tal:widget define="widget nocall:view/widgets/commit_message">
-                    <metal:block use-macro="context/@@launchpad_form/widget_row" />
-                  </tal:widget>
-
                   <tal:widget define="widget nocall:view/widgets/needs_review">
                     <metal:block use-macro="context/@@launchpad_form/widget_row" />
                   </tal:widget>

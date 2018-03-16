@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -1158,7 +1158,9 @@ class RegisterProposalSchema(Interface):
         title=_('Description of the Change'), required=False,
         description=_('Describe what changes your branch introduces, '
                       'what bugs it fixes, or what features it implements. '
-                      'Ideally include rationale and how to test.'))
+                      'Ideally include rationale and how to test. '
+                      'You do not need to repeat information from the commit '
+                      'message here.'))
 
     reviewer = copy_field(
         ICodeReviewVoteReference['reviewer'], required=False)
@@ -1182,6 +1184,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     for_input = True
 
     custom_widget('target_branch', TargetBranchWidget)
+    custom_widget('commit_message', TextAreaWidget, cssClass='comment-text')
     custom_widget('comment', TextAreaWidget, cssClass='comment-text')
 
     page_title = label = 'Propose branch for merging'
