@@ -8,17 +8,19 @@
 
 * bingsearchservice-no-results.json
 
-/bingcustomsearch/v7.0/search?q=bug&customconfig=1234567890&mkt=en-US&safesearch=Moderate&count=20&q=bug&offset=0 bingsearchservice-bugs-1.json
+/bingcustomsearch/v7.0/search?count=20&customConfig=1234567890&mkt=en-US&offset=0&q=bug bingsearchservice-bugs-1.json
 
-/bingcustomsearch/v7.0/search?q=bug&customconfig=1234567890&mkt=en-US&safesearch=Moderate&count=20&q=bug&offset=20 bingsearchservice-bugs-2.json
+/bingcustomsearch/v7.0/search?count=20&customConfig=1234567890&mkt=en-US&offset=20&q=bug bingsearchservice-bugs-2.json
 
-/bingcustomsearch/v7.0/search?q=bug&customconfig=1234567890&mkt=en-US&safesearch=Moderate&count=20&q=launchpad&offset=0 bingsearchservice-bugs-1.json
+/bingcustomsearch/v7.0/search?count=20&customConfig=1234567890&mkt=en-US&offset=0&q=launchpad bingsearchservice-bugs-1.json
 
-/bingcustomsearch/v7.0/search?q=bug&customconfig=1234567890&mkt=en-US&safesearch=Moderate&count=20&q=launchpad&offset=20 bingsearchservice-bugs-2.json
+/bingcustomsearch/v7.0/search?count=20&customConfig=1234567890&mkt=en-US&offset=20&q=launchpad bingsearchservice-bugs-2.json
 
-/bingcustomsearch/v7.0/search?q=bug&customconfig=1234567890&mkt=en-US&safesearch=Moderate&count=20&q=gnomebaker&offset=0 bingsearchservice-incomplete-response.json
+/bingcustomsearch/v7.0/search?count=20&customConfig=1234567890&mkt=en-US&offset=0&q=gnomebaker bingsearchservice-incomplete-response.json
 
-/bingcustomsearch/v7.0/search?q=bug&customconfig=1234567890&mkt=en-US&safesearch=Moderate&count=20&q=no-meaningful&offset=0 bingsearchservice-no-meaningful-results.json
+/bingcustomsearch/v7.0/search?count=20&customConfig=1234567890&mkt=en-US&offset=0&q=no-meaningful bingsearchservice-no-meaningful-results.json
+
+/bingcustomsearch/v7.0/search?count=20&customConfig=1234567890&mkt=en-US&offset=0&q=errors-please bingsearchservice-error.json
 
 # This stub service is also used to impersonate the Blog feed
 /blog-feed blog.launchpad.net-feed.json

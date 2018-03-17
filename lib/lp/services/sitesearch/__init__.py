@@ -417,7 +417,7 @@ class BingSearchService:
         """Return a Bing Custom Search search url."""
         self._checkParameter('q', terms)
         self._checkParameter('offset', start, is_int=True)
-        self._checkParameter('customconfig', self.custom_config_id)
+        self._checkParameter('customConfig', self.custom_config_id)
         safe_terms = urllib.quote_plus(terms.encode('utf8'))
         search_params = dict(self._default_values)
         search_params['q'] = safe_terms
@@ -479,7 +479,7 @@ class BingSearchService:
             total = int(bing_doc['webPages']['totalEstimatedMatches'])
         except (AttributeError, KeyError, ValueError):
             # The datatype is not what PageMatches requires.
-            raise GoogleWrongGSPVersion(
+            raise BingResponseError(
                 "Could not get the total from the Bing JSON response.")
         if total < 0:
             # See bug 683115.

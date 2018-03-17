@@ -16,7 +16,10 @@ from lp.services.sitesearch import BingSearchService
 from lp.services.sitesearch.interfaces import BingResponseError
 from lp.services.timeout import TimeoutError
 from lp.testing import TestCase
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    BingLaunchpadFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 
 
 @contextmanager
@@ -69,21 +72,62 @@ class TestBingSearchService(TestCase):
 
     def test_parse_bing_reponse_TypeError(self):
         # The method converts TypeError to BingResponseError.
-        with urlfetch_exception(TypeError, 'oops'):
-            self.assertRaises(
-                BingResponseError,
-                self.search_service._parse_bing_response, None)
+        self.assertRaises(
+            BingResponseError,
+            self.search_service._parse_bing_response, None)
 
     def test_parse_bing_reponse_ValueError(self):
         # The method converts ValueError to BingResponseError.
-        with urlfetch_exception(ValueError, 'oops'):
-            self.assertRaises(
-                BingResponseError,
-                self.search_service._parse_bing_response, '')
+        self.assertRaises(
+            BingResponseError,
+            self.search_service._parse_bing_response, '')
 
     def test_parse_bing_reponse_KeyError(self):
         # The method converts KeyError to BingResponseError.
-        with urlfetch_exception(KeyError, 'oops'):
-            self.assertRaises(
-                BingResponseError,
-                self.search_service._parse_bing_response, '{}')
+        self.assertRaises(
+            BingResponseError,
+            self.search_service._parse_bing_response, '{}')
+
+
+class FunctionalTestBingSearchService(TestCase):
+    """Test GoogleSearchService."""
+
+    layer = BingLaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(FunctionalTestBingSearchService, self).setUp()
+        self.search_service = BingSearchService()
+
+    def test_search_with_results(self):
+        matches = self.search_service.search('bug')
+        self.assertEqual(0, matches.start)
+        self.assertEqual(87000, matches.total)
+        self.assertEqual(20, len(matches))
+
+    def test_search_with_results_and_offset(self):
+        matches = self.search_service.search('bug', start=20)
+        self.assertEqual(20, matches.start)
+        self.assertEqual(87000, matches.total)
+        self.assertEqual(15, len(matches))
+
+    def test_search_no_results(self):
+        matches = self.search_service.search('fnord')
+        self.assertEqual(0, matches.start)
+        self.assertEqual(0, matches.total)
+        self.assertEqual(0, len(matches))
+
+    def test_search_no_meaningful_results(self):
+        matches = self.search_service.search('no-meaningful')
+        self.assertEqual(0, matches.start)
+        self.assertEqual(0, matches.total)
+        self.assertEqual(0, len(matches))
+
+    def test_search_incomplete_response(self):
+        self.assertRaises(
+            BingResponseError,
+            self.search_service.search, 'gnomebaker')
+
+    def test_search_error_response(self):
+        self.assertRaises(
+            BingResponseError,
+            self.search_service.search, 'errors-please')

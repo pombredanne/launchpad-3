@@ -1,22 +1,180 @@
 {
   "_type": "SearchResponse",
   "instrumentation": {
-    "pingUrlBase": "https://www.bingapis.com/api/ping?IG=4C3A184771914F6BB81F8541E7EE7695&CID=13045103CBA569B80D475AB7CA03687C&ID=",
-    "pageLoadPingUrl": "https://www.bingapis.com/api/ping/pageload?IG=4C3A184771914F6BB81F8541E7EE7695&CID=13045103CBA569B80D475AB7CA03687C&Type=Event.CPT&DATA=0"
+    "pingUrlBase": "https://www.bingapis.com/api/ping?IG=41744312F5E645D58DE6733982EDC72A&CID=222E331334AA69A5318C38A7350C683B&ID=",
+    "pageLoadPingUrl": "https://www.bingapis.com/api/ping/pageload?IG=41744312F5E645D58DE6733982EDC72A&CID=222E331334AA69A5318C38A7350C683B&Type=Event.CPT&DATA=0"
   },
   "queryContext": {
     "originalQuery": "bug"
   },
   "webPages": {
     "webSearchUrl": "https://www.bing.com/search?q=bug",
-    "webSearchUrlPingSuffix": "DevEx,5462.1",
+    "webSearchUrlPingSuffix": "DevEx,5530.1",
     "totalEstimatedMatches": 87000,
     "value": [
       {
         "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.0",
+        "name": "Bugs - Launchpad Help",
+        "url": "https://help.launchpad.net/Bugs",
+        "urlPingSuffix": "DevEx,5103.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://help.launchpad.net/Bugs",
+        "snippet": "Launchpad Help > Bugs . Use Launchpad's bug tracker for your project. Bug heat: a computed estimate of a bug's significance. Learn about automatic bug expiry",
+        "deepLinks": [
+          {
+            "name": "Bugs/EmailInterface",
+            "url": "https://help.launchpad.net/Bugs/EmailInterface",
+            "urlPingSuffix": "DevEx,5093.1",
+            "snippet": "Overview. Launchpad's bug tracker sends you email about the bugs you're interested in. If you see something that requires your attention - for example, you want to ..."
+          },
+          {
+            "name": "Bugs/PluginAPISpec",
+            "url": "https://help.launchpad.net/Bugs/PluginAPISpec",
+            "urlPingSuffix": "DevEx,5094.1",
+            "snippet": "Overview. We want Launchpad to share bug reports, comments, statuses and other information with as many bug trackers as possible. We've already produced plugins that ..."
+          },
+          {
+            "name": "Bugs/Subscriptions",
+            "url": "https://help.launchpad.net/Bugs/Subscriptions",
+            "urlPingSuffix": "DevEx,5095.1",
+            "snippet": "Overview. Launchpad uses notification emails and Atom feeds to help you stay on top of the bugs that interest you. Bug mail. There are three ways to get bug ..."
+          },
+          {
+            "name": "Bugs/YourProject",
+            "url": "https://help.launchpad.net/Bugs/YourProject",
+            "urlPingSuffix": "DevEx,5096.1",
+            "snippet": "Overview. Launchpad's bug tracker is unique: it can track how one bug affects different communities. When you share free software, you share its bugs."
+          },
+          {
+            "name": "Bugs/Expiry",
+            "url": "https://help.launchpad.net/Bugs/Expiry",
+            "urlPingSuffix": "DevEx,5097.1",
+            "snippet": "This gives you three benefits: you can view a report of all bugs that are due to expiry and so deal with any that need your attention ; once the bug's expired ..."
+          }
+        ],
+        "dateLastCrawled": "2018-02-20T23:45:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.1",
+        "name": "Of Bugs and Statuses - Launchpad Blog",
+        "url": "https://blog.launchpad.net/general/of-bugs-and-statuses",
+        "urlPingSuffix": "DevEx,5149.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://blog.launchpad.net/general/of-bugs-and-statuses",
+        "snippet": "This past week’s Bug Janitor thread has made it clear that we need better descriptions of what our bug statuses actually mean. While it’s true that many project ...",
+        "dateLastCrawled": "2018-03-09T07:40:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.2",
+        "name": "Mahara 1.8.0",
+        "url": "https://launchpad.net/mahara/+milestone/1.8.0",
+        "urlPingSuffix": "DevEx,5178.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://launchpad.net/mahara/+milestone/1.8.0",
+        "snippet": "Mahara 1.8.0 Release Notes. This is a stable release of Mahara 1.8. Stable releases are fit for general use. If you find a bug, please report it to the tracker:",
+        "dateLastCrawled": "2018-03-04T10:53:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.3",
+        "name": "Mighty Box in Launchpad",
+        "url": "https://launchpad.net/mb",
+        "urlPingSuffix": "DevEx,5193.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://launchpad.net/mb",
+        "snippet": "All bugs Latest bugs reported. Bug #766411: The settings dialog box is not available on Windows 7 Reported on 2011-04-19 Bug #766410: App crashes when navigating file ...",
+        "dateLastCrawled": "2018-03-10T07:57:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.4",
+        "name": "Bug tracking - Launchpad Bugs",
+        "url": "https://launchpad.net/bugs",
+        "urlPingSuffix": "DevEx,5208.1",
+        "about": [
+          {
+            "name": "Launchpad"
+          }
+        ],
+        "isFamilyFriendly": true,
+        "displayUrl": "https://launchpad.net/bugs",
+        "snippet": "Statistics. 1755185 bugs reported across 12480 projects including 122769 links to 2796 bug trackers; 148160 bugs are shared across multiple projects",
+        "dateLastCrawled": "2018-03-14T01:18:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.5",
+        "name": "LaunchpadBugTags - Launchpad Development",
+        "url": "https://dev.launchpad.net/LaunchpadBugTags",
+        "urlPingSuffix": "DevEx,5223.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://dev.launchpad.net/LaunchpadBugTags",
+        "snippet": "Tagging bugs about Launchpad. Launchpad's Bug Tracker allows you to create ad-hoc groups of bugs with tagging. In the Launchpad team, we have a list of agreed tags ...",
+        "dateLastCrawled": "2018-02-13T19:01:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.6",
+        "name": "Evergreen Bug Tracker - Launchpad",
+        "url": "https://launchpad.net/evergreen",
+        "urlPingSuffix": "DevEx,5238.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://launchpad.net/evergreen",
+        "snippet": "Evergreen is a highly-scalable library system that helps library patrons find library materials, and helps libraries manage, catalog, and circulate those materials ...",
+        "dateLastCrawled": "2018-03-02T10:11:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.7",
+        "name": "Ubuntu BugSquad in Launchpad",
+        "url": "https://launchpad.net/~bugsquad",
+        "urlPingSuffix": "DevEx,5268.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://launchpad.net/~bugsquad",
+        "snippet": "http://wiki.ubuntu.com/HelpingWithBugs http://wiki.ubuntu.com/BugSquad The BugSquad is Ubuntu's team for helping out with improving bug reports.",
+        "dateLastCrawled": "2018-02-23T13:05:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.8",
+        "name": "Bugs : Launchpad Suite",
+        "url": "https://launchpad.net/launchpad-project/+bugs?field.tag=bugwatch",
+        "urlPingSuffix": "DevEx,5281.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://launchpad.net/launchpad-project/+bugs?field.tag=bugwatch",
+        "snippet": "Launchpad is the software running this Web site. It includes a project registry, code branch registry and mirroring service, bug tracker, specification tracker ...",
+        "dateLastCrawled": "2017-10-18T02:06:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.9",
+        "name": "ufw project files : ufw",
+        "url": "https://launchpad.net/ufw/+download",
+        "urlPingSuffix": "DevEx,5294.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://launchpad.net/ufw/+download",
+        "snippet": "ufw 0.35 adds support for comments, moves the ufw managed user rules to /etc, improved setup options and several bug fixes.",
+        "dateLastCrawled": "2018-02-19T14:58:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.10",
+        "name": "VersionThreeDotO/Bugs/StoryCards - Launchpad Development",
+        "url": "https://dev.launchpad.net/VersionThreeDotO/Bugs/StoryCards",
+        "urlPingSuffix": "DevEx,5309.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://dev.launchpad.net/VersionThreeDotO/Bugs/StoryCards",
+        "snippet": "Contents. HWDB. Get number of affected users by a bug tied to a device; Get number of users using a driver; Include DMI and lspci information in HWDB submissions",
+        "dateLastCrawled": "2018-03-10T13:58:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.11",
         "name": "Ubuntu Bugs in Launchpad",
         "url": "https://launchpad.net/~ubuntu-bugs",
-        "urlPingSuffix": "DevEx,5080.1",
+        "urlPingSuffix": "DevEx,5339.1",
         "isFamilyFriendly": true,
         "displayUrl": "https://launchpad.net/~ubuntu-bugs",
         "snippet": "The purpose of this team is to have a mailing list that receives all Ubuntu bug mail. If you wish to receive copies of all bug traffic, instead subscribe to the ...",
@@ -24,21 +182,10 @@
         "fixedPosition": false
       },
       {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.1",
-        "name": "GCleaner in Launchpad",
-        "url": "https://launchpad.net/gcleaner",
-        "urlPingSuffix": "DevEx,5095.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/gcleaner",
-        "snippet": "GCleaner is a beautiful and fast system cleaner for Elementary OS and Ubuntu or based. Writen in Vala, GTK+, Granite and GLib/GIO for the purpose that the users feel ...",
-        "dateLastCrawled": "2018-02-21T13:17:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.2",
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.12",
         "name": "BugExpiry - Launchpad Help",
         "url": "https://help.launchpad.net/BugExpiry",
-        "urlPingSuffix": "DevEx,5110.1",
+        "urlPingSuffix": "DevEx,5354.1",
         "isFamilyFriendly": true,
         "displayUrl": "https://help.launchpad.net/BugExpiry",
         "snippet": "Want to know more about Bug Statuses? Check out our BugStatuses page. What is bug expiry? Today, projects and distributions have the option of allowing old ...",
@@ -46,77 +193,10 @@
         "fixedPosition": false
       },
       {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.3",
-        "name": "LongoMatch in Launchpad",
-        "url": "https://launchpad.net/longomatch",
-        "urlPingSuffix": "DevEx,5125.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/longomatch",
-        "snippet": "LongoMatch is a sports video analyse tool for coaches to assist them on making live video reports from a match. It creates a database with the most important plays of ...",
-        "dateLastCrawled": "2018-02-16T21:54:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.4",
-        "name": "Question #232632 : Questions : OpenStack Heat",
-        "url": "https://answers.launchpad.net/heat/+question/232632",
-        "urlPingSuffix": "DevEx,5140.1",
-        "datePublished": "2013-07-18T00:00:00.0000000",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://answers.launchpad.net/heat/+question/232632",
-        "snippet": "Using grizzly version(2013.1.2) from heat/openstack. Failed to create stack, got error: 'NoneType' object has no attribute 'rstrip'. See below my runtime ...",
-        "dateLastCrawled": "2018-02-20T23:45:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.5",
-        "name": "Sandpad in Launchpad",
-        "url": "https://launchpad.net/sandpad",
-        "urlPingSuffix": "DevEx,5154.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/sandpad",
-        "snippet": "Sandpad is an standalone wlua application for making quick scratch programs and sandboxes in Lua. It uses IUP 3 for the user interface.",
-        "dateLastCrawled": "2018-03-03T17:54:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.6",
-        "name": "Eventum in Launchpad",
-        "url": "https://launchpad.net/eventum",
-        "urlPingSuffix": "DevEx,5169.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/eventum",
-        "snippet": "Eventum is a user-friendly and flexible issue tracking system that can be used by a support department to track incoming technical support requests, or by a software ...",
-        "dateLastCrawled": "2018-03-07T19:52:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.7",
-        "name": "Inkscape 0.48.2 \"0.48.2\" - Launchpad",
-        "url": "https://launchpad.net/inkscape/+milestone/0.48.2",
-        "urlPingSuffix": "DevEx,5182.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/inkscape/+milestone/0.48.2",
-        "snippet": "After you've downloaded a file, you can verify its authenticity using its MD5 sum or signature. (How do I verify a download?",
-        "dateLastCrawled": "2018-02-24T19:01:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.8",
-        "name": "Code Hosting - Launchpad tour",
-        "url": "https://launchpad.net/+tour/branch-hosting-tracking",
-        "urlPingSuffix": "DevEx,5195.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/+tour/branch-hosting-tracking",
-        "snippet": "Code hosting and review. Launchpad and Bazaar make it easy for anyone to get your project's code, make their own changes with full version control, and then propose ...",
-        "dateLastCrawled": "2018-03-10T23:01:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.9",
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.13",
         "name": "gdiskdump project files : gdiskdump",
         "url": "https://launchpad.net/gdiskdump/+download",
-        "urlPingSuffix": "DevEx,5208.1",
+        "urlPingSuffix": "DevEx,5367.1",
         "isFamilyFriendly": true,
         "displayUrl": "https://launchpad.net/gdiskdump/+download",
         "snippet": "added advanced settings and estimated Time for process to finish. bug fixes for some languages.",
@@ -124,113 +204,14 @@
         "fixedPosition": false
       },
       {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.10",
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.14",
         "name": "Bug #1747091 “epicsTimeGetEvent() / generalTime bug ...",
         "url": "https://code.launchpad.net/bugs/1747091",
-        "urlPingSuffix": "DevEx,5220.1",
+        "urlPingSuffix": "DevEx,5379.1",
         "isFamilyFriendly": true,
         "displayUrl": "https://code.launchpad.net/bugs/1747091",
         "snippet": "When changes in epicsGeneralTime.c were made (fetch time provider's eventTime into a local copy) an inconsistency resulted.",
         "dateLastCrawled": "2018-02-04T02:49:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.11",
-        "name": "Bug #96441 “timer updates use too much CPU” : Bugs : Jokosher",
-        "url": "https://launchpad.net/jokosher/+bug/96441",
-        "urlPingSuffix": "DevEx,5232.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/jokosher/+bug/96441",
-        "snippet": "The information about this bug in Launchpad is automatically pulled daily from the remote bug. This information was last pulled ...",
-        "dateLastCrawled": "2018-02-17T16:53:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.12",
-        "name": "Series 17.10 : Mahara",
-        "url": "https://launchpad.net/mahara/17.10",
-        "urlPingSuffix": "DevEx,5247.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/mahara/17.10",
-        "snippet": "All bugs Latest bugs reported. Bug #1752688: MariaDB fails to upgrade - unable to CAST as JSON Reported on 2018-03-01 Bug #1752442: Problems with group forums / topics",
-        "dateLastCrawled": "2018-03-12T13:48:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.13",
-        "name": "sap in Launchpad",
-        "url": "https://launchpad.net/sap+",
-        "urlPingSuffix": "DevEx,5260.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/sap+",
-        "snippet": "Sap is a simple audio player written in Vala and utilizing gstreamer for audio playback and ncurses for user interaction.",
-        "dateLastCrawled": "2018-03-12T05:18:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.14",
-        "name": "Code/BugAndBlueprintLinks - Launchpad Help",
-        "url": "https://help.launchpad.net/Code/BugAndBlueprintLinks",
-        "urlPingSuffix": "DevEx,5275.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://help.launchpad.net/Code/BugAndBlueprintLinks",
-        "snippet": "Linking code to bug reports and blueprints. Launchpad is much like a fancy china dinner service: you can get a great deal of use and contentment from just one or two ...",
-        "dateLastCrawled": "2018-01-26T14:46:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.15",
-        "name": "One Hundred Papercuts in Launchpad",
-        "url": "https://launchpad.net/hundredpapercuts",
-        "urlPingSuffix": "DevEx,5289.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/hundredpapercuts",
-        "snippet": "Downloads. One Hundred Papercuts does not have any download files registered with Launchpad. •",
-        "dateLastCrawled": "2018-03-01T20:05:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.16",
-        "name": "Little Software Stats in Launchpad",
-        "url": "https://launchpad.net/lilsoftstats/",
-        "urlPingSuffix": "DevEx,5304.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/lilsoftstats",
-        "snippet": "Little Software Stats is the first free and open source program that will allow software developers to keep track of how their software is being used.",
-        "dateLastCrawled": "2018-03-07T21:46:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.17",
-        "name": "Take the tour - Launchpad tour",
-        "url": "https://launchpad.net/+tour",
-        "urlPingSuffix": "DevEx,5317.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/+tour",
-        "snippet": "Launchpad helps people to work together on free software by making it easy to share code, bug reports, translations and ideas.",
-        "dateLastCrawled": "2018-02-25T04:37:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.18",
-        "name": "EOEC in Launchpad",
-        "url": "https://launchpad.net/eoec",
-        "urlPingSuffix": "DevEx,5332.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/eoec",
-        "snippet": "Barcode example published as standalone extension on 2009-01-15 After adding a number of extra features to the Barcode example of EuroOffice ... EOEC ...",
-        "dateLastCrawled": "2018-03-09T21:39:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.19",
-        "name": "Bug #1210747 “taskdef name not specified” : Bugs : Radkarte",
-        "url": "https://launchpad.net/radkarte/+bug/1210747",
-        "urlPingSuffix": "DevEx,5345.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/radkarte/+bug/1210747",
-        "snippet": "Sorry for the late response, somehow the notification mail did not work. I use the \"ant-contrib\" package for the ID calculation to prepare the build-file for easy ...",
-        "dateLastCrawled": "2018-01-11T22:23:00.0000000Z",
         "fixedPosition": false
       }
     ]
@@ -342,43 +323,9 @@
           "value": {
             "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.14"
           }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 15,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.15"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 16,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.16"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 17,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.17"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 18,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.18"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 19,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.19"
-          }
         }
       ]
     }
   }
 }
+
