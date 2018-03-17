@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for job-running facilities."""
@@ -17,6 +17,7 @@ from lazr.jobrunner.jobrunner import (
     LeaseHeld,
     SuspendJobException,
     )
+from lazr.restful.utils import get_current_browser_request
 from pytz import UTC
 from testtools.matchers import (
     GreaterThan,
@@ -29,6 +30,7 @@ import transaction
 from zope.interface import implementer
 
 from lp.services.config import config
+from lp.services.database.sqlbase import flush_database_updates
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     IRunnableJob,
@@ -42,6 +44,7 @@ from lp.services.job.runner import (
     TwistedJobRunner,
     )
 from lp.services.log.logger import BufferLogger
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
     get_default_timeout_function,
     set_default_timeout_function,
@@ -97,6 +100,15 @@ class RaisingJob(NullJob):
     """A job that raises when it runs."""
 
     def run(self):
+        raise RaisingJobException(self.message)
+
+
+class RaisingJobTimelineMessage(NullJob):
+    """A job that records a timeline action and then raises when it runs."""
+
+    def run(self):
+        timeline = get_request_timeline(get_current_browser_request())
+        timeline.start('job', self.message).finish()
         raise RaisingJobException(self.message)
 
 
@@ -327,6 +339,19 @@ class TestJobRunner(TestCaseWithFactory):
         runner = JobRunner([job])
         runner.runJobHandleError(job)
         self.assertEqual(1, len(self.oopses))
+
+    def test_runJobHandleErrors_oops_timeline(self):
+        """The oops timeline only covers the job itself."""
+        timeline = get_request_timeline(get_current_browser_request())
+        timeline.start('test', 'sentinel').finish()
+        job = RaisingJobTimelineMessage('boom')
+        flush_database_updates()
+        runner = JobRunner([job])
+        runner.runJobHandleError(job)
+        self.assertEqual(1, len(self.oopses))
+        actions = [action[2:4] for action in self.oopses[0]['timeline']]
+        self.assertIn(('job', 'boom'), actions)
+        self.assertNotIn(('test', 'sentinel'), actions)
 
     def test_runJobHandleErrors_user_error_no_oops(self):
         """If the job raises a user error, there is no oops."""
