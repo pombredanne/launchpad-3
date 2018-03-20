@@ -782,18 +782,6 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
                 RevisionAuthor, revisions, ['revision_author_id'])
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
-    def getRevisionsSince(self, timestamp):
-        """See `IBranch`."""
-        result = Store.of(self).find(
-            (BranchRevision, Revision),
-            Revision.id == BranchRevision.revision_id,
-            BranchRevision.branch == self,
-            BranchRevision.sequence != None,
-            Revision.revision_date > timestamp)
-        result = result.order_by(Desc(BranchRevision.sequence))
-        # Return BranchRevision but prejoin Revision as well.
-        return DecoratedResultSet(result, operator.itemgetter(0))
-
     def canBeDeleted(self):
         """See `IBranch`."""
         if ((len(self.deletionRequirements()) != 0) or not
