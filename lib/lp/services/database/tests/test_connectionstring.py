@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from lp.services.database.postgresql import ConnectionString
@@ -38,3 +38,14 @@ class TestConnectionString(TestCase):
     def test_rejects_quoted_strings(self):
         self.assertRaises(
             AssertionError, ConnectionString, "dbname='quoted string'")
+
+    def test_equality(self):
+        cs1 = ConnectionString('dbname=foo host=bar')
+        cs2 = ConnectionString('dbname=foo host=bar')
+        cs3 = ConnectionString('dbname=foo host=baz')
+        self.assertEqual(cs1, cs2)
+        self.assertNotEqual(cs1, cs3)
+        self.assertNotEqual(cs2, cs3)
+        self.assertEqual(hash(cs1), hash(cs2))
+        self.assertNotEqual(hash(cs1), hash(cs3))
+        self.assertContentEqual([cs1, cs3], set([cs1, cs2, cs3]))
