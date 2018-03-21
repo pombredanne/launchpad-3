@@ -14,10 +14,12 @@ import tarfile
 from fixtures import MonkeyPatch
 from testtools.matchers import (
     Contains,
+    FileContains,
     Matcher,
     MatchesAll,
     Mismatch,
     Not,
+    StartsWith,
     )
 from testtools.twistedsupport import AsynchronousDeferredRunTest
 from twisted.internet import defer
@@ -896,7 +898,10 @@ class TestSigning(TestSigningHelpers):
         sha256file = os.path.join(self.getSignedPath("test", "amd64"),
              "1.0", "SHA256SUMS")
         self.assertTrue(os.path.exists(sha256file))
-        self.assertTrue(os.path.exists(sha256file + '.gpg'))
+        self.assertThat(
+            sha256file + '.gpg',
+            FileContains(
+                matcher=StartsWith('-----BEGIN PGP SIGNATURE-----\n')))
 
     @defer.inlineCallbacks
     def test_checksumming_tree_signed_options_tarball(self):
@@ -916,7 +921,10 @@ class TestSigning(TestSigningHelpers):
         sha256file = os.path.join(self.getSignedPath("test", "amd64"),
              "1.0", "SHA256SUMS")
         self.assertTrue(os.path.exists(sha256file))
-        self.assertTrue(os.path.exists(sha256file + '.gpg'))
+        self.assertThat(
+            sha256file + '.gpg',
+            FileContains(
+                matcher=StartsWith('-----BEGIN PGP SIGNATURE-----\n')))
 
         tarfilename = os.path.join(self.getSignedPath("test", "amd64"),
             "1.0", "signed.tar.gz")
