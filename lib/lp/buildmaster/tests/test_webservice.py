@@ -48,7 +48,7 @@ class TestBuildersCollection(TestCaseWithFactory):
                 '/builders', api_version='devel').jsonBody()
         self.assertContentEqual(
             names, [b['name'] for b in builders['entries']])
-        self.assertThat(recorder, HasQueryCount(Equals(21)))
+        self.assertThat(recorder, HasQueryCount(Equals(19)))
 
     def test_list_with_private_builds(self):
         # Inaccessible private builds aren't linked in builders'

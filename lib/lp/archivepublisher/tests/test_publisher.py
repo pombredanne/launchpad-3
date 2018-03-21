@@ -3,6 +3,8 @@
 
 """Tests for publisher class."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 import bz2
@@ -32,7 +34,6 @@ try:
 except ImportError:
     from backports import lzma
 import pytz
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     ContainsAll,
     DirContains,
@@ -49,6 +50,7 @@ from testtools.matchers import (
     PathExists,
     SamePath,
     )
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
 from zope.component import getUtility
@@ -449,7 +451,7 @@ class TestPublisherSeries(TestNativePublishingBase):
         for pu_build in pu_i386.builds:
             pu_build.publish()
 
-        publications = archive.getAllPublishedBinaries(name=u"bin-i386")
+        publications = archive.getAllPublishedBinaries(name="bin-i386")
 
         self.assertEqual(1, publications.count())
         self.assertEqual(
@@ -808,14 +810,14 @@ class TestPublisher(TestPublisherBase):
         self.assertFalse(os.path.exists(publisher._config.metaroot))
         self.assertEqual(ArchiveStatus.DELETED, test_archive.status)
         self.assertEqual(False, test_archive.publish)
-        self.assertEqual(u'testing-deletedppa', test_archive.name)
+        self.assertEqual('testing-deletedppa', test_archive.name)
 
         # All of the archive's active publications have been marked
         # DELETED, and dateremoved has been set early because they've
         # already been removed from disk.
         for pub in (spph, bpph, orphaned_bpph):
             self.assertEqual(PackagePublishingStatus.DELETED, pub.status)
-            self.assertEqual(u'janitor', pub.removed_by.name)
+            self.assertEqual('janitor', pub.removed_by.name)
             self.assertIsNot(None, pub.dateremoved)
 
         # The SUPERSEDED publications now have dateremoved set, even
@@ -1251,7 +1253,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(
             cprov.archive, archive_publisher.archive)
         self.assertEqual(
-            u'/var/tmp/ppa.test/cprov/ppa/ubuntutest/dists',
+            '/var/tmp/ppa.test/cprov/ppa/ubuntutest/dists',
             archive_publisher._config.distsroot)
         self.assertEqual(
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
@@ -1932,7 +1934,7 @@ class TestPublisher(TestPublisherBase):
         """
         allowed_suites = []
         cprov = getUtility(IPersonSet).getByName('cprov')
-        cprov.archive.displayname = u'PPA for Celso Provid\xe8lo'
+        cprov.archive.displayname = 'PPA for Celso Provid\xe8lo'
         archive_publisher = getPublisher(
             cprov.archive, allowed_suites, self.logger)
 
@@ -1949,7 +1951,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual('LP-PPA-cprov', release['origin'])
 
         # The Label: field should be set to the archive displayname
-        self.assertEqual(u'PPA for Celso Provid\xe8lo', release['label'])
+        self.assertEqual('PPA for Celso Provid\xe8lo', release['label'])
 
         arch_sources_path = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest',
@@ -2719,7 +2721,7 @@ class TestUpdateByHash(TestPublisherBase):
         # A no-op run leaves the scheduled deletion date intact.
         i386_file = getUtility(IArchiveFileSet).getByArchive(
             self.ubuntutest.main_archive,
-            path=u'dists/breezy-autotest/Contents-i386').one()
+            path='dists/breezy-autotest/Contents-i386').one()
         i386_date = i386_file.scheduled_deletion_date
         self.runSteps(publisher, step_d=True)
         flush_database_caches()
@@ -2745,7 +2747,7 @@ class TestUpdateByHash(TestPublisherBase):
         # Arrange for the second file to be pruned.
         hppa_file = getUtility(IArchiveFileSet).getByArchive(
             self.ubuntutest.main_archive,
-            path=u'dists/breezy-autotest/Contents-hppa').one()
+            path='dists/breezy-autotest/Contents-hppa').one()
         removeSecurityProxy(hppa_file).scheduled_deletion_date = (
             now - timedelta(hours=1))
         self.runSteps(publisher, step_d=True)
@@ -2808,7 +2810,7 @@ class TestUpdateByHash(TestPublisherBase):
             ByHashHasContents(main_contents))
         archive_files = getUtility(IArchiveFileSet).getByArchive(
             self.ubuntutest.main_archive,
-            path=u'dists/breezy-autotest/main/source/Sources')
+            path='dists/breezy-autotest/main/source/Sources')
         self.assertThat(
             sorted(archive_files, key=attrgetter('id')),
             MatchesListwise([

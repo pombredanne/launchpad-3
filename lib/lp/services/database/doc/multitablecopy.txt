@@ -25,7 +25,7 @@ Set up some unrelated tables that follow the documented expectations:
     >>> tables_to_clean_up.append('textual')
     >>> cur.execute(
     ...     "CREATE TABLE textual (id SERIAL PRIMARY KEY, t varchar)")
-    >>> numeric_values = range(1,4)
+    >>> numeric_values = list(range(1, 4))
     >>> textual_values = ['one', 'two', 'three']
     >>> for number in numeric_values:
     ...     cur.execute("INSERT INTO numeric (n) VALUES (%d)" % number)

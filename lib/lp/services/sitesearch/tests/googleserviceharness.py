@@ -14,7 +14,7 @@ import errno
 import os
 import signal
 
-from lp.services.googlesearch import googletestservice
+from lp.services.sitesearch import googletestservice
 
 
 class GoogleServiceTestSetup:
@@ -27,7 +27,7 @@ class GoogleServiceTestSetup:
     # to the docstring above.  Note that the test that uses this setup,
     # google-service-stub.txt, is also disabled.  See test_doc.py.
     """
-    >>> from lp.services.googlesearch.googletestservice import (
+    >>> from lp.services.sitesearch.googletestservice import (
     ...     service_is_available)
     >>> from lp.services.config import config
 

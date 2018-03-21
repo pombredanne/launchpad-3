@@ -1,7 +1,9 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the generate_ppa_htaccess.py script. """
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 import crypt
 from datetime import (
@@ -75,7 +77,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         self.ppa.distribution = ubuntutest
 
         # Enable named auth tokens.
-        self.useFixture(FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: "on"}))
 
     def getScript(self, test_args=None):
         """Return a HtaccessTokenGenerator instance."""
@@ -266,8 +268,8 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         team1_person = persons1[0]
 
         # Named tokens should be ignored for deactivation.
-        self.ppa.newNamedAuthToken(u"tokenname1")
-        named_token = self.ppa.newNamedAuthToken(u"tokenname2")
+        self.ppa.newNamedAuthToken("tokenname1")
+        named_token = self.ppa.newNamedAuthToken("tokenname2")
         named_token.deactivate()
 
         # Initially, nothing is eligible for deactivation.
@@ -335,7 +337,7 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         sub2 = self.ppa.newSubscription(name16, self.ppa.owner)
         token1 = self.ppa.newAuthToken(name12)
         token2 = self.ppa.newAuthToken(name16)
-        token3 = self.ppa.newNamedAuthToken(u"tokenname3")
+        token3 = self.ppa.newNamedAuthToken("tokenname3")
         self.layer.txn.commit()
         return (sub1, sub2), (token1, token2, token3)
 
@@ -384,9 +386,9 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
 
     def testBasicOperation_with_named_tokens(self):
         """Invoke the actual script and make sure it generates some files."""
-        token1 = self.ppa.newNamedAuthToken(u"tokenname1")
-        token2 = self.ppa.newNamedAuthToken(u"tokenname2")
-        token3 = self.ppa.newNamedAuthToken(u"tokenname3")
+        token1 = self.ppa.newNamedAuthToken("tokenname1")
+        token2 = self.ppa.newNamedAuthToken("tokenname2")
+        token3 = self.ppa.newNamedAuthToken("tokenname3")
         token3.deactivate()
 
         # Call the script and check that we have a .htaccess and a .htpasswd.
@@ -641,10 +643,10 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         last_start = datetime.now(pytz.UTC) - timedelta(seconds=90)
         before_last_start = last_start - timedelta(seconds=30)
 
-        self.ppa.newNamedAuthToken(u"tokenname1")
-        token2 = self.ppa.newNamedAuthToken(u"tokenname2")
+        self.ppa.newNamedAuthToken("tokenname1")
+        token2 = self.ppa.newNamedAuthToken("tokenname2")
         token2.deactivate()
-        token3 = self.ppa.newNamedAuthToken(u"tokenname3")
+        token3 = self.ppa.newNamedAuthToken("tokenname3")
         token3.date_deactivated = before_last_start
 
         script = self.getScript()
@@ -657,12 +659,12 @@ class TestPPAHtaccessTokenGeneration(TestCaseWithFactory):
         before_last_start = last_start - timedelta(seconds=30)
         tomorrow = datetime.now(pytz.UTC) + timedelta(days=1)
 
-        self.ppa.newNamedAuthToken(u"tokenname1")
-        token2 = self.ppa.newNamedAuthToken(u"tokenname2")
+        self.ppa.newNamedAuthToken("tokenname1")
+        token2 = self.ppa.newNamedAuthToken("tokenname2")
         token2.deactivate()
-        token3 = self.ppa.newNamedAuthToken(u"tokenname3")
+        token3 = self.ppa.newNamedAuthToken("tokenname3")
         token3.date_deactivated = before_last_start
-        token4 = self.ppa.newNamedAuthToken(u"tokenname4")
+        token4 = self.ppa.newNamedAuthToken("tokenname4")
         token4.date_deactivated = tomorrow
 
         script = self.getScript()

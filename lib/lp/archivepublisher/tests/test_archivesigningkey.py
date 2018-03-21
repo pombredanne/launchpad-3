@@ -3,13 +3,15 @@
 
 """Test ArchiveSigningKey."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 import os
 from textwrap import dedent
 
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import FileContains
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 from twisted.internet import defer
 from zope.component import getUtility
 

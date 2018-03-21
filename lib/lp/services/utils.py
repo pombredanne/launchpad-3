@@ -257,8 +257,7 @@ class CapturedOutput(Fixture):
         self.stdout = StringIO()
         self.stderr = StringIO()
 
-    def setUp(self):
-        super(CapturedOutput, self).setUp()
+    def _setUp(self):
         self.useFixture(MonkeyPatch('sys.stdout', self.stdout))
         self.useFixture(MonkeyPatch('sys.stderr', self.stderr))
 

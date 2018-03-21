@@ -31,9 +31,9 @@ from lp.snappy.interfaces.snapbuildjob import (
     )
 from lp.snappy.interfaces.snapstoreclient import (
     BadRefreshResponse,
-    BadScanStatusResponse,
     ISnapStoreClient,
     ReleaseFailedResponse,
+    ScanFailedResponse,
     UnauthorizedUploadResponse,
     UploadFailedResponse,
     UploadNotScannedYetResponse,
@@ -433,7 +433,11 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         job = SnapStoreUploadJob.create(snapbuild)
         client = FakeSnapStoreClient()
         client.upload.result = self.status_url
-        client.checkStatus.failure = BadScanStatusResponse("Scan failed.")
+        client.checkStatus.failure = ScanFailedResponse(
+            "Scan failed.\nConfinement not allowed.",
+            messages=[
+                {"message": "Scan failed.", "link": "link1"},
+                {"message": "Confinement not allowed.", "link": "link2"}])
         self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             JobRunner([job]).runAll()
@@ -443,7 +447,12 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertContentEqual([job], snapbuild.store_upload_jobs)
         self.assertIsNone(job.store_url)
         self.assertIsNone(job.store_revision)
-        self.assertEqual("Scan failed.", job.error_message)
+        self.assertEqual(
+            "Scan failed.\nConfinement not allowed.", job.error_message)
+        self.assertEqual([
+            {"message": "Scan failed.", "link": "link1"},
+            {"message": "Confinement not allowed.", "link": "link2"}],
+            job.error_messages)
         [notification] = pop_notifications()
         self.assertEqual(
             config.canonical.noreply_from_address, notification["From"])

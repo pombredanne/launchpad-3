@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Originally based on code from msgfmt.py (available from python source
@@ -662,7 +662,7 @@ class POParser(object):
                 # Octal escape.
                 position += 2
                 # Up to two more octal digits.
-                for i in xrange(2):
+                for i in range(2):
                     if string[position].isdigit():
                         position += 1
                     else:

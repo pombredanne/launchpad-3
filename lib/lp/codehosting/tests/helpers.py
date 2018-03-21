@@ -22,7 +22,7 @@ from bzrlib.tests import (
     TestNotApplicable,
     TestSkipped,
     )
-from testtools.deferredruntest import AsynchronousDeferredRunTest
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 
 from lp.code.enums import BranchType
 from lp.codehosting.vfs import branch_id_to_path

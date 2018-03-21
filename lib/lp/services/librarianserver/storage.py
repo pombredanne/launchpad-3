@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,9 +10,9 @@ import shutil
 import tempfile
 
 from swiftclient import client as swiftclient
-from twisted.python import log
 from twisted.internet import defer
 from twisted.internet.threads import deferToThread
+from twisted.python import log
 from twisted.web.static import StaticProducer
 
 from lp.registry.model.product import Product
@@ -124,7 +124,7 @@ class LibrarianStorage:
             swift_connection = swift.connection_pool.get()
             try:
                 headers, chunks = yield deferToThread(
-                    swift_connection.get_object,
+                    swift.quiet_swiftclient, swift_connection.get_object,
                     container, name, resp_chunk_size=self.CHUNK_SIZE)
                 swift_stream = TxSwiftStream(swift_connection, chunks)
                 defer.returnValue(swift_stream)

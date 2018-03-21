@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Branches."""
@@ -2209,18 +2209,6 @@ class TestRevisionHistory(TestCaseWithFactory):
             list(branch.revision_history[:smaller_number]),
             list(branch.latest_revisions(smaller_number)))
 
-    def test_getRevisionsSince(self):
-        # IBranch.getRevisionsSince gives all the BranchRevisions for
-        # revisions committed since a given timestamp.
-        branch = self.factory.makeBranch()
-        some_number = 7
-        self.factory.makeRevisionsForBranch(branch, count=some_number)
-        mid_sequence = some_number - 2
-        revisions = list(branch.revision_history)
-        mid_revision = revisions[mid_sequence]
-        since = branch.getRevisionsSince(mid_revision.revision.revision_date)
-        self.assertEqual(revisions[:mid_sequence], list(since))
-
     def test_getCodebrowseUrlForRevision(self):
         # IBranch.getCodebrowseUrlForRevision gives the URL to the browser
         # for a specific revision of the code
@@ -2281,14 +2269,14 @@ class TestCodebrowse(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_simple(self):
-        # The basic codebrowse URL for a public branch is a 'http' url.
+        # The basic codebrowse URL for a public branch is an 'https' URL.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
-            'http://bazaar.launchpad.dev/' + branch.unique_name,
+            'https://bazaar.launchpad.dev/' + branch.unique_name,
             branch.getCodebrowseUrl())
 
     def test_private(self):
-        # The codebrowse URL for a private branch is a 'https' url.
+        # The codebrowse URL for a private branch is an 'https' URL.
         owner = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(
             owner=owner, information_type=InformationType.USERDATA)
@@ -2301,7 +2289,7 @@ class TestCodebrowse(TestCaseWithFactory):
         # Any arguments to getCodebrowseUrl are appended to the URL.
         branch = self.factory.makeAnyBranch()
         self.assertEqual(
-            'http://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
+            'https://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
             branch.getCodebrowseUrl('a', 'b'))
 
     def test_source_code_url(self):

@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the GNU
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the GNU
 # Affero General Public License version 3 (see the file LICENSE).
 
 """Soyuz vocabularies."""
@@ -127,6 +127,8 @@ class PPAVocabulary(SQLObjectVocabularyBase):
 
         if query.startswith('~'):
             query = query.strip('~')
+        if query.startswith('ppa:'):
+            query = query[4:]
         try:
             query_split = query.split('/')
             if len(query_split) == 3:

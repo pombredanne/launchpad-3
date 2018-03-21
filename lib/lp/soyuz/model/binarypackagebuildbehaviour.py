@@ -20,7 +20,10 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
     BuildFarmJobBehaviourBase,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.services.webapp import urlappend
+from lp.services.webapp import (
+    canonical_url,
+    urlappend,
+    )
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component,
     get_sources_list_for_building,
@@ -169,6 +172,7 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             yield get_sources_list_for_building(
                 build, das, build.source_package_release.name, logger=logger))
         args['archive_private'] = build.archive.private
+        args['build_url'] = canonical_url(build)
         args['build_debug_symbols'] = build.archive.build_debug_symbols
 
         defer.returnValue(args)

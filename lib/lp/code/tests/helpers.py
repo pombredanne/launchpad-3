@@ -324,8 +324,7 @@ class GitHostingFixture(fixtures.Fixture):
         self.delete = FakeMethod()
         self.disable_memcache = disable_memcache
 
-    def setUp(self):
-        super(GitHostingFixture, self).setUp()
+    def _setUp(self):
         self.useFixture(ZopeUtilityFixture(self, IGitHostingClient))
         if self.disable_memcache:
             # Most tests that involve GitRef._getLog don't want to cache the

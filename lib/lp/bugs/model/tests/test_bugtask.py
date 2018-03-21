@@ -1630,7 +1630,6 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def _setupBugData(self):
-        super(TestConjoinedBugTasks, self).setUp()
         owner = self.factory.makePerson()
         distro = self.factory.makeDistribution(name="eggs", owner=owner,
                                                bug_supervisor=owner)

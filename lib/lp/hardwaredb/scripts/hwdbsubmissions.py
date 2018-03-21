@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Parse Hardware Database submissions.
@@ -1103,7 +1103,7 @@ class SubmissionParser(object):
         """
         udi_device_map = {}
         duplicates = []
-        for index in xrange(len(devices)):
+        for index in range(len(devices)):
             device = devices[index]
             udi = device['udi']
             if udi in udi_device_map:

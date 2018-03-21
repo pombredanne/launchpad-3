@@ -1,7 +1,9 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Packageset features."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -112,7 +114,7 @@ class TestPackagesetSet(TestCaseWithFactory):
         # IPackagesetSet.getBySeries() will return those package sets
         # associated with the given distroseries.
         package_sets_for_current_ubuntu = [
-            self.factory.makePackageset() for counter in xrange(2)]
+            self.factory.makePackageset() for counter in range(2)]
         self.factory.makePackageset(
             distroseries=self.makeExperimentalSeries())
         self.assertContentEqual(
@@ -268,7 +270,7 @@ class TestPackageset(TestCaseWithFactory):
             status=SeriesStatus.EXPERIMENTAL)
 
         self.person1 = self.factory.makePerson(
-            name='hacker', displayname=u'Happy Hacker')
+            name='hacker', displayname='Happy Hacker')
 
         self.packageset_set = getUtility(IPackagesetSet)
 
@@ -276,7 +278,7 @@ class TestPackageset(TestCaseWithFactory):
         # If the package set is the only one in the group the result set
         # returned by relatedSets() is empty.
         packageset = self.packageset_set.new(
-            u'kernel', u'Contains all OS kernel packages', self.person1,
+            'kernel', 'Contains all OS kernel packages', self.person1,
             self.distroseries_current)
 
         self.assertEqual(packageset.relatedSets().count(), 0)
@@ -288,18 +290,18 @@ class TestPackageset(TestCaseWithFactory):
 
         # The original package set.
         pset1 = self.packageset_set.new(
-            u'kernel', u'Contains all OS kernel packages', self.person1,
+            'kernel', 'Contains all OS kernel packages', self.person1,
             distroseries=self.distroseries_current)
 
         # A related package set.
         pset2 = self.packageset_set.new(
-            u'kernel', u'A related package set.', self.person1,
+            'kernel', 'A related package set.', self.person1,
             distroseries=self.distroseries_experimental, related_set=pset1)
         self.assertEqual(pset1.packagesetgroup, pset2.packagesetgroup)
 
         # An unrelated package set with the same name.
         pset3 = self.packageset_set.new(
-            u'kernel', u'Unrelated package set.', self.person1,
+            'kernel', 'Unrelated package set.', self.person1,
             distroseries=self.distroseries_experimental2)
         self.assertNotEqual(pset2.packagesetgroup, pset3.packagesetgroup)
 
@@ -320,12 +322,12 @@ class TestPackageset(TestCaseWithFactory):
     def test_destroy(self):
         series = self.factory.makeDistroSeries()
         pset = self.packageset_set.new(
-            u'kernel', u'Contains all OS kernel packages', self.person1,
+            'kernel', 'Contains all OS kernel packages', self.person1,
             series)
         pset.destroySelf()
         self.assertRaises(
             NoSuchPackageSet, self.packageset_set.getByName, series,
-            u'kernel')
+            'kernel')
 
         # Did we clean up the single packagesetgroup?
         store = IStore(PackagesetGroup)
@@ -334,20 +336,20 @@ class TestPackageset(TestCaseWithFactory):
 
     def test_destroy_with_ancestor(self):
         ancestor = self.packageset_set.new(
-            u'kernel', u'Contains all OS kernel packages', self.person1,
+            'kernel', 'Contains all OS kernel packages', self.person1,
             distroseries=self.distroseries_current)
         pset = self.packageset_set.new(
-            u'kernel', u'Contains all OS kernel packages', self.person1,
+            'kernel', 'Contains all OS kernel packages', self.person1,
             distroseries=self.distroseries_experimental, related_set=ancestor)
         pset.destroySelf()
         self.assertRaises(
             NoSuchPackageSet, self.packageset_set.getByName,
-            self.distroseries_experimental, u'kernel')
+            self.distroseries_experimental, 'kernel')
 
     def test_destroy_with_packages(self):
         series = self.factory.makeDistroSeries()
         pset = self.packageset_set.new(
-            u'kernel', u'Contains all OS kernel packages', self.person1,
+            'kernel', 'Contains all OS kernel packages', self.person1,
             series)
         package = self.factory.makeSourcePackageName()
         pset.addSources([package.name])
@@ -355,37 +357,37 @@ class TestPackageset(TestCaseWithFactory):
         pset.destroySelf()
         self.assertRaises(
             NoSuchPackageSet, self.packageset_set.getByName, series,
-            u'kernel')
+            'kernel')
 
     def test_destroy_child(self):
         series = self.factory.makeDistroSeries()
         parent = self.packageset_set.new(
-            u'core', u'Contains all the important packages', self.person1,
+            'core', 'Contains all the important packages', self.person1,
             series)
         child = self.packageset_set.new(
-            u'kernel', u'Contains all OS kernel packages', self.person1,
+            'kernel', 'Contains all OS kernel packages', self.person1,
             series)
         parent.add((child,))
 
         child.destroySelf()
         self.assertRaises(
             NoSuchPackageSet, self.packageset_set.getByName, series,
-            u'kernel')
+            'kernel')
         self.assertTrue(parent.setsIncluded(direct_inclusion=True).is_empty())
 
     def test_destroy_parent(self):
         series = self.factory.makeDistroSeries()
         parent = self.packageset_set.new(
-            u'core', u'Contains all the important packages', self.person1,
+            'core', 'Contains all the important packages', self.person1,
             series)
         child = self.packageset_set.new(
-            u'kernel', u'Contains all OS kernel packages', self.person1,
+            'kernel', 'Contains all OS kernel packages', self.person1,
             series)
         parent.add((child,))
 
         parent.destroySelf()
         self.assertRaises(
-            NoSuchPackageSet, self.packageset_set.getByName, series, u'core')
+            NoSuchPackageSet, self.packageset_set.getByName, series, 'core')
         self.assertTrue(child.setsIncludedBy(direct_inclusion=True).is_empty())
 
     def test_destroy_intermidate(self):
@@ -667,10 +669,10 @@ class TestPackagesetPermissions(TestCaseWithFactory):
         # Normal users may not modify packagesets
         with person_logged_in(self.person2):
             self.assertRaises(
-                Unauthorized, setattr, self.packageset, 'name', u'renamed')
+                Unauthorized, setattr, self.packageset, 'name', 'renamed')
             self.assertRaises(
                 Unauthorized, setattr, self.packageset, 'description',
-                u'Re-described')
+                'Re-described')
             self.assertRaises(
                 Unauthorized, setattr, self.packageset, 'owner', self.person2)
             self.assertRaises(
@@ -687,8 +689,8 @@ class TestPackagesetPermissions(TestCaseWithFactory):
                 Unauthorized, getattr, self.packageset, 'removeSubsets')
 
     def modifyPackageset(self):
-        self.packageset.name = u'renamed'
-        self.packageset.description = u'Re-described'
+        self.packageset.name = 'renamed'
+        self.packageset.description = 'Re-described'
         self.packageset.add((self.package,))
         self.packageset.remove((self.package,))
         self.packageset.addSources((self.package.name,))

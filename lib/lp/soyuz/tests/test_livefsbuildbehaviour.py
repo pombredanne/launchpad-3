@@ -1,7 +1,9 @@
-# Copyright 2014-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystem build behaviour."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -10,8 +12,8 @@ import os.path
 
 import fixtures
 import pytz
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import MatchesListwise
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -40,6 +42,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp import canonical_url
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
@@ -63,7 +66,7 @@ class TestLiveFSBuildBehaviourBase(TestCaseWithFactory):
 
     def setUp(self):
         super(TestLiveFSBuildBehaviourBase, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
 
     def makeJob(self, archive=None, pocket=PackagePublishingPocket.RELEASE,
                 **kwargs):
@@ -80,7 +83,7 @@ class TestLiveFSBuildBehaviourBase(TestCaseWithFactory):
             processor=processor)
         build = self.factory.makeLiveFSBuild(
             archive=archive, distroarchseries=distroarchseries, pocket=pocket,
-            name=u"test-livefs", **kwargs)
+            name="test-livefs", **kwargs)
         return IBuildFarmJobBehaviour(build)
 
 
@@ -194,6 +197,7 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_url": canonical_url(job.build),
             "datestamp": "20140425-103800",
             "pocket": "release",
             "project": "distro",
@@ -256,13 +260,13 @@ class MakeLiveFSBuildMixin:
     """Provide the common makeBuild method returning a queued build."""
 
     def makeBuild(self):
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         build = self.factory.makeLiveFSBuild(status=BuildStatus.BUILDING)
         build.queueBuild()
         return build
 
     def makeUnmodifiableBuild(self):
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         build = self.factory.makeLiveFSBuild(status=BuildStatus.BUILDING)
         build.distro_series.status = SeriesStatus.OBSOLETE
         build.queueBuild()

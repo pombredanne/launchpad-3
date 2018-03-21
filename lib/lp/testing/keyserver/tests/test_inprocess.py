@@ -7,7 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from testtools.deferredruntest import (
+from testtools.twistedsupport import (
     AsynchronousDeferredRunTestForBrokenTwisted,
     )
 from twisted.internet import defer

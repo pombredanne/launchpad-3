@@ -60,10 +60,8 @@ class FeatureFixtureMixin:
         self.full_feature_rules = full_feature_rules
         self.override_scope_lookup = override_scope_lookup
 
-    def setUp(self):
+    def _setUp(self):
         """Set the feature flags that this fixture is responsible for."""
-        super(FeatureFixtureMixin, self).setUp()
-
         rule_source = self.makeRuleSource(self.makeNewRules())
 
         original_controller = get_relevant_feature_controller()

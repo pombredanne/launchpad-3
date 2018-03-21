@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -335,6 +335,7 @@ class SnapBuild(PackageBuildMixin, Storm):
                      date_started=None, date_finished=None,
                      force_invalid_transition=False):
         """See `IBuildFarmJob`."""
+        old_status = self.status
         super(SnapBuild, self).updateStatus(
             status, builder=builder, slave_status=slave_status,
             date_started=date_started, date_finished=date_finished,
@@ -343,7 +344,8 @@ class SnapBuild(PackageBuildMixin, Storm):
             revision_id = slave_status.get("revision_id")
             if revision_id is not None:
                 self.revision_id = unicode(revision_id)
-        notify(SnapBuildStatusChangedEvent(self))
+        if status != old_status:
+            notify(SnapBuildStatusChangedEvent(self))
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""
@@ -453,6 +455,11 @@ class SnapBuild(PackageBuildMixin, Storm):
     def store_upload_error_message(self):
         job = self.last_store_upload_job
         return job and job.error_message
+
+    @property
+    def store_upload_error_messages(self):
+        job = self.last_store_upload_job
+        return job and job.error_messages or []
 
     def scheduleStoreUpload(self):
         """See `ISnapBuild`."""

@@ -230,9 +230,22 @@ by PPA name.
     ~cprov/ubuntu/testing: testing packages.
 
 The vocabulary search also supports specific named PPA lookups
-follwing the same combined syntax used to build unique tokens.
+following the same combined syntax used to build unique tokens, including
+some alternate and older forms.
 
     >>> named_search = vocabulary.search(u'~cprov/ubuntu/testing')
+    >>> print_search_results(named_search)
+    ~cprov/ubuntu/testing: testing packages.
+
+    >>> named_search = vocabulary.search(u'~cprov/testing')
+    >>> print_search_results(named_search)
+    ~cprov/ubuntu/testing: testing packages.
+
+    >>> named_search = vocabulary.search(u'ppa:cprov/ubuntu/testing')
+    >>> print_search_results(named_search)
+    ~cprov/ubuntu/testing: testing packages.
+
+    >>> named_search = vocabulary.search(u'ppa:cprov/testing')
     >>> print_search_results(named_search)
     ~cprov/ubuntu/testing: testing packages.
 

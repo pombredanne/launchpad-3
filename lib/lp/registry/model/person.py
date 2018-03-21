@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for a Person."""
@@ -81,6 +81,7 @@ from storm.store import (
     Store,
     )
 import transaction
+from twisted.conch.ssh.keys import Key
 from zope.component import (
     adapter,
     getUtility,
@@ -3512,7 +3513,8 @@ class PersonSet:
             raise NoSuchAccount("No account found for openid identifier '%s'"
                                 % openid_identifier)
         getUtility(ISSHKeySet).new(
-            IPerson(account), key_text, False, dry_run=dry_run)
+            IPerson(account), key_text, send_notification=False,
+            dry_run=dry_run)
 
     def deleteSSHKeyFromSSO(self, user, openid_identifier, key_text,
                             dry_run=False):
@@ -4123,8 +4125,16 @@ class SSHKey(SQLBase):
 @implementer(ISSHKeySet)
 class SSHKeySet:
 
-    def new(self, person, sshkey, send_notification=True, dry_run=False):
+    def new(self, person, sshkey, check_key=True, send_notification=True,
+            dry_run=False):
         keytype, keytext, comment = self._extract_ssh_key_components(sshkey)
+
+        if check_key:
+            try:
+                Key.fromString(sshkey)
+            except Exception as e:
+                raise SSHKeyAdditionError(
+                    "Invalid SSH key data: '%s' (%s)" % (sshkey, e))
 
         if send_notification:
             person.security_field_changed(

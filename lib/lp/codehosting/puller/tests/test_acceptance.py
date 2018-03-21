@@ -128,8 +128,7 @@ class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
             output and error are strings contain the output of the process to
             stdout and stderr respectively.
         """
-        tempdir = self.useFixture(TempDir()).path
-        logfile = os.path.join(tempdir, "supermirror_test.log")
+        logfile = self.useFixture(TempDir()).join("supermirror_test.log")
         command = [
             '%s/bin/py' % config.root, self._puller_script, '--log-file',
             logfile, '-q'] + list(args)

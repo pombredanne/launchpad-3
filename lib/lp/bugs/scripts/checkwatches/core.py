@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes and logic for the checkwatches cronscript."""
@@ -529,7 +529,7 @@ class CheckwatchesMaster(WorkingBase):
                 # run out of bugs to ask about or we have batch_size
                 # bugs to check.
                 remote_old_ids_to_check = []
-                for index in xrange(0, len(remote_old_ids), batch_size):
+                for index in range(0, len(remote_old_ids), batch_size):
                     remote_old_ids_to_check.extend(
                         remotesystem.getModifiedRemoteBugs(
                             remote_old_ids[index:index + batch_size],
