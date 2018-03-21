@@ -70,7 +70,6 @@ from lp.archivepublisher.publishing import (
     Publisher,
     )
 from lp.archivepublisher.utils import RepositoryIndexFile
-from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
@@ -3210,16 +3209,6 @@ class TestDirectoryHashHelpers(TestCaseWithFactory):
                         result[dh_file].append(line.strip().split(' '))
         return result
 
-    def fetchSigs(self, rootdir):
-        result = defaultdict(list)
-        for dh_file in self.all_hash_files:
-            checksum_sig = os.path.join(rootdir, dh_file) + '.gpg'
-            if os.path.exists(checksum_sig):
-                with open(checksum_sig, "r") as sfd:
-                    for line in sfd:
-                        result[dh_file].append(line)
-        return result
-
 
 class TestDirectoryHash(TestDirectoryHashHelpers):
     """Unit tests for DirectoryHash object."""
@@ -3234,7 +3223,7 @@ class TestDirectoryHash(TestDirectoryHashHelpers):
             checksum_file = os.path.join(rootdir, dh_file)
             self.assertFalse(os.path.exists(checksum_file))
 
-        with DirectoryHash(rootdir, tmpdir, None):
+        with DirectoryHash(rootdir, tmpdir):
             pass
 
         for dh_file in self.all_hash_files:
@@ -3297,63 +3286,3 @@ class TestDirectoryHash(TestDirectoryHashHelpers):
             ),
         }
         self.assertThat(self.fetchSums(rootdir), MatchesDict(expected))
-
-
-class TestDirectoryHashSigning(TestDirectoryHashHelpers):
-    """Unit tests for DirectoryHash object, signing functionality."""
-
-    layer = ZopelessDatabaseLayer
-    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
-
-    @defer.inlineCallbacks
-    def setUp(self):
-        super(TestDirectoryHashSigning, self).setUp()
-        self.temp_dir = self.makeTemporaryDirectory()
-        self.distro = self.factory.makeDistribution()
-        db_pubconf = getUtility(IPublisherConfigSet).getByDistribution(
-            self.distro)
-        db_pubconf.root_dir = unicode(self.temp_dir)
-        self.archive = self.factory.makeArchive(
-            distribution=self.distro, purpose=ArchivePurpose.PRIMARY)
-        self.archive_root = getPubConfig(self.archive).archiveroot
-        self.suite = "distroseries"
-
-        # Setup a keyserver so we can install the archive key.
-        with InProcessKeyServerFixture() as keyserver:
-            yield keyserver.start()
-            key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
-            yield IArchiveSigningKey(self.archive).setSigningKey(
-                key_path, async_keyserver=True)
-
-    def test_basic_directory_add_signed(self):
-        tmpdir = unicode(self.makeTemporaryDirectory())
-        rootdir = self.archive_root
-        os.makedirs(rootdir)
-
-        test1_file = os.path.join(rootdir, "test1")
-        test1_hash = self.createTestFile(test1_file, "test1 dir")
-
-        test2_file = os.path.join(rootdir, "test2")
-        test2_hash = self.createTestFile(test2_file, "test2 dir")
-
-        os.mkdir(os.path.join(rootdir, "subdir1"))
-
-        test3_file = os.path.join(rootdir, "subdir1", "test3")
-        test3_hash = self.createTestFile(test3_file, "test3 dir")
-
-        signer = IArchiveSigningKey(self.archive)
-        with DirectoryHash(rootdir, tmpdir, signer=signer) as dh:
-            dh.add_dir(rootdir)
-
-        expected = {
-            'SHA256SUMS': MatchesSetwise(
-                Equals([test1_hash, "*test1"]),
-                Equals([test2_hash, "*test2"]),
-                Equals([test3_hash, "*subdir1/test3"]),
-            ),
-        }
-        self.assertThat(self.fetchSums(rootdir), MatchesDict(expected))
-        sig_content = self.fetchSigs(rootdir)
-        for dh_file in sig_content:
-            self.assertEqual(
-                sig_content[dh_file][0], '-----BEGIN PGP SIGNATURE-----\n')

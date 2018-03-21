@@ -1,4 +1,4 @@
-# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of Signing tarballs.
@@ -368,19 +368,19 @@ class SigningUpload(CustomUpload):
         if 'tarball' in self.signing_options:
             self.convertToTarball()
 
-    def installFiles(self):
+    def installFiles(self, archive, suite):
         """After installation hash and sign the installed result."""
         # Avoid circular import.
         from lp.archivepublisher.publishing import DirectoryHash
 
-        super(SigningUpload, self).installFiles()
+        super(SigningUpload, self).installFiles(archive, suite)
 
         versiondir = os.path.join(self.targetdir, self.version)
-        signer = None
-        if self.archive.signing_key:
-            signer = IArchiveSigningKey(self.archive)
-        with DirectoryHash(versiondir, self.temproot, signer) as hasher:
+        with DirectoryHash(versiondir, self.temproot) as hasher:
             hasher.add_dir(versiondir)
+        for checksum_path in hasher.checksum_paths:
+            if archive.signing_key is not None:
+                IArchiveSigningKey(archive).signFile(suite, checksum_path)
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
