@@ -153,7 +153,8 @@ class ISnapBuildView(IPackageBuild):
         description=_(
             "A dictionary mapping snap names to channels to use for this "
             "build.  Currently only 'core' and 'snapcraft' keys are "
-            "supported.")))
+            "supported."),
+        key_type=TextLine()))
 
     virtualized = Bool(
         title=_("If True, this build is virtualized."), readonly=True)

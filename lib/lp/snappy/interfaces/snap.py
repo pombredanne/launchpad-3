@@ -285,6 +285,10 @@ class ISnapView(Interface):
         pocket=Choice(vocabulary=PackagePublishingPocket),
         channels=Dict(
             title=_("Source channels to use for this build."),
+            description=_(
+                "A dictionary mapping snap names to channels to use for this "
+                "build.  Currently only 'core' and 'snapcraft' keys are "
+                "supported."),
             key_type=TextLine(), required=False))
     # Really ISnapBuild, patched in lp.snappy.interfaces.webservice.
     @export_factory_operation(Interface, [])
