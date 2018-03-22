@@ -99,8 +99,6 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def make_product_user(self, licenses):
-        # Setup an a view that implements ProductLicenseMixin.
-        super(LicenseNotificationTestCase, self).setUp()
         user = self.factory.makePerson(
             name='registrant', email='registrant@launchpad.dev')
         login_person(user)

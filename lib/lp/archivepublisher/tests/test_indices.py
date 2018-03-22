@@ -1,7 +1,9 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native archive index generation for Soyuz."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 import os
 import tempfile
@@ -70,27 +72,27 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
                 ("Build-Conflicts-Arch", "libbar-dev")])
 
         self.assertEqual(
-            [u'Package: foo',
-             u'Binary: foo-bin',
-             u'Version: 666',
-             u'Section: base',
-             u'Maintainer: Foo Bar <foo@bar.com>',
-             u'Build-Depends: fooish',
-             u'Build-Depends-Indep: pyfoo',
-             u'Build-Depends-Arch: libfoo-dev',
-             u'Build-Conflicts: bar',
-             u'Build-Conflicts-Indep: pybar',
-             u'Build-Conflicts-Arch: libbar-dev',
-             u'Architecture: all',
-             u'Standards-Version: 3.6.2',
-             u'Format: 1.0',
-             u'Directory: pool/main/f/foo',
-             u'Files:',
-             u' %s 28 foo_666.dsc' % self.dsc_md5,
-             u'Checksums-Sha1:',
-             u' %s 28 foo_666.dsc' % self.dsc_sha1,
-             u'Checksums-Sha256:',
-             u' %s 28 foo_666.dsc' % self.dsc_sha256,
+            ['Package: foo',
+             'Binary: foo-bin',
+             'Version: 666',
+             'Section: base',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Build-Depends: fooish',
+             'Build-Depends-Indep: pyfoo',
+             'Build-Depends-Arch: libfoo-dev',
+             'Build-Conflicts: bar',
+             'Build-Conflicts-Indep: pybar',
+             'Build-Conflicts-Arch: libbar-dev',
+             'Architecture: all',
+             'Standards-Version: 3.6.2',
+             'Format: 1.0',
+             'Directory: pool/main/f/foo',
+             'Files:',
+             ' %s 28 foo_666.dsc' % self.dsc_md5,
+             'Checksums-Sha1:',
+             ' %s 28 foo_666.dsc' % self.dsc_sha1,
+             'Checksums-Sha256:',
+             ' %s 28 foo_666.dsc' % self.dsc_sha256,
              ],
             build_spph_stanza(pub_source).makeOutput().splitlines())
 
@@ -112,28 +114,28 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
                 ("Build-Conflicts-Arch", "libbar-dev")])
 
         self.assertEqual(
-            [u'Package: foo',
-             u'Binary: foo-bin',
-             u'Version: 666',
-             u'Section: base',
-             u'Maintainer: Foo Bar <foo@bar.com>',
-             u'Build-Depends: fooish',
-             u'Build-Depends-Indep: pyfoo',
-             u'Build-Depends-Arch: libfoo-dev',
-             u'Build-Conflicts: bar',
-             u'Build-Conflicts-Indep: pybar',
-             u'Build-Conflicts-Arch: libbar-dev',
-             u'Architecture: all',
-             u'Standards-Version: 3.6.2',
-             u'Format: 1.0',
-             u'Directory: pool/main/f/foo',
-             u'Files:',
-             u' %s 28 foo_666.dsc' % self.dsc_md5,
-             u'Checksums-Sha1:',
-             u' %s 28 foo_666.dsc' % self.dsc_sha1,
-             u'Checksums-Sha256:',
-             u' %s 28 foo_666.dsc' % self.dsc_sha256,
-             u'Python-Version: < 1.5'],
+            ['Package: foo',
+             'Binary: foo-bin',
+             'Version: 666',
+             'Section: base',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Build-Depends: fooish',
+             'Build-Depends-Indep: pyfoo',
+             'Build-Depends-Arch: libfoo-dev',
+             'Build-Conflicts: bar',
+             'Build-Conflicts-Indep: pybar',
+             'Build-Conflicts-Arch: libbar-dev',
+             'Architecture: all',
+             'Standards-Version: 3.6.2',
+             'Format: 1.0',
+             'Directory: pool/main/f/foo',
+             'Files:',
+             ' %s 28 foo_666.dsc' % self.dsc_md5,
+             'Checksums-Sha1:',
+             ' %s 28 foo_666.dsc' % self.dsc_sha1,
+             'Checksums-Sha256:',
+             ' %s 28 foo_666.dsc' % self.dsc_sha256,
+             'Python-Version: < 1.5'],
             build_spph_stanza(pub_source).makeOutput().splitlines())
 
     def testBinaryStanza(self):
@@ -149,32 +151,32 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
             phased_update_percentage=50)
         pub_binary = pub_binaries[0]
         self.assertEqual(
-            [u'Package: foo-bin',
-             u'Source: foo',
-             u'Priority: standard',
-             u'Section: base',
-             u'Installed-Size: 100',
-             u'Maintainer: Foo Bar <foo@bar.com>',
-             u'Architecture: all',
-             u'Version: 666',
-             u'Recommends: foo-dev',
-             u'Replaces: old-foo',
-             u'Suggests: pyfoo',
-             u'Provides: foo-master',
-             u'Depends: biscuit',
-             u'Conflicts: old-foo',
-             u'Pre-Depends: master-foo',
-             u'Enhances: foo-super',
-             u'Breaks: old-foo',
-             u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
-             u'Size: 18',
-             u'MD5sum: ' + self.deb_md5,
-             u'SHA1: ' + self.deb_sha1,
-             u'SHA256: ' + self.deb_sha256,
-             u'Phased-Update-Percentage: 50',
-             u'Description: Foo app is great',
-             u' Well ...',
-             u' it does nothing, though'],
+            ['Package: foo-bin',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Recommends: foo-dev',
+             'Replaces: old-foo',
+             'Suggests: pyfoo',
+             'Provides: foo-master',
+             'Depends: biscuit',
+             'Conflicts: old-foo',
+             'Pre-Depends: master-foo',
+             'Enhances: foo-super',
+             'Breaks: old-foo',
+             'Filename: pool/main/f/foo/foo-bin_666_all.deb',
+             'Size: 18',
+             'MD5sum: ' + self.deb_md5,
+             'SHA1: ' + self.deb_sha1,
+             'SHA256: ' + self.deb_sha256,
+             'Phased-Update-Percentage: 50',
+             'Description: Foo app is great',
+             ' Well ...',
+             ' it does nothing, though'],
             build_bpph_stanza(pub_binary).makeOutput().splitlines())
 
     def testBinaryStanzaWithCustomFields(self):
@@ -189,32 +191,32 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
             user_defined_fields=[("Python-Version", ">= 2.4")])
         pub_binary = pub_binaries[0]
         self.assertEqual(
-            [u'Package: foo-bin',
-             u'Source: foo',
-             u'Priority: standard',
-             u'Section: base',
-             u'Installed-Size: 100',
-             u'Maintainer: Foo Bar <foo@bar.com>',
-             u'Architecture: all',
-             u'Version: 666',
-             u'Recommends: foo-dev',
-             u'Replaces: old-foo',
-             u'Suggests: pyfoo',
-             u'Provides: foo-master',
-             u'Depends: biscuit',
-             u'Conflicts: old-foo',
-             u'Pre-Depends: master-foo',
-             u'Enhances: foo-super',
-             u'Breaks: old-foo',
-             u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
-             u'Size: 18',
-             u'MD5sum: ' + self.deb_md5,
-             u'SHA1: ' + self.deb_sha1,
-             u'SHA256: ' + self.deb_sha256,
-             u'Description: Foo app is great',
-             u' Well ...',
-             u' it does nothing, though',
-             u'Python-Version: >= 2.4'],
+            ['Package: foo-bin',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Recommends: foo-dev',
+             'Replaces: old-foo',
+             'Suggests: pyfoo',
+             'Provides: foo-master',
+             'Depends: biscuit',
+             'Conflicts: old-foo',
+             'Pre-Depends: master-foo',
+             'Enhances: foo-super',
+             'Breaks: old-foo',
+             'Filename: pool/main/f/foo/foo-bin_666_all.deb',
+             'Size: 18',
+             'MD5sum: ' + self.deb_md5,
+             'SHA1: ' + self.deb_sha1,
+             'SHA256: ' + self.deb_sha256,
+             'Description: Foo app is great',
+             ' Well ...',
+             ' it does nothing, though',
+             'Python-Version: >= 2.4'],
             build_bpph_stanza(pub_binary).makeOutput().splitlines())
 
     def testBinaryStanzaDescription(self):
@@ -245,26 +247,26 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
             description=description)[0]
 
         self.assertEqual(
-            [u'Package: foo-bin',
-             u'Source: foo',
-             u'Priority: standard',
-             u'Section: base',
-             u'Installed-Size: 100',
-             u'Maintainer: Foo Bar <foo@bar.com>',
-             u'Architecture: all',
-             u'Version: 666',
-             u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
-             u'Size: 18',
-             u'MD5sum: ' + self.deb_md5,
-             u'SHA1: ' + self.deb_sha1,
-             u'SHA256: ' + self.deb_sha256,
-             u'Description: Foo app is great',
-             u' Normal',
-             u' Normal',
-             u' .',
-             u' .',
-             u' .',
-             u' %s' % ('x' * 100),
+            ['Package: foo-bin',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Filename: pool/main/f/foo/foo-bin_666_all.deb',
+             'Size: 18',
+             'MD5sum: ' + self.deb_md5,
+             'SHA1: ' + self.deb_sha1,
+             'SHA256: ' + self.deb_sha256,
+             'Description: Foo app is great',
+             ' Normal',
+             ' Normal',
+             ' .',
+             ' .',
+             ' .',
+             ' %s' % ('x' * 100),
              ],
             build_bpph_stanza(pub_binary).makeOutput().splitlines())
 
@@ -277,26 +279,26 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         The encoding should be preserved and able to be encoded in
         'utf-8' for disk writing.
         """
-        description = u'Using non-ascii as: \xe7\xe3\xe9\xf3'
+        description = 'Using non-ascii as: \xe7\xe3\xe9\xf3'
         pub_binary = self.getPubBinaries(
             description=description)[0]
 
         self.assertEqual(
-            [u'Package: foo-bin',
-             u'Source: foo',
-             u'Priority: standard',
-             u'Section: base',
-             u'Installed-Size: 100',
-             u'Maintainer: Foo Bar <foo@bar.com>',
-             u'Architecture: all',
-             u'Version: 666',
-             u'Filename: pool/main/f/foo/foo-bin_666_all.deb',
-             u'Size: 18',
-             u'MD5sum: ' + self.deb_md5,
-             u'SHA1: ' + self.deb_sha1,
-             u'SHA256: ' + self.deb_sha256,
-             u'Description: Foo app is great',
-             u' Using non-ascii as: \xe7\xe3\xe9\xf3',
+            ['Package: foo-bin',
+             'Source: foo',
+             'Priority: standard',
+             'Section: base',
+             'Installed-Size: 100',
+             'Maintainer: Foo Bar <foo@bar.com>',
+             'Architecture: all',
+             'Version: 666',
+             'Filename: pool/main/f/foo/foo-bin_666_all.deb',
+             'Size: 18',
+             'MD5sum: ' + self.deb_md5,
+             'SHA1: ' + self.deb_sha1,
+             'SHA256: ' + self.deb_sha256,
+             'Description: Foo app is great',
+             ' Using non-ascii as: \xe7\xe3\xe9\xf3',
              ],
             build_bpph_stanza(pub_binary).makeOutput().splitlines())
 
@@ -315,7 +317,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         pub_binary = self.getPubBinaries(
             binaryname='foo-bin', pub_source=pub_source)[0]
         self.assertEqual(
-            u'foo',
+            'foo',
             get_field(build_bpph_stanza(pub_binary), 'Source'))
 
     def testBinaryIncludesDifferingSourceVersion(self):
@@ -324,7 +326,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         pub_binary = self.getPubBinaries(
             binaryname='foo', version='999', pub_source=pub_source)[0]
         self.assertEqual(
-            u'foo (666)',
+            'foo (666)',
             get_field(build_bpph_stanza(pub_binary), 'Source'))
 
 

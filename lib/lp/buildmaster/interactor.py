@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -385,7 +385,8 @@ class BuilderInteractor(object):
 
         d = slave.resume()
 
-        def got_resume_ok((stdout, stderr, returncode)):
+        def got_resume_ok(args):
+            stdout, stderr, returncode = args
             return stdout, stderr
 
         def got_resume_bad(failure):

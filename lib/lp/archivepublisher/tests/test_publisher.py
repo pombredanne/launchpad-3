@@ -1,7 +1,9 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisher class."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -32,7 +34,6 @@ try:
 except ImportError:
     from backports import lzma
 import pytz
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     ContainsAll,
     DirContains,
@@ -49,6 +50,7 @@ from testtools.matchers import (
     PathExists,
     SamePath,
     )
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
 from zope.component import getUtility
@@ -68,7 +70,6 @@ from lp.archivepublisher.publishing import (
     Publisher,
     )
 from lp.archivepublisher.utils import RepositoryIndexFile
-from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
@@ -450,7 +451,7 @@ class TestPublisherSeries(TestNativePublishingBase):
         for pu_build in pu_i386.builds:
             pu_build.publish()
 
-        publications = archive.getAllPublishedBinaries(name=u"bin-i386")
+        publications = archive.getAllPublishedBinaries(name="bin-i386")
 
         self.assertEqual(1, publications.count())
         self.assertEqual(
@@ -809,14 +810,14 @@ class TestPublisher(TestPublisherBase):
         self.assertFalse(os.path.exists(publisher._config.metaroot))
         self.assertEqual(ArchiveStatus.DELETED, test_archive.status)
         self.assertEqual(False, test_archive.publish)
-        self.assertEqual(u'testing-deletedppa', test_archive.name)
+        self.assertEqual('testing-deletedppa', test_archive.name)
 
         # All of the archive's active publications have been marked
         # DELETED, and dateremoved has been set early because they've
         # already been removed from disk.
         for pub in (spph, bpph, orphaned_bpph):
             self.assertEqual(PackagePublishingStatus.DELETED, pub.status)
-            self.assertEqual(u'janitor', pub.removed_by.name)
+            self.assertEqual('janitor', pub.removed_by.name)
             self.assertIsNot(None, pub.dateremoved)
 
         # The SUPERSEDED publications now have dateremoved set, even
@@ -1252,7 +1253,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(
             cprov.archive, archive_publisher.archive)
         self.assertEqual(
-            u'/var/tmp/ppa.test/cprov/ppa/ubuntutest/dists',
+            '/var/tmp/ppa.test/cprov/ppa/ubuntutest/dists',
             archive_publisher._config.distsroot)
         self.assertEqual(
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
@@ -1933,7 +1934,7 @@ class TestPublisher(TestPublisherBase):
         """
         allowed_suites = []
         cprov = getUtility(IPersonSet).getByName('cprov')
-        cprov.archive.displayname = u'PPA for Celso Provid\xe8lo'
+        cprov.archive.displayname = 'PPA for Celso Provid\xe8lo'
         archive_publisher = getPublisher(
             cprov.archive, allowed_suites, self.logger)
 
@@ -1950,7 +1951,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual('LP-PPA-cprov', release['origin'])
 
         # The Label: field should be set to the archive displayname
-        self.assertEqual(u'PPA for Celso Provid\xe8lo', release['label'])
+        self.assertEqual('PPA for Celso Provid\xe8lo', release['label'])
 
         arch_sources_path = os.path.join(
             archive_publisher._config.distsroot, 'breezy-autotest',
@@ -2720,7 +2721,7 @@ class TestUpdateByHash(TestPublisherBase):
         # A no-op run leaves the scheduled deletion date intact.
         i386_file = getUtility(IArchiveFileSet).getByArchive(
             self.ubuntutest.main_archive,
-            path=u'dists/breezy-autotest/Contents-i386').one()
+            path='dists/breezy-autotest/Contents-i386').one()
         i386_date = i386_file.scheduled_deletion_date
         self.runSteps(publisher, step_d=True)
         flush_database_caches()
@@ -2746,7 +2747,7 @@ class TestUpdateByHash(TestPublisherBase):
         # Arrange for the second file to be pruned.
         hppa_file = getUtility(IArchiveFileSet).getByArchive(
             self.ubuntutest.main_archive,
-            path=u'dists/breezy-autotest/Contents-hppa').one()
+            path='dists/breezy-autotest/Contents-hppa').one()
         removeSecurityProxy(hppa_file).scheduled_deletion_date = (
             now - timedelta(hours=1))
         self.runSteps(publisher, step_d=True)
@@ -2809,7 +2810,7 @@ class TestUpdateByHash(TestPublisherBase):
             ByHashHasContents(main_contents))
         archive_files = getUtility(IArchiveFileSet).getByArchive(
             self.ubuntutest.main_archive,
-            path=u'dists/breezy-autotest/main/source/Sources')
+            path='dists/breezy-autotest/main/source/Sources')
         self.assertThat(
             sorted(archive_files, key=attrgetter('id')),
             MatchesListwise([
@@ -3208,16 +3209,6 @@ class TestDirectoryHashHelpers(TestCaseWithFactory):
                         result[dh_file].append(line.strip().split(' '))
         return result
 
-    def fetchSigs(self, rootdir):
-        result = defaultdict(list)
-        for dh_file in self.all_hash_files:
-            checksum_sig = os.path.join(rootdir, dh_file) + '.gpg'
-            if os.path.exists(checksum_sig):
-                with open(checksum_sig, "r") as sfd:
-                    for line in sfd:
-                        result[dh_file].append(line)
-        return result
-
 
 class TestDirectoryHash(TestDirectoryHashHelpers):
     """Unit tests for DirectoryHash object."""
@@ -3232,7 +3223,7 @@ class TestDirectoryHash(TestDirectoryHashHelpers):
             checksum_file = os.path.join(rootdir, dh_file)
             self.assertFalse(os.path.exists(checksum_file))
 
-        with DirectoryHash(rootdir, tmpdir, None):
+        with DirectoryHash(rootdir, tmpdir):
             pass
 
         for dh_file in self.all_hash_files:
@@ -3295,63 +3286,3 @@ class TestDirectoryHash(TestDirectoryHashHelpers):
             ),
         }
         self.assertThat(self.fetchSums(rootdir), MatchesDict(expected))
-
-
-class TestDirectoryHashSigning(TestDirectoryHashHelpers):
-    """Unit tests for DirectoryHash object, signing functionality."""
-
-    layer = ZopelessDatabaseLayer
-    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
-
-    @defer.inlineCallbacks
-    def setUp(self):
-        super(TestDirectoryHashSigning, self).setUp()
-        self.temp_dir = self.makeTemporaryDirectory()
-        self.distro = self.factory.makeDistribution()
-        db_pubconf = getUtility(IPublisherConfigSet).getByDistribution(
-            self.distro)
-        db_pubconf.root_dir = unicode(self.temp_dir)
-        self.archive = self.factory.makeArchive(
-            distribution=self.distro, purpose=ArchivePurpose.PRIMARY)
-        self.archive_root = getPubConfig(self.archive).archiveroot
-        self.suite = "distroseries"
-
-        # Setup a keyserver so we can install the archive key.
-        with InProcessKeyServerFixture() as keyserver:
-            yield keyserver.start()
-            key_path = os.path.join(gpgkeysdir, 'ppa-sample@canonical.com.sec')
-            yield IArchiveSigningKey(self.archive).setSigningKey(
-                key_path, async_keyserver=True)
-
-    def test_basic_directory_add_signed(self):
-        tmpdir = unicode(self.makeTemporaryDirectory())
-        rootdir = self.archive_root
-        os.makedirs(rootdir)
-
-        test1_file = os.path.join(rootdir, "test1")
-        test1_hash = self.createTestFile(test1_file, "test1 dir")
-
-        test2_file = os.path.join(rootdir, "test2")
-        test2_hash = self.createTestFile(test2_file, "test2 dir")
-
-        os.mkdir(os.path.join(rootdir, "subdir1"))
-
-        test3_file = os.path.join(rootdir, "subdir1", "test3")
-        test3_hash = self.createTestFile(test3_file, "test3 dir")
-
-        signer = IArchiveSigningKey(self.archive)
-        with DirectoryHash(rootdir, tmpdir, signer=signer) as dh:
-            dh.add_dir(rootdir)
-
-        expected = {
-            'SHA256SUMS': MatchesSetwise(
-                Equals([test1_hash, "*test1"]),
-                Equals([test2_hash, "*test2"]),
-                Equals([test3_hash, "*subdir1/test3"]),
-            ),
-        }
-        self.assertThat(self.fetchSums(rootdir), MatchesDict(expected))
-        sig_content = self.fetchSigs(rootdir)
-        for dh_file in sig_content:
-            self.assertEqual(
-                sig_content[dh_file][0], '-----BEGIN PGP SIGNATURE-----\n')

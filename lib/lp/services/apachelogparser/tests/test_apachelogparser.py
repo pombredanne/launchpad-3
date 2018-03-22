@@ -391,8 +391,8 @@ class TestParsedFilesDetection(TestCase):
 
     def test_sorts_by_mtime(self):
         # Files are sorted by ascending mtime.
-        root = self.useFixture(TempDir()).path
-        file_paths = [os.path.join(root, str(name)) for name in range(3)]
+        root = self.useFixture(TempDir())
+        file_paths = [root.join(str(name)) for name in range(3)]
         now = time.time()
         for i, path in enumerate(file_paths):
             write_file(path, '%s\n' % i)

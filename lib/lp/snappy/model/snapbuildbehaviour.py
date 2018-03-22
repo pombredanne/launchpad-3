@@ -29,6 +29,7 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
+from lp.services.webapp import canonical_url
 from lp.snappy.interfaces.snap import SnapBuildArchiveOwnerMismatch
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.adapters.archivedependencies import (
@@ -107,6 +108,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 tools_fingerprint=config.snappy.tools_fingerprint,
                 logger=logger))
         args["archive_private"] = build.archive.private
+        args["build_url"] = canonical_url(build)
         if build.channels is not None:
             args["channels"] = build.channels
         if build.snap.branch is not None:

@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Various functions and classes that are useful across different parts of
@@ -61,7 +61,7 @@ def text_replaced(text, replacements, _cache={}):
             list_item = '(%s)'
             join_char = '|'
         for find, replace in sorted(replacements.items(),
-                                    key=lambda (key, value): len(key),
+                                    key=lambda item: len(item[0]),
                                     reverse=True):
             L.append(list_item % re.escape(find))
         # Make a copy of the replacements dict, as it is mutable, but we're
@@ -146,12 +146,12 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
 
     It works on iterable also which don't support the extended slice protocol.
 
-    >>> xrange(5)[:1] #doctest: +ELLIPSIS
+    >>> iter(range(5))[:1] #doctest: +ELLIPSIS
     Traceback (most recent call last):
     ...
     TypeError: ...
 
-    >>> shortlist(xrange(10), 5, hardlimit=8) #doctest: +ELLIPSIS
+    >>> shortlist(iter(range(10)), 5, hardlimit=8) #doctest: +ELLIPSIS
     Traceback (most recent call last):
     ...
     ShortListTooBigError: ...

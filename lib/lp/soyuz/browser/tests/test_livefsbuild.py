@@ -1,12 +1,15 @@
-# Copyright 2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystem build views."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
 from fixtures import FakeLogger
 from mechanize import LinkNotFoundError
+import soupmatchers
 from storm.locals import Store
 from testtools.matchers import StartsWith
 import transaction
@@ -46,7 +49,7 @@ class TestCanonicalUrlForLiveFSBuild(TestCaseWithFactory):
 
     def setUp(self):
         super(TestCanonicalUrlForLiveFSBuild, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
 
     def test_canonical_url(self):
         owner = self.factory.makePerson(name="person")
@@ -56,7 +59,7 @@ class TestCanonicalUrlForLiveFSBuild(TestCaseWithFactory):
             distribution=distribution, name="unstable")
         livefs = self.factory.makeLiveFS(
             registrant=owner, owner=owner, distroseries=distroseries,
-            name=u"livefs")
+            name="livefs")
         build = self.factory.makeLiveFSBuild(requester=owner, livefs=livefs)
         self.assertThat(
             canonical_url(build),
@@ -71,7 +74,7 @@ class TestLiveFSBuildView(TestCaseWithFactory):
 
     def setUp(self):
         super(TestLiveFSBuildView, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
 
     def test_files(self):
         # LiveFSBuildView.files returns all the associated files.
@@ -114,7 +117,7 @@ class TestLiveFSBuildOperations(BrowserTestCase):
 
     def setUp(self):
         super(TestLiveFSBuildOperations, self).setUp()
-        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         self.useFixture(FakeLogger())
         self.build = self.factory.makeLiveFSBuild()
         self.build_url = canonical_url(self.build)
@@ -204,9 +207,10 @@ class TestLiveFSBuildOperations(BrowserTestCase):
         browser = self.getViewBrowser(
             self.build, "+rescore", user=self.buildd_admin)
         self.assertEqual(self.build_url, browser.url)
-        self.assertIn(
-            "Cannot rescore this build because it is not queued.",
-            browser.contents)
+        self.assertThat(browser.contents, soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "notification", "div", attrs={"class": "warning message"},
+                text="Cannot rescore this build because it is not queued.")))
 
     def test_builder_history(self):
         Store.of(self.build).flush()

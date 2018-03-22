@@ -2,10 +2,12 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test SourcePackageRelease."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -76,7 +78,7 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         # that version and up to and including the context SPR.
         changelog = self.factory.makeChangelog(
             spn="foo", versions=["1.3",  "1.2",  "1.1",  "1.0"])
-        expected_changelog = dedent(u"""\
+        expected_changelog = dedent("""\
             foo (1.3) unstable; urgency=low
 
               * 1.3.
@@ -98,13 +100,13 @@ class TestSourcePackageRelease(TestCaseWithFactory):
 
     def test_aggregate_changelog_invalid_utf8(self):
         # aggregate_changelog copes with invalid UTF-8.
-        changelog_main = dedent(u"""\
+        changelog_main = dedent("""\
             foo (1.0) unstable; urgency=low
 
               * 1.0 (héllo).""").encode("ISO-8859-1")
         changelog_trailer = (
-            u" -- Føo Bær <foo@example.com>  "
-            u"Tue, 01 Jan 1970 01:50:41 +0000").encode("ISO-8859-1")
+            " -- Føo Bær <foo@example.com>  "
+            "Tue, 01 Jan 1970 01:50:41 +0000").encode("ISO-8859-1")
         changelog_text = changelog_main + b"\n\n" + changelog_trailer
         changelog = self.factory.makeLibraryFileAlias(content=changelog_text)
         spph = self.factory.makeSourcePackagePublishingHistory(

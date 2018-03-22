@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for process-death-row.py script.
@@ -7,6 +7,8 @@ See lib/canonical/launchpad/doc/deathrow.txt for more detailed tests
 of the module functionality; here we just aim to test that the script
 processes its arguments and handles dry-run correctly.
 """
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -105,12 +107,12 @@ class TestProcessDeathRow(TestCaseWithFactory):
 
         cprov = getUtility(IPersonSet).getByName('cprov')
         removeSecurityProxy(cprov.archive).distribution = ubuntutest
-        ppa_pubrecs = cprov.archive.getPublishedSources(u'iceweasel')
+        ppa_pubrecs = cprov.archive.getPublishedSources('iceweasel')
         self.ppa_pubrec_ids = self.markPublishingForRemoval(ppa_pubrecs)
 
         mark = getUtility(IPersonSet).getByName('mark')
         removeSecurityProxy(mark.archive).distribution = ubuntutest
-        ppa_pubrecs = mark.archive.getPublishedSources(u'iceweasel')
+        ppa_pubrecs = mark.archive.getPublishedSources('iceweasel')
         self.ppa_pubrec_ids.extend(self.markPublishingForRemoval(ppa_pubrecs))
 
         # Fill one of the files in cprov PPA just to ensure that deathrow

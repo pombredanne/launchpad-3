@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone related test helper."""
@@ -469,7 +469,7 @@ class MilestoneBugTaskSpecificationTest(TestCaseWithFactory):
     def _create_items(self, num, factory, **kwargs):
         items = []
         with person_logged_in(self.owner):
-            for n in xrange(num):
+            for n in range(num):
                 items.append(factory(**kwargs))
         return items
 

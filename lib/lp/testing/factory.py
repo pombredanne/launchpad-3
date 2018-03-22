@@ -19,6 +19,7 @@ __all__ = [
     'remove_security_proxy_and_shout_at_engineer',
     ]
 
+import base64
 from datetime import (
     datetime,
     timedelta,
@@ -50,6 +51,11 @@ from bzrlib.revision import Revision as BzrRevision
 from lazr.jobrunner.jobrunner import SuspendJobException
 import pytz
 from pytz import UTC
+from twisted.conch.ssh.common import (
+    MP,
+    NS,
+    )
+from twisted.conch.test import keydata
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import (
     ComponentLookupError,
@@ -1108,7 +1114,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeStackedOnBranchChain(self, depth=5, **kwargs):
         branch = None
-        for i in xrange(depth):
+        for i in range(depth):
             branch = self.makeAnyBranch(stacked_on=branch, **kwargs)
         return branch
 
@@ -4304,6 +4310,29 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IHWSubmissionDeviceSet).create(
             device_driver_link, submission, parent, hal_device_id)
 
+    def makeSSHKeyText(self, key_type=SSHKeyType.RSA, comment=None):
+        """Create new SSH public key text.
+
+        :param key_type: If specified, the type of SSH key to generate. Must be
+            a member of SSHKeyType. If unspecified, SSHKeyType.RSA is used.
+        """
+        key_type_string = SSH_KEY_TYPE_TO_TEXT.get(key_type)
+        if key_type is None:
+            raise AssertionError(
+                "key_type must be a member of SSHKeyType, not %r" % key_type)
+        if key_type == SSHKeyType.RSA:
+            parameters = [MP(keydata.RSAData[param]) for param in ("e", "n")]
+        elif key_type == SSHKeyType.DSA:
+            parameters = [
+                MP(keydata.DSAData[param]) for param in ("p", "q", "g", "y")]
+        else:
+            raise AssertionError(
+                "key_type must be a member of SSHKeyType, not %r" % key_type)
+        key_text = base64.b64encode(NS(key_type_string) + b"".join(parameters))
+        if comment is None:
+            comment = self.getUniqueString()
+        return "%s %s %s" % (key_type_string, key_text, comment)
+
     def makeSSHKey(self, person=None, key_type=SSHKeyType.RSA,
                    send_notification=True):
         """Create a new SSHKey.
@@ -4315,15 +4344,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if person is None:
             person = self.makePerson()
-        key_type_string = SSH_KEY_TYPE_TO_TEXT.get(key_type)
-        if key_type is None:
-            raise AssertionError(
-                "key_type must be a member of SSHKeyType, not %r" % key_type)
-        public_key = "%s %s %s" % (
-            key_type_string,
-            self.getUniqueString(),
-            self.getUniqueString(),
-            )
+        public_key = self.makeSSHKeyText(key_type=key_type)
         return getUtility(ISSHKeySet).new(
             person, public_key, send_notification=send_notification)
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,7 +8,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import os
 import pickle
 import re
 import subprocess
@@ -1288,9 +1287,9 @@ class TestCheckTeamParticipationScript(TestCase):
         logger = BufferLogger()
         self.addDetail("log", logger.content)
         info = fetch_team_participation_info(logger)
-        tempdir = self.useFixture(TempDir()).path
-        filename_in = os.path.join(tempdir, "info.in")
-        filename_out = os.path.join(tempdir, "info.out")
+        tempdir = self.useFixture(TempDir())
+        filename_in = tempdir.join("info.in")
+        filename_out = tempdir.join("info.out")
         fout = bz2.BZ2File(filename_in, "w")
         try:
             pickle.dump(info, fout, pickle.HIGHEST_PROTOCOL)
@@ -1320,7 +1319,7 @@ class TestCheckTeamParticipationScriptPerformance(TestCaseWithFactory):
         """
         # Create a deeply nested team and member structure.
         team = self.factory.makeTeam()
-        for num in xrange(10):
+        for num in range(10):
             another_team = self.factory.makeTeam()
             another_person = self.factory.makePerson()
             with person_logged_in(team.teamowner):

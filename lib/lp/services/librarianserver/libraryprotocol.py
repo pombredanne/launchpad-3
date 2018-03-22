@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -211,8 +211,9 @@ class FileUploadProtocol(basic.LineReceiver):
             # Store file.
             deferred = self._storeFile()
 
-            def _sendID((fileID, aliasID)):
+            def _sendID(ids):
                 # Send ID to client.
+                fileID, aliasID = ids
                 if self.newFile.contentID is None:
                     # Respond with deprecated server-generated IDs.
                     self.sendLine('200 %s/%s' % (fileID, aliasID))

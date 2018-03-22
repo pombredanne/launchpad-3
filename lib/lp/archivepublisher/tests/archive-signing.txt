@@ -453,7 +453,7 @@ have a 'signing_key' set,  it raises an error.
     >>> archive_signing_key.signRepository(test_suite)
     Traceback (most recent call last):
     ...
-    AssertionError: No signing key available for PPA for Celso Providelo
+    CannotSignArchive: No signing key available for PPA for Celso Providelo
 
 We'll purge 'signing_keys_root' and the PPA repository root so that
 other tests don't choke on it, and shut down the server.

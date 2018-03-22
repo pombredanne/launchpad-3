@@ -1,4 +1,4 @@
-# Copyright 2013-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test rosetta-translations custom uploads.
@@ -6,6 +6,8 @@
 See also lp.soyuz.tests.test_distroseriesqueue_rosetta_translations for
 high-level tests of rosetta-translations upload and queue manipulation.
 """
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from storm.expr import Desc
 import transaction
@@ -50,8 +52,8 @@ class TestRosettaTranslations(TestCaseWithFactory):
         """Create an LibraryFileAlias containing dummy translation data."""
         if tar_content is None:
             tar_content = {
-                'source/po/foo.pot': 'Foo template',
-                'source/po/eo.po': 'Foo translation',
+                'source/po/foo.pot': b'Foo template',
+                'source/po/eo.po': b'Foo translation',
                 }
         tarfile_content = LaunchpadWriteTarFile.files_to_string(
             tar_content)

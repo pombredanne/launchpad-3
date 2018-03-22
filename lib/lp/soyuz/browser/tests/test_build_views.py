@@ -1,5 +1,7 @@
-# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -168,7 +170,7 @@ class TestBuildViews(TestCaseWithFactory):
             archive=archive, status=BuildStatus.FAILEDTOBUILD)
         with person_logged_in(self.admin):
             packageset = getUtility(IPackagesetSet).new(
-                u'rebuild', u'test', team,
+                'rebuild', 'test', team,
                 distroseries=build.distro_arch_series.distroseries)
             packageset.add((build.source_package_release.sourcepackagename,))
         # The team doesn't have permission until we grant it
@@ -427,7 +429,7 @@ class TestBuildViews(TestCaseWithFactory):
             distroseries.distribution, name="+builds",
             form={
                 'build_state': 'built',
-                'build_text': u'foo',
+                'build_text': 'foo',
                 'start': 75,
                 'memo': '["2012-01-01T01:01:01", 0]'})
         view.setupBuildList()

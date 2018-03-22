@@ -1,7 +1,9 @@
-# Copyright 2011-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test `DistroSeriesDifferenceJob` and utility."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -155,7 +157,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
 
     def createSPPHs(self, derived_series, nb_spph=10):
         res_spph = []
-        for i in xrange(nb_spph):
+        for i in range(nb_spph):
             packagename = self.factory.makeSourcePackageName()
             spph = self.factory.makeSourcePackagePublishingHistory(
                 sourcepackagename=packagename,
@@ -174,8 +176,8 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
 
         sourcepackagenameid = spph.sourcepackagerelease.sourcepackagename.id
         expected_metadata = {
-            u'sourcepackagename': sourcepackagenameid,
-            u'parent_series': dsp.parent_series.id}
+            'sourcepackagename': sourcepackagenameid,
+            'parent_series': dsp.parent_series.id}
         self.assertThat(job, MatchesStructure.byEquality(
             distribution=dsp.derived_series.distribution,
             distroseries=dsp.derived_series,
@@ -202,7 +204,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.assertContentEqual(
             [spph.sourcepackagerelease.sourcepackagename.id
                 for spph in spphs],
-            [job.metadata[u'sourcepackagename'] for job in jobs])
+            [job.metadata['sourcepackagename'] for job in jobs])
 
     def test_create_multiple_jobs_creates_waiting_jobs(self):
         dsp = self.factory.makeDistroSeriesParent()
@@ -379,7 +381,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         spn = self.factory.makeSourcePackageName()
         series = [
             self.factory.makeDistroSeries(derived_distro)
-            for counter in xrange(2)]
+            for counter in range(2)]
         dsps = [
             self.factory.makeDistroSeriesParent(derived_series=distroseries)
             for distroseries in series]
@@ -407,7 +409,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
             dsp.parent_series, pocket=PackagePublishingPocket.RELEASE)
         spn = spph.sourcepackagerelease.sourcepackagename
 
-        create_jobs = range(1, 3)
+        create_jobs = list(range(1, 3))
         for counter in create_jobs:
             self.getJobSource().createForSPPHs([spph])
 

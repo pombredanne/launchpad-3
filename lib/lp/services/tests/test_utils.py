@@ -340,8 +340,7 @@ class TestBZ2Pickle(TestCase):
 
     def test_save_and_load(self):
         data = {1: 2, "room": 101}
-        tempdir = self.useFixture(TempDir()).path
-        tempfile = os.path.join(tempdir, "dump")
+        tempfile = self.useFixture(TempDir()).join("dump")
         save_bz2_pickle(data, tempfile)
         self.assertEqual(data, load_bz2_pickle(tempfile))
 
