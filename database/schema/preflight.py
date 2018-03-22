@@ -1,5 +1,5 @@
 #!/usr/bin/python -S
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Confirm the database systems are ready to be patched as best we can."""
@@ -86,7 +86,7 @@ class DatabasePreflight:
         self.lpmain_master_node = node
 
         # Add streaming replication standbys.
-        standbys = controller.slaves.values()
+        standbys = set(controller.slaves.values())
         self._num_standbys = len(standbys)
         for standby in standbys:
             standby_node = Node(None, None, standby, False)
