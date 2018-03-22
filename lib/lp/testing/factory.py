@@ -4670,7 +4670,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeSnap(self, registrant=None, owner=None, distroseries=None,
                  name=None, branch=None, git_ref=None, auto_build=False,
                  auto_build_archive=None, auto_build_pocket=None,
-                 is_stale=None, require_virtualized=True, processors=None,
+                 auto_build_channels=None, is_stale=None,
+                 require_virtualized=True, processors=None,
                  date_created=DEFAULT, private=False, store_upload=False,
                  store_series=None, store_name=None, store_secrets=None,
                  store_channels=None):
@@ -4696,7 +4697,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             require_virtualized=require_virtualized, processors=processors,
             date_created=date_created, branch=branch, git_ref=git_ref,
             auto_build=auto_build, auto_build_archive=auto_build_archive,
-            auto_build_pocket=auto_build_pocket, private=private,
+            auto_build_pocket=auto_build_pocket,
+            auto_build_channels=auto_build_channels, private=private,
             store_upload=store_upload, store_series=store_series,
             store_name=store_name, store_secrets=store_secrets,
             store_channels=store_channels)
@@ -4707,8 +4709,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSnapBuild(self, requester=None, registrant=None, snap=None,
                       archive=None, distroarchseries=None, pocket=None,
-                      date_created=DEFAULT, status=BuildStatus.NEEDSBUILD,
-                      builder=None, duration=None, **kwargs):
+                      channels=None, date_created=DEFAULT,
+                      status=BuildStatus.NEEDSBUILD, builder=None,
+                      duration=None, **kwargs):
         """Make a new SnapBuild."""
         if requester is None:
             requester = self.makePerson()
@@ -4736,7 +4739,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket = PackagePublishingPocket.UPDATES
         snapbuild = getUtility(ISnapBuildSet).new(
             requester, snap, archive, distroarchseries, pocket,
-            date_created=date_created)
+            channels=channels, date_created=date_created)
         if duration is not None:
             removeSecurityProxy(snapbuild).updateStatus(
                 BuildStatus.BUILDING, builder=builder,

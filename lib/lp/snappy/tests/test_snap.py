@@ -54,6 +54,7 @@ from lp.services.database.constants import (
     ONE_DAY_AGO,
     UTC_NOW,
     )
+from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.features.testing import (
     FeatureFixture,
@@ -188,6 +189,7 @@ class TestSnap(TestCaseWithFactory):
         self.assertEqual(snap.distro_series.main_archive, build.archive)
         self.assertEqual(distroarchseries, build.distro_arch_series)
         self.assertEqual(PackagePublishingPocket.UPDATES, build.pocket)
+        self.assertIsNone(build.channels)
         self.assertEqual(BuildStatus.NEEDSBUILD, build.status)
         store = Store.of(build)
         store.flush()
@@ -231,6 +233,18 @@ class TestSnap(TestCaseWithFactory):
         queue_record = build.buildqueue_record
         queue_record.score()
         self.assertEqual(2610, queue_record.lastscore)
+
+    def test_requestBuild_channels(self):
+        # requestBuild can select non-default channels.
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            processor=processor)
+        snap = self.factory.makeSnap(
+            distroseries=distroarchseries.distroseries, processors=[processor])
+        build = snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.UPDATES, channels={"snapcraft": "edge"})
+        self.assertEqual({"snapcraft": "edge"}, build.channels)
 
     def test_requestBuild_rejects_repeats(self):
         # requestBuild refuses if there is already a pending build.
@@ -355,10 +369,36 @@ class TestSnap(TestCaseWithFactory):
         with person_logged_in(snap.owner):
             builds = snap.requestAutoBuilds()
         self.assertThat(builds, MatchesSetwise(
+            *(MatchesStructure(
+                requester=Equals(snap.owner), snap=Equals(snap),
+                archive=Equals(archive), distro_arch_series=Equals(das),
+                pocket=Equals(PackagePublishingPocket.PROPOSED),
+                channels=Is(None))
+              for das in dases[:2])))
+
+    def test_requestAutoBuilds_channels(self):
+        # requestAutoBuilds honours Snap.auto_build_channels.
+        distroseries = self.factory.makeDistroSeries()
+        dases = []
+        for _ in range(3):
+            processor = self.factory.makeProcessor(supports_virtualized=True)
+            dases.append(self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, processor=processor))
+        archive = self.factory.makeArchive()
+        snap = self.factory.makeSnap(
+            distroseries=distroseries,
+            processors=[das.processor for das in dases[:2]],
+            auto_build_archive=archive,
+            auto_build_pocket=PackagePublishingPocket.PROPOSED,
+            auto_build_channels={"snapcraft": "edge"})
+        with person_logged_in(snap.owner):
+            builds = snap.requestAutoBuilds()
+        self.assertThat(builds, MatchesSetwise(
             *(MatchesStructure.byEquality(
                 requester=snap.owner, snap=snap, archive=archive,
                 distro_arch_series=das,
-                pocket=PackagePublishingPocket.PROPOSED)
+                pocket=PackagePublishingPocket.PROPOSED,
+                channels={"snapcraft": "edge"})
               for das in dases[:2])))
 
     def test_getBuilds(self):
@@ -610,6 +650,7 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertFalse(snap.auto_build)
         self.assertIsNone(snap.auto_build_archive)
         self.assertIsNone(snap.auto_build_pocket)
+        self.assertIsNone(snap.auto_build_channels)
         self.assertTrue(snap.require_virtualized)
         self.assertFalse(snap.private)
 
@@ -630,6 +671,7 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertFalse(snap.auto_build)
         self.assertIsNone(snap.auto_build_archive)
         self.assertIsNone(snap.auto_build_pocket)
+        self.assertIsNone(snap.auto_build_channels)
         self.assertTrue(snap.require_virtualized)
         self.assertFalse(snap.private)
 
@@ -1003,6 +1045,56 @@ class TestSnapSet(TestCaseWithFactory):
         self.factory.makeSnapBuild(
             requester=snap.owner, snap=snap, archive=snap.auto_build_archive,
             distroarchseries=das)
+        logger = BufferLogger()
+        builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
+        self.assertEqual([], builds)
+        self.assertEqual([], logger.getLogBuffer().splitlines())
+
+    def test_makeAutoBuilds_skips_if_built_recently_matching_channels(self):
+        # ISnapSet.makeAutoBuilds only considers recently-requested builds
+        # to match a snap if they match its auto_build_channels.
+        das1, snap1 = self.makeAutoBuildableSnap(is_stale=True)
+        das2, snap2 = self.makeAutoBuildableSnap(
+            is_stale=True, auto_build_channels={"snapcraft": "edge"})
+        # Create some builds with mismatched channels.
+        self.factory.makeSnapBuild(
+            requester=snap1.owner, snap=snap1,
+            archive=snap1.auto_build_archive, distroarchseries=das1,
+            channels={"snapcraft": "edge"})
+        self.factory.makeSnapBuild(
+            requester=snap2.owner, snap=snap2,
+            archive=snap2.auto_build_archive, distroarchseries=das2,
+            channels={"snapcraft": "stable"})
+
+        logger = BufferLogger()
+        builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
+        self.assertThat(builds, MatchesSetwise(
+            MatchesStructure(
+                requester=Equals(snap1.owner), snap=Equals(snap1),
+                distro_arch_series=Equals(das1), channels=Is(None),
+                status=Equals(BuildStatus.NEEDSBUILD)),
+            MatchesStructure.byEquality(
+                requester=snap2.owner, snap=snap2, distro_arch_series=das2,
+                channels={"snapcraft": "edge"}, status=BuildStatus.NEEDSBUILD),
+            ))
+        log_entries = logger.getLogBuffer().splitlines()
+        self.assertEqual(4, len(log_entries))
+        for das, snap in (das1, snap1), (das2, snap2):
+            self.assertIn(
+                "DEBUG Scheduling builds of snap package %s/%s" % (
+                    snap.owner.name, snap.name),
+                log_entries)
+            self.assertIn(
+                "DEBUG  - %s/%s/%s: Build requested." % (
+                    snap.owner.name, snap.name, das.architecturetag),
+                log_entries)
+            self.assertFalse(snap.is_stale)
+
+        # Mark the two snaps stale and try again.  There are now matching
+        # builds so we don't try to request more.
+        for snap in snap1, snap2:
+            removeSecurityProxy(snap).is_stale = True
+            IStore(snap).flush()
         logger = BufferLogger()
         builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
         self.assertEqual([], builds)

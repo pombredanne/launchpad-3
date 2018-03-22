@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap package build interfaces."""
@@ -148,6 +148,14 @@ class ISnapBuildView(IPackageBuild):
     pocket = exported(Choice(
         title=_("The pocket for which to build."),
         vocabulary=PackagePublishingPocket, required=True, readonly=True))
+
+    channels = exported(Dict(
+        title=_("Source snap channels to use for this build."),
+        description=_(
+            "A dictionary mapping snap names to channels to use for this "
+            "build.  Currently only 'core' and 'snapcraft' keys are "
+            "supported."),
+        key_type=TextLine()))
 
     virtualized = Bool(
         title=_("If True, this build is virtualized."), readonly=True)

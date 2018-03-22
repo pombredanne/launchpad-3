@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `SnapBuild`.
@@ -109,6 +109,8 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 logger=logger))
         args["archive_private"] = build.archive.private
         args["build_url"] = canonical_url(build)
+        if build.channels is not None:
+            args["channels"] = build.channels
         if build.snap.branch is not None:
             args["branch"] = build.snap.branch.bzr_identity
         elif build.snap.git_ref is not None:
