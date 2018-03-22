@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build views."""
@@ -140,6 +140,9 @@ class TestSnapBuildView(TestCaseWithFactory):
         naked_job.job._status = JobStatus.FAILED
         naked_job.error_message = "This should not be shown."
         naked_job.error_messages = [
+            {"message": (
+                "The new version submitted for 'name' does not match the "
+                "upload ('other-name').")},
             {"message": "Scan failed.", "link": "link1"},
             {"message": "Classic not allowed.", "link": "link2"}]
         build_view = create_initialized_view(build, "+index")
@@ -157,6 +160,14 @@ class TestSnapBuildView(TestCaseWithFactory):
                 soupmatchers.Tag(
                     "store upload error messages", "ul",
                     attrs={"id": "store-upload-error-messages"}))))
+        self.assertThat(built_view, soupmatchers.HTMLContains(
+            soupmatchers.Within(
+                soupmatchers.Tag(
+                    "store upload error messages", "ul",
+                    attrs={"id": "store-upload-error-messages"}),
+                soupmatchers.Tag(
+                    "store upload error message", "li",
+                    text=re.compile(".*The new version.*")))))
         self.assertThat(built_view, soupmatchers.HTMLContains(
             soupmatchers.Within(
                 soupmatchers.Tag(
