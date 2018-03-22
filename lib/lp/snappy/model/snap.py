@@ -94,6 +94,7 @@ from lp.services.database.interfaces import (
     )
 from lp.services.database.stormexpr import (
     Greatest,
+    IsDistinctFrom,
     NullsLast,
     )
 from lp.services.features import getFeatureFlag
@@ -926,15 +927,8 @@ class SnapSet:
                     SnapBuild.snap_id == Snap.id,
                     SnapBuild.archive_id == Snap.auto_build_archive_id,
                     SnapBuild.pocket == Snap.auto_build_pocket,
-                    # These columns are nullable so require some care, since
-                    # a straightforward equality check will compile to
-                    # "SnapBuild.channels = Snap.auto_build_channels" which
-                    # is false if both are NULL.
-                    Or(
-                        And(
-                            SnapBuild.channels == None,
-                            Snap.auto_build_channels == None),
-                        SnapBuild.channels == Snap.auto_build_channels),
+                    Not(IsDistinctFrom(
+                        SnapBuild.channels, Snap.auto_build_channels)),
                     # We only want Snaps that haven't had an automatic
                     # SnapBuild dispatched for them recently.
                     SnapBuild.date_created >= threshold_date)),
