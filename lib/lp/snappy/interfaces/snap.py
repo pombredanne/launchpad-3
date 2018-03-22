@@ -284,7 +284,7 @@ class ISnapView(Interface):
         distro_arch_series=Reference(schema=IDistroArchSeries),
         pocket=Choice(vocabulary=PackagePublishingPocket),
         channels=Dict(
-            title=_("Source channels to use for this build."),
+            title=_("Source snap channels to use for this build."),
             description=_(
                 "A dictionary mapping snap names to channels to use for this "
                 "build.  Currently only 'core' and 'snapcraft' keys are "
@@ -521,7 +521,7 @@ class ISnapEditableAttributes(IHasOwner):
             "when building the snap package.")))
 
     auto_build_channels = exported(Dict(
-        title=_("Source channels for automatic builds"),
+        title=_("Source snap channels for automatic builds"),
         key_type=TextLine(), required=False, readonly=False,
         description=_(
             "A dictionary mapping snap names to channels to use when building "

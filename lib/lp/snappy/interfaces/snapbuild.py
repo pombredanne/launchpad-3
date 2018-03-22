@@ -149,7 +149,7 @@ class ISnapBuildView(IPackageBuild):
         vocabulary=PackagePublishingPocket, required=True, readonly=True))
 
     channels = exported(Dict(
-        title=_("Source channels to use for this build."),
+        title=_("Source snap channels to use for this build."),
         description=_(
             "A dictionary mapping snap names to channels to use for this "
             "build.  Currently only 'core' and 'snapcraft' keys are "
