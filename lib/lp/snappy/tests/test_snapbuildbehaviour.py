@@ -31,6 +31,7 @@ import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
+from zope.proxy import isProxy
 from zope.security.proxy import removeSecurityProxy
 
 from lp.archivepublisher.interfaces.archivesigningkey import (
@@ -410,6 +411,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             yield get_sources_list_for_building(
                 job.build, job.build.distro_arch_series, None))
         args = yield job._extraBuildArgs()
+        self.assertFalse(isProxy(args["channels"]))
         self.assertEqual({"snapcraft": "edge"}, args["channels"])
 
     @defer.inlineCallbacks
