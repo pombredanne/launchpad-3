@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.services.utils."""
@@ -33,6 +33,7 @@ from lp.services.utils import (
     load_bz2_pickle,
     obfuscate_structure,
     run_capturing_output,
+    sanitise_urls,
     save_bz2_pickle,
     traceback_info,
     utc_now,
@@ -383,3 +384,24 @@ class TestObfuscateStructure(TestCase):
         """Values are obfuscated recursively."""
         obfuscated = obfuscate_structure({'foo': (['a@example.com'],)})
         self.assertEqual({'foo': [['<email address hidden>']]}, obfuscated)
+
+
+class TestSanitiseURLs(TestCase):
+
+    def test_already_clean(self):
+        self.assertEqual('clean', sanitise_urls('clean'))
+
+    def test_removes_credentials(self):
+        self.assertEqual(
+            'http://<redacted>@example.com/',
+            sanitise_urls('http://user:secret@example.com/'))
+
+    def test_non_greedy(self):
+        self.assertEqual(
+            '{"one": "http://example.com/", '
+            '"two": "http://<redacted>@example.com/", '
+            '"three": "http://<redacted>@example.org/"}',
+            sanitise_urls(
+                '{"one": "http://example.com/", '
+                '"two": "http://alice:secret@example.com/", '
+                '"three": "http://bob:hidden@example.org/"}'))
