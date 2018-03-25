@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code import scheduler interfaces."""
@@ -38,13 +38,13 @@ class ICodeImportScheduler(Interface):
     def getImportDataForJobID(job_id):
         """Get data about the import with job id `job_id`.
 
-        :return: ``(worker_arguments, branch_url, log_file_name)`` where:
+        :return: ``(worker_arguments, target_url, log_file_name)`` where:
             * ``worker_arguments`` are the arguments to pass to the code
-              import worker subprocess.
-           * ``branch_url`` is the URL of the import branch (only used to put
-             in OOPS reports)
-           * ``log_file_name`` is the name of the log file to create in the
-             librarian.
+              import worker subprocess
+            * ``target_url`` is the URL of the import branch/repository
+              (only used in OOPS reports)
+            * ``log_file_name`` is the name of the log file to create in the
+              librarian.
         :raise NoSuchCodeImportJob: if no job with id `job_id` exists.
         """
 

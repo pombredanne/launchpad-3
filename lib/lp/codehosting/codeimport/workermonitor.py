@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to talk to the database about what the worker script is doing."""
@@ -176,7 +176,14 @@ class CodeImportWorkerMonitor:
             'getImportDataForJobID', self._job_id)
 
         def _processResult(result):
-            code_import_arguments, target_url, log_file_name = result
+            if isinstance(result, dict):
+                code_import_arguments = result['arguments']
+                target_url = result['target_url']
+                log_file_name = result['log_file_name']
+            else:
+                # XXX cjwatson 2018-03-15: Remove once the scheduler always
+                # sends a dict.
+                code_import_arguments, target_url, log_file_name = result
             self._target_url = target_url
             self._log_file_name = log_file_name
             self._logger.info(
