@@ -208,17 +208,17 @@ An error is raised if any of the parameters are None.
     >>> google_search.create_search_url('')
     Traceback (most recent call last):
      ...
-    AssertionError: Missing value for parameter 'q'.
+    ValueError: Missing value for parameter 'q'.
 
     >>> google_search.create_search_url(None)
     Traceback (most recent call last):
      ...
-    AssertionError: Missing value for parameter 'q'.
+    ValueError: Missing value for parameter 'q'.
 
     >>> google_search.create_search_url('bugs', start='true')
     Traceback (most recent call last):
      ...
-    AssertionError: Value for parameter 'start' is not an int.
+    ValueError: Value for parameter 'start' is not an int.
 
 The term parameter in this example can be defined by passing the term
 argument to the method. The argument is url encoded and used as the
