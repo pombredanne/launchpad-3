@@ -243,9 +243,7 @@ class GoogleSearchService:
         search_params['q'] = terms.encode('utf8')
         search_params['start'] = start
         search_params['cx'] = self.client_id
-        search_param_list = [
-            (name, value) for name, value in sorted(search_params.items())]
-        query_string = urllib.urlencode(search_param_list)
+        query_string = urllib.urlencode(sorted(search_params.items()))
         return self.site + '?' + query_string
 
     def _getElementsByAttributeValue(self, doc, path, name, value):
@@ -421,9 +419,7 @@ class BingSearchService:
         search_params['q'] = terms.encode('utf8')
         search_params['offset'] = start
         search_params['customConfig'] = self.custom_config_id
-        search_param_list = [
-            (name, value) for name, value in sorted(search_params.items())]
-        query_string = urllib.urlencode(search_param_list)
+        query_string = urllib.urlencode(sorted(search_params.items()))
         return self.site + '?' + query_string
 
     def create_search_headers(self):
