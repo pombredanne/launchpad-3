@@ -9,10 +9,6 @@ when given certain user-configurable URLs.
 """
 
 
-from BaseHTTPServer import (
-    BaseHTTPRequestHandler,
-    HTTPServer,
-    )
 import errno
 import logging
 import os
@@ -20,6 +16,11 @@ import signal
 import socket
 import subprocess
 import time
+
+from six.moves.BaseHTTPServer import (
+    BaseHTTPRequestHandler,
+    HTTPServer,
+    )
 
 from lp.services.config import config
 from lp.services.osutils import ensure_directory_exists
