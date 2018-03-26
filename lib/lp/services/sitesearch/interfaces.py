@@ -6,12 +6,11 @@
 __metaclass__ = type
 
 __all__ = [
-    'BingResponseError',
     'ISearchResult',
     'ISearchResults',
     'ISearchService',
-    'GoogleResponseError',
     'GoogleWrongGSPVersion',
+    'SiteSearchResponseError',
     ]
 
 from zope.interface import Interface
@@ -75,12 +74,8 @@ class GoogleWrongGSPVersion(ValueError):
     """Raised when the content is not parsable Google Search Protocol XML."""
 
 
-class GoogleResponseError(SyntaxError):
-    """Raised when Google's response does not contain valid XML."""
-
-
-class BingResponseError(ValueError):
-    """Raised when Bing's response does not contain valid JSON."""
+class SiteSearchResponseError(ValueError):
+    """Raised when the search engine's response cannot be parsed."""
 
 
 class ISearchService(Interface):

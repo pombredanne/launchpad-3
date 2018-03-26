@@ -27,8 +27,7 @@ from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.sitesearch.interfaces import (
-    BingResponseError,
-    GoogleResponseError,
+    SiteSearchResponseError,
     GoogleWrongGSPVersion,
     ISearchResult,
     ISearchResults,
@@ -217,7 +216,7 @@ class GoogleSearchService:
         except (TimeoutError, requests.RequestException) as error:
             # Google search service errors are not code errors. Let the
             # call site choose to handle the unavailable service.
-            raise GoogleResponseError(
+            raise SiteSearchResponseError(
                 "The response errored: %s" % str(error))
         finally:
             action.finish()
@@ -281,7 +280,7 @@ class GoogleSearchService:
             version 3.2 XML. There is no guarantee that other GSP versions
             can be parsed.
         :return: `ISearchResults` (PageMatches).
-        :raise: `GoogleResponseError` if the xml is incomplete.
+        :raise: `SiteSearchResponseError` if the xml is incomplete.
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
         try:
@@ -289,7 +288,8 @@ class GoogleSearchService:
             start_param = self._getElementByAttributeValue(
                 gsp_doc, './PARAM', 'name', 'start')
         except (SyntaxError, IndexError):
-            raise GoogleResponseError("The response was incomplete, no xml.")
+            raise SiteSearchResponseError(
+                "The response was incomplete, no xml.")
         try:
             start = int(start_param.get('value'))
         except (AttributeError, ValueError):
@@ -383,7 +383,7 @@ class BingSearchService:
         used over multiple queries to get successive sets of results.
 
         :return: `ISearchResults` (PageMatches).
-        :raise: `BingResponseError` if the json response is incomplete or
+        :raise: `SiteSearchResponseError` if the json response is incomplete or
             cannot be parsed.
         """
         search_url = self.create_search_url(terms, start=start)
@@ -394,7 +394,8 @@ class BingSearchService:
         try:
             response = urlfetch(search_url, headers=search_headers)
         except (TimeoutError, requests.RequestException) as error:
-            raise BingResponseError("The response errored: %s" % str(error))
+            raise SiteSearchResponseError(
+                "The response errored: %s" % str(error))
         finally:
             action.finish()
         page_matches = self._parse_bing_response(response.content, start)
@@ -437,30 +438,31 @@ class BingSearchService:
 
         :param bing_json: A string containing Bing Custom Search API v7 JSON.
         :return: `ISearchResults` (PageMatches).
-        :raise: `BingResponseError` if the json response is incomplete or
+        :raise: `SiteSearchResponseError` if the json response is incomplete or
             cannot be parsed.
         """
         try:
             bing_doc = json.loads(bing_json)
         except (TypeError, ValueError):
-            raise BingResponseError("The response was incomplete, no JSON.")
+            raise SiteSearchResponseError(
+                "The response was incomplete, no JSON.")
 
         try:
             response_type = bing_doc['_type']
         except (AttributeError, KeyError, ValueError):
-            raise BingResponseError(
+            raise SiteSearchResponseError(
                 "Could not get the '_type' from the Bing JSON response.")
 
         if response_type == 'ErrorResponse':
             try:
                 errors = [error['message'] for error in bing_doc['errors']]
-                raise BingResponseError(
+                raise SiteSearchResponseError(
                     "Error response from Bing: %s" % '; '.join(errors))
             except (AttributeError, KeyError, TypeError, ValueError):
-                raise BingResponseError(
+                raise SiteSearchResponseError(
                     "Unable to parse the Bing JSON error response.")
         elif response_type != 'SearchResponse':
-            raise BingResponseError(
+            raise SiteSearchResponseError(
                 "Unknown Bing JSON response type: '%s'." % response_type)
 
         page_matches = []
@@ -475,7 +477,7 @@ class BingSearchService:
             total = int(bing_doc['webPages']['totalEstimatedMatches'])
         except (AttributeError, KeyError, ValueError):
             # The datatype is not what PageMatches requires.
-            raise BingResponseError(
+            raise SiteSearchResponseError(
                 "Could not get the total from the Bing JSON response.")
         if total < 0:
             # See bug 683115.

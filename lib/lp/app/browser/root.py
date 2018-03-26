@@ -42,14 +42,7 @@ from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.propertycache import cachedproperty
 from lp.services.sitesearch.interfaces import (
-    GoogleResponseError,
-    ISearchService,
-    )
-from lp.services.memcache.interfaces import IMemcacheClient
-from lp.services.propertycache import cachedproperty
-from lp.services.sitesearch.interfaces import (
-    BingResponseError,
-    GoogleResponseError,
+    SiteSearchResponseError,
     ISearchService,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet

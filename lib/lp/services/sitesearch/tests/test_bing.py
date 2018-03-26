@@ -5,15 +5,15 @@
 
 __metaclass__ = type
 
-from contextlib import contextmanager
 
+from fixtures import MockPatch
 from requests.exceptions import (
     ConnectionError,
     HTTPError,
     )
 
 from lp.services.sitesearch import BingSearchService
-from lp.services.sitesearch.interfaces import BingResponseError
+from lp.services.sitesearch.interfaces import SiteSearchResponseError
 from lp.services.timeout import TimeoutError
 from lp.testing import TestCase
 from lp.testing.layers import (
@@ -22,28 +22,8 @@ from lp.testing.layers import (
     )
 
 
-@contextmanager
-def urlfetch_exception(test_error, *args):
-    """Raise an error during the execution of urlfetch.
-
-    This function replaces urlfetch() with a function that
-    raises an error.
-    """
-
-    def raise_exception(url):
-        raise test_error(*args)
-
-    from lp.services import timeout
-    original_urlfetch = timeout.urlfetch
-    timeout.urlfetch = raise_exception
-    try:
-        yield
-    finally:
-        timeout.urlfetch = original_urlfetch
-
-
 class TestBingSearchService(TestCase):
-    """Test GoogleSearchService."""
+    """Test BingSearchService."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -52,45 +32,49 @@ class TestBingSearchService(TestCase):
         self.search_service = BingSearchService()
 
     def test_search_converts_HTTPError(self):
-        # The method converts HTTPError to BingResponseError.
+        # The method converts HTTPError to SiteSearchResponseError.
         args = ('url', 500, 'oops', {}, None)
-        with urlfetch_exception(HTTPError, *args):
-            self.assertRaises(
-                BingResponseError, self.search_service.search, 'fnord')
+        self.useFixture(MockPatch(
+            'lp.services.timeout.urlfetch', side_effect=HTTPError(*args)))
+        self.assertRaises(
+            SiteSearchResponseError, self.search_service.search, 'fnord')
 
     def test_search_converts_ConnectionError(self):
-        # The method converts ConnectionError to BingResponseError.
-        with urlfetch_exception(ConnectionError, 'oops'):
-            self.assertRaises(
-                BingResponseError, self.search_service.search, 'fnord')
+        # The method converts ConnectionError to SiteSearchResponseError.
+        self.useFixture(MockPatch(
+            'lp.services.timeout.urlfetch',
+            side_effect=ConnectionError('oops')))
+        self.assertRaises(
+            SiteSearchResponseError, self.search_service.search, 'fnord')
 
     def test_search_converts_TimeoutError(self):
-        # The method converts TimeoutError to BingResponseError.
-        with urlfetch_exception(TimeoutError, 'oops'):
-            self.assertRaises(
-                BingResponseError, self.search_service.search, 'fnord')
-
-    def test_parse_bing_reponse_TypeError(self):
-        # The method converts TypeError to BingResponseError.
+        # The method converts TimeoutError to SiteSearchResponseError.
+        self.useFixture(MockPatch(
+            'lp.services.timeout.urlfetch', side_effect=TimeoutError('oops')))
         self.assertRaises(
-            BingResponseError,
+            SiteSearchResponseError, self.search_service.search, 'fnord')
+
+    def test_parse_bing_response_TypeError(self):
+        # The method converts TypeError to SiteSearchResponseError.
+        self.assertRaises(
+            SiteSearchResponseError,
             self.search_service._parse_bing_response, None)
 
-    def test_parse_bing_reponse_ValueError(self):
-        # The method converts ValueError to BingResponseError.
+    def test_parse_bing_response_ValueError(self):
+        # The method converts ValueError to SiteSearchResponseError.
         self.assertRaises(
-            BingResponseError,
+            SiteSearchResponseError,
             self.search_service._parse_bing_response, '')
 
-    def test_parse_bing_reponse_KeyError(self):
-        # The method converts KeyError to BingResponseError.
+    def test_parse_bing_response_KeyError(self):
+        # The method converts KeyError to SiteSearchResponseError.
         self.assertRaises(
-            BingResponseError,
+            SiteSearchResponseError,
             self.search_service._parse_bing_response, '{}')
 
 
 class FunctionalTestBingSearchService(TestCase):
-    """Test GoogleSearchService."""
+    """Test BingSearchService."""
 
     layer = BingLaunchpadFunctionalLayer
 
@@ -124,10 +108,10 @@ class FunctionalTestBingSearchService(TestCase):
 
     def test_search_incomplete_response(self):
         self.assertRaises(
-            BingResponseError,
+            SiteSearchResponseError,
             self.search_service.search, 'gnomebaker')
 
     def test_search_error_response(self):
         self.assertRaises(
-            BingResponseError,
+            SiteSearchResponseError,
             self.search_service.search, 'errors-please')
