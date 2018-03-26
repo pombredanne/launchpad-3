@@ -42,7 +42,7 @@ from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.propertycache import cachedproperty
 from lp.services.sitesearch.interfaces import (
-    GoogleResponseError,
+    SiteSearchResponseError,
     ISearchService,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
@@ -520,7 +520,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         try:
             page_matches = google_search.search(
                 terms=query_terms, start=start)
-        except GoogleResponseError:
+        except SiteSearchResponseError:
             # There was a connectivity or Google service issue that means
             # there is no data available at this moment.
             self.has_page_service = False

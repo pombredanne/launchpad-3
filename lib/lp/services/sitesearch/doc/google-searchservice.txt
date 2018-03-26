@@ -617,7 +617,7 @@ cases a TimeoutError is issued.
     >>> google_search.search(terms='bug')
     Traceback (most recent call last):
      ...
-    GoogleResponseError: ... timeout exceeded.
+    SiteSearchResponseError: ... timeout exceeded.
 
     # Restore the configuration and the timeout state.
     >>> timeout_data = config.pop('timeout_data')

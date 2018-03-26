@@ -13,7 +13,7 @@ from requests.exceptions import (
     )
 
 from lp.services.sitesearch import GoogleSearchService
-from lp.services.sitesearch.interfaces import GoogleResponseError
+from lp.services.sitesearch.interfaces import SiteSearchResponseError
 from lp.services.timeout import TimeoutError
 from lp.testing import TestCase
 from lp.testing.layers import LaunchpadFunctionalLayer
@@ -49,37 +49,37 @@ class TestGoogleSearchService(TestCase):
         self.search_service = GoogleSearchService()
 
     def test_search_converts_HTTPError(self):
-        # The method converts HTTPError to GoogleResponseError.
+        # The method converts HTTPError to SiteSearchResponseError.
         args = ('url', 500, 'oops', {}, None)
         with urlfetch_exception(HTTPError, *args):
             self.assertRaises(
-                GoogleResponseError, self.search_service.search, 'fnord')
+                SiteSearchResponseError, self.search_service.search, 'fnord')
 
     def test_search_converts_ConnectionError(self):
-        # The method converts ConnectionError to GoogleResponseError.
+        # The method converts ConnectionError to SiteSearchResponseError.
         with urlfetch_exception(ConnectionError, 'oops'):
             self.assertRaises(
-                GoogleResponseError, self.search_service.search, 'fnord')
+                SiteSearchResponseError, self.search_service.search, 'fnord')
 
     def test_search_converts_TimeoutError(self):
-        # The method converts TimeoutError to GoogleResponseError.
+        # The method converts TimeoutError to SiteSearchResponseError.
         with urlfetch_exception(TimeoutError, 'oops'):
             self.assertRaises(
-                GoogleResponseError, self.search_service.search, 'fnord')
+                SiteSearchResponseError, self.search_service.search, 'fnord')
 
     def test___parse_google_search_protocol_SyntaxError(self):
-        # The method converts SyntaxError to GoogleResponseError.
+        # The method converts SyntaxError to SiteSearchResponseError.
         with urlfetch_exception(SyntaxError, 'oops'):
             self.assertRaises(
-                GoogleResponseError,
+                SiteSearchResponseError,
                 self.search_service._parse_google_search_protocol, '')
 
     def test___parse_google_search_protocol_IndexError(self):
-        # The method converts IndexError to GoogleResponseError.
+        # The method converts IndexError to SiteSearchResponseError.
         with urlfetch_exception(IndexError, 'oops'):
             data = (
                 '<?xml version="1.0" encoding="UTF-8" standalone="no"?>'
                 '<GSP VER="3.2"></GSP>')
             self.assertRaises(
-                GoogleResponseError,
+                SiteSearchResponseError,
                 self.search_service._parse_google_search_protocol, data)
