@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views, navigation and actions for BranchMergeProposals."""
@@ -777,7 +777,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """The description as widget HTML."""
         mp = self.context
         description = IBranchMergeProposal['description']
-        title = "Description of the Change"
+        title = "Description of the change"
         return TextAreaEditorWidget(
             mp, description, title, edit_view='+edit-description')
 
@@ -793,7 +793,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """The commit message as widget HTML."""
         mp = self.context
         commit_message = IBranchMergeProposal['commit_message']
-        title = "Commit Message"
+        title = "Commit message"
         return TextAreaEditorWidget(
             mp, commit_message, title, edit_view='+edit-commit-message')
 
