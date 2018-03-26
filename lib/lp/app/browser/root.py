@@ -519,7 +519,7 @@ class LaunchpadSearchView(LaunchpadFormView):
 
         :param query_terms: The unescaped terms to query for.
         :param start: The index of the page that starts the set of pages.
-        :return: A SearchResultsBatchNavigator or None.
+        :return: A SiteSearchBatchNavigator or None.
         """
         if query_terms in [None, '']:
             return None
@@ -527,14 +527,14 @@ class LaunchpadSearchView(LaunchpadFormView):
         try:
             page_matches = site_search.search(
                 terms=query_terms, start=start)
-        except (BingResponseError, GoogleResponseError):
+        except SiteSearchResponseError:
             # There was a connectivity or the search service issue that means
             # there is no data available at this moment.
             self.has_page_service = False
             return None
         if len(page_matches) == 0:
             return None
-        navigator = SearchResultsBatchNavigator(
+        navigator = SiteSearchBatchNavigator(
             page_matches, self.request, start=start)
         navigator.setHeadings(*self.batch_heading)
         return navigator
@@ -596,7 +596,7 @@ class WindowedListBatch(batch._Batch):
         return self.start + len(self.list._window)
 
 
-class SearchResultsBatchNavigator(BatchNavigator):
+class SiteSearchBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
 
     _batch_factory = WindowedListBatch
@@ -621,7 +621,7 @@ class SearchResultsBatchNavigator(BatchNavigator):
         :param callback: Not used.
         """
         results = WindowedList(results, start, results.total)
-        super(SearchResultsBatchNavigator, self).__init__(results, request,
+        super(SiteSearchBatchNavigator, self).__init__(results, request,
             start=start, size=size, callback=callback,
             transient_parameters=transient_parameters,
             force_start=force_start, range_factory=range_factory)
