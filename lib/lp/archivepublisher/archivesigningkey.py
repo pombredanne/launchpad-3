@@ -119,19 +119,21 @@ class SignableArchive:
                     "No signing key available for %s" %
                     self.archive.displayname)
 
-    def signRepository(self, suite, log=None):
+    def signRepository(self, suite, suffix='', log=None):
         """See `ISignableArchive`."""
         suite_path = os.path.join(self._archive_root_path, 'dists', suite)
-        release_file_path = os.path.join(suite_path, 'Release')
+        release_file_path = os.path.join(suite_path, 'Release' + suffix)
         if not os.path.exists(release_file_path):
             raise AssertionError(
                 "Release file doesn't exist in the repository: %s" %
                 release_file_path)
 
         self._makeSignatures([
-            (release_file_path, os.path.join(suite_path, 'Release.gpg'),
+            (release_file_path,
+             os.path.join(suite_path, 'Release.gpg' + suffix),
              SigningMode.DETACHED, suite),
-            (release_file_path, os.path.join(suite_path, 'InRelease'),
+            (release_file_path,
+             os.path.join(suite_path, 'InRelease' + suffix),
              SigningMode.CLEAR, suite),
             ], log=log)
 

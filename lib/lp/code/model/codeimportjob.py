@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for the CodeImportJob table."""
@@ -31,6 +31,12 @@ from lp.code.enums import (
     CodeImportMachineState,
     CodeImportResultStatus,
     CodeImportReviewStatus,
+    RevisionControlSystems,
+    )
+from lp.code.interfaces.branch import IBranch
+from lp.code.interfaces.codehosting import (
+    branch_id_alias,
+    compose_public_url,
     )
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
 from lp.code.interfaces.codeimportjob import (
@@ -103,6 +109,61 @@ class CodeImportJob(SQLBase):
         import_job = CodeImportJob.selectOne(
             "id = %s AND date_due <= %s" % sqlvalues(self.id, UTC_NOW))
         return import_job is not None
+
+    def makeWorkerArguments(self):
+        """See `ICodeImportJob`."""
+        # Keep this in sync with CodeImportSourceDetails.fromArguments.
+        code_import = self.code_import
+        target = code_import.target
+
+        if IBranch.providedBy(target):
+            target_id = target.id
+        else:
+            # We don't have a better way to identify the target repository
+            # than the mutable unique name, but the macaroon constrains
+            # pushes tightly enough that the worst case is an authentication
+            # failure.
+            target_id = target.unique_name
+
+        if code_import.rcs_type == RevisionControlSystems.BZR_SVN:
+            rcs_type = 'bzr-svn'
+            target_rcs_type = 'bzr'
+        elif code_import.rcs_type == RevisionControlSystems.CVS:
+            rcs_type = 'cvs'
+            target_rcs_type = 'bzr'
+        elif code_import.rcs_type == RevisionControlSystems.GIT:
+            rcs_type = 'git'
+            if IBranch.providedBy(target):
+                target_rcs_type = 'bzr'
+            else:
+                target_rcs_type = 'git'
+        elif code_import.rcs_type == RevisionControlSystems.BZR:
+            rcs_type = 'bzr'
+            target_rcs_type = 'bzr'
+        else:
+            raise AssertionError("Unknown rcs_type %r." % code_import.rcs_type)
+
+        result = [str(target_id), '%s:%s' % (rcs_type, target_rcs_type)]
+        if rcs_type in ('bzr-svn', 'git', 'bzr'):
+            result.append(str(code_import.url))
+            if (IBranch.providedBy(target) and
+                    target.stacked_on is not None and
+                    not target.stacked_on.private):
+                stacked_path = branch_id_alias(target.stacked_on)
+                stacked_on_url = compose_public_url('http', stacked_path)
+                result.append(stacked_on_url)
+        elif rcs_type == 'cvs':
+            result.append(str(code_import.cvs_root))
+            result.append(str(code_import.cvs_module))
+        else:
+            raise AssertionError("Unknown rcs_type %r." % rcs_type)
+        if target_rcs_type == 'git':
+            issuer = getUtility(IMacaroonIssuer, 'code-import-job')
+            macaroon = removeSecurityProxy(issuer).issueMacaroon(self)
+            # XXX cjwatson 2016-10-12: Consider arranging for this to be
+            # passed to worker processes in the environment instead.
+            result.append(macaroon.serialize())
+        return result
 
 
 @implementer(ICodeImportJobSet, ICodeImportJobSetPublic)

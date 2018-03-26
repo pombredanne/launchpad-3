@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The code import worker. This imports code from foreign repositories."""
@@ -73,18 +73,8 @@ from lazr.uri import (
     )
 from pymacaroons import Macaroon
 import SCM
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
-from lp.code.enums import RevisionControlSystems
-from lp.code.interfaces.branch import (
-    get_blacklisted_hostnames,
-    IBranch,
-    )
-from lp.code.interfaces.codehosting import (
-    branch_id_alias,
-    compose_public_url,
-    )
+from lp.code.interfaces.branch import get_blacklisted_hostnames
 from lp.codehosting.codeimport.foreigntree import CVSWorkingTree
 from lp.codehosting.codeimport.tarball import (
     create_tarball,
@@ -97,7 +87,6 @@ from lp.codehosting.safe_open import (
     SafeBranchOpener,
     )
 from lp.services.config import config
-from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.services.propertycache import cachedproperty
 from lp.services.timeout import urlfetch
 from lp.services.utils import sanitise_urls
@@ -285,7 +274,7 @@ class CodeImportSourceDetails:
     As the worker doesn't talk to the database, we don't use
     `CodeImport` objects for this.
 
-    The 'fromArguments' and 'asArguments' methods convert to and from a form
+    The 'fromArguments' method builds an instance of this class from a form
     of the information suitable for passing around on executables' command
     lines.
 
@@ -319,6 +308,8 @@ class CodeImportSourceDetails:
     @classmethod
     def fromArguments(cls, arguments):
         """Convert command line-style arguments to an instance."""
+        # Keep this in sync with CodeImportJob.makeWorkerArguments.
+        arguments = list(arguments)
         target_id = arguments.pop(0)
         rcstype = arguments.pop(0)
         # XXX cjwatson 2016-10-12: Remove compatibility code once the
@@ -353,71 +344,6 @@ class CodeImportSourceDetails:
         return cls(
             target_id, rcstype, target_rcstype, url, cvs_root, cvs_module,
             stacked_on_url, macaroon)
-
-    @classmethod
-    def fromCodeImportJob(cls, job):
-        """Convert a `CodeImportJob` to an instance."""
-        code_import = job.code_import
-        target = code_import.target
-        if IBranch.providedBy(target):
-            if target.stacked_on is not None and not target.stacked_on.private:
-                stacked_path = branch_id_alias(target.stacked_on)
-                stacked_on_url = compose_public_url('http', stacked_path)
-            else:
-                stacked_on_url = None
-            target_id = target.id
-        else:
-            # We don't have a better way to identify the target repository
-            # than the mutable unique name, but the macaroon constrains
-            # pushes tightly enough that the worst case is an authentication
-            # failure.
-            target_id = target.unique_name
-        if code_import.rcs_type == RevisionControlSystems.BZR_SVN:
-            return cls(
-                target_id, 'bzr-svn', 'bzr', str(code_import.url),
-                stacked_on_url=stacked_on_url)
-        elif code_import.rcs_type == RevisionControlSystems.CVS:
-            return cls(
-                target_id, 'cvs', 'bzr',
-                cvs_root=str(code_import.cvs_root),
-                cvs_module=str(code_import.cvs_module))
-        elif code_import.rcs_type == RevisionControlSystems.GIT:
-            if IBranch.providedBy(target):
-                return cls(
-                    target_id, 'git', 'bzr', str(code_import.url),
-                    stacked_on_url=stacked_on_url)
-            else:
-                issuer = getUtility(IMacaroonIssuer, 'code-import-job')
-                macaroon = removeSecurityProxy(issuer).issueMacaroon(job)
-                return cls(
-                    target_id, 'git', 'git', str(code_import.url),
-                    macaroon=macaroon)
-        elif code_import.rcs_type == RevisionControlSystems.BZR:
-            return cls(
-                target_id, 'bzr', 'bzr', str(code_import.url),
-                stacked_on_url=stacked_on_url)
-        else:
-            raise AssertionError("Unknown rcstype %r." % code_import.rcs_type)
-
-    def asArguments(self):
-        """Return a list of arguments suitable for passing to a child process.
-        """
-        result = [
-            str(self.target_id), '%s:%s' % (self.rcstype, self.target_rcstype)]
-        if self.rcstype in ['bzr-svn', 'git', 'bzr']:
-            result.append(self.url)
-            if self.stacked_on_url is not None:
-                result.append(self.stacked_on_url)
-        elif self.rcstype == 'cvs':
-            result.append(self.cvs_root)
-            result.append(self.cvs_module)
-        else:
-            raise AssertionError("Unknown rcstype %r." % self.rcstype)
-        if self.target_rcstype == 'git':
-            # XXX cjwatson 2016-10-12: Consider arranging for this to be
-            # passed to worker processes in the environment instead.
-            result.append(self.macaroon.serialize())
-        return result
 
 
 class ImportDataStore:

@@ -28,9 +28,6 @@ import textwrap
 
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUpload
-from lp.archivepublisher.interfaces.archivesigningkey import (
-    IArchiveSigningKey,
-    )
 from lp.services.osutils import remove_if_exists
 from lp.soyuz.interfaces.queue import CustomUploadError
 
@@ -379,11 +376,14 @@ class SigningUpload(CustomUpload):
         with DirectoryHash(versiondir, self.temproot) as hasher:
             hasher.add_dir(versiondir)
         for checksum_path in hasher.checksum_paths:
-            if archive.signing_key is not None:
-                IArchiveSigningKey(archive).signFile(suite, checksum_path)
+            if self.shouldSign(checksum_path):
+                self.sign(archive, suite, checksum_path)
 
     def shouldInstall(self, filename):
         return filename.startswith("%s/" % self.version)
+
+    def shouldSign(self, filename):
+        return filename.endswith("SUMS")
 
 
 class UefiUpload(SigningUpload):

@@ -57,9 +57,7 @@ from lp.archivepublisher.indices import (
     build_source_stanza_fields,
     build_translations_stanza_fields,
     )
-from lp.archivepublisher.interfaces.archivesigningkey import (
-    IArchiveSigningKey,
-    )
+from lp.archivepublisher.interfaces.archivesigningkey import ISignableArchive
 from lp.archivepublisher.model.ftparchive import FTPArchiveHandler
 from lp.archivepublisher.utils import (
     get_ppa_reference,
@@ -1245,19 +1243,22 @@ class Publisher(object):
         if distroseries.publish_by_hash:
             self._updateByHash(suite, "Release.new")
 
-        os.rename(
-            os.path.join(suite_dir, "Release.new"),
-            os.path.join(suite_dir, "Release"))
-
-        if self.archive.signing_key is not None:
+        signable_archive = ISignableArchive(self.archive)
+        if signable_archive.can_sign:
             # Sign the repository.
             self.log.debug("Signing Release file for %s" % suite)
-            IArchiveSigningKey(self.archive).signRepository(suite)
+            signable_archive.signRepository(suite, suffix=".new", log=self.log)
             core_files.add("Release.gpg")
             core_files.add("InRelease")
         else:
-            # Skip signature if the archive signing key is undefined.
+            # Skip signature if the archive is not set up for signing.
             self.log.debug("No signing key available, skipping signature.")
+
+        for name in ("Release", "Release.gpg", "InRelease"):
+            if name in core_files:
+                os.rename(
+                    os.path.join(suite_dir, "%s.new" % name),
+                    os.path.join(suite_dir, name))
 
         # Make sure all the timestamps match, to make it easier to insert
         # caching headers on mirrors.

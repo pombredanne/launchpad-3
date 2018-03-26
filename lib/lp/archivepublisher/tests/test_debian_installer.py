@@ -10,7 +10,9 @@ high-level tests of debian-installer upload and queue manipulation.
 from __future__ import absolute_import, print_function, unicode_literals
 
 import os
+from textwrap import dedent
 
+from testtools.matchers import DirContains
 from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
@@ -20,13 +22,14 @@ from lp.archivepublisher.customupload import (
     )
 from lp.archivepublisher.debian_installer import DebianInstallerUpload
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.archivepublisher.tests.test_run_parts import RunPartsMixin
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import ZopelessDatabaseLayer
 
 
-class TestDebianInstaller(TestCaseWithFactory):
+class TestDebianInstaller(RunPartsMixin, TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
@@ -162,6 +165,24 @@ class TestDebianInstaller(TestCaseWithFactory):
             0o644, os.stat(self.getInstallerPath(filename)).st_mode & 0o777)
         self.assertEqual(
             0o755, os.stat(self.getInstallerPath(directory)).st_mode & 0o777)
+
+    def test_sign_with_external_run_parts(self):
+        self.enableRunParts(distribution_name=self.distro.name)
+        with open(os.path.join(
+                self.parts_directory, self.distro.name, "sign.d",
+                "10-sign"), "w") as f:
+            f.write(dedent("""\
+                #! /bin/sh
+                touch "$OUTPUT_PATH"
+                """))
+            os.fchmod(f.fileno(), 0o755)
+        self.openArchive()
+        self.addFile("images/list", "a list")
+        self.addFile("images/SHA256SUMS", "a checksum")
+        self.process()
+        self.assertThat(
+            self.getInstallerPath("images"),
+            DirContains(["list", "SHA256SUMS", "SHA256SUMS.gpg"]))
 
     def test_getSeriesKey_extracts_architecture(self):
         # getSeriesKey extracts the architecture from an upload's filename.
