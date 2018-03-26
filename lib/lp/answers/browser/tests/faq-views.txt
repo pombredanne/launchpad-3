@@ -54,7 +54,7 @@ The portlet provides a link to create a FAQ when the user that has append
 permission, such as the project owner.
 
     >>> print content.find('a', {'class': 'menu-link-create_faq sprite add'})
-    <a href=".../firefox/+createfaq" class="...">Create a new FAQ</a>
+    <a class="..." href=".../firefox/+createfaq">Create a new FAQ</a>
 
 Other users do not see the link.
 

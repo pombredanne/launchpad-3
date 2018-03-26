@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ArchiveSigningKey interface."""
@@ -6,17 +6,61 @@
 __metaclass__ = type
 
 __all__ = [
+    'CannotSignArchive',
     'IArchiveSigningKey',
+    'ISignableArchive',
     ]
 
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import Object
 
 from lp import _
 from lp.soyuz.interfaces.archive import IArchive
 
 
-class IArchiveSigningKey(Interface):
+class CannotSignArchive(Exception):
+    """An archive is not set up for signing."""
+
+
+class ISignableArchive(Interface):
+    """`SignableArchive` interface.
+
+    `IArchive` adapter for operations that involve signing files.
+    """
+
+    archive = Object(
+        title=_('Corresponding IArchive'), required=True, schema=IArchive)
+
+    can_sign = Attribute("True if this archive is set up for signing.")
+
+    def signRepository(suite, log=None):
+        """Sign the corresponding repository.
+
+        :param suite: suite name to be signed.
+        :param log: an optional logger.
+        :raises CannotSignArchive: if the context archive is not set up for
+            signing.
+        :raises AssertionError: if there is no Release file in the given
+            suite.
+        """
+
+    def signFile(suite, path, log=None):
+        """Sign the corresponding file.
+
+        :param suite: name of the suite containing the file to be signed.
+        :param path: path within dists to sign with the archive key.
+        :param log: an optional logger.
+        :raises CannotSignArchive: if the context archive is not set up for
+            signing.
+        :raises AssertionError: if the given 'path' is outside of the
+            archive root.
+        """
+
+
+class IArchiveSigningKey(ISignableArchive):
     """`ArchiveSigningKey` interface.
 
     `IArchive` adapter for operations using its 'signing_key'.
@@ -24,9 +68,6 @@ class IArchiveSigningKey(Interface):
     Note that this adapter only works on zopeless mode for generating
     new signing keys.
     """
-
-    archive = Object(
-        title=_('Corresponding IArchive'), required=True, schema=IArchive)
 
     def getPathForSecretKey(key):
         """Return the absolute path to access a secret key export.
@@ -79,21 +120,4 @@ class IArchiveSigningKey(Interface):
         :raises AssertionError: if the context archive already has a
             `signing_key`.
         :raises AssertionError: if the given 'key_path' does not exist.
-        """
-
-    def signRepository(suite):
-        """Sign the corresponding repository.
-
-        :param suite: suite name to be signed.
-        :raises AssertionError: if the context archive has no `signing_key`
-            or there is no Release file in the given suite.
-        """
-
-    def signFile(path):
-        """Sign the corresponding file.
-
-        :param path: path within dists to sign with the archive key.
-        :raises AssertionError: if the context archive has no `signing_key`.
-        :raises AssertionError: if the given 'path' is outside of the
-            archive root.
         """

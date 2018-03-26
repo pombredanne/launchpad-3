@@ -868,8 +868,8 @@ render() method.
     >>> html = test_tales('context/menu:foo/first/render',
     ...                   context=house, view=view, request=request)
     >>> print html #doctest: +NORMALIZE_WHITESPACE
-    <a...href="http://127.0.0.1/sesamestreet/number73/+first"
-    ...class="menu-link-first">First menu</a>
+    <a...class="menu-link-first"
+    ...href="http://127.0.0.1/sesamestreet/number73/+first">First menu</a>
 
     # Clean up our special login.
 

@@ -1,7 +1,9 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ftparchive.py"""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -254,7 +256,7 @@ class TestFTPArchive(TestCaseWithFactory):
         extra_overrides = os.path.join(
             self._confdir, "more-extra.override.hoary-test.main")
         with open(extra_overrides, "w") as extra_override_file:
-            print >>extra_override_file, "  ".join(sentinel)
+            print("  ".join(sentinel), file=extra_override_file)
         self._publishDefaultOverrides(fa, 'universe')
 
         result_path = os.path.join(
@@ -332,7 +334,7 @@ class TestFTPArchive(TestCaseWithFactory):
         self._publisher = SamplePublisher(self._archive)
         fa = self._setUpFTPArchiveHandler()
         pubs = self._archive.getAllPublishedBinaries(
-            name=u"pmount", status=PackagePublishingStatus.PUBLISHED,
+            name="pmount", status=PackagePublishingStatus.PUBLISHED,
             distroarchseries=self._distribution.getSeries("hoary")["hppa"])
         for pub in pubs:
             pub.changeOverride(new_phased_update_percentage=30).setPublished()
@@ -377,10 +379,10 @@ class TestFTPArchive(TestCaseWithFactory):
 
     def makeDDEBPub(self, series):
         self.factory.makeBinaryPackagePublishingHistory(
-            binarypackagename=u'foo', sourcepackagename='foo', version='666',
+            binarypackagename='foo', sourcepackagename='foo', version='666',
             archive=series.main_archive, distroarchseries=series['hppa'],
             pocket=PackagePublishingPocket.RELEASE,
-            component=u'main', with_debug=True, with_file=True,
+            component='main', with_debug=True, with_file=True,
             status=PackagePublishingStatus.PUBLISHED,
             architecturespecific=True)
 

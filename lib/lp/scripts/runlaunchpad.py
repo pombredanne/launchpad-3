@@ -19,7 +19,6 @@ from zope.app.server.main import main
 
 from lp.services.config import config
 from lp.services.daemons import tachandler
-from lp.services.googlesearch import googletestservice
 from lp.services.mailman import runmailman
 from lp.services.osutils import ensure_directory_exists
 from lp.services.pidfile import (
@@ -27,6 +26,7 @@ from lp.services.pidfile import (
     pidfile_path,
     )
 from lp.services.rabbit.server import RabbitServer
+from lp.services.sitesearch import googletestservice
 from lp.services.txlongpoll.server import TxLongPollServer
 
 

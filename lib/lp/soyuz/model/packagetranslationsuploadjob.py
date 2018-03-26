@@ -8,11 +8,11 @@ __all__ = [
     'PackageTranslationsUploadJob',
     ]
 
+import json
 import os
 import tempfile
 
 from lazr.delegates import delegate_to
-import simplejson
 from zope.component import getUtility
 from zope.interface import (
     implementer,
@@ -86,13 +86,20 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
         self.job = job
         self.context = self
 
+    def __repr__(self):
+        return "<%(job_class)s for %(source)s in %(series)s>" % {
+            "job_class": self.__class__.__name__,
+            "source": self.sourcepackagename.name,
+            "series": self.distroseries,
+            }
+
     @classmethod
     def create(cls, distroseries, libraryfilealias, sourcepackagename,
                requester):
         job = Job(
             base_job_type=JobType.UPLOAD_PACKAGE_TRANSLATIONS,
             requester=requester,
-            base_json_data=simplejson.dumps(
+            base_json_data=json.dumps(
                 {'distroseries': distroseries.id,
                  'libraryfilealias': libraryfilealias.id,
                  'sourcepackagename': sourcepackagename.id,
@@ -113,22 +120,17 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
             return [format_address_for_person(self.requester)]
         return []
 
-
-@implementer(IPackageTranslationsUploadJob)
-@provider(IPackageTranslationsUploadJobSource)
-class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
-
     @property
     def distroseries_id(self):
-        return simplejson.loads(self.base_json_data)['distroseries']
+        return json.loads(self.base_json_data)['distroseries']
 
     @property
     def libraryfilealias_id(self):
-        return simplejson.loads(self.base_json_data)['libraryfilealias']
+        return json.loads(self.base_json_data)['libraryfilealias']
 
     @property
     def sourcepackagename_id(self):
-        return simplejson.loads(self.base_json_data)['sourcepackagename']
+        return json.loads(self.base_json_data)['sourcepackagename']
 
     @property
     def distroseries(self):
@@ -141,6 +143,11 @@ class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
     @property
     def sourcepackagename(self):
         return getUtility(ISourcePackageNameSet).get(self.sourcepackagename_id)
+
+
+@implementer(IPackageTranslationsUploadJob)
+@provider(IPackageTranslationsUploadJobSource)
+class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
 
     def attachTranslationFiles(self, by_maintainer):
         distroseries = self.distroseries

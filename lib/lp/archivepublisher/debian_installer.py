@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of debian installer tarballs."""
@@ -76,3 +76,7 @@ class DebianInstallerUpload(CustomUpload):
 
     def shouldInstall(self, filename):
         return filename.startswith('%s/' % self.version)
+
+    def shouldSign(self, filename):
+        """Sign checksums files."""
+        return filename.endswith('SUMS')

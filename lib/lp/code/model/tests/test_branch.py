@@ -2209,18 +2209,6 @@ class TestRevisionHistory(TestCaseWithFactory):
             list(branch.revision_history[:smaller_number]),
             list(branch.latest_revisions(smaller_number)))
 
-    def test_getRevisionsSince(self):
-        # IBranch.getRevisionsSince gives all the BranchRevisions for
-        # revisions committed since a given timestamp.
-        branch = self.factory.makeBranch()
-        some_number = 7
-        self.factory.makeRevisionsForBranch(branch, count=some_number)
-        mid_sequence = some_number - 2
-        revisions = list(branch.revision_history)
-        mid_revision = revisions[mid_sequence]
-        since = branch.getRevisionsSince(mid_revision.revision.revision_date)
-        self.assertEqual(revisions[:mid_sequence], list(since))
-
     def test_getCodebrowseUrlForRevision(self):
         # IBranch.getCodebrowseUrlForRevision gives the URL to the browser
         # for a specific revision of the code
