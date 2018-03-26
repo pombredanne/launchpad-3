@@ -9,6 +9,8 @@ __all__ = [
     ]
 
 import json
+import os
+import tempfile
 
 from lazr.delegates import delegate_to
 from zope.component import getUtility
@@ -28,6 +30,7 @@ from lp.services.job.model.job import (
     )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.utils import filechunks
 from lp.services.mail.sendmail import format_address_for_person
 from lp.soyuz.interfaces.packagetranslationsuploadjob import (
     IPackageTranslationsUploadJob,
@@ -149,19 +152,28 @@ class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
     def attachTranslationFiles(self, by_maintainer):
         distroseries = self.distroseries
         sourcepackagename = self.sourcepackagename
+        libraryfilealias = self.libraryfilealias
         only_templates = distroseries.getSourcePackage(
             sourcepackagename).has_sharing_translation_templates
         importer = self.requester
-        tarball = self.libraryfilealias.read()
+        with tempfile.NamedTemporaryFile(
+                prefix='package-translations-upload-job-') as tarball:
+            libraryfilealias.open()
+            try:
+                for chunk in filechunks(self.libraryfilealias):
+                    tarball.write(chunk)
+            finally:
+                libraryfilealias.close()
+            tarball.seek(0, os.SEEK_SET)
 
-        queue = getUtility(ITranslationImportQueue)
+            queue = getUtility(ITranslationImportQueue)
 
-        queue.addOrUpdateEntriesFromTarball(
-            tarball, by_maintainer, importer,
-            sourcepackagename=sourcepackagename,
-            distroseries=distroseries,
-            filename_filter=_filter_ubuntu_translation_file,
-            only_templates=only_templates)
+            queue.addOrUpdateEntriesFromTarball(
+                tarball, by_maintainer, importer,
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries,
+                filename_filter=_filter_ubuntu_translation_file,
+                only_templates=only_templates)
 
     def run(self):
         self.attachTranslationFiles(True)
