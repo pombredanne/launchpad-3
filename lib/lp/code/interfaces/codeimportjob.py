@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces and enumeratrions for CodeImportJobs.
@@ -96,6 +96,9 @@ class ICodeImportJob(Interface):
         system clock. It does the correct thing, which is to compare date_due
         to the time of the current transaction.
         """
+
+    def makeWorkerArguments():
+        """Return a list of worker arguments for this job."""
 
 
 class ICodeImportJobSet(Interface):

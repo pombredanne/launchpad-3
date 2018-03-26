@@ -34,6 +34,7 @@ from twisted.internet import (
 from twisted.python import log
 from twisted.web import xmlrpc
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import (
     CodeImportResultStatus,
@@ -797,7 +798,8 @@ class TestWorkerMonitorIntegration(TestCaseInTempDir, TestCase):
                 self.factory.makePerson())
         job = getUtility(ICodeImportJobSet).getJobForMachine('machine', 10)
         self.assertEqual(code_import, job.code_import)
-        source_details = CodeImportSourceDetails.fromCodeImportJob(job)
+        source_details = CodeImportSourceDetails.fromArguments(
+            removeSecurityProxy(job.makeWorkerArguments()))
         if IBranch.providedBy(code_import.target):
             clean_up_default_stores_for_import(source_details)
             self.addCleanup(clean_up_default_stores_for_import, source_details)
