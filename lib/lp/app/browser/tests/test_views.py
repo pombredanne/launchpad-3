@@ -10,8 +10,8 @@ import os
 import unittest
 
 from lp.testing.layers import (
-    DatabaseFunctionalLayer,
     BingLaunchpadFunctionalLayer,
+    DatabaseFunctionalLayer,
     )
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,

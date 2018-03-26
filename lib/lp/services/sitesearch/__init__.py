@@ -166,7 +166,7 @@ class PageMatches:
 class GoogleSearchService:
     """See `ISearchService`.
 
-    A search service that search Google for launchpad.net pages.
+    A search service that searches Google for launchpad.net pages.
     """
 
     _default_values = {
@@ -346,12 +346,13 @@ class GoogleSearchService:
 class BingSearchService:
     """See `ISearchService`.
 
-    A search service that search Bing for launchpad.net pages.
+    A search service that searches Bing for launchpad.net pages.
     """
 
     _default_values = {
+        # XXX: maxiberta 2018-03-26: Set `mkt` based on the current request.
         'customConfig': None,
-        'mkt': 'en-US',  # FIXME: set language based on the current request?
+        'mkt': 'en-US',
         'count': 20,
         'offset': 0,
         'q': None,
