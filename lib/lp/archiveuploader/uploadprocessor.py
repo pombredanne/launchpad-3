@@ -397,7 +397,8 @@ class UploadHandler:
                 notify = False
             if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
-                if upload.changes.parsed_content is not None:
+                if (upload.changes.signingkey is not None or
+                        upload.changes.parsed_content is not None):
                     # We got past the point of checking any required
                     # signature, so we can do a proper rejection.
                     upload.do_reject(notify)

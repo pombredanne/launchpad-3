@@ -283,7 +283,7 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
         try:
             signature = getUtility(IGPGHandler).getVerifiedSignature(
                 signedcontent.encode('ASCII'))
-        except (GPGVerificationError, UnicodeEncodeError) as e:
+        except (GPGVerificationError, GPGKeyExpired, UnicodeEncodeError) as e:
             self.addError(_(
                 'Launchpad could not verify your signature: ${err}',
                 mapping=dict(err=str(e))))

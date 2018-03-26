@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git reference views."""
@@ -198,27 +198,32 @@ class GitRefRegisterMergeProposalSchema(Interface):
         description=_("The repository that the source will be merged into."))
 
     target_git_path = TextLine(
-        title=_("Target reference path"), required=True, readonly=True,
+        title=_("Target branch"), required=True, readonly=True,
         description=_(
-            "The reference within the target repository that the source will "
+            "The branch within the target repository that the source will "
             "be merged into."))
 
     prerequisite_git_repository = Choice(
         title=_("Prerequisite repository"),
         vocabulary="GitRepository", required=False, readonly=True,
-        description=_("The repository that the source will be merged into."))
+        description=_(
+            "A repository containing a branch that should be merged before "
+            "this one.  (Its changes will not be shown in the diff.)"))
 
     prerequisite_git_path = TextLine(
-        title=_("Prerequisite reference path"), required=False, readonly=True,
+        title=_("Prerequisite branch"), required=False, readonly=True,
         description=_(
-            "The reference within the target repository that the source will "
-            "be merged into."))
+            "A branch within the prerequisite repository that should be "
+            "merged before this one.  (Its changes will not be shown in the "
+            "diff.)"))
 
     comment = Text(
-        title=_('Description of the Change'), required=False,
+        title=_('Description of the change'), required=False,
         description=_('Describe what changes your branch introduces, '
                       'what bugs it fixes, or what features it implements. '
-                      'Ideally include rationale and how to test.'))
+                      'Ideally include rationale and how to test. '
+                      'You do not need to repeat information from the commit '
+                      'message here.'))
 
     reviewer = copy_field(
         ICodeReviewVoteReference['reviewer'], required=False)
@@ -243,6 +248,7 @@ class GitRefRegisterMergeProposalView(LaunchpadFormView):
     for_input = True
 
     custom_widget('target_git_repository', TargetGitRepositoryWidget)
+    custom_widget('commit_message', TextAreaWidget, cssClass='comment-text')
     custom_widget('comment', TextAreaWidget, cssClass='comment-text')
 
     page_title = label = 'Propose for merging'

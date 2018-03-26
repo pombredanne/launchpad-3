@@ -101,7 +101,10 @@ from lp.testing import (
     )
 from lp.testing.dbuser import switch_dbuser
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.gpgkeys import import_public_test_keys
+from lp.testing.gpgkeys import (
+    import_public_key,
+    import_public_test_keys,
+    )
 from lp.testing.layers import LaunchpadZopelessLayer
 from lp.testing.mail_helpers import pop_notifications
 
@@ -1993,6 +1996,47 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "contents": base_contents + [
                 "You are receiving this email because you made this upload."],
             "recipient": "foo.bar@canonical.com",
+            })
+        self.assertEmails(expected)
+        self.assertEqual([], self.oopses)
+
+    def test_expired_key_upload_sends_mail(self):
+        # An upload signed with an expired key does not OOPS and sends a
+        # rejection email.
+        self.switchToAdmin()
+        email = "expired.key@canonical.com"
+        fingerprint = "0DD64D28E5F41138533495200E3DB4D402F53CC6"
+        # This key's email address doesn't exist in sampledata, so we need
+        # to create a person for it and import it.
+        self.factory.makePerson(email=email)
+        import_public_key(email)
+        self.switchToUploader()
+
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload("netapplet_1.0-1-expiredkey")
+
+        [result] = self.processUpload(uploadprocessor, upload_dir)
+
+        self.assertEqual(UploadStatusEnum.REJECTED, result)
+        base_contents = [
+            "Subject: [ubuntu] netapplet_1.0-1_source.changes (Rejected)",
+            "File "
+            "%s/netapplet_1.0-1-expiredkey/netapplet_1.0-1_source.changes "
+            "is signed with an expired key %s" % (
+                self.incoming_folder, fingerprint),
+            ]
+        expected = []
+        expected.append({
+            "contents": base_contents + [
+                "You are receiving this email because you are the most "
+                    "recent person",
+                "listed in this package's changelog."],
+            "recipient": "daniel.silverstone@canonical.com",
+            })
+        expected.append({
+            "contents": base_contents + [
+                "You are receiving this email because you made this upload."],
+            "recipient": email,
             })
         self.assertEmails(expected)
         self.assertEqual([], self.oopses)
