@@ -10,7 +10,9 @@ tests of dist-upgrader upload and queue manipulation.
 from __future__ import absolute_import, print_function, unicode_literals
 
 import os
+from textwrap import dedent
 
+from testtools.matchers import DirContains
 from zope.component import getUtility
 
 from lp.archivepublisher.config import getPubConfig
@@ -23,6 +25,7 @@ from lp.archivepublisher.dist_upgrader import (
     DistUpgraderUpload,
     )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.archivepublisher.tests.test_run_parts import RunPartsMixin
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import TestCaseWithFactory
@@ -35,7 +38,7 @@ class FakeConfig:
         self.archiveroot = archiveroot
 
 
-class TestDistUpgrader(TestCaseWithFactory):
+class TestDistUpgrader(RunPartsMixin, TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
@@ -110,6 +113,24 @@ class TestDistUpgrader(TestCaseWithFactory):
         self.openArchive("20070219.1234")
         self.tarfile.add_file("foobar/foobar/dapper.tar.gz", b"")
         self.assertRaises(DistUpgraderBadVersion, self.process)
+
+    def test_sign_with_external_run_parts(self):
+        self.enableRunParts(distribution_name=self.distro.name)
+        with open(os.path.join(
+                self.parts_directory, self.distro.name, "sign.d",
+                "10-sign"), "w") as f:
+            f.write(dedent("""\
+                #! /bin/sh
+                touch "$OUTPUT_PATH"
+                """))
+            os.fchmod(f.fileno(), 0o755)
+        self.openArchive("20060302.0120")
+        self.tarfile.add_file("20060302.0120/list", "a list")
+        self.tarfile.add_file("20060302.0120/foo.tar.gz", "a tarball")
+        self.process()
+        self.assertThat(
+            os.path.join(self.getUpgraderPath(), "20060302.0120"),
+            DirContains(["list", "foo.tar.gz", "foo.tar.gz.gpg"]))
 
     def test_getSeriesKey_extracts_architecture(self):
         # getSeriesKey extracts the architecture from an upload's filename.

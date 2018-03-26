@@ -26,6 +26,7 @@ from lp.archivepublisher.debversion import (
     Version as make_version,
     VersionError,
     )
+from lp.archivepublisher.interfaces.archivesigningkey import ISignableArchive
 from lp.services.librarian.utils import copy_and_close
 from lp.soyuz.interfaces.queue import (
     CustomUploadError,
@@ -268,6 +269,20 @@ class CustomUpload:
         if not os.path.isdir(parentdir):
             os.makedirs(parentdir, 0o755)
 
+    def shouldSign(self, filename):
+        """Returns True if the given filename should be signed."""
+        return False
+
+    def sign(self, archive, suite, filename):
+        """Sign a file.
+
+        For now, we always write a detached signature to the input file name
+        plus ".gpg".
+        """
+        signable_archive = ISignableArchive(archive)
+        if signable_archive.can_sign:
+            signable_archive.signFile(suite, filename, log=self.logger)
+
     def installFiles(self, archive, suite):
         """Install the files from the custom upload to the archive."""
         assert self.tmpdir is not None, "Must extract tarfile first"
@@ -316,6 +331,8 @@ class CustomUpload:
                 else:
                     shutil.copy(sourcepath, destpath)
                     os.chmod(destpath, 0o644)
+                    if self.shouldSign(destpath):
+                        self.sign(archive, suite, destpath)
 
                 extracted = True
 

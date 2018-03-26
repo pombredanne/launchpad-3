@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of dist-upgrader tarballs."""
@@ -81,7 +81,7 @@ class DistUpgraderUpload(CustomUpload):
             return None
 
     def shouldInstall(self, filename):
-        """ Install files from a dist-upgrader tarball.
+        """Install files from a dist-upgrader tarball.
 
         It raises DistUpgraderBadVersion if if finds a directory name that
         could not be treated as a valid Debian version.
@@ -100,3 +100,7 @@ class DistUpgraderUpload(CustomUpload):
         except BadUpstreamError as exc:
             raise DistUpgraderBadVersion(self.tarfile_path, exc)
         return version and not filename.startswith('current')
+
+    def shouldSign(self, filename):
+        """Sign *.tar.gz files."""
+        return filename.endswith('.tar.gz')
