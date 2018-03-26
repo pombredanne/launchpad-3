@@ -527,7 +527,7 @@ class LaunchpadSearchView(LaunchpadFormView):
             return None
         if len(page_matches) == 0:
             return None
-        navigator = GoogleBatchNavigator(
+        navigator = SiteSearchBatchNavigator(
             page_matches, self.request, start=start)
         navigator.setHeadings(*self.batch_heading)
         return navigator
@@ -589,7 +589,7 @@ class WindowedListBatch(batch._Batch):
         return self.start + len(self.list._window)
 
 
-class GoogleBatchNavigator(BatchNavigator):
+class SiteSearchBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
 
     _batch_factory = WindowedListBatch
@@ -614,7 +614,7 @@ class GoogleBatchNavigator(BatchNavigator):
         :param callback: Not used.
         """
         results = WindowedList(results, start, results.total)
-        super(GoogleBatchNavigator, self).__init__(results, request,
+        super(SiteSearchBatchNavigator, self).__init__(results, request,
             start=start, size=size, callback=callback,
             transient_parameters=transient_parameters,
             force_start=force_start, range_factory=range_factory)
