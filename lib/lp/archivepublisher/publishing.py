@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -57,9 +57,7 @@ from lp.archivepublisher.indices import (
     build_source_stanza_fields,
     build_translations_stanza_fields,
     )
-from lp.archivepublisher.interfaces.archivesigningkey import (
-    IArchiveSigningKey,
-    )
+from lp.archivepublisher.interfaces.archivesigningkey import ISignableArchive
 from lp.archivepublisher.model.ftparchive import FTPArchiveHandler
 from lp.archivepublisher.utils import (
     get_ppa_reference,
@@ -1245,19 +1243,22 @@ class Publisher(object):
         if distroseries.publish_by_hash:
             self._updateByHash(suite, "Release.new")
 
-        os.rename(
-            os.path.join(suite_dir, "Release.new"),
-            os.path.join(suite_dir, "Release"))
-
-        if self.archive.signing_key is not None:
+        signable_archive = ISignableArchive(self.archive)
+        if signable_archive.can_sign:
             # Sign the repository.
             self.log.debug("Signing Release file for %s" % suite)
-            IArchiveSigningKey(self.archive).signRepository(suite)
+            signable_archive.signRepository(suite, suffix=".new", log=self.log)
             core_files.add("Release.gpg")
             core_files.add("InRelease")
         else:
-            # Skip signature if the archive signing key is undefined.
+            # Skip signature if the archive is not set up for signing.
             self.log.debug("No signing key available, skipping signature.")
+
+        for name in ("Release", "Release.gpg", "InRelease"):
+            if name in core_files:
+                os.rename(
+                    os.path.join(suite_dir, "%s.new" % name),
+                    os.path.join(suite_dir, name))
 
         # Make sure all the timestamps match, to make it easier to insert
         # caching headers on mirrors.
@@ -1478,10 +1479,9 @@ class Publisher(object):
 class DirectoryHash:
     """Represents a directory hierarchy for hashing."""
 
-    def __init__(self, root, tmpdir, signer=None):
+    def __init__(self, root, tmpdir):
         self.root = root
         self.tmpdir = tmpdir
-        self.signer = signer
         self.checksum_hash = []
 
         for usable in self._usable_archive_hashes:
@@ -1500,6 +1500,11 @@ class DirectoryHash:
         for archive_hash in archive_hashes:
             if archive_hash.write_directory_hash:
                 yield archive_hash
+
+    @property
+    def checksum_paths(self):
+        for checksum_path, _, _ in self.checksum_hash:
+            yield checksum_path
 
     def add(self, path):
         """Add a path to be checksummed."""
@@ -1524,5 +1529,3 @@ class DirectoryHash:
     def close(self):
         for (checksum_path, checksum_file, archive_hash) in self.checksum_hash:
             checksum_file.close()
-            if self.signer:
-                self.signer.signFile(checksum_path)

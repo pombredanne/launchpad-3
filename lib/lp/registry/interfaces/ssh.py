@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SSH key interfaces."""
@@ -89,16 +89,19 @@ class ISSHKey(Interface):
 class ISSHKeySet(Interface):
     """The set of SSHKeys."""
 
-    def new(person, sshkey, send_notification=True, dry_run=False):
+    def new(person, sshkey, check_key=True, send_notification=True,
+            dry_run=False):
         """Create a new SSHKey pointing to the given Person.
 
         :param person: The IPerson to add the ssh key to.
         :param sshkey: The full ssh key text.
-        :param send_notification: Set to False to supress sending the user an
+        :param check_key: Set to False to skip the check for whether the key
+            text can be deserialised by Twisted.
+        :param send_notification: Set to False to suppress sending the user an
             email about the change.
-        :param dry_run: Perform all the format and vaulnerability checks, but
-            don't actually add the key. Causes the method to return None,
-            rather than an instance of ISSHKey.
+        :param dry_run: Perform all the format checks, but don't actually
+            add the key. Causes the method to return None, rather than an
+            instance of ISSHKey.
         """
 
     def getByID(id, default=None):

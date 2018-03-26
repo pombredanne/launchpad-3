@@ -232,7 +232,7 @@ class TestBranchMergeProposalMergedViewBzr(
     """Tests for `BranchMergeProposalMergedView` for Bazaar."""
 
     arbitrary_revisions = (1, 2, 42)
-    merged_revision_text = 'Merged Revision Number'
+    merged_revision_text = 'Merged revision number'
 
     def makeBranchMergeProposal(self):
         return self.factory.makeBranchMergeProposal()
@@ -250,7 +250,7 @@ class TestBranchMergeProposalMergedViewGit(
     """Tests for `BranchMergeProposalMergedView` for Git."""
 
     arbitrary_revisions = ("0" * 40, "1" * 40, "2" * 40)
-    merged_revision_text = 'Merged Revision ID'
+    merged_revision_text = 'Merged revision ID'
 
     def makeBranchMergeProposal(self):
         return self.factory.makeBranchMergeProposalForGit()
@@ -1261,9 +1261,9 @@ class TestResubmitBrowserBzr(BrowserTestCase):
         text = self.getMainText(bmp, '+resubmit')
         expected = (
             'Resubmit proposal to merge.*'
-            'Source Branch:.*'
-            'Target Branch:.*'
-            'Prerequisite Branch:.*'
+            'Source branch:.*'
+            'Target branch:.*'
+            'Prerequisite branch:.*'
             'Description.*'
             'Start afresh.*')
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
@@ -1289,11 +1289,11 @@ class TestResubmitBrowserGit(GitHostingClientMixin, BrowserTestCase):
         text = self.getMainText(bmp, '+resubmit')
         expected = (
             'Resubmit proposal to merge.*'
-            'Source Git Repository:.*'
+            'Source Git repository:.*'
             'Source Git branch path:.*'
-            'Target Git Repository:.*'
+            'Target Git repository:.*'
             'Target Git branch path:.*'
-            'Prerequisite Git Repository:.*'
+            'Prerequisite Git repository:.*'
             'Prerequisite Git branch path:.*'
             'Description.*'
             'Start afresh.*')
@@ -1303,7 +1303,7 @@ class TestResubmitBrowserGit(GitHostingClientMixin, BrowserTestCase):
         """Proposals can be resubmitted using the browser."""
         bmp = self.factory.makeBranchMergeProposalForGit(registrant=self.user)
         browser = self.getViewBrowser(bmp, '+resubmit')
-        browser.getControl('Commit Message').value = 'dribble'
+        browser.getControl('Commit message').value = 'dribble'
         browser.getControl('Description').value = 'flibble'
         browser.getControl('Resubmit').click()
         with person_logged_in(self.user):

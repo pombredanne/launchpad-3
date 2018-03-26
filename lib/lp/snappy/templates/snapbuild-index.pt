@@ -183,7 +183,7 @@
           <ul id="store-upload-error-messages">
             <li tal:repeat="error context/store_upload_error_messages">
               <span tal:replace="error/message"/>
-              <a tal:condition="error/link"
+              <a tal:condition="error/link|nothing"
                   tal:attributes="href error/link"
                   target="_blank"
                   class="sprite maybe action-icon">(?)</a>

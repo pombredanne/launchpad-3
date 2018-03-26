@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -538,6 +538,18 @@ class ConnectionString:
             if val is not None:
                 params.append('%s=%s' % (key, val))
         return ' '.join(params)
+
+    def __eq__(self, other):
+        return isinstance(other, ConnectionString) and all(
+            getattr(self, key, None) == getattr(other, key, None)
+            for key in self.CONNECTION_KEYS)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash(
+            tuple(getattr(self, key, None) for key in self.CONNECTION_KEYS))
 
     def asPGCommandLineArgs(self):
         """Return a string suitable for the PostgreSQL standard tools

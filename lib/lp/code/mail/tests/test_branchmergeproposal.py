@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposal mailings"""
@@ -502,7 +502,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         """Ensure the right delta is filled out if there is a change."""
         job, subscriber = self.makeProposalUpdatedEmailJob()
         self.assertEqual(
-            'Commit Message changed to:\n\nnew commit message\n\n'
+            'Commit message changed to:\n\nnew commit message\n\n'
             'Description changed to:\n\nchange description',
             job.delta_text)
 
@@ -528,7 +528,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         expected = dedent("""\
             The proposal to merge %(source)s into %(target)s has been updated.
 
-            Commit Message changed to:
+            Commit message changed to:
 
             new commit message
 

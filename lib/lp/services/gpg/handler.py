@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 import atexit
+from contextlib import contextmanager
 import httplib
 import os
 import shutil
@@ -64,6 +65,17 @@ signing_only_param = """
   Expire-Date: 0
 </GnupgKeyParms>
 """
+
+
+@contextmanager
+def gpgme_timeline(name, detail):
+    request = get_current_browser_request()
+    timeline = get_request_timeline(request)
+    action = timeline.start("gpgme-%s" % name, detail, allow_nested=True)
+    try:
+        yield
+    finally:
+        action.finish()
 
 
 @implementer(IGPGHandler)
@@ -133,8 +145,8 @@ class GPGHandler:
         """See IGPGHandler."""
         try:
             return self.getVerifiedSignature(content, signature)
-        except GPGVerificationError:
-            # Swallow GPG Verification Errors
+        except (GPGVerificationError, GPGKeyExpired):
+            # Swallow GPG verification errors
             pass
         return None
 
@@ -178,16 +190,19 @@ class GPGHandler:
             # store the content
             plain = StringIO(content)
             args = (sig, plain, None)
+            timeline_detail = "detached signature"
         else:
             # store clearsigned signature
             sig = StringIO(content)
             # writeable content
             plain = StringIO()
             args = (sig, None, plain)
+            timeline_detail = "clear signature"
 
         # process it
         try:
-            signatures = ctx.verify(*args)
+            with gpgme_timeline("verify", timeline_detail):
+                signatures = ctx.verify(*args)
         except gpgme.GpgmeError as e:
             error = GPGVerificationError(e.strerror)
             for attr in ("args", "code", "signatures", "source"):
@@ -214,17 +229,26 @@ class GPGHandler:
                                        'found multiple signatures')
 
         signature = signatures[0]
+        expired = False
         # signature.status == 0 means "Ok"
         if signature.status is not None:
-            raise GPGVerificationError(signature.status.args)
+            if signature.status.code == gpgme.ERR_KEY_EXPIRED:
+                expired = True
+            else:
+                raise GPGVerificationError(signature.status.args)
 
-        # supporting subkeys by retriving the full key from the
-        # keyserver and use the master key fingerprint.
+        # Support subkeys by retrieving the full key from the keyserver and
+        # using the master key fingerprint.
         try:
             key = self.retrieveKey(signature.fpr)
         except GPGKeyNotFoundError:
             raise GPGVerificationError(
                 "Unable to map subkey: %s" % signature.fpr)
+
+        if expired:
+            # This should already be set, but let's make sure.
+            key.expired = True
+            raise GPGKeyExpired(key)
 
         # return the signature container
         return PymeSignature(
@@ -238,7 +262,8 @@ class GPGHandler:
         context = self._getContext()
 
         newkey = StringIO(content)
-        result = context.import_(newkey)
+        with gpgme_timeline("import", "new public key"):
+            result = context.import_(newkey)
 
         if len(result.imports) == 0:
             raise GPGKeyNotFoundError(content)
@@ -271,7 +296,8 @@ class GPGHandler:
 
         context = self._getContext()
         newkey = StringIO(content)
-        import_result = context.import_(newkey)
+        with gpgme_timeline("import", "new secret key"):
+            import_result = context.import_(newkey)
 
         secret_imports = [
             fingerprint
@@ -303,8 +329,9 @@ class GPGHandler:
         # Only 'utf-8' encoding is supported by gpgme.
         # See more information at:
         # http://pyme.sourceforge.net/doc/gpgme/Generating-Keys.html
-        result = context.genkey(
-            signing_only_param % {'name': name.encode('utf-8')})
+        with gpgme_timeline("genkey", name):
+            result = context.genkey(
+                signing_only_param % {'name': name.encode('utf-8')})
 
         # Right, it might seem paranoid to have this many assertions,
         # but we have to take key generation very seriously.
@@ -346,9 +373,10 @@ class GPGHandler:
                              % key.fingerprint)
 
         # encrypt content
-        ctx.encrypt(
-            [removeSecurityProxy(key.key)], gpgme.ENCRYPT_ALWAYS_TRUST,
-            plain, cipher)
+        with gpgme_timeline("encrypt", key.fingerprint):
+            ctx.encrypt(
+                [removeSecurityProxy(key.key)], gpgme.ENCRYPT_ALWAYS_TRUST,
+                plain, cipher)
 
         return cipher.getvalue()
 
@@ -379,7 +407,8 @@ class GPGHandler:
 
         # Sign the text.
         try:
-            context.sign(plaintext, signature, mode)
+            with gpgme_timeline("sign", key.fingerprint):
+                context.sign(plaintext, signature, mode)
         except gpgme.GpgmeError:
             return None
 
@@ -397,8 +426,10 @@ class GPGHandler:
         if type(filter) == unicode:
             filter = filter.encode('utf-8')
 
-        for key in ctx.keylist(filter, secret):
-            yield PymeKey.newFromGpgmeKey(key)
+        with gpgme_timeline(
+                "keylist", "filter: %r, secret: %r" % (filter, secret)):
+            for key in ctx.keylist(filter, secret):
+                yield PymeKey.newFromGpgmeKey(key)
 
     def retrieveKey(self, fingerprint):
         """See IGPGHandler."""
@@ -414,7 +445,8 @@ class GPGHandler:
             key = self.importPublicKey(pubkey)
             if fingerprint != key.fingerprint:
                 ctx = self._getContext()
-                ctx.delete(key.key)
+                with gpgme_timeline("delete", key.fingerprint):
+                    ctx.delete(key.key)
                 raise GPGKeyMismatchOnServer(fingerprint, key.fingerprint)
         return key
 
@@ -490,7 +522,8 @@ class GPGHandler:
         request = get_current_browser_request()
         timeline = get_request_timeline(request)
         action = timeline.start(
-            'retrieving GPG key', 'Fingerprint: %s' % fingerprint)
+            'retrieving GPG key', 'Fingerprint: %s' % fingerprint,
+            allow_nested=True)
         try:
             return self._grabPage('get', fingerprint)
         # We record an OOPS for most errors: If the keyserver does not
@@ -568,7 +601,8 @@ class PymeKey:
         context = self._getContext()
         # retrive additional key information
         try:
-            key = context.get_key(fingerprint, False)
+            with gpgme_timeline("get-key", fingerprint):
+                key = context.get_key(fingerprint, False)
         except gpgme.GpgmeError:
             key = None
 
@@ -616,7 +650,8 @@ class PymeKey:
 
         context = self._getContext()
         keydata = StringIO()
-        context.export(self.fingerprint.encode('ascii'), keydata)
+        with gpgme_timeline("export", self.fingerprint):
+            context.export(self.fingerprint.encode('ascii'), keydata)
 
         return keydata.getvalue()
 

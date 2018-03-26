@@ -597,6 +597,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
             self.assertEqual(
                 db_build.distro_arch_series.architecturetag, build["arch_tag"])
             self.assertEqual("Updates", build["pocket"])
+            self.assertIsNone(build["channels"])
             self.assertIsNone(build["score"])
             self.assertFalse(build["can_be_rescored"])
             self.assertFalse(build["can_be_cancelled"])

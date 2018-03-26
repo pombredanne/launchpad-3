@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test for the methods of `ICodeImportScheduler`."""
@@ -15,7 +15,6 @@ from lp.code.enums import CodeImportResultStatus
 from lp.code.model.codeimportjob import CodeImportJob
 from lp.code.tests.codeimporthelpers import make_running_import
 from lp.code.xmlrpc.codeimportscheduler import CodeImportSchedulerAPI
-from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from lp.services.database.constants import UTC_NOW
 from lp.services.webapp import canonical_url
 from lp.testing import (
@@ -63,8 +62,7 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
         code_import = removeSecurityProxy(code_import_job).code_import
         code_import_arguments, target_url, log_file_name = \
             self.api.getImportDataForJobID(code_import_job.id)
-        import_as_arguments = CodeImportSourceDetails.fromCodeImportJob(
-            code_import_job).asArguments()
+        import_as_arguments = code_import_job.makeWorkerArguments()
         expected_log_file_name = '%s.log' % (
             code_import.target.unique_name[1:].replace('/', '-'))
         self.assertEqual(

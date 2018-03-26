@@ -1,4 +1,4 @@
-# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for SSHKey."""
@@ -74,9 +74,10 @@ class TestSSHKeySet(TestCaseWithFactory):
 
     def test_sends_notification_by_default(self):
         person = self.factory.makePerson()
+        key_text = self.factory.makeSSHKeyText(comment="comment")
         with person_logged_in(person):
             keyset = getUtility(ISSHKeySet)
-            keyset.new(person, "ssh-rsa keytext comment")
+            keyset.new(person, key_text)
             [email] = pop_notifications()
         self.assertEqual(
             email['Subject'], "New SSH key added to your account.")
@@ -89,7 +90,7 @@ class TestSSHKeySet(TestCaseWithFactory):
         person = self.factory.makePerson()
         with person_logged_in(person):
             keyset = getUtility(ISSHKeySet)
-            keyset.new(person, "ssh-rsa keytext comment",
+            keyset.new(person, self.factory.makeSSHKeyText(),
                        send_notification=False)
             self.assertEqual([], pop_notifications())
 
@@ -138,10 +139,8 @@ class TestSSHKeySet(TestCaseWithFactory):
     def test_can_add_new_key(self):
         keyset = getUtility(ISSHKeySet)
         person = self.factory.makePerson()
-        keytype = 'ssh-rsa'
-        keytext = 'ThisIsAFakeSSHKey'
-        comment = 'This is a key comment.'
-        full_key = ' '.join((keytype, keytext, comment))
+        full_key = self.factory.makeSSHKeyText()
+        keytype, keytext, comment = full_key.split(' ', 2)
         with person_logged_in(person):
             key = keyset.new(person, full_key)
             self.assertEqual([key], list(person.sshkeys))
@@ -152,18 +151,28 @@ class TestSSHKeySet(TestCaseWithFactory):
     def test_new_raises_KeyAdditionError_on_bad_key_data(self):
         person = self.factory.makePerson()
         keyset = getUtility(ISSHKeySet)
-        self.assertRaises(
+        self.assertRaisesWithContent(
             SSHKeyAdditionError,
+            "Invalid SSH key data: 'thiskeyhasnospaces'",
             keyset.new,
             person, 'thiskeyhasnospaces'
         )
-        self.assertRaises(
+        self.assertRaisesWithContent(
             SSHKeyAdditionError,
+            "Invalid SSH key type: 'bad_key_type'",
             keyset.new,
             person, 'bad_key_type keytext comment'
         )
-        self.assertRaises(
+        self.assertRaisesWithContent(
             SSHKeyAdditionError,
+            "Invalid SSH key data: 'ssh-rsa badkeytext comment' "
+            "(Incorrect padding)",
+            keyset.new,
+            person, 'ssh-rsa badkeytext comment'
+        )
+        self.assertRaisesWithContent(
+            SSHKeyAdditionError,
+            "Invalid SSH key data: 'None'",
             keyset.new,
             person, None
         )

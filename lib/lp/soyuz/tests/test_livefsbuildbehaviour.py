@@ -42,6 +42,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp import canonical_url
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
@@ -196,6 +197,7 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_url": canonical_url(job.build),
             "datestamp": "20140425-103800",
             "pocket": "release",
             "project": "distro",

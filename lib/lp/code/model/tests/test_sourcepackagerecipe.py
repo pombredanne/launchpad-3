@@ -765,6 +765,20 @@ class TestSourcePackageRecipeMixin:
         self.assertEqual([build], list(recipe.completed_builds))
         self.assertEqual([], list(recipe.pending_builds))
 
+    def test_getBuilds_cancelled_never_started_last(self):
+        # A cancelled build that was never even started sorts to the end.
+        recipe = self.makeSourcePackageRecipe()
+        fullybuilt = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
+        instacancelled = self.factory.makeSourcePackageRecipeBuild(
+            recipe=recipe)
+        fullybuilt.updateStatus(BuildStatus.BUILDING)
+        fullybuilt.updateStatus(BuildStatus.CANCELLED)
+        instacancelled.updateStatus(BuildStatus.CANCELLED)
+        self.assertEqual([fullybuilt, instacancelled], list(recipe.builds))
+        self.assertEqual(
+            [fullybuilt, instacancelled], list(recipe.completed_builds))
+        self.assertEqual([], list(recipe.pending_builds))
+
     def test_setRecipeText_private_base_branch(self):
         source_package_recipe = self.makeSourcePackageRecipe()
         with person_logged_in(source_package_recipe.owner):

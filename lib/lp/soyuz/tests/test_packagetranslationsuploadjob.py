@@ -90,6 +90,13 @@ class TestPackageTranslationsUploadJob(LocalTestHelper):
         self.assertTrue(verifyObject(IPackageTranslationsUploadJobSource,
                                      job_source))
 
+    def test___repr__(self):
+        _, sp, job = self.makeJob()
+        self.assertEqual(
+            "<PackageTranslationsUploadJob for %s in %s>" % (
+                sp.sourcepackagename.name, sp.distroseries),
+            repr(job))
+
     def test_iterReady(self):
         _, _, job1 = self.makeJob()
         removeSecurityProxy(job1).job._status = JobStatus.COMPLETED
