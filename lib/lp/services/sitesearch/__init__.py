@@ -224,12 +224,12 @@ class GoogleSearchService:
     def _checkParameter(self, name, value, is_int=False):
         """Check that a parameter value is not None or an empty string."""
         if value in (None, ''):
-            raise AssertionError("Missing value for parameter '%s'." % name)
+            raise ValueError("Missing value for parameter '%s'." % name)
         if is_int:
             try:
                 int(value)
             except ValueError:
-                raise AssertionError(
+                raise ValueError(
                     "Value for parameter '%s' is not an int." % name)
 
     def create_search_url(self, terms, start=0):
