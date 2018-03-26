@@ -240,16 +240,13 @@ class GoogleSearchService:
         self._checkParameter('q', terms)
         self._checkParameter('start', start, is_int=True)
         self._checkParameter('cx', self.client_id)
-        safe_terms = urllib.quote_plus(terms.encode('utf8'))
         search_params = dict(self._default_values)
-        search_params['q'] = safe_terms
+        search_params['q'] = terms.encode('utf8')
         search_params['start'] = start
         search_params['cx'] = self.client_id
-        search_param_list = []
-        for name in sorted(search_params):
-            value = search_params[name]
-            search_param_list.append('%s=%s' % (name, value))
-        query_string = '&'.join(search_param_list)
+        search_param_list = [
+            (name, value) for name, value in sorted(search_params.items())]
+        query_string = urllib.urlencode(search_param_list)
         return self.site + '?' + query_string
 
     def _getElementsByAttributeValue(self, doc, path, name, value):
@@ -419,15 +416,13 @@ class BingSearchService:
         self._checkParameter('q', terms)
         self._checkParameter('offset', start, is_int=True)
         self._checkParameter('customConfig', self.custom_config_id)
-        safe_terms = urllib.quote_plus(terms.encode('utf8'))
         search_params = dict(self._default_values)
-        search_params['q'] = safe_terms
+        search_params['q'] = terms.encode('utf8')
         search_params['offset'] = start
         search_params['customConfig'] = self.custom_config_id
         search_param_list = [
-            '%s=%s' % (name, value)
-            for name, value in sorted(search_params.items())]
-        query_string = '&'.join(search_param_list)
+            (name, value) for name, value in sorted(search_params.items())]
+        query_string = urllib.urlencode(search_param_list)
         return self.site + '?' + query_string
 
     def create_search_headers(self):
