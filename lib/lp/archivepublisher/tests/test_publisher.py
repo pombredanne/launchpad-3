@@ -34,6 +34,10 @@ try:
 except ImportError:
     from backports import lzma
 import pytz
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from testtools.matchers import (
     ContainsAll,
     DirContains,
@@ -2928,8 +2932,14 @@ class TestUpdateByHashOverriddenDistsroot(TestUpdateByHash):
             os.rename(temporary_dists, original_dists)
 
 
-class TestPublisherRepositorySignatures(RunPartsMixin, TestPublisherBase):
+class TestPublisherRepositorySignatures(
+        WithScenarios, RunPartsMixin, TestPublisherBase):
     """Testing `Publisher` signature behaviour."""
+
+    scenarios = [
+        ('default distsroot', {'override_distsroot': False}),
+        ('overridden distsroot', {'override_distsroot': True}),
+        ]
 
     run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=10)
 
@@ -2947,6 +2957,9 @@ class TestPublisherRepositorySignatures(RunPartsMixin, TestPublisherBase):
             allowed_suites = []
             self.archive_publisher = getPublisher(
                 archive, allowed_suites, self.logger)
+            if self.override_distsroot:
+                self.archive_publisher._config.distsroot = (
+                    self.makeTemporaryDirectory())
 
     def _publishArchive(self, archive):
         """Publish a test source in the given archive.
@@ -3335,3 +3348,6 @@ class TestDirectoryHash(TestDirectoryHashHelpers):
             ),
         }
         self.assertThat(self.fetchSums(rootdir), MatchesDict(expected))
+
+
+load_tests = load_tests_apply_scenarios
