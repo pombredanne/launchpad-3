@@ -10,7 +10,7 @@
   "webPages": {
     "webSearchUrl": "https://www.bing.com/search?q=bug",
     "webSearchUrlPingSuffix": "DevEx,5462.1",
-    "totalEstimatedMatches": 87000,
+    "totalEstimatedMatches": 25,
     "value": [
       {
         "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.0",

@@ -1596,7 +1596,8 @@ class MockHTTPTask:
         return self.request._orig_env
 
 
-class PageTestLayer(LaunchpadFunctionalLayer, BingServiceLayer):
+class PageTestLayer(LaunchpadFunctionalLayer,
+                    BingServiceLayer, GoogleServiceLayer):
     """Environment for page tests.
     """
 

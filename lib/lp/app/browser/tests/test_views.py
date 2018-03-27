@@ -12,6 +12,7 @@ import unittest
 from lp.testing.layers import (
     BingLaunchpadFunctionalLayer,
     DatabaseFunctionalLayer,
+    GoogleLaunchpadFunctionalLayer,
     )
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
@@ -26,7 +27,8 @@ here = os.path.dirname(os.path.realpath(__file__))
 # that require something special like the librarian or mailman must run
 # on a layer that sets those services up.
 special_test_layer = {
-    'launchpad-search-pages.txt': BingLaunchpadFunctionalLayer,
+    'launchpad-search-pages-google.txt': GoogleLaunchpadFunctionalLayer,
+    'launchpad-search-pages-bing.txt': BingLaunchpadFunctionalLayer,
     }
 
 

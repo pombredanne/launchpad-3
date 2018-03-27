@@ -1,5 +1,19 @@
 {
   "_type": "SearchResponse",
-  "webPages": {}
+  "webPages": {
+    "totalEstimatedMatches": 25,
+    "value": [
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.2",
+        "url": "https://help.launchpad.net/BugExpiry",
+        "urlPingSuffix": "DevEx,5110.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://help.launchpad.net/BugExpiry",
+        "snippet": "Want to know more about Bug Statuses? Check out our BugStatuses page. What is bug expiry? Today, projects and distributions have the option of allowing old ...",
+        "dateLastCrawled": "2018-01-13T13:58:00.0000000Z",
+        "fixedPosition": false
+      }
+    ]
+  }
 }
 

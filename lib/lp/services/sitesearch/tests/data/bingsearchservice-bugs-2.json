@@ -10,7 +10,7 @@
   "webPages": {
     "webSearchUrl": "https://www.bing.com/search?q=bug",
     "webSearchUrlPingSuffix": "DevEx,5530.1",
-    "totalEstimatedMatches": 87000,
+    "totalEstimatedMatches": 25,
     "value": [
       {
         "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.0",
@@ -103,116 +103,6 @@
         "snippet": "Statistics. 1755185 bugs reported across 12480 projects including 122769 links to 2796 bug trackers; 148160 bugs are shared across multiple projects",
         "dateLastCrawled": "2018-03-14T01:18:00.0000000Z",
         "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.5",
-        "name": "LaunchpadBugTags - Launchpad Development",
-        "url": "https://dev.launchpad.net/LaunchpadBugTags",
-        "urlPingSuffix": "DevEx,5223.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://dev.launchpad.net/LaunchpadBugTags",
-        "snippet": "Tagging bugs about Launchpad. Launchpad's Bug Tracker allows you to create ad-hoc groups of bugs with tagging. In the Launchpad team, we have a list of agreed tags ...",
-        "dateLastCrawled": "2018-02-13T19:01:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.6",
-        "name": "Evergreen Bug Tracker - Launchpad",
-        "url": "https://launchpad.net/evergreen",
-        "urlPingSuffix": "DevEx,5238.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/evergreen",
-        "snippet": "Evergreen is a highly-scalable library system that helps library patrons find library materials, and helps libraries manage, catalog, and circulate those materials ...",
-        "dateLastCrawled": "2018-03-02T10:11:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.7",
-        "name": "Ubuntu BugSquad in Launchpad",
-        "url": "https://launchpad.net/~bugsquad",
-        "urlPingSuffix": "DevEx,5268.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/~bugsquad",
-        "snippet": "http://wiki.ubuntu.com/HelpingWithBugs http://wiki.ubuntu.com/BugSquad The BugSquad is Ubuntu's team for helping out with improving bug reports.",
-        "dateLastCrawled": "2018-02-23T13:05:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.8",
-        "name": "Bugs : Launchpad Suite",
-        "url": "https://launchpad.net/launchpad-project/+bugs?field.tag=bugwatch",
-        "urlPingSuffix": "DevEx,5281.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/launchpad-project/+bugs?field.tag=bugwatch",
-        "snippet": "Launchpad is the software running this Web site. It includes a project registry, code branch registry and mirroring service, bug tracker, specification tracker ...",
-        "dateLastCrawled": "2017-10-18T02:06:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.9",
-        "name": "ufw project files : ufw",
-        "url": "https://launchpad.net/ufw/+download",
-        "urlPingSuffix": "DevEx,5294.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/ufw/+download",
-        "snippet": "ufw 0.35 adds support for comments, moves the ufw managed user rules to /etc, improved setup options and several bug fixes.",
-        "dateLastCrawled": "2018-02-19T14:58:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.10",
-        "name": "VersionThreeDotO/Bugs/StoryCards - Launchpad Development",
-        "url": "https://dev.launchpad.net/VersionThreeDotO/Bugs/StoryCards",
-        "urlPingSuffix": "DevEx,5309.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://dev.launchpad.net/VersionThreeDotO/Bugs/StoryCards",
-        "snippet": "Contents. HWDB. Get number of affected users by a bug tied to a device; Get number of users using a driver; Include DMI and lspci information in HWDB submissions",
-        "dateLastCrawled": "2018-03-10T13:58:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.11",
-        "name": "Ubuntu Bugs in Launchpad",
-        "url": "https://launchpad.net/~ubuntu-bugs",
-        "urlPingSuffix": "DevEx,5339.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/~ubuntu-bugs",
-        "snippet": "The purpose of this team is to have a mailing list that receives all Ubuntu bug mail. If you wish to receive copies of all bug traffic, instead subscribe to the ...",
-        "dateLastCrawled": "2018-03-10T00:32:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.12",
-        "name": "BugExpiry - Launchpad Help",
-        "url": "https://help.launchpad.net/BugExpiry",
-        "urlPingSuffix": "DevEx,5354.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://help.launchpad.net/BugExpiry",
-        "snippet": "Want to know more about Bug Statuses? Check out our BugStatuses page. What is bug expiry? Today, projects and distributions have the option of allowing old ...",
-        "dateLastCrawled": "2018-01-13T13:58:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.13",
-        "name": "gdiskdump project files : gdiskdump",
-        "url": "https://launchpad.net/gdiskdump/+download",
-        "urlPingSuffix": "DevEx,5367.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://launchpad.net/gdiskdump/+download",
-        "snippet": "added advanced settings and estimated Time for process to finish. bug fixes for some languages.",
-        "dateLastCrawled": "2018-02-19T11:52:00.0000000Z",
-        "fixedPosition": false
-      },
-      {
-        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.14",
-        "name": "Bug #1747091 “epicsTimeGetEvent() / generalTime bug ...",
-        "url": "https://code.launchpad.net/bugs/1747091",
-        "urlPingSuffix": "DevEx,5379.1",
-        "isFamilyFriendly": true,
-        "displayUrl": "https://code.launchpad.net/bugs/1747091",
-        "snippet": "When changes in epicsGeneralTime.c were made (fetch time provider's eventTime into a local copy) an inconsistency resulted.",
-        "dateLastCrawled": "2018-02-04T02:49:00.0000000Z",
-        "fixedPosition": false
       }
     ]
   },
@@ -252,76 +142,6 @@
           "resultIndex": 4,
           "value": {
             "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.4"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 5,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.5"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 6,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.6"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 7,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.7"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 8,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.8"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 9,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.9"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 10,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.10"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 11,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.11"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 12,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.12"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 13,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.13"
-          }
-        },
-        {
-          "answerType": "WebPages",
-          "resultIndex": 14,
-          "value": {
-            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.14"
           }
         }
       ]
