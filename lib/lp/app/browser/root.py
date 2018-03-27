@@ -516,7 +516,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         """
         if query_terms in [None, '']:
             return None
-        site_search = getUtility(ISearchService)
+        site_search = getUtility(ISearchService, name="google")
         try:
             page_matches = site_search.search(
                 terms=query_terms, start=start)

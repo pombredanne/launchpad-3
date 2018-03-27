@@ -23,7 +23,7 @@ The GoogleSearchService implements the ISearchService interface.
     >>> from lp.services.sitesearch.interfaces import (
     ...     ISearchService)
 
-    >>> google_search = getUtility(ISearchService)
+    >>> google_search = getUtility(ISearchService, name="google")
     >>> verifyObject(ISearchService, google_search)
     True
     >>> google_search
