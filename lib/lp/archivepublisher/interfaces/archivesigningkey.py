@@ -36,10 +36,15 @@ class ISignableArchive(Interface):
 
     can_sign = Attribute("True if this archive is set up for signing.")
 
-    def signRepository(suite, log=None):
+    def signRepository(suite, pubconf=None, suffix='', log=None):
         """Sign the corresponding repository.
 
         :param suite: suite name to be signed.
+        :param pubconf: an optional publisher configuration instance
+            indicating where files should be written (if not passed, uses
+            the archive's defaults).
+        :param suffix: an optional suffix for repository index files (e.g.
+            ".new" to help with publishing files atomically).
         :param log: an optional logger.
         :raises CannotSignArchive: if the context archive is not set up for
             signing.
