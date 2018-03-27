@@ -62,8 +62,7 @@ class TestSignableArchiveWithSigningKey(TestCaseWithFactory):
         self.assertTrue(signer.can_sign)
         signer.signFile(self.suite, filename)
 
-        signature = filename + '.gpg'
-        self.assertTrue(os.path.exists(signature))
+        self.assertTrue(os.path.exists(filename + ".gpg"))
 
     def test_signFile_absolute_outside_archive(self):
         filename = os.path.join(self.temp_dir, "signme")
@@ -72,7 +71,7 @@ class TestSignableArchiveWithSigningKey(TestCaseWithFactory):
         signer = ISignableArchive(self.archive)
         self.assertTrue(signer.can_sign)
         self.assertRaises(
-            AssertionError, lambda: signer.signFile(self.suite, filename))
+            AssertionError, signer.signFile, self.suite, filename)
 
     def test_signFile_relative_within_archive(self):
         filename_relative = "signme"
@@ -83,8 +82,7 @@ class TestSignableArchiveWithSigningKey(TestCaseWithFactory):
         self.assertTrue(signer.can_sign)
         signer.signFile(self.suite, filename_relative)
 
-        signature = filename + '.gpg'
-        self.assertTrue(os.path.exists(signature))
+        self.assertTrue(os.path.exists(filename + ".gpg"))
 
     def test_signFile_relative_outside_archive(self):
         filename_relative = "../signme"
@@ -94,8 +92,7 @@ class TestSignableArchiveWithSigningKey(TestCaseWithFactory):
         signer = ISignableArchive(self.archive)
         self.assertTrue(signer.can_sign)
         self.assertRaises(
-            AssertionError,
-            lambda: signer.signFile(self.suite, filename_relative))
+            AssertionError, signer.signFile, self.suite, filename_relative)
 
 
 class TestSignableArchiveWithRunParts(RunPartsMixin, TestCaseWithFactory):
@@ -132,6 +129,29 @@ class TestSignableArchiveWithRunParts(RunPartsMixin, TestCaseWithFactory):
         signer = ISignableArchive(self.archive)
         self.assertTrue(signer.can_sign)
         signer.signRepository(self.suite)
+
+        self.assertThat(
+            os.path.join(suite_dir, "Release.gpg"),
+            FileContains(
+                "detached signature of %s (%s/%s)\n" %
+                (release_path, self.distro.name, self.suite)))
+        self.assertThat(
+            os.path.join(suite_dir, "InRelease"),
+            FileContains(
+                "clear signature of %s (%s/%s)\n" %
+                (release_path, self.distro.name, self.suite)))
+
+    def test_signRepository_honours_pubconf(self):
+        pubconf = getPubConfig(self.archive)
+        pubconf.distsroot = self.makeTemporaryDirectory()
+        suite_dir = os.path.join(pubconf.distsroot, self.suite)
+        release_path = os.path.join(suite_dir, "Release")
+        write_file(release_path, "Release contents")
+
+        signer = ISignableArchive(self.archive)
+        self.assertTrue(signer.can_sign)
+        self.assertRaises(AssertionError, signer.signRepository, self.suite)
+        signer.signRepository(self.suite, pubconf=pubconf)
 
         self.assertThat(
             os.path.join(suite_dir, "Release.gpg"),

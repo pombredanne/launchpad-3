@@ -62,6 +62,7 @@ class SignableArchive:
 
     def __init__(self, archive):
         self.archive = archive
+        self.pubconf = getPubConfig(self.archive)
 
     @property
     def can_sign(self):
@@ -119,9 +120,11 @@ class SignableArchive:
                     "No signing key available for %s" %
                     self.archive.displayname)
 
-    def signRepository(self, suite, suffix='', log=None):
+    def signRepository(self, suite, pubconf=None, suffix='', log=None):
         """See `ISignableArchive`."""
-        suite_path = os.path.join(self._archive_root_path, 'dists', suite)
+        if pubconf is None:
+            pubconf = self.pubconf
+        suite_path = os.path.join(pubconf.distsroot, suite)
         release_file_path = os.path.join(suite_path, 'Release' + suffix)
         if not os.path.exists(release_file_path):
             raise AssertionError(
@@ -140,12 +143,12 @@ class SignableArchive:
     def signFile(self, suite, path, log=None):
         """See `ISignableArchive`."""
         # Allow the passed path to be relative to the archive root.
-        path = os.path.realpath(os.path.join(self._archive_root_path, path))
+        path = os.path.realpath(os.path.join(self.pubconf.archiveroot, path))
 
         # Ensure the resulting path is within the archive root after
         # normalisation.
         # NOTE: uses os.sep to prevent /var/tmp/../tmpFOO attacks.
-        archive_root = self._archive_root_path + os.sep
+        archive_root = self.pubconf.archiveroot + os.sep
         if not path.startswith(archive_root):
             raise AssertionError(
                 "Attempting to sign file (%s) outside archive_root for %s" % (
@@ -158,10 +161,6 @@ class SignableArchive:
 @implementer(IArchiveSigningKey)
 class ArchiveSigningKey(SignableArchive):
     """`IArchive` adapter for manipulating its GPG key."""
-
-    @property
-    def _archive_root_path(self):
-        return getPubConfig(self.archive).archiveroot
 
     def getPathForSecretKey(self, key):
         """See `IArchiveSigningKey`."""
