@@ -58,6 +58,8 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
     def test_getImportDataForJobID(self):
         # getImportDataForJobID returns the worker arguments, target url and
         # log file name for an import corresponding to a particular job.
+        self.pushConfig(
+            'codehosting', blacklisted_hostnames='localhost,127.0.0.1')
         code_import_job = self.makeCodeImportJob(running=True)
         code_import = removeSecurityProxy(code_import_job).code_import
         data = self.api.getImportDataForJobID(code_import_job.id)
@@ -66,6 +68,7 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
             'target_url': canonical_url(code_import.target),
             'log_file_name': '%s.log' % (
                 code_import.target.unique_name[1:].replace('/', '-')),
+            'blacklisted_hostnames': ['localhost', '127.0.0.1'],
             }
         self.assertEqual(expected_data, data)
 
