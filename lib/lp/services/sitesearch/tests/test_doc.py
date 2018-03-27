@@ -9,6 +9,7 @@ import os
 
 from lp.services.testing import build_test_suite
 from lp.testing.layers import (
+    BingLaunchpadFunctionalLayer,
     DatabaseFunctionalLayer,
     GoogleLaunchpadFunctionalLayer,
     )
@@ -23,6 +24,10 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 
 special = {
+    'bing-searchservice.txt': LayeredDocFileSuite(
+        '../doc/bing-searchservice.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=BingLaunchpadFunctionalLayer,),
     'google-searchservice.txt': LayeredDocFileSuite(
         '../doc/google-searchservice.txt',
         setUp=setUp, tearDown=tearDown,

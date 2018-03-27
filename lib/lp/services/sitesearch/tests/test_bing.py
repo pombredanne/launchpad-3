@@ -85,14 +85,14 @@ class FunctionalTestBingSearchService(TestCase):
     def test_search_with_results(self):
         matches = self.search_service.search('bug')
         self.assertEqual(0, matches.start)
-        self.assertEqual(87000, matches.total)
+        self.assertEqual(25, matches.total)
         self.assertEqual(20, len(matches))
 
     def test_search_with_results_and_offset(self):
         matches = self.search_service.search('bug', start=20)
         self.assertEqual(20, matches.start)
-        self.assertEqual(87000, matches.total)
-        self.assertEqual(15, len(matches))
+        self.assertEqual(25, matches.total)
+        self.assertEqual(5, len(matches))
 
     def test_search_no_results(self):
         matches = self.search_service.search('fnord')
@@ -103,7 +103,7 @@ class FunctionalTestBingSearchService(TestCase):
     def test_search_no_meaningful_results(self):
         matches = self.search_service.search('no-meaningful')
         self.assertEqual(0, matches.start)
-        self.assertEqual(0, matches.total)
+        self.assertEqual(25, matches.total)
         self.assertEqual(0, len(matches))
 
     def test_search_incomplete_response(self):
