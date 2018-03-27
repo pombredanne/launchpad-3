@@ -42,8 +42,8 @@ from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.propertycache import cachedproperty
 from lp.services.sitesearch.interfaces import (
-    SiteSearchResponseError,
     ISearchService,
+    SiteSearchResponseError,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.timeout import urlfetch
@@ -521,7 +521,7 @@ class LaunchpadSearchView(LaunchpadFormView):
             page_matches = site_search.search(
                 terms=query_terms, start=start)
         except SiteSearchResponseError:
-            # There was a connectivity or the search service issue that means
+            # There was a connectivity or search service issue that means
             # there is no data available at this moment.
             self.has_page_service = False
             return None
