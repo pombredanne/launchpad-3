@@ -7,6 +7,8 @@ See also lp.soyuz.tests.test_distroseriesqueue_debian_installer for
 high-level tests of debian-installer upload and queue manipulation.
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 import os
 from textwrap import dedent
 
@@ -80,7 +82,7 @@ class TestDebianInstaller(RunPartsMixin, TestCaseWithFactory):
     def test_basic(self):
         # Processing a simple correct tar file succeeds.
         self.openArchive()
-        self.addFile("hello", "world")
+        self.addFile("hello", b"world")
         self.process()
 
     def test_already_exists(self):
@@ -92,14 +94,14 @@ class TestDebianInstaller(RunPartsMixin, TestCaseWithFactory):
     def test_bad_umask(self):
         # The umask must be 0o022 to avoid incorrect permissions.
         self.openArchive()
-        self.addFile("dir/file", "foo")
+        self.addFile("dir/file", b"foo")
         os.umask(0o002)  # cleanup already handled by setUp
         self.assertRaises(CustomUploadBadUmask, self.process)
 
     def test_current_symlink(self):
         # A "current" symlink is created to the last version.
         self.openArchive()
-        self.addFile("hello", "world")
+        self.addFile("hello", b"world")
         self.process()
         installer_path = self.getInstallerPath()
         self.assertContentEqual(
@@ -115,8 +117,8 @@ class TestDebianInstaller(RunPartsMixin, TestCaseWithFactory):
         filename = os.path.join(directory, "default")
         long_filename = os.path.join(
             directory, "very_very_very_very_very_very_long_filename")
-        self.addFile(filename, "hey")
-        self.addFile(long_filename, "long")
+        self.addFile(filename, b"hey")
+        self.addFile(long_filename, b"long")
         self.process()
         with open(self.getInstallerPath(filename)) as f:
             self.assertEqual("hey", f.read())
@@ -143,7 +145,7 @@ class TestDebianInstaller(RunPartsMixin, TestCaseWithFactory):
     def test_top_level_permissions(self):
         # Top-level directories are set to mode 0o755 (see bug 107068).
         self.openArchive()
-        self.addFile("hello", "world")
+        self.addFile("hello", b"world")
         self.process()
         installer_path = self.getInstallerPath()
         self.assertEqual(0o755, os.stat(installer_path).st_mode & 0o777)
@@ -157,7 +159,7 @@ class TestDebianInstaller(RunPartsMixin, TestCaseWithFactory):
         directory = ("images/netboot/ubuntu-installer/i386/"
                      "pxelinux.cfg.serial-9600")
         filename = os.path.join(directory, "default")
-        self.addFile(filename, "hey")
+        self.addFile(filename, b"hey")
         self.process()
         self.assertEqual(
             0o644, os.stat(self.getInstallerPath(filename)).st_mode & 0o777)

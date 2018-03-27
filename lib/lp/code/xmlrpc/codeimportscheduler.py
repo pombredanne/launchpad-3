@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The code import scheduler XML-RPC API."""
@@ -18,7 +18,6 @@ from lp.code.interfaces.codeimportjob import (
     ICodeImportJobWorkflow,
     )
 from lp.code.interfaces.codeimportscheduler import ICodeImportScheduler
-from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.webapp import (
     canonical_url,
@@ -67,8 +66,7 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
     @return_fault
     def _getImportDataForJobID(self, job_id):
         job = self._getJob(job_id)
-        arguments = CodeImportSourceDetails.fromCodeImportJob(
-            job).asArguments()
+        arguments = job.makeWorkerArguments()
         target = job.code_import.target
         target_url = canonical_url(target)
         log_file_name = '%s.log' % target.unique_name[1:].replace('/', '-')

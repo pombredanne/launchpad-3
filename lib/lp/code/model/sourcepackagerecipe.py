@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the `SourcePackageRecipe` content type."""
@@ -67,7 +67,10 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
-from lp.services.database.stormexpr import Greatest
+from lp.services.database.stormexpr import (
+    Greatest,
+    NullsLast,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -330,9 +333,9 @@ class SourcePackageRecipe(Storm):
     def builds(self):
         """See `ISourcePackageRecipe`."""
         order_by = (
-            Desc(Greatest(
+            NullsLast(Desc(Greatest(
                 SourcePackageRecipeBuild.date_started,
-                SourcePackageRecipeBuild.date_finished)),
+                SourcePackageRecipeBuild.date_finished))),
             Desc(SourcePackageRecipeBuild.date_created),
             Desc(SourcePackageRecipeBuild.id))
         return self._getBuilds(None, order_by)
@@ -343,9 +346,9 @@ class SourcePackageRecipe(Storm):
         filter_term = (
             SourcePackageRecipeBuild.status != BuildStatus.NEEDSBUILD)
         order_by = (
-            Desc(Greatest(
+            NullsLast(Desc(Greatest(
                 SourcePackageRecipeBuild.date_started,
-                SourcePackageRecipeBuild.date_finished)),
+                SourcePackageRecipeBuild.date_finished))),
             Desc(SourcePackageRecipeBuild.id))
         return self._getBuilds(filter_term, order_by)
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -562,21 +562,22 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
         with admin_logged_in():
             person = removeSecurityProxy(self.factory.makePerson())
             openid_id = person.account.openid_identifiers.any().identifier
-        response = self.addSSHKeyForPerson(
-            openid_id, 'ssh-rsa keydata comment')
+        full_key = self.factory.makeSSHKeyText()
+        _, keytext, comment = full_key.split(' ', 2)
+        response = self.addSSHKeyForPerson(openid_id, full_key)
 
         self.assertEqual(200, response.status)
         [key] = person.sshkeys
         self.assertEqual(SSHKeyType.RSA, key.keytype)
-        self.assertEqual('keydata', key.keytext)
-        self.assertEqual('comment', key.comment)
+        self.assertEqual(keytext, key.keytext)
+        self.assertEqual(comment, key.comment)
 
     def test_addSSHKeyFromSSO_dry_run(self):
         with admin_logged_in():
             person = removeSecurityProxy(self.factory.makePerson())
             openid_id = person.account.openid_identifiers.any().identifier
         response = self.addSSHKeyForPerson(
-            openid_id, 'ssh-rsa keydata comment', dry_run=True)
+            openid_id, self.factory.makeSSHKeyText(), dry_run=True)
 
         self.assertEqual(200, response.status)
         self.assertEqual(0, person.sshkeys.count())

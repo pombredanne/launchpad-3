@@ -1,7 +1,9 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for publisherConfig model class."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -45,9 +47,9 @@ class TestPublisherConfig(TestCaseWithFactory):
 
     def test_properties(self):
         # Test the model properties.
-        ROOT_DIR = u"rootdir/test"
-        BASE_URL = u"http://base.url"
-        COPY_BASE_URL = u"http://base.url"
+        ROOT_DIR = "rootdir/test"
+        BASE_URL = "http://base.url"
+        COPY_BASE_URL = "http://base.url"
         pubconf = self.factory.makePublisherConfig(
             distribution=self.distribution,
             root_dir=ROOT_DIR,
@@ -83,7 +85,7 @@ class TestPublisherConfigSecurity(TestCaseWithFactory):
 
     def test_only_admin(self):
         # Only admins can see and change the config.
-        distro = self.factory.makeDistribution(publish_root_dir=u"foo")
+        distro = self.factory.makeDistribution(publish_root_dir="foo")
         config = getUtility(IPublisherConfigSet).getByDistribution(distro)
 
         login(ANONYMOUS)
@@ -91,6 +93,6 @@ class TestPublisherConfigSecurity(TestCaseWithFactory):
         self.assertRaises(Unauthorized, setattr, config, "root_dir", "test")
 
         login(LAUNCHPAD_ADMIN)
-        self.assertEqual(u"foo", config.root_dir)
-        config.root_dir = u"bar"
-        self.assertEqual(u"bar", config.root_dir)
+        self.assertEqual("foo", config.root_dir)
+        config.root_dir = "bar"
+        self.assertEqual("bar", config.root_dir)

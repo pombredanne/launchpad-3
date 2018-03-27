@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap package build interfaces."""
@@ -39,7 +39,9 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    Dict,
     Int,
+    List,
     TextLine,
     )
 
@@ -147,6 +149,14 @@ class ISnapBuildView(IPackageBuild):
         title=_("The pocket for which to build."),
         vocabulary=PackagePublishingPocket, required=True, readonly=True))
 
+    channels = exported(Dict(
+        title=_("Source snap channels to use for this build."),
+        description=_(
+            "A dictionary mapping snap names to channels to use for this "
+            "build.  Currently only 'core' and 'snapcraft' keys are "
+            "supported."),
+        key_type=TextLine()))
+
     virtualized = Bool(
         title=_("If True, this build is virtualized."), readonly=True)
 
@@ -211,6 +221,16 @@ class ISnapBuildView(IPackageBuild):
         description=_(
             "The error message, if any, from the last attempt to upload "
             "this snap build to the store."),
+        required=False, readonly=True))
+
+    store_upload_error_messages = exported(List(
+        title=_("Store upload error messages"),
+        description=_(
+            "A list of dict(message, link) where message is an error "
+            "description and link, if any, is an external link to extra "
+            "details, from the last attempt to upload this snap build "
+            "to the store."),
+        value_type=Dict(key_type=TextLine()),
         required=False, readonly=True))
 
     def getFiles():

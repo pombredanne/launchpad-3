@@ -20,7 +20,7 @@ The GoogleSearchService implements the ISearchService interface.
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
-    >>> from lp.services.googlesearch.interfaces import (
+    >>> from lp.services.sitesearch.interfaces import (
     ...     ISearchService)
 
     >>> google_search = getUtility(ISearchService)
@@ -38,7 +38,7 @@ The search method accepts a string argument of terms and an optional int
 argument of start. The terms are the same as the text that would be
 entered in Google search form; the terms should not be escaped.
 
-    >>> from lp.services.googlesearch.interfaces import (
+    >>> from lp.services.sitesearch.interfaces import (
     ...     ISearchResults)
 
     >>> first_page_matches = google_search.search(terms='bug')
@@ -127,8 +127,8 @@ The PageMatch object represents a single result from a search result
 set. It is created by passing a title, url, and a summary. It is
 an implementation of ISearchResult.
 
-    >>> from lp.services.googlesearch.interfaces import ISearchResult
-    >>> from lp.services.googlesearch import PageMatch
+    >>> from lp.services.sitesearch.interfaces import ISearchResult
+    >>> from lp.services.sitesearch import PageMatch
 
     >>> page_match = PageMatch(
     ...     u'Unicode Titles in Launchpad',
@@ -161,7 +161,7 @@ lazr.config. All requests are made to Google's site, but the
 configuration may set a testing site.
 
     >>> from lp.services.config import config
-    >>> from lp.services.googlesearch import GoogleSearchService
+    >>> from lp.services.sitesearch import GoogleSearchService
 
     >>> google_search = GoogleSearchService()
     >>> config.google.site == google_search.site
@@ -208,17 +208,17 @@ An error is raised if any of the parameters are None.
     >>> google_search.create_search_url('')
     Traceback (most recent call last):
      ...
-    AssertionError: Missing value for parameter 'q'.
+    ValueError: Missing value for parameter 'q'.
 
     >>> google_search.create_search_url(None)
     Traceback (most recent call last):
      ...
-    AssertionError: Missing value for parameter 'q'.
+    ValueError: Missing value for parameter 'q'.
 
     >>> google_search.create_search_url('bugs', start='true')
     Traceback (most recent call last):
      ...
-    AssertionError: Value for parameter 'start' is not an int.
+    ValueError: Value for parameter 'start' is not an int.
 
 The term parameter in this example can be defined by passing the term
 argument to the method. The argument is url encoded and used as the
@@ -617,7 +617,7 @@ cases a TimeoutError is issued.
     >>> google_search.search(terms='bug')
     Traceback (most recent call last):
      ...
-    GoogleResponseError: ... timeout exceeded.
+    SiteSearchResponseError: ... timeout exceeded.
 
     # Restore the configuration and the timeout state.
     >>> timeout_data = config.pop('timeout_data')

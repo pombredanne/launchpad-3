@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -600,7 +600,7 @@ class TranslationMerger:
         tm = removeSecurityProxy(tm)
         msgstr_ids = tuple([
             getattr(tm, 'msgstr%dID' % form)
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+            for form in range(TranslationConstants.MAX_PLURAL_FORMS)])
 
         return (tm.potemplateID, tm.languageID) + msgstr_ids
 

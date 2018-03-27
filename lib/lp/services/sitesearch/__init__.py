@@ -24,12 +24,12 @@ import requests
 from zope.interface import implementer
 
 from lp.services.config import config
-from lp.services.googlesearch.interfaces import (
-    GoogleResponseError,
+from lp.services.sitesearch.interfaces import (
     GoogleWrongGSPVersion,
     ISearchResult,
     ISearchResults,
     ISearchService,
+    SiteSearchResponseError,
     )
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
@@ -214,7 +214,7 @@ class GoogleSearchService:
         except (TimeoutError, requests.RequestException) as error:
             # Google search service errors are not code errors. Let the
             # call site choose to handle the unavailable service.
-            raise GoogleResponseError(
+            raise SiteSearchResponseError(
                 "The response errored: %s" % str(error))
         finally:
             action.finish()
@@ -224,12 +224,12 @@ class GoogleSearchService:
     def _checkParameter(self, name, value, is_int=False):
         """Check that a parameter value is not None or an empty string."""
         if value in (None, ''):
-            raise AssertionError("Missing value for parameter '%s'." % name)
+            raise ValueError("Missing value for parameter '%s'." % name)
         if is_int:
             try:
                 int(value)
             except ValueError:
-                raise AssertionError(
+                raise ValueError(
                     "Value for parameter '%s' is not an int." % name)
 
     def create_search_url(self, terms, start=0):
@@ -237,16 +237,11 @@ class GoogleSearchService:
         self._checkParameter('q', terms)
         self._checkParameter('start', start, is_int=True)
         self._checkParameter('cx', self.client_id)
-        safe_terms = urllib.quote_plus(terms.encode('utf8'))
         search_params = dict(self._default_values)
-        search_params['q'] = safe_terms
+        search_params['q'] = terms.encode('utf8')
         search_params['start'] = start
         search_params['cx'] = self.client_id
-        search_param_list = []
-        for name in sorted(search_params):
-            value = search_params[name]
-            search_param_list.append('%s=%s' % (name, value))
-        query_string = '&'.join(search_param_list)
+        query_string = urllib.urlencode(sorted(search_params.items()))
         return self.site + '?' + query_string
 
     def _getElementsByAttributeValue(self, doc, path, name, value):
@@ -281,7 +276,7 @@ class GoogleSearchService:
             version 3.2 XML. There is no guarantee that other GSP versions
             can be parsed.
         :return: `ISearchResults` (PageMatches).
-        :raise: `GoogleResponseError` if the xml is incomplete.
+        :raise: `SiteSearchResponseError` if the xml is incomplete.
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
         try:
@@ -289,7 +284,8 @@ class GoogleSearchService:
             start_param = self._getElementByAttributeValue(
                 gsp_doc, './PARAM', 'name', 'start')
         except (SyntaxError, IndexError):
-            raise GoogleResponseError("The response was incomplete, no xml.")
+            raise SiteSearchResponseError(
+                "The response was incomplete, no xml.")
         try:
             start = int(start_param.get('value'))
         except (AttributeError, ValueError):

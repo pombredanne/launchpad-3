@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -19,6 +19,7 @@ __all__ = [
     'remove_security_proxy_and_shout_at_engineer',
     ]
 
+import base64
 from datetime import (
     datetime,
     timedelta,
@@ -50,6 +51,11 @@ from bzrlib.revision import Revision as BzrRevision
 from lazr.jobrunner.jobrunner import SuspendJobException
 import pytz
 from pytz import UTC
+from twisted.conch.ssh.common import (
+    MP,
+    NS,
+    )
+from twisted.conch.test import keydata
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import (
     ComponentLookupError,
@@ -1108,7 +1114,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeStackedOnBranchChain(self, depth=5, **kwargs):
         branch = None
-        for i in xrange(depth):
+        for i in range(depth):
             branch = self.makeAnyBranch(stacked_on=branch, **kwargs)
         return branch
 
@@ -4304,6 +4310,29 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IHWSubmissionDeviceSet).create(
             device_driver_link, submission, parent, hal_device_id)
 
+    def makeSSHKeyText(self, key_type=SSHKeyType.RSA, comment=None):
+        """Create new SSH public key text.
+
+        :param key_type: If specified, the type of SSH key to generate. Must be
+            a member of SSHKeyType. If unspecified, SSHKeyType.RSA is used.
+        """
+        key_type_string = SSH_KEY_TYPE_TO_TEXT.get(key_type)
+        if key_type is None:
+            raise AssertionError(
+                "key_type must be a member of SSHKeyType, not %r" % key_type)
+        if key_type == SSHKeyType.RSA:
+            parameters = [MP(keydata.RSAData[param]) for param in ("e", "n")]
+        elif key_type == SSHKeyType.DSA:
+            parameters = [
+                MP(keydata.DSAData[param]) for param in ("p", "q", "g", "y")]
+        else:
+            raise AssertionError(
+                "key_type must be a member of SSHKeyType, not %r" % key_type)
+        key_text = base64.b64encode(NS(key_type_string) + b"".join(parameters))
+        if comment is None:
+            comment = self.getUniqueString()
+        return "%s %s %s" % (key_type_string, key_text, comment)
+
     def makeSSHKey(self, person=None, key_type=SSHKeyType.RSA,
                    send_notification=True):
         """Create a new SSHKey.
@@ -4315,15 +4344,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if person is None:
             person = self.makePerson()
-        key_type_string = SSH_KEY_TYPE_TO_TEXT.get(key_type)
-        if key_type is None:
-            raise AssertionError(
-                "key_type must be a member of SSHKeyType, not %r" % key_type)
-        public_key = "%s %s %s" % (
-            key_type_string,
-            self.getUniqueString(),
-            self.getUniqueString(),
-            )
+        public_key = self.makeSSHKeyText(key_type=key_type)
         return getUtility(ISSHKeySet).new(
             person, public_key, send_notification=send_notification)
 
@@ -4649,7 +4670,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeSnap(self, registrant=None, owner=None, distroseries=None,
                  name=None, branch=None, git_ref=None, auto_build=False,
                  auto_build_archive=None, auto_build_pocket=None,
-                 is_stale=None, require_virtualized=True, processors=None,
+                 auto_build_channels=None, is_stale=None,
+                 require_virtualized=True, processors=None,
                  date_created=DEFAULT, private=False, store_upload=False,
                  store_series=None, store_name=None, store_secrets=None,
                  store_channels=None):
@@ -4675,7 +4697,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             require_virtualized=require_virtualized, processors=processors,
             date_created=date_created, branch=branch, git_ref=git_ref,
             auto_build=auto_build, auto_build_archive=auto_build_archive,
-            auto_build_pocket=auto_build_pocket, private=private,
+            auto_build_pocket=auto_build_pocket,
+            auto_build_channels=auto_build_channels, private=private,
             store_upload=store_upload, store_series=store_series,
             store_name=store_name, store_secrets=store_secrets,
             store_channels=store_channels)
@@ -4686,8 +4709,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeSnapBuild(self, requester=None, registrant=None, snap=None,
                       archive=None, distroarchseries=None, pocket=None,
-                      date_created=DEFAULT, status=BuildStatus.NEEDSBUILD,
-                      builder=None, duration=None, **kwargs):
+                      channels=None, date_created=DEFAULT,
+                      status=BuildStatus.NEEDSBUILD, builder=None,
+                      duration=None, **kwargs):
         """Make a new SnapBuild."""
         if requester is None:
             requester = self.makePerson()
@@ -4715,7 +4739,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket = PackagePublishingPocket.UPDATES
         snapbuild = getUtility(ISnapBuildSet).new(
             requester, snap, archive, distroarchseries, pocket,
-            date_created=date_created)
+            channels=channels, date_created=date_created)
         if duration is not None:
             removeSecurityProxy(snapbuild).updateStatus(
                 BuildStatus.BUILDING, builder=builder,

@@ -26,7 +26,7 @@ Set up some fingerprints for testing:
     ...                "S\xe9bastien Serre (Bienvenue sous Ubuntu) "
     ...                "<sebastien.serre@gmail.com> sub 1024g/F39C8D42 2006-08-17")
     >>> revoked     = "84D2 05F0 3E1E 6709 6CB5  4E26 2BE8 3793 AACC D97C"
-    >>> expired     = "ECA5 B797 586F 2E27 381A  16CF DE6C 9167 046C 6D63"
+    >>> expired     = "0DD6 4D28 E5F4 1138 5334  9520 0E3D B4D4 02F5 3CC6"
 
     >>> def post_fingerprint(fingerprint, action='claim_gpg'):
     ...     request = LaunchpadTestRequest(form={

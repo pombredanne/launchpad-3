@@ -232,6 +232,16 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         self.metadata["error_detail"] = detail
 
     @property
+    def error_messages(self):
+        """See `ISnapStoreUploadJob`."""
+        return self.metadata.get("error_messages")
+
+    @error_messages.setter
+    def error_messages(self, messages):
+        """See `ISnapStoreUploadJob`."""
+        self.metadata["error_messages"] = messages
+
+    @property
     def store_url(self):
         """See `ISnapStoreUploadJob`."""
         return self.metadata.get("store_url")
@@ -326,6 +336,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
                     self.attempt_count <= self.max_retries):
                 raise RetryableSnapStoreError(e.message, detail=e.detail)
             self.error_message = str(e)
+            self.error_messages = getattr(e, "messages", None)
             self.error_detail = getattr(e, "detail", None)
             if isinstance(e, UnauthorizedUploadResponse):
                 mailer = SnapBuildMailer.forUnauthorizedUpload(self.snapbuild)

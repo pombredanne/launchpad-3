@@ -416,7 +416,7 @@ search terms.
     >>> search_view.has_matches
     True
     >>> search_view.pages
-    <...GoogleBatchNavigator ...>
+    <...SiteSearchBatchNavigator ...>
 
 The GoogleSearchService may not be available due to connectivity problems.
 The view's has_page_service attribute reports when the search was performed
@@ -444,7 +444,7 @@ matches.
     >>> search_view.batch_heading
     (u'other page matching "launchpad"', u'other pages matching "launchpad"')
 
-The GoogleBatchNavigator behaves like most BatchNavigators, except that
+The SiteSearchBatchNavigator behaves like most BatchNavigators, except that
 its batch size is always 20. The size restriction conforms to Google's
 maximum number of results that can be returned per request.
 
@@ -625,7 +625,7 @@ field's value is 'bug', as was submitted above.
       </div>
     </form>
 
-WindowedList and GoogleBatchNavigator
+WindowedList and SiteSearchBatchNavigator
 -------------------------------------
 
 The LaunchpadSearchView uses two helper classes to work with
@@ -635,14 +635,14 @@ The PageMatches object returned by the GoogleSearchService contains 20
 or fewer PageMatches of what could be thousands of matches. Google
 requires client's to make repeats request to step though the batches of
 matches. The Windowed list is a list that contains only a subset of its
-reported size. It is used to make batches in the GoogleBatchNavigator.
+reported size. It is used to make batches in the SiteSearchBatchNavigator.
 
 For example, the last batch of the 'bug' search contained 5 of the 25
 matching pages. The WindowList claims to be 25 items in length, but
 the first 20 items are None. Only the last 5 items are PageMatches.
 
     >>> from lp.app.browser.root import WindowedList
-    >>> from lp.services.googlesearch import GoogleSearchService
+    >>> from lp.services.sitesearch import GoogleSearchService
 
     >>> google_search = GoogleSearchService()
     >>> page_matches = google_search.search(terms='bug', start=20)
@@ -657,14 +657,14 @@ the first 20 items are None. Only the last 5 items are PageMatches.
     >>> results[18, 22]
     [None, None, <...PageMatch ...>, <...PageMatch ...>]
 
-The GoogleBatchNavigator restricts the batch size to 20. the 'batch'
+The SiteSearchBatchNavigator restricts the batch size to 20. the 'batch'
 parameter that comes from the URL is ignored. For example, setting
 the 'batch' parameter to 100 has no affect upon the Google search
 or on the navigator object.
 
-    >>> from lp.app.browser.root import GoogleBatchNavigator
+    >>> from lp.app.browser.root import SiteSearchBatchNavigator
 
-    >>> GoogleBatchNavigator.batch_variable_name
+    >>> SiteSearchBatchNavigator.batch_variable_name
     'batch'
 
     >>> search_view = getSearchView(
@@ -683,11 +683,11 @@ or on the navigator object.
 Even if the PageMatch object to have an impossibly large size, the
 navigator conforms to Google's maximum size of 20.
 
-    >>> matches = range(0, 100)
+    >>> matches = list(range(0, 100))
     >>> page_matches._matches = matches
     >>> page_matches.start = 0
     >>> page_matches.total = 100
-    >>> navigator = GoogleBatchNavigator(
+    >>> navigator = SiteSearchBatchNavigator(
     ...     page_matches, search_view.request, page_matches.start, size=100)
     >>> navigator.currentBatch().size
     20
@@ -703,9 +703,9 @@ the true size can be seen. For example there could be only 3 matches in
 the PageMatches object, so only 3 are yielded. The start of the next
 batch is 20, which is the start of the next batch from Google.
 
-    >>> matches = range(0, 3)
+    >>> matches = list(range(0, 3))
     >>> page_matches._matches = matches
-    >>> navigator = GoogleBatchNavigator(
+    >>> navigator = SiteSearchBatchNavigator(
     ...     page_matches, search_view.request, page_matches.start, size=100)
     >>> batch = navigator.currentBatch()
     >>> batch.size

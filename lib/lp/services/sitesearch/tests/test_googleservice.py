@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -8,12 +8,12 @@ Unit tests for the Google test service stub.
 __metaclass__ = type
 
 
-import errno
 import os
 import unittest
 
-from lp.services.googlesearch import googletestservice
+from lp.services.osutils import process_exists
 from lp.services.pidfile import pidfile_path
+from lp.services.sitesearch import googletestservice
 
 
 class TestServiceUtilities(unittest.TestCase):
@@ -37,17 +37,3 @@ class TestServiceUtilities(unittest.TestCase):
         self.assertFalse(
             os.path.exists(filepath),
             "The PID file '%s' should have been deleted." % filepath)
-
-
-def process_exists(pid):
-    """Return True if the specified process already exists."""
-    try:
-        os.kill(pid, 0)
-    except os.error as err:
-        if err.errno == errno.ESRCH:
-            # All is well - the process doesn't exist.
-            return False
-        else:
-            # We got a strange OSError, which we'll pass upwards.
-            raise
-    return True

@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build features."""
@@ -254,6 +254,22 @@ class TestSnapBuild(TestCaseWithFactory):
                 "<WebhookDeliveryJob for webhook %d on %r>" % (
                     hook.id, hook.target),
                 repr(delivery))
+
+    def test_updateStatus_no_change_does_not_trigger_webhooks(self):
+        # An updateStatus call that changes details such as the revision_id
+        # but that doesn't change the build's status attribute does not
+        # trigger webhooks.
+        hook = self.factory.makeWebhook(
+            target=self.build.snap, event_types=["snap:build:0.1"])
+        builder = self.factory.makeBuilder()
+        self.build.updateStatus(BuildStatus.BUILDING)
+        self.assertEqual(1, hook.deliveries.count())
+        self.build.updateStatus(
+            BuildStatus.BUILDING, builder=builder,
+            slave_status={"revision_id": "1"})
+        self.assertEqual(1, hook.deliveries.count())
+        self.build.updateStatus(BuildStatus.UPLOADING)
+        self.assertEqual(2, hook.deliveries.count())
 
     def test_updateStatus_failure_does_not_trigger_store_uploads(self):
         # A failed SnapBuild does not trigger store uploads.
@@ -581,6 +597,7 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
             self.assertEqual(
                 db_build.distro_arch_series.architecturetag, build["arch_tag"])
             self.assertEqual("Updates", build["pocket"])
+            self.assertIsNone(build["channels"])
             self.assertIsNone(build["score"])
             self.assertFalse(build["can_be_rescored"])
             self.assertFalse(build["can_be_cancelled"])

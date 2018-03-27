@@ -1,7 +1,9 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test htaccess/htpasswd file generation. """
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 import os
 import tempfile
@@ -39,7 +41,7 @@ class TestHtpasswdGeneration(TestCaseWithFactory):
         self.ppa.distribution = ubuntutest
 
         # Enable named auth tokens.
-        self.useFixture(FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: u"on"}))
+        self.useFixture(FeatureFixture({NAMED_AUTH_TOKEN_FEATURE_FLAG: "on"}))
 
     def test_write_htpasswd(self):
         """Test that writing the .htpasswd file works properly."""
@@ -118,9 +120,9 @@ class TestHtpasswdGeneration(TestCaseWithFactory):
         first_created_token = self.ppa.newAuthToken(name16)
         second_created_token = self.ppa.newAuthToken(name12)
         third_created_token = self.ppa.newAuthToken(hyphenated)
-        named_token_20 = self.ppa.newNamedAuthToken(u"name20", as_dict=False)
-        named_token_14 = self.ppa.newNamedAuthToken(u"name14", as_dict=False)
-        named_token_99 = self.ppa.newNamedAuthToken(u"name99", as_dict=False)
+        named_token_20 = self.ppa.newNamedAuthToken("name20", as_dict=False)
+        named_token_14 = self.ppa.newNamedAuthToken("name14", as_dict=False)
+        named_token_99 = self.ppa.newNamedAuthToken("name99", as_dict=False)
         named_token_99.deactivate()
 
         expected_credentials = [

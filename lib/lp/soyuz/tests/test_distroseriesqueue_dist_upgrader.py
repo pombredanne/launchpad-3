@@ -1,4 +1,4 @@
-# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test upload and queue manipulation of dist-upgrader tarballs.
@@ -6,6 +6,8 @@
 See also lp.archivepublisher.tests.test_dist_upgrader for detailed tests of
 dist-upgrader tarball extraction.
 """
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 import os
 import shutil

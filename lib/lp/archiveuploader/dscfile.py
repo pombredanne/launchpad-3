@@ -66,6 +66,7 @@ from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.encoding import guess as guess_encoding
 from lp.services.gpg.interfaces import (
+    GPGKeyExpired,
     GPGVerificationError,
     IGPGHandler,
     )
@@ -143,15 +144,24 @@ class SignableTagFile:
 
         if verify_signature:
             # We set self.signingkey regardless of whether the key is
-            # deactivated, since a deactivated key is still good enough for
-            # determining whom to notify, and raising UploadError is enough
-            # to prevent the upload being accepted.
-            self.signingkey, self.parsed_content = self._verifySignature(
-                self.raw_content, self.filepath)
-            if not self.signingkey.active:
-                raise UploadError("File %s is signed with a deactivated key %s"
-                                  % (self.filepath,
-                                     self.signingkey.fingerprint))
+            # deactivated or expired, since a deactivated or expired key is
+            # still good enough for determining whom to notify, and raising
+            # UploadError is enough to prevent the upload being accepted.
+            try:
+                self.signingkey, self.parsed_content = self._verifySignature(
+                    self.raw_content, self.filepath)
+                if not self.signingkey.active:
+                    raise UploadError(
+                        "File %s is signed with a deactivated key %s" %
+                        (self.filepath, self.signingkey.fingerprint))
+            except GPGKeyExpired as e:
+                # This may theoretically return None, but the "expired"
+                # error will take precedence anyway.
+                self.signingkey = getUtility(IGPGKeySet).getByFingerprint(
+                    e.key.fingerprint)
+                raise UploadError(
+                    "File %s is signed with an expired key %s" %
+                    (self.filepath, e.key.fingerprint))
         else:
             self.logger.debug("%s can be unsigned." % self.filename)
             self.parsed_content = self.raw_content

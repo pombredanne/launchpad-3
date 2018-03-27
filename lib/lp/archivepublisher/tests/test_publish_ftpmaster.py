@@ -3,6 +3,8 @@
 
 """Test publish-ftpmaster cron script."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 import logging
@@ -352,7 +354,7 @@ class TestPublishFTPMasterScript(
             self.factory.makeSourcePackagePublishingHistory(
                 distroseries=self.factory.makeDistroSeries(
                     distribution=distro))
-            for counter in xrange(2)]
+            for counter in range(2)]
 
         script = self.makeScript(distro)
         script.setUp()
@@ -383,7 +385,7 @@ class TestPublishFTPMasterScript(
                 distroseries=self.factory.makeDistroSeries(
                     distribution=distro),
                 pocket=PackagePublishingPocket.SECURITY)
-            for counter in xrange(2)]
+            for counter in range(2)]
 
         script = self.makeScript(distro)
         script.setUp()
@@ -1169,7 +1171,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         have_fresh_series = script.prepareFreshSeries(distro)
         self.assertTrue(have_fresh_series)
         [copied_upload] = new_series.getPackageUploads(
-            name=u'debian-installer-images', exact_match=False)
+            name='debian-installer-images', exact_match=False)
         [copied_custom] = copied_upload.customfiles
         self.assertEqual(
             custom_upload.customfiles[0].libraryfilealias.filename,

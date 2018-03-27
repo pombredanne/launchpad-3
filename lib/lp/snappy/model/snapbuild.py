@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -22,6 +22,7 @@ from storm.locals import (
     DateTime,
     Desc,
     Int,
+    JSON,
     Reference,
     Select,
     SQL,
@@ -142,6 +143,8 @@ class SnapBuild(PackageBuildMixin, Storm):
 
     pocket = DBEnum(enum=PackagePublishingPocket, allow_none=False)
 
+    channels = JSON('channels', allow_none=True)
+
     processor_id = Int(name='processor', allow_none=False)
     processor = Reference(processor_id, 'Processor.id')
     virtualized = Bool(name='virtualized')
@@ -171,7 +174,7 @@ class SnapBuild(PackageBuildMixin, Storm):
     failure_count = Int(name='failure_count', allow_none=False)
 
     def __init__(self, build_farm_job, requester, snap, archive,
-                 distro_arch_series, pocket, processor, virtualized,
+                 distro_arch_series, pocket, channels, processor, virtualized,
                  date_created):
         """Construct a `SnapBuild`."""
         super(SnapBuild, self).__init__()
@@ -181,6 +184,7 @@ class SnapBuild(PackageBuildMixin, Storm):
         self.archive = archive
         self.distro_arch_series = distro_arch_series
         self.pocket = pocket
+        self.channels = channels
         self.processor = processor
         self.virtualized = virtualized
         self.date_created = date_created
@@ -335,6 +339,7 @@ class SnapBuild(PackageBuildMixin, Storm):
                      date_started=None, date_finished=None,
                      force_invalid_transition=False):
         """See `IBuildFarmJob`."""
+        old_status = self.status
         super(SnapBuild, self).updateStatus(
             status, builder=builder, slave_status=slave_status,
             date_started=date_started, date_finished=date_finished,
@@ -343,7 +348,8 @@ class SnapBuild(PackageBuildMixin, Storm):
             revision_id = slave_status.get("revision_id")
             if revision_id is not None:
                 self.revision_id = unicode(revision_id)
-        notify(SnapBuildStatusChangedEvent(self))
+        if status != old_status:
+            notify(SnapBuildStatusChangedEvent(self))
 
     def notify(self, extra_info=None):
         """See `IPackageBuild`."""
@@ -454,6 +460,11 @@ class SnapBuild(PackageBuildMixin, Storm):
         job = self.last_store_upload_job
         return job and job.error_message
 
+    @property
+    def store_upload_error_messages(self):
+        job = self.last_store_upload_job
+        return job and job.error_messages or []
+
     def scheduleStoreUpload(self):
         """See `ISnapBuild`."""
         if not self.snap.can_upload_to_store:
@@ -477,7 +488,7 @@ class SnapBuild(PackageBuildMixin, Storm):
 class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
 
     def new(self, requester, snap, archive, distro_arch_series, pocket,
-            date_created=DEFAULT):
+            channels=None, date_created=DEFAULT):
         """See `ISnapBuildSet`."""
         store = IMasterStore(SnapBuild)
         build_farm_job = getUtility(IBuildFarmJobSource).new(
@@ -485,7 +496,7 @@ class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
             archive)
         snapbuild = SnapBuild(
             build_farm_job, requester, snap, archive, distro_arch_series,
-            pocket, distro_arch_series.processor,
+            pocket, channels, distro_arch_series.processor,
             not distro_arch_series.processor.supports_nonvirtualized
             or snap.require_virtualized or archive.require_virtualized,
             date_created)

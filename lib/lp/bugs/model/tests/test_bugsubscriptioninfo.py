@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test `BugSubscriptionInfo`."""
@@ -59,10 +59,10 @@ class TestSubscriptionRelatedSets(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSubscriptionRelatedSets, self).setUp()
-        make_person = lambda (displayname, name): (
+        make_person = lambda displayname, name: (
             self.factory.makePerson(displayname=displayname, name=name))
         subscribers = dict(
-            (name_pair, make_person(name_pair))
+            (name_pair, make_person(*name_pair))
             for name_pair in self.name_pairs)
         self.subscribers_set = frozenset(subscribers.itervalues())
         self.subscribers_sorted = tuple(

@@ -1,7 +1,9 @@
-# Copyright 2012-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for jobs to close bugs for accepted package uploads."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from cStringIO import StringIO
 from itertools import product
@@ -169,7 +171,7 @@ class TestClosingBugs(TestCaseWithFactory):
             bugs[3][0].id,
             bugs[4][0].id,
             bugs[5][0].id,
-            ))
+            )).encode("UTF-8")
         lfa = self.factory.makeLibraryFileAlias(content=changelog)
         removeSecurityProxy(spr).changelog = lfa
         self.layer.txn.commit()

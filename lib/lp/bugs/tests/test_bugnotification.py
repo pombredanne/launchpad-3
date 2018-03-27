@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to bug notifications."""
@@ -499,7 +499,7 @@ class TestGetDeferredNotifications(TestCaseWithFactory):
 
     def test_many_deferred_notification(self):
         num = 5
-        for i in xrange(num):
+        for i in range(num):
             self._make_deferred_notification()
         results = self.bns.getDeferredNotifications()
         self.assertEqual(num, results.count())

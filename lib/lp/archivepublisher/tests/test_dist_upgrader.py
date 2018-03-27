@@ -7,6 +7,8 @@ See also lp.soyuz.tests.test_distroseriesqueue_dist_upgrader for high-level
 tests of dist-upgrader upload and queue manipulation.
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 import os
 from textwrap import dedent
 
@@ -74,27 +76,27 @@ class TestDistUpgrader(RunPartsMixin, TestCaseWithFactory):
     def test_basic(self):
         # Processing a simple correct tar file works.
         self.openArchive("20060302.0120")
-        self.tarfile.add_file("20060302.0120/hello", "world")
+        self.tarfile.add_file("20060302.0120/hello", b"world")
         self.process()
 
     def test_already_exists(self):
         # If the target directory already exists, processing fails.
         self.openArchive("20060302.0120")
-        self.tarfile.add_file("20060302.0120/hello", "world")
+        self.tarfile.add_file("20060302.0120/hello", b"world")
         os.makedirs(os.path.join(self.getUpgraderPath(), "20060302.0120"))
         self.assertRaises(CustomUploadAlreadyExists, self.process)
 
     def test_bad_umask(self):
         # The umask must be 0o022 to avoid incorrect permissions.
         self.openArchive("20060302.0120")
-        self.tarfile.add_file("20060302.0120/file", "foo")
+        self.tarfile.add_file("20060302.0120/file", b"foo")
         os.umask(0o002)  # cleanup already handled by setUp
         self.assertRaises(CustomUploadBadUmask, self.process)
 
     def test_current_symlink(self):
         # A "current" symlink is created to the last version.
         self.openArchive("20060302.0120")
-        self.tarfile.add_file("20060302.0120/hello", "world")
+        self.tarfile.add_file("20060302.0120/hello", b"world")
         self.process()
         upgrader_path = self.getUpgraderPath()
         self.assertContentEqual(
@@ -109,7 +111,7 @@ class TestDistUpgrader(RunPartsMixin, TestCaseWithFactory):
     def test_bad_version(self):
         # Bad versions in the tarball are refused.
         self.openArchive("20070219.1234")
-        self.tarfile.add_file("foobar/foobar/dapper.tar.gz", "")
+        self.tarfile.add_file("foobar/foobar/dapper.tar.gz", b"")
         self.assertRaises(DistUpgraderBadVersion, self.process)
 
     def test_sign_with_external_run_parts(self):

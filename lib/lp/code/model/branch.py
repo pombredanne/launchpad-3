@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -699,10 +699,7 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
 
     def getCodebrowseUrl(self, *extras):
         """See `IBranch`."""
-        if self.private:
-            root = config.codehosting.secure_codebrowse_root
-        else:
-            root = config.codehosting.codebrowse_root
+        root = config.codehosting.secure_codebrowse_root
         return urlutils.join(root, self.unique_name, *extras)
 
     def getCodebrowseUrlForRevision(self, revision):
@@ -784,18 +781,6 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             bulk.load_related(
                 RevisionAuthor, revisions, ['revision_author_id'])
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
-
-    def getRevisionsSince(self, timestamp):
-        """See `IBranch`."""
-        result = Store.of(self).find(
-            (BranchRevision, Revision),
-            Revision.id == BranchRevision.revision_id,
-            BranchRevision.branch == self,
-            BranchRevision.sequence != None,
-            Revision.revision_date > timestamp)
-        result = result.order_by(Desc(BranchRevision.sequence))
-        # Return BranchRevision but prejoin Revision as well.
-        return DecoratedResultSet(result, operator.itemgetter(0))
 
     def canBeDeleted(self):
         """See `IBranch`."""

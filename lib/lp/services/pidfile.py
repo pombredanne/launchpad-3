@@ -1,10 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import atexit
-import errno
 import os
 from signal import (
     signal,
@@ -14,6 +13,7 @@ import sys
 import tempfile
 
 from lp.services.config import config
+from lp.services.osutils import process_exists
 
 
 def pidfile_path(service_name, use_config=None):
@@ -104,13 +104,9 @@ def is_locked(service_name, use_config=None):
     # right here at the same time. But that's sufficiently unlikely, and
     # stale PIDs are sufficiently annoying, that it's a reasonable
     # tradeoff.
-    try:
-        os.kill(pid, 0)
-    except OSError as e:
-        if e.errno == errno.ESRCH:
-            remove_pidfile(service_name, use_config)
-            return False
-        raise
+    if not process_exists(pid):
+        remove_pidfile(service_name, use_config)
+        return False
 
     # There's a PID file and we couldn't definitively say that the
     # process no longer exists. Assume that we're locked.

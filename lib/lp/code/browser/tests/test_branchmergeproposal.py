@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposals."""
@@ -232,7 +232,7 @@ class TestBranchMergeProposalMergedViewBzr(
     """Tests for `BranchMergeProposalMergedView` for Bazaar."""
 
     arbitrary_revisions = (1, 2, 42)
-    merged_revision_text = 'Merged Revision Number'
+    merged_revision_text = 'Merged revision number'
 
     def makeBranchMergeProposal(self):
         return self.factory.makeBranchMergeProposal()
@@ -250,7 +250,7 @@ class TestBranchMergeProposalMergedViewGit(
     """Tests for `BranchMergeProposalMergedView` for Git."""
 
     arbitrary_revisions = ("0" * 40, "1" * 40, "2" * 40)
-    merged_revision_text = 'Merged Revision ID'
+    merged_revision_text = 'Merged revision ID'
 
     def makeBranchMergeProposal(self):
         return self.factory.makeBranchMergeProposalForGit()
@@ -565,8 +565,8 @@ class TestRegisterBranchMergeProposalViewMixin:
         target_branch = self._makeTargetBranch()
         reviewer = self.factory.makePerson()
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
-        request = LaunchpadTestRequest(
-            method='POST', principal=owner, **extra)
+        request = LaunchpadTestRequest(method='POST', **extra)
+        request.setPrincipal(owner)
         view = self._createView(request=request)
         with person_logged_in(owner):
             result_data = view.register_action.success(self._getFormValues(
@@ -767,8 +767,8 @@ class TestRegisterBranchMergeProposalViewBzr(
             owner=owner, information_type=InformationType.USERDATA)
         reviewer = self.factory.makePerson()
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
-        request = LaunchpadTestRequest(
-            method='POST', principal=owner, **extra)
+        request = LaunchpadTestRequest(method='POST', **extra)
+        request.setPrincipal(owner)
         view = self._createView(request=request)
         with person_logged_in(owner):
             branches_to_check = [self.source_branch.unique_name,
@@ -796,12 +796,13 @@ class TestRegisterBranchMergeProposalViewBzr(
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
             request = LaunchpadTestRequest(
-                method='POST', principal=owner,
+                method='POST',
                 form={
                     'field.actions.register': 'Propose Merge',
                     'field.target_branch.target_branch':
                         target_branch.unique_name},
                 **extra)
+            request.setPrincipal(owner)
             view = create_initialized_view(
                 target_branch,
                 name='+register-merge',
@@ -856,8 +857,8 @@ class TestRegisterBranchMergeProposalViewGit(
             owner=owner, information_type=InformationType.USERDATA)
         reviewer = self.factory.makePerson()
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
-        request = LaunchpadTestRequest(
-            method='POST', principal=owner, **extra)
+        request = LaunchpadTestRequest(method='POST', **extra)
+        request.setPrincipal(owner)
         view = self._createView(request=request)
         with person_logged_in(owner):
             repositories_to_check = [
@@ -887,7 +888,7 @@ class TestRegisterBranchMergeProposalViewGit(
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
             request = LaunchpadTestRequest(
-                method='POST', principal=owner,
+                method='POST',
                 form={
                     'field.actions.register': 'Propose Merge',
                     'field.target_git_repository.target_git_repository':
@@ -895,6 +896,7 @@ class TestRegisterBranchMergeProposalViewGit(
                     'field.target_git_path': target_branch.path,
                     },
                 **extra)
+            request.setPrincipal(owner)
             view = create_initialized_view(
                 target_branch,
                 name='+register-merge',
@@ -916,7 +918,7 @@ class TestRegisterBranchMergeProposalViewGit(
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
             request = LaunchpadTestRequest(
-                method='POST', principal=owner,
+                method='POST',
                 form={
                     'field.actions.register': 'Propose Merge',
                     'field.target_git_repository.target_git_repository': '',
@@ -924,6 +926,7 @@ class TestRegisterBranchMergeProposalViewGit(
                     'field.target_git_path': 'master',
                     },
                 **extra)
+            request.setPrincipal(owner)
             view = create_initialized_view(
                 self.source_branch,
                 name='+register-merge',
@@ -946,13 +949,14 @@ class TestRegisterBranchMergeProposalViewGit(
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
             request = LaunchpadTestRequest(
-                method='POST', principal=owner,
+                method='POST',
                 form={
                     'field.actions.register': 'Propose Merge',
                     'field.target_git_repository.target_git_repository':
                         target_branch.repository.unique_name,
                     },
                 **extra)
+            request.setPrincipal(owner)
             view = create_initialized_view(
                 self.source_branch,
                 name='+register-merge',
@@ -979,7 +983,7 @@ class TestRegisterBranchMergeProposalViewGit(
         extra = {'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'}
         with person_logged_in(owner):
             request = LaunchpadTestRequest(
-                method='POST', principal=owner,
+                method='POST',
                 form={
                     'field.actions.register': 'Propose Merge',
                     'field.target_git_repository.target_git_repository':
@@ -989,6 +993,7 @@ class TestRegisterBranchMergeProposalViewGit(
                         prerequisite_branch.repository.unique_name,
                     },
                 **extra)
+            request.setPrincipal(owner)
             view = create_initialized_view(
                 self.source_branch,
                 name='+register-merge',
@@ -1256,9 +1261,9 @@ class TestResubmitBrowserBzr(BrowserTestCase):
         text = self.getMainText(bmp, '+resubmit')
         expected = (
             'Resubmit proposal to merge.*'
-            'Source Branch:.*'
-            'Target Branch:.*'
-            'Prerequisite Branch:.*'
+            'Source branch:.*'
+            'Target branch:.*'
+            'Prerequisite branch:.*'
             'Description.*'
             'Start afresh.*')
         self.assertTextMatchesExpressionIgnoreWhitespace(expected, text)
@@ -1284,11 +1289,11 @@ class TestResubmitBrowserGit(GitHostingClientMixin, BrowserTestCase):
         text = self.getMainText(bmp, '+resubmit')
         expected = (
             'Resubmit proposal to merge.*'
-            'Source Git Repository:.*'
+            'Source Git repository:.*'
             'Source Git branch path:.*'
-            'Target Git Repository:.*'
+            'Target Git repository:.*'
             'Target Git branch path:.*'
-            'Prerequisite Git Repository:.*'
+            'Prerequisite Git repository:.*'
             'Prerequisite Git branch path:.*'
             'Description.*'
             'Start afresh.*')
@@ -1298,7 +1303,7 @@ class TestResubmitBrowserGit(GitHostingClientMixin, BrowserTestCase):
         """Proposals can be resubmitted using the browser."""
         bmp = self.factory.makeBranchMergeProposalForGit(registrant=self.user)
         browser = self.getViewBrowser(bmp, '+resubmit')
-        browser.getControl('Commit Message').value = 'dribble'
+        browser.getControl('Commit message').value = 'dribble'
         browser.getControl('Description').value = 'flibble'
         browser.getControl('Resubmit').click()
         with person_logged_in(self.user):

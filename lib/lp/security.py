@@ -1167,6 +1167,11 @@ class ModerateDistributionByDriversOrOwnersOrAdmins(AuthorizationBase):
         return user.isOwner(self.obj) or user.in_admin
 
 
+class ViewDistributionSourcePackage(AnonymousAuthorization):
+    """Anyone can view a DistributionSourcePackage."""
+    usedfor = IDistributionSourcePackage
+
+
 class BugSuperviseDistributionSourcePackage(AuthorizationBase):
     """The owner of a distribution should be able to edit its source
     package information"""

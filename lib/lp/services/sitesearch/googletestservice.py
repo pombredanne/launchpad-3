@@ -9,10 +9,6 @@ when given certain user-configurable URLs.
 """
 
 
-from BaseHTTPServer import (
-    BaseHTTPRequestHandler,
-    HTTPServer,
-    )
 import errno
 import logging
 import os
@@ -21,8 +17,16 @@ import socket
 import subprocess
 import time
 
+from six.moves.BaseHTTPServer import (
+    BaseHTTPRequestHandler,
+    HTTPServer,
+    )
+
 from lp.services.config import config
-from lp.services.osutils import ensure_directory_exists
+from lp.services.osutils import (
+    ensure_directory_exists,
+    remove_if_exists,
+    )
 from lp.services.pidfile import (
     get_pid,
     make_pidfile,
@@ -220,7 +224,7 @@ def kill_running_process():
     except ValueError:
         # The file contained a mangled and invalid PID number, so we should
         # clean the file up.
-        safe_unlink(pidfile_path(service_name))
+        remove_if_exists(pidfile_path(service_name))
     else:
         if pid is not None:
             try:
@@ -236,18 +240,9 @@ def kill_running_process():
                     # is probably stale, so we'll remove it to prevent trash
                     # from lying around in the test environment.
                     # See bug #237086.
-                    safe_unlink(pidfile_path(service_name))
+                    remove_if_exists(pidfile_path(service_name))
                 else:
                     raise
-
-
-def safe_unlink(filepath):
-    """Unlink a file, but don't raise an error if the file is missing."""
-    try:
-        os.unlink(filepath)
-    except os.error as err:
-        if err.errno != errno.ENOENT:
-            raise
 
 
 def main():

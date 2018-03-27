@@ -3,6 +3,8 @@
 
 """Test UEFI custom uploads."""
 
+from __future__ import absolute_import, print_function, unicode_literals
+
 __metaclass__ = type
 
 import os
@@ -10,7 +12,6 @@ import stat
 import tarfile
 
 from fixtures import MonkeyPatch
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     Contains,
     Equals,
@@ -22,6 +23,7 @@ from testtools.matchers import (
     Not,
     StartsWith,
     )
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 from twisted.internet import defer
 from zope.component import getUtility
 
@@ -260,9 +262,9 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         if not os.path.exists(pubconf.temproot):
             os.makedirs(pubconf.temproot)
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
-        self.tarfile.add_file("1.0/empty.ko", "")
-        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
+        self.tarfile.add_file("1.0/empty.ko", b"")
+        self.tarfile.add_file("1.0/empty.opal", b"")
         upload = self.process_emulate()
         self.assertContentEqual([], upload.callLog.caller_list())
 
@@ -270,9 +272,9 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # If the configured key/cert are missing, processing succeeds but
         # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
-        self.tarfile.add_file("1.0/empty.ko", "")
-        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
+        self.tarfile.add_file("1.0/empty.ko", b"")
+        self.tarfile.add_file("1.0/empty.opal", b"")
         upload = self.process_emulate()
         self.assertContentEqual([], upload.callLog.caller_list())
 
@@ -282,9 +284,9 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         self.setUpUefiKeys()
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
-        self.tarfile.add_file("1.0/empty.ko", "")
-        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
+        self.tarfile.add_file("1.0/empty.ko", b"")
+        self.tarfile.add_file("1.0/empty.opal", b"")
         upload = self.process_emulate()
         expected_callers = [
             ('UEFI signing', 1),
@@ -297,9 +299,9 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # nothing is signed.
         self.setUpPPA()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
-        self.tarfile.add_file("1.0/empty.ko", "")
-        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
+        self.tarfile.add_file("1.0/empty.ko", b"")
+        self.tarfile.add_file("1.0/empty.opal", b"")
         upload = self.process_emulate()
         expected_callers = [
             ('UEFI keygen', 1),
@@ -357,7 +359,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # If the configured key/cert are missing, processing succeeds but
         # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/control/options", "")
+        self.tarfile.add_file("1.0/control/options", b"")
         upload = self.process_emulate()
         self.assertContentEqual([], upload.signing_options.keys())
 
@@ -365,7 +367,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # If the configured key/cert are missing, processing succeeds but
         # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/control/options", "first\n")
+        self.tarfile.add_file("1.0/control/options", b"first\n")
         upload = self.process_emulate()
         self.assertContentEqual(['first'], upload.signing_options.keys())
 
@@ -373,7 +375,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # If the configured key/cert are missing, processing succeeds but
         # nothing is signed.
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/control/options", "first\nsecond\n")
+        self.tarfile.add_file("1.0/control/options", b"first\nsecond\n")
         upload = self.process_emulate()
         self.assertContentEqual(['first', 'second'],
             upload.signing_options.keys())
@@ -384,9 +386,9 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         self.setUpKmodKeys()
         self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
-        self.tarfile.add_file("1.0/empty.ko", "")
-        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
+        self.tarfile.add_file("1.0/empty.ko", b"")
+        self.tarfile.add_file("1.0/empty.opal", b"")
         self.process_emulate()
         self.assertThat(self.getSignedPath("test", "amd64"), SignedMatches([
             "1.0/SHA256SUMS",
@@ -402,10 +404,10 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         self.setUpKmodKeys()
         self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/control/options", "tarball")
-        self.tarfile.add_file("1.0/empty.efi", "")
-        self.tarfile.add_file("1.0/empty.ko", "")
-        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/control/options", b"tarball")
+        self.tarfile.add_file("1.0/empty.efi", b"")
+        self.tarfile.add_file("1.0/empty.ko", b"")
+        self.tarfile.add_file("1.0/empty.opal", b"")
         self.process_emulate()
         self.assertThat(self.getSignedPath("test", "amd64"), SignedMatches([
             "1.0/SHA256SUMS",
@@ -430,10 +432,10 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         self.setUpKmodKeys()
         self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/control/options", "signed-only")
-        self.tarfile.add_file("1.0/empty.efi", "")
-        self.tarfile.add_file("1.0/empty.ko", "")
-        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/control/options", b"signed-only")
+        self.tarfile.add_file("1.0/empty.efi", b"")
+        self.tarfile.add_file("1.0/empty.ko", b"")
+        self.tarfile.add_file("1.0/empty.opal", b"")
         self.process_emulate()
         self.assertThat(self.getSignedPath("test", "amd64"), SignedMatches([
             "1.0/SHA256SUMS", "1.0/control/options",
@@ -450,11 +452,10 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         self.setUpKmodKeys()
         self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/control/options",
-            "tarball\nsigned-only")
-        self.tarfile.add_file("1.0/empty.efi", "")
-        self.tarfile.add_file("1.0/empty.ko", "")
-        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/control/options", b"tarball\nsigned-only")
+        self.tarfile.add_file("1.0/empty.efi", b"")
+        self.tarfile.add_file("1.0/empty.ko", b"")
+        self.tarfile.add_file("1.0/empty.opal", b"")
         self.process_emulate()
         self.assertThat(self.getSignedPath("test", "amd64"), SignedMatches([
             "1.0/SHA256SUMS",
@@ -475,7 +476,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # Nothing is signed.
         self.setUpUefiKeys()
         self.openArchive("empty", "1.0", "amd64")
-        self.tarfile.add_file("1.0/hello", "world")
+        self.tarfile.add_file("1.0/hello", b"world")
         upload = self.process()
         self.assertTrue(os.path.exists(os.path.join(
             self.getSignedPath("empty", "amd64"), "1.0", "hello")))
@@ -486,7 +487,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # If the target directory already exists, processing fails.
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
         os.makedirs(os.path.join(self.getSignedPath("test", "amd64"), "1.0"))
         self.assertRaises(CustomUploadAlreadyExists, self.process)
 
@@ -494,7 +495,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # The umask must be 0o022 to avoid incorrect permissions.
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/dir/file.efi", "foo")
+        self.tarfile.add_file("1.0/dir/file.efi", b"foo")
         os.umask(0o002)  # cleanup already handled by setUp
         self.assertRaises(CustomUploadBadUmask, self.process)
 
@@ -689,7 +690,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # Each image in the tarball is signed.
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
         upload = self.process()
         self.assertEqual(1, upload.signUefi.call_count)
 
@@ -697,7 +698,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # Each image in the tarball is signed.
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.ko", "")
+        self.tarfile.add_file("1.0/empty.ko", b"")
         upload = self.process()
         self.assertEqual(1, upload.signKmod.call_count)
 
@@ -705,7 +706,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # Each image in the tarball is signed.
         self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/empty.opal", b"")
         upload = self.process()
         self.assertEqual(1, upload.signOpal.call_count)
 
@@ -713,12 +714,12 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # Each image in the tarball is signed.
         self.setUpKmodKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
-        self.tarfile.add_file("1.0/empty.ko", "")
-        self.tarfile.add_file("1.0/empty2.ko", "")
-        self.tarfile.add_file("1.0/empty.opal", "")
-        self.tarfile.add_file("1.0/empty2.opal", "")
-        self.tarfile.add_file("1.0/empty3.opal", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
+        self.tarfile.add_file("1.0/empty.ko", b"")
+        self.tarfile.add_file("1.0/empty2.ko", b"")
+        self.tarfile.add_file("1.0/empty.opal", b"")
+        self.tarfile.add_file("1.0/empty2.opal", b"")
+        self.tarfile.add_file("1.0/empty3.opal", b"")
         upload = self.process()
         self.assertEqual(1, upload.signUefi.call_count)
         self.assertEqual(2, upload.signKmod.call_count)
@@ -728,7 +729,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         # Files in the tarball are installed correctly.
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "signed")))
@@ -740,7 +741,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         os.makedirs(os.path.join(self.getDistsPath(), "uefi"))
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "signed")))
@@ -752,7 +753,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         os.makedirs(os.path.join(self.getDistsPath(), "signing"))
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "signed")))
@@ -875,9 +876,9 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         self.setUpKmodKeys()
         self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
-        self.tarfile.add_file("1.0/empty.ko", "")
-        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
+        self.tarfile.add_file("1.0/empty.ko", b"")
+        self.tarfile.add_file("1.0/empty.opal", b"")
         self.process_emulate()
         sha256file = os.path.join(self.getSignedPath("test", "amd64"),
              "1.0", "SHA256SUMS")
@@ -893,9 +894,9 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         self.setUpKmodKeys()
         self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
-        self.tarfile.add_file("1.0/empty.ko", "")
-        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
+        self.tarfile.add_file("1.0/empty.ko", b"")
+        self.tarfile.add_file("1.0/empty.opal", b"")
         self.process_emulate()
         sha256file = os.path.join(self.getSignedPath("test", "amd64"),
              "1.0", "SHA256SUMS")
@@ -915,10 +916,10 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         self.setUpKmodKeys()
         self.setUpOpalKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/control/options", "tarball")
-        self.tarfile.add_file("1.0/empty.efi", "")
-        self.tarfile.add_file("1.0/empty.ko", "")
-        self.tarfile.add_file("1.0/empty.opal", "")
+        self.tarfile.add_file("1.0/control/options", b"tarball")
+        self.tarfile.add_file("1.0/empty.efi", b"")
+        self.tarfile.add_file("1.0/empty.ko", b"")
+        self.tarfile.add_file("1.0/empty.opal", b"")
         self.process_emulate()
         sha256file = os.path.join(self.getSignedPath("test", "amd64"),
              "1.0", "SHA256SUMS")
@@ -992,7 +993,7 @@ class TestUefi(TestSigningHelpers):
         # Files in the tarball are installed correctly.
         self.setUpUefiKeys()
         self.openArchive("test", "1.0", "amd64")
-        self.tarfile.add_file("1.0/empty.efi", "")
+        self.tarfile.add_file("1.0/empty.efi", b"")
         self.process()
         self.assertTrue(os.path.isdir(os.path.join(
             self.getDistsPath(), "uefi")))

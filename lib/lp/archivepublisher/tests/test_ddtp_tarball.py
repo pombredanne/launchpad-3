@@ -1,4 +1,4 @@
-# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test ddtp-tarball custom uploads.
@@ -6,6 +6,8 @@
 See also lp.soyuz.tests.test_distroseriesqueue_ddtp_tarball for high-level
 tests of ddtp-tarball upload and queue manipulation.
 """
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 import os
 
@@ -57,7 +59,7 @@ class TestDdtpTarball(TestCaseWithFactory):
     def test_basic(self):
         # Processing a simple correct tar file works.
         self.openArchive("20060728")
-        self.tarfile.add_file("i18n/Translation-de", "")
+        self.tarfile.add_file("i18n/Translation-de", b"")
         self.process()
         self.assertTrue(os.path.exists(
             self.getTranslationsPath("Translation-de")))
@@ -65,7 +67,7 @@ class TestDdtpTarball(TestCaseWithFactory):
     def test_ignores_empty_directories(self):
         # Empty directories in the tarball are not extracted.
         self.openArchive("20060728")
-        self.tarfile.add_file("i18n/Translation-de", "")
+        self.tarfile.add_file("i18n/Translation-de", b"")
         self.tarfile.add_directory("i18n/foo")
         self.process()
         self.assertTrue(os.path.exists(
@@ -76,15 +78,15 @@ class TestDdtpTarball(TestCaseWithFactory):
         # If a DDTP tarball only contains a subset of published translation
         # files, these are updated and the rest are left untouched.
         self.openArchive("20060728")
-        self.tarfile.add_file("i18n/Translation-bn", "bn")
-        self.tarfile.add_file("i18n/Translation-ca", "ca")
+        self.tarfile.add_file("i18n/Translation-bn", b"bn")
+        self.tarfile.add_file("i18n/Translation-ca", b"ca")
         self.process()
         with open(self.getTranslationsPath("Translation-bn")) as bn_file:
             self.assertEqual("bn", bn_file.read())
         with open(self.getTranslationsPath("Translation-ca")) as ca_file:
             self.assertEqual("ca", ca_file.read())
         self.openArchive("20060817")
-        self.tarfile.add_file("i18n/Translation-bn", "new bn")
+        self.tarfile.add_file("i18n/Translation-bn", b"new bn")
         self.process()
         with open(self.getTranslationsPath("Translation-bn")) as bn_file:
             self.assertEqual("new bn", bn_file.read())
@@ -98,7 +100,7 @@ class TestDdtpTarball(TestCaseWithFactory):
         # into place, so making this work requires special care.  Test that
         # that care has been taken.
         self.openArchive("20060728")
-        self.tarfile.add_file("i18n/Translation-ca", "")
+        self.tarfile.add_file("i18n/Translation-ca", b"")
         self.process()
         ca = self.getTranslationsPath("Translation-ca")
         bn = self.getTranslationsPath("Translation-bn")
@@ -107,7 +109,7 @@ class TestDdtpTarball(TestCaseWithFactory):
         self.assertEqual(2, os.stat(bn).st_nlink)
         self.assertEqual(2, os.stat(ca).st_nlink)
         self.openArchive("20060817")
-        self.tarfile.add_file("i18n/Translation-bn", "break hard link")
+        self.tarfile.add_file("i18n/Translation-bn", b"break hard link")
         self.process()
         with open(bn) as bn_file:
             self.assertEqual("break hard link", bn_file.read())
