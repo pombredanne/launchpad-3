@@ -25,11 +25,11 @@ from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.sitesearch.interfaces import (
-    GoogleResponseError,
     GoogleWrongGSPVersion,
     ISearchResult,
     ISearchResults,
     ISearchService,
+    SiteSearchResponseError,
     )
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
@@ -214,7 +214,7 @@ class GoogleSearchService:
         except (TimeoutError, requests.RequestException) as error:
             # Google search service errors are not code errors. Let the
             # call site choose to handle the unavailable service.
-            raise GoogleResponseError(
+            raise SiteSearchResponseError(
                 "The response errored: %s" % str(error))
         finally:
             action.finish()
@@ -276,7 +276,7 @@ class GoogleSearchService:
             version 3.2 XML. There is no guarantee that other GSP versions
             can be parsed.
         :return: `ISearchResults` (PageMatches).
-        :raise: `GoogleResponseError` if the xml is incomplete.
+        :raise: `SiteSearchResponseError` if the xml is incomplete.
         :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
         """
         try:
@@ -284,7 +284,8 @@ class GoogleSearchService:
             start_param = self._getElementByAttributeValue(
                 gsp_doc, './PARAM', 'name', 'start')
         except (SyntaxError, IndexError):
-            raise GoogleResponseError("The response was incomplete, no xml.")
+            raise SiteSearchResponseError(
+                "The response was incomplete, no xml.")
         try:
             start = int(start_param.get('value'))
         except (AttributeError, ValueError):

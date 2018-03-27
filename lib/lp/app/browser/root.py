@@ -42,8 +42,8 @@ from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.propertycache import cachedproperty
 from lp.services.sitesearch.interfaces import (
-    GoogleResponseError,
     ISearchService,
+    SiteSearchResponseError,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.timeout import urlfetch
@@ -520,14 +520,14 @@ class LaunchpadSearchView(LaunchpadFormView):
         try:
             page_matches = google_search.search(
                 terms=query_terms, start=start)
-        except GoogleResponseError:
+        except SiteSearchResponseError:
             # There was a connectivity or Google service issue that means
             # there is no data available at this moment.
             self.has_page_service = False
             return None
         if len(page_matches) == 0:
             return None
-        navigator = GoogleBatchNavigator(
+        navigator = SiteSearchBatchNavigator(
             page_matches, self.request, start=start)
         navigator.setHeadings(*self.batch_heading)
         return navigator
@@ -589,7 +589,7 @@ class WindowedListBatch(batch._Batch):
         return self.start + len(self.list._window)
 
 
-class GoogleBatchNavigator(BatchNavigator):
+class SiteSearchBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
 
     _batch_factory = WindowedListBatch
@@ -614,7 +614,7 @@ class GoogleBatchNavigator(BatchNavigator):
         :param callback: Not used.
         """
         results = WindowedList(results, start, results.total)
-        super(GoogleBatchNavigator, self).__init__(results, request,
+        super(SiteSearchBatchNavigator, self).__init__(results, request,
             start=start, size=size, callback=callback,
             transient_parameters=transient_parameters,
             force_start=force_start, range_factory=range_factory)

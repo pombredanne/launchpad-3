@@ -5,16 +5,21 @@
 
 __metaclass__ = type
 
+import errno
 import os
 import tempfile
 
-from fixtures import EnvironmentVariable
+from fixtures import (
+    EnvironmentVariable,
+    MockPatch,
+    )
 from testtools.matchers import FileContains
 
 from lp.services.osutils import (
     ensure_directory_exists,
     find_on_path,
     open_for_writing,
+    process_exists,
     remove_tree,
     write_file,
     )
@@ -128,3 +133,22 @@ class TestFindOnPath(TestCase):
         write_file(os.path.join(bin_dir, "program"), "")
         self.useFixture(EnvironmentVariable("PATH", bin_dir))
         self.assertFalse(find_on_path("program"))
+
+
+class TestProcessExists(TestCase):
+
+    def test_with_process_running(self):
+        pid = os.getpid()
+        self.assertTrue(process_exists(pid))
+
+    def test_with_process_not_running(self):
+        exception = OSError()
+        exception.errno = errno.ESRCH
+        self.useFixture(MockPatch('os.kill', side_effect=exception))
+        self.assertFalse(process_exists(123))
+
+    def test_with_unknown_error(self):
+        exception = OSError()
+        exception.errno = errno.ENOMEM
+        self.useFixture(MockPatch('os.kill', side_effect=exception))
+        self.assertRaises(OSError, process_exists, 123)
