@@ -25,11 +25,11 @@ from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.sitesearch.interfaces import (
-    SiteSearchResponseError,
     GoogleWrongGSPVersion,
     ISearchResult,
     ISearchResults,
     ISearchService,
+    SiteSearchResponseError,
     )
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
