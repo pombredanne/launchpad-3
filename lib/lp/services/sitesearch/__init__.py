@@ -224,12 +224,12 @@ class GoogleSearchService:
     def _checkParameter(self, name, value, is_int=False):
         """Check that a parameter value is not None or an empty string."""
         if value in (None, ''):
-            raise AssertionError("Missing value for parameter '%s'." % name)
+            raise ValueError("Missing value for parameter '%s'." % name)
         if is_int:
             try:
                 int(value)
             except ValueError:
-                raise AssertionError(
+                raise ValueError(
                     "Value for parameter '%s' is not an int." % name)
 
     def create_search_url(self, terms, start=0):
@@ -237,16 +237,11 @@ class GoogleSearchService:
         self._checkParameter('q', terms)
         self._checkParameter('start', start, is_int=True)
         self._checkParameter('cx', self.client_id)
-        safe_terms = urllib.quote_plus(terms.encode('utf8'))
         search_params = dict(self._default_values)
-        search_params['q'] = safe_terms
+        search_params['q'] = terms.encode('utf8')
         search_params['start'] = start
         search_params['cx'] = self.client_id
-        search_param_list = []
-        for name in sorted(search_params):
-            value = search_params[name]
-            search_param_list.append('%s=%s' % (name, value))
-        query_string = '&'.join(search_param_list)
+        query_string = urllib.urlencode(sorted(search_params.items()))
         return self.site + '?' + query_string
 
     def _getElementsByAttributeValue(self, doc, path, name, value):
