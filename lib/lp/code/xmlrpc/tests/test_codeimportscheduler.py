@@ -60,15 +60,14 @@ class TestCodeImportSchedulerAPI(TestCaseWithFactory):
         # log file name for an import corresponding to a particular job.
         code_import_job = self.makeCodeImportJob(running=True)
         code_import = removeSecurityProxy(code_import_job).code_import
-        code_import_arguments, target_url, log_file_name = \
-            self.api.getImportDataForJobID(code_import_job.id)
-        import_as_arguments = code_import_job.makeWorkerArguments()
-        expected_log_file_name = '%s.log' % (
-            code_import.target.unique_name[1:].replace('/', '-'))
-        self.assertEqual(
-            (import_as_arguments, canonical_url(code_import.target),
-             expected_log_file_name),
-            (code_import_arguments, target_url, log_file_name))
+        data = self.api.getImportDataForJobID(code_import_job.id)
+        expected_data = {
+            'arguments': code_import_job.makeWorkerArguments(),
+            'target_url': canonical_url(code_import.target),
+            'log_file_name': '%s.log' % (
+                code_import.target.unique_name[1:].replace('/', '-')),
+            }
+        self.assertEqual(expected_data, data)
 
     def test_getImportDataForJobID_not_found(self):
         # getImportDataForJobID returns a NoSuchCodeImportJob fault when there
