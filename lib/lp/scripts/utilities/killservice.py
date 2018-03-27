@@ -1,6 +1,6 @@
 #!../bin/py
 
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This module uses relative imports.
@@ -17,6 +17,7 @@ import time
 
 from lp.services.config import config
 from lp.services.mailman.runmailman import stop_mailman
+from lp.services.osutils import process_exists
 from lp.services.pidfile import (
     get_pid,
     pidfile_path,
@@ -99,17 +100,6 @@ def main():
                 remove_pidfile(service)
             except OSError:
                 pass
-
-
-def process_exists(pid):
-    """True if the given process exists."""
-    try:
-        os.getpgid(pid)
-    except OSError as x:
-        if x.errno == 3:
-            return False
-        logging.error("Unknown exception from getpgid - %s", str(x))
-    return True
 
 
 def wait_for_pids(pids, wait, log):
