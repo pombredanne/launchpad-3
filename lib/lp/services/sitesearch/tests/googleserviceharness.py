@@ -27,11 +27,11 @@ class GoogleServiceTestSetup:
     # to the docstring above.  Note that the test that uses this setup,
     # google-service-stub.txt, is also disabled.  See test_doc.py.
     """
-    >>> from lp.services.sitesearch import (
+    >>> from lp.services.sitesearch.googletestservice import (
     ...     service_is_available)
     >>> from lp.services.config import config
 
-    >>> assert not service_is_available()  # SPURIOUS FAILURE
+    >>> assert not service_is_available()  # Sanity check. # SPURIOUS FAILURE
 
     >>> GoogleServiceTestSetup().setUp()
 
