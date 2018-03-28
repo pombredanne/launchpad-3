@@ -1,6 +1,12 @@
 Launchpad search page
 =====================
 
+Let's first set Bing as the default search engine.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> flags = FeatureFixture({'sitesearch.engine.name': 'bing'})
+    >>> flags.setUp()
+
 Users can search for Launchpad objects and pages from the search form
 located on all pages. The search is performed and displayed by the
 LaunchpadSearchView.
@@ -723,3 +729,7 @@ batch is 20, which is the start of the next batch from Bing.
     2
     >>> navigator.nextBatchURL()
     '...start=20'
+
+Finally, let's reset our custom feature flags.
+
+    >>> flags.cleanUp()

@@ -32,14 +32,14 @@ class TestGoogleSearchService(TestCase):
         # The method converts HTTPError to SiteSearchResponseError.
         args = ('url', 500, 'oops', {}, None)
         self.useFixture(MockPatch(
-            'lp.services.timeout.urlfetch', side_effect=HTTPError(*args)))
+            'lp.services.sitesearch.urlfetch', side_effect=HTTPError(*args)))
         self.assertRaises(
             SiteSearchResponseError, self.search_service.search, 'fnord')
 
     def test_search_converts_ConnectionError(self):
         # The method converts ConnectionError to SiteSearchResponseError.
         self.useFixture(MockPatch(
-            'lp.services.timeout.urlfetch',
+            'lp.services.sitesearch.urlfetch',
             side_effect=ConnectionError('oops')))
         self.assertRaises(
             SiteSearchResponseError, self.search_service.search, 'fnord')
@@ -47,7 +47,8 @@ class TestGoogleSearchService(TestCase):
     def test_search_converts_TimeoutError(self):
         # The method converts TimeoutError to SiteSearchResponseError.
         self.useFixture(MockPatch(
-            'lp.services.timeout.urlfetch', side_effect=TimeoutError('oops')))
+            'lp.services.sitesearch.urlfetch',
+            side_effect=TimeoutError('oops')))
         self.assertRaises(
             SiteSearchResponseError, self.search_service.search, 'fnord')
 
