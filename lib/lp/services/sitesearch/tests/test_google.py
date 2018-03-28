@@ -55,7 +55,8 @@ class TestGoogleSearchService(TestCase):
     def test___parse_google_search_protocol_SyntaxError(self):
         # The method converts SyntaxError to SiteSearchResponseError.
         self.useFixture(MockPatch(
-            'lp.services.timeout.urlfetch', side_effect=SyntaxError('oops')))
+            'lp.services.sitesearch.urlfetch',
+            side_effect=SyntaxError('oops')))
         self.assertRaises(
             SiteSearchResponseError,
             self.search_service._parse_google_search_protocol, '')
@@ -63,7 +64,7 @@ class TestGoogleSearchService(TestCase):
     def test___parse_google_search_protocol_IndexError(self):
         # The method converts IndexError to SiteSearchResponseError.
         self.useFixture(MockPatch(
-            'lp.services.timeout.urlfetch', side_effect=IndexError('oops')))
+            'lp.services.sitesearch.urlfetch', side_effect=IndexError('oops')))
         data = (
             '<?xml version="1.0" encoding="UTF-8" standalone="no"?>'
             '<GSP VER="3.2"></GSP>')
