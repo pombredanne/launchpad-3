@@ -25,7 +25,7 @@ The view can define the template's title in the page_title property.
     >>> class MainSideView(LaunchpadView):
     ...     """A simple view to test base-layout."""
     ...     __launchpad_facetname__ = 'overview'
-    ...     template = ViewPageTemplateFile('testfiles/main-side.pt')
+    ...     template = ViewPageTemplateFile('../tests/testfiles/main-side.pt')
     ...     page_title = 'Test base-layout: main_side'
 
 The main_side layout uses all the defined features of the base-layout
@@ -57,7 +57,7 @@ content to take up all the horizontal space.
     >>> class MainOnlyView(LaunchpadView):
     ...     """A simple view to test base-layout."""
     ...     __launchpad_facetname__ = 'overview'
-    ...     template = ViewPageTemplateFile('testfiles/main-only.pt')
+    ...     template = ViewPageTemplateFile('../tests/testfiles/main-only.pt')
     ...     page_title = 'Test base-layout: main_only'
 
     >>> view = MainOnlyView(user, request)
@@ -80,7 +80,7 @@ slots are rendered, as are the application tabs.
     >>> class SearchlessView(LaunchpadView):
     ...     """A simple view to test base-layout."""
     ...     __launchpad_facetname__ = 'overview'
-    ...     template = ViewPageTemplateFile('testfiles/searchless.pt')
+    ...     template = ViewPageTemplateFile('../tests/testfiles/searchless.pt')
     ...     page_title = 'Test base-layout: searchless'
 
     >>> view = SearchlessView(user, request)
