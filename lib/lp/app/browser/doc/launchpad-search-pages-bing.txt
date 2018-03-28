@@ -1,12 +1,6 @@
 Launchpad search page
 =====================
 
-Let's first set Bing as the default search engine.
-
-    >>> from lp.services.features.testing import FeatureFixture
-    >>> flags = FeatureFixture({'sitesearch.engine.name': 'bing'})
-    >>> flags.setUp()
-
 Users can search for Launchpad objects and pages from the search form
 located on all pages. The search is performed and displayed by the
 LaunchpadSearchView.
@@ -463,10 +457,10 @@ maximum number of results that can be returned per request.
     20
     >>> for page in pages[0:5]:
     ...     page.title
-    u'Ubuntu Bugs in Launchpad'
-    u'GCleaner in Launchpad'
-    u'BugExpiry - Launchpad Help'
-    u'LongoMatch in Launchpad'
+    u'Launchpad Bugs'
+    u'Bugs in Ubuntu Linux'
+    u'Bugs related to Sample Person'
+    u'Bug #1 in Mozilla Firefox: Firefox does not support SVG'
     u'Question #232632 : Questions : OpenStack Heat'
 
 The batch navigator provides access to the other batches. There are two
@@ -524,7 +518,7 @@ showing the matching terms in context of the page text.
     >>> page.url
     'https://help.launchpad.net/Bugs'
     >>> page.summary  # doctest: +ELLIPSIS
-    u"Launchpad Help > Bugs . Use Launchpad's bug tracker for your project. ..."
+    u"Launchpad Help > Bugs . Use Launchpad's bug tracker for your project..."
 
 See `google-searchservice.txt` for more information about the
 BingSearchService and PageMatch objects.
@@ -729,7 +723,3 @@ batch is 20, which is the start of the next batch from Bing.
     2
     >>> navigator.nextBatchURL()
     '...start=20'
-
-Finally, let's reset our custom feature flags.
-
-    >>> flags.cleanUp()

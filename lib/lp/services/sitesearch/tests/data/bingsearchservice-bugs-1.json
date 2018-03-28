@@ -14,7 +14,7 @@
     "value": [
       {
         "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.0",
-        "name": "Ubuntu Bugs in Launchpad",
+        "name": "Launchpad Bugs",
         "url": "https://launchpad.net/~ubuntu-bugs",
         "urlPingSuffix": "DevEx,5080.1",
         "isFamilyFriendly": true,
@@ -25,7 +25,7 @@
       },
       {
         "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.1",
-        "name": "GCleaner in Launchpad",
+        "name": "Bugs in Ubuntu Linux",
         "url": "https://launchpad.net/gcleaner",
         "urlPingSuffix": "DevEx,5095.1",
         "isFamilyFriendly": true,
@@ -36,7 +36,7 @@
       },
       {
         "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.2",
-        "name": "BugExpiry - Launchpad Help",
+        "name": "Bugs related to Sample Person",
         "url": "https://help.launchpad.net/BugExpiry",
         "urlPingSuffix": "DevEx,5110.1",
         "isFamilyFriendly": true,
@@ -47,7 +47,7 @@
       },
       {
         "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.3",
-        "name": "LongoMatch in Launchpad",
+        "name": "Bug #1 in Mozilla Firefox: Firefox does not support SVG",
         "url": "https://launchpad.net/longomatch",
         "urlPingSuffix": "DevEx,5125.1",
         "isFamilyFriendly": true,
