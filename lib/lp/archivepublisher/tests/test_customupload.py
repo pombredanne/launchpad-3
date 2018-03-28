@@ -275,8 +275,8 @@ class TestSigning(TestCaseWithFactory, RunPartsMixin):
 
     def test_sign_with_external_run_parts(self):
         self.enableRunParts(distribution_name=self.distro.name)
-        filename = os.path.join(
-            getPubConfig(self.archive).archiveroot, "file")
+        archiveroot = getPubConfig(self.archive).archiveroot
+        filename = os.path.join(archiveroot, "file")
         write_file(filename, "contents")
         self.assertIsNone(self.archive.signing_key)
         run_parts_fixture = self.useFixture(MonkeyPatch(
@@ -286,6 +286,7 @@ class TestSigning(TestCaseWithFactory, RunPartsMixin):
         args, kwargs = run_parts_fixture.new_value.calls[0]
         self.assertEqual((self.distro.name, "sign.d"), args)
         self.assertThat(kwargs["env"], MatchesDict({
+            "ARCHIVEROOT": Equals(archiveroot),
             "INPUT_PATH": Equals(filename),
             "OUTPUT_PATH": Equals("%s.gpg" % filename),
             "MODE": Equals("detached"),
