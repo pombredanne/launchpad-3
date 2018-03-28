@@ -1,6 +1,6 @@
-=====================
+===================
 Bing Search Service
-=====================
+===================
 
 The BingSearchService is a Bing Custom Search client.
 Given one or more terms, it will retrieve a JSON
@@ -14,7 +14,7 @@ We silence logging of new HTTP connections from requests throughout.
 
 
 BingSearchService
-===================
+=================
 
 The BingSearchService implements the ISearchService interface.
 
@@ -30,9 +30,9 @@ The BingSearchService implements the ISearchService interface.
     <...BingSearchService ...>
 
 
-----------------------------
+--------------------------
 BingSearchService search()
-----------------------------
+--------------------------
 
 The search method accepts a string argument of terms and an optional int
 argument of start. The terms are the same as the text that would be
