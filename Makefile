@@ -285,7 +285,7 @@ ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
 run: build inplace stop
-	bin/run -r librarian,bing-webservice,memcached,rabbitmq,txlongpoll \
+	bin/run -r librarian,bing-webservice,google-webservice,memcached,rabbitmq,txlongpoll \
 	-i $(LPCONFIG)
 
 run-testapp: LPCONFIG=testrunner-appserver
@@ -298,12 +298,12 @@ run.gdb:
 
 start-gdb: build inplace stop support_files run.gdb
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
-		-r librarian,bing-webservice
+		-r librarian,bing-webservice,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: build inplace stop
 	bin/run \
-	 -r librarian,sftp,forker,mailman,codebrowse,bing-webservice,\
+	 -r librarian,sftp,forker,mailman,codebrowse,bing-webservice,google-webservice,\
 	memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
 run_codebrowse: compile
