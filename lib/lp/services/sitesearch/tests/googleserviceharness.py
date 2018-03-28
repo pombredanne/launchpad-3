@@ -27,29 +27,30 @@ class GoogleServiceTestSetup:
     # to the docstring above.  Note that the test that uses this setup,
     # google-service-stub.txt, is also disabled.  See test_doc.py.
     """
-    >>> from lp.services.sitesearch import googletestservice
+    >>> from lp.services.sitesearch import (
+    ...     service_is_available)
     >>> from lp.services.config import config
 
-    >>> assert not googletestservice.service_is_available()  # SPURIOUS FAILURE
+    >>> assert not service_is_available()  # SPURIOUS FAILURE
 
     >>> GoogleServiceTestSetup().setUp()
 
     After setUp is called, a Google test service instance is running.
 
-    >>> assert googletestservice.service_is_available()
+    >>> assert service_is_available()
     >>> assert GoogleServiceTestSetup.service is not None
 
     After tearDown is called, the service is shut down.
 
     >>> GoogleServiceTestSetup().tearDown()
 
-    >>> assert not googletestservice.service_is_available()
+    >>> assert not service_is_available()
     >>> assert GoogleServiceTestSetup.service is None
 
     The fixture can be started and stopped multiple time in succession:
 
     >>> GoogleServiceTestSetup().setUp()
-    >>> assert googletestservice.service_is_available()
+    >>> assert service_is_available()
 
     Having a service instance already running doesn't prevent a new
     service from starting.  The old instance is killed off and replaced
@@ -63,7 +64,7 @@ class GoogleServiceTestSetup:
     Tidy up.
 
     >>> GoogleServiceTestSetup().tearDown()
-    >>> assert not googletestservice.service_is_available()
+    >>> assert not service_is_available()
 
     """
 
