@@ -516,7 +516,10 @@ class LaunchpadSearchView(LaunchpadFormView):
         """
         if query_terms in [None, '']:
             return None
-        site_search = getUtility(ISearchService, name="google")
+        search_engine = getFeatureFlag("sitesearch.engine.name")
+        # Default to the Google search engine.
+        search_engine = search_engine or "google"
+        site_search = getUtility(ISearchService, name=search_engine)
         try:
             page_matches = site_search.search(
                 terms=query_terms, start=start)
