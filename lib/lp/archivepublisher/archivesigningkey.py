@@ -106,6 +106,7 @@ class SignableArchive:
             elif find_run_parts_dir(
                     self.archive.distribution.name, "sign.d") is not None:
                 env = {
+                    "ARCHIVEROOT": self.pubconf.archiveroot,
                     "INPUT_PATH": input_path,
                     "OUTPUT_PATH": output_path,
                     "MODE": mode.name.lower(),

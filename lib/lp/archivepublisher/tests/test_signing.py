@@ -961,6 +961,8 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
         args, kwargs = run_parts_fixture.new_value.calls[-1]
         self.assertEqual((self.distro.name, "sign.d"), args)
         self.assertThat(kwargs["env"], MatchesDict({
+            "ARCHIVEROOT": Equals(
+                os.path.join(self.temp_dir, self.distro.name)),
             "INPUT_PATH": Equals(sha256file),
             "OUTPUT_PATH": Equals("%s.gpg" % sha256file),
             "MODE": Equals("detached"),
