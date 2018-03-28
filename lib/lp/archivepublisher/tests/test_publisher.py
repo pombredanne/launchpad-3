@@ -3095,7 +3095,8 @@ class TestPublisherRepositorySignatures(
         with open(os.path.join(sign_directory, '10-sign'), 'w') as sign_script:
             sign_script.write(dedent("""\
                 #! /bin/sh
-                echo "$MODE signature of $INPUT_PATH ($DISTRIBUTION/$SUITE)" \\
+                echo "$MODE signature of $INPUT_PATH" \\
+                     "($ARCHIVEROOT, $DISTRIBUTION/$SUITE)" \\
                     >"$OUTPUT_PATH"
                 """))
             os.fchmod(sign_script.fileno(), 0o755)
@@ -3114,13 +3115,17 @@ class TestPublisherRepositorySignatures(
         self.assertThat(
             self.release_file_signature_path,
             FileContains(
-                "detached signature of %s.new (%s/breezy-autotest)\n" %
-                (self.release_file_path, cprov.archive.distribution.name)))
+                "detached signature of %s.new (%s, %s/breezy-autotest)\n" %
+                (self.release_file_path,
+                 self.archive_publisher._config.archiveroot,
+                 cprov.archive.distribution.name)))
         self.assertThat(
             self.inline_release_file_path,
             FileContains(
-                "clear signature of %s.new (%s/breezy-autotest)\n" %
-                (self.release_file_path, cprov.archive.distribution.name)))
+                "clear signature of %s.new (%s, %s/breezy-autotest)\n" %
+                (self.release_file_path,
+                 self.archive_publisher._config.archiveroot,
+                 cprov.archive.distribution.name)))
 
         # The publisher synchronises the various Release file timestamps.
         self.assertEqual(1, self.archive_publisher._syncTimestamps.call_count)

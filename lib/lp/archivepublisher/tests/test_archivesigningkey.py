@@ -116,7 +116,8 @@ class TestSignableArchiveWithRunParts(RunPartsMixin, TestCaseWithFactory):
                 "10-sign"), "w") as sign_script:
             sign_script.write(dedent("""\
                 #! /bin/sh
-                echo "$MODE signature of $INPUT_PATH ($DISTRIBUTION/$SUITE)" \\
+                echo "$MODE signature of $INPUT_PATH" \\
+                     "($ARCHIVEROOT, $DISTRIBUTION/$SUITE)" \\
                     >"$OUTPUT_PATH"
                 """))
             os.fchmod(sign_script.fileno(), 0o755)
@@ -133,13 +134,15 @@ class TestSignableArchiveWithRunParts(RunPartsMixin, TestCaseWithFactory):
         self.assertThat(
             os.path.join(suite_dir, "Release.gpg"),
             FileContains(
-                "detached signature of %s (%s/%s)\n" %
-                (release_path, self.distro.name, self.suite)))
+                "detached signature of %s (%s, %s/%s)\n" %
+                (release_path, self.archive_root, self.distro.name,
+                 self.suite)))
         self.assertThat(
             os.path.join(suite_dir, "InRelease"),
             FileContains(
-                "clear signature of %s (%s/%s)\n" %
-                (release_path, self.distro.name, self.suite)))
+                "clear signature of %s (%s, %s/%s)\n" %
+                (release_path, self.archive_root, self.distro.name,
+                 self.suite)))
 
     def test_signRepository_honours_pubconf(self):
         pubconf = getPubConfig(self.archive)
@@ -156,13 +159,15 @@ class TestSignableArchiveWithRunParts(RunPartsMixin, TestCaseWithFactory):
         self.assertThat(
             os.path.join(suite_dir, "Release.gpg"),
             FileContains(
-                "detached signature of %s (%s/%s)\n" %
-                (release_path, self.distro.name, self.suite)))
+                "detached signature of %s (%s, %s/%s)\n" %
+                (release_path, self.archive_root, self.distro.name,
+                 self.suite)))
         self.assertThat(
             os.path.join(suite_dir, "InRelease"),
             FileContains(
-                "clear signature of %s (%s/%s)\n" %
-                (release_path, self.distro.name, self.suite)))
+                "clear signature of %s (%s, %s/%s)\n" %
+                (release_path, self.archive_root, self.distro.name,
+                 self.suite)))
 
     def test_signFile_runs_parts(self):
         filename = os.path.join(self.archive_root, "signme")
@@ -175,5 +180,5 @@ class TestSignableArchiveWithRunParts(RunPartsMixin, TestCaseWithFactory):
         self.assertThat(
             "%s.gpg" % filename,
             FileContains(
-                "detached signature of %s (%s/%s)\n" %
-                (filename, self.distro.name, self.suite)))
+                "detached signature of %s (%s, %s/%s)\n" %
+                (filename, self.archive_root, self.distro.name, self.suite)))
