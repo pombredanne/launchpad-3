@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces for searching and working with results."""
@@ -6,11 +6,13 @@
 __metaclass__ = type
 
 __all__ = [
+    'BingSearchService',
     'GoogleSearchService',
     'PageMatch',
     'PageMatches',
     ]
 
+import json
 import urllib
 from urlparse import (
     parse_qsl,
@@ -163,7 +165,7 @@ class PageMatches:
 class GoogleSearchService:
     """See `ISearchService`.
 
-    A search service that search Google for launchpad.net pages.
+    A search service that searches Google for launchpad.net pages.
     """
 
     _default_values = {
@@ -332,4 +334,161 @@ class GoogleSearchService:
             # are more possible matches; the XML may be the wrong version.
             raise GoogleWrongGSPVersion(
                 "Could not get any PageMatches from the GSP XML response.")
+        return PageMatches(page_matches, start, total)
+
+
+@implementer(ISearchService)
+class BingSearchService:
+    """See `ISearchService`.
+
+    A search service that searches Bing for launchpad.net pages.
+    """
+
+    _default_values = {
+        # XXX: maxiberta 2018-03-26: Set `mkt` based on the current request.
+        'customConfig': None,
+        'mkt': 'en-US',
+        'count': 20,
+        'offset': 0,
+        'q': None,
+        }
+
+    @property
+    def subscription_key(self):
+        """The subscription key issued by Bing Custom Search."""
+        return config.bing.subscription_key
+
+    @property
+    def custom_config_id(self):
+        """The custom search instance as configured in Bing Custom Search."""
+        return config.bing.custom_config_id
+
+    @property
+    def site(self):
+        """The URL to the Bing Custom Search service.
+
+        The URL is probably
+        https://api.cognitive.microsoft.com/bingcustomsearch/v7.0/search.
+        """
+        return config.bing.site
+
+    def search(self, terms, start=0):
+        """See `ISearchService`.
+
+        The `subscription_key` and `custom_config_id` are used in the
+        search request. Search returns 20 or fewer results for each query.
+        For terms that match more than 20 results, the start param can be
+        used over multiple queries to get successive sets of results.
+
+        :return: `ISearchResults` (PageMatches).
+        :raise: `SiteSearchResponseError` if the json response is incomplete or
+            cannot be parsed.
+        """
+        search_url = self.create_search_url(terms, start=start)
+        search_headers = self.create_search_headers()
+        request = get_current_browser_request()
+        timeline = get_request_timeline(request)
+        action = timeline.start("bing-search-api", search_url)
+        try:
+            response = urlfetch(search_url, headers=search_headers)
+        except (TimeoutError, requests.RequestException) as error:
+            raise SiteSearchResponseError(
+                "The response errored: %s" % str(error))
+        finally:
+            action.finish()
+        page_matches = self._parse_bing_response(response.content, start)
+        return page_matches
+
+    def _checkParameter(self, name, value, is_int=False):
+        """Check that a parameter value is not None or an empty string."""
+        if value in (None, ''):
+            raise ValueError("Missing value for parameter '%s'." % name)
+        if is_int:
+            try:
+                int(value)
+            except ValueError:
+                raise ValueError(
+                    "Value for parameter '%s' is not an int." % name)
+
+    def create_search_url(self, terms, start=0):
+        """Return a Bing Custom Search search url."""
+        self._checkParameter('q', terms)
+        self._checkParameter('offset', start, is_int=True)
+        self._checkParameter('customConfig', self.custom_config_id)
+        search_params = dict(self._default_values)
+        search_params['q'] = terms.encode('utf8')
+        search_params['offset'] = start
+        search_params['customConfig'] = self.custom_config_id
+        query_string = urllib.urlencode(sorted(search_params.items()))
+        return self.site + '?' + query_string
+
+    def create_search_headers(self):
+        """Return a dict with Bing Custom Search compatible request headers."""
+        self._checkParameter('subscription_key', self.subscription_key)
+        return {
+            'Ocp-Apim-Subscription-Key': self.subscription_key,
+            }
+
+    def _parse_bing_response(self, bing_json, start=0):
+        """Return a `PageMatches` object.
+
+        :param bing_json: A string containing Bing Custom Search API v7 JSON.
+        :return: `ISearchResults` (PageMatches).
+        :raise: `SiteSearchResponseError` if the json response is incomplete or
+            cannot be parsed.
+        """
+        try:
+            bing_doc = json.loads(bing_json)
+        except (TypeError, ValueError):
+            raise SiteSearchResponseError(
+                "The response was incomplete, no JSON.")
+
+        try:
+            response_type = bing_doc['_type']
+        except (AttributeError, KeyError, ValueError):
+            raise SiteSearchResponseError(
+                "Could not get the '_type' from the Bing JSON response.")
+
+        if response_type == 'ErrorResponse':
+            try:
+                errors = [error['message'] for error in bing_doc['errors']]
+                raise SiteSearchResponseError(
+                    "Error response from Bing: %s" % '; '.join(errors))
+            except (AttributeError, KeyError, TypeError, ValueError):
+                raise SiteSearchResponseError(
+                    "Unable to parse the Bing JSON error response.")
+        elif response_type != 'SearchResponse':
+            raise SiteSearchResponseError(
+                "Unknown Bing JSON response type: '%s'." % response_type)
+
+        page_matches = []
+        total = 0
+        try:
+            results = bing_doc['webPages']['value']
+        except (AttributeError, KeyError, ValueError):
+            # Bing did not match any pages. Return an empty PageMatches.
+            return PageMatches(page_matches, start, total)
+
+        try:
+            total = int(bing_doc['webPages']['totalEstimatedMatches'])
+        except (AttributeError, KeyError, ValueError):
+            # The datatype is not what PageMatches requires.
+            raise SiteSearchResponseError(
+                "Could not get the total from the Bing JSON response.")
+        if total < 0:
+            # See bug 683115.
+            total = 0
+        for result in results:
+            url = result.get('url')
+            title = result.get('name')
+            summary = result.get('snippet')
+            if None in (url, title, summary):
+                # There is not enough data to create a PageMatch object.
+                # This can be caused by an empty title or summary which
+                # has been observed for pages that are from vhosts that
+                # should not be indexed.
+                continue
+            summary = summary.replace('<br>', '')
+            page_matches.append(PageMatch(title, url, summary))
+
         return PageMatches(page_matches, start, total)

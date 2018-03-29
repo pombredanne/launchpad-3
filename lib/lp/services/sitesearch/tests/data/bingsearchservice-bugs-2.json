@@ -1,0 +1,151 @@
+{
+  "_type": "SearchResponse",
+  "instrumentation": {
+    "pingUrlBase": "https://www.bingapis.com/api/ping?IG=41744312F5E645D58DE6733982EDC72A&CID=222E331334AA69A5318C38A7350C683B&ID=",
+    "pageLoadPingUrl": "https://www.bingapis.com/api/ping/pageload?IG=41744312F5E645D58DE6733982EDC72A&CID=222E331334AA69A5318C38A7350C683B&Type=Event.CPT&DATA=0"
+  },
+  "queryContext": {
+    "originalQuery": "bug"
+  },
+  "webPages": {
+    "webSearchUrl": "https://www.bing.com/search?q=bug",
+    "webSearchUrlPingSuffix": "DevEx,5530.1",
+    "totalEstimatedMatches": 25,
+    "value": [
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.0",
+        "name": "Bugs - Launchpad Help",
+        "url": "https://help.launchpad.net/Bugs",
+        "urlPingSuffix": "DevEx,5103.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://help.launchpad.net/Bugs",
+        "snippet": "Launchpad Help > Bugs . Use Launchpad's bug tracker for your project. Bug heat: a computed estimate of a bug's significance. Learn about automatic bug expiry",
+        "deepLinks": [
+          {
+            "name": "Bugs/EmailInterface",
+            "url": "https://help.launchpad.net/Bugs/EmailInterface",
+            "urlPingSuffix": "DevEx,5093.1",
+            "snippet": "Overview. Launchpad's bug tracker sends you email about the bugs you're interested in. If you see something that requires your attention - for example, you want to ..."
+          },
+          {
+            "name": "Bugs/PluginAPISpec",
+            "url": "https://help.launchpad.net/Bugs/PluginAPISpec",
+            "urlPingSuffix": "DevEx,5094.1",
+            "snippet": "Overview. We want Launchpad to share bug reports, comments, statuses and other information with as many bug trackers as possible. We've already produced plugins that ..."
+          },
+          {
+            "name": "Bugs/Subscriptions",
+            "url": "https://help.launchpad.net/Bugs/Subscriptions",
+            "urlPingSuffix": "DevEx,5095.1",
+            "snippet": "Overview. Launchpad uses notification emails and Atom feeds to help you stay on top of the bugs that interest you. Bug mail. There are three ways to get bug ..."
+          },
+          {
+            "name": "Bugs/YourProject",
+            "url": "https://help.launchpad.net/Bugs/YourProject",
+            "urlPingSuffix": "DevEx,5096.1",
+            "snippet": "Overview. Launchpad's bug tracker is unique: it can track how one bug affects different communities. When you share free software, you share its bugs."
+          },
+          {
+            "name": "Bugs/Expiry",
+            "url": "https://help.launchpad.net/Bugs/Expiry",
+            "urlPingSuffix": "DevEx,5097.1",
+            "snippet": "This gives you three benefits: you can view a report of all bugs that are due to expiry and so deal with any that need your attention ; once the bug's expired ..."
+          }
+        ],
+        "dateLastCrawled": "2018-02-20T23:45:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.1",
+        "name": "Of Bugs and Statuses - Launchpad Blog",
+        "url": "https://blog.launchpad.net/general/of-bugs-and-statuses",
+        "urlPingSuffix": "DevEx,5149.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://blog.launchpad.net/general/of-bugs-and-statuses",
+        "snippet": "This past week’s Bug Janitor thread has made it clear that we need better descriptions of what our bug statuses actually mean. While it’s true that many project ...",
+        "dateLastCrawled": "2018-03-09T07:40:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.2",
+        "name": "Mahara 1.8.0",
+        "url": "https://launchpad.net/mahara/+milestone/1.8.0",
+        "urlPingSuffix": "DevEx,5178.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://launchpad.net/mahara/+milestone/1.8.0",
+        "snippet": "Mahara 1.8.0 Release Notes. This is a stable release of Mahara 1.8. Stable releases are fit for general use. If you find a bug, please report it to the tracker:",
+        "dateLastCrawled": "2018-03-04T10:53:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.3",
+        "name": "Mighty Box in Launchpad",
+        "url": "https://launchpad.net/mb",
+        "urlPingSuffix": "DevEx,5193.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://launchpad.net/mb",
+        "snippet": "All bugs Latest bugs reported. Bug #766411: The settings dialog box is not available on Windows 7 Reported on 2011-04-19 Bug #766410: App crashes when navigating file ...",
+        "dateLastCrawled": "2018-03-10T07:57:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.4",
+        "name": "Bug tracking - Launchpad Bugs",
+        "url": "https://launchpad.net/bugs",
+        "urlPingSuffix": "DevEx,5208.1",
+        "about": [
+          {
+            "name": "Launchpad"
+          }
+        ],
+        "isFamilyFriendly": true,
+        "displayUrl": "https://launchpad.net/bugs",
+        "snippet": "Statistics. 1755185 bugs reported across 12480 projects including 122769 links to 2796 bug trackers; 148160 bugs are shared across multiple projects",
+        "dateLastCrawled": "2018-03-14T01:18:00.0000000Z",
+        "fixedPosition": false
+      }
+    ]
+  },
+  "rankingResponse": {
+    "mainline": {
+      "items": [
+        {
+          "answerType": "WebPages",
+          "resultIndex": 0,
+          "value": {
+            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.0"
+          }
+        },
+        {
+          "answerType": "WebPages",
+          "resultIndex": 1,
+          "value": {
+            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.1"
+          }
+        },
+        {
+          "answerType": "WebPages",
+          "resultIndex": 2,
+          "value": {
+            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.2"
+          }
+        },
+        {
+          "answerType": "WebPages",
+          "resultIndex": 3,
+          "value": {
+            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.3"
+          }
+        },
+        {
+          "answerType": "WebPages",
+          "resultIndex": 4,
+          "value": {
+            "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.4"
+          }
+        }
+      ]
+    }
+  }
+}
+

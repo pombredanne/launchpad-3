@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Browser code for the Launchpad root page."""
 
@@ -510,18 +510,21 @@ class LaunchpadSearchView(LaunchpadFormView):
     def searchPages(self, query_terms, start=0):
         """Return the up to 20 pages that match the query_terms, or None.
 
-        :param query_terms: The unescaped terms to query Google.
+        :param query_terms: The unescaped terms to query for.
         :param start: The index of the page that starts the set of pages.
-        :return: A GooglBatchNavigator or None.
+        :return: A SiteSearchBatchNavigator or None.
         """
         if query_terms in [None, '']:
             return None
-        google_search = getUtility(ISearchService)
+        search_engine = getFeatureFlag("sitesearch.engine.name")
+        # Default to the Google search engine.
+        search_engine = search_engine or "google"
+        site_search = getUtility(ISearchService, name=search_engine)
         try:
-            page_matches = google_search.search(
+            page_matches = site_search.search(
                 terms=query_terms, start=start)
         except SiteSearchResponseError:
-            # There was a connectivity or Google service issue that means
+            # There was a connectivity or search service issue that means
             # there is no data available at this moment.
             self.has_page_service = False
             return None

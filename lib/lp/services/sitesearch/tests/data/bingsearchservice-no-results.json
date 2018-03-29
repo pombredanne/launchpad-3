@@ -1,0 +1,12 @@
+{
+  "_type": "SearchResponse",
+  "instrumentation": {
+    "pingUrlBase": "https://www.bingapis.com/api/ping?IG=74D50DC66A774E74AF486941DDF2C89C&CID=2023A1AFC6086AE52F08AA1BC7476B1F&ID=",
+    "pageLoadPingUrl": "https://www.bingapis.com/api/ping/pageload?IG=74D50DC66A774E74AF486941DDF2C89C&CID=2023A1AFC6086AE52F08AA1BC7476B1F&Type=Event.CPT&DATA=0"
+  },
+  "queryContext": {
+    "originalQuery": "AELymgURIr4plE6V5qUaesxj1S8kUSFxCVrVLNU_OeCogh9Q7W5be6lEGMcbb0q6WTDgLL7zsnlnYGLvVrsdxgx3AamFm0M6ARaxerSLvSf-1JQHrOLuhsQ"
+  },
+  "rankingResponse": {}
+}
+

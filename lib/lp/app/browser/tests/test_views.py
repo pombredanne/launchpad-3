@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -7,10 +7,11 @@ Run the view tests.
 
 import logging
 import os
-import unittest
 
+from lp.services.features.testing import FeatureFixture
+from lp.services.testing import build_test_suite
 from lp.testing.layers import (
-    DatabaseFunctionalLayer,
+    BingLaunchpadFunctionalLayer,
     GoogleLaunchpadFunctionalLayer,
     )
 from lp.testing.systemdocs import (
@@ -21,32 +22,46 @@ from lp.testing.systemdocs import (
 
 
 here = os.path.dirname(os.path.realpath(__file__))
+bing_flag = FeatureFixture({'sitesearch.engine.name': 'bing'})
+google_flag = FeatureFixture({'sitesearch.engine.name': 'google'})
+
+
+def setUp_bing(test):
+    setUp(test)
+    bing_flag.setUp()
+
+
+def setUp_google(test):
+    setUp(test)
+    google_flag.setUp()
+
+
+def tearDown_bing(test):
+    bing_flag.cleanUp()
+    tearDown(test)
+
+
+def tearDown_google(test):
+    google_flag.cleanUp()
+    tearDown(test)
+
 
 # The default layer of view tests is the DatabaseFunctionalLayer. Tests
 # that require something special like the librarian or mailman must run
 # on a layer that sets those services up.
-special_test_layer = {
-    'launchpad-search-pages.txt': GoogleLaunchpadFunctionalLayer,
+special = {
+    'launchpad-search-pages-bing.txt': LayeredDocFileSuite(
+        '../doc/launchpad-search-pages-bing.txt',
+        setUp=setUp_bing, tearDown=tearDown_bing,
+        layer=BingLaunchpadFunctionalLayer,
+        stdout_logging_level=logging.WARNING),
+    'launchpad-search-pages-google.txt': LayeredDocFileSuite(
+        '../doc/launchpad-search-pages-google.txt',
+        setUp=setUp_google, tearDown=tearDown_google,
+        layer=GoogleLaunchpadFunctionalLayer,
+        stdout_logging_level=logging.WARNING),
     }
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    testsdir = os.path.abspath(here)
-
-    # Add tests using default setup/teardown
-    filenames = [filename
-                 for filename in os.listdir(testsdir)
-                 if filename.endswith('.txt')]
-    # Sort the list to give a predictable order.
-    filenames.sort()
-    for filename in filenames:
-        path = filename
-        layer = special_test_layer.get(path, DatabaseFunctionalLayer)
-        one_test = LayeredDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown, layer=layer,
-            stdout_logging_level=logging.WARNING
-            )
-        suite.addTest(one_test)
-
-    return suite
+    return build_test_suite(here, special)

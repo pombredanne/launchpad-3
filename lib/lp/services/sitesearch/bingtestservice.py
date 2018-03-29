@@ -4,7 +4,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
-This script runs a simple HTTP server. The server returns XML files
+This script runs a simple HTTP server. The server returns JSON files
 when given certain user-configurable URLs.
 """
 
@@ -23,23 +23,23 @@ from lp.services.sitesearch import testservice
 log = logging.getLogger(__name__)
 
 # The default service name, used by the Launchpad service framework.
-service_name = 'google-webservice'
+service_name = 'bing-webservice'
 
 
-class GoogleRequestHandler(testservice.RequestHandler):
+class BingRequestHandler(testservice.RequestHandler):
     default_content_type = 'text/xml; charset=UTF-8'
     log = log
-    mapfile = config.google_test_service.mapfile
-    content_dir = config.google_test_service.canned_response_directory
+    mapfile = config.bing_test_service.mapfile
+    content_dir = config.bing_test_service.canned_response_directory
 
 
 def start_as_process():
-    return testservice.start_as_process('googletestservice')
+    return testservice.start_as_process('bingtestservice')
 
 
 def get_service_endpoint():
     """Return the host and port that the service is running on."""
-    return testservice.hostpair(config.google.site)
+    return testservice.hostpair(config.bing.site)
 
 
 def service_is_available():
@@ -62,8 +62,8 @@ def main():
     """Run the HTTP server."""
     # Redirect our service output to a log file.
     global log
-    ensure_directory_exists(os.path.dirname(config.google_test_service.log))
-    filelog = logging.FileHandler(config.google_test_service.log)
+    ensure_directory_exists(os.path.dirname(config.bing_test_service.log))
+    filelog = logging.FileHandler(config.bing_test_service.log)
     log.addHandler(filelog)
     log.setLevel(logging.DEBUG)
 
@@ -73,7 +73,7 @@ def main():
     make_pidfile(service_name)
 
     host, port = get_service_endpoint()
-    server = HTTPServer((host, port), GoogleRequestHandler)
+    server = HTTPServer((host, port), BingRequestHandler)
 
-    log.info("Starting HTTP Google webservice server on port %s", port)
+    log.info("Starting HTTP Bing webservice server on port %s", port)
     server.serve_forever()
