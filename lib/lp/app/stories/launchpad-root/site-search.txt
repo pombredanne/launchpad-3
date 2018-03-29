@@ -1,9 +1,9 @@
 Site-wide Search
 ================
 
-Launchpad features a site-wide search that combines Google's site-
-specific search with Launchpad's prominent objects (projects, bugs,
-teams, etc.).
+Launchpad features a site-wide search that combines an external search
+engine's site-specific search with Launchpad's prominent objects (projects,
+bugs, teams, etc.).
 
     # Our very helpful function for printing all the page results.
 
@@ -81,9 +81,9 @@ sees that a bug matched.
     3: Firefox is slow and consumes too much RAM
     ...
 
-An arbitrary search returns a list of Google search results. The user
-searches for "bug" and sees a listing of matching pages. The navigation
-states that the page is showing 1 through 20 of 25 total results.
+An arbitrary search returns a list of the search engine's search results.
+The user searches for "bug" and sees a listing of matching pages. The
+navigation states that the page is showing 1 through 20 of 25 total results.
 
     # Use our pre-defined search results for the 'bug' search.
 
@@ -248,9 +248,10 @@ search.
 Searches when there is no page service
 --------------------------------------
 
-Google may not be available when the search is performed. This is often
-caused by temporary connectivity problems. A message is displayed that
-explains that the search can be performed again to find matching pages.
+The search provider may not be available when the search is performed.
+This is often caused by temporary connectivity problems. A message is
+displayed that explains that the search can be performed again to find
+matching pages.
 
     >>> search_for('gnomebaker')
     >>> print find_tag_by_id(anon_browser.contents, 'no-page-service')
