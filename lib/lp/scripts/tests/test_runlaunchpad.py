@@ -137,7 +137,7 @@ class ServersToStart(testtools.TestCase):
         config.push('launch_data', launch_data)
         self.addCleanup(config.pop, 'launch_data')
 
-    def test_nothing_explictly_requested(self):
+    def test_nothing_explicitly_requested(self):
         """Implicitly start services based on the config.*.launch property.
         """
         services = sorted(get_services_to_run([]))
@@ -147,8 +147,10 @@ class ServersToStart(testtools.TestCase):
         if config.mailman.launch:
             expected.append(SERVICES['mailman'])
 
-        # Likewise, the GoogleWebService may or may not be asked to
+        # Likewise, the search test services may or may not be asked to
         # run.
+        if config.bing_test_service.launch:
+            expected.append(SERVICES['bing-webservice'])
         if config.google_test_service.launch:
             expected.append(SERVICES['google-webservice'])
 
@@ -164,8 +166,8 @@ class ServersToStart(testtools.TestCase):
         self.assertEqual(expected, services)
 
     def test_explicit_request_overrides(self):
-        """Only start those services which are explictly requested, ignoring
-        the configuration properties.
+        """Only start those services which are explicitly requested,
+        ignoring the configuration properties.
         """
         services = get_services_to_run(['sftp'])
         self.assertEqual([SERVICES['sftp']], services)
