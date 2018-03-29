@@ -234,6 +234,12 @@ flag_info = sorted([
      'disabled',
      'Named authorization tokens for archives',
      ''),
+    ('sitesearch.engine.name',
+     'space delimited',
+     'Name of the site search engine backend ("google" or "bing").',
+     'google',
+     'Site search engine',
+     ''),
     ])
 
 # The set of all flag names that are documented.

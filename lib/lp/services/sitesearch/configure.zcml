@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -16,8 +16,17 @@
   </class>
 
   <securedutility
+    name="google"
     class="lp.services.sitesearch.GoogleSearchService"
     provides="lp.services.sitesearch.interfaces.ISearchService">
     <allow interface="lp.services.sitesearch.interfaces.ISearchService" />
   </securedutility>
+
+  <securedutility
+    name="bing"
+    class="lp.services.sitesearch.BingSearchService"
+    provides="lp.services.sitesearch.interfaces.ISearchService">
+    <allow interface="lp.services.sitesearch.interfaces.ISearchService" />
+  </securedutility>
+
 </configure>

@@ -1,0 +1,30 @@
+{
+  "_type": "SearchResponse",
+  "webPages": {
+    "totalEstimatedMatches": -25,
+    "value": [
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.0",
+        "name": "Ubuntu Bugs in Launchpad",
+        "urlPingSuffix": "DevEx,5080.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://launchpad.net/~ubuntu-bugs",
+        "snippet": "The purpose of this team is to have a mailing list that receives all Ubuntu bug mail. If you wish to receive copies of all bug traffic, instead subscribe to the ...",
+        "dateLastCrawled": "2018-03-10T00:32:00.0000000Z",
+        "fixedPosition": false
+      },
+      {
+        "id": "https://api.cognitive.microsoft.com/api/v7/#WebPages.3",
+        "name": "LongoMatch in Launchpad",
+        "url": "https://launchpad.net/longomatch",
+        "urlPingSuffix": "DevEx,5125.1",
+        "isFamilyFriendly": true,
+        "displayUrl": "https://launchpad.net/longomatch",
+        "snippet": "LongoMatch is a sports video analyse tool for coaches to assist them on making live video reports from a match. It creates a database with the most important plays of ...",
+        "dateLastCrawled": "2018-02-16T21:54:00.0000000Z",
+        "fixedPosition": false
+      }
+    ]
+  }
+}
+
