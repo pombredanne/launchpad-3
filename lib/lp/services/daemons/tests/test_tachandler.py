@@ -108,11 +108,8 @@ class TacTestSetupTestCase(testtools.TestCase):
     def test_missingTac(self):
         """TacTestSetup raises TacException if the tacfile doesn't exist"""
         fixture = SimpleTac("missing", "/file/does/not/exist")
-        try:
-            self.assertRaises(TacException, fixture.setUp)
-            self.assertThat(fixture, Not(IsRunning()))
-        finally:
-            fixture.cleanUp()
+        self.assertRaises(TacException, fixture.setUp)
+        self.assertThat(fixture, Not(IsRunning()))
 
     def test_couldNotListenTac(self):
         """If the tac fails due to not being able to listen on the needed
@@ -120,11 +117,8 @@ class TacTestSetupTestCase(testtools.TestCase):
         """
         tempdir = self.useFixture(TempDir()).path
         fixture = SimpleTac("cannotlisten", tempdir)
-        try:
-            self.assertRaises(TacException, fixture.setUp)
-            self.assertThat(fixture, Not(IsRunning()))
-        finally:
-            fixture.cleanUp()
+        self.assertRaises(TacException, fixture.setUp)
+        self.assertThat(fixture, Not(IsRunning()))
 
     def test_stalePidFile(self):
         """TacTestSetup complains about stale pid files."""
@@ -142,11 +136,8 @@ class TacTestSetupTestCase(testtools.TestCase):
 
         # Fire up the fixture, capturing warnings.
         with warnings.catch_warnings(record=True) as warnings_log:
-            try:
-                self.assertRaises(TacException, fixture.setUp)
-                self.assertThat(fixture, Not(IsRunning()))
-            finally:
-                fixture.cleanUp()
+            self.assertRaises(TacException, fixture.setUp)
+            self.assertThat(fixture, Not(IsRunning()))
 
         # One deprecation warning is emitted.
         self.assertEqual(
