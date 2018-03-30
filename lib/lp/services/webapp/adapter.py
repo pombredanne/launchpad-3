@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -156,8 +156,28 @@ class CommitLogger:
         action.finish()
 
 
+class FilteredTimeline(Timeline):
+    """A timeline that filters its actions.
+
+    This is useful for requests that are expected to log actions with very
+    large details (for example, large bulk SQL INSERT statements), where we
+    don't want the overhead of storing those in memory.
+    """
+
+    def __init__(self, actions=None, detail_filter=None, **kwargs):
+        super(FilteredTimeline, self).__init__(actions=actions, **kwargs)
+        self.detail_filter = detail_filter
+
+    def start(self, category, detail, allow_nested=False):
+        """See `Timeline`."""
+        if self.detail_filter is not None:
+            detail = self.detail_filter(category, detail)
+        return super(FilteredTimeline, self).start(category, detail)
+
+
 def set_request_started(
-    starttime=None, request_statements=None, txn=None, enable_timeout=True):
+    starttime=None, request_statements=None, txn=None, enable_timeout=True,
+    detail_filter=None):
     """Set the start time for the request being served by the current
     thread.
 
@@ -171,6 +191,9 @@ def set_request_started(
         txn.abort() calls are logged too.
     :param enable_timeout: If True, a timeout error is raised if the request
         runs for a longer time than the configured timeout.
+    :param detail_filter: An optional (category, detail) -> detail callable
+        that filters action details.  This may be used when some details are
+        expected to be very large.
     """
     if getattr(_local, 'request_start_time', None) is not None:
         warnings.warn('set_request_started() called before previous request '
@@ -180,13 +203,18 @@ def set_request_started(
         starttime = time()
     _local.request_start_time = starttime
     request = get_current_browser_request()
+    if detail_filter is not None:
+        timeline_factory = partial(
+            FilteredTimeline, detail_filter=detail_filter)
+    else:
+        timeline_factory = Timeline
     if request_statements is not None:
         # Specify a specific sequence object for the timeline.
-        set_request_timeline(request, Timeline(request_statements))
+        set_request_timeline(request, timeline_factory(request_statements))
     else:
         # Ensure a timeline is created, so that time offset for actions is
         # reasonable.
-        set_request_timeline(request, Timeline())
+        set_request_timeline(request, timeline_factory())
     _local.current_statement_timeout = None
     _local.enable_timeout = enable_timeout
     _local.commit_logger = CommitLogger(transaction)

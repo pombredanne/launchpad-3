@@ -138,6 +138,24 @@ it pass.
     >>> print no_request_warning[0].message
     clear_request_started() called outside of a request
 
+Some requests are expected to log actions with very large details, such as
+large bulk SQL INSERT statements.  The request can be started with a
+callable that filters action details to avoid using an inordinate amount of
+memory on logging.
+
+    >>> def detail_filter(category, detail):
+    ...     if category != 'SQL-nostore':
+    ...         detail = '<redacted>'
+    ...     return detail
+    >>> set_request_started(detail_filter=detail_filter)
+    >>> store.execute('SELECT 1', noresult=True)
+    >>> transaction.abort()
+    >>> for _, _, _, statement, _ in get_request_statements():
+    ...     print statement
+    <redacted>
+    Transaction completed, status: Active
+    >>> clear_request_started()
+
 
 Statement Timeout
 =================

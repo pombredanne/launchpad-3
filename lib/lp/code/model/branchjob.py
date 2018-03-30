@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -330,6 +330,20 @@ class BranchScanJob(BranchJobDerived):
     def __init__(self, branch_job):
         super(BranchScanJob, self).__init__(branch_job)
         self._cached_branch_name = self.metadata['branch_name']
+
+    @staticmethod
+    def timeline_detail_filter(category, detail):
+        """See `IRunnableJob`."""
+        # Branch scan jobs involve very large bulk INSERT statements, which
+        # we don't want to log in full.  Truncate these in the same kind of
+        # way that python-oops-tools does for its list of most expensive
+        # statements.
+        maximum = 1000
+        splitter = ' ... '
+        if category.startswith('SQL-') and len(detail) > maximum:
+            half = (maximum - len(splitter)) // 2
+            detail = (detail[:half] + splitter + detail[-half:])
+        return detail
 
     def run(self):
         """See `IBranchScanJob`."""
