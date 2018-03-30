@@ -121,6 +121,8 @@ class BaseRunnableJob(BaseRunnableJobSource):
     retry_delay = timedelta(minutes=10)
     soft_time_limit = timedelta(minutes=5)
 
+    timeline_detail_filter = None
+
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
     def __eq__(self, job):
@@ -316,7 +318,8 @@ class BaseJobRunner(LazrJobRunner):
             set_default_timeout_function(original_timeout_function)
 
     def runJobHandleError(self, job, fallback=None):
-        set_request_started(enable_timeout=False)
+        set_request_started(
+            enable_timeout=False, detail_filter=job.timeline_detail_filter)
         try:
             return super(BaseJobRunner, self).runJobHandleError(
                 job, fallback=fallback)

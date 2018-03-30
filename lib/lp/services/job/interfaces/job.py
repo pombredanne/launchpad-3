@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces including and related to IJob."""
@@ -192,6 +192,13 @@ class IRunnableJob(IJob):
 
     retry_error_types = Attribute(
         'A tuple of exception classes which should cause a retry.')
+
+    # If implemented, this must not be an instance method of a job, as that
+    # will create an uncollectable reference cycle via the timeline.
+    timeline_detail_filter = Attribute(
+        'An optional (category, detail) -> detail callable to filter '
+        'timeline action details.  This may be used when some details are '
+        'expected to be very large.')
 
     def notifyUserError(e):
         """Notify interested parties that this job encountered a user error.

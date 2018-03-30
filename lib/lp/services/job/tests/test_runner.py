@@ -353,6 +353,17 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertIn(('job', 'boom'), actions)
         self.assertNotIn(('test', 'sentinel'), actions)
 
+    def test_runJobHandleErrors_oops_timeline_detail_filter(self):
+        """A job can choose to filter oops timeline details."""
+        job = RaisingJobTimelineMessage('boom')
+        job.timeline_detail_filter = lambda _, detail: '<redacted>'
+        flush_database_updates()
+        runner = JobRunner([job])
+        runner.runJobHandleError(job)
+        self.assertEqual(1, len(self.oopses))
+        actions = [action[2:4] for action in self.oopses[0]['timeline']]
+        self.assertIn(('job', '<redacted>'), actions)
+
     def test_runJobHandleErrors_user_error_no_oops(self):
         """If the job raises a user error, there is no oops."""
         job = RaisingJobUserError('boom')
