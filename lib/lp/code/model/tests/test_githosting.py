@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for `GitHostingClient`.
@@ -385,9 +385,11 @@ class TestGitHostingClient(TestCase):
                         content=b'{"refs/heads/master": {}}',
                         set_default_timeout=False):
                     self.refs = self.testcase.client.getRefs("123")
+                # We must make this assertion inside the job, since the job
+                # runner creates a separate timeline.
+                self.testcase.assertRequest("repo/123/refs", method="GET")
 
         job = GetRefsJob(self)
         JobRunner([job]).runAll()
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
         self.assertEqual({"refs/heads/master": {}}, job.refs)
-        self.assertRequest("repo/123/refs", method="GET")
