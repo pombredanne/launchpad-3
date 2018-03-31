@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Communication with the Git hosting service."""
@@ -28,6 +28,7 @@ from lp.code.interfaces.githosting import IGitHostingClient
 from lp.services.config import config
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
+    DefaultTimeout,
     TimeoutError,
     urlfetch,
     )
@@ -45,6 +46,11 @@ class GitHostingClient:
         self.endpoint = config.codehosting.internal_git_api_endpoint
 
     def _request(self, method, path, **kwargs):
+        """Make a request to the Git hosting API."""
+        # Fetch the current timeout before starting the timeline action,
+        # since making a database query inside this action will result in an
+        # OverlappingActionError.
+        DefaultTimeout()
         timeline = get_request_timeline(get_current_browser_request())
         action = timeline.start(
             "git-hosting-%s" % method, "%s %s" % (path, json.dumps(kwargs)))
