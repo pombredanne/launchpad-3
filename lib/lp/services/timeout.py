@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    "DefaultTimeout",
     "default_timeout",
     "get_default_timeout_function",
     "reduced_timeout",
