@@ -28,7 +28,7 @@ from lp.code.interfaces.githosting import IGitHostingClient
 from lp.services.config import config
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
-    DefaultTimeout,
+    get_default_timeout_function,
     TimeoutError,
     urlfetch,
     )
@@ -50,7 +50,7 @@ class GitHostingClient:
         # Fetch the current timeout before starting the timeline action,
         # since making a database query inside this action will result in an
         # OverlappingActionError.
-        DefaultTimeout()
+        get_default_timeout_function()()
         timeline = get_request_timeline(get_current_browser_request())
         action = timeline.start(
             "git-hosting-%s" % method, "%s %s" % (path, json.dumps(kwargs)))
