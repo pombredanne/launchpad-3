@@ -29,6 +29,7 @@ from lp.services.features import getFeatureFlag
 
 def active_search_service():
     search_engine = getFeatureFlag("sitesearch.engine.name")
+    # Default to the Bing search engine.
     search_engine = search_engine or "bing"
     return getUtility(ISearchService, name=search_engine)
 
