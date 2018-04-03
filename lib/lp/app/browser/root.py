@@ -43,7 +43,7 @@ from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.propertycache import cachedproperty
 from lp.services.sitesearch.interfaces import (
     SiteSearchResponseError,
-    default_search_service,
+    active_search_service,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.timeout import urlfetch
@@ -516,7 +516,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         """
         if query_terms in [None, '']:
             return None
-        site_search = default_search_service()
+        site_search = active_search_service()
         try:
             page_matches = site_search.search(
                 terms=query_terms, start=start)
