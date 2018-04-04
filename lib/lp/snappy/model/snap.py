@@ -195,20 +195,7 @@ class Snap(Storm, WebhookTargetMixin):
 
     private = Bool(name='private')
 
-    _allow_internet = Bool(name='allow_internet')
-
-    @property
-    def allow_internet(self):
-        # XXX cjwatson 2018-01-31: Remove once this column has been
-        # backfilled.
-        if self._allow_internet is None:
-            return True
-        else:
-            return self._allow_internet
-
-    @allow_internet.setter
-    def allow_internet(self, value):
-        self._allow_internet = value
+    allow_internet = Bool(name='allow_internet', allow_none=False)
 
     store_upload = Bool(name='store_upload', allow_none=False)
 

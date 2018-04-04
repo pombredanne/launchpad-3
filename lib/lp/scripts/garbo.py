@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -41,7 +41,6 @@ from storm.expr import (
     Or,
     Row,
     SQL,
-    Update,
     )
 from storm.info import ClassAlias
 from storm.store import EmptyResultSet
@@ -1604,33 +1603,6 @@ class SnapStoreSeriesPopulator(TunableLoop):
         transaction.commit()
 
 
-class SnapAllowInternetPopulator(TunableLoop):
-    """Populates Snap.allow_internet with True."""
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(SnapAllowInternetPopulator, self).__init__(log, abort_time)
-        self.start_at = 1
-        self.store = IMasterStore(Snap)
-
-    def findSnaps(self):
-        return self.store.find(
-            Snap,
-            Snap.id >= self.start_at,
-            Snap._allow_internet == None).order_by(Snap.id)
-
-    def isDone(self):
-        return self.findSnaps().is_empty()
-
-    def __call__(self, chunk_size):
-        ids = [snap.id for snap in self.findSnaps()]
-        self.store.execute(Update(
-            {Snap._allow_internet: True},
-            where=Snap.id.is_in(ids), table=Snap))
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1921,7 +1893,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ProductVCSPopulator,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
-        SnapAllowInternetPopulator,
         SnapBuildJobPruner,
         SnapStoreSeriesPopulator,
         SuggestiveTemplatesCacheUpdater,

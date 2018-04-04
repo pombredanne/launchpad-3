@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -15,7 +15,6 @@ import logging
 from StringIO import StringIO
 import time
 
-from psycopg2 import IntegrityError
 from pytz import UTC
 from storm.exceptions import LostObjectError
 from storm.expr import (
@@ -1553,34 +1552,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.assertEqual(sses[1], snaps[4].store_series)
         # Snaps with more than one possible store series are untouched.
         self.assertIsNone(snaps[5].store_series)
-
-    def test_SnapAllowInternetPopulator(self):
-        switch_dbuser('testadmin')
-        old_snaps = [self.factory.makeSnap() for _ in range(2)]
-        for snap in old_snaps:
-            removeSecurityProxy(snap)._allow_internet = None
-        try:
-            Store.of(old_snaps[0]).flush()
-        except IntegrityError:
-            # Now enforced by DB NOT NULL constraint; backfilling is no
-            # longer necessary.
-            return
-        allow_internet_snaps = [
-            self.factory.makeSnap(allow_internet=True) for _ in range(2)]
-        disallow_internet_snaps = [
-            self.factory.makeSnap(allow_internet=False) for _ in range(2)]
-        transaction.commit()
-
-        self.runDaily()
-
-        # Old snaps are backfilled.
-        for snap in old_snaps:
-            self.assertIs(True, removeSecurityProxy(snap)._allow_internet)
-        # Other snaps are left alone.
-        for snap in allow_internet_snaps:
-            self.assertIs(True, removeSecurityProxy(snap)._allow_internet)
-        for snap in disallow_internet_snaps:
-            self.assertIs(False, removeSecurityProxy(snap)._allow_internet)
 
 
 class TestGarboTasks(TestCaseWithFactory):
