@@ -3,8 +3,8 @@
 
 SET client_min_messages=ERROR;
 
-ALTER TABLE Snap ADD COLUMN allow_network boolean;
+ALTER TABLE Snap ADD COLUMN allow_internet boolean;
 
-COMMENT ON COLUMN Snap.allow_network IS 'If True, builds of this snap may allow access to external network resources.';
+COMMENT ON COLUMN Snap.allow_internet IS 'If True, builds of this snap may allow access to external network resources.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 83, 0);
