@@ -1604,13 +1604,13 @@ class SnapStoreSeriesPopulator(TunableLoop):
         transaction.commit()
 
 
-class SnapAllowNetworkPopulator(TunableLoop):
-    """Populates Snap.allow_network with True."""
+class SnapAllowInternetPopulator(TunableLoop):
+    """Populates Snap.allow_internet with True."""
 
     maximum_chunk_size = 5000
 
     def __init__(self, log, abort_time=None):
-        super(SnapAllowNetworkPopulator, self).__init__(log, abort_time)
+        super(SnapAllowInternetPopulator, self).__init__(log, abort_time)
         self.start_at = 1
         self.store = IMasterStore(Snap)
 
@@ -1618,7 +1618,7 @@ class SnapAllowNetworkPopulator(TunableLoop):
         return self.store.find(
             Snap,
             Snap.id >= self.start_at,
-            Snap._allow_network == None).order_by(Snap.id)
+            Snap._allow_internet == None).order_by(Snap.id)
 
     def isDone(self):
         return self.findSnaps().is_empty()
@@ -1626,7 +1626,8 @@ class SnapAllowNetworkPopulator(TunableLoop):
     def __call__(self, chunk_size):
         ids = [snap.id for snap in self.findSnaps()]
         self.store.execute(Update(
-            {Snap._allow_network: True}, where=Snap.id.is_in(ids), table=Snap))
+            {Snap._allow_internet: True},
+            where=Snap.id.is_in(ids), table=Snap))
         transaction.commit()
 
 
@@ -1920,7 +1921,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ProductVCSPopulator,
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
-        SnapAllowNetworkPopulator,
+        SnapAllowInternetPopulator,
         SnapBuildJobPruner,
         SnapStoreSeriesPopulator,
         SuggestiveTemplatesCacheUpdater,

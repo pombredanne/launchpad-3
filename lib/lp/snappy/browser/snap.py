@@ -319,7 +319,7 @@ class ISnapEditSchema(Interface):
         'name',
         'private',
         'require_virtualized',
-        'allow_network',
+        'allow_internet',
         'auto_build',
         'store_upload',
         ])
@@ -649,7 +649,7 @@ class SnapAdminView(BaseSnapEditView):
 
     page_title = 'Administer'
 
-    field_names = ['private', 'require_virtualized', 'allow_network']
+    field_names = ['private', 'require_virtualized', 'allow_internet']
 
     def validate(self, data):
         super(SnapAdminView, self).validate(data)

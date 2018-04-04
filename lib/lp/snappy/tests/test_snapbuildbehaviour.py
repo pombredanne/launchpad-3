@@ -396,10 +396,10 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             ]))
 
     @defer.inlineCallbacks
-    def test_extraBuildArgs_disallow_network(self):
+    def test_extraBuildArgs_disallow_internet(self):
         # If external network access is not allowed for the snap,
         # _extraBuildArgs does not dispatch a proxy token.
-        job = self.makeJob(allow_network=False)
+        job = self.makeJob(allow_internet=False)
         args = yield job._extraBuildArgs()
         self.assertNotIn("proxy_url", args)
         self.assertNotIn("revocation_endpoint", args)

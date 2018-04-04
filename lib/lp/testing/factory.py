@@ -4650,7 +4650,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                  name=None, branch=None, git_ref=None, auto_build=False,
                  auto_build_archive=None, auto_build_pocket=None,
                  is_stale=None, require_virtualized=True, processors=None,
-                 date_created=DEFAULT, private=False, allow_network=True,
+                 date_created=DEFAULT, private=False, allow_internet=True,
                  store_upload=False, store_series=None, store_name=None,
                  store_secrets=None, store_channels=None):
         """Make a new Snap."""
@@ -4676,7 +4676,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             date_created=date_created, branch=branch, git_ref=git_ref,
             auto_build=auto_build, auto_build_archive=auto_build_archive,
             auto_build_pocket=auto_build_pocket, private=private,
-            allow_network=allow_network, store_upload=store_upload,
+            allow_internet=allow_internet, store_upload=store_upload,
             store_series=store_series, store_name=store_name,
             store_secrets=store_secrets, store_channels=store_channels)
         if is_stale is not None:

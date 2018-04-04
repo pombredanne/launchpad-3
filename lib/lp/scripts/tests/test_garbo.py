@@ -1554,33 +1554,33 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # Snaps with more than one possible store series are untouched.
         self.assertIsNone(snaps[5].store_series)
 
-    def test_SnapAllowNetworkPopulator(self):
+    def test_SnapAllowInternetPopulator(self):
         switch_dbuser('testadmin')
         old_snaps = [self.factory.makeSnap() for _ in range(2)]
         for snap in old_snaps:
-            removeSecurityProxy(snap)._allow_network = None
+            removeSecurityProxy(snap)._allow_internet = None
         try:
             Store.of(old_snaps[0]).flush()
         except IntegrityError:
             # Now enforced by DB NOT NULL constraint; backfilling is no
             # longer necessary.
             return
-        allow_network_snaps = [
-            self.factory.makeSnap(allow_network=True) for _ in range(2)]
-        disallow_network_snaps = [
-            self.factory.makeSnap(allow_network=False) for _ in range(2)]
+        allow_internet_snaps = [
+            self.factory.makeSnap(allow_internet=True) for _ in range(2)]
+        disallow_internet_snaps = [
+            self.factory.makeSnap(allow_internet=False) for _ in range(2)]
         transaction.commit()
 
         self.runDaily()
 
         # Old snaps are backfilled.
         for snap in old_snaps:
-            self.assertIs(True, removeSecurityProxy(snap)._allow_network)
+            self.assertIs(True, removeSecurityProxy(snap)._allow_internet)
         # Other snaps are left alone.
-        for snap in allow_network_snaps:
-            self.assertIs(True, removeSecurityProxy(snap)._allow_network)
-        for snap in disallow_network_snaps:
-            self.assertIs(False, removeSecurityProxy(snap)._allow_network)
+        for snap in allow_internet_snaps:
+            self.assertIs(True, removeSecurityProxy(snap)._allow_internet)
+        for snap in disallow_internet_snaps:
+            self.assertIs(False, removeSecurityProxy(snap)._allow_internet)
 
 
 class TestGarboTasks(TestCaseWithFactory):

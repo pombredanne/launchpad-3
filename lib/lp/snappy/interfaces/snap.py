@@ -581,7 +581,7 @@ class ISnapAdminAttributes(Interface):
         value_type=Reference(schema=IProcessor),
         readonly=False))
 
-    allow_network = exported(Bool(
+    allow_internet = exported(Bool(
         title=_("Allow external network access"),
         required=True, readonly=False,
         description=_(

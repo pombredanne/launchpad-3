@@ -195,20 +195,20 @@ class Snap(Storm, WebhookTargetMixin):
 
     private = Bool(name='private')
 
-    _allow_network = Bool(name='allow_network')
+    _allow_internet = Bool(name='allow_internet')
 
     @property
-    def allow_network(self):
+    def allow_internet(self):
         # XXX cjwatson 2018-01-31: Remove once this column has been
         # backfilled.
-        if self._allow_network is None:
+        if self._allow_internet is None:
             return True
         else:
-            return self._allow_network
+            return self._allow_internet
 
-    @allow_network.setter
-    def allow_network(self, value):
-        self._allow_network = value
+    @allow_internet.setter
+    def allow_internet(self, value):
+        self._allow_internet = value
 
     store_upload = Bool(name='store_upload', allow_none=False)
 
@@ -225,7 +225,7 @@ class Snap(Storm, WebhookTargetMixin):
                  description=None, branch=None, git_ref=None, auto_build=False,
                  auto_build_archive=None, auto_build_pocket=None,
                  require_virtualized=True, date_created=DEFAULT, private=False,
-                 allow_network=True, store_upload=False, store_series=None,
+                 allow_internet=True, store_upload=False, store_series=None,
                  store_name=None, store_secrets=None, store_channels=None):
         """Construct a `Snap`."""
         super(Snap, self).__init__()
@@ -243,7 +243,7 @@ class Snap(Storm, WebhookTargetMixin):
         self.date_created = date_created
         self.date_last_modified = date_created
         self.private = private
-        self.allow_network = allow_network
+        self.allow_internet = allow_internet
         self.store_upload = store_upload
         self.store_series = store_series
         self.store_name = store_name
@@ -676,7 +676,7 @@ class SnapSet:
             git_path=None, git_ref=None, auto_build=False,
             auto_build_archive=None, auto_build_pocket=None,
             require_virtualized=True, processors=None, date_created=DEFAULT,
-            private=False, allow_network=True, store_upload=False,
+            private=False, allow_internet=True, store_upload=False,
             store_series=None, store_name=None, store_secrets=None,
             store_channels=None):
         """See `ISnapSet`."""
@@ -720,7 +720,7 @@ class SnapSet:
             auto_build_archive=auto_build_archive,
             auto_build_pocket=auto_build_pocket,
             require_virtualized=require_virtualized, date_created=date_created,
-            private=private, allow_network=allow_network,
+            private=private, allow_internet=allow_internet,
             store_upload=store_upload, store_series=store_series,
             store_name=store_name, store_secrets=store_secrets,
             store_channels=store_channels)

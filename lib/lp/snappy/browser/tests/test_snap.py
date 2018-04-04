@@ -573,7 +573,7 @@ class TestSnapAdminView(BaseTestSnapView):
             user=self.person)
 
     def test_admin_snap(self):
-        # Admins can change require_virtualized, privacy, and allow_network.
+        # Admins can change require_virtualized, privacy, and allow_internet.
         login("admin@canonical.com")
         commercial_admin = self.factory.makePerson(
             member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
@@ -581,7 +581,7 @@ class TestSnapAdminView(BaseTestSnapView):
         snap = self.factory.makeSnap(registrant=self.person)
         self.assertTrue(snap.require_virtualized)
         self.assertFalse(snap.private)
-        self.assertTrue(snap.allow_network)
+        self.assertTrue(snap.allow_internet)
 
         browser = self.getViewBrowser(snap, user=commercial_admin)
         browser.getLink("Administer snap package").click()
@@ -593,7 +593,7 @@ class TestSnapAdminView(BaseTestSnapView):
         login_person(self.person)
         self.assertFalse(snap.require_virtualized)
         self.assertTrue(snap.private)
-        self.assertFalse(snap.allow_network)
+        self.assertFalse(snap.allow_internet)
 
     def test_admin_snap_privacy_mismatch(self):
         # Cannot make snap public if it still contains private information.
