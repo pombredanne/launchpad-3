@@ -11,8 +11,10 @@ __all__ = [
     'ISearchService',
     'GoogleWrongGSPVersion',
     'SiteSearchResponseError',
+    'active_search_service',
     ]
 
+from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import (
     Int,
@@ -22,6 +24,14 @@ from zope.schema import (
     )
 
 from lp import _
+from lp.services.features import getFeatureFlag
+
+
+def active_search_service():
+    search_engine = getFeatureFlag("sitesearch.engine.name")
+    # Default to the Bing search engine.
+    search_engine = search_engine or "bing"
+    return getUtility(ISearchService, name=search_engine)
 
 
 class ISearchResult(Interface):
