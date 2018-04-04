@@ -42,8 +42,8 @@ from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.propertycache import cachedproperty
 from lp.services.sitesearch.interfaces import (
-    ISearchService,
     SiteSearchResponseError,
+    active_search_service,
     )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.timeout import urlfetch
@@ -516,10 +516,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         """
         if query_terms in [None, '']:
             return None
-        search_engine = getFeatureFlag("sitesearch.engine.name")
-        # Default to the Google search engine.
-        search_engine = search_engine or "google"
-        site_search = getUtility(ISearchService, name=search_engine)
+        site_search = active_search_service()
         try:
             page_matches = site_search.search(
                 terms=query_terms, start=start)
