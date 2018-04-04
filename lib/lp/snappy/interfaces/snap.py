@@ -63,6 +63,7 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    Dict,
     Int,
     List,
     Text,
@@ -281,17 +282,27 @@ class ISnapView(Interface):
     @operation_parameters(
         archive=Reference(schema=IArchive),
         distro_arch_series=Reference(schema=IDistroArchSeries),
-        pocket=Choice(vocabulary=PackagePublishingPocket))
+        pocket=Choice(vocabulary=PackagePublishingPocket),
+        channels=Dict(
+            title=_("Source snap channels to use for this build."),
+            description=_(
+                "A dictionary mapping snap names to channels to use for this "
+                "build.  Currently only 'core' and 'snapcraft' keys are "
+                "supported."),
+            key_type=TextLine(), required=False))
     # Really ISnapBuild, patched in lp.snappy.interfaces.webservice.
     @export_factory_operation(Interface, [])
     @operation_for_version("devel")
-    def requestBuild(requester, archive, distro_arch_series, pocket):
+    def requestBuild(requester, archive, distro_arch_series, pocket,
+                     channels=None):
         """Request that the snap package be built.
 
         :param requester: The person requesting the build.
         :param archive: The IArchive to associate the build with.
         :param distro_arch_series: The architecture to build for.
         :param pocket: The pocket that should be targeted.
+        :param channels: A dictionary mapping snap names to channels to use
+            for this build.
         :return: `ISnapBuild`.
         """
 
@@ -508,6 +519,14 @@ class ISnapEditableAttributes(IHasOwner):
         description=_(
             "The package stream within the source distribution series to use "
             "when building the snap package.")))
+
+    auto_build_channels = exported(Dict(
+        title=_("Source snap channels for automatic builds"),
+        key_type=TextLine(), required=False, readonly=False,
+        description=_(
+            "A dictionary mapping snap names to channels to use when building "
+            "this snap package.  Currently only 'core' and 'snapcraft' keys "
+            "are supported.")))
 
     is_stale = Bool(
         title=_("Snap package is stale and is due to be rebuilt."),

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Show what Launchpad community contributors have done.
@@ -54,7 +54,7 @@ except:
     sys.stderr.write("""ERROR: Unable to import from 'editmoin'. How to solve:
 Get editmoin.py from launchpadlib's "contrib/" directory:
 
-  http://bazaar.launchpad.net/~lazr-developers/launchpadlib/trunk/annotate/head%3A/contrib/editmoin.py
+  https://bazaar.launchpad.net/~lazr-developers/launchpadlib/trunk/annotate/head%3A/contrib/editmoin.py
 
 (Put it in the same directory as this script and everything should work.)
 """)
@@ -64,7 +64,6 @@ Get editmoin.py from launchpadlib's "contrib/" directory:
 def wiki_encode(x):
     """Encode a Unicode string for display on the wiki."""
     return x.encode('utf-8', 'xmlcharrefreplace')
-
 
 
 # The output contains two classes of contributors: people who don't
@@ -343,18 +342,18 @@ class ContainerRevision():
         else:
             date_str = "(NO DATE)"
 
-        rev_url_base = "http://bazaar.launchpad.net/%s/revision/" % (
+        rev_url_base = "https://bazaar.launchpad.net/%s/revision/" % (
             self.branch_info.loggerhead_path)
 
         # In loggerhead, you can use either a revision number or a
         # revision ID.  In other words, these would reach the same page:
         #
-        # http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/\
+        # https://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/\
         # revision/9202
         #
         #   -and-
         #
-        # http://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/\
+        # https://bazaar.launchpad.net/~launchpad-pqm/launchpad/devel/\
         # revision/launchpad@pqm.canonical.com-20090821221206-\
         # ritpv21q8w61gbpt
         #
@@ -637,10 +636,11 @@ or ''db-devel'' trees (see the [[Trunk|trunk explanation]] for more).
 cron job running as wgrant on devpad (though if there are no new \
 contributions, the page's timestamp won't change).  The code that \
 generates this page is \
-[[http://bazaar.launchpad.net/%7Elaunchpad-pqm/launchpad/devel/annotate/head%3A/utilities/community-contributions.py|utilities/community-contributions.py]] \
+[[https://bazaar.launchpad.net/%7Elaunchpad-pqm/launchpad/devel/annotate/head%3A/utilities/community-contributions.py|utilities/community-contributions.py]] \
 in the Launchpad tree.''-~
 
 """
+
 
 def main():
     quiet = False
@@ -698,8 +698,7 @@ def main():
         # Do everything.
         b = Branch.open(branch_info.path)
 
-        logger = log.Logger(b, {'direction' : 'reverse',
-                                'levels' : 0, })
+        logger = log.Logger(b, {'direction': 'reverse', 'levels': 0})
         if not quiet:
             print "Calculating (this may take a while)..."
 
@@ -708,12 +707,14 @@ def main():
         logger.show(lec)  # Won't "show" anything -- just gathers data.
 
     page_contents = page_intro + lec.result()
+
     def update_if_modified(moinfile):
         if moinfile._unescape(moinfile.body) == page_contents:
             return 0  # Nothing changed, so cancel the edit.
         else:
             moinfile.body = page_contents
             return 1
+
     if not dry_run:
         if not quiet:
             print "Updating wiki..."

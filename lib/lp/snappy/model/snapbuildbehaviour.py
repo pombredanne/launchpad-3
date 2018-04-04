@@ -19,6 +19,7 @@ from twisted.internet import defer
 from twisted.web.client import getPage
 from zope.component import adapter
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
@@ -29,6 +30,7 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
+from lp.services.webapp import canonical_url
 from lp.snappy.interfaces.snap import SnapBuildArchiveOwnerMismatch
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.adapters.archivedependencies import (
@@ -107,6 +109,12 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 tools_fingerprint=config.snappy.tools_fingerprint,
                 logger=logger))
         args["archive_private"] = build.archive.private
+        args["build_url"] = canonical_url(build)
+        if build.channels is not None:
+            # We have to remove the security proxy that Zope applies to this
+            # dict, since otherwise we'll be unable to serialise it to
+            # XML-RPC.
+            args["channels"] = removeSecurityProxy(build.channels)
         if build.snap.branch is not None:
             args["branch"] = build.snap.branch.bzr_identity
         elif build.snap.git_ref is not None:

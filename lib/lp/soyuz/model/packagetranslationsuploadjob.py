@@ -1,4 +1,4 @@
-# Copyright 2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,16 +8,19 @@ __all__ = [
     'PackageTranslationsUploadJob',
     ]
 
+import json
+import os
+import tempfile
+
 from lazr.delegates import delegate_to
-import simplejson
 from zope.component import getUtility
 from zope.interface import (
     implementer,
     provider,
     )
 
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.job.interfaces.job import JobType
@@ -27,6 +30,7 @@ from lp.services.job.model.job import (
     )
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.librarian.utils import filechunks
 from lp.services.mail.sendmail import format_address_for_person
 from lp.soyuz.interfaces.packagetranslationsuploadjob import (
     IPackageTranslationsUploadJob,
@@ -82,13 +86,20 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
         self.job = job
         self.context = self
 
+    def __repr__(self):
+        return "<%(job_class)s for %(source)s in %(series)s>" % {
+            "job_class": self.__class__.__name__,
+            "source": self.sourcepackagename.name,
+            "series": self.distroseries,
+            }
+
     @classmethod
     def create(cls, distroseries, libraryfilealias, sourcepackagename,
                requester):
         job = Job(
             base_job_type=JobType.UPLOAD_PACKAGE_TRANSLATIONS,
             requester=requester,
-            base_json_data=simplejson.dumps(
+            base_json_data=json.dumps(
                 {'distroseries': distroseries.id,
                  'libraryfilealias': libraryfilealias.id,
                  'sourcepackagename': sourcepackagename.id,
@@ -109,22 +120,17 @@ class PackageTranslationsUploadJobDerived(BaseRunnableJob):
             return [format_address_for_person(self.requester)]
         return []
 
-
-@implementer(IPackageTranslationsUploadJob)
-@provider(IPackageTranslationsUploadJobSource)
-class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
-
     @property
     def distroseries_id(self):
-        return simplejson.loads(self.base_json_data)['distroseries']
+        return json.loads(self.base_json_data)['distroseries']
 
     @property
     def libraryfilealias_id(self):
-        return simplejson.loads(self.base_json_data)['libraryfilealias']
+        return json.loads(self.base_json_data)['libraryfilealias']
 
     @property
     def sourcepackagename_id(self):
-        return simplejson.loads(self.base_json_data)['sourcepackagename']
+        return json.loads(self.base_json_data)['sourcepackagename']
 
     @property
     def distroseries(self):
@@ -138,22 +144,36 @@ class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
     def sourcepackagename(self):
         return getUtility(ISourcePackageNameSet).get(self.sourcepackagename_id)
 
+
+@implementer(IPackageTranslationsUploadJob)
+@provider(IPackageTranslationsUploadJobSource)
+class PackageTranslationsUploadJob(PackageTranslationsUploadJobDerived):
+
     def attachTranslationFiles(self, by_maintainer):
         distroseries = self.distroseries
         sourcepackagename = self.sourcepackagename
+        libraryfilealias = self.libraryfilealias
         only_templates = distroseries.getSourcePackage(
             sourcepackagename).has_sharing_translation_templates
         importer = self.requester
-        tarball = self.libraryfilealias.read()
+        with tempfile.NamedTemporaryFile(
+                prefix='package-translations-upload-job-') as tarball:
+            libraryfilealias.open()
+            try:
+                for chunk in filechunks(self.libraryfilealias):
+                    tarball.write(chunk)
+            finally:
+                libraryfilealias.close()
+            tarball.seek(0, os.SEEK_SET)
 
-        queue = getUtility(ITranslationImportQueue)
+            queue = getUtility(ITranslationImportQueue)
 
-        queue.addOrUpdateEntriesFromTarball(
-            tarball, by_maintainer, importer,
-            sourcepackagename=sourcepackagename,
-            distroseries=distroseries,
-            filename_filter=_filter_ubuntu_translation_file,
-            only_templates=only_templates)
+            queue.addOrUpdateEntriesFromTarball(
+                tarball, by_maintainer, importer,
+                sourcepackagename=sourcepackagename,
+                distroseries=distroseries,
+                filename_filter=_filter_ubuntu_translation_file,
+                only_templates=only_templates)
 
     def run(self):
         self.attachTranslationFiles(True)

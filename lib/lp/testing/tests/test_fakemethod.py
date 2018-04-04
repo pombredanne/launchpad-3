@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from unittest import TestCase
@@ -67,7 +67,7 @@ class TestFakeMethod(TestCase):
     def test_countCalls(self):
         # A FakeMethod counts the number of times it's been invoked.
         func = FakeMethod()
-        for count in xrange(3):
+        for count in range(3):
             self.assertEqual(count, func.call_count)
             func()
             self.assertEqual(count + 1, func.call_count)

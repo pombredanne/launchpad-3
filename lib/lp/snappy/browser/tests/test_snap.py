@@ -326,11 +326,11 @@ class TestSnapAddView(BaseTestSnapView):
             owner=self.person,
             information_type=InformationType.USERDATA)
 
-        with self.useFixture(FeatureFixture({SNAP_PRIVATE_FEATURE_FLAG: ""})):
+        with FeatureFixture({SNAP_PRIVATE_FEATURE_FLAG: ""}):
             browser = self.getViewBrowser(branch, user=self.person)
             self.assertRaises(
                 LinkNotFoundError, browser.getLink, "Create snap package")
-        with self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS)):
+        with FeatureFixture(SNAP_TESTING_FLAGS):
             browser = self.getViewBrowser(branch, user=self.person)
             browser.getLink("Create snap package")
 

@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for translation import queue views."""
@@ -137,7 +137,7 @@ class TestTranslationImportQueueEntryView(WithScenarios, TestCaseWithFactory):
         # Many translatable series.  The list is cut short; there's an
         # ellipsis to indicate this.
         series_count = len(product.translatable_series)
-        for counter in xrange(series_count, view.max_series_to_display + 1):
+        for counter in range(series_count, view.max_series_to_display + 1):
             extra_series = self.factory.makeProductSeries(product=product)
             self.factory.makePOTemplate(productseries=extra_series)
         series_text = view.product_translatable_series

@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the bugcomment module."""
@@ -108,7 +108,7 @@ class TestGroupCommentsWithActivities(TestCase):
         # have any common actors, no grouping is possible.
         comments = [
             BugCommentStub(*next(self.time_index))
-            for number in xrange(5)]
+            for number in range(5)]
         self.assertEqual(
             comments, self.group(comments=comments, activities=[]))
 
@@ -117,7 +117,7 @@ class TestGroupCommentsWithActivities(TestCase):
         # have any common actors, no grouping is possible.
         activities = [
             BugActivityStub(next(self.time_index)[0])
-            for number in xrange(5)]
+            for number in range(5)]
         self.assertEqual(
             [[activity] for activity in activities], self.group(
                 comments=[], activities=activities))
@@ -175,7 +175,7 @@ class TestGroupCommentsWithActivities(TestCase):
         actor = PersonStub()
         activities = [
             BugActivityStub(next(self.time_index)[0], owner=actor)
-            for count in xrange(8)]
+            for count in range(8)]
         grouped = self.group(comments=[], activities=activities)
         self.assertEqual(2, len(grouped))
         self.assertEqual(activities[:5], grouped[0])

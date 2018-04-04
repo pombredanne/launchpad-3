@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Browser code for the Launchpad root page."""
 
@@ -39,12 +39,12 @@ from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
-from lp.services.googlesearch.interfaces import (
-    GoogleResponseError,
-    ISearchService,
-    )
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.propertycache import cachedproperty
+from lp.services.sitesearch.interfaces import (
+    ISearchService,
+    SiteSearchResponseError,
+    )
 from lp.services.statistics.interfaces.statistic import ILaunchpadStatisticSet
 from lp.services.timeout import urlfetch
 from lp.services.webapp import LaunchpadView
@@ -510,24 +510,27 @@ class LaunchpadSearchView(LaunchpadFormView):
     def searchPages(self, query_terms, start=0):
         """Return the up to 20 pages that match the query_terms, or None.
 
-        :param query_terms: The unescaped terms to query Google.
+        :param query_terms: The unescaped terms to query for.
         :param start: The index of the page that starts the set of pages.
-        :return: A GooglBatchNavigator or None.
+        :return: A SiteSearchBatchNavigator or None.
         """
         if query_terms in [None, '']:
             return None
-        google_search = getUtility(ISearchService)
+        search_engine = getFeatureFlag("sitesearch.engine.name")
+        # Default to the Google search engine.
+        search_engine = search_engine or "google"
+        site_search = getUtility(ISearchService, name=search_engine)
         try:
-            page_matches = google_search.search(
+            page_matches = site_search.search(
                 terms=query_terms, start=start)
-        except GoogleResponseError:
-            # There was a connectivity or Google service issue that means
+        except SiteSearchResponseError:
+            # There was a connectivity or search service issue that means
             # there is no data available at this moment.
             self.has_page_service = False
             return None
         if len(page_matches) == 0:
             return None
-        navigator = GoogleBatchNavigator(
+        navigator = SiteSearchBatchNavigator(
             page_matches, self.request, start=start)
         navigator.setHeadings(*self.batch_heading)
         return navigator
@@ -589,7 +592,7 @@ class WindowedListBatch(batch._Batch):
         return self.start + len(self.list._window)
 
 
-class GoogleBatchNavigator(BatchNavigator):
+class SiteSearchBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
 
     _batch_factory = WindowedListBatch
@@ -614,7 +617,7 @@ class GoogleBatchNavigator(BatchNavigator):
         :param callback: Not used.
         """
         results = WindowedList(results, start, results.total)
-        super(GoogleBatchNavigator, self).__init__(results, request,
+        super(SiteSearchBatchNavigator, self).__init__(results, request,
             start=start, size=size, callback=callback,
             transient_parameters=transient_parameters,
             force_start=force_start, range_factory=range_factory)

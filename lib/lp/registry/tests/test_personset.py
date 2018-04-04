@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for PersonSet."""
@@ -976,7 +976,7 @@ class TestPersonAddSSHKeyFromSSO(TestCaseWithFactory):
     def test_restricted_to_sso(self):
         # Only the ubuntu-sso celebrity can invoke this
         # privileged method.
-        key_text = 'ssh-rsa keytext keycomment'
+        key_text = self.factory.makeSSHKeyText()
         target = self.factory.makePerson(name='username')
         make_openid_identifier(target.account, u'openid')
 
@@ -998,22 +998,23 @@ class TestPersonAddSSHKeyFromSSO(TestCaseWithFactory):
             self.assertEqual(None, do_it())
 
     def test_adds_new_ssh_key(self):
-        key_text = 'ssh-rsa keytext keycomment'
+        full_key = self.factory.makeSSHKeyText()
+        _, keytext, comment = full_key.split(' ', 2)
         target = self.factory.makePerson(name='username')
         make_openid_identifier(target.account, u'openid')
 
         with person_logged_in(self.sso):
             getUtility(IPersonSet).addSSHKeyFromSSO(
-                self.sso, u'openid', key_text, False)
+                self.sso, u'openid', full_key, False)
 
         with person_logged_in(target):
             [key] = target.sshkeys
             self.assertEqual(key.keytype, SSHKeyType.RSA)
-            self.assertEqual(key.keytext, 'keytext')
-            self.assertEqual(key.comment, 'keycomment')
+            self.assertEqual(key.keytext, keytext)
+            self.assertEqual(key.comment, comment)
 
     def test_does_not_add_new_ssh_key_with_dry_run(self):
-        key_text = 'ssh-rsa keytext keycomment'
+        key_text = self.factory.makeSSHKeyText()
         target = self.factory.makePerson(name='username')
         make_openid_identifier(target.account, u'openid')
 

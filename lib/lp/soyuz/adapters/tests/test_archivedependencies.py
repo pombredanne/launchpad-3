@@ -9,11 +9,11 @@ __metaclass__ = type
 
 import os.path
 
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     MatchesSetwise,
     StartsWith,
     )
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
 from twisted.internet.threads import deferToThread

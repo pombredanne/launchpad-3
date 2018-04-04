@@ -18,7 +18,6 @@ import fixtures
 from mock import patch
 from pymacaroons import Macaroon
 from testtools import ExpectedException
-from testtools.deferredruntest import AsynchronousDeferredRunTest
 from testtools.matchers import (
     AfterPreprocessing,
     Equals,
@@ -27,10 +26,12 @@ from testtools.matchers import (
     MatchesListwise,
     StartsWith,
     )
+from testtools.twistedsupport import AsynchronousDeferredRunTest
 import transaction
 from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 from zope.component import getUtility
+from zope.proxy import isProxy
 from zope.security.proxy import removeSecurityProxy
 
 from lp.archivepublisher.interfaces.archivesigningkey import (
@@ -55,6 +56,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.log.logger import BufferLogger
+from lp.services.webapp import canonical_url
 from lp.snappy.interfaces.snap import SnapBuildArchiveOwnerMismatch
 from lp.snappy.model.snapbuildbehaviour import SnapBuildBehaviour
 from lp.soyuz.adapters.archivedependencies import (
@@ -276,6 +278,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archives": expected_archives,
             "arch_tag": "i386",
             "branch": branch.bzr_identity,
+            "build_url": canonical_url(job.build),
             "name": "test-snap",
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
@@ -297,6 +300,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_url": canonical_url(job.build),
             "git_repository": ref.repository.git_https_url,
             "git_path": ref.name,
             "name": "test-snap",
@@ -321,6 +325,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_url": canonical_url(job.build),
             "git_repository": ref.repository.git_https_url,
             "name": "test-snap",
             "proxy_url": self.proxy_url,
@@ -345,6 +350,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_url": canonical_url(job.build),
             "git_repository": url,
             "git_path": "master",
             "name": "test-snap",
@@ -369,6 +375,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_url": canonical_url(job.build),
             "git_repository": url,
             "name": "test-snap",
             "proxy_url": self.proxy_url,
@@ -396,6 +403,17 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             ]))
 
     @defer.inlineCallbacks
+    def test_extraBuildArgs_channels(self):
+        # If the build needs particular channels, _extraBuildArgs sends
+        # them.
+        job = self.makeJob(channels={"snapcraft": "edge"})
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
+        args = yield job._extraBuildArgs()
+        self.assertFalse(isProxy(args["channels"]))
+        self.assertEqual({"snapcraft": "edge"}, args["channels"])
+
     def test_extraBuildArgs_disallow_internet(self):
         # If external network access is not allowed for the snap,
         # _extraBuildArgs does not dispatch a proxy token.

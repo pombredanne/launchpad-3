@@ -1,7 +1,9 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the GNU
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the GNU
 # Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive software center agent celebrity."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized

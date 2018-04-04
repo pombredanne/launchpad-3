@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -456,7 +456,7 @@ class CopyCheckerQueries(TestCaseWithFactory,
 
     def _setupSources(self, nb_of_sources):
         sources = []
-        for i in xrange(nb_of_sources):
+        for i in range(nb_of_sources):
             source = self.test_publisher.getPubSource(
                 version=u'%d' % self.factory.getUniqueInteger(),
                 sourcename=u'name-%d' % self.factory.getUniqueInteger())

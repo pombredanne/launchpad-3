@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The Launchpad code hosting file system.
@@ -466,7 +466,8 @@ class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
                 virtual_url_fragment.lstrip('/')))
 
         @no_traceback_failures
-        def process_result((branch, trailing)):
+        def process_result(result):
+            branch, trailing = result
             if branch is None:
                 raise NoSuchFile(virtual_url_fragment)
             else:
@@ -494,7 +495,7 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
         # the user tries to make a directory like "~foo/bar". That is, a
         # directory that has too little information to be translated into a
         # Launchpad branch.
-        deferred = AsyncVirtualTransport._getUnderylingTransportAndPath(
+        deferred = AsyncVirtualTransport._getUnderlyingTransportAndPath(
             self, relpath)
 
         @no_traceback_failures
@@ -504,7 +505,8 @@ class AsyncLaunchpadTransport(AsyncVirtualTransport):
             return self.server.createBranch(self._abspath(relpath))
 
         @no_traceback_failures
-        def real_mkdir((transport, path)):
+        def real_mkdir(result):
+            transport, path = result
             return getattr(transport, 'mkdir')(path, mode)
 
         deferred.addCallback(real_mkdir)
@@ -663,7 +665,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
             '/' + virtual_url_fragment)
 
         @no_traceback_failures
-        def got_path_info((transport_type, data, trailing_path)):
+        def got_path_info(result):
+            transport_type, data, trailing_path = result
             if transport_type != BRANCH_TRANSPORT:
                 raise NotABranchPath(virtual_url_fragment)
             transport, _ = self._transport_dispatch.makeTransport(

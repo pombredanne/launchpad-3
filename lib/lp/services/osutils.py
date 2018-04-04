@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for doing the sort of thing the os module does."""
@@ -12,6 +12,7 @@ __all__ = [
     'get_pid_from_file',
     'open_for_writing',
     'override_environ',
+    'process_exists',
     'remove_if_exists',
     'remove_tree',
     'two_stage_kill',
@@ -194,3 +195,17 @@ def find_on_path(command):
         if os.path.isfile(filename) and os.access(filename, os.X_OK):
             return True
     return False
+
+
+def process_exists(pid):
+    """Return True if the specified process already exists."""
+    try:
+        os.kill(pid, 0)
+    except os.error as err:
+        if err.errno == errno.ESRCH:
+            # All is well - the process doesn't exist.
+            return False
+        else:
+            # We got a strange OSError, which we'll pass upwards.
+            raise
+    return True

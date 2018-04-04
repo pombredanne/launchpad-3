@@ -219,7 +219,7 @@ setup(
         'testtools',
         'timeline',
         'transaction',
-        'Twisted',
+        'Twisted[conch,tls]',
         'txfixtures',
         'txlongpoll',
         'txlongpollfixture',
@@ -284,11 +284,13 @@ setup(
     },
     entry_points=dict(
         console_scripts=[  # `console_scripts` is a magic name to setuptools
+            'bingtestservice = '
+                'lp.services.sitesearch.bingtestservice:main',
             'build-twisted-plugin-cache = '
                 'lp.services.twistedsupport.plugincache:main',
             'combine-css = lp.scripts.utilities.js.combinecss:main',
             'googletestservice = '
-                'lp.services.googlesearch.googletestservice:main',
+                'lp.services.sitesearch.googletestservice:main',
             'harness = lp.scripts.harness:python',
             'iharness = lp.scripts.harness:ipython',
             'ipy = IPython.frontend.terminal.ipapp:launch_new_instance',

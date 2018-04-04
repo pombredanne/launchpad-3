@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Generic Python utilities.
@@ -257,8 +257,7 @@ class CapturedOutput(Fixture):
         self.stdout = StringIO()
         self.stderr = StringIO()
 
-    def setUp(self):
-        super(CapturedOutput, self).setUp()
+    def _setUp(self):
         self.useFixture(MonkeyPatch('sys.stdout', self.stdout))
         self.useFixture(MonkeyPatch('sys.stderr', self.stderr))
 
@@ -383,5 +382,5 @@ def sanitise_urls(s):
     example).  This function removes them.
     """
     # Remove credentials from URLs.
-    password_re = re.compile('://([^:]*:[^@]*@)(\S+)')
+    password_re = re.compile('://([^:@/]*:[^@/]*@)(\S+)')
     return password_re.sub(r'://<redacted>@\2', s)

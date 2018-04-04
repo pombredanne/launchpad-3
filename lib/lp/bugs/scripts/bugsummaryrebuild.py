@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -81,7 +81,9 @@ def get_bugtask_targets():
 def load_target(pid, psid, did, dsid, spnid):
     store = IStore(Product)
     p, ps, d, ds, spn = map(
-        lambda (cls, id): store.get(cls, id) if id is not None else None,
+        lambda cls_id: (
+            store.get(cls_id[0], cls_id[1]) if cls_id[1] is not None
+            else None),
         zip((Product, ProductSeries, Distribution, DistroSeries,
              SourcePackageName),
             (pid, psid, did, dsid, spnid)))
@@ -205,7 +207,7 @@ def apply_bugsummary_changes(target, added, updated, removed):
         chunk = removed[:100]
         removed = removed[100:]
         exprs = [
-            map(lambda (k, v): k == v, zip(key_cols, key))
+            map(lambda k_v: k_v[0] == k_v[1], zip(key_cols, key))
             for key in chunk]
         IStore(RawBugSummary).find(
             RawBugSummary,

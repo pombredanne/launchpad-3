@@ -61,6 +61,7 @@ API_INDEX = $(APIDOC_DIR)/index.html
 # NB: It's important PIP_BIN only mentions things genuinely produced by pip.
 PIP_BIN = \
     $(PY) \
+    bin/bingtestservice \
     bin/build-twisted-plugin-cache \
     bin/combine-css \
     bin/googletestservice \
@@ -141,12 +142,18 @@ logs:
 	mkdir logs
 
 codehosting-dir:
+	mkdir -p $(CODEHOSTING_ROOT)
 	mkdir -p $(CODEHOSTING_ROOT)/mirrors
 	mkdir -p $(CODEHOSTING_ROOT)/config
 	mkdir -p /var/tmp/bzrsync
 	touch $(CODEHOSTING_ROOT)/rewrite.log
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
+ifneq ($(SUDO_UID),)
+	if [ "$$(id -u)" = 0 ]; then \
+		chown -R $(SUDO_UID):$(SUDO_GID) $(CODEHOSTING_ROOT); \
+	fi
+endif
 
 inplace: build logs clean_logs codehosting-dir
 	if [ -d /srv/launchpad.dev ]; then \
@@ -205,8 +212,7 @@ $(YUI_SYMLINK): $(JS_BUILD_DIR)/.production
 	ln -sfn ../../yarn/node_modules/yui $@
 
 $(LP_JS_BUILD): | $(JS_BUILD_DIR)
-	-mkdir $@
-	-mkdir $@/services
+	mkdir -p $@/services
 	for jsdir in lib/lp/*/javascript lib/lp/services/*/javascript; do \
 		app=$$(echo $$jsdir | sed -e 's,lib/lp/\(.*\)/javascript,\1,'); \
 		cp -a $$jsdir $@/$$app; \
@@ -279,7 +285,7 @@ ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
 
 run: build inplace stop
-	bin/run -r librarian,google-webservice,memcached,rabbitmq,txlongpoll \
+	bin/run -r librarian,bing-webservice,google-webservice,memcached,rabbitmq,txlongpoll \
 	-i $(LPCONFIG)
 
 run-testapp: LPCONFIG=testrunner-appserver
@@ -292,12 +298,12 @@ run.gdb:
 
 start-gdb: build inplace stop support_files run.gdb
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
-		-r librarian,google-webservice
+		-r librarian,bing-webservice,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: build inplace stop
 	bin/run \
-	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,\
+	 -r librarian,sftp,forker,mailman,codebrowse,bing-webservice,google-webservice,\
 	memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
 run_codebrowse: compile
@@ -398,16 +404,13 @@ lxc-clean: clean_js clean_mailman clean_pip clean_logs
 	# it does everything expected from a clean target.  When the
 	# referenced bug is fixed, this target may be reunited with
 	# the 'clean' target.
-	$(MAKE) -C sourcecode/pygettextpo clean
-	# XXX gary 2009-11-16 bug 483782
-	# The pygettextpo Makefile should have this next line in it for its make
-	# clean, and then we should remove this line.
-	$(RM) sourcecode/pygpgme/gpgme/*.so
+	if test -f sourcecode/pygettextpo/Makefile; then \
+		$(MAKE) -C sourcecode/pygettextpo clean; \
+	fi
 	if test -f sourcecode/mailman/Makefile; then \
 		$(MAKE) -C sourcecode/mailman clean; \
 	fi
 	$(RM) -r env
-	$(RM) -r lib/subvertpy/*.so
 	$(RM) -r $(LP_BUILT_JS_ROOT)/*
 	$(RM) -r $(CODEHOSTING_ROOT)/*
 	$(RM) -r $(APIDOC_DIR)
@@ -458,7 +461,7 @@ copy-certificates:
 	cp configs/development/launchpad.crt /etc/apache2/ssl/
 	cp configs/development/launchpad.key /etc/apache2/ssl/
 
-copy-apache-config:
+copy-apache-config: codehosting-dir
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	set -e; \
@@ -472,8 +475,6 @@ copy-apache-config:
 		-e 's,%LISTEN_ADDRESS%,$(LISTEN_ADDRESS),' \
 		configs/development/local-launchpad-apache > \
 		/etc/apache2/sites-available/$$base
-	touch $(CODEHOSTING_ROOT)/rewrite.log
-	chown -R $(SUDO_UID):$(SUDO_GID) $(CODEHOSTING_ROOT)
 	if [ ! -d /srv/launchpad.dev ]; then \
 		mkdir /srv/launchpad.dev; \
 		chown $(SUDO_UID):$(SUDO_GID) /srv/launchpad.dev; \

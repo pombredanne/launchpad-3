@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -73,7 +73,7 @@ def make_plurals_fragment(fragment, separator):
     """
     return separator.join([
         fragment % {'form': form}
-        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+        for form in range(TranslationConstants.MAX_PLURAL_FORMS)])
 
 
 def make_plurals_sql_fragment(fragment, separator="AND"):
@@ -169,7 +169,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.date_reviewed = None
         self.reviewer = None
 
-        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+        for form in range(TranslationConstants.MAX_PLURAL_FORMS):
             setattr(self, 'msgstr%d' % form, None)
 
         self.comment = None
@@ -307,7 +307,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         return [
             getattr(self, 'msgstr%d' % form)
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+            for form in range(TranslationConstants.MAX_PLURAL_FORMS)]
 
     @cachedproperty
     def translations(self):
@@ -498,7 +498,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         store = Store.of(self)
 
         forms_match = (TranslationMessage.msgstr0ID == self.msgstr0ID)
-        for form in xrange(1, TranslationConstants.MAX_PLURAL_FORMS):
+        for form in range(1, TranslationConstants.MAX_PLURAL_FORMS):
             form_name = 'msgstr%d' % form
             form_value = getattr(self, 'msgstr%dID' % form)
             forms_match = And(
@@ -571,7 +571,7 @@ class TranslationMessageSet:
             load_related(
                 POTranslation, tms,
                 ['msgstr%dID' % form
-                 for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+                 for form in range(TranslationConstants.MAX_PLURAL_FORMS)])
         if need_potmsgset:
             load_related(POTMsgSet, tms, ['potmsgsetID'])
         if need_people:

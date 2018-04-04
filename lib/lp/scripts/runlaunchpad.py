@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -19,7 +19,6 @@ from zope.app.server.main import main
 
 from lp.services.config import config
 from lp.services.daemons import tachandler
-from lp.services.googlesearch import googletestservice
 from lp.services.mailman import runmailman
 from lp.services.osutils import ensure_directory_exists
 from lp.services.pidfile import (
@@ -27,6 +26,10 @@ from lp.services.pidfile import (
     pidfile_path,
     )
 from lp.services.rabbit.server import RabbitServer
+from lp.services.sitesearch import (
+    bingtestservice,
+    googletestservice,
+    )
 from lp.services.txlongpoll.server import TxLongPollServer
 
 
@@ -49,8 +52,7 @@ class Service(fixtures.Fixture):
         """
         raise NotImplementedError
 
-    def setUp(self):
-        super(Service, self).setUp()
+    def _setUp(self):
         self.launch()
 
 
@@ -152,6 +154,16 @@ class GoogleWebService(Service):
 
     def launch(self):
         self.addCleanup(stop_process, googletestservice.start_as_process())
+
+
+class BingWebService(Service):
+
+    @property
+    def should_launch(self):
+        return config.bing_test_service.launch
+
+    def launch(self):
+        self.addCleanup(stop_process, bingtestservice.start_as_process())
 
 
 class MemcachedService(Service):
@@ -281,6 +293,7 @@ SERVICES = {
     'sftp': TacFile('sftp', 'daemons/sftp.tac', 'codehosting'),
     'forker': ForkingSessionService(),
     'mailman': MailmanService(),
+    'bing-webservice': BingWebService(),
     'codebrowse': CodebrowseService(),
     'google-webservice': GoogleWebService(),
     'memcached': MemcachedService(),

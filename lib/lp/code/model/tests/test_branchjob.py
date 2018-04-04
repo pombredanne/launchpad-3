@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchJobs."""
@@ -16,6 +16,7 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
+from fixtures import MockPatch
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
@@ -205,6 +206,32 @@ class TestBranchScanJob(TestCaseWithFactory):
             job.run()
         self.assertEqual(db_branch.revision_count, 1)
         self.assertIn(db_branch, private_bug.linked_branches)
+
+    def test_sql_statements_truncated(self):
+        """SQL statements in the job timeline are truncated."""
+        self.useBzrBranches(direct_database=True)
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        job = BranchScanJob.create(db_branch)
+
+        def mock_run(*args):
+            IMasterStore(BranchJob).execute("SELECT '" + 'x' * 1000 + "'")
+            raise Exception('boom')
+
+        self.useFixture(MockPatch(
+            'lp.code.model.branchjob.BranchScanJob.run', mock_run))
+        runner = JobRunner([job])
+        with dbuser('branchscanner'):
+            runner.runJobHandleError(job)
+        self.assertEqual(1, len(self.oopses))
+        actions = [action[2:4] for action in self.oopses[0]['timeline']]
+        # Long action details are truncated.
+        self.assertIn(
+            ('SQL-main-master',
+             "SELECT '" + 'x' * 489 + ' ... ' + 'x' * 496 + "'"),
+            actions)
+        # Short action details are left untouched.
+        self.assertIn(
+            ('SQL-nostore', 'Transaction completed, status: Active'), actions)
 
 
 class TestBranchUpgradeJob(TestCaseWithFactory):

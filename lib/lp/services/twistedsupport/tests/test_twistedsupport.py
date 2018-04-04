@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from testtools.deferredruntest import (
+from testtools.twistedsupport import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     )

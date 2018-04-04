@@ -712,9 +712,6 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         :returns: A resultset of tuples for (BranchRevision, Revision)
         """
 
-    def getRevisionsSince(timestamp):
-        """Revisions in the history that are more recent than timestamp."""
-
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
