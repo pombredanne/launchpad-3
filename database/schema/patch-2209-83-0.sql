@@ -3,7 +3,7 @@
 
 SET client_min_messages=ERROR;
 
-ALTER TABLE Snap ADD COLUMN allow_internet boolean;
+ALTER TABLE Snap ADD COLUMN allow_internet boolean DEFAULT true NOT NULL;
 
 COMMENT ON COLUMN Snap.allow_internet IS 'If True, builds of this snap may allow access to external network resources.';
 
