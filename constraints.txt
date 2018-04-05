@@ -268,7 +268,7 @@ iso8601==0.1.12
 jsautobuild==0.2
 keyring==0.6.2
 kombu==3.0.30
-launchpad-buildd==157
+launchpad-buildd==159
 launchpadlib==1.10.5
 lazr.authentication==0.1.1
 lazr.batchnavigator==1.2.11
