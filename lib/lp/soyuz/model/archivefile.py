@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A file in an archive."""
@@ -33,6 +33,7 @@ from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
+from lp.services.database.sqlbase import convert_storm_clause_to_string
 from lp.services.database.stormexpr import BulkUpdate
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.model import (
@@ -74,6 +75,15 @@ class ArchiveFile(Storm):
         self.path = path
         self.library_file = library_file
         self.scheduled_deletion_date = None
+
+
+def _now():
+    """Get the current transaction timestamp.
+
+    Tests can override this with a Storm expression or a `datetime` to
+    simulate time changes.
+    """
+    return UTC_NOW
 
 
 @implementer(IArchiveFileSet)
@@ -128,7 +138,7 @@ class ArchiveFileSet:
             ArchiveFile.library_file == LibraryFileAlias.id,
             LibraryFileAlias.content == LibraryFileContent.id,
             ]
-        new_date = UTC_NOW + stay_of_execution
+        new_date = _now() + stay_of_execution
         return_columns = [
             ArchiveFile.container, ArchiveFile.path, LibraryFileContent.sha256]
         return list(IMasterStore(ArchiveFile).execute(Returning(
@@ -162,7 +172,7 @@ class ArchiveFileSet:
     def getContainersToReap(archive, container_prefix=None):
         clauses = [
             ArchiveFile.archive == archive,
-            ArchiveFile.scheduled_deletion_date < UTC_NOW,
+            ArchiveFile.scheduled_deletion_date < _now(),
             ]
         if container_prefix is not None:
             clauses.append(ArchiveFile.container.startswith(container_prefix))
@@ -175,22 +185,20 @@ class ArchiveFileSet:
         # XXX cjwatson 2016-03-30 bug=322972: Requires manual SQL due to
         # lack of support for DELETE FROM ... USING ... in Storm.
         clauses = [
-            "ArchiveFile.archive = ?",
-            "ArchiveFile.scheduled_deletion_date < "
-                "CURRENT_TIMESTAMP AT TIME ZONE 'UTC'",
-            "ArchiveFile.library_file = LibraryFileAlias.id",
-            "LibraryFileAlias.content = LibraryFileContent.id",
+            ArchiveFile.archive == archive,
+            ArchiveFile.scheduled_deletion_date < _now(),
+            ArchiveFile.library_file_id == LibraryFileAlias.id,
+            LibraryFileAlias.contentID == LibraryFileContent.id,
             ]
-        values = [archive.id]
         if container is not None:
-            clauses.append("ArchiveFile.container = ?")
-            values.append(container)
+            clauses.append(ArchiveFile.container == container)
+        where = convert_storm_clause_to_string(And(*clauses))
         return list(IMasterStore(ArchiveFile).execute("""
             DELETE FROM ArchiveFile
             USING LibraryFileAlias, LibraryFileContent
-            WHERE """ + " AND ".join(clauses) + """
+            WHERE """ + where + """
             RETURNING
                 ArchiveFile.container,
                 ArchiveFile.path,
                 LibraryFileContent.sha256
-            """, values))
+            """))

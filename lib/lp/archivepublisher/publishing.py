@@ -772,8 +772,8 @@ class Publisher(object):
             for pocket in self.archive.getPockets():
                 ds_pocket = (distroseries.name, pocket)
                 suite = distroseries.getSuite(pocket)
-                release_path = os.path.join(
-                    self._config.distsroot, suite, "Release")
+                suite_path = os.path.join(self._config.distsroot, suite)
+                release_path = os.path.join(suite_path, "Release")
 
                 if is_careful:
                     if not self.isAllowed(distroseries, pocket):
@@ -803,7 +803,11 @@ class Publisher(object):
                     # We aren't publishing a new Release file for this
                     # suite, probably because it's immutable, but we still
                     # need to prune by-hash files from it.
-                    self._updateByHash(suite, "Release")
+                    extra_by_hash_files = {
+                        filename: filename
+                        for filename in ("Release", "Release.gpg", "InRelease")
+                        if file_exists(os.path.join(suite_path, filename))}
+                    self._updateByHash(suite, "Release", extra_by_hash_files)
 
     def _allIndexFiles(self, distroseries):
         """Return all index files on disk for a distroseries.
@@ -1025,7 +1029,7 @@ class Publisher(object):
             return self.distro.displayname
         return "LP-PPA-%s" % get_ppa_reference(self.archive)
 
-    def _updateByHash(self, suite, release_file_name):
+    def _updateByHash(self, suite, release_file_name, extra_files):
         """Update by-hash files for a suite.
 
         This takes Release file data which references a set of on-disk
@@ -1034,6 +1038,16 @@ class Publisher(object):
         directories to be in sync with ArchiveFile.  Any on-disk by-hash
         entries that ceased to be current sufficiently long ago are removed.
         """
+        extra_data = {}
+        for filename, real_filename in extra_files.items():
+            hashes = self._readIndexFileHashes(
+                suite, filename, real_file_name=real_filename)
+            if hashes is None:
+                continue
+            for archive_hash in archive_hashes:
+                extra_data.setdefault(archive_hash.apt_name, []).append(
+                    hashes[archive_hash.deb822_name])
+
         release_path = os.path.join(
             self._config.distsroot, suite, release_file_name)
         with open(release_path) as release_file:
@@ -1052,12 +1066,13 @@ class Publisher(object):
         # Gather information on entries in the current Release file, and
         # make sure nothing there is condemned.
         current_files = {}
-        current_sha256_checksums = set()
-        for current_entry in release_data["SHA256"]:
+        for current_entry in (
+                release_data["SHA256"] + extra_data.get("SHA256", [])):
             path = os.path.join(suite_dir, current_entry["name"])
+            real_name = current_entry.get("real_name", current_entry["name"])
+            real_path = os.path.join(suite_dir, real_name)
             current_files[path] = (
-                int(current_entry["size"]), current_entry["sha256"])
-            current_sha256_checksums.add(current_entry["sha256"])
+                int(current_entry["size"]), current_entry["sha256"], real_path)
         uncondemned_files = set()
         for db_file in archive_file_set.getByArchive(
                 self.archive, container=container, only_condemned=True,
@@ -1117,15 +1132,16 @@ class Publisher(object):
         # XXX cjwatson 2016-03-15: This should possibly use bulk creation,
         # although we can only avoid about a third of the queries since the
         # librarian client has no bulk upload methods.
-        for path, (size, sha256) in current_files.items():
-            full_path = os.path.join(self._config.distsroot, path)
+        for path, (size, sha256, real_path) in current_files.items():
+            full_path = os.path.join(self._config.distsroot, real_path)
             if (os.path.exists(full_path) and
                     not by_hashes.known(path, "SHA256", sha256)):
                 with open(full_path, "rb") as fileobj:
                     db_file = archive_file_set.newFromFile(
                         self.archive, container, os.path.join("dists", path),
                         fileobj, size, filenameToContentType(path))
-                by_hashes.add(path, db_file.library_file, copy_from_path=path)
+                by_hashes.add(
+                    path, db_file.library_file, copy_from_path=real_path)
 
         # Finally, remove any files from disk that aren't recorded in the
         # database and aren't active.
@@ -1173,6 +1189,9 @@ class Publisher(object):
         # special games with timestamps here, as it will interfere with the
         # "staging" mechanism used to update these files.
         extra_files = set()
+        # Extra by-hash files are not listed in the Release file, but we
+        # still want to include them in by-hash directories.
+        extra_by_hash_files = {}
         for component in all_components:
             self._writeSuiteSource(
                 distroseries, pocket, component, core_files)
@@ -1239,9 +1258,7 @@ class Publisher(object):
 
         self._writeReleaseFile(suite, release_file)
         core_files.add("Release")
-
-        if distroseries.publish_by_hash:
-            self._updateByHash(suite, "Release.new")
+        extra_by_hash_files["Release"] = "Release.new"
 
         signable_archive = ISignableArchive(self.archive)
         if signable_archive.can_sign:
@@ -1250,10 +1267,15 @@ class Publisher(object):
             signable_archive.signRepository(
                 suite, pubconf=self._config, suffix=".new", log=self.log)
             core_files.add("Release.gpg")
+            extra_by_hash_files["Release.gpg"] = "Release.gpg.new"
             core_files.add("InRelease")
+            extra_by_hash_files["InRelease"] = "InRelease.new"
         else:
             # Skip signature if the archive is not set up for signing.
             self.log.debug("No signing key available, skipping signature.")
+
+        if distroseries.publish_by_hash:
+            self._updateByHash(suite, "Release.new", extra_by_hash_files)
 
         for name in ("Release", "Release.gpg", "InRelease"):
             if name in core_files:
@@ -1366,7 +1388,8 @@ class Publisher(object):
         # Schedule this for inclusion in the Release file.
         all_series_files.add(os.path.join(component, "i18n", "Index"))
 
-    def _readIndexFileHashes(self, suite, file_name, subpath=None):
+    def _readIndexFileHashes(self, suite, file_name, subpath=None,
+                             real_file_name=None):
         """Read an index file and return its hashes.
 
         :param suite: Suite name.
@@ -1374,6 +1397,11 @@ class Publisher(object):
         :param subpath: Optional subpath within the suite root.  Generated
             indexes will not include this path.  If omitted, filenames are
             assumed to be relative to the suite root.
+        :param real_file_name: The actual filename to open when reading
+            data (`file_name` will still be the name used in the returned
+            dictionary).  If this is passed, then the returned hash
+            component dictionaries will include it in additional "real_name"
+            items.
         :return: A dictionary mapping hash field names to dictionaries of
             their components as defined by debian.deb822.Release (e.g.
             {"md5sum": {"md5sum": ..., "size": ..., "name": ...}}), or None
@@ -1381,7 +1409,8 @@ class Publisher(object):
         """
         open_func = open
         full_name = os.path.join(
-            self._config.distsroot, suite, subpath or '.', file_name)
+            self._config.distsroot, suite, subpath or '.',
+            real_file_name or file_name)
         if not os.path.exists(full_name):
             if os.path.exists(full_name + '.gz'):
                 open_func = gzip.open
@@ -1405,9 +1434,13 @@ class Publisher(object):
                 for hashobj in hashes.values():
                     hashobj.update(chunk)
                 size += len(chunk)
-        return {
-            alg: {alg: hashobj.hexdigest(), "name": file_name, "size": size}
-            for alg, hashobj in hashes.items()}
+        ret = {}
+        for alg, hashobj in hashes.items():
+            digest = hashobj.hexdigest()
+            ret[alg] = {alg: digest, "name": file_name, "size": size}
+            if real_file_name:
+                ret[alg]["real_name"] = real_file_name
+        return ret
 
     def deleteArchive(self):
         """Delete the archive.
