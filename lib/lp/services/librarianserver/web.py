@@ -147,12 +147,9 @@ class LibraryFileAliasResource(resource.Resource):
             return fourOhFour
 
     @defer.inlineCallbacks
-    def _cb_getFileAlias(
-            self,
-            (dbcontentID, dbfilename, mimetype, date_created, size,
-                restricted),
-            filename, request
-            ):
+    def _cb_getFileAlias(self, results, filename, request):
+        (dbcontentID, dbfilename, mimetype, date_created, size,
+         restricted) = results
         # Return a 404 if the filename in the URL is incorrect. This offers
         # a crude form of access control (stuff we care about can have
         # unguessable names effectively using the filename as a secret).

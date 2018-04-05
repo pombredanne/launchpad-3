@@ -45,8 +45,8 @@ def fsync_path(path, dir=False):
         os.close(fd)
 
 
-def makedirs_fsync(name, mode=0777):
-    """makedirs_fsync(path [, mode=0777])
+def makedirs_fsync(name, mode=0o777):
+    """makedirs_fsync(path [, mode=0o777])
 
     os.makedirs, but fsyncing on the way up to ensure durability.
     """
