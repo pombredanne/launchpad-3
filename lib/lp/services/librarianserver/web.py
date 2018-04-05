@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,9 +8,18 @@ import time
 from urlparse import urlparse
 
 from storm.exceptions import DisconnectionError
-from twisted.internet import defer
+from twisted.internet import (
+    abstract,
+    defer,
+    reactor,
+    )
+from twisted.internet.interfaces import IPushProducer
 from twisted.internet.threads import deferToThread
 from twisted.python import log
+from twisted.python.compat import (
+    intToBytes,
+    networkString,
+    )
 from twisted.web import (
     http,
     proxy,
@@ -19,6 +28,7 @@ from twisted.web import (
     static,
     util,
     )
+from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.database import (
@@ -165,7 +175,6 @@ class LibraryFileAliasResource(resource.Resource):
             # stored as part of a file's metadata this logic will be replaced.
             encoding, mimetype = guess_librarian_encoding(filename, mimetype)
             file = File(mimetype, encoding, date_created, stream, size)
-            assert file.exists
             # Set our caching headers. Public Librarian files can be
             # cached forever, while private ones mustn't be at all.
             request.setHeader(
@@ -185,76 +194,109 @@ class LibraryFileAliasResource(resource.Resource):
         return defaultResource.render(request)
 
 
-class File(static.File):
+class File(resource.Resource):
     isLeaf = True
 
-    def __init__(
-        self, contentType, encoding, modification_time, stream, size):
+    def __init__(self, contentType, encoding, modification_time, stream, size):
+        resource.Resource.__init__(self)
         # Have to convert the UTC datetime to POSIX timestamp (localtime)
         offset = datetime.utcnow() - datetime.now()
         local_modification_time = modification_time - offset
         self._modification_time = time.mktime(
             local_modification_time.timetuple())
-        static.File.__init__(self, '.')
         self.type = contentType
         self.encoding = encoding
         self.stream = stream
         self.size = size
 
-    def getModificationTime(self):
-        """Override the time on disk with the time from the database.
+    def _setContentHeaders(self, request):
+        request.setHeader(b'content-length', intToBytes(self.size))
+        if self.type:
+            request.setHeader(b'content-type', networkString(self.type))
+        if self.encoding:
+            request.setHeader(
+                b'content-encoding', networkString(self.encoding))
 
-        This is used by twisted to set the Last-Modified: header.
-        """
-        return self._modification_time
+    def render_GET(self, request):
+        """See `Resource`."""
+        request.setHeader(b'accept-ranges', b'none')
 
-    def restat(self, reraise=True):
-        return  # Noop
+        if request.setLastModified(self._modification_time) is http.CACHED:
+            # `setLastModified` also sets the response code for us, so if
+            # the request is cached, we close the file now that we've made
+            # sure that the request would otherwise succeed and return an
+            # empty body.
+            self.stream.close()
+            return b''
 
-    def getsize(self):
-        return self.size
+        if request.method == b'HEAD':
+            # Set the content headers here, rather than making a producer.
+            self._setContentHeaders(request)
+            self.stream.close()
+            return b''
 
-    def exists(self):
-        return self.stream is not None
-
-    def isdir(self):
-        return False
-
-    def openForReading(self):
-        return self.stream
-
-    def makeProducer(self, request, fileForReading):
-        # Unfortunately, by overriding the static.File's more
-        # complex makeProducer method we lose HTTP range support.
-        # However, this seems the only sane way of coping with the fact
-        # that sucking data in from Swift requires a Deferred and the
-        # static.*Producer implementations don't cope. This shouldn't be
-        # a problem as the Librarian sits behind Squid. If it is, I
-        # think we will need to cargo-cult three Procucer
-        # implementations in static, making the small modification to
-        # cope with self.fileObject.read maybe returning a Deferred, and
+        # static.File has HTTP range support, which would be nice to have.
+        # Unfortunately, static.File isn't a good match for producing data
+        # dynamically by fetching it from Swift. This shouldn't be a problem
+        # as the Librarian sits behind Squid. If it is, I think we will need
+        # to cargo-cult the byte-range support and three Producer
+        # implementations from static.File, making the small modifications
+        # to cope with self.fileObject.read maybe returning a Deferred, and
         # the static.File.makeProducer method to return the correct
         # producer.
         self._setContentHeaders(request)
         request.setResponseCode(http.OK)
-        return FileProducer(request, fileForReading)
+        producer = FileProducer(request, self.stream)
+        producer.start()
+
+        return server.NOT_DONE_YET
 
 
-class FileProducer(static.NoRangeStaticProducer):
+@implementer(IPushProducer)
+class FileProducer(object):
+
+    buffer_size = abstract.FileDescriptor.bufferSize
+
+    def __init__(self, request, stream):
+        self.request = request
+        self.stream = stream
+        self.producing = True
+
+    def start(self):
+        self.request.registerProducer(self, True)
+        self.resumeProducing()
+
+    def pauseProducing(self):
+        """See `IPushProducer`."""
+        self.producing = False
+
     @defer.inlineCallbacks
+    def _produceFromStream(self):
+        """Read data from our stream and write it to our consumer."""
+        while self.request and self.producing:
+            data = yield self.stream.read(self.buffer_size)
+            # pauseProducing or stopProducing may have been called while we
+            # were waiting.
+            if not self.producing:
+                return
+            if data:
+                self.request.write(data)
+            else:
+                self.request.unregisterProducer()
+                self.request.finish()
+                self.stopProducing()
+
     def resumeProducing(self):
-        if not self.request:
-            return
-        data = yield self.fileObject.read(self.bufferSize)
-        # stopProducing may have been called while we were waiting.
-        if not self.request:
-            return
-        if data:
-            self.request.write(data)
-        else:
-            self.request.unregisterProducer()
-            self.request.finish()
-            self.stopProducing()
+        """See `IPushProducer`."""
+        self.producing = True
+        if self.request:
+            reactor.callLater(0, self._produceFromStream)
+
+    def stopProducing(self):
+        """See `IProducer`."""
+        self.producing = False
+        self.stream.close()
+        self.request = None
 
 
 class DigestSearchResource(resource.Resource):
