@@ -22,5 +22,7 @@
 
 /bingcustomsearch/v7.0/search?count=20&customConfig=1234567890&mkt=en-US&offset=0&q=errors-please bingsearchservice-error.json
 
+/bingcustomsearch/v7.0/search?count=20&customConfig=1234567890&mkt=en-US&offset=0&q=xss bingsearchservice-xss.json
+
 # This stub service is also used to impersonate the Blog feed
 /blog-feed blog.launchpad.net-feed.json

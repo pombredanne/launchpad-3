@@ -3,14 +3,16 @@
 
 """Test the bing search service."""
 
-__metaclass__ = type
+from __future__ import absolute_import, print_function, unicode_literals
 
+__metaclass__ = type
 
 from fixtures import MockPatch
 from requests.exceptions import (
     ConnectionError,
     HTTPError,
     )
+from testtools.matchers import MatchesStructure
 
 from lp.services.sitesearch import BingSearchService
 from lp.services.sitesearch.interfaces import SiteSearchResponseError
@@ -116,3 +118,15 @@ class FunctionalTestBingSearchService(TestCase):
         self.assertRaises(
             SiteSearchResponseError,
             self.search_service.search, 'errors-please')
+
+    def test_search_xss(self):
+        matches = self.search_service.search('xss')
+        self.assertThat(matches[0], MatchesStructure.byEquality(
+            url='http://bugs.launchpad.dev/horizon/+bug/1349491',
+            title=(
+                'Bug #1349491 \u201c[OSSA 2014-027] Persistent &lt;XSS&gt; in '
+                'the Host Aggrega...\u201d : Bugs ...'),
+            summary=(
+                '* Enter some name and an availability zone like this: '
+                '&lt;svg onload=alert(1)&gt; * Save ... - Persistent XSS in '
+                'the Host Aggregates interface (CVE-2014-3594) + ...')))
