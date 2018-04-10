@@ -39,6 +39,7 @@ from lp.services.timeout import (
     urlfetch,
     )
 from lp.services.webapp import urlparse
+from lp.services.webapp.escaping import structured
 
 
 @implementer(ISearchResult)
@@ -489,6 +490,11 @@ class BingSearchService:
                 # should not be indexed.
                 continue
             summary = summary.replace('<br>', '')
+            # Strings in Bing's search results are unescaped by default.  We
+            # could alternatively fix this by sending textFormat=HTML, but
+            # let's just do our own escaping for now.
+            title = structured('%s', title).escapedtext
+            summary = structured('%s', summary).escapedtext
             page_matches.append(PageMatch(title, url, summary))
 
         return PageMatches(page_matches, start, total)
