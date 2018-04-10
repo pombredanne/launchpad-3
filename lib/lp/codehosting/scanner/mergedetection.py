@@ -157,8 +157,11 @@ def auto_merge_proposals(scan_completed):
         # Only happens in tests.
         merge_sorted = []
     else:
+        # This is potentially slow for deep histories; we defer even
+        # initialising it until we need it, and we cache the iterator's
+        # results.
         merge_sorted = CachingIterator(
-            scan_completed.bzr_branch.iter_merge_sorted_revisions())
+            scan_completed.bzr_branch.iter_merge_sorted_revisions)
     for proposal in db_branch.landing_candidates:
         tip_rev_id = proposal.source_branch.last_scanned_id
         if tip_rev_id in new_ancestry:
