@@ -518,7 +518,8 @@ showing the matching terms in context of the page text.
     >>> page.url
     'https://help.launchpad.net/Bugs'
     >>> page.summary  # doctest: +ELLIPSIS
-    u"Launchpad Help > Bugs . Use Launchpad's bug tracker for your project..."
+    u'Launchpad Help &gt; Bugs . Use Launchpad&#x27;s bug tracker for your
+    project...'
 
 See `google-searchservice.txt` for more information about the
 BingSearchService and PageMatch objects.
