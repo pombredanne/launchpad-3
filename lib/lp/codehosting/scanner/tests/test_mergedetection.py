@@ -32,6 +32,7 @@ from lp.codehosting.scanner.tests.test_bzrsync import (
     )
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
+from lp.services.log.logger import DevNullLogger
 from lp.services.osutils import override_environ
 from lp.testing import (
     TestCase,
@@ -199,7 +200,7 @@ class TestMergeDetection(TestCaseWithFactory):
         mergedetection.auto_merge_branches(
             events.ScanCompleted(
                 db_branch=db_branch, bzr_branch=None,
-                logger=None, new_ancestry=new_ancestry))
+                logger=DevNullLogger(), new_ancestry=new_ancestry))
 
     def mergeDetected(self, logger, source, target):
         # Record the merged branches
