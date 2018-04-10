@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1314,10 +1314,17 @@ class TestGetRecipients(TestCaseWithFactory):
         kwargs['email_address_status'] = EmailAddressStatus.NEW
         return self.factory.makePerson(**kwargs)
 
-    def get_test_recipients_person(self):
+    def test_get_recipients_person(self):
         person = self.factory.makePerson()
         recipients = get_recipients(person)
         self.assertEqual(set([person]), set(recipients))
+
+    def test_get_recipients_person_with_disabled_account(self):
+        """Mail is not sent to a direct recipient whose account is disabled."""
+        person = self.factory.makePerson()
+        person.setAccountStatus(AccountStatus.DEACTIVATED, None, 'gone')
+        recipients = get_recipients(person)
+        self.assertEqual(set(), set(recipients))
 
     def test_get_recipients_empty(self):
         """get_recipients returns empty set for person with no preferredemail.

@@ -4397,17 +4397,21 @@ def person_from_account(account):
 def get_recipients(person):
     """Return a set of people who receive email for this Person (person/team).
 
-    If <person> has a preferred email, the set will contain only that
-    person.  If <person> doesn't have a preferred email but is a team,
-    the set will contain the preferred email address of each member of
-    <person>, including indirect members, that has an active account and an
+    If <person> has a preferred email, then if <person> is a team or has an
+    active account the set will contain only that person, otherwise the set
+    will be empty.  If <person> doesn't have a preferred email but is a
+    team, the set will contain the preferred email address of each member of
+    <person>, including indirect members, that has an active account and a
     preferred (active) address.
 
     Finally, if <person> doesn't have a preferred email and is not a team,
     the set will be empty.
     """
     if removeSecurityProxy(person).preferredemail:
-        return [person]
+        if person.is_team or person.account_status == AccountStatus.ACTIVE:
+            return [person]
+        else:
+            return []
     elif person.is_team:
         # Get transitive members of a team that does not itself have a
         # preferred email.
