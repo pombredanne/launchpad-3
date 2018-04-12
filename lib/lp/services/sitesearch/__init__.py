@@ -53,9 +53,9 @@ class PageMatch:
     def url_rewrite_exceptions(self):
         """A list of launchpad.net URLs that must not be rewritten.
 
-        Configured in config.google.url_rewrite_exceptions.
+        Configured in config.sitesearch.url_rewrite_exceptions.
         """
-        return config.google.url_rewrite_exceptions.split()
+        return config.sitesearch.url_rewrite_exceptions.split()
 
     @property
     def url_rewrite_scheme(self):

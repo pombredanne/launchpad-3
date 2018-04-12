@@ -542,7 +542,7 @@ URL rewriting
 -------------
 
 The URL scheme used in the rewritten URL is configured in
-config.google.url_rewrite_scheme. The hostname is set in the shared
+config.vhosts.use_https. The hostname is set in the shared
 key config.vhost.mainsite.hostname.
 
     >>> config.vhosts.use_https
@@ -576,10 +576,10 @@ slashes.
     'http://launchpad.dev/ubuntu'
 
 There is a list of URLs that are not rewritten configured in
-config.google.url_rewrite_exceptions. For example, help.launchpad.net
+config.sitesearch.url_rewrite_exceptions. For example, help.launchpad.net
 is only run in one environment, so links to that site will be preserved.
 
-    >>> config.google.url_rewrite_exceptions
+    >>> config.sitesearch.url_rewrite_exceptions
     'help.launchpad.net'
     >>> page_match.url_rewrite_exceptions
     ['help.launchpad.net']
