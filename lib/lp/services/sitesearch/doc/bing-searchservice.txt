@@ -72,7 +72,7 @@ entire collection of matches. The 'length' attribute contains the number
 of returned results.
 
 The first search for 'bugs' returned a subset of items in the
-ISearchResult. There are 25 total items, but the results contains the
+ISearchResult. There are 25 total items, but the results contain the
 first 20 matches (because they start at index 0).
 
     >>> first_page_matches.start
@@ -109,7 +109,7 @@ index. All the items in the collection can be iterated.
     'http://launchpad.dev/mb'
     'http://launchpad.dev/bugs'
 
-An empty PageMatches is returns if there are no results.
+An empty PageMatches is returned if there are no results.
 
     >>> no_page_matches = bing_search.search(terms='fnord')
     >>> no_page_matches.start
