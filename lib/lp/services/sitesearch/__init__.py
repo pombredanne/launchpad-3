@@ -221,7 +221,7 @@ class GoogleSearchService:
                 "The response errored: %s" % str(error))
         finally:
             action.finish()
-        page_matches = self._parse_google_search_protocol(response.content)
+        page_matches = self._parse_search_response(response.content)
         return page_matches
 
     def _checkParameter(self, name, value, is_int=False):
@@ -272,7 +272,7 @@ class GoogleSearchService:
         """
         return self._getElementsByAttributeValue(doc, path, name, value)[0]
 
-    def _parse_google_search_protocol(self, gsp_xml):
+    def _parse_search_response(self, gsp_xml):
         """Return a `PageMatches` object.
 
         :param gsp_xml: A string that should be Google Search Protocol
