@@ -397,7 +397,7 @@ class BingSearchService:
                 "The response errored: %s" % str(error))
         finally:
             action.finish()
-        page_matches = self._parse_bing_response(response.content, start)
+        page_matches = self._parse_search_response(response.content, start)
         return page_matches
 
     def _checkParameter(self, name, value, is_int=False):
@@ -430,7 +430,7 @@ class BingSearchService:
             'Ocp-Apim-Subscription-Key': self.subscription_key,
             }
 
-    def _parse_bing_response(self, bing_json, start=0):
+    def _parse_search_response(self, bing_json, start=0):
         """Return a `PageMatches` object.
 
         :param bing_json: A string containing Bing Custom Search API v7 JSON.

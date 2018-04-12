@@ -57,23 +57,23 @@ class TestBingSearchService(TestCase):
         self.assertRaises(
             SiteSearchResponseError, self.search_service.search, 'fnord')
 
-    def test_parse_bing_response_TypeError(self):
+    def test_parse_search_response_TypeError(self):
         # The method converts TypeError to SiteSearchResponseError.
         self.assertRaises(
             SiteSearchResponseError,
-            self.search_service._parse_bing_response, None)
+            self.search_service._parse_search_response, None)
 
-    def test_parse_bing_response_ValueError(self):
+    def test_parse_search_response_ValueError(self):
         # The method converts ValueError to SiteSearchResponseError.
         self.assertRaises(
             SiteSearchResponseError,
-            self.search_service._parse_bing_response, '')
+            self.search_service._parse_search_response, '')
 
-    def test_parse_bing_response_KeyError(self):
+    def test_parse_search_response_KeyError(self):
         # The method converts KeyError to SiteSearchResponseError.
         self.assertRaises(
             SiteSearchResponseError,
-            self.search_service._parse_bing_response, '{}')
+            self.search_service._parse_search_response, '{}')
 
 
 class FunctionalTestBingSearchService(TestCase):
