@@ -1212,6 +1212,17 @@ class Publisher(object):
             except OSError as e:
                 if e.errno != errno.ENOENT:
                     raise
+            cnf_dir = os.path.join(suite_dir, component, "cnf")
+            try:
+                for cnf_file in os.listdir(cnf_dir):
+                    if dep11_file.startswith("Commands-"):
+                        cnf_path = os.path.join(
+                            component, "cnf", cnf_file)
+                        extra_files.add(remove_suffix(cnf_path))
+                        extra_files.add(cnf_path)
+            except OSError as e:
+                if e.errno != errno.ENOENT:
+                    raise
         for architecture in all_architectures:
             for contents_path in get_suffixed_indices(
                     'Contents-' + architecture):

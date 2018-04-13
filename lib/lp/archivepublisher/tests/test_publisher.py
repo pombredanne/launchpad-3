@@ -2189,6 +2189,36 @@ class TestPublisher(TestPublisherBase):
                 self.assertReleaseContentsMatch(
                     release, os.path.join('main', 'dep11', name), f.read())
 
+    def testReleaseFileForCommandNotFound(self):
+        # Test Release file writing for command-not-found metadata.
+        publisher = Publisher(
+            self.logger, self.config, self.disk_pool,
+            self.ubuntutest.main_archive)
+
+        # Put some cnf metadata files in place, and force the publisher
+        # to republish that suite.
+        series_path = os.path.join(self.config.distsroot, 'breezy-autotest')
+        cnf_path = os.path.join(series_path, 'main', 'cnf')
+        cnf_names = ('Commands-amd64.gz', 'Commands-i386.gz')
+        os.makedirs(cnf_path)
+        for name in cnf_names:
+            with gzip.GzipFile(os.path.join(cnf_path, name), 'wb') as f:
+                f.write(name)
+        publisher.markPocketDirty(
+            self.ubuntutest.getSeries('breezy-autotest'),
+            PackagePublishingPocket.RELEASE)
+
+        publisher.A_publish(False)
+        publisher.C_doFTPArchive(False)
+        publisher.D_writeReleaseFiles(False)
+
+        # The metadata files are listed correctly in Release.
+        release = self.parseRelease(os.path.join(series_path, 'Release'))
+        for name in cnf_names:
+            with open(os.path.join(cnf_path, name), 'rb') as f:
+                self.assertReleaseContentsMatch(
+                    release, os.path.join('main', 'cnf', name), f.read())
+
     def testReleaseFileTimestamps(self):
         # The timestamps of Release and all its core entries match.
         publisher = Publisher(
