@@ -209,10 +209,13 @@ class CachingIterator:
     iterator if necessary.
     """
 
-    def __init__(self, iterator):
-        self.iterator = iterator
+    def __init__(self, iterator_factory):
+        self.iterator_factory = iterator_factory
+        self.iterator = None
 
     def __iter__(self):
+        if self.iterator is None:
+            self.iterator = self.iterator_factory()
         # Teeing an iterator previously returned by tee won't cause heat
         # death. See tee_copy in itertoolsmodule.c in the Python source.
         self.iterator, iterator = tee(self.iterator)

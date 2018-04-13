@@ -92,6 +92,7 @@ def auto_merge_branches(scan_completed):
     #
     # XXX: JonathanLange 2009-05-11 spec=package-branches: This assumes that
     # merge detection only works with product branches.
+    logger.info("Looking for merged branches.")
     branches = getUtility(IAllBranches).inProduct(db_branch.product)
     branches = branches.withLifecycleStatus(
         BranchLifecycleStatus.DEVELOPMENT,
@@ -151,12 +152,16 @@ def auto_merge_proposals(scan_completed):
     # which introduced the change, that will either be set through the web
     # ui by a person, or by PQM once it is integrated.
 
+    logger.info("Looking for merged proposals.")
     if scan_completed.bzr_branch is None:
         # Only happens in tests.
         merge_sorted = []
     else:
+        # This is potentially slow for deep histories; we defer even
+        # initialising it until we need it, and we cache the iterator's
+        # results.
         merge_sorted = CachingIterator(
-            scan_completed.bzr_branch.iter_merge_sorted_revisions())
+            scan_completed.bzr_branch.iter_merge_sorted_revisions)
     for proposal in db_branch.landing_candidates:
         tip_rev_id = proposal.source_branch.last_scanned_id
         if tip_rev_id in new_ancestry:
