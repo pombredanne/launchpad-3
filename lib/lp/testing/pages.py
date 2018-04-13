@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for page tests."""
@@ -845,7 +845,7 @@ def setUpGlobs(test):
 # but does follow the convention of the other doctest related *Suite()
 # functions.
 
-def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
+def PageTestSuite(storydir, package=None, setUp=setUpGlobs, **kw):
     """Create a suite of page tests for files found in storydir.
 
     :param storydir: the directory containing the page tests.
@@ -873,5 +873,5 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
         suite.addTest(LayeredDocFileSuite(
             paths=paths,
             package=package, checker=checker, stdout_logging=False,
-            layer=PageTestLayer, setUp=setUp))
+            layer=PageTestLayer, setUp=setUp, **kw))
     return suite
