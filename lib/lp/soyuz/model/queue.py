@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -1363,6 +1363,8 @@ class PackageUploadCustom(SQLBase):
         handler = getUtility(ICustomUploadHandler, self.customformat.name)
         handler.publish(
             self.packageupload, self.libraryfilealias, logger=logger)
+        self.packageupload.archive.markSuiteDirty(
+            self.packageupload.distroseries, self.packageupload.pocket)
 
 
 @implementer(IPackageUploadSet)

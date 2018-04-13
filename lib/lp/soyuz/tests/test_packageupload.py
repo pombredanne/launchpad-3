@@ -6,6 +6,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 from datetime import timedelta
+import io
 from urllib2 import (
     HTTPError,
     urlopen,
@@ -34,6 +35,8 @@ from lp.services.database.interfaces import IStore
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
+from lp.services.log.logger import BufferLogger
+from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     PackagePublishingStatus,
@@ -137,6 +140,34 @@ class PackageUploadTestCase(TestCaseWithFactory):
         upload.setAccepted()
         [spph] = upload.realiseUpload()
         self.assertEqual(spph.packageupload, upload)
+
+    def test_publish_custom_marks_suite_dirty(self):
+        # Publishing a PackageUploadCustom will mark the suite as dirty so
+        # that new indexes will be published for it.
+        buf = io.BytesIO()
+        tarfile = LaunchpadWriteTarFile(buf)
+        tarfile.add_file("installer-amd64/1/hello", b"world")
+        tarfile.close()
+        upload = self.factory.makePackageUpload(
+            pocket=PackagePublishingPocket.PROPOSED)
+        filename = "debian-installer-images_1_amd64.tar.gz"
+        lfa = self.factory.makeLibraryFileAlias(
+            filename=filename, content=buf.getvalue(),
+            content_type="application/gzipped-tar")
+        upload.addCustom(lfa, PackageUploadCustomFormat.DEBIAN_INSTALLER)
+        transaction.commit()
+        upload.setAccepted()
+        self.assertIsNone(upload.archive.dirty_suites)
+        logger = BufferLogger()
+        self.assertEqual([], upload.realiseUpload(logger=logger))
+        self.assertEqual(
+            "DEBUG Publishing custom %s to %s/%s\n" % (
+                filename, upload.distroseries.distribution.name,
+                upload.distroseries.name),
+            logger.getLogBuffer())
+        self.assertEqual(
+            ["%s-proposed" % upload.distroseries.name],
+            upload.archive.dirty_suites)
 
     def test_overrideSource_ignores_None_component_change(self):
         # overrideSource accepts None as a component; it will not object
