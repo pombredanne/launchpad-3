@@ -99,15 +99,15 @@ An item can be retrieved from an ISearchResults object using its
 index. All the items in the collection can be iterated.
 
     >>> second_page_matches[1].url
-    'http://blog.launchpad.dev/general/of-bugs-and-statuses'
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2'
 
     >>> for page_match in second_page_matches:
     ...     page_match.url
-    'https://help.launchpad.net/Bugs'
-    'http://blog.launchpad.dev/general/of-bugs-and-statuses'
-    'http://launchpad.dev/mahara/+milestone/1.8.0'
-    'http://launchpad.dev/mb'
-    'http://launchpad.dev/bugs'
+    'http://bugs.launchpad.dev/ubuntu/hoary/+bug/2'
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2'
+    'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3'
+    'http://bugs.launchpad.dev/bugs/bugtrackers'
+    'http://bugs.launchpad.dev/bugs/bugtrackers/debbugs'
 
 An empty PageMatches is returned if there are no results.
 

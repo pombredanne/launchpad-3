@@ -1,9 +1,11 @@
 # Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""
-Run the view tests.
-"""
+"""Run the view tests."""
+
+from __future__ import absolute_import, print_function, unicode_literals
+
+__metaclass__ = type
 
 import logging
 import os
@@ -13,6 +15,7 @@ from lp.services.testing import build_test_suite
 from lp.testing.layers import (
     BingLaunchpadFunctionalLayer,
     GoogleLaunchpadFunctionalLayer,
+    PageTestLayer,
     )
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
@@ -50,15 +53,23 @@ def tearDown_google(test):
 # that require something special like the librarian or mailman must run
 # on a layer that sets those services up.
 special = {
-    'launchpad-search-pages-bing.txt': LayeredDocFileSuite(
-        '../doc/launchpad-search-pages-bing.txt',
+    'launchpad-search-pages.txt(Bing)': LayeredDocFileSuite(
+        '../doc/launchpad-search-pages.txt',
+        id_extensions=['launchpad-search-pages.txt(Bing)'],
         setUp=setUp_bing, tearDown=tearDown_bing,
         layer=BingLaunchpadFunctionalLayer,
         stdout_logging_level=logging.WARNING),
-    'launchpad-search-pages-google.txt': LayeredDocFileSuite(
-        '../doc/launchpad-search-pages-google.txt',
+    'launchpad-search-pages.txt(Google)': LayeredDocFileSuite(
+        '../doc/launchpad-search-pages.txt',
+        id_extensions=['launchpad-search-pages.txt(Google)'],
         setUp=setUp_google, tearDown=tearDown_google,
         layer=GoogleLaunchpadFunctionalLayer,
+        stdout_logging_level=logging.WARNING),
+    # Run these doctests again with the default search engine.
+    'launchpad-search-pages.txt': LayeredDocFileSuite(
+        '../doc/launchpad-search-pages.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=PageTestLayer,
         stdout_logging_level=logging.WARNING),
     }
 
