@@ -72,7 +72,7 @@ entire collection of matches. The 'length' attribute contains the number
 of returned results.
 
 The first search for 'bugs' returned a subset of items in the
-ISearchResult. There are 25 total items, but the results contains the
+ISearchResult. There are 25 total items, but the results contain the
 first 20 matches (because they start at index 0).
 
     >>> first_page_matches.start
@@ -109,7 +109,7 @@ index. All the items in the collection can be iterated.
     'http://launchpad.dev/mb'
     'http://launchpad.dev/bugs'
 
-An empty PageMatches is returns if there are no results.
+An empty PageMatches is returned if there are no results.
 
     >>> no_page_matches = bing_search.search(terms='fnord')
     >>> no_page_matches.start
@@ -239,7 +239,7 @@ The start parameter can be changed by passing a start int argument.
 Bing Search response parsing
 ============================
 
-The BingSearchService's _parse_bing_response() expects a JSON response to
+The BingSearchService's _parse_search_response() expects a JSON response to
 create the PageMatch and PageMatches objects. An error is raised when
 the JSON document cannot be parsed into objects.
 
@@ -261,7 +261,7 @@ be raised.
     {...
         "totalEstimatedMatches": "~25"...
 
-    >>> bing_search._parse_bing_response(data)
+    >>> bing_search._parse_search_response(data)
     Traceback (most recent call last):
      ...
     SiteSearchResponseError: Could not get the total from the
@@ -278,7 +278,7 @@ this is expected: we simply return a total of 0.
     {...
         "totalEstimatedMatches": -25...
 
-    >>> bing_search._parse_bing_response(data).total
+    >>> bing_search._parse_search_response(data).total
     0
 
 A PageMatch requires a title, url, and a summary. If those elements cannot
@@ -290,7 +290,7 @@ is missing a title, so only the second page is present in the PageMatches.
     ...     base_path, 'bingsearchservice-missing-title.json')
     >>> with open(json_file_name, 'r') as json_file:
     ...     data = json_file.read()
-    >>> page_matches = bing_search._parse_bing_response(data)
+    >>> page_matches = bing_search._parse_search_response(data)
     >>> len(page_matches)
     1
     >>> page_matches[0].title
@@ -308,7 +308,7 @@ vhosts. The edge vhost has no summary, so it is skipped.
     ...     base_path, 'bingsearchservice-missing-summary.json')
     >>> with open(json_file_name, 'r') as json_file:
     ...     data = json_file.read()
-    >>> page_matches = bing_search._parse_bing_response(data)
+    >>> page_matches = bing_search._parse_search_response(data)
     >>> len(page_matches)
     1
     >>> page_matches[0].title
@@ -324,7 +324,7 @@ users a bad experience.
     ...     base_path, 'bingsearchservice-missing-url.json')
     >>> with open(json_file_name, 'r') as json_file:
     ...     data = json_file.read()
-    >>> page_matches = bing_search._parse_bing_response(data)
+    >>> page_matches = bing_search._parse_search_response(data)
     >>> len(page_matches)
     1
     >>> page_matches[0].title
@@ -344,7 +344,7 @@ a PageMatch.
     ...     base_path, 'bingsearchservice-no-meaningful-results.json')
     >>> with open(json_file_name, 'r') as json_file:
     ...     data = json_file.read()
-    >>> page_matches = bing_search._parse_bing_response(data)
+    >>> page_matches = bing_search._parse_search_response(data)
     >>> len(page_matches)
     0
 
@@ -353,7 +353,7 @@ The 'snippet' is not HTML-escaped; we must do that ourselves.
     >>> json_file_name = path.join(base_path, 'bingsearchservice-xss.json')
     >>> with open(json_file_name, 'r') as json_file:
     ...     data = json_file.read()
-    >>> page_matches = bing_search._parse_bing_response(data)
+    >>> page_matches = bing_search._parse_search_response(data)
     >>> len(page_matches)
     1
     >>> page_matches[0].title
@@ -370,7 +370,7 @@ URL rewriting
 -------------
 
 The URL scheme used in the rewritten URL is configured in
-config.bing.url_rewrite_scheme. The hostname is set in the shared
+config.vhosts.use_https. The hostname is set in the shared
 key config.vhost.mainsite.hostname.
 
     >>> config.vhosts.use_https
@@ -404,10 +404,10 @@ slashes.
     'http://launchpad.dev/ubuntu'
 
 There is a list of URLs that are not rewritten configured in
-config.bing.url_rewrite_exceptions. For example, help.launchpad.net
+config.sitesearch.url_rewrite_exceptions. For example, help.launchpad.net
 is only run in one environment, so links to that site will be preserved.
 
-    >>> config.bing.url_rewrite_exceptions
+    >>> config.sitesearch.url_rewrite_exceptions
     'help.launchpad.net'
     >>> page_match.url_rewrite_exceptions
     ['help.launchpad.net']

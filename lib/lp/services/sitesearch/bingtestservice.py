@@ -8,6 +8,10 @@ This script runs a simple HTTP server. The server returns JSON files
 when given certain user-configurable URLs.
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+
+__metaclass__ = type
+
 import logging
 import os
 
@@ -27,7 +31,7 @@ service_name = 'bing-webservice'
 
 
 class BingRequestHandler(testservice.RequestHandler):
-    default_content_type = 'text/xml; charset=UTF-8'
+    default_content_type = 'application/json; charset=UTF-8'
     log = log
     mapfile = config.bing_test_service.mapfile
     content_dir = config.bing_test_service.canned_response_directory
