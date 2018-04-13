@@ -72,7 +72,7 @@ entire collection of matches. The 'length' attribute contains the number
 of returned results.
 
 The first search for 'bugs' returned a subset of items in the
-ISearchResult. There are 25 total items, but the results contains the
+ISearchResult. There are 25 total items, but the results contain the
 first 20 matches (because they start at index 0).
 
     >>> first_page_matches.start
@@ -109,7 +109,7 @@ index. All the items in the collection can be iterated.
     'http://bugs.launchpad.dev/bugs/bugtrackers'
     'http://bugs.launchpad.dev/bugs/bugtrackers/debbugs'
 
-An empty PageMatches is returns if there are no results.
+An empty PageMatches is returned if there are no results.
 
     >>> no_page_matches = google_search.search(terms='fnord')
     >>> no_page_matches.start
@@ -248,7 +248,7 @@ The start parameter can be changed by passing a start int argument.
 Google Search Protocol parsing
 ==============================
 
-The GoogleSearchService's _parse_google_search_protocol() requires a
+The GoogleSearchService's _parse_search_response() requires a
 subset of the GSP 3.2 markup to create the PageMatch and PageMatches
 objects. An error is raised when the XML document cannot be parsed into
 objects. The probable cause of an error is that Google returned a new
@@ -272,7 +272,7 @@ nothing in the value attribute in the next test, so an error is raised.
     <...
     <PARAM name="start" value="" original_value="0"/>...
 
-    >>> google_search._parse_google_search_protocol(gsp_xml)
+    >>> google_search._parse_search_response(gsp_xml)
     Traceback (most recent call last):
      ...
     GoogleWrongGSPVersion: Could not get the 'start' from the
@@ -294,7 +294,7 @@ be raised.
     <RES SN="1" EN="1">
     <M>~1</M>...
 
-    >>> google_search._parse_google_search_protocol(gsp_xml)
+    >>> google_search._parse_search_response(gsp_xml)
     Traceback (most recent call last):
      ...
     GoogleWrongGSPVersion: Could not get the 'total' from the
@@ -313,7 +313,7 @@ this is expected: we simply return a total of 0.
     <RES SN="1" EN="1">
     <M>-1</M>...
 
-    >>> google_search._parse_google_search_protocol(gsp_xml).total
+    >>> google_search._parse_search_response(gsp_xml).total
     0
 
 A PageMatch requires a title, url, and a summary. If those elements
@@ -350,7 +350,7 @@ so only the second page is present in the PageMatches.
     <UE>https://bugs.launchpad.net/bugs/205991</UE>
     <T>Bug #205991 in Ubuntu: ... pair Bluetooth Logitech ...</T>...
 
-    >>> page_matches = google_search._parse_google_search_protocol(gsp_xml)
+    >>> page_matches = google_search._parse_search_response(gsp_xml)
     >>> len(page_matches)
     1
     >>> page_matches[0].title
@@ -394,7 +394,7 @@ vhosts. The edge vhost has no summary, so it is skipped.
     <RK>0</RK>
     <S>Discuss what needs to be done for &lt;b&gt;Gobuntu&lt;/b&gt;...
 
-    >>> page_matches = google_search._parse_google_search_protocol(gsp_xml)
+    >>> page_matches = google_search._parse_search_response(gsp_xml)
     >>> len(page_matches)
     1
     >>> page_matches[0].title
@@ -433,7 +433,7 @@ users a bad experience.
     <UE>https://blueprints.launchpad.net/ubuntu/%2Bspec/gobuntu-hardy</UE>
     <T>Blueprint: &lt;b&gt;Gobuntu&lt;/b&gt; 8.04</T>...
 
-    >>> page_matches = google_search._parse_google_search_protocol(gsp_xml)
+    >>> page_matches = google_search._parse_search_response(gsp_xml)
     >>> len(page_matches)
     1
     >>> page_matches[0].title
@@ -499,7 +499,7 @@ tags can be parsed (because the markup was changed to use RESULT).
       <HAS><L/><RT/></HAS>
     </RESULT>...
 
-    >>> google_search._parse_google_search_protocol(gsp_xml)
+    >>> google_search._parse_search_response(gsp_xml)
     Traceback (most recent call last):
      ...
     GoogleWrongGSPVersion: Could not get any PageMatches from the
@@ -528,7 +528,7 @@ tags about every 40 characters.
          &lt;br&gt;
          tracker allows collaboration</S>...
 
-    >>> page_matches = google_search._parse_google_search_protocol(gsp_xml)
+    >>> page_matches = google_search._parse_search_response(gsp_xml)
     >>> page_match = page_matches[0]
     >>> page_match.summary
     u'<b>Bug</b> tracking <b>...</b> Search
@@ -542,7 +542,7 @@ URL rewriting
 -------------
 
 The URL scheme used in the rewritten URL is configured in
-config.google.url_rewrite_scheme. The hostname is set in the shared
+config.vhosts.use_https. The hostname is set in the shared
 key config.vhost.mainsite.hostname.
 
     >>> config.vhosts.use_https
@@ -576,10 +576,10 @@ slashes.
     'http://launchpad.dev/ubuntu'
 
 There is a list of URLs that are not rewritten configured in
-config.google.url_rewrite_exceptions. For example, help.launchpad.net
+config.sitesearch.url_rewrite_exceptions. For example, help.launchpad.net
 is only run in one environment, so links to that site will be preserved.
 
-    >>> config.google.url_rewrite_exceptions
+    >>> config.sitesearch.url_rewrite_exceptions
     'help.launchpad.net'
     >>> page_match.url_rewrite_exceptions
     ['help.launchpad.net']
