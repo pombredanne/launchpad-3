@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the search result PageMatch class."""
@@ -89,7 +89,7 @@ class TestPageMatchURLHandling(TestCase):
 class TestPageMatches(TestCase):
 
     def test_initialisation(self):
-        matches = PageMatches([], start=12, total=15)
+        matches = PageMatches(['match1', 'match2', 'match3'], 12, 15)
         self.assertEqual(12, matches.start)
         self.assertEqual(15, matches.total)
 
