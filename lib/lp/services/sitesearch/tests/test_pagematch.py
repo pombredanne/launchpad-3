@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from testtools.matchers import MatchesStructure
+
 from lp.services.sitesearch import (
     PageMatch,
     PageMatches,
@@ -18,12 +20,12 @@ class TestPageMatchURLHandling(TestCase):
         p = PageMatch(
             u'Unicode Titles in Launchpad',
             'http://example.com/unicode-titles',
-            u'Unicode Titles is a modest project dedicated to using Unicode.')
-        self.assertEqual(u'Unicode Titles in Launchpad', p.title)
-        self.assertEqual(
-            u'Unicode Titles is a modest project dedicated to using Unicode.',
-            p.summary)
-        self.assertEqual('http://example.com/unicode-titles', p.url)
+            u'Unicode Titles is a modest project using Unicode.')
+        self.assertThat(p, MatchesStructure.byEquality(
+            title=u'Unicode Titles in Launchpad',
+            summary=u'Unicode Titles is a modest project using Unicode.',
+            url='http://example.com/unicode-titles',
+            ))
 
     def test_rewrite_url(self):
         """The URL scheme used in the rewritten URL is configured via
