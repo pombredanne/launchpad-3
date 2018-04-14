@@ -653,6 +653,7 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertIsNone(snap.auto_build_channels)
         self.assertTrue(snap.require_virtualized)
         self.assertFalse(snap.private)
+        self.assertTrue(snap.allow_internet)
 
     def test_creation_git(self):
         # The metadata entries supplied when a Snap is created for a Git
@@ -674,6 +675,7 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertIsNone(snap.auto_build_channels)
         self.assertTrue(snap.require_virtualized)
         self.assertFalse(snap.private)
+        self.assertTrue(snap.allow_internet)
 
     def test_creation_git_url(self):
         # A Snap can be backed directly by a URL for an external Git
@@ -1378,6 +1380,7 @@ class TestSnapWebservice(TestCaseWithFactory):
             self.assertIsNone(snap["git_path"])
             self.assertIsNone(snap["git_ref_link"])
             self.assertTrue(snap["require_virtualized"])
+            self.assertTrue(snap["allow_internet"])
 
     def test_new_git(self):
         # Ensure Snap creation based on a Git branch works.
@@ -1398,6 +1401,7 @@ class TestSnapWebservice(TestCaseWithFactory):
             self.assertEqual(ref.path, snap["git_path"])
             self.assertEqual(self.getURL(ref), snap["git_ref_link"])
             self.assertTrue(snap["require_virtualized"])
+            self.assertTrue(snap["allow_internet"])
 
     def test_new_private(self):
         # Ensure private Snap creation works.

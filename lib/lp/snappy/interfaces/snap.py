@@ -600,6 +600,13 @@ class ISnapAdminAttributes(Interface):
         value_type=Reference(schema=IProcessor),
         readonly=False))
 
+    allow_internet = exported(Bool(
+        title=_("Allow external network access"),
+        required=True, readonly=False,
+        description=_(
+            "Allow access to external network resources via a proxy.  "
+            "Resources hosted on Launchpad itself are always allowed.")))
+
 
 class ISnap(
     ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes,
