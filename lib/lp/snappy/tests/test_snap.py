@@ -1547,6 +1547,67 @@ class TestSnapWebservice(TestCaseWithFactory):
             "No such snap package with this owner: 'nonexistent'.",
             response.body)
 
+    def test_findByOwner(self):
+        # lp.snaps.findByOwner returns all visible Snaps with the given owner.
+        persons = [self.factory.makePerson(), self.factory.makePerson()]
+        snaps = []
+        for person in persons:
+            for private in (False, True):
+                snaps.append(self.factory.makeSnap(
+                    registrant=person, owner=person, private=private))
+        with admin_logged_in():
+            person_urls = [api_url(person) for person in persons]
+            ws_snaps = [
+                self.webservice.getAbsoluteUrl(api_url(snap))
+                for snap in snaps]
+        commercial_admin = (
+            getUtility(ILaunchpadCelebrities).commercial_admin.teamowner)
+        logout()
+        # Anonymous requests can only see public snaps.
+        anon_webservice = LaunchpadWebServiceCaller("test", "")
+        response = anon_webservice.named_get(
+            "/+snaps", "findByOwner", owner=person_urls[0],
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[0]],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        # persons[0] can see their own private snap as well, but not those
+        # for other people.
+        webservice = webservice_for_person(
+            persons[0], permission=OAuthPermission.READ_PRIVATE)
+        response = webservice.named_get(
+            "/+snaps", "findByOwner", owner=person_urls[0],
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            ws_snaps[:2],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = webservice.named_get(
+            "/+snaps", "findByOwner", owner=person_urls[1],
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            [ws_snaps[2]],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        # Admins can see all snaps.
+        commercial_admin_webservice = webservice_for_person(
+            commercial_admin, permission=OAuthPermission.READ_PRIVATE)
+        response = commercial_admin_webservice.named_get(
+            "/+snaps", "findByOwner", owner=person_urls[0],
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            ws_snaps[:2],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+        response = commercial_admin_webservice.named_get(
+            "/+snaps", "findByOwner", owner=person_urls[1],
+            api_version="devel")
+        self.assertEqual(200, response.status)
+        self.assertContentEqual(
+            ws_snaps[2:],
+            [entry["self_link"] for entry in response.jsonBody()["entries"]])
+
     def test_findByURL(self):
         # lp.snaps.findByURL returns visible Snaps with the given URL.
         persons = [self.factory.makePerson(), self.factory.makePerson()]
