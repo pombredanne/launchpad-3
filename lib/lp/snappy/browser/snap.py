@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap views."""
@@ -319,6 +319,7 @@ class ISnapEditSchema(Interface):
         'name',
         'private',
         'require_virtualized',
+        'allow_internet',
         'auto_build',
         'store_upload',
         ])
@@ -648,7 +649,7 @@ class SnapAdminView(BaseSnapEditView):
 
     page_title = 'Administer'
 
-    field_names = ['private', 'require_virtualized']
+    field_names = ['private', 'require_virtualized', 'allow_internet']
 
     def validate(self, data):
         super(SnapAdminView, self).validate(data)

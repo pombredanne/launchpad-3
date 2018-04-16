@@ -13,6 +13,7 @@ from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import CodeImportResultStatus
+from lp.code.interfaces.branch import get_blacklisted_hostnames
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet,
     ICodeImportJobWorkflow,
@@ -66,11 +67,14 @@ class CodeImportSchedulerAPI(LaunchpadXMLRPCView):
     @return_fault
     def _getImportDataForJobID(self, job_id):
         job = self._getJob(job_id)
-        arguments = job.makeWorkerArguments()
         target = job.code_import.target
-        target_url = canonical_url(target)
-        log_file_name = '%s.log' % target.unique_name[1:].replace('/', '-')
-        return (arguments, target_url, log_file_name)
+        return {
+            'arguments': job.makeWorkerArguments(),
+            'target_url': canonical_url(target),
+            'log_file_name': '%s.log' % (
+                target.unique_name[1:].replace('/', '-')),
+            'blacklisted_hostnames': get_blacklisted_hostnames(),
+            }
 
     @return_fault
     def _updateHeartbeat(self, job_id, log_tail):

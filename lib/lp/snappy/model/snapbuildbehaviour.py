@@ -85,7 +85,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         """
         build = self.build
         args = {}
-        if config.snappy.builder_proxy_host:
+        if config.snappy.builder_proxy_host and build.snap.allow_internet:
             token = yield self._requestProxyToken()
             args["proxy_url"] = (
                 "http://{username}:{password}@{host}:{port}".format(

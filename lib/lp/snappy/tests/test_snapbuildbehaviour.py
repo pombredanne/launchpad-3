@@ -414,6 +414,14 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         self.assertFalse(isProxy(args["channels"]))
         self.assertEqual({"snapcraft": "edge"}, args["channels"])
 
+    def test_extraBuildArgs_disallow_internet(self):
+        # If external network access is not allowed for the snap,
+        # _extraBuildArgs does not dispatch a proxy token.
+        job = self.makeJob(allow_internet=False)
+        args = yield job._extraBuildArgs()
+        self.assertNotIn("proxy_url", args)
+        self.assertNotIn("revocation_endpoint", args)
+
     @defer.inlineCallbacks
     def test_composeBuildRequest_proxy_url_set(self):
         job = self.makeJob()
