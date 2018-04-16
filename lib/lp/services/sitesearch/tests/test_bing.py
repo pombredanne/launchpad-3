@@ -32,6 +32,8 @@ from lp.testing.layers import BingLaunchpadFunctionalLayer
 class TestBingSearchService(TestCase):
     """Test BingSearchService."""
 
+    layer = BingLaunchpadFunctionalLayer
+
     def setUp(self):
         super(TestBingSearchService, self).setUp()
         self.search_service = BingSearchService()
@@ -231,16 +233,6 @@ class TestBingSearchService(TestCase):
         self.assertRaises(
             SiteSearchResponseError,
             self.search_service._parse_search_response, '{}')
-
-
-class FunctionalBingSearchServiceTests(TestCase):
-    """Test BingSearchService."""
-
-    layer = BingLaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(FunctionalBingSearchServiceTests, self).setUp()
-        self.search_service = BingSearchService()
 
     def test_search_with_results(self):
         matches = self.search_service.search('bug')

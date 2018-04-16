@@ -34,6 +34,8 @@ from lp.testing.layers import GoogleLaunchpadFunctionalLayer
 class TestGoogleSearchService(TestCase):
     """Test GoogleSearchService."""
 
+    layer = GoogleLaunchpadFunctionalLayer
+
     def setUp(self):
         super(TestGoogleSearchService, self).setUp()
         self.search_service = GoogleSearchService()
@@ -264,16 +266,6 @@ class TestGoogleSearchService(TestCase):
         self.assertRaises(
             SiteSearchResponseError,
             self.search_service._parse_search_response, data)
-
-
-class FunctionalGoogleSearchServiceTests(TestCase):
-    """Test GoogleSearchService."""
-
-    layer = GoogleLaunchpadFunctionalLayer
-
-    def setUp(self):
-        super(FunctionalGoogleSearchServiceTests, self).setUp()
-        self.search_service = GoogleSearchService()
 
     def test_search_with_results(self):
         matches = self.search_service.search('bug')
