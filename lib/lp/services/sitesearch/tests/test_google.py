@@ -7,14 +7,18 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from os import path
+import os.path
 
 from fixtures import MockPatch
 from requests.exceptions import (
     ConnectionError,
     HTTPError,
     )
-from testtools.matchers import HasLength
+from testtools.matchers import (
+    HasLength,
+    MatchesListwise,
+    MatchesStructure,
+    )
 
 from lp.services.config import config
 from lp.services.sitesearch import GoogleSearchService
@@ -33,8 +37,8 @@ class TestGoogleSearchService(TestCase):
     def setUp(self):
         super(TestGoogleSearchService, self).setUp()
         self.search_service = GoogleSearchService()
-        self.base_path = path.normpath(
-            path.join(path.dirname(__file__), 'data'))
+        self.base_path = os.path.normpath(
+            os.path.join(os.path.dirname(__file__), 'data'))
 
     def test_configuration(self):
         self.assertEqual(config.google.site, self.search_service.site)
@@ -48,8 +52,9 @@ class TestGoogleSearchService(TestCase):
 
     def test_create_search_url_escapes_unicode_chars(self):
         self.assertEndsWith(
-            self.search_service.create_search_url('Carlo Perell\xf3 Mar\xedn'),
-            '&q=Carlo+Perell%C3%B3+Mar%C3%ADn&start=0')
+            self.search_service.create_search_url(
+                'Carlos Perell\xf3 Mar\xedn'),
+            '&q=Carlos+Perell%C3%B3+Mar%C3%ADn&start=0')
 
     def test_create_search_url_with_offset(self):
         self.assertEndsWith(
@@ -57,19 +62,19 @@ class TestGoogleSearchService(TestCase):
             '&q=svg+%2Bbugs&start=20')
 
     def test_create_search_url_empty_terms(self):
-        e = self.assertRaises(
-            ValueError, self.search_service.create_search_url, '')
-        self.assertEqual("Missing value for parameter 'q'.", str(e))
+        self.assertRaisesWithContent(
+            ValueError, "Missing value for parameter 'q'.",
+            self.search_service.create_search_url, '')
 
     def test_create_search_url_null_terms(self):
-        e = self.assertRaises(
-            ValueError, self.search_service.create_search_url, None)
-        self.assertEqual("Missing value for parameter 'q'.", str(e))
+        self.assertRaisesWithContent(
+            ValueError, "Missing value for parameter 'q'.",
+            self.search_service.create_search_url, None)
 
     def test_create_search_url_requires_start(self):
-        e = self.assertRaises(
-            ValueError, self.search_service.create_search_url, 'bugs', 'true')
-        self.assertEqual("Value for parameter 'start' is not an int.", str(e))
+        self.assertRaisesWithContent(
+            ValueError, "Value for parameter 'start' is not an int.",
+            self.search_service.create_search_url, 'bugs', 'true')
 
     def test_parse_search_response_incompatible_param(self):
         """The PageMatches's start attribute comes from the GSP XML element
@@ -77,17 +82,16 @@ class TestGoogleSearchService(TestCase):
         be found and the value cast to an int, an error is raised. There is
         nothing in the value attribute in the next test, so an error is raised.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'googlesearchservice-incompatible-param.xml')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
-        assert '<M>' not in response
+        self.assertNotIn('<M>', response)
 
-        e = self.assertRaises(
+        self.assertRaisesWithContent(
             GoogleWrongGSPVersion,
+            "Could not get the 'start' from the GSP XML response.",
             self.search_service._parse_search_response, response)
-        self.assertEqual(
-            "Could not get the 'start' from the GSP XML response.", str(e))
 
     def test_parse_search_response_invalid_total(self):
         """The PageMatches's total attribute comes from the GSP XML element
@@ -96,27 +100,26 @@ class TestGoogleSearchService(TestCase):
         element to use a '~' to indicate an approximate total, an error would
         be raised.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'googlesearchservice-incompatible-matches.xml')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
-        assert '<M>~1</M>' in response
+        self.assertIn('<M>~1</M>', response)
 
-        e = self.assertRaises(
+        self.assertRaisesWithContent(
             GoogleWrongGSPVersion,
+            "Could not get the 'total' from the GSP XML response.",
             self.search_service._parse_search_response, response)
-        self.assertEqual(
-            "Could not get the 'total' from the GSP XML response.", str(e))
 
     def test_parse_search_response_negative_total(self):
         """If the total is ever less than zero (see bug 683115),
         this is expected: we simply return a total of 0.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'googlesearchservice-negative-total.xml')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
-        assert '<M>-1</M>' in response
+        self.assertIn('<M>-1</M>', response)
 
         matches = self.search_service._parse_search_response(response)
         self.assertEqual(0, matches.total)
@@ -128,16 +131,19 @@ class TestGoogleSearchService(TestCase):
         so it is ignored. In this example, The first match is missing a title,
         so only the second page is present in the PageMatches.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'googlesearchservice-missing-title.xml')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
 
         matches = self.search_service._parse_search_response(response)
-        self.assertThat(matches, HasLength(1))
-        self.assertStartsWith(matches[0].title, 'Bug #205991 in Ubuntu:')
-        self.assertEqual(
-            'http://bugs.launchpad.dev/bugs/205991', matches[0].url)
+        self.assertThat(matches, MatchesListwise([
+            MatchesStructure.byEquality(
+                title=(
+                    u'Bug #205991 in Ubuntu: \u201cCan&#39;t pair '
+                    u'Bluetooth Logitech DiNovo <b>Edge</b> <b>...</b>'),
+                url='http://bugs.launchpad.dev/bugs/205991'),
+            ]))
 
     def test_parse_search_response_missing_summary(self):
         """When a match is missing a summary (<S>), it is skipped because
@@ -146,34 +152,38 @@ class TestGoogleSearchService(TestCase):
         taken from real data, the links are to the same page on different
         vhosts. The edge vhost has no summary, so it is skipped.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'googlesearchservice-missing-summary.xml')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
 
         matches = self.search_service._parse_search_response(response)
-        self.assertThat(matches, HasLength(1))
-        self.assertEqual('Blueprint: <b>Gobuntu</b> 8.04', matches[0].title)
-        self.assertEqual(
-            'http://blueprints.launchpad.dev/ubuntu/+spec/gobuntu-hardy',
-            matches[0].url)
+        self.assertThat(matches, MatchesListwise([
+            MatchesStructure.byEquality(
+                title='Blueprint: <b>Gobuntu</b> 8.04',
+                url=(
+                    'http://blueprints.launchpad.dev'
+                    '/ubuntu/+spec/gobuntu-hardy')),
+            ]))
 
     def test_parse_search_response_missing_url(self):
         """When the URL (<U>) cannot be found the match is skipped. There are
         no examples of this. We do not want this hypothetical situation to give
         users a bad experience.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'googlesearchservice-missing-url.xml')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
 
         matches = self.search_service._parse_search_response(response)
-        self.assertThat(matches, HasLength(1))
-        self.assertEqual('Blueprint: <b>Gobuntu</b> 8.04', matches[0].title)
-        self.assertEqual(
-            'http://blueprints.launchpad.dev/ubuntu/+spec/gobuntu-hardy',
-            matches[0].url)
+        self.assertThat(matches, MatchesListwise([
+            MatchesStructure.byEquality(
+                title='Blueprint: <b>Gobuntu</b> 8.04',
+                url=(
+                    'http://blueprints.launchpad.dev'
+                    '/ubuntu/+spec/gobuntu-hardy')),
+            ]))
 
     def test_parse_search_response_with_no_meaningful_results(self):
         """If no matches are found in the response, and there are 20 or fewer
@@ -184,11 +194,11 @@ class TestGoogleSearchService(TestCase):
         example, there is only one match, but the results is missing a title so
         there is not enough information to make a PageMatch.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'googlesearchservice-no-meaningful-results.xml')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
-        assert '<M>1</M>' in response
+        self.assertIn('<M>1</M>', response)
 
         matches = self.search_service._parse_search_response(response)
         self.assertThat(matches, HasLength(0))
@@ -200,17 +210,16 @@ class TestGoogleSearchService(TestCase):
         incompatible. This example says it has 1000 matches, but none of the R
         tags can be parsed (because the markup was changed to use RESULT).
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'googlesearchservice-incompatible-result.xml')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
-        assert '<M>1000</M>' in response
+        self.assertIn('<M>1000</M>', response)
 
-        e = self.assertRaises(
+        self.assertRaisesWithContent(
             GoogleWrongGSPVersion,
+            "Could not get any PageMatches from the GSP XML response.",
             self.search_service._parse_search_response, response)
-        self.assertEqual(
-            "Could not get any PageMatches from the GSP XML response.", str(e))
 
     def test_search_converts_HTTPError(self):
         # The method converts HTTPError to SiteSearchResponseError.

@@ -8,7 +8,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 
 import json
-from os import path
+import os.path
 
 from fixtures import MockPatch
 from requests.exceptions import (
@@ -17,8 +17,9 @@ from requests.exceptions import (
     )
 from testtools.matchers import (
     HasLength,
+    MatchesListwise,
     MatchesStructure,
-)
+    )
 
 from lp.services.config import config
 from lp.services.sitesearch import BingSearchService
@@ -34,8 +35,8 @@ class TestBingSearchService(TestCase):
     def setUp(self):
         super(TestBingSearchService, self).setUp()
         self.search_service = BingSearchService()
-        self.base_path = path.normpath(
-            path.join(path.dirname(__file__), 'data'))
+        self.base_path = os.path.normpath(
+            os.path.join(os.path.dirname(__file__), 'data'))
 
     def test_configuration(self):
         self.assertEqual(config.bing.site, self.search_service.site)
@@ -51,8 +52,9 @@ class TestBingSearchService(TestCase):
 
     def test_create_search_url_escapes_unicode_chars(self):
         self.assertEndsWith(
-            self.search_service.create_search_url('Carlo Perell\xf3 Mar\xedn'),
-            '&offset=0&q=Carlo+Perell%C3%B3+Mar%C3%ADn')
+            self.search_service.create_search_url(
+                'Carlos Perell\xf3 Mar\xedn'),
+            '&offset=0&q=Carlos+Perell%C3%B3+Mar%C3%ADn')
 
     def test_create_search_url_with_offset(self):
         self.assertEndsWith(
@@ -60,19 +62,19 @@ class TestBingSearchService(TestCase):
             '&offset=20&q=svg+%2Bbugs')
 
     def test_create_search_url_empty_terms(self):
-        e = self.assertRaises(
-            ValueError, self.search_service.create_search_url, '')
-        self.assertEqual("Missing value for parameter 'q'.", str(e))
+        self.assertRaisesWithContent(
+            ValueError, "Missing value for parameter 'q'.",
+            self.search_service.create_search_url, '')
 
     def test_create_search_url_null_terms(self):
-        e = self.assertRaises(
-            ValueError, self.search_service.create_search_url, None)
-        self.assertEqual("Missing value for parameter 'q'.", str(e))
+        self.assertRaisesWithContent(
+            ValueError, "Missing value for parameter 'q'.",
+            self.search_service.create_search_url, None)
 
     def test_create_search_url_requires_start(self):
-        e = self.assertRaises(
-            ValueError, self.search_service.create_search_url, 'bugs', 'true')
-        self.assertEqual("Value for parameter 'offset' is not an int.", str(e))
+        self.assertRaisesWithContent(
+            ValueError, "Value for parameter 'offset' is not an int.",
+            self.search_service.create_search_url, 'bugs', 'true')
 
     def test_parse_search_response_invalid_total(self):
         """The PageMatches's total attribute comes from the
@@ -82,28 +84,28 @@ class TestBingSearchService(TestCase):
         element to use a '~' to indicate an approximate total, an error would
         be raised.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'bingsearchservice-incompatible-matches.json')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
-        assert (
-            json.loads(response)['webPages']['totalEstimatedMatches'] == '~25')
-
-        e = self.assertRaises(
-            SiteSearchResponseError,
-            self.search_service._parse_search_response, response)
         self.assertEqual(
-            "Could not get the total from the Bing JSON response.", str(e))
+            '~25', json.loads(response)['webPages']['totalEstimatedMatches'])
+
+        self.assertRaisesWithContent(
+            SiteSearchResponseError,
+            "Could not get the total from the Bing JSON response.",
+            self.search_service._parse_search_response, response)
 
     def test_parse_search_response_negative_total(self):
         """If the total is ever less than zero (see bug 683115),
         this is expected: we simply return a total of 0.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'bingsearchservice-negative-total.json')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
-        assert json.loads(response)['webPages']['totalEstimatedMatches'] == -25
+        self.assertEqual(
+            -25, json.loads(response)['webPages']['totalEstimatedMatches'])
 
         matches = self.search_service._parse_search_response(response)
         self.assertEqual(0, matches.total)
@@ -115,16 +117,19 @@ class TestBingSearchService(TestCase):
         the first match is missing a title, so only the second page is present
         in the PageMatches.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'bingsearchservice-missing-title.json')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
-        assert len(json.loads(response)['webPages']['value']) == 2
+        self.assertThat(
+            json.loads(response)['webPages']['value'], HasLength(2))
 
         matches = self.search_service._parse_search_response(response)
-        self.assertThat(matches, HasLength(1))
-        self.assertEqual('GCleaner in Launchpad', matches[0].title)
-        self.assertEqual('http://launchpad.dev/gcleaner', matches[0].url)
+        self.assertThat(matches, MatchesListwise([
+            MatchesStructure.byEquality(
+                title='GCleaner in Launchpad',
+                url='http://launchpad.dev/gcleaner'),
+            ]))
 
     def test_parse_search_response_missing_summary(self):
         """When a match is missing a summary ('snippet'), the match is skipped
@@ -133,33 +138,38 @@ class TestBingSearchService(TestCase):
         example taken from real data, the links are to the same page on
         different vhosts. The edge vhost has no summary, so it is skipped.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'bingsearchservice-missing-summary.json')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
-        assert len(json.loads(response)['webPages']['value']) == 2
+        self.assertThat(
+            json.loads(response)['webPages']['value'], HasLength(2))
 
         matches = self.search_service._parse_search_response(response)
-        self.assertThat(matches, HasLength(1))
-        self.assertEqual('BugExpiry - Launchpad Help', matches[0].title)
-        self.assertEqual(
-            'https://help.launchpad.net/BugExpiry', matches[0].url)
+        self.assertThat(matches, MatchesListwise([
+            MatchesStructure.byEquality(
+                title='BugExpiry - Launchpad Help',
+                url='https://help.launchpad.net/BugExpiry'),
+            ]))
 
     def test_parse_search_response_missing_url(self):
         """When the URL ('url') cannot be found the match is skipped. There are
         no examples of this. We do not want this hypothetical situation to give
         users a bad experience.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'bingsearchservice-missing-url.json')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
-        assert len(json.loads(response)['webPages']['value']) == 2
+        self.assertThat(
+            json.loads(response)['webPages']['value'], HasLength(2))
 
         matches = self.search_service._parse_search_response(response)
-        self.assertThat(matches, HasLength(1))
-        self.assertEqual('LongoMatch in Launchpad', matches[0].title)
-        self.assertEqual('http://launchpad.dev/longomatch', matches[0].url)
+        self.assertThat(matches, MatchesListwise([
+            MatchesStructure.byEquality(
+                title='LongoMatch in Launchpad',
+                url='http://launchpad.dev/longomatch'),
+            ]))
 
     def test_parse_search_response_with_no_meaningful_results(self):
         """If no matches are found in the response, and there are 20 or fewer
@@ -170,11 +180,12 @@ class TestBingSearchService(TestCase):
         example, there is only one match, but the results is missing a title so
         there is not enough information to make a PageMatch.
         """
-        file_name = path.join(
+        file_name = os.path.join(
             self.base_path, 'bingsearchservice-no-meaningful-results.json')
         with open(file_name, 'r') as response_file:
             response = response_file.read()
-        assert len(json.loads(response)['webPages']['value']) == 1
+        self.assertThat(
+            json.loads(response)['webPages']['value'], HasLength(1))
 
         matches = self.search_service._parse_search_response(response)
         self.assertThat(matches, HasLength(0))
