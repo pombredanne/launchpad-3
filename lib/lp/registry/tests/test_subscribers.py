@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test subscruber classes and functions."""
@@ -189,6 +189,25 @@ class LicenseNotificationTestCase(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
         self.assertEqual('admin@eg.dom,owner@eg.dom', notifications[0]['To'])
+
+    def test_send_other_proprietary_no_team_admins_falls_back_to_owner(self):
+        # If there are no team admins, an Other/Proprietary licence falls
+        # back to sending email to the team owner.
+        product, user = self.make_product_user([License.OTHER_PROPRIETARY])
+        owner = self.factory.makePerson(email='owner@eg.dom')
+        team = self.factory.makeTeam(
+            owner=owner, membership_policy=TeamMembershipPolicy.RESTRICTED)
+        with person_logged_in(team.teamowner):
+            team.teamowner.leave(team)
+        with person_logged_in(product.owner):
+            product.owner = team
+        pop_notifications()
+        notification = LicenseNotification(product)
+        result = notification.send()
+        self.assertIs(True, result)
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertEqual('owner@eg.dom', notifications[0]['To'])
 
     def test_display_no_request(self):
         # If there is no request, there is no reason to show a message in

@@ -1595,6 +1595,8 @@ class Person(
         to_addrs = set()
         for admin in self.adminmembers:
             to_addrs.update(get_contact_email_addresses(admin))
+        if not to_addrs:
+            to_addrs.update(get_contact_email_addresses(self.teamowner))
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, comment=None, force_team_add=False,

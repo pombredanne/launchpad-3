@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person interfaces."""
@@ -1344,9 +1344,14 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
         member with admin privilege, or member of a team with such
         privileges.  It excludes teams which have been merged.
         """
+
     def getTeamAdminsEmailAddresses():
         """Return a set containing the email addresses of all administrators
         of this team.
+
+        If the team has no administrators, fall back to the team owner.
+        This shouldn't normally happen, but a team can end up in this state
+        after deactivations, and there's no good way to prevent it entirely.
         """
 
     def getLatestApprovedMembershipsForPerson(limit=5):
