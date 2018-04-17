@@ -16,7 +16,7 @@ __all__ = [
     'decorate_with',
     'docstring_dedent',
     'file_exists',
-    'iter_list_chunks',
+    'iter_chunks',
     'iter_split',
     'load_bz2_pickle',
     'obfuscate_email',
@@ -34,7 +34,10 @@ __all__ = [
 import bz2
 import cPickle as pickle
 from datetime import datetime
-from itertools import tee
+from itertools import (
+    islice,
+    tee,
+    )
 import os
 import re
 import string
@@ -139,13 +142,17 @@ def iter_split(string, splitter, splits=None):
         yield first, string[len(first):]
 
 
-def iter_list_chunks(a_list, size):
-    """Iterate over `a_list` in chunks of size `size`.
+def iter_chunks(iterable, size):
+    """Iterate over `iterable` in chunks of size `size`.
 
     I'm amazed this isn't in itertools (mwhudson).
     """
-    for i in range(0, len(a_list), size):
-        yield a_list[i:i + size]
+    iterable = iter(iterable)
+    while True:
+        chunk = tuple(islice(iterable, size))
+        if not chunk:
+            break
+        yield chunk
 
 
 def value_string(item):
