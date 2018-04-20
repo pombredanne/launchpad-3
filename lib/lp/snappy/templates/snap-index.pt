@@ -61,6 +61,19 @@
           <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
         </dd>
       </dl>
+      <dl id="source_tarball"
+          tal:define="source_tarball context/source_tarball">
+        <dt>Source tarball:</dt>
+        <dd>
+          <span tal:condition="source_tarball">
+            Builds of this snap package will also build a source tarball.
+          </span>
+          <span tal:condition="not: source_tarball">
+            Builds of this snap package will not build a source tarball.
+          </span>
+          <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
+        </dd>
+      </dl>
 
       <dl id="auto_build">
         <dt>Build schedule:

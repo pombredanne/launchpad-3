@@ -283,6 +283,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
             "series": "unstable",
+            "source_tarball": False,
             "trusted_keys": expected_trusted_keys,
             }, args)
 
@@ -307,6 +308,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
             "series": "unstable",
+            "source_tarball": False,
             "trusted_keys": expected_trusted_keys,
             }, args)
 
@@ -331,6 +333,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
             "series": "unstable",
+            "source_tarball": False,
             "trusted_keys": expected_trusted_keys,
             }, args)
 
@@ -357,6 +360,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
             "series": "unstable",
+            "source_tarball": False,
             "trusted_keys": expected_trusted_keys,
             }, args)
 
@@ -381,6 +385,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "proxy_url": self.proxy_url,
             "revocation_endpoint": self.revocation_endpoint,
             "series": "unstable",
+            "source_tarball": False,
             "trusted_keys": expected_trusted_keys,
             }, args)
 
@@ -414,6 +419,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         self.assertFalse(isProxy(args["channels"]))
         self.assertEqual({"snapcraft": "edge"}, args["channels"])
 
+    @defer.inlineCallbacks
     def test_extraBuildArgs_disallow_internet(self):
         # If external network access is not allowed for the snap,
         # _extraBuildArgs does not dispatch a proxy token.
@@ -421,6 +427,14 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         args = yield job._extraBuildArgs()
         self.assertNotIn("proxy_url", args)
         self.assertNotIn("revocation_endpoint", args)
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_source_tarball(self):
+        # If the snap requests building of a source tarball, _extraBuildArgs
+        # sends the appropriate arguments.
+        job = self.makeJob(source_tarball=True)
+        args = yield job._extraBuildArgs()
+        self.assertTrue(args["source_tarball"])
 
     @defer.inlineCallbacks
     def test_composeBuildRequest_proxy_url_set(self):

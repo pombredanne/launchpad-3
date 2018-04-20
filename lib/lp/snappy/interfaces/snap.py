@@ -498,6 +498,13 @@ class ISnapEditableAttributes(IHasOwner):
             "The Git branch containing a snap/snapcraft.yaml, snapcraft.yaml, "
             "or .snapcraft.yaml recipe at the top level.")))
 
+    source_tarball = exported(Bool(
+        title=_("Build source tarball"),
+        required=True, readonly=False,
+        description=_(
+            "Whether builds of this snap package should also build a tarball "
+            "containing all source code, including external dependencies.")))
+
     auto_build = exported(Bool(
         title=_("Automatically build when branch changes"),
         required=True, readonly=False,

@@ -243,6 +243,11 @@ class TestSnapAddView(BaseTestSnapView):
             "Source:\n%s\nEdit snap package" % source_display,
             MatchesTagText(content, "source"))
         self.assertThat(
+            "Source tarball:\n"
+            "Builds of this snap package will not build a source tarball.\n"
+            "Edit snap package",
+            MatchesTagText(content, "source_tarball"))
+        self.assertThat(
             "Build schedule:\n(?)\nBuilt on request\nEdit snap package\n",
             MatchesTagText(content, "auto_build"))
         self.assertThat(
@@ -276,6 +281,11 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertThat(
             "Source:\n%s\nEdit snap package" % source_display,
             MatchesTagText(content, "source"))
+        self.assertThat(
+            "Source tarball:\n"
+            "Builds of this snap package will not build a source tarball.\n"
+            "Edit snap package",
+            MatchesTagText(content, "source_tarball"))
         self.assertThat(
             "Build schedule:\n(?)\nBuilt on request\nEdit snap package\n",
             MatchesTagText(content, "auto_build"))
@@ -354,6 +364,22 @@ class TestSnapAddView(BaseTestSnapView):
             'This snap contains Private information',
             extract_text(find_tag_by_id(browser.contents, "privacy"))
         )
+
+    def test_create_new_snap_source_tarball(self):
+        # We can create a new snap and ask for it to build a source tarball.
+        branch = self.factory.makeAnyBranch()
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        browser.getControl(name="field.name").value = "snap-name"
+        browser.getControl("Build source tarball").selected = True
+        browser.getControl("Create snap package").click()
+
+        content = find_main_content(browser.contents)
+        self.assertThat(
+            "Source tarball:\n"
+            "Builds of this snap package will also build a source tarball.\n"
+            "Edit snap package",
+            MatchesTagText(content, "source_tarball"))
 
     def test_create_new_snap_auto_build(self):
         # Creating a new snap and asking for it to be automatically built
@@ -686,6 +712,7 @@ class TestSnapEditView(BaseTestSnapView):
         browser.getControl("Git repository").value = (
             new_git_ref.repository.identity)
         browser.getControl("Git branch").value = new_git_ref.path
+        browser.getControl("Build source tarball").selected = True
         browser.getControl(
             "Automatically build when branch changes").selected = True
         browser.getControl("PPA").click()
@@ -704,6 +731,11 @@ class TestSnapEditView(BaseTestSnapView):
         self.assertThat(
             "Source:\n%s\nEdit snap package" % new_git_ref.display_name,
             MatchesTagText(content, "source"))
+        self.assertThat(
+            "Source tarball:\n"
+            "Builds of this snap package will also build a source tarball.\n"
+            "Edit snap package",
+            MatchesTagText(content, "source_tarball"))
         self.assertThat(
             "Build schedule:\n(?)\nBuilt automatically\nEdit snap package\n",
             MatchesTagText(content, "auto_build"))
@@ -1223,6 +1255,8 @@ class TestSnapView(BaseTestSnapView):
             Owner: Test Person
             Distribution series: Ubuntu Shiny
             Source: lp://dev/~test-person/\\+junk/snap-branch
+            Source tarball:
+            Builds of this snap package will not build a source tarball.
             Build schedule: \(\?\)
             Built on request
             Source archive for automatic builds:
@@ -1250,6 +1284,8 @@ class TestSnapView(BaseTestSnapView):
             Owner: Test Person
             Distribution series: Ubuntu Shiny
             Source: ~test-person/\\+git/snap-repository:master
+            Source tarball:
+            Builds of this snap package will not build a source tarball.
             Build schedule: \(\?\)
             Built on request
             Source archive for automatic builds:
@@ -1277,6 +1313,8 @@ class TestSnapView(BaseTestSnapView):
             Owner: Test Person
             Distribution series: Ubuntu Shiny
             Source: https://git.example.org/foo master
+            Source tarball:
+            Builds of this snap package will not build a source tarball.
             Build schedule: \(\?\)
             Built on request
             Source archive for automatic builds:
