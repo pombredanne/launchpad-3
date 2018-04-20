@@ -385,6 +385,14 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             }, args)
 
     @defer.inlineCallbacks
+    def test_extraBuildArgs_prefers_store_name(self):
+        # For the "name" argument, _extraBuildArgs prefers Snap.store_name
+        # over Snap.name if the former is set.
+        job = self.makeJob(store_name="something-else")
+        args = yield job._extraBuildArgs()
+        self.assertEqual("something-else", args["name"])
+
+    @defer.inlineCallbacks
     def test_extraBuildArgs_archive_trusted_keys(self):
         # If the archive has a signing key, _extraBuildArgs sends it.
         yield self.useFixture(InProcessKeyServerFixture()).start()
