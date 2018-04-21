@@ -97,7 +97,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 "{endpoint}/{token}".format(
                     endpoint=config.snappy.builder_proxy_auth_api_endpoint,
                     token=token['username']))
-        args["name"] = build.snap.name
+        args["name"] = build.snap.store_name or build.snap.name
         args["series"] = build.distro_series.name
         args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
