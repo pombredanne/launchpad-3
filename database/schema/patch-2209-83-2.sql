@@ -3,8 +3,8 @@
 
 SET client_min_messages=ERROR;
 
-ALTER TABLE Snap ADD COLUMN source_tarball boolean DEFAULT false NOT NULL;
+ALTER TABLE Snap ADD COLUMN build_source_tarball boolean DEFAULT false NOT NULL;
 
-COMMENT ON COLUMN Snap.source_tarball IS 'If true, builds of this snap should also build a tarball containing all source code, including external dependencies.';
+COMMENT ON COLUMN Snap.build_source_tarball IS 'If true, builds of this snap should also build a tarball containing all source code, including external dependencies.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 83, 2);
