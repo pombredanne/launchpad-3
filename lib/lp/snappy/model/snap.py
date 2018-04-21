@@ -200,7 +200,7 @@ class Snap(Storm, WebhookTargetMixin):
 
     allow_internet = Bool(name='allow_internet', allow_none=False)
 
-    source_tarball = Bool(name='source_tarball', allow_none=False)
+    build_source_tarball = Bool(name='build_source_tarball', allow_none=False)
 
     store_upload = Bool(name='store_upload', allow_none=False)
 
@@ -218,8 +218,9 @@ class Snap(Storm, WebhookTargetMixin):
                  auto_build_archive=None, auto_build_pocket=None,
                  auto_build_channels=None, require_virtualized=True,
                  date_created=DEFAULT, private=False, allow_internet=True,
-                 source_tarball=False, store_upload=False, store_series=None,
-                 store_name=None, store_secrets=None, store_channels=None):
+                 build_source_tarball=False, store_upload=False,
+                 store_series=None, store_name=None, store_secrets=None,
+                 store_channels=None):
         """Construct a `Snap`."""
         super(Snap, self).__init__()
         self.registrant = registrant
@@ -238,7 +239,7 @@ class Snap(Storm, WebhookTargetMixin):
         self.date_last_modified = date_created
         self.private = private
         self.allow_internet = allow_internet
-        self.source_tarball = source_tarball
+        self.build_source_tarball = build_source_tarball
         self.store_upload = store_upload
         self.store_series = store_series
         self.store_name = store_name
@@ -675,9 +676,9 @@ class SnapSet:
             auto_build_archive=None, auto_build_pocket=None,
             auto_build_channels=None, require_virtualized=True,
             processors=None, date_created=DEFAULT, private=False,
-            allow_internet=True, source_tarball=False, store_upload=False,
-            store_series=None, store_name=None, store_secrets=None,
-            store_channels=None):
+            allow_internet=True, build_source_tarball=False,
+            store_upload=False, store_series=None, store_name=None,
+            store_secrets=None, store_channels=None):
         """See `ISnapSet`."""
         if not registrant.inTeam(owner):
             if owner.is_team:
@@ -721,9 +722,10 @@ class SnapSet:
             auto_build_channels=auto_build_channels,
             require_virtualized=require_virtualized, date_created=date_created,
             private=private, allow_internet=allow_internet,
-            source_tarball=source_tarball, store_upload=store_upload,
-            store_series=store_series, store_name=store_name,
-            store_secrets=store_secrets, store_channels=store_channels)
+            build_source_tarball=build_source_tarball,
+            store_upload=store_upload, store_series=store_series,
+            store_name=store_name, store_secrets=store_secrets,
+            store_channels=store_channels)
         store.add(snap)
 
         if processors is None:

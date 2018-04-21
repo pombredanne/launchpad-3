@@ -246,7 +246,7 @@ class TestSnapAddView(BaseTestSnapView):
             "Source tarball:\n"
             "Builds of this snap package will not build a source tarball.\n"
             "Edit snap package",
-            MatchesTagText(content, "source_tarball"))
+            MatchesTagText(content, "build_source_tarball"))
         self.assertThat(
             "Build schedule:\n(?)\nBuilt on request\nEdit snap package\n",
             MatchesTagText(content, "auto_build"))
@@ -285,7 +285,7 @@ class TestSnapAddView(BaseTestSnapView):
             "Source tarball:\n"
             "Builds of this snap package will not build a source tarball.\n"
             "Edit snap package",
-            MatchesTagText(content, "source_tarball"))
+            MatchesTagText(content, "build_source_tarball"))
         self.assertThat(
             "Build schedule:\n(?)\nBuilt on request\nEdit snap package\n",
             MatchesTagText(content, "auto_build"))
@@ -365,7 +365,7 @@ class TestSnapAddView(BaseTestSnapView):
             extract_text(find_tag_by_id(browser.contents, "privacy"))
         )
 
-    def test_create_new_snap_source_tarball(self):
+    def test_create_new_snap_build_source_tarball(self):
         # We can create a new snap and ask for it to build a source tarball.
         branch = self.factory.makeAnyBranch()
         browser = self.getViewBrowser(
@@ -379,7 +379,7 @@ class TestSnapAddView(BaseTestSnapView):
             "Source tarball:\n"
             "Builds of this snap package will also build a source tarball.\n"
             "Edit snap package",
-            MatchesTagText(content, "source_tarball"))
+            MatchesTagText(content, "build_source_tarball"))
 
     def test_create_new_snap_auto_build(self):
         # Creating a new snap and asking for it to be automatically built
@@ -735,7 +735,7 @@ class TestSnapEditView(BaseTestSnapView):
             "Source tarball:\n"
             "Builds of this snap package will also build a source tarball.\n"
             "Edit snap package",
-            MatchesTagText(content, "source_tarball"))
+            MatchesTagText(content, "build_source_tarball"))
         self.assertThat(
             "Build schedule:\n(?)\nBuilt automatically\nEdit snap package\n",
             MatchesTagText(content, "auto_build"))
