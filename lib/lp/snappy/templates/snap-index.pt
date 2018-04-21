@@ -63,14 +63,10 @@
       </dl>
       <dl id="build_source_tarball"
           tal:define="build_source_tarball context/build_source_tarball">
-        <dt>Source tarball:</dt>
+        <dt>Build source tarball:</dt>
         <dd>
-          <span tal:condition="build_source_tarball">
-            Builds of this snap package will also build a source tarball.
-          </span>
-          <span tal:condition="not: build_source_tarball">
-            Builds of this snap package will not build a source tarball.
-          </span>
+          <span tal:condition="build_source_tarball">Yes</span>
+          <span tal:condition="not: build_source_tarball">No</span>
           <a tal:replace="structure view/menu:overview/edit/fmt:icon"/>
         </dd>
       </dl>
