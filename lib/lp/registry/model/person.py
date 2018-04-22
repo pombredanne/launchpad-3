@@ -427,6 +427,8 @@ class PersonSettings(Storm):
 
     expanded_notification_footers = BoolCol(notNull=False, default=False)
 
+    require_strong_email_authentication = BoolCol(notNull=False, default=False)
+
 
 def readonly_settings(message, interface):
     """Make an object that disallows writes to values on the interface.
