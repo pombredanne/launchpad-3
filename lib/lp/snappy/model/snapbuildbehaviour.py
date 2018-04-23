@@ -132,6 +132,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             raise CannotBuild(
                 "Source branch/repository for ~%s/%s has been deleted." %
                 (build.snap.owner.name, build.snap.name))
+        args["build_source_tarball"] = build.snap.build_source_tarball
         defer.returnValue(args)
 
     @defer.inlineCallbacks
