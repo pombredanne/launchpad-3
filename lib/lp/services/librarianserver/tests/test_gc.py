@@ -23,6 +23,7 @@ from subprocess import (
 import sys
 import tempfile
 
+import pytz
 from sqlobject import SQLObjectNotFound
 from storm.store import Store
 from swiftclient import client as swiftclient
@@ -88,8 +89,8 @@ class TestLibrarianGarbageCollectionBase:
         # Make sure that every file the database knows about exists on disk.
         # We manually remove them for tests that need to cope with missing
         # library items.
-        store = IMasterStore(LibraryFileContent)
-        for content in store.find(LibraryFileContent):
+        self.store = IMasterStore(LibraryFileContent)
+        for content in self.store.find(LibraryFileContent):
             path = librariangc.get_file_path(content.id)
             if not os.path.exists(path):
                 if not os.path.exists(os.path.dirname(path)):
@@ -451,7 +452,7 @@ class TestLibrarianGarbageCollectionBase:
             return org_time() + 24 * 60 * 60 + 1
 
         def tomorrow_utcnow():
-            return datetime.utcnow() + timedelta(days=1, seconds=1)
+            return datetime.now(pytz.UTC) + timedelta(days=1, seconds=1)
 
         try:
             librariangc.time = tomorrow_time
@@ -584,13 +585,13 @@ class TestLibrarianGarbageCollectionBase:
 
     def test_confirm_no_clock_skew(self):
         # There should not be any clock skew when running the test suite.
-        librariangc.confirm_no_clock_skew(self.con)
+        librariangc.confirm_no_clock_skew(self.store)
 
         # To test this function raises an excption when it should,
         # fool the garbage collector into thinking it is tomorrow.
         with self.librariangc_thinking_it_is_tomorrow():
             self.assertRaises(
-                Exception, librariangc.confirm_no_clock_skew, (self.con,)
+                Exception, librariangc.confirm_no_clock_skew, (self.store,)
                 )
 
 

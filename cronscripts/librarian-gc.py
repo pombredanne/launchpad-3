@@ -66,11 +66,12 @@ class LibrarianGC(LaunchpadCronScript):
         # XXX wgrant 2011-09-18 bug=853066: Using Storm's raw connection
         # here is wrong. We should either create our own or use
         # Store.execute or cursor() and the transaction module.
-        conn = IStore(LibraryFileAlias)._connection._raw_connection
+        store = IStore(LibraryFileAlias)
+        conn = store._connection._raw_connection
 
         # Refuse to run if we have significant clock skew between the
         # librarian and the database.
-        librariangc.confirm_no_clock_skew(conn)
+        librariangc.confirm_no_clock_skew(store)
 
         # Note that each of these next steps will issue commit commands
         # as appropriate to make this script transaction friendly

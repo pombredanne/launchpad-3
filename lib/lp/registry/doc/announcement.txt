@@ -212,8 +212,10 @@ modify() method.
 Announcements can be retracted at any time. Retracting an announcement
 updates the date_last_modified and sets the announcement.active flag to False
 
+    >>> from storm.store import Store
     >>> from lp.services.database.sqlbase import get_transaction_timestamp
-    >>> transaction_timestamp = get_transaction_timestamp()
+    >>> transaction_timestamp = get_transaction_timestamp(
+    ...     Store.of(apache_asia))
 
     >>> print apache_asia.date_last_modified
     None

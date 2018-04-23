@@ -55,6 +55,8 @@ from lp.code.tests.codeimporthelpers import (
 from lp.code.tests.helpers import GitHostingFixture
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.database.interfaces import IStore
+from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.interfaces.client import ILibrarianClient
 from lp.services.macaroons.interfaces import IMacaroonIssuer
@@ -561,10 +563,10 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
         # This causes problems for the "UTC_NOW - interval / 2"
         # expression below.
         interval = code_import.effective_update_interval
-        from lp.services.database.sqlbase import get_transaction_timestamp
+        store = IStore(CodeImportResult)
         recent_result = CodeImportResult(
             code_import=code_import, machine=machine, status=FAILURE,
-            date_job_started=get_transaction_timestamp() - interval / 2)
+            date_job_started=get_transaction_timestamp(store) - interval / 2)
         # When we create the job, its date_due should be set to the date_due
         # of the job that was deleted when the CodeImport review status
         # changed from REVIEWED. That is the date_job_started of the most

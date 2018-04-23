@@ -7,19 +7,18 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from datetime import (
-    datetime,
-    timedelta,
-    )
+from datetime import timedelta
 import os
 
-import pytz
-from testtools.matchers import LessThan
+from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from lp.services.database.sqlbase import flush_database_caches
+from lp.services.database.sqlbase import (
+    flush_database_caches,
+    get_transaction_timestamp,
+    )
 from lp.services.osutils import open_for_writing
 from lp.soyuz.interfaces.archivefile import IArchiveFileSet
 from lp.testing import TestCaseWithFactory
@@ -63,7 +62,7 @@ class TestArchiveFile(TestCaseWithFactory):
     def test_getByArchive(self):
         archives = [self.factory.makeArchive(), self.factory.makeArchive()]
         archive_files = []
-        now = datetime.now(pytz.UTC)
+        now = get_transaction_timestamp(Store.of(archives[0]))
         for archive in archives:
             archive_files.append(self.factory.makeArchiveFile(
                 archive=archive, scheduled_deletion_date=now))
@@ -113,19 +112,16 @@ class TestArchiveFile(TestCaseWithFactory):
             archive_files[:2], timedelta(days=1))
         self.assertContentEqual(expected_rows, rows)
         flush_database_caches()
-        tomorrow = datetime.now(pytz.UTC) + timedelta(days=1)
-        # Allow a bit of timing slack for slow tests.
-        self.assertThat(
-            tomorrow - archive_files[0].scheduled_deletion_date,
-            LessThan(timedelta(minutes=5)))
-        self.assertThat(
-            tomorrow - archive_files[1].scheduled_deletion_date,
-            LessThan(timedelta(minutes=5)))
+        tomorrow = (
+            get_transaction_timestamp(Store.of(archive_files[0])) +
+            timedelta(days=1))
+        self.assertEqual(tomorrow, archive_files[0].scheduled_deletion_date)
+        self.assertEqual(tomorrow, archive_files[1].scheduled_deletion_date)
         self.assertIsNone(archive_files[2].scheduled_deletion_date)
 
     def test_unscheduleDeletion(self):
         archive_files = [self.factory.makeArchiveFile() for _ in range(3)]
-        now = datetime.now(pytz.UTC)
+        now = get_transaction_timestamp(Store.of(archive_files[0]))
         for archive_file in archive_files:
             removeSecurityProxy(archive_file).scheduled_deletion_date = now
         expected_rows = [
@@ -138,7 +134,7 @@ class TestArchiveFile(TestCaseWithFactory):
         flush_database_caches()
         self.assertIsNone(archive_files[0].scheduled_deletion_date)
         self.assertIsNone(archive_files[1].scheduled_deletion_date)
-        self.assertIsNotNone(archive_files[2].scheduled_deletion_date)
+        self.assertEqual(now, archive_files[2].scheduled_deletion_date)
 
     def test_getContainersToReap(self):
         archive = self.factory.makeArchive()
@@ -150,7 +146,7 @@ class TestArchiveFile(TestCaseWithFactory):
         other_archive = self.factory.makeArchive()
         archive_files.append(self.factory.makeArchiveFile(
             archive=other_archive, container="baz"))
-        now = datetime.now(pytz.UTC)
+        now = get_transaction_timestamp(Store.of(archive_files[0]))
         removeSecurityProxy(archive_files[0]).scheduled_deletion_date = (
             now - timedelta(days=1))
         removeSecurityProxy(archive_files[1]).scheduled_deletion_date = (
@@ -183,7 +179,7 @@ class TestArchiveFile(TestCaseWithFactory):
         other_archive = self.factory.makeArchive()
         archive_files.append(
             self.factory.makeArchiveFile(archive=other_archive))
-        now = datetime.now(pytz.UTC)
+        now = get_transaction_timestamp(Store.of(archive_files[0]))
         removeSecurityProxy(archive_files[0]).scheduled_deletion_date = (
             now - timedelta(days=1))
         removeSecurityProxy(archive_files[1]).scheduled_deletion_date = (
