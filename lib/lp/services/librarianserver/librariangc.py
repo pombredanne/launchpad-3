@@ -17,6 +17,7 @@ import sys
 from time import time
 
 import iso8601
+import pytz
 from swiftclient import client as swiftclient
 from zope.interface import implementer
 
@@ -26,6 +27,7 @@ from lp.services.database.postgresql import (
     listReferences,
     quoteIdentifier,
     )
+from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.services.features import getFeatureFlag
 from lp.services.librarianserver import swift
 from lp.services.librarianserver.storage import (
@@ -67,7 +69,7 @@ def file_exists(content_id):
 
 def _utcnow():
     # Wrapper that is replaced in the test suite.
-    return datetime.utcnow()
+    return datetime.now(pytz.UTC)
 
 
 def open_stream(content_id):
@@ -105,16 +107,14 @@ def sha1_file(content_id):
     return hasher.hexdigest(), length
 
 
-def confirm_no_clock_skew(con):
+def confirm_no_clock_skew(store):
     """Raise an exception if there is significant clock skew between the
     database and this machine.
 
     It is theoretically possible to lose data if there is more than several
     hours of skew.
     """
-    cur = con.cursor()
-    cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
-    db_now = cur.fetchone()[0]
+    db_now = get_transaction_timestamp(store)
     local_now = _utcnow()
     five_minutes = timedelta(minutes=5)
 
@@ -813,8 +813,7 @@ def delete_unwanted_swift_files(con):
             and next_wanted_content_id == content_id)
 
         if not file_wanted:
-            mod_time = iso8601.parse_date(
-                obj['last_modified']).replace(tzinfo=None)
+            mod_time = iso8601.parse_date(obj['last_modified'])
             if mod_time > _utcnow() - timedelta(days=1):
                 log.debug3(
                     "File %d not removed - created too recently", content_id)
