@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -98,11 +98,12 @@ def build_test_suite(base_dir, special_tests={},
             if not os.path.isdir(full_story_dir):
                 continue
             story_path = os.path.join(stories_dir, story_dir)
+            if story_path in special_tests:
+                continue
             suite.addTest(PageTestSuite(story_path, package))
 
     # Add the special doctests.
-    for key in sorted(special_tests):
-        special_suite = special_tests[key]
+    for key, special_suite in sorted(special_tests.items()):
         suite.addTest(special_suite)
 
     tests_path = os.path.join(os.path.pardir, 'doc')
