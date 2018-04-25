@@ -16,7 +16,10 @@ from testtools.matchers import (
 from zope.component import getUtility
 
 from lp.services.database.interfaces import IStore
-from lp.services.database.sqlbase import flush_database_caches
+from lp.services.database.sqlbase import (
+    flush_database_caches,
+    get_transaction_timestamp,
+    )
 from lp.services.xref.interfaces import IXRefSet
 from lp.services.xref.model import XRef
 from lp.testing import (
@@ -35,9 +38,7 @@ class TestXRefSet(TestCaseWithFactory):
         # date_created defaults to now, but can be overridden.
         old = datetime.datetime.strptime('2005-01-01', '%Y-%m-%d').replace(
             tzinfo=pytz.UTC)
-        now = IStore(XRef).execute(
-            "SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"
-            ).get_one()[0].replace(tzinfo=pytz.UTC)
+        now = get_transaction_timestamp(IStore(XRef))
         getUtility(IXRefSet).create({
             ('a', '1'): {('b', 'foo'): {}},
             ('a', '2'): {('b', 'bar'): {'date_created': old}}})
@@ -68,9 +69,7 @@ class TestXRefSet(TestCaseWithFactory):
 
     def test_findFrom(self):
         creator = self.factory.makePerson()
-        now = IStore(XRef).execute(
-            "SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"
-            ).get_one()[0].replace(tzinfo=pytz.UTC)
+        now = get_transaction_timestamp(IStore(XRef))
         getUtility(IXRefSet).create({
             ('a', 'bar'): {
                 ('b', 'foo'): {'creator': creator, 'metadata': {'test': 1}}},

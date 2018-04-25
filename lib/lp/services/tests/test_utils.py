@@ -30,6 +30,7 @@ from lp.services.utils import (
     decorate_with,
     docstring_dedent,
     file_exists,
+    iter_chunks,
     iter_split,
     load_bz2_pickle,
     obfuscate_structure,
@@ -139,6 +140,32 @@ class TestIterateSplit(TestCase):
             [('one/two/three', ''), ('one/two', '/three'),
              ('one', '/two/three')],
             list(iter_split('one/two/three', '/')))
+
+
+class TestIterChunks(TestCase):
+    """Tests for iter_chunks."""
+
+    def test_empty(self):
+        self.assertEqual([], list(iter_chunks([], 1)))
+
+    def test_sequence(self):
+        self.assertEqual(
+            [('a', 'b'), ('c', 'd'), ('e',)], list(iter_chunks('abcde', 2)))
+
+    def test_iterable(self):
+        self.assertEqual(
+            [('a', 'b'), ('c', 'd'), ('e',)],
+            list(iter_chunks(iter('abcde'), 2)))
+
+    def test_size_divides_exactly(self):
+        self.assertEqual(
+            [(1, 2, 3), (4, 5, 6), (7, 8, 9)],
+            list(iter_chunks(range(1, 10), 3)))
+
+    def test_size_does_not_divide_exactly(self):
+        self.assertEqual(
+            [(1, 2, 3), (4, 5, 6), (7, 8)],
+            list(iter_chunks(range(1, 9), 3)))
 
 
 class TestCachingIterator(TestCase):

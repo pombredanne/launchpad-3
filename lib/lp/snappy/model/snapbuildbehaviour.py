@@ -85,7 +85,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
         """
         build = self.build
         args = {}
-        if config.snappy.builder_proxy_host:
+        if config.snappy.builder_proxy_host and build.snap.allow_internet:
             token = yield self._requestProxyToken()
             args["proxy_url"] = (
                 "http://{username}:{password}@{host}:{port}".format(
@@ -97,7 +97,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 "{endpoint}/{token}".format(
                     endpoint=config.snappy.builder_proxy_auth_api_endpoint,
                     token=token['username']))
-        args["name"] = build.snap.name
+        args["name"] = build.snap.store_name or build.snap.name
         args["series"] = build.distro_series.name
         args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
@@ -132,6 +132,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             raise CannotBuild(
                 "Source branch/repository for ~%s/%s has been deleted." %
                 (build.snap.owner.name, build.snap.name))
+        args["build_source_tarball"] = build.snap.build_source_tarball
         defer.returnValue(args)
 
     @defer.inlineCallbacks

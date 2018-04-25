@@ -347,8 +347,9 @@ removal_comment argument.
 
 Inspecting the modified record shows it's ready for domination:
 
+    >>> from storm.store import Store
     >>> from lp.services.database.sqlbase import get_transaction_timestamp
-    >>> transaction_timestamp = get_transaction_timestamp()
+    >>> transaction_timestamp = get_transaction_timestamp(Store.of(spph))
 
     >>> modified_spph = spph
     >>> modified_spph.status

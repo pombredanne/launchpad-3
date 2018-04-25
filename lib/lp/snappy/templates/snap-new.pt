@@ -35,6 +35,9 @@
         <tal:widget define="widget nocall:view/widgets/processors">
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
         </tal:widget>
+        <tal:widget define="widget nocall:view/widgets/build_source_tarball">
+          <metal:block use-macro="context/@@launchpad_form/widget_row" />
+        </tal:widget>
 
         <tal:widget define="widget nocall:view/widgets/auto_build">
           <metal:block use-macro="context/@@launchpad_form/widget_row" />

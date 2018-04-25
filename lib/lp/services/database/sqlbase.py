@@ -263,11 +263,9 @@ def clear_current_connection_cache():
     _get_sqlobject_store().invalidate()
 
 
-def get_transaction_timestamp():
-    """Get the timestamp for the current transaction on the MAIN DEFAULT
-    store. DEPRECATED - if needed it should become a method on the store.
-    """
-    timestamp = _get_sqlobject_store().execute(
+def get_transaction_timestamp(store):
+    """Get the timestamp for the current transaction on `store`."""
+    timestamp = store.execute(
         "SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'").get_one()[0]
     return timestamp.replace(tzinfo=pytz.timezone('UTC'))
 

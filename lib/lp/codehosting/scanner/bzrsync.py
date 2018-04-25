@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Import version control metadata from a Bazaar branch into the database."""
@@ -19,6 +19,7 @@ import logging
 from bzrlib.graph import DictParentsProvider
 from bzrlib.revision import NULL_REVISION
 import pytz
+import six
 from storm.locals import Store
 import transaction
 from zope.component import getUtility
@@ -35,7 +36,7 @@ from lp.code.model.revision import Revision
 from lp.codehosting.scanner import events
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
-from lp.services.utils import iter_list_chunks
+from lp.services.utils import iter_chunks
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.translations.interfaces.translationtemplatesbuild import (
     ITranslationTemplatesBuildSource,
@@ -104,7 +105,7 @@ class BzrSync:
         new_db_revs = (
             new_ancestry - getUtility(IRevisionSet).onlyPresent(new_ancestry))
         self.logger.info("Adding %s new revisions.", len(new_db_revs))
-        for revids in iter_list_chunks(list(new_db_revs), 10000):
+        for revids in iter_chunks(new_db_revs, 10000):
             revisions = self.getBazaarRevisions(bzr_branch, revids)
             self.syncRevisions(bzr_branch, revisions, revids_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
@@ -297,8 +298,8 @@ class BzrSync:
         """Insert a batch of BranchRevision rows."""
         self.logger.info("Inserting %d branchrevision records.",
             len(revids_to_insert))
-        revid_seq_pairs = revids_to_insert.items()
-        for revid_seq_pair_chunk in iter_list_chunks(revid_seq_pairs, 10000):
+        revid_seq_pairs = six.iteritems(revids_to_insert)
+        for revid_seq_pair_chunk in iter_chunks(revid_seq_pairs, 10000):
             self.db_branch.createBranchRevisionFromIDs(revid_seq_pair_chunk)
 
     def updateBranchStatus(self, bzr_history):

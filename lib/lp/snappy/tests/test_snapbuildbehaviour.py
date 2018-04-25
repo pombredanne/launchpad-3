@@ -278,6 +278,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archives": expected_archives,
             "arch_tag": "i386",
             "branch": branch.bzr_identity,
+            "build_source_tarball": False,
             "build_url": canonical_url(job.build),
             "name": "test-snap",
             "proxy_url": self.proxy_url,
@@ -300,6 +301,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_source_tarball": False,
             "build_url": canonical_url(job.build),
             "git_repository": ref.repository.git_https_url,
             "git_path": ref.name,
@@ -325,6 +327,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_source_tarball": False,
             "build_url": canonical_url(job.build),
             "git_repository": ref.repository.git_https_url,
             "name": "test-snap",
@@ -350,6 +353,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_source_tarball": False,
             "build_url": canonical_url(job.build),
             "git_repository": url,
             "git_path": "master",
@@ -375,6 +379,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
+            "build_source_tarball": False,
             "build_url": canonical_url(job.build),
             "git_repository": url,
             "name": "test-snap",
@@ -383,6 +388,14 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "series": "unstable",
             "trusted_keys": expected_trusted_keys,
             }, args)
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_prefers_store_name(self):
+        # For the "name" argument, _extraBuildArgs prefers Snap.store_name
+        # over Snap.name if the former is set.
+        job = self.makeJob(store_name="something-else")
+        args = yield job._extraBuildArgs()
+        self.assertEqual("something-else", args["name"])
 
     @defer.inlineCallbacks
     def test_extraBuildArgs_archive_trusted_keys(self):
@@ -413,6 +426,23 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         args = yield job._extraBuildArgs()
         self.assertFalse(isProxy(args["channels"]))
         self.assertEqual({"snapcraft": "edge"}, args["channels"])
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_disallow_internet(self):
+        # If external network access is not allowed for the snap,
+        # _extraBuildArgs does not dispatch a proxy token.
+        job = self.makeJob(allow_internet=False)
+        args = yield job._extraBuildArgs()
+        self.assertNotIn("proxy_url", args)
+        self.assertNotIn("revocation_endpoint", args)
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_build_source_tarball(self):
+        # If the snap requests building of a source tarball, _extraBuildArgs
+        # sends the appropriate arguments.
+        job = self.makeJob(build_source_tarball=True)
+        args = yield job._extraBuildArgs()
+        self.assertTrue(args["build_source_tarball"])
 
     @defer.inlineCallbacks
     def test_composeBuildRequest_proxy_url_set(self):

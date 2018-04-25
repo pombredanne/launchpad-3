@@ -1,4 +1,4 @@
-# Copyright 2010-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for PersonSet."""
@@ -165,9 +165,10 @@ class TestTeamGetTeamAdminsEmailAddresses(TestCaseWithFactory):
         self.assertEqual([email], self.team.getTeamAdminsEmailAddresses())
 
     def test_no_admins(self):
-        # A team without admins has no email addresses.
+        # A team without admins falls back to the owner's email address.
+        email = self.team.teamowner.preferredemail.email
         self.team.teamowner.leave(self.team)
-        self.assertEqual([], self.team.getTeamAdminsEmailAddresses())
+        self.assertEqual([email], self.team.getTeamAdminsEmailAddresses())
 
     def test_admins_are_users_with_preferred_email_addresses(self):
         # The team's admins are users, and they provide the email addresses.

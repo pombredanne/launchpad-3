@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package views."""
@@ -243,6 +243,9 @@ class TestSnapAddView(BaseTestSnapView):
             "Source:\n%s\nEdit snap package" % source_display,
             MatchesTagText(content, "source"))
         self.assertThat(
+            "Build source tarball:\nNo\nEdit snap package",
+            MatchesTagText(content, "build_source_tarball"))
+        self.assertThat(
             "Build schedule:\n(?)\nBuilt on request\nEdit snap package\n",
             MatchesTagText(content, "auto_build"))
         self.assertThat(
@@ -276,6 +279,9 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertThat(
             "Source:\n%s\nEdit snap package" % source_display,
             MatchesTagText(content, "source"))
+        self.assertThat(
+            "Build source tarball:\nNo\nEdit snap package",
+            MatchesTagText(content, "build_source_tarball"))
         self.assertThat(
             "Build schedule:\n(?)\nBuilt on request\nEdit snap package\n",
             MatchesTagText(content, "auto_build"))
@@ -354,6 +360,20 @@ class TestSnapAddView(BaseTestSnapView):
             'This snap contains Private information',
             extract_text(find_tag_by_id(browser.contents, "privacy"))
         )
+
+    def test_create_new_snap_build_source_tarball(self):
+        # We can create a new snap and ask for it to build a source tarball.
+        branch = self.factory.makeAnyBranch()
+        browser = self.getViewBrowser(
+            branch, view_name="+new-snap", user=self.person)
+        browser.getControl(name="field.name").value = "snap-name"
+        browser.getControl("Build source tarball").selected = True
+        browser.getControl("Create snap package").click()
+
+        content = find_main_content(browser.contents)
+        self.assertThat(
+            "Build source tarball:\nYes\nEdit snap package",
+            MatchesTagText(content, "build_source_tarball"))
 
     def test_create_new_snap_auto_build(self):
         # Creating a new snap and asking for it to be automatically built
@@ -573,7 +593,7 @@ class TestSnapAdminView(BaseTestSnapView):
             user=self.person)
 
     def test_admin_snap(self):
-        # Admins can change require_virtualized and privacy.
+        # Admins can change require_virtualized, privacy, and allow_internet.
         login("admin@canonical.com")
         commercial_admin = self.factory.makePerson(
             member_of=[getUtility(ILaunchpadCelebrities).commercial_admin])
@@ -581,16 +601,19 @@ class TestSnapAdminView(BaseTestSnapView):
         snap = self.factory.makeSnap(registrant=self.person)
         self.assertTrue(snap.require_virtualized)
         self.assertFalse(snap.private)
+        self.assertTrue(snap.allow_internet)
 
         browser = self.getViewBrowser(snap, user=commercial_admin)
         browser.getLink("Administer snap package").click()
         browser.getControl("Require virtualized builders").selected = False
         browser.getControl("Private").selected = True
+        browser.getControl("Allow external network access").selected = False
         browser.getControl("Update snap package").click()
 
         login_person(self.person)
         self.assertFalse(snap.require_virtualized)
         self.assertTrue(snap.private)
+        self.assertFalse(snap.allow_internet)
 
     def test_admin_snap_privacy_mismatch(self):
         # Cannot make snap public if it still contains private information.
@@ -683,6 +706,7 @@ class TestSnapEditView(BaseTestSnapView):
         browser.getControl("Git repository").value = (
             new_git_ref.repository.identity)
         browser.getControl("Git branch").value = new_git_ref.path
+        browser.getControl("Build source tarball").selected = True
         browser.getControl(
             "Automatically build when branch changes").selected = True
         browser.getControl("PPA").click()
@@ -701,6 +725,9 @@ class TestSnapEditView(BaseTestSnapView):
         self.assertThat(
             "Source:\n%s\nEdit snap package" % new_git_ref.display_name,
             MatchesTagText(content, "source"))
+        self.assertThat(
+            "Build source tarball:\nYes\nEdit snap package",
+            MatchesTagText(content, "build_source_tarball"))
         self.assertThat(
             "Build schedule:\n(?)\nBuilt automatically\nEdit snap package\n",
             MatchesTagText(content, "auto_build"))
@@ -1220,6 +1247,7 @@ class TestSnapView(BaseTestSnapView):
             Owner: Test Person
             Distribution series: Ubuntu Shiny
             Source: lp://dev/~test-person/\\+junk/snap-branch
+            Build source tarball: No
             Build schedule: \(\?\)
             Built on request
             Source archive for automatic builds:
@@ -1247,6 +1275,7 @@ class TestSnapView(BaseTestSnapView):
             Owner: Test Person
             Distribution series: Ubuntu Shiny
             Source: ~test-person/\\+git/snap-repository:master
+            Build source tarball: No
             Build schedule: \(\?\)
             Built on request
             Source archive for automatic builds:
@@ -1274,6 +1303,7 @@ class TestSnapView(BaseTestSnapView):
             Owner: Test Person
             Distribution series: Ubuntu Shiny
             Source: https://git.example.org/foo master
+            Build source tarball: No
             Build schedule: \(\?\)
             Built on request
             Source archive for automatic builds:

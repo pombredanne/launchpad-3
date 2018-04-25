@@ -343,4 +343,6 @@ class TestCreate(TestCaseWithFactory):
             [(bug, person, person,
               SQL("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'"),
               BugNotificationLevel.LIFECYCLE)], get_objects=True)
-        self.assertEqual(get_transaction_timestamp(), sub.date_created)
+        self.assertEqual(
+            get_transaction_timestamp(IStore(BugSubscription)),
+            sub.date_created)

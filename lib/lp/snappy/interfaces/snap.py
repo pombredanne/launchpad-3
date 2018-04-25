@@ -498,6 +498,13 @@ class ISnapEditableAttributes(IHasOwner):
             "The Git branch containing a snap/snapcraft.yaml, snapcraft.yaml, "
             "or .snapcraft.yaml recipe at the top level.")))
 
+    build_source_tarball = exported(Bool(
+        title=_("Build source tarball"),
+        required=True, readonly=False,
+        description=_(
+            "Whether builds of this snap package should also build a tarball "
+            "containing all source code, including external dependencies.")))
+
     auto_build = exported(Bool(
         title=_("Automatically build when branch changes"),
         required=True, readonly=False,
@@ -600,6 +607,13 @@ class ISnapAdminAttributes(Interface):
         value_type=Reference(schema=IProcessor),
         readonly=False))
 
+    allow_internet = exported(Bool(
+        title=_("Allow external network access"),
+        required=True, readonly=False,
+        description=_(
+            "Allow access to external network resources via a proxy.  "
+            "Resources hosted on Launchpad itself are always allowed.")))
+
 
 class ISnap(
     ISnapView, ISnapEdit, ISnapEditableAttributes, ISnapAdminAttributes,
@@ -653,6 +667,11 @@ class ISnapSet(Interface):
     def getByName(owner, name):
         """Return the appropriate `ISnap` for the given objects."""
 
+    @operation_parameters(
+        owner=Reference(IPerson, title=_("Owner"), required=True))
+    @operation_returns_collection_of(ISnap)
+    @export_read_operation()
+    @operation_for_version("devel")
     def findByOwner(owner):
         """Return all snap packages with the given `owner`."""
 

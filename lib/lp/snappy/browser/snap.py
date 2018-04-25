@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap views."""
@@ -319,6 +319,8 @@ class ISnapEditSchema(Interface):
         'name',
         'private',
         'require_virtualized',
+        'allow_internet',
+        'build_source_tarball',
         'auto_build',
         'store_upload',
         ])
@@ -373,6 +375,7 @@ class SnapAddView(
         'owner',
         'name',
         'store_distro_series',
+        'build_source_tarball',
         'auto_build',
         'auto_build_archive',
         'auto_build_pocket',
@@ -510,6 +513,7 @@ class SnapAddView(
             auto_build_archive=data['auto_build_archive'],
             auto_build_pocket=data['auto_build_pocket'],
             processors=data['processors'], private=private,
+            build_source_tarball=data['build_source_tarball'],
             store_upload=data['store_upload'],
             store_series=data['store_distro_series'].snappy_series,
             store_name=data['store_name'],
@@ -648,7 +652,7 @@ class SnapAdminView(BaseSnapEditView):
 
     page_title = 'Administer'
 
-    field_names = ['private', 'require_virtualized']
+    field_names = ['private', 'require_virtualized', 'allow_internet']
 
     def validate(self, data):
         super(SnapAdminView, self).validate(data)
@@ -680,6 +684,7 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
         'vcs',
         'branch',
         'git_ref',
+        'build_source_tarball',
         'auto_build',
         'auto_build_archive',
         'auto_build_pocket',

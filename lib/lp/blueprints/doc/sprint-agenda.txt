@@ -42,8 +42,9 @@ status accordingly and also update the decider and the date_decided.
 It is possible to revise your choice, declining the spec. This should update
 the date_decided.
 
+    >>> from storm.store import Store
     >>> from lp.services.database.sqlbase import get_transaction_timestamp
-    >>> transaction_timestamp = get_transaction_timestamp()
+    >>> transaction_timestamp = get_transaction_timestamp(Store.of(sl))
 
     # Nobody is allowed to write directly to SprintSpecification.date_decided,
     # so we need to remove its security proxy here.
