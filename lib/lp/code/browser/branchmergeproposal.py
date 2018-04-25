@@ -123,6 +123,7 @@ from lp.services.webapp import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.menu import NavigationMenu
 
 
@@ -436,8 +437,13 @@ class BranchMergeProposalNavigation(Navigation):
         except ValueError:
             return None
         try:
-            return self.context.getComment(id)
+            comment = self.context.getComment(id)
         except WrongBranchMergeProposal:
+            return None
+        user = getUtility(ILaunchBag).user
+        if comment.visible or comment.userCanSetCommentVisibility(user):
+            return comment
+        else:
             return None
 
     @stepthrough("+preview-diff")
@@ -591,6 +597,8 @@ class CodeReviewNewRevisions:
         self.comment_date = None
         self.display_attachments = False
         self.index = None
+        self.visible = True
+        self.show_spam_controls = False
 
     def download(self, request):
         pass
@@ -661,6 +669,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         source = merge_proposal.merge_source
         if IBranch.providedBy(source):
             source = DecoratedBranch(source)
+        user = getUtility(ILaunchBag).user
+        strip_invisible = not merge_proposal.userCanSetCommentVisibility(user)
         comments = []
         if (getFeatureFlag('code.incremental_diffs.enabled') and
                 merge_proposal.source_branch is not None):
@@ -688,6 +698,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 for comment in merge_proposal.all_comments)
             merge_proposal = merge_proposal.supersedes
         comments = sorted(comments, key=operator.attrgetter('date'))
+        if strip_invisible:
+            comments = [c for c in comments if c.visible or c.author == user]
         self._populate_previewdiffs(comments)
         return CodeReviewConversation(comments)
 

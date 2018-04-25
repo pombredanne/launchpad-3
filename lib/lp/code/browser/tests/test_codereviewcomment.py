@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeReviewComments."""
@@ -24,9 +24,12 @@ from lp.code.browser.codereviewcomment import (
 from lp.code.interfaces.codereviewinlinecomment import (
     ICodeReviewInlineCommentSet,
     )
+from lp.services.propertycache import clear_property_cache
 from lp.services.webapp import canonical_url
 from lp.testing import (
+    admin_logged_in,
     BrowserTestCase,
+    celebrity_logged_in,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -51,6 +54,34 @@ class TestCodeReviewComments(TestCaseWithFactory):
         display_comment = CodeReviewDisplayComment(comment)
 
         verifyObject(ICodeReviewDisplayComment, display_comment)
+
+    def test_extra_css_classes_visibility(self):
+        author = self.factory.makePerson()
+        comment = self.factory.makeCodeReviewComment(sender=author)
+        display_comment = CodeReviewDisplayComment(comment)
+        self.assertEqual('', display_comment.extra_css_class)
+        with person_logged_in(author):
+            display_comment.message.setVisible(False)
+        self.assertEqual(
+            'adminHiddenComment', display_comment.extra_css_class)
+
+    def test_show_spam_controls_permissions(self):
+        # Admins, registry experts, and the author of the comment itself can
+        # hide comments, but other people can't.
+        author = self.factory.makePerson()
+        comment = self.factory.makeCodeReviewComment(sender=author)
+        display_comment = CodeReviewDisplayComment(comment)
+        with person_logged_in(author):
+            self.assertTrue(display_comment.show_spam_controls)
+        clear_property_cache(display_comment)
+        with person_logged_in(self.factory.makePerson()):
+            self.assertFalse(display_comment.show_spam_controls)
+        clear_property_cache(display_comment)
+        with celebrity_logged_in('registry_experts'):
+            self.assertTrue(display_comment.show_spam_controls)
+        clear_property_cache(display_comment)
+        with admin_logged_in():
+            self.assertTrue(display_comment.show_spam_controls)
 
 
 class TestCodeReviewCommentInlineComments(TestCaseWithFactory):

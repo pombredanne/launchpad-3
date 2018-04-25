@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """CodeReviewComment interfaces."""
@@ -16,6 +16,7 @@ from lazr.restful.declarations import (
 from lazr.restful.fields import Reference
 from zope.interface import Interface
 from zope.schema import (
+    Bool,
     Choice,
     Datetime,
     Int,
@@ -86,6 +87,16 @@ class ICodeReviewComment(Interface):
         TextLine(
             title=_('The message as quoted in email.'),
             readonly=True))
+
+    visible = Bool(title=_('Whether this comment is visible.'))
+
+    def userCanSetCommentVisibility(user):
+        """Can `user` set the visibility of this comment?
+
+        Admins and registry experts can set the visibility of any code
+        review comment.  Comment authors can set the visibility of their own
+        comments.
+        """
 
 
 class ICodeReviewCommentDeletion(Interface):

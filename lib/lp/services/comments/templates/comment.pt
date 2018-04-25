@@ -25,6 +25,12 @@
     <div class="boardCommentFooter"
          tal:define="link context/menu:context/reply | nothing"
          tal:condition="link/enabled | nothing">
+        <a tal:condition="context/show_spam_controls"
+           tal:attributes="id string:mark-spam-${context/index};"
+           class="js-action mark-spam" href="#">
+          <tal:not-spam condition="not: context/visible">Unhide</tal:not-spam>
+          <tal:spam condition="context/visible">Hide</tal:spam>
+        </a>
         <a itemprop="replyToUrl"
              tal:attributes="href link/fmt:url"
              tal:content="link/escapedtext">
