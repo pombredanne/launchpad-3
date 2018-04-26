@@ -246,11 +246,11 @@ class TestBingSearchService(TestCase):
         self.assertEqual(25, matches.total)
         self.assertEqual(5, len(matches))
         self.assertEqual([
-            'https://help.launchpad.net/Bugs',
-            'http://blog.launchpad.dev/general/of-bugs-and-statuses',
-            'http://launchpad.dev/mahara/+milestone/1.8.0',
-            'http://launchpad.dev/mb',
-            'http://launchpad.dev/bugs'],
+            'http://bugs.launchpad.dev/ubuntu/hoary/+bug/2',
+            'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2',
+            'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3',
+            'http://bugs.launchpad.dev/bugs/bugtrackers',
+            'http://bugs.launchpad.dev/bugs/bugtrackers/debbugs'],
             [match.url for match in matches])
 
     def test_search_no_results(self):
