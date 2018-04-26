@@ -456,12 +456,12 @@ maximum number of results that can be returned per request.
     >>> len(pages)
     20
     >>> for page in pages[0:5]:
-    ...     page.title
-    'Launchpad Bugs'
-    'Bugs in Ubuntu Linux'
-    'Bugs related to Sample Person'
-    u'<b>Bug</b> #1 in Mozilla Firefox: ...Firefox does not support SVG...'
-    'Bugs in Source Package "thunderbird" in Ubuntu Linux'
+    ...     unicode(page.title)
+    u'Launchpad Bugs'
+    u'Bugs in Ubuntu Linux'
+    u'Bugs related to Sample Person'
+    u'...Bug... #1 in Mozilla Firefox: ...Firefox does not support SVG...'
+    u'Bugs in Source Package ...thunderbird... in Ubuntu Linux'
 
 The batch navigator provides access to the other batches. There are two
 batches of pages that match the search text 'bugs'. The navigator
@@ -492,12 +492,12 @@ is 20. That is because there were only 25 matching pages.
     >>> len(pages)
     5
     >>> for page in pages:
-    ...     page.title
-    u'<b>Bug</b> #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
-    u'<b>Bug</b> #2 in mozilla-firefox (Debian): ...Blackhole Trash folder...'
-    u'<b>Bug</b> #3 in mozilla-firefox (Debian): \u201cBug Title Test\u201d'
-    '<b>Bug</b> trackers registered in Launchpad'
-    u'<b>Bug</b> tracker \u201cDebian Bug tracker\u201d'
+    ...     unicode(page.title)
+    u'...Bug... #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
+    u'...Bug... #2 in mozilla-firefox (Debian): ...Blackhole Trash folder...'
+    u'...Bug... #3 in mozilla-firefox (Debian): \u201cBug Title Test\u201d'
+    u'...Bug... trackers registered in Launchpad'
+    u'...Bug... tracker \u201cDebian Bug tracker\u201d'
 
     >>> search_view.pages.nextBatchURL()
     ''
@@ -512,11 +512,11 @@ showing the matching terms in context of the page text.
     >>> page
     <...PageMatch ...>
     >>> page.title
-    u'<b>Bug</b> #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
+    u'...Bug... #2 in Ubuntu Hoary: \u201cBlackhole Trash folder\u201d'
     >>> page.url
     'http://bugs.launchpad.dev/ubuntu/hoary/+bug/2'
     >>> page.summary
-    u'<b>Bug</b> tracking <b>...</b> Search <b>bugs</b> reports ...'
+    u'...Launchpad\u2019s ...bug... tracker allows collaboration...'
 
 See `google-searchservice.txt` for more information about the
 GoogleSearchService and PageMatch objects.
@@ -642,10 +642,12 @@ matching pages. The WindowList claims to be 25 items in length, but
 the first 20 items are None. Only the last 5 items are PageMatches.
 
     >>> from lp.app.browser.root import WindowedList
-    >>> from lp.services.sitesearch import GoogleSearchService
+    >>> from lp.services.sitesearch.interfaces import active_search_service
+    >>> from zope.security.proxy import removeSecurityProxy
 
-    >>> google_search = GoogleSearchService()
-    >>> page_matches = google_search.search(terms='bug', start=20)
+    >>> site_search = active_search_service()
+    >>> naked_site_search = removeSecurityProxy(site_search)
+    >>> page_matches = naked_site_search.search(terms='bug', start=20)
     >>> results = WindowedList(
     ...     page_matches, page_matches.start, page_matches.total)
     >>> len(results)
@@ -653,7 +655,7 @@ the first 20 items are None. Only the last 5 items are PageMatches.
     >>> print results[0]
     None
     >>> results[24].title
-    u'<b>Bug</b> tracker \u201cDebian Bug tracker\u201d'
+    u'...Bug... tracker \u201cDebian Bug tracker\u201d'
     >>> results[18, 22]
     [None, None, <...PageMatch ...>, <...PageMatch ...>]
 
