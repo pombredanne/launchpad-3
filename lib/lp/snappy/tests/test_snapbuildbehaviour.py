@@ -55,9 +55,13 @@ from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
+from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import BufferLogger
 from lp.services.webapp import canonical_url
-from lp.snappy.interfaces.snap import SnapBuildArchiveOwnerMismatch
+from lp.snappy.interfaces.snap import (
+    SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG,
+    SnapBuildArchiveOwnerMismatch,
+    )
 from lp.snappy.model.snapbuildbehaviour import SnapBuildBehaviour
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -430,6 +434,33 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
     @defer.inlineCallbacks
     def test_extraBuildArgs_channels_apt(self):
         # {"snapcraft": "apt"} causes snapcraft to be installed from apt.
+        job = self.makeJob(channels={"snapcraft": "apt"})
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
+        args = yield job._extraBuildArgs()
+        self.assertNotIn("channels", args)
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_channels_feature_flag_real_channel(self):
+        # If the snap.channels.snapcraft feature flag is set, it identifies
+        # the default channel to be used for snapcraft.
+        self.useFixture(
+            FeatureFixture({SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG: "stable"}))
+        job = self.makeJob()
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
+        args = yield job._extraBuildArgs()
+        self.assertFalse(isProxy(args["channels"]))
+        self.assertEqual({"snapcraft": "stable"}, args["channels"])
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_channels_feature_flag_overridden(self):
+        # The snap.channels.snapcraft feature flag can be overridden by
+        # explicit configuration.
+        self.useFixture(
+            FeatureFixture({SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG: "stable"}))
         job = self.makeJob(channels={"snapcraft": "apt"})
         expected_archives, expected_trusted_keys = (
             yield get_sources_list_for_building(
