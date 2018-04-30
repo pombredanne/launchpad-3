@@ -110,7 +110,8 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 logger=logger))
         args["archive_private"] = build.archive.private
         args["build_url"] = canonical_url(build)
-        if build.channels is not None:
+        if (build.channels is not None and
+                build.channels.get("snapcraft") != "apt"):
             # We have to remove the security proxy that Zope applies to this
             # dict, since otherwise we'll be unable to serialise it to
             # XML-RPC.

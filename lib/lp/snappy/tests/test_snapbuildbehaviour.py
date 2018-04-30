@@ -428,6 +428,16 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         self.assertEqual({"snapcraft": "edge"}, args["channels"])
 
     @defer.inlineCallbacks
+    def test_extraBuildArgs_channels_apt(self):
+        # {"snapcraft": "apt"} causes snapcraft to be installed from apt.
+        job = self.makeJob(channels={"snapcraft": "apt"})
+        expected_archives, expected_trusted_keys = (
+            yield get_sources_list_for_building(
+                job.build, job.build.distro_arch_series, None))
+        args = yield job._extraBuildArgs()
+        self.assertNotIn("channels", args)
+
+    @defer.inlineCallbacks
     def test_extraBuildArgs_disallow_internet(self):
         # If external network access is not allowed for the snap,
         # _extraBuildArgs does not dispatch a proxy token.
