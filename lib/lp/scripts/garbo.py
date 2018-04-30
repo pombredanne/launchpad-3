@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -101,6 +101,7 @@ from lp.services.identity.interfaces.account import AccountStatus
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.model import TimeLimitedToken
 from lp.services.log.logger import PrefixFilter
@@ -122,6 +123,8 @@ from lp.services.webhooks.interfaces import IWebhookJobSource
 from lp.services.webhooks.model import WebhookJob
 from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.model.snap import Snap
+from lp.snappy.model.snapbuild import SnapFile
+from lp.snappy.model.snapbuildjob import SnapBuildJobType
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagecache import (
@@ -1564,6 +1567,32 @@ class LiveFSFilePruner(BulkPruner):
         """
 
 
+class SnapFilePruner(BulkPruner):
+    """Prune old `SnapFile`s that have been uploaded to the store.
+
+    Binary files attached to `SnapBuild`s are typically very large, and once
+    they've been uploaded to the store we don't really need to keep them in
+    Launchpad as well.  Text files are typically small (<1MiB) and useful
+    for retrospective analysis, so we preserve those indefinitely.
+    """
+    target_table_class = SnapFile
+    ids_to_prune_query = """
+        SELECT DISTINCT SnapFile.id
+        FROM SnapFile, SnapBuild, SnapBuildJob, Job, LibraryFileAlias
+        WHERE
+            SnapFile.snapbuild = SnapBuild.id
+            AND SnapBuildJob.snapbuild = SnapBuild.id
+            AND SnapBuildJob.job_type = %s
+            AND SnapBuildJob.job = Job.id
+            AND Job.status = %s
+            AND Job.date_finished <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('30 days' AS INTERVAL)
+            AND SnapFile.libraryfile = LibraryFileAlias.id
+            AND LibraryFileAlias.mimetype != 'text/plain'
+        """ % (SnapBuildJobType.STORE_UPLOAD.value, JobStatus.COMPLETED.value)
+
+
 class SnapStoreSeriesPopulator(TunableLoop):
     """Populates Snap.store_series based on Snap.distro_series.
 
@@ -1894,6 +1923,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionAuthorEmailLinker,
         ScrubPOFileTranslator,
         SnapBuildJobPruner,
+        SnapFilePruner,
         SnapStoreSeriesPopulator,
         SuggestiveTemplatesCacheUpdater,
         TeamMembershipPruner,
