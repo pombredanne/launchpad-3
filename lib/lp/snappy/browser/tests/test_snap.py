@@ -254,6 +254,7 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertThat(
             "Pocket for automatic builds:\n\nEdit snap package",
             MatchesTagText(content, "auto_build_pocket"))
+        self.assertIsNone(find_tag_by_id(content, "auto_build_channels"))
         self.assertThat(
             "Builds of this snap package are not automatically uploaded to "
             "the store.\nEdit snap package",
@@ -291,6 +292,7 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertThat(
             "Pocket for automatic builds:\n\nEdit snap package",
             MatchesTagText(content, "auto_build_pocket"))
+        self.assertIsNone(find_tag_by_id(content, "auto_build_channels"))
         self.assertThat(
             "Builds of this snap package are not automatically uploaded to "
             "the store.\nEdit snap package",
@@ -389,6 +391,10 @@ class TestSnapAddView(BaseTestSnapView):
         browser.getControl(name="field.auto_build_archive.ppa").value = (
             archive.reference)
         browser.getControl("Pocket for automatic builds").value = ["SECURITY"]
+        browser.getControl(
+            name="field.auto_build_channels.core").value = "stable"
+        browser.getControl(
+            name="field.auto_build_channels.snapcraft").value = "edge"
         browser.getControl("Create snap package").click()
 
         content = find_main_content(browser.contents)
@@ -402,6 +408,10 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertThat(
             "Pocket for automatic builds:\nSecurity\nEdit snap package",
             MatchesTagText(content, "auto_build_pocket"))
+        self.assertThat(
+            "Source snap channels for automatic builds:\nEdit snap package\n"
+            "core\nstable\nsnapcraft\nedge\n",
+            MatchesTagText(content, "auto_build_channels"))
 
     def test_create_new_snap_store_upload(self):
         # Creating a new snap and asking for it to be automatically uploaded
@@ -713,6 +723,8 @@ class TestSnapEditView(BaseTestSnapView):
         browser.getControl(name="field.auto_build_archive.ppa").value = (
             archive.reference)
         browser.getControl("Pocket for automatic builds").value = ["SECURITY"]
+        browser.getControl(
+            name="field.auto_build_channels.snapcraft").value = "edge"
         browser.getControl("Update snap package").click()
 
         content = find_main_content(browser.contents)
@@ -738,6 +750,10 @@ class TestSnapEditView(BaseTestSnapView):
         self.assertThat(
             "Pocket for automatic builds:\nSecurity\nEdit snap package",
             MatchesTagText(content, "auto_build_pocket"))
+        self.assertThat(
+            "Source snap channels for automatic builds:\nEdit snap package\n"
+            "snapcraft\nedge",
+            MatchesTagText(content, "auto_build_channels"))
         self.assertThat(
             "Builds of this snap package are not automatically uploaded to "
             "the store.\nEdit snap package",

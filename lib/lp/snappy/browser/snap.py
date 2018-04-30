@@ -80,6 +80,9 @@ from lp.services.webapp.breadcrumb import (
 from lp.services.webapp.url import urlappend
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
+from lp.snappy.browser.widgets.snapbuildchannels import (
+    SnapBuildChannelsWidget,
+    )
 from lp.snappy.browser.widgets.storechannels import StoreChannelsWidget
 from lp.snappy.interfaces.snap import (
     CannotAuthorizeStoreUploads,
@@ -188,6 +191,12 @@ class SnapView(LaunchpadView):
             return 'Built automatically'
         else:
             return 'Built on request'
+
+    @property
+    def sorted_auto_build_channels_items(self):
+        if self.context.auto_build_channels is None:
+            return []
+        return sorted(self.context.auto_build_channels.items())
 
     @property
     def store_channels(self):
@@ -322,8 +331,16 @@ class ISnapEditSchema(Interface):
         'allow_internet',
         'build_source_tarball',
         'auto_build',
+        'auto_build_channels',
         'store_upload',
         ])
+    auto_build_channels = copy_field(
+        ISnap['auto_build_channels'],
+        description=(
+            u'The channels to use for build tools when building the snap '
+            u'package.  If unset, or if the channel for snapcraft is set to '
+            u'"apt", the default behaviour is to install snapcraft from the '
+            u'source archive using apt.'))
     store_distro_series = Choice(
         vocabulary='BuildableSnappyDistroSeries', required=True,
         title=u'Series')
@@ -379,14 +396,16 @@ class SnapAddView(
         'auto_build',
         'auto_build_archive',
         'auto_build_pocket',
+        'auto_build_channels',
         'store_upload',
         'store_name',
         'store_channels',
         ]
     custom_widget('store_distro_series', LaunchpadRadioWidget)
     custom_widget('auto_build_archive', SnapArchiveWidget)
-    custom_widget('store_channels', StoreChannelsWidget)
     custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
+    custom_widget('auto_build_channels', SnapBuildChannelsWidget)
+    custom_widget('store_channels', StoreChannelsWidget)
 
     help_links = {
         "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",
@@ -512,6 +531,7 @@ class SnapAddView(
             auto_build=data['auto_build'],
             auto_build_archive=data['auto_build_archive'],
             auto_build_pocket=data['auto_build_pocket'],
+            auto_build_channels=data.get('auto_build_channels'),
             processors=data['processors'], private=private,
             build_source_tarball=data['build_source_tarball'],
             store_upload=data['store_upload'],
@@ -624,6 +644,8 @@ class BaseSnapEditView(LaunchpadEditFormView, SnapAuthorizeMixin):
                 del data['auto_build_archive']
             if 'auto_build_pocket' in data:
                 del data['auto_build_pocket']
+            if 'auto_build_channels' in data:
+                del data['auto_build_channels']
         store_upload = data.get('store_upload', False)
         if not store_upload:
             if 'store_name' in data:
@@ -688,16 +710,18 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
         'auto_build',
         'auto_build_archive',
         'auto_build_pocket',
+        'auto_build_channels',
         'store_upload',
         'store_name',
         'store_channels',
         ]
     custom_widget('store_distro_series', LaunchpadRadioWidget)
-    custom_widget('store_channels', StoreChannelsWidget)
     custom_widget('vcs', LaunchpadRadioWidget)
     custom_widget('git_ref', GitRefWidget, allow_external=True)
     custom_widget('auto_build_archive', SnapArchiveWidget)
     custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
+    custom_widget('auto_build_channels', SnapBuildChannelsWidget)
+    custom_widget('store_channels', StoreChannelsWidget)
 
     help_links = {
         "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",
