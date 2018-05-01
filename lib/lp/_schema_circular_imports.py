@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -489,6 +489,8 @@ patch_reference_property(
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
+patch_plain_parameter_type(
+    IDistroArchSeries, 'setChrootFromBuild', 'livefsbuild', ILiveFSBuild)
 
 # IGitRef
 patch_reference_property(IGitRef, 'repository', IGitRepository)
