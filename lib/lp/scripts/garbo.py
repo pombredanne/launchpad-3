@@ -1570,10 +1570,10 @@ class LiveFSFilePruner(BulkPruner):
 class SnapFilePruner(BulkPruner):
     """Prune old `SnapFile`s that have been uploaded to the store.
 
-    Binary files attached to `SnapBuild`s are typically very large, and once
+    Snaps attached to `SnapBuild`s are typically very large, and once
     they've been uploaded to the store we don't really need to keep them in
-    Launchpad as well.  Text files are typically small (<1MiB) and useful
-    for retrospective analysis, so we preserve those indefinitely.
+    Launchpad as well.  Other files are either small or don't exist anywhere
+    else, so we preserve those indefinitely.
     """
     target_table_class = SnapFile
     ids_to_prune_query = """
@@ -1589,7 +1589,7 @@ class SnapFilePruner(BulkPruner):
                 CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                 - CAST('30 days' AS INTERVAL)
             AND SnapFile.libraryfile = LibraryFileAlias.id
-            AND LibraryFileAlias.mimetype != 'text/plain'
+            AND LibraryFileAlias.filename LIKE '%%.snap'
         """ % (SnapBuildJobType.STORE_UPLOAD.value, JobStatus.COMPLETED.value)
 
 

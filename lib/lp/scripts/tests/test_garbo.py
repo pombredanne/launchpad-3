@@ -1520,11 +1520,11 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self._test_LiveFSFilePruner(
             'application/octet-stream', 0, expected_count=1)
 
-    def _test_SnapFilePruner(self, content_type, job_status, interval,
+    def _test_SnapFilePruner(self, filename, job_status, interval,
                              expected_count=0):
         # Garbo should (or should not, if `expected_count=1`) remove snap
-        # files of MIME type `content_type` with a store upload job of
-        # status `job_status` that finished more than `interval` days ago.
+        # files named `filename` with a store upload job of status
+        # `job_status` that finished more than `interval` days ago.
         now = datetime.now(UTC)
         switch_dbuser('testadmin')
         store = IMasterStore(SnapFile)
@@ -1532,7 +1532,7 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         db_build = self.factory.makeSnapBuild(
             date_created=now - timedelta(days=interval, minutes=15),
             status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=10))
-        db_lfa = self.factory.makeLibraryFileAlias(content_type=content_type)
+        db_lfa = self.factory.makeLibraryFileAlias(filename=filename)
         db_file = self.factory.makeSnapFile(
             snapbuild=db_build, libraryfile=db_lfa)
         if job_status is not None:
@@ -1548,36 +1548,33 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         switch_dbuser('testadmin')
         self.assertEqual(expected_count, store.find(SnapFile).count())
 
-    def test_SnapFilePruner_old_binary_files(self):
-        # Snap binary files attached to builds over 30 days old that have
-        # been uploaded to the store are pruned.
-        self._test_SnapFilePruner(
-            'application/octet-stream', JobStatus.COMPLETED, 30)
+    def test_SnapFilePruner_old_snap_files(self):
+        # Snap files attached to builds over 30 days old that have been
+        # uploaded to the store are pruned.
+        self._test_SnapFilePruner('foo.snap', JobStatus.COMPLETED, 30)
 
-    def test_SnapFilePruner_old_text_files(self):
-        # Snap text files attached to builds over 30 days old that have been
+    def test_SnapFilePruner_old_non_snap_files(self):
+        # Non-snap files attached to builds over 30 days old that have been
         # uploaded to the store are retained.
         self._test_SnapFilePruner(
-            'text/plain', JobStatus.COMPLETED, 30, expected_count=1)
+            'foo.tar.gz', JobStatus.COMPLETED, 30, expected_count=1)
 
     def test_SnapFilePruner_recent_binary_files(self):
         # Snap binary files attached to builds less than 30 days old that
         # have been uploaded to the store are retained.
         self._test_SnapFilePruner(
-            'application/octet-stream', JobStatus.COMPLETED, 29,
-            expected_count=1)
+            'foo.snap', JobStatus.COMPLETED, 29, expected_count=1)
 
     def test_SnapFilePruner_binary_files_failed_to_upload(self):
         # Snap binary files attached to builds that failed to be uploaded to
         # the store are retained.
         self._test_SnapFilePruner(
-            'application/octet-stream', JobStatus.FAILED, 30, expected_count=1)
+            'foo.snap', JobStatus.FAILED, 30, expected_count=1)
 
     def test_SnapFilePruner_binary_files_no_upload_job(self):
         # Snap binary files attached to builds with no store upload job are
         # retained.
-        self._test_SnapFilePruner(
-            'application/octet-stream', None, 30, expected_count=1)
+        self._test_SnapFilePruner('foo.snap', None, 30, expected_count=1)
 
     def test_SnapStoreSeriesPopulator(self):
         switch_dbuser('testadmin')
