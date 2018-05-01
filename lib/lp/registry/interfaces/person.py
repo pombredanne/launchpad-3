@@ -583,10 +583,10 @@ class IPersonSettingsModerate(Interface):
         title=_("Require strong authentication for incoming emails"),
         description=_(
             "If this option is set, Launchpad will only accept incoming "
-            "emails from you if it can authenticate them using GPG or DKIM.  "
-            "Launchpad administrators may set this if one of your email "
-            "addresses is being forged as the sender address for incoming "
-            "spam."),
+            "emails from you if it can authenticate them using OpenPGP or "
+            "DKIM.  Launchpad administrators may set this if one of your "
+            "email addresses is being forged as the sender address for "
+            "incoming spam."),
         required=False, default=False)
 
 
