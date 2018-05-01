@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -41,36 +41,6 @@ class TestMessageSet(TestCaseWithFactory):
         message3 = self.factory.makeMessage(parent=message1)
         message4 = self.factory.makeMessage(parent=message2)
         return (message1, message2, message3, message4)
-
-    def test_parentToChild(self):
-        """Test MessageSet._parentToChild."""
-        messages = self.createTestMessages()
-        message1, message2, message3, message4 = messages
-        expected = {
-            message1: [message2, message3],
-            message2: [message4],
-            message3: [], message4: []}
-        result, roots = MessageSet._parentToChild(messages)
-        self.assertEqual(expected, result)
-        self.assertEqual([message1], roots)
-
-    def test_threadMessages(self):
-        """Test MessageSet.threadMessages."""
-        messages = self.createTestMessages()
-        message1, message2, message3, message4 = messages
-        threads = MessageSet.threadMessages(messages)
-        self.assertEqual(
-            [(message1, [(message2, [(message4, [])]), (message3, [])])],
-            threads)
-
-    def test_flattenThreads(self):
-        """Test MessageSet.flattenThreads."""
-        messages = self.createTestMessages()
-        message1, message2, message3, message4 = messages
-        threads = MessageSet.threadMessages(messages)
-        flattened = list(MessageSet.flattenThreads(threads))
-        expected = [(0, message1), (1, message2), (2, message4), (1, message3)]
-        self.assertEqual(expected, flattened)
 
     def _makeMessageWithAttachment(self, filename='review.diff'):
         sender = self.factory.makePerson()

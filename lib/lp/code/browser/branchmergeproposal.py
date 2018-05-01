@@ -102,7 +102,6 @@ from lp.services.comments.interfaces.conversation import (
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.interfaces.client import LibrarianServerError
-from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -704,27 +703,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         for comment in comments:
             get_property_cache(
                 comment).previewdiff_id = relations.get(comment.id)
-
-    @property
-    def comments(self):
-        """Return comments associated with this proposal, plus styling info.
-
-        Comments are in threaded order, and the style indicates indenting
-        for use with threads.
-        """
-        message_to_comment = {}
-        messages = []
-        for comment in self.context.all_comments:
-            message_to_comment[comment.message] = comment
-            messages.append(comment.message)
-        message_set = getUtility(IMessageSet)
-        threads = message_set.threadMessages(messages)
-        result = []
-        for depth, message in message_set.flattenThreads(threads):
-            comment = message_to_comment[message]
-            style = 'margin-left: %dem;' % (2 * depth)
-            result.append(dict(style=style, comment=comment))
-        return result
 
     @property
     def label(self):
