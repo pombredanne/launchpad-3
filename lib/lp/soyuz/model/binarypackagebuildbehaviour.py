@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Builder behaviour for binary package builds."""
@@ -36,6 +36,8 @@ from lp.soyuz.model.publishing import makePoolPath
 class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
     """Define the behaviour of binary package builds."""
 
+    builder_type = "binarypackage"
+
     def getLogFileName(self):
         """See `IBuildPackageJob`."""
         sourcename = self.build.source_package_release.name
@@ -60,6 +62,7 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             state))
 
     def determineFilesToSend(self):
+        """See `IBuildFarmJobBehaviour`."""
         # Build filemap structure with the files required in this build
         # and send them to the slave.
         if self.build.archive.private:
@@ -84,13 +87,6 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
                     'username': 'buildd',
                     'password': self.build.archive.buildd_secret}
         return filemap
-
-    @defer.inlineCallbacks
-    def composeBuildRequest(self, logger):
-        args = yield self._extraBuildArgs(self.build, logger=logger)
-        defer.returnValue(
-            ("binarypackage", self.build.distro_arch_series,
-             self.determineFilesToSend(), args))
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.
@@ -137,14 +133,16 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
                      build.distro_series.name))
 
     @defer.inlineCallbacks
-    def _extraBuildArgs(self, build, logger=None):
+    def extraBuildArgs(self, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
+        build = self.build
         das = build.distro_arch_series
 
         # Build extra arguments.
-        args = {}
+        args = yield super(BinaryPackageBuildBehaviour, self).extraBuildArgs(
+            logger=logger)
         args['arch_indep'] = build.arch_indep
         args['distribution'] = das.distroseries.distribution.name
         args['series'] = das.distroseries.name

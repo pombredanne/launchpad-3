@@ -334,15 +334,15 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
     def test_arch_indep(self):
         # BinaryPackageBuild.arch_indep is passed through to the slave.
         build = self.factory.makeBinaryPackageBuild(arch_indep=False)
-        extra_args = yield IBuildFarmJobBehaviour(build)._extraBuildArgs(build)
+        extra_args = yield IBuildFarmJobBehaviour(build).extraBuildArgs()
         self.assertFalse(extra_args['arch_indep'])
         build = self.factory.makeBinaryPackageBuild(arch_indep=True)
-        extra_args = yield IBuildFarmJobBehaviour(build)._extraBuildArgs(build)
+        extra_args = yield IBuildFarmJobBehaviour(build).extraBuildArgs()
         self.assertTrue(extra_args['arch_indep'])
 
     @defer.inlineCallbacks
     def test_extraBuildArgs_archive_trusted_keys(self):
-        # If the archive has a signing key, _extraBuildArgs sends it.
+        # If the archive has a signing key, extraBuildArgs sends it.
         yield self.useFixture(InProcessKeyServerFixture()).start()
         archive = self.factory.makeArchive()
         key_path = os.path.join(gpgkeysdir, "ppa-sample@canonical.com.sec")
@@ -352,7 +352,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         self.factory.makeBinaryPackagePublishingHistory(
             distroarchseries=build.distro_arch_series, pocket=build.pocket,
             archive=archive, status=PackagePublishingStatus.PUBLISHED)
-        args = yield IBuildFarmJobBehaviour(build)._extraBuildArgs(build)
+        args = yield IBuildFarmJobBehaviour(build).extraBuildArgs()
         self.assertThat(args["trusted_keys"], MatchesListwise([
             Base64KeyMatches("0D57E99656BEFB0897606EE9A022DD1F5001B46D"),
             ]))

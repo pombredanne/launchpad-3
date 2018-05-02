@@ -44,6 +44,8 @@ from lp.soyuz.interfaces.archive import ArchiveDisabled
 class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `SnapBuild` jobs to slaves."""
 
+    builder_type = "snap"
+
     def getLogFileName(self):
         das = self.build.distro_arch_series
 
@@ -79,12 +81,13 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 "Missing chroot for %s" % build.distro_arch_series.displayname)
 
     @defer.inlineCallbacks
-    def _extraBuildArgs(self, logger=None):
+    def extraBuildArgs(self, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
         build = self.build
-        args = {}
+        args = yield super(SnapBuildBehaviour, self).extraBuildArgs(
+            logger=logger)
         if config.snappy.builder_proxy_host and build.snap.allow_internet:
             token = yield self._requestProxyToken()
             args["proxy_url"] = (
@@ -167,11 +170,6 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             )
         token = json.loads(result)
         defer.returnValue(token)
-
-    @defer.inlineCallbacks
-    def composeBuildRequest(self, logger):
-        args = yield self._extraBuildArgs(logger=logger)
-        defer.returnValue(("snap", self.build.distro_arch_series, {}, args))
 
     def verifySuccessfulBuild(self):
         """See `IBuildFarmJobBehaviour`."""

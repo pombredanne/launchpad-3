@@ -1,4 +1,4 @@
-# Copyright 2014-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `LiveFSBuild`.
@@ -38,6 +38,8 @@ from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `LiveFSBuild` jobs to slaves."""
 
+    builder_type = "livefs"
+
     def getLogFileName(self):
         das = self.build.distro_arch_series
         archname = das.architecturetag
@@ -76,15 +78,17 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
                 "Missing chroot for %s" % build.distro_arch_series.displayname)
 
     @defer.inlineCallbacks
-    def _extraBuildArgs(self, logger=None):
+    def extraBuildArgs(self, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
         build = self.build
+        args = yield super(LiveFSBuildBehaviour, self).extraBuildArgs(
+            logger=logger)
         # Non-trivial metadata values may have been security-wrapped, which
         # is pointless here and just gets in the way of xmlrpclib
         # serialisation.
-        args = dict(removeSecurityProxy(build.livefs.metadata))
+        args.update(removeSecurityProxy(build.livefs.metadata))
         if build.metadata_override is not None:
             args.update(removeSecurityProxy(build.metadata_override))
         args["series"] = build.distro_series.name
@@ -97,11 +101,6 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         args["archive_private"] = build.archive.private
         args["build_url"] = canonical_url(build)
         defer.returnValue(args)
-
-    @defer.inlineCallbacks
-    def composeBuildRequest(self, logger):
-        args = yield self._extraBuildArgs(logger=logger)
-        defer.returnValue(("livefs", self.build.distro_arch_series, {}, args))
 
     def verifySuccessfulBuild(self):
         """See `IBuildFarmJobBehaviour`."""
