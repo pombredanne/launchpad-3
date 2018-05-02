@@ -69,7 +69,7 @@ class TestLiveFSBuildBehaviourBase(TestCaseWithFactory):
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
 
     def makeJob(self, archive=None, pocket=PackagePublishingPocket.RELEASE,
-                **kwargs):
+                with_builder=False, **kwargs):
         """Create a sample `ILiveFSBuildBehaviour`."""
         if archive is None:
             distribution = self.factory.makeDistribution(name="distro")
@@ -84,7 +84,12 @@ class TestLiveFSBuildBehaviourBase(TestCaseWithFactory):
         build = self.factory.makeLiveFSBuild(
             archive=archive, distroarchseries=distroarchseries, pocket=pocket,
             name="test-livefs", **kwargs)
-        return IBuildFarmJobBehaviour(build)
+        job = IBuildFarmJobBehaviour(build)
+        if with_builder:
+            builder = MockBuilder()
+            builder.processor = processor
+            job.setBuilder(builder, None)
+        return job
 
 
 class TestLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
@@ -188,7 +193,8 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
         # extraBuildArgs returns a reasonable set of additional arguments.
         job = self.makeJob(
             date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC),
-            metadata={"project": "distro", "subproject": "special"})
+            metadata={"project": "distro", "subproject": "special"},
+            with_builder=True)
         expected_archives, expected_trusted_keys = (
             yield get_sources_list_for_building(
                 job.build, job.build.distro_arch_series, None))
@@ -199,6 +205,7 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
             "arch_tag": "i386",
             "build_url": canonical_url(job.build),
             "datestamp": "20140425-103800",
+            "fast_cleanup": True,
             "pocket": "release",
             "project": "distro",
             "subproject": "special",
@@ -212,7 +219,7 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
         # job for -proposed.
         job = self.makeJob(
             pocket=PackagePublishingPocket.PROPOSED,
-            metadata={"project": "distro"})
+            metadata={"project": "distro"}, with_builder=True)
         args = yield job.extraBuildArgs()
         self.assertEqual("unstable", args["series"])
         self.assertEqual("proposed", args["pocket"])
@@ -222,7 +229,8 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
         # extraBuildArgs returns an object without security wrapping, even
         # if values in the metadata are (say) lists and hence get proxied by
         # Zope.
-        job = self.makeJob(metadata={"lb_args": ["--option=value"]})
+        job = self.makeJob(
+            metadata={"lb_args": ["--option=value"]}, with_builder=True)
         args = yield job.extraBuildArgs()
         self.assertEqual(["--option=value"], args["lb_args"])
         self.assertIsNot(Proxy, type(args["lb_args"]))
@@ -235,7 +243,7 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
         key_path = os.path.join(gpgkeysdir, "ppa-sample@canonical.com.sec")
         yield IArchiveSigningKey(archive).setSigningKey(
             key_path, async_keyserver=True)
-        job = self.makeJob(archive=archive)
+        job = self.makeJob(archive=archive, with_builder=True)
         self.factory.makeBinaryPackagePublishingHistory(
             distroarchseries=job.build.distro_arch_series,
             pocket=job.build.pocket, archive=archive,
@@ -247,7 +255,7 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
 
     @defer.inlineCallbacks
     def test_composeBuildRequest(self):
-        job = self.makeJob()
+        job = self.makeJob(with_builder=True)
         lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
         build_request = yield job.composeBuildRequest(None)

@@ -143,6 +143,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             'build_debug_symbols': archive.build_debug_symbols,
             'build_url': canonical_url(build),
             'distribution': das.distroseries.distribution.name,
+            'fast_cleanup': builder.virtualized,
             'ogrecomponent': component,
             'series': ds_name,
             'suite': suite,
@@ -333,11 +334,16 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
     @defer.inlineCallbacks
     def test_arch_indep(self):
         # BinaryPackageBuild.arch_indep is passed through to the slave.
+        builder = self.factory.makeBuilder()
         build = self.factory.makeBinaryPackageBuild(arch_indep=False)
-        extra_args = yield IBuildFarmJobBehaviour(build).extraBuildArgs()
+        behaviour = IBuildFarmJobBehaviour(build)
+        behaviour.setBuilder(builder, None)
+        extra_args = yield behaviour.extraBuildArgs()
         self.assertFalse(extra_args['arch_indep'])
         build = self.factory.makeBinaryPackageBuild(arch_indep=True)
-        extra_args = yield IBuildFarmJobBehaviour(build).extraBuildArgs()
+        behaviour = IBuildFarmJobBehaviour(build)
+        behaviour.setBuilder(builder, None)
+        extra_args = yield behaviour.extraBuildArgs()
         self.assertTrue(extra_args['arch_indep'])
 
     @defer.inlineCallbacks
@@ -345,6 +351,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         # If the archive has a signing key, extraBuildArgs sends it.
         yield self.useFixture(InProcessKeyServerFixture()).start()
         archive = self.factory.makeArchive()
+        builder = self.factory.makeBuilder()
         key_path = os.path.join(gpgkeysdir, "ppa-sample@canonical.com.sec")
         yield IArchiveSigningKey(archive).setSigningKey(
             key_path, async_keyserver=True)
@@ -352,7 +359,9 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
         self.factory.makeBinaryPackagePublishingHistory(
             distroarchseries=build.distro_arch_series, pocket=build.pocket,
             archive=archive, status=PackagePublishingStatus.PUBLISHED)
-        args = yield IBuildFarmJobBehaviour(build).extraBuildArgs()
+        behaviour = IBuildFarmJobBehaviour(build)
+        behaviour.setBuilder(builder, None)
+        args = yield behaviour.extraBuildArgs()
         self.assertThat(args["trusted_keys"], MatchesListwise([
             Base64KeyMatches("0D57E99656BEFB0897606EE9A022DD1F5001B46D"),
             ]))
