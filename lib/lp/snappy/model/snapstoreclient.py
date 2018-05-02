@@ -104,9 +104,23 @@ class MacaroonAuth(requests.auth.AuthBase):
                         self.logger.debug(
                             "%s macaroon: OpenID identifier: %s" %
                             (macaroon_name, account["openid"]))
+                elif key == "acl":
+                    self.logger.debug(
+                        "%s macaroon: permissions: %s" %
+                        (macaroon_name, value))
+                elif key == "channel":
+                    self.logger.debug(
+                        "%s macaroon: channels: %s" % (macaroon_name, value))
+                elif key == "expires":
+                    self.logger.debug(
+                        "%s macaroon: expires: %s" % (macaroon_name, value))
                 elif key == "package_id":
                     self.logger.debug(
                         "%s macaroon: snap-ids: %s" % (macaroon_name, value))
+                elif key == "valid_since":
+                    self.logger.debug(
+                        "%s macaroon: valid since: %s" %
+                        (macaroon_name, value))
             except ValueError:
                 pass
 
