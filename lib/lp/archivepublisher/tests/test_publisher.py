@@ -3213,7 +3213,7 @@ class TestPublisherRepositorySignatures(
 
         # Release.gpg and InRelease exist with suitable fake signatures.
         # Note that the signatures are made before Release.new is renamed to
-        # to Release.
+        # Release.
         self.assertThat(
             self.release_file_signature_path,
             FileContains(
@@ -3235,6 +3235,55 @@ class TestPublisherRepositorySignatures(
         self.assertEqual(self.distroseries.name, sync_args[0])
         self.assertThat(
             sync_args[1], ContainsAll(['Release', 'Release.gpg', 'InRelease']))
+
+    def testRepositorySignatureWithSelectiveRunParts(self):
+        """Check publisher behaviour when partially signing repositories.
+
+        A 'sign.d' run-parts implementation may choose to produce only a
+        subset of signatures.
+        """
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        self.assertIsNone(cprov.archive.signing_key)
+        self.enableRunParts(distribution_name=cprov.archive.distribution.name)
+        sign_directory = os.path.join(
+            self.parts_directory, cprov.archive.distribution.name, 'sign.d')
+        with open(os.path.join(sign_directory, '10-sign'), 'w') as sign_script:
+            sign_script.write(dedent("""\
+                #! /bin/sh
+                [ "$(basename "$OUTPUT_PATH" .new)" != InRelease ] || exit 0
+                echo "$MODE signature of $INPUT_PATH" \\
+                     "($ARCHIVEROOT, $DISTRIBUTION/$SUITE)" \\
+                    >"$OUTPUT_PATH"
+                """))
+            os.fchmod(sign_script.fileno(), 0o755)
+
+        self.setupPublisher(cprov.archive)
+        self.archive_publisher._syncTimestamps = FakeMethod()
+
+        self._publishArchive(cprov.archive)
+
+        # Release exists.
+        self.assertThat(self.release_file_path, PathExists())
+
+        # Release.gpg exists with a suitable fake signature.  Note that the
+        # signature is made before Release.new is renamed to Release.
+        self.assertThat(
+            self.release_file_signature_path,
+            FileContains(
+                "detached signature of %s.new (%s, %s/breezy-autotest)\n" %
+                (self.release_file_path,
+                 self.archive_publisher._config.archiveroot,
+                 cprov.archive.distribution.name)))
+
+        # InRelease does not exist.
+        self.assertThat(self.inline_release_file_path, Not(PathExists()))
+
+        # The publisher synchronises the various Release file timestamps.
+        self.assertEqual(1, self.archive_publisher._syncTimestamps.call_count)
+        sync_args = self.archive_publisher._syncTimestamps.extract_args()[0]
+        self.assertEqual(self.distroseries.name, sync_args[0])
+        self.assertThat(sync_args[1], ContainsAll(['Release', 'Release.gpg']))
+        self.assertNotIn('InRelease', sync_args[1])
 
 
 class TestPublisherLite(TestCaseWithFactory):
