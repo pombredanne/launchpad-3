@@ -742,6 +742,34 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 "channels": ["stable", "edge"], "series": "rolling",
                 }))
 
+    def test_release_needs_discharge_macaroon_refresh(self):
+        @urlmatch(path=r".*/snap-release/$")
+        def snap_release_handler(url, request):
+            snap_release_handler.call_count += 1
+            if snap_release_handler.call_count == 1:
+                self.first_snap_release_request = request
+                return {
+                    "status_code": 401,
+                    "headers": {
+                        "WWW-Authenticate": "Macaroon needs_refresh=1"}}
+            else:
+                return self._snap_release_handler(url, request)
+        snap_release_handler.call_count = 0
+
+        store_secrets = self._make_store_secrets()
+        with HTTMock(self._channels_handler):
+            snap = self.factory.makeSnap(
+                store_upload=True,
+                store_series=self.factory.makeSnappySeries(name="rolling"),
+                store_name="test-snap", store_secrets=store_secrets,
+                store_channels=["stable", "edge"])
+        snapbuild = self.factory.makeSnapBuild(snap=snap)
+        with HTTMock(snap_release_handler, self._macaroon_refresh_handler):
+            self.client.release(snapbuild, 1)
+        self.assertEqual(2, snap_release_handler.call_count)
+        self.assertNotEqual(
+            store_secrets["discharge"], snap.store_secrets["discharge"])
+
     def test_release_error(self):
         @urlmatch(path=r".*/snap-release/$")
         def handler(url, request):

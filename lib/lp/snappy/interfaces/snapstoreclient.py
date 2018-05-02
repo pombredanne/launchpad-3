@@ -1,4 +1,4 @@
-# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for communication with the snap store."""
@@ -114,6 +114,19 @@ class ISnapStoreClient(Interface):
         """Refresh a snap's discharge macaroon.
 
         :param snap: An `ISnap` whose discharge macaroon needs to be refreshed.
+        """
+
+    def refreshIfNecessary(snap, f, *args, **kwargs):
+        """Call a function, refreshing macaroons if necessary.
+
+        If the called function raises `NeedsRefreshResponse`, then this
+        calls `refreshDischargeMacaroon` and tries again.
+
+        :param snap: An `ISnap` whose discharge macaroon may need to be
+            refreshed.
+        :param f: The function to call.
+        :param args: Positional arguments to `f`.
+        :param kwargs: Keyword arguments to `f`.
         """
 
     def checkStatus(status_url):

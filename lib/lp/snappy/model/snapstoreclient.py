@@ -292,13 +292,8 @@ class SnapStoreClient:
             if not lfa.filename.endswith(".snap"):
                 continue
             upload_data = cls._uploadFile(lfa, lfc)
-            try:
-                return cls._uploadApp(snapbuild.snap, upload_data)
-            except NeedsRefreshResponse:
-                # Try to automatically refresh the discharge macaroon and
-                # retry the upload.
-                cls.refreshDischargeMacaroon(snapbuild.snap)
-                return cls._uploadApp(snapbuild.snap, upload_data)
+            return cls.refreshIfNecessary(
+                snapbuild.snap, cls._uploadApp, snapbuild.snap, upload_data)
 
     @classmethod
     def refreshDischargeMacaroon(cls, snap):
@@ -319,6 +314,15 @@ class SnapStoreClient:
             snap.store_secrets = new_secrets
         except requests.HTTPError as e:
             raise cls._makeSnapStoreError(BadRefreshResponse, e)
+
+    @classmethod
+    def refreshIfNecessary(cls, snap, f, *args, **kwargs):
+        """See `ISnapStoreClient`."""
+        try:
+            return f(*args, **kwargs)
+        except NeedsRefreshResponse:
+            cls.refreshDischargeMacaroon(snap)
+            return f(*args, **kwargs)
 
     @classmethod
     def checkStatus(cls, status_url):
@@ -389,13 +393,8 @@ class SnapStoreClient:
         return channels
 
     @classmethod
-    def release(cls, snapbuild, revision):
-        """See `ISnapStoreClient`."""
-        assert config.snappy.store_url is not None
-        snap = snapbuild.snap
-        assert snap.store_name is not None
-        assert snap.store_series is not None
-        assert snap.store_channels
+    def _release(cls, snap, revision):
+        """Release a snap revision to specified channels."""
         release_url = urlappend(
             config.snappy.store_url, "dev/api/snap-release/")
         data = {
@@ -415,4 +414,18 @@ class SnapStoreClient:
                     snap.store_secrets["root"],
                     snap.store_secrets.get("discharge")))
         except requests.HTTPError as e:
+            if e.response.status_code == 401:
+                if (e.response.headers.get("WWW-Authenticate") ==
+                        "Macaroon needs_refresh=1"):
+                    raise NeedsRefreshResponse()
             raise cls._makeSnapStoreError(ReleaseFailedResponse, e)
+
+    @classmethod
+    def release(cls, snapbuild, revision):
+        """See `ISnapStoreClient`."""
+        assert config.snappy.store_url is not None
+        snap = snapbuild.snap
+        assert snap.store_name is not None
+        assert snap.store_series is not None
+        assert snap.store_channels
+        cls.refreshIfNecessary(snap, cls._release, snap, revision)
