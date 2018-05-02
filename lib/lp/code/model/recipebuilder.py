@@ -25,7 +25,6 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     )
 from lp.services.config import config
 from lp.services.propertycache import cachedproperty
-from lp.services.webapp import canonical_url
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component,
     get_sources_list_for_building,
@@ -67,9 +66,7 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
         # Build extra arguments.
         args = yield super(RecipeBuildBehaviour, self).extraBuildArgs(
             logger=logger)
-        args['series'] = self.build.distroseries.name
         args['suite'] = self.build.distroseries.getSuite(self.build.pocket)
-        args['arch_tag'] = self.distro_arch_series.architecturetag
         requester = self.build.requester
         if requester.preferredemail is None:
             # Use a constant, known, name and email.
@@ -92,8 +89,6 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
                 self.build, self.distro_arch_series, None,
                 tools_source=config.builddmaster.bzr_builder_sources_list,
                 logger=logger))
-        args['archive_private'] = self.build.archive.private
-        args['build_url'] = canonical_url(self.build)
         # XXX cjwatson 2017-07-26: This duplicates "series", which is common
         # to all build types; this name for it is deprecated and should be
         # removed once launchpad-buildd no longer requires it.

@@ -32,6 +32,7 @@ from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.services.utils import sanitise_urls
+from lp.services.webapp import canonical_url
 
 
 SLAVE_LOG_FILENAME = 'buildlog'
@@ -65,8 +66,13 @@ class BuildFarmJobBehaviourBase:
         return {}
 
     def extraBuildArgs(self, logger=None):
-        """The default behaviour is to send no extra arguments."""
-        return {}
+        """The default behaviour is to send only common extra arguments."""
+        args = {}
+        args["arch_tag"] = self.distro_arch_series.architecturetag
+        args["archive_private"] = self.build.archive.private
+        args["build_url"] = canonical_url(self.build)
+        args["series"] = self.distro_arch_series.distroseries.name
+        return args
 
     @defer.inlineCallbacks
     def composeBuildRequest(self, logger):
