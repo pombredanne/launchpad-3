@@ -1,4 +1,4 @@
-# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for communication with the snap store."""
@@ -452,6 +452,12 @@ class TestSnapStoreClient(TestCaseWithFactory):
             return {
                 "status_code": 401,
                 "headers": {"WWW-Authenticate": 'Macaroon realm="Devportal"'},
+                "content": {
+                    "error_list": [{
+                        "code": "macaroon-permission-required",
+                        "message": "Permission is required: package_push",
+                        }],
+                    },
                 }
 
         store_secrets = self._make_store_secrets()
@@ -460,8 +466,10 @@ class TestSnapStoreClient(TestCaseWithFactory):
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             with HTTMock(self._unscanned_upload_handler, snap_push_handler,
                          self._macaroon_refresh_handler):
-                self.assertRaises(
-                    UnauthorizedUploadResponse, self.client.upload, snapbuild)
+                self.assertRaisesWithContent(
+                    UnauthorizedUploadResponse,
+                    "Permission is required: package_push",
+                    self.client.upload, snapbuild)
 
     def test_upload_needs_discharge_macaroon_refresh(self):
         @urlmatch(path=r".*/snap-push/$")

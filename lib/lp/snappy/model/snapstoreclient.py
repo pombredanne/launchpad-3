@@ -1,4 +1,4 @@
-# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Communication with the snap store."""
@@ -280,7 +280,8 @@ class SnapStoreClient:
                         "Macaroon needs_refresh=1"):
                     raise NeedsRefreshResponse()
                 else:
-                    raise UnauthorizedUploadResponse("Authorization failed.")
+                    raise cls._makeSnapStoreError(
+                        UnauthorizedUploadResponse, e)
             raise cls._makeSnapStoreError(UploadFailedResponse, e)
 
     @classmethod
