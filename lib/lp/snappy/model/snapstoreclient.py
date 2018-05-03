@@ -1,4 +1,4 @@
-# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Communication with the snap store."""
@@ -104,9 +104,23 @@ class MacaroonAuth(requests.auth.AuthBase):
                         self.logger.debug(
                             "%s macaroon: OpenID identifier: %s" %
                             (macaroon_name, account["openid"]))
+                elif key == "acl":
+                    self.logger.debug(
+                        "%s macaroon: permissions: %s" %
+                        (macaroon_name, value))
+                elif key == "channel":
+                    self.logger.debug(
+                        "%s macaroon: channels: %s" % (macaroon_name, value))
+                elif key == "expires":
+                    self.logger.debug(
+                        "%s macaroon: expires: %s" % (macaroon_name, value))
                 elif key == "package_id":
                     self.logger.debug(
                         "%s macaroon: snap-ids: %s" % (macaroon_name, value))
+                elif key == "valid_since":
+                    self.logger.debug(
+                        "%s macaroon: valid since: %s" %
+                        (macaroon_name, value))
             except ValueError:
                 pass
 
@@ -266,7 +280,8 @@ class SnapStoreClient:
                         "Macaroon needs_refresh=1"):
                     raise NeedsRefreshResponse()
                 else:
-                    raise UnauthorizedUploadResponse("Authorization failed.")
+                    raise cls._makeSnapStoreError(
+                        UnauthorizedUploadResponse, e)
             raise cls._makeSnapStoreError(UploadFailedResponse, e)
 
     @classmethod
@@ -277,13 +292,8 @@ class SnapStoreClient:
             if not lfa.filename.endswith(".snap"):
                 continue
             upload_data = cls._uploadFile(lfa, lfc)
-            try:
-                return cls._uploadApp(snapbuild.snap, upload_data)
-            except NeedsRefreshResponse:
-                # Try to automatically refresh the discharge macaroon and
-                # retry the upload.
-                cls.refreshDischargeMacaroon(snapbuild.snap)
-                return cls._uploadApp(snapbuild.snap, upload_data)
+            return cls.refreshIfNecessary(
+                snapbuild.snap, cls._uploadApp, snapbuild.snap, upload_data)
 
     @classmethod
     def refreshDischargeMacaroon(cls, snap):
@@ -304,6 +314,15 @@ class SnapStoreClient:
             snap.store_secrets = new_secrets
         except requests.HTTPError as e:
             raise cls._makeSnapStoreError(BadRefreshResponse, e)
+
+    @classmethod
+    def refreshIfNecessary(cls, snap, f, *args, **kwargs):
+        """See `ISnapStoreClient`."""
+        try:
+            return f(*args, **kwargs)
+        except NeedsRefreshResponse:
+            cls.refreshDischargeMacaroon(snap)
+            return f(*args, **kwargs)
 
     @classmethod
     def checkStatus(cls, status_url):
@@ -374,13 +393,8 @@ class SnapStoreClient:
         return channels
 
     @classmethod
-    def release(cls, snapbuild, revision):
-        """See `ISnapStoreClient`."""
-        assert config.snappy.store_url is not None
-        snap = snapbuild.snap
-        assert snap.store_name is not None
-        assert snap.store_series is not None
-        assert snap.store_channels
+    def _release(cls, snap, revision):
+        """Release a snap revision to specified channels."""
         release_url = urlappend(
             config.snappy.store_url, "dev/api/snap-release/")
         data = {
@@ -400,4 +414,18 @@ class SnapStoreClient:
                     snap.store_secrets["root"],
                     snap.store_secrets.get("discharge")))
         except requests.HTTPError as e:
+            if e.response.status_code == 401:
+                if (e.response.headers.get("WWW-Authenticate") ==
+                        "Macaroon needs_refresh=1"):
+                    raise NeedsRefreshResponse()
             raise cls._makeSnapStoreError(ReleaseFailedResponse, e)
+
+    @classmethod
+    def release(cls, snapbuild, revision):
+        """See `ISnapStoreClient`."""
+        assert config.snappy.store_url is not None
+        snap = snapbuild.snap
+        assert snap.store_name is not None
+        assert snap.store_series is not None
+        assert snap.store_channels
+        cls.refreshIfNecessary(snap, cls._release, snap, revision)

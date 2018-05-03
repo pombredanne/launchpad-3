@@ -1,4 +1,4 @@
-# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for communication with the snap store."""
@@ -452,6 +452,12 @@ class TestSnapStoreClient(TestCaseWithFactory):
             return {
                 "status_code": 401,
                 "headers": {"WWW-Authenticate": 'Macaroon realm="Devportal"'},
+                "content": {
+                    "error_list": [{
+                        "code": "macaroon-permission-required",
+                        "message": "Permission is required: package_push",
+                        }],
+                    },
                 }
 
         store_secrets = self._make_store_secrets()
@@ -460,8 +466,10 @@ class TestSnapStoreClient(TestCaseWithFactory):
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
             with HTTMock(self._unscanned_upload_handler, snap_push_handler,
                          self._macaroon_refresh_handler):
-                self.assertRaises(
-                    UnauthorizedUploadResponse, self.client.upload, snapbuild)
+                self.assertRaisesWithContent(
+                    UnauthorizedUploadResponse,
+                    "Permission is required: package_push",
+                    self.client.upload, snapbuild)
 
     def test_upload_needs_discharge_macaroon_refresh(self):
         @urlmatch(path=r".*/snap-push/$")
@@ -733,6 +741,34 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 "name": "test-snap", "revision": 1,
                 "channels": ["stable", "edge"], "series": "rolling",
                 }))
+
+    def test_release_needs_discharge_macaroon_refresh(self):
+        @urlmatch(path=r".*/snap-release/$")
+        def snap_release_handler(url, request):
+            snap_release_handler.call_count += 1
+            if snap_release_handler.call_count == 1:
+                self.first_snap_release_request = request
+                return {
+                    "status_code": 401,
+                    "headers": {
+                        "WWW-Authenticate": "Macaroon needs_refresh=1"}}
+            else:
+                return self._snap_release_handler(url, request)
+        snap_release_handler.call_count = 0
+
+        store_secrets = self._make_store_secrets()
+        with HTTMock(self._channels_handler):
+            snap = self.factory.makeSnap(
+                store_upload=True,
+                store_series=self.factory.makeSnappySeries(name="rolling"),
+                store_name="test-snap", store_secrets=store_secrets,
+                store_channels=["stable", "edge"])
+        snapbuild = self.factory.makeSnapBuild(snap=snap)
+        with HTTMock(snap_release_handler, self._macaroon_refresh_handler):
+            self.client.release(snapbuild, 1)
+        self.assertEqual(2, snap_release_handler.call_count)
+        self.assertNotEqual(
+            store_secrets["discharge"], snap.store_secrets["discharge"])
 
     def test_release_error(self):
         @urlmatch(path=r".*/snap-release/$")
