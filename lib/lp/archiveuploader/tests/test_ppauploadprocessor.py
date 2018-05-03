@@ -2,10 +2,12 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -97,7 +99,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
 
             # This is now a non-multipart message.
             self.assertFalse(msg.is_multipart())
-            body = msg.get_payload(decode=True)
+            body = msg.get_payload(decode=True).decode("UTF-8")
 
             self.assertEqual(recipient, msg['X-Envelope-To'])
 
@@ -986,7 +988,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Also, the email generated should be sane.  Any of the multiple
         # notifications will do.
         msg = pop_notifications()[-1]
-        body = msg.get_payload(decode=True)
+        body = msg.get_payload(decode=True).decode("UTF-8")
 
         self.assertTrue(
             "File bar_1.0.orig.tar.gz already exists in unicode PPA name: "
@@ -1008,7 +1010,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
 
         # The email generated should be sane.
         [msg] = pop_notifications()
-        body = msg.get_payload(decode=True)
+        body = msg.get_payload(decode=True).decode("UTF-8")
 
         self.assertTrue(
             "Rejected:\n"

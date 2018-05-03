@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code for 'processing' 'uploads'. Also see nascentupload.py.
@@ -741,7 +741,7 @@ def _getDistributionAndSuite(parts, exc_type):
         % '/'.join(parts))
 
     # Uploads with undefined distribution defaults to 'ubuntu'.
-    if len(parts) == 0 or parts[0] is '':
+    if len(parts) == 0 or parts[0] == '':
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         return (ubuntu, None)
 
