@@ -442,6 +442,8 @@ class CodeImportJobMacaroonIssuer:
 
     def verifyMacaroon(self, macaroon, context):
         """See `IMacaroonIssuer`."""
+        if not ICodeImportJob.providedBy(context):
+            return False
         if not self.checkMacaroonIssuer(macaroon):
             return False
         try:
