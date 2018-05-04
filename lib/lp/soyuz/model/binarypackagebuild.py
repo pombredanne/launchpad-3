@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -21,6 +21,10 @@ import warnings
 
 import apt_pkg
 from debian.deb822 import PkgRelation
+from pymacaroons import (
+    Macaroon,
+    Verifier,
+    )
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import (
@@ -81,6 +85,7 @@ from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
+from lp.services.macaroons.interfaces import IMacaroonIssuer
 from lp.soyuz.adapters.buildarch import determine_architectures_to_build
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -102,7 +107,10 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.mail.binarypackagebuild import BinaryPackageBuildMailer
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.files import BinaryPackageFile
+from lp.soyuz.model.files import (
+    BinaryPackageFile,
+    SourcePackageReleaseFile,
+    )
 from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.model.queue import (
     PackageUpload,
@@ -1362,3 +1370,82 @@ class BinaryPackageBuildSet(SpecificBuildFarmJobSourceMixin):
                     % (build.title, build.id, build.archive.displayname,
                     build_queue.lastscore))
         return new_builds
+
+
+@implementer(IMacaroonIssuer)
+class BinaryPackageBuildMacaroonIssuer:
+
+    @property
+    def _root_secret(self):
+        secret = config.librarian.macaroon_secret_key
+        if not secret:
+            raise RuntimeError("librarian.macaroon_secret_key not configured.")
+        return secret
+
+    def issueMacaroon(self, context):
+        """See `IMacaroonIssuer`.
+
+        For issuing, the context is an `IBinaryPackageBuild`.
+        """
+        if not removeSecurityProxy(context).archive.private:
+            raise AssertionError(
+                "Refusing to issue macaroon for public build.")
+        macaroon = Macaroon(
+            location=config.vhost.mainsite.hostname,
+            identifier="binary-package-build", key=self._root_secret)
+        macaroon.add_first_party_caveat(
+            "lp.binary-package-build %s" % removeSecurityProxy(context).id)
+        return macaroon
+
+    def checkMacaroonIssuer(self, macaroon):
+        """See `IMacaroonIssuer`."""
+        if macaroon.location != config.vhost.mainsite.hostname:
+            return False
+        try:
+            verifier = Verifier()
+            verifier.satisfy_general(
+                lambda caveat: caveat.startswith("lp.binary-package-build "))
+            return verifier.verify(macaroon, self._root_secret)
+        except Exception:
+            return False
+
+    def verifyMacaroon(self, macaroon, context):
+        """See `IMacaroonIssuer`.
+
+        For verification, the context is a `LibraryFileAlias` ID.  We check
+        that the file is one of those required to build the
+        `IBinaryPackageBuild` that is the context of the macaroon, and that
+        the context build is currently building.
+        """
+        # Circular import.
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+        if not isinstance(context, int):
+            return False
+        if not self.checkMacaroonIssuer(macaroon):
+            return False
+
+        def verify_build(caveat):
+            prefix = "lp.binary-package-build "
+            if not caveat.startswith(prefix):
+                return False
+            try:
+                build_id = int(caveat[len(prefix):])
+            except ValueError:
+                return False
+            return not IStore(BinaryPackageBuild).find(
+                BinaryPackageBuild,
+                BinaryPackageBuild.id == build_id,
+                BinaryPackageBuild.source_package_release_id ==
+                    SourcePackageRelease.id,
+                SourcePackageReleaseFile.sourcepackagereleaseID ==
+                    SourcePackageRelease.id,
+                SourcePackageReleaseFile.libraryfileID == context,
+                BinaryPackageBuild.status == BuildStatus.BUILDING).is_empty()
+
+        try:
+            verifier = Verifier()
+            verifier.satisfy_general(verify_build)
+            return verifier.verify(macaroon, self._root_secret)
+        except Exception:
+            return False

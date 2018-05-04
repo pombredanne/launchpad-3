@@ -14,11 +14,12 @@ from lazr.uri import URI
 import pytz
 import requests
 from storm.expr import SQL
-import testtools
 from testtools.matchers import EndsWith
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from lp.buildmaster.enums import BuildStatus
 from lp.services.config import config
 from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import (
@@ -37,7 +38,12 @@ from lp.services.librarian.model import (
     TimeLimitedToken,
     )
 from lp.services.librarianserver.storage import LibrarianStorage
-from lp.testing.dbuser import switch_dbuser
+from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.testing import TestCaseWithFactory
+from lp.testing.dbuser import (
+    dbuser,
+    switch_dbuser,
+    )
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -50,7 +56,7 @@ def uri_path_replace(url, old, new):
     return str(parsed.replace(path=parsed.path.replace(old, new)))
 
 
-class LibrarianWebTestCase(testtools.TestCase):
+class LibrarianWebTestCase(TestCaseWithFactory):
     """Test the librarian's web interface."""
     layer = LaunchpadFunctionalLayer
 
@@ -414,6 +420,49 @@ class LibrarianWebTestCase(testtools.TestCase):
             TimeLimitedToken.created == SQL("created - interval '1 week'"))
         # Now, as per test_restricted_no_token we should get a 404.
         self.require404(url, params={"token": token})
+
+    def test_restricted_with_macaroon(self):
+        fileAlias, url = self.get_restricted_file_and_public_url()
+        lfa = IMasterStore(LibraryFileAlias).get(LibraryFileAlias, fileAlias)
+        with dbuser('testadmin'):
+            build = self.factory.makeBinaryPackageBuild(
+                archive=self.factory.makeArchive(private=True))
+            naked_build = removeSecurityProxy(build)
+            self.factory.makeSourcePackageReleaseFile(
+                sourcepackagerelease=naked_build.source_package_release,
+                library_file=lfa)
+            naked_build.updateStatus(BuildStatus.BUILDING)
+            issuer = getUtility(IMacaroonIssuer, "binary-package-build")
+            macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
+        self.commit()
+        response = requests.get(url, auth=("", macaroon.serialize()))
+        response.raise_for_status()
+        self.assertEqual(b"a" * 12, response.content)
+
+    def test_restricted_with_invalid_macaroon(self):
+        fileAlias, url = self.get_restricted_file_and_public_url()
+        lfa = IMasterStore(LibraryFileAlias).get(LibraryFileAlias, fileAlias)
+        with dbuser('testadmin'):
+            build = self.factory.makeBinaryPackageBuild(
+                archive=self.factory.makeArchive(private=True))
+            naked_build = removeSecurityProxy(build)
+            self.factory.makeSourcePackageReleaseFile(
+                sourcepackagerelease=naked_build.source_package_release,
+                library_file=lfa)
+            naked_build.updateStatus(BuildStatus.BUILDING)
+        self.commit()
+        self.require404(url, auth=("", "not-a-macaroon"))
+
+    def test_restricted_with_unverifiable_macaroon(self):
+        fileAlias, url = self.get_restricted_file_and_public_url()
+        with dbuser('testadmin'):
+            build = self.factory.makeBinaryPackageBuild(
+                archive=self.factory.makeArchive(private=True))
+            removeSecurityProxy(build).updateStatus(BuildStatus.BUILDING)
+            issuer = getUtility(IMacaroonIssuer, "binary-package-build")
+            macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
+        self.commit()
+        self.require404(url, auth=("", macaroon.serialize()))
 
     def test_restricted_file_headers(self):
         fileAlias, url = self.get_restricted_file_and_public_url()

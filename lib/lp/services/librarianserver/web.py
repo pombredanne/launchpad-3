@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -7,6 +7,7 @@ from datetime import datetime
 import time
 from urlparse import urlparse
 
+from pymacaroons import Macaroon
 from storm.exceptions import DisconnectionError
 from twisted.internet import defer
 from twisted.internet.threads import deferToThread
@@ -116,6 +117,12 @@ class LibraryFileAliasResource(resource.Resource):
                 return fourOhFour
 
         token = request.args.get('token', [None])[0]
+        if token is None:
+            if not request.getUser() and request.getPassword():
+                try:
+                    token = Macaroon.deserialize(request.getPassword())
+                except Exception:
+                    pass
         path = request.path
         deferred = deferToThread(
             self._getFileAlias, self.aliasID, token, path)

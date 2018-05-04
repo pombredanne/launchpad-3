@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database access layer for the Librarian."""
@@ -11,10 +11,13 @@ __all__ = [
 import hashlib
 import urllib
 
+from pymacaroons import Macaroon
 from storm.expr import (
     And,
     SQL,
     )
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import session_store
@@ -23,6 +26,7 @@ from lp.services.librarian.model import (
     LibraryFileContent,
     TimeLimitedToken,
     )
+from lp.services.macaroons.interfaces import IMacaroonIssuer
 
 
 class Library:
@@ -69,16 +73,26 @@ class Library:
             #
             # This needs to match url_path_quote.
             normalised_path = urllib.quote(urllib.unquote(path), safe='/~+')
-            store = session_store()
-            token_found = store.find(TimeLimitedToken,
-                SQL("age(created) < interval '1 day'"),
-                TimeLimitedToken.token == hashlib.sha256(token).hexdigest(),
-                TimeLimitedToken.path == normalised_path).is_empty()
-            store.reset()
-            if token_found:
-                raise LookupError("Token stale/pruned/path mismatch")
+            if isinstance(token, Macaroon):
+                # We have no Zope interaction, so must remove the proxy.
+                issuer = removeSecurityProxy(
+                    getUtility(IMacaroonIssuer, token.identifier))
+                # Macaroons have enough other constraints that they don't
+                # need to be path-specific; it's simpler and faster to just
+                # check the alias ID.
+                token_ok = issuer.verifyMacaroon(token, aliasid)
             else:
+                store = session_store()
+                token_ok = not store.find(TimeLimitedToken,
+                    SQL("age(created) < interval '1 day'"),
+                    TimeLimitedToken.token ==
+                        hashlib.sha256(token).hexdigest(),
+                    TimeLimitedToken.path == normalised_path).is_empty()
+                store.reset()
+            if token_ok:
                 restricted = True
+            else:
+                raise LookupError("Token stale/pruned/path mismatch")
         alias = LibraryFileAlias.selectOne(And(
             LibraryFileAlias.id == aliasid,
             LibraryFileAlias.contentID == LibraryFileContent.q.id,

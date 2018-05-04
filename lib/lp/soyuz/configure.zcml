@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -478,6 +478,15 @@
         provides="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"
         name="PACKAGEBUILD">
         <allow interface="lp.buildmaster.interfaces.buildfarmjob.ISpecificBuildFarmJobSource"/>
+    </securedutility>
+
+    <!-- BinaryPackageBuildMacaroonIssuer -->
+
+    <securedutility
+        class="lp.soyuz.model.binarypackagebuild.BinaryPackageBuildMacaroonIssuer"
+        provides="lp.services.macaroons.interfaces.IMacaroonIssuer"
+        name="binary-package-build">
+        <allow interface="lp.services.macaroons.interfaces.IMacaroonIssuerPublic"/>
     </securedutility>
 
     <!-- DistroArchSeriesBinaryPackage -->
