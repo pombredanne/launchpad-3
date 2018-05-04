@@ -201,7 +201,7 @@ via `dget`.
     View changes file
 
     >>> print anon_browser.getLink('testing-dspr_1.0.dsc').url
-    http://.../ubuntutest/+archive/primary/+files/testing-dspr_1.0.dsc
+    http://.../ubuntutest/+archive/primary/+sourcefiles/testing-dspr/1.0/testing-dspr_1.0.dsc
 
 The 'Downloads' section also lists and link to package diffs when they
 are available.

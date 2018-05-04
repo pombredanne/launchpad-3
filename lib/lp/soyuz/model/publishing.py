@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -76,6 +76,7 @@ from lp.services.webapp.errorlog import (
     ScriptRequest,
     )
 from lp.services.worlddata.model.country import Country
+from lp.soyuz.adapters.proxiedsourcefiles import ProxiedSourceLibraryFileAlias
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingPriority,
@@ -140,6 +141,12 @@ def get_component(archive, distroseries, component):
 def proxied_urls(files, parent):
     """Run the files passed through `ProxiedLibraryFileAlias`."""
     return [ProxiedLibraryFileAlias(file, parent).http_url for file in files]
+
+
+def proxied_source_urls(files, parent):
+    """Return the files passed through `ProxiedSourceLibraryFileAlias`."""
+    return [
+        ProxiedSourceLibraryFileAlias(file, parent).http_url for file in files]
 
 
 class ArchivePublisherBase:
@@ -548,8 +555,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             SourcePackageReleaseFile.sourcepackagerelease ==
                 SourcePackageRelease.id,
             SourcePackageRelease.id == self.sourcepackagereleaseID)
-        source_urls = proxied_urls(
-            [source for source, _ in sources], self.archive)
+        source_urls = proxied_source_urls(
+            [source for source, _ in sources], self)
         if include_meta:
             meta = [
                 (content.filesize, content.sha256) for _, content in sources]

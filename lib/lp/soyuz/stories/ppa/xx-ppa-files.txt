@@ -90,18 +90,19 @@ Links to files accessible via +files/ proxy in the PPA page.
 
     >>> ppa_links = [
     ...     ('(changes file)',
-    ...         another_test_source.sourcepackagerelease.upload_changesfile),
+    ...         another_test_source.sourcepackagerelease.upload_changesfile,
+    ...         None, None),
     ...     ]
 
     >>> ppa_1_0_links = [
-    ...     ('test-pkg_1.0.dsc', dsc_file),
-    ...     ('test-pkg_1.0.tar.gz', tar_gz),
-    ...     ('test-bin_1.0_all.deb', deb_file),
+    ...     ('test-pkg_1.0.dsc', dsc_file, 'test-pkg', '1.0'),
+    ...     ('test-pkg_1.0.tar.gz', tar_gz, 'test-pkg', '1.0'),
+    ...     ('test-bin_1.0_all.deb', deb_file, None, None),
     ...     ]
 
     >>> ppa_1_1_links = [
-    ...     ('test-pkg_1.1.dsc', another_dsc_file),
-    ...     ('1.0 to 1.1', package_diff.diff_content),
+    ...     ('test-pkg_1.1.dsc', another_dsc_file, 'test-pkg', '1.1'),
+    ...     ('1.0 to 1.1', package_diff.diff_content, None, None),
     ...     ]
 
 Links to files accessible via +files/ proxy in the Build page.
@@ -109,13 +110,14 @@ Links to files accessible via +files/ proxy in the Build page.
     >>> build_id = build.id
 
     >>> builds_links = [
-    ...     ('see the log', build.log),
+    ...     ('see the log', build.log, None, None),
     ...     ]
 
     >>> build_links = [
-    ...     ('test-bin_1.0_i386.changes', build.upload_changesfile),
-    ...     ('buildlog', build.log),
-    ...     ('uploadlog', build.upload_log),
+    ...     ('test-bin_1.0_i386.changes', build.upload_changesfile,
+    ...      None, None),
+    ...     ('buildlog', build.log, None, None),
+    ...     ('uploadlog', build.upload_log, None, None),
     ...     ]
 
     >>> logout()
@@ -124,15 +126,20 @@ Create a function to check the expected links.
 
     >>> from mechanize import LinkNotFoundError
     >>> def check_urls(browser, links, base_url):
-    ...     for link, libraryfile in links:
+    ...     for link, libraryfile, source_name, source_version in links:
     ...         try:
     ...             found_url = browser.getLink(link).url
     ...         except LinkNotFoundError:
     ...             print '%s: NOT FOUND' % libraryfile.filename
     ...             continue
     ...         found_url = found_url.replace('%7E', '~')
-    ...         expected_url = '/'.join(
-    ...             (base_url, '+files', libraryfile.filename))
+    ...         if source_name is not None:
+    ...             expected_url = '/'.join(
+    ...                 (base_url, '+sourcefiles', source_name,
+    ...                  source_version, libraryfile.filename))
+    ...         else:
+    ...             expected_url = '/'.join(
+    ...                 (base_url, '+files', libraryfile.filename))
     ...         if found_url == expected_url:
     ...             print '%s: OK' % libraryfile.filename
     ...         else:
@@ -184,7 +191,7 @@ builds list is presented.
     ...     'http://launchpad.dev/~no-priv/+archive/ubuntu/p3a/+packages')
 
 Source and binary files, in the expandable-row area, are served via
-the PPA '+files' traversal.
+the PPA '+sourcefiles' and '+files' traversals.
 
     >>> expander_id = find_tags_by_class(
     ...     no_priv_browser.contents, 'expander')[1]['id']
