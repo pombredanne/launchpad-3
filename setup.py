@@ -161,6 +161,7 @@ setup(
         'fixtures',
         'html5browser',
         'httmock',
+        'importlib-resources',
         'ipython',
         'jsautobuild',
         'launchpad-buildd',

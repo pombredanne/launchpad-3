@@ -16,9 +16,9 @@ import os
 import unittest
 
 from fixtures import TempDir
+import importlib_resources
 from lazr.config import ConfigSchema
 from lazr.config.interfaces import ConfigErrors
-import pkg_resources
 import testtools
 import ZConfig
 
@@ -29,8 +29,8 @@ from lp.services.config.fixture import ConfigUseFixture
 EXCLUDED_CONFIGS = ['lpnet-template']
 
 # Calculate some landmark paths.
-schema_file = pkg_resources.resource_filename('zope.app.server', 'schema.xml')
-schema = ZConfig.loadSchema(schema_file)
+with importlib_resources.path('zope.app.server', 'schema.xml') as schema_file:
+    schema = ZConfig.loadSchema(str(schema_file))
 
 here = os.path.dirname(lp.services.config.__file__)
 lazr_schema_file = os.path.join(here, 'schema-lazr.conf')

@@ -20,6 +20,7 @@ from urlparse import (
     urlunparse,
     )
 
+import importlib_resources
 from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
 import ZConfig
@@ -240,10 +241,9 @@ class LaunchpadConfig:
 
     def _setZConfig(self):
         """Modify the config, adding automatically generated settings"""
-        import pkg_resources
-        schemafile = pkg_resources.resource_filename(
-            'zope.app.server', 'schema.xml')
-        schema = ZConfig.loadSchema(schemafile)
+        with importlib_resources.path(
+                'zope.app.server', 'schema.xml') as schemafile:
+            schema = ZConfig.loadSchema(str(schemafile))
         root_options, handlers = ZConfig.loadConfig(
             schema, self.zope_config_file)
 
