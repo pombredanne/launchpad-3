@@ -11,6 +11,7 @@ import logging
 import os
 import unittest
 
+import scandir
 import transaction
 
 from lp.services.config import config
@@ -165,11 +166,10 @@ def test_suite():
     stories_dir = os.path.join(os.path.pardir, 'stories')
     suite.addTest(PageTestSuite(stories_dir))
     stories_path = os.path.join(here, stories_dir)
-    for story_dir in os.listdir(stories_path):
-        full_story_dir = os.path.join(stories_path, story_dir)
-        if not os.path.isdir(full_story_dir):
+    for story_entry in scandir.scandir(stories_path):
+        if not story_entry.is_dir():
             continue
-        story_path = os.path.join(stories_dir, story_dir)
+        story_path = os.path.join(stories_dir, story_entry.name)
         suite.addTest(PageTestSuite(story_path))
 
     # Add special needs tests

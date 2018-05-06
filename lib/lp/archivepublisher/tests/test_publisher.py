@@ -38,6 +38,7 @@ except ImportError:
     from backports import lzma
 import mock
 import pytz
+import scandir
 from testscenarios import (
     load_tests_apply_scenarios,
     WithScenarios,
@@ -513,7 +514,7 @@ class ByHashesHaveContents(Matcher):
 
     def match(self, root):
         children = set()
-        for dirpath, dirnames, _ in os.walk(root):
+        for dirpath, dirnames, _ in scandir.walk(root):
             if "by-hash" in dirnames:
                 children.add(os.path.relpath(dirpath, root))
         mismatch = MatchesSetwise(

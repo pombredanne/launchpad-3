@@ -21,6 +21,8 @@ import logging
 import os
 import unittest
 
+import scandir
+
 # This import registers the 'doctest' Unicode codec.
 import lp.services.testing.doctestcodec
 from lp.testing.systemdocs import (
@@ -93,11 +95,10 @@ def build_test_suite(base_dir, special_tests={},
     stories_path = os.path.join(base_dir, stories_dir)
     if os.path.exists(stories_path):
         suite.addTest(PageTestSuite(stories_dir, package))
-        for story_dir in os.listdir(stories_path):
-            full_story_dir = os.path.join(stories_path, story_dir)
-            if not os.path.isdir(full_story_dir):
+        for story_entry in scandir.scandir(stories_path):
+            if not story_entry.is_dir():
                 continue
-            story_path = os.path.join(stories_dir, story_dir)
+            story_path = os.path.join(stories_dir, story_entry.name)
             if story_path in special_tests:
                 continue
             suite.addTest(PageTestSuite(story_path, package))

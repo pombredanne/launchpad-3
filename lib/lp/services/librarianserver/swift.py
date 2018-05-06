@@ -1,4 +1,4 @@
-# Copyright 2013-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2013-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Move files from Librarian disk storage into Swift."""
@@ -21,6 +21,7 @@ import re
 import time
 import urllib
 
+import scandir
 from swiftclient import client as swiftclient
 
 from lp.services.config import config
@@ -79,7 +80,8 @@ def to_swift(log, start_lfc_id=None, end_lfc_id=None, remove_func=False):
     # Walk the Librarian on disk file store, searching for matching
     # files that may need to be copied into Swift. We need to follow
     # symlinks as they are being used span disk partitions.
-    for dirpath, dirnames, filenames in os.walk(fs_root, followlinks=True):
+    for dirpath, dirnames, filenames in scandir.walk(
+            fs_root, followlinks=True):
 
         # Don't recurse if we know this directory contains no matching
         # files.

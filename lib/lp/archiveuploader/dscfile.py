@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ DSCFile and related.
@@ -30,6 +30,7 @@ from debian.deb822 import (
     Deb822Dict,
     PkgRelation,
     )
+import scandir
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
@@ -613,8 +614,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
             # Check if 'dpkg-source' created only one directory.
             temp_directories = [
-                dirname for dirname in os.listdir(unpacked_dir)
-                if os.path.isdir(dirname)]
+                entry.name for entry in scandir.scandir(unpacked_dir)
+                if entry.is_dir()]
             if len(temp_directories) > 1:
                 yield UploadError(
                     'Unpacked source contains more than one directory: %r'

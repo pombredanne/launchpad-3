@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tools for maintaining the Launchpad source code."""
@@ -32,6 +32,7 @@ from bzrlib.trace import (
     )
 from bzrlib.upgrade import upgrade
 from bzrlib.workingtree import WorkingTree
+import scandir
 
 from devscripts import get_launchpad_root
 
@@ -136,12 +137,10 @@ def plan_update(existing_branches, configuration):
 def find_branches(directory):
     """List the directory names in 'directory' that are branches."""
     branches = []
-    for name in os.listdir(directory):
-        if name in ('.', '..'):
-            continue
+    for entry in scandir.scandir(directory):
         try:
-            Branch.open(os.path.join(directory, name))
-            branches.append(name)
+            Branch.open(entry.path)
+            branches.append(entry.name)
         except NotBranchError:
             pass
     return branches

@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixtures related to configs.
@@ -18,6 +18,7 @@ import shutil
 from textwrap import dedent
 
 from fixtures import Fixture
+import scandir
 
 from lp.services.config import config
 
@@ -54,12 +55,12 @@ class ConfigFixture(Fixture):
         self.absroot = os.path.abspath(root)
         self.addCleanup(shutil.rmtree, self.absroot)
         source = os.path.join(config.root, 'configs', self.copy_from_instance)
-        for basename in os.listdir(source):
-            if basename == 'launchpad-lazr.conf':
+        for entry in scandir.scandir(source):
+            if entry.name == 'launchpad-lazr.conf':
                 self.add_section(self._extend_str % self.copy_from_instance)
                 continue
-            with open(source + '/' + basename, 'rb') as input:
-                with open(root + '/' + basename, 'wb') as out:
+            with open(entry.path, 'rb') as input:
+                with open(os.path.join(root, entry.name), 'wb') as out:
                     out.write(input.read())
 
 

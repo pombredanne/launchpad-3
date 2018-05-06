@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Start and stop the Mailman processes."""
@@ -15,6 +15,8 @@ import os
 import signal
 import subprocess
 import sys
+
+import scandir
 
 import lp.services.config
 from lp.services.mailman.config import configure_prefix
@@ -96,8 +98,8 @@ def stop_mailman(quiet=False, config=None):
         if error.errno != errno.ENOENT:
             raise
     lock_dir = os.path.join(mailman_path, 'locks')
-    for filename in os.listdir(lock_dir):
-        os.remove(os.path.join(lock_dir, filename))
+    for entry in scandir.scandir(lock_dir):
+        os.remove(entry.path)
 
 
 def start_mailman(quiet=False, config=None):

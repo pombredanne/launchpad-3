@@ -209,6 +209,7 @@ setup(
         'rabbitfixture',
         'requests',
         'requests-toolbelt',
+        'scandir',
         'setproctitle',
         'setuptools',
         'six',
