@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposals."""
@@ -32,6 +32,7 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -605,6 +606,57 @@ class TestMergeProposalGetComment(TestCase):
         """Tests that we can get a comment."""
         self.assertRaises(WrongBranchMergeProposal,
                           self.merge_proposal2.getComment, self.comment.id)
+
+
+class TestMergeProposalSetCommentVisibility(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_anonymous(self):
+        comment = self.factory.makeCodeReviewComment()
+        self.assertRaisesWithContent(
+            Unauthorized,
+            "User <anonymous> cannot hide or show code review comments.",
+            comment.branch_merge_proposal.setCommentVisibility,
+            user=None, comment_number=comment.id, visible=False)
+
+    def test_random_user(self):
+        comment = self.factory.makeCodeReviewComment()
+        person = self.factory.makePerson()
+        self.assertRaisesWithContent(
+            Unauthorized,
+            "User %s cannot hide or show code review comments." % person.name,
+            comment.branch_merge_proposal.setCommentVisibility,
+            user=person, comment_number=comment.id, visible=False)
+
+    def test_comment_author(self):
+        comment = self.factory.makeCodeReviewComment()
+        another_comment = self.factory.makeCodeReviewComment(
+            merge_proposal=comment.branch_merge_proposal)
+        comment.branch_merge_proposal.setCommentVisibility(
+            user=comment.author, comment_number=comment.id, visible=False)
+        self.assertFalse(comment.visible)
+        self.assertTrue(another_comment.visible)
+
+    def test_registry_expert(self):
+        comment = self.factory.makeCodeReviewComment()
+        another_comment = self.factory.makeCodeReviewComment(
+            merge_proposal=comment.branch_merge_proposal)
+        comment.branch_merge_proposal.setCommentVisibility(
+            user=self.factory.makeRegistryExpert(), comment_number=comment.id,
+            visible=False)
+        self.assertFalse(comment.visible)
+        self.assertTrue(another_comment.visible)
+
+    def test_admin(self):
+        comment = self.factory.makeCodeReviewComment()
+        another_comment = self.factory.makeCodeReviewComment(
+            merge_proposal=comment.branch_merge_proposal)
+        comment.branch_merge_proposal.setCommentVisibility(
+            user=self.factory.makeAdministrator(), comment_number=comment.id,
+            visible=False)
+        self.assertFalse(comment.visible)
+        self.assertTrue(another_comment.visible)
 
 
 class TestMergeProposalGetVoteReference(TestCaseWithFactory):

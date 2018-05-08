@@ -26,6 +26,10 @@ from soupmatchers import (
     Tag,
     Within,
     )
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from testtools.matchers import (
     ContainsDict,
     DocTestMatches,
@@ -77,6 +81,10 @@ from lp.code.tests.helpers import (
     make_merge_proposal_without_reviewers,
     )
 from lp.code.xmlrpc.git import GitAPI
+from lp.coop.answersbugs.visibility import (
+    TestHideMessageControlMixin,
+    TestMessageVisibilityMixin,
+    )
 from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
@@ -1899,6 +1907,64 @@ class TestBranchMergeProposalChangeStatusView(TestCaseWithFactory):
             git_proposal.merge_source.commit_sha1, view.source_revid)
 
 
+class TestCodeReviewCommentVisibility(
+        WithScenarios, BrowserTestCase, TestMessageVisibilityMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    scenarios = [
+        ('bzr', {'git': False}),
+        ('git', {'git': True}),
+        ]
+
+    def makeHiddenMessage(self, comment_owner=None):
+        """See `TestMessageVisibilityMixin`."""
+        if self.git:
+            self.useFixture(GitHostingFixture())
+        comment = self.factory.makeCodeReviewComment(
+            sender=comment_owner, body=self.comment_text, git=self.git)
+        with admin_logged_in():
+            comment.message.visible = False
+        return comment.branch_merge_proposal
+
+    def getView(self, context, user=None, no_login=False):
+        """See `TestMessageVisibilityMixin`."""
+        return self.getViewBrowser(
+            context=context, user=user, no_login=no_login)
+
+
+class TestCodeReviewCommentHideControls(
+        WithScenarios, BrowserTestCase, TestHideMessageControlMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    scenarios = [
+        ('bzr', {'git': False}),
+        ('git', {'git': True}),
+        ]
+
+    def getContext(self, comment_owner=None):
+        """See `TestHideMessageControlMixin`."""
+        if self.git:
+            self.useFixture(GitHostingFixture())
+        comment = self.factory.makeCodeReviewComment(
+            sender=comment_owner, git=self.git)
+        self.control_text = 'mark-spam-%d' % comment.id
+        return comment.branch_merge_proposal
+
+    def getView(self, context, user=None, no_login=False):
+        """See `TestHideMessageControlMixin`."""
+        return self.getViewBrowser(
+            context=context, user=user, no_login=no_login)
+
+    def test_comment_owner_sees_hide_control(self):
+        user = self.factory.makePerson()
+        context = self.getContext(comment_owner=user)
+        view = self.getView(context=context, user=user)
+        hide_link = find_tag_by_id(view.contents, self.control_text)
+        self.assertIsNot(None, hide_link)
+
+
 class TestCommentAttachmentRendering(TestCaseWithFactory):
     """Test diff attachments are rendered correctly."""
 
@@ -2308,3 +2374,6 @@ class TestBranchMergeProposalDeleteViewGit(
 
     def _makeBranchMergeProposal(self, **kwargs):
         return self.factory.makeBranchMergeProposalForGit(**kwargs)
+
+
+load_tests = load_tests_apply_scenarios
