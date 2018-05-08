@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,6 +9,8 @@ __all__ = [
 
 import os
 import subprocess
+
+import scandir
 
 import lp
 from lp.services.config import config
@@ -32,7 +34,7 @@ def find_lp_scripts():
     scripts = []
     for script_location in SCRIPT_LOCATIONS:
         location = os.path.join(LP_TREE, script_location)
-        for path, dirs, filenames in os.walk(location):
+        for path, dirs, filenames in scandir.walk(location):
             for filename in filenames:
                 script_path = os.path.join(path, filename)
                 if (filename.startswith('_') or

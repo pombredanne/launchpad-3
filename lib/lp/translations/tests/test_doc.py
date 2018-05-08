@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -8,6 +8,8 @@ Run the doctests and pagetests.
 import logging
 import os
 import unittest
+
+import scandir
 
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
@@ -54,11 +56,10 @@ def test_suite():
     stories_dir = os.path.join(os.path.pardir, 'stories')
     suite.addTest(PageTestSuite(stories_dir))
     stories_path = os.path.join(here, stories_dir)
-    for story_dir in os.listdir(stories_path):
-        full_story_dir = os.path.join(stories_path, story_dir)
-        if not os.path.isdir(full_story_dir):
+    for story_entry in scandir.scandir(stories_path):
+        if not story_entry.is_dir():
             continue
-        story_path = os.path.join(stories_dir, story_dir)
+        story_path = os.path.join(stories_dir, story_entry.name)
         suite.addTest(PageTestSuite(story_path))
 
     testsdir = os.path.abspath(

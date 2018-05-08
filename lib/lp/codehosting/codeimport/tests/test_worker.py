@@ -45,6 +45,7 @@ from CVS import (
     )
 from dulwich.repo import Repo as GitRepo
 from fixtures import FakeLogger
+import scandir
 import subvertpy
 import subvertpy.client
 import subvertpy.ra
@@ -136,7 +137,7 @@ class WorkerTest(TestCaseWithTransport, TestCase):
         `directory1` are laid out in the same way as `directory2`.
         """
         def list_files(directory):
-            for path, ignored, ignored in os.walk(directory):
+            for path, ignored, ignored in scandir.walk(directory):
                 yield path[len(directory):]
         self.assertEqual(
             sorted(list_files(directory1)), sorted(list_files(directory2)))

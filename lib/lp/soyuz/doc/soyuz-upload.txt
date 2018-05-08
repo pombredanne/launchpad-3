@@ -99,11 +99,12 @@ files match the uploaded ones.
     >>> def get_md5(filename):
     ...     return hashlib.md5(open(filename).read()).digest()
 
+    >>> import scandir
     >>> def get_upload_dir(num, dir=incoming_dir):
     ...     """Return the path to the upload, if found in the dir."""
-    ...     for upload_dir in os.listdir(dir):
-    ...         if upload_dir.endswith("%06d" % num):
-    ...             return os.path.join(dir, upload_dir)
+    ...     for upload_entry in scandir.scandir(dir):
+    ...         if upload_entry.name.endswith("%06d" % num):
+    ...             return upload_entry.path
     ...     return None
 
     >>> def find_upload_dir(num):
@@ -183,7 +184,6 @@ do uploads:
     ...     IPersonSet,
     ...     PersonCreationRationale,
     ...     )
-    >>> from lp.services.gpg.interfaces import GPGKeyAlgorithm
     >>> name, address = "Katie", "katie@rockhopper.ubuntu.com"
     >>> user = getUtility(IPersonSet).ensurePerson(
     ...     address, name, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper methods for XPI testing"""
@@ -14,6 +14,8 @@ import os.path
 import tempfile
 from textwrap import dedent
 import zipfile
+
+import scandir
 
 import lp.translations
 
@@ -55,7 +57,7 @@ def get_en_US_xpi_file_to_import(subdir):
     jar = zipfile.ZipFile(jarfile, 'w')
     jarlist = []
     data_dir = os.path.join(test_root, 'en-US-jar/')
-    for root, dirs, files in os.walk(data_dir):
+    for root, dirs, files in scandir.walk(data_dir):
         for name in files:
             relative_dir = root[len(data_dir):].strip('/')
             jarlist.append(os.path.join(relative_dir, name))
@@ -69,11 +71,10 @@ def get_en_US_xpi_file_to_import(subdir):
 
     xpifile = tempfile.TemporaryFile()
     xpi = zipfile.ZipFile(xpifile, 'w')
-    xpilist = os.listdir(test_root)
-    xpilist.remove('en-US-jar')
-    for file_name in xpilist:
-        f = open(os.path.join(test_root, file_name), 'r')
-        xpi.writestr(file_name, f.read())
+    for xpi_entry in scandir.scandir(test_root):
+        if xpi_entry.name != 'en-US-jar':
+            with open(xpi_entry.path) as f:
+                xpi.writestr(xpi_entry.name, f.read())
     xpi.writestr('chrome/en-US.jar', jarfile.read())
     xpi.close()
     xpifile.seek(0)

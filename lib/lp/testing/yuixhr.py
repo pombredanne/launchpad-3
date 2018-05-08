@@ -1,4 +1,4 @@
-# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Fixture code for YUITest + XHR integration testing."""
@@ -20,6 +20,7 @@ import unittest
 
 from lazr.restful import ResourceJSONEncoder
 from lazr.restful.utils import get_current_browser_request
+import scandir
 import simplejson
 from zope.component import getUtility
 from zope.exceptions.exceptionformatter import format_exception
@@ -451,7 +452,7 @@ class YUITestFixtureControllerView(LaunchpadView):
 
 
 def find_tests(root):
-    for dirpath, dirnames, filenames in os.walk(root):
+    for dirpath, dirnames, filenames in scandir.walk(root):
         dirpath = os.path.relpath(dirpath, root)
         for filename in filenames:
             if fnmatchcase(filename, 'test_*.js'):

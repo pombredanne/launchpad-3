@@ -26,6 +26,8 @@ import tarfile
 import tempfile
 import textwrap
 
+import scandir
+
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUpload
 from lp.services.osutils import remove_if_exists
@@ -166,7 +168,7 @@ class SigningUpload(CustomUpload):
 
     def findSigningHandlers(self):
         """Find all the signable files in an extracted tarball."""
-        for dirpath, dirnames, filenames in os.walk(self.tmpdir):
+        for dirpath, dirnames, filenames in scandir.walk(self.tmpdir):
             for filename in filenames:
                 if filename.endswith(".efi"):
                     yield (os.path.join(dirpath, filename), self.signUefi)
