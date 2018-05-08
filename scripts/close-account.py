@@ -121,11 +121,11 @@ def close_account(con, log, username):
 
     # Remove rows from tables in simple cases in the given order
     removals = [
-        # Trash their email addresses. Unsociable privacy nut jobs who request
-        # account removal would be pissed if they reregistered with their old
-        # email address and this resurrected their deleted account, as the
-        # email address is probably the piece of data we store that they where
-        # most concerned with being removed from our systems.
+        # Trash their email addresses. People who request complete account
+        # removal would be unhappy if they reregistered with their old email
+        # address and this resurrected their deleted account, as the email
+        # address is probably the piece of data we store that they were most
+        # concerned with being removed from our systems.
         ('EmailAddress', 'person'),
 
         # Trash their codes of conduct and GPG keys
