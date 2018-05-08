@@ -134,6 +134,7 @@ def close_account(con, log, username):
 
         # Subscriptions
         ('BranchSubscription', 'person'),
+        ('GitSubscription', 'person'),
         ('BugSubscription', 'person'),
         ('QuestionSubscription', 'person'),
         ('SpecificationSubscription', 'person'),
