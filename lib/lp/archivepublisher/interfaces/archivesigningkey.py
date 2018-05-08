@@ -46,6 +46,8 @@ class ISignableArchive(Interface):
         :param suffix: an optional suffix for repository index files (e.g.
             ".new" to help with publishing files atomically).
         :param log: an optional logger.
+        :return: A sequence of output paths that were produced, relative to
+            the suite's path, with `suffix` removed.
         :raises CannotSignArchive: if the context archive is not set up for
             signing.
         :raises AssertionError: if there is no Release file in the given

@@ -41,6 +41,7 @@ from lp.archivepublisher.run_parts import (
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.services.config import config
 from lp.services.gpg.interfaces import IGPGHandler
+from lp.services.osutils import remove_if_exists
 from lp.services.propertycache import get_property_cache
 
 
@@ -80,8 +81,10 @@ class SignableArchive:
         key more than once.
 
         :param signatures: A sequence of (input path, output path,
-            `SigningMode`, suite) tuples.
+            `SigningMode`, suite) tuples.  Note that some backends may make
+            a policy decision not to produce all the requested output paths.
         :param log: An optional logger.
+        :return: A list of output paths that were produced.
         """
         if not self.can_sign:
             raise CannotSignArchive(
@@ -95,6 +98,7 @@ class SignableArchive:
             gpghandler = getUtility(IGPGHandler)
             secret_key = gpghandler.importSecretKey(secret_key_export)
 
+        output_paths = []
         for input_path, output_path, mode, suite in signatures:
             if self.archive.signing_key is not None:
                 with open(input_path) as input_file:
@@ -103,8 +107,10 @@ class SignableArchive:
                     input_content, secret_key, mode=self.gpgme_modes[mode])
                 with open(output_path, "w") as output_file:
                     output_file.write(signature)
+                output_paths.append(output_path)
             elif find_run_parts_dir(
                     self.archive.distribution.name, "sign.d") is not None:
+                remove_if_exists(output_path)
                 env = {
                     "ARCHIVEROOT": self.pubconf.archiveroot,
                     "INPUT_PATH": input_path,
@@ -116,10 +122,13 @@ class SignableArchive:
                 run_parts(
                     self.archive.distribution.name, "sign.d",
                     log=log, env=env)
+                if os.path.exists(output_path):
+                    output_paths.append(output_path)
             else:
                 raise AssertionError(
                     "No signing key available for %s" %
                     self.archive.displayname)
+        return output_paths
 
     def signRepository(self, suite, pubconf=None, suffix='', log=None):
         """See `ISignableArchive`."""
@@ -132,14 +141,22 @@ class SignableArchive:
                 "Release file doesn't exist in the repository: %s" %
                 release_file_path)
 
-        self._makeSignatures([
-            (release_file_path,
-             os.path.join(suite_path, 'Release.gpg' + suffix),
-             SigningMode.DETACHED, suite),
-            (release_file_path,
-             os.path.join(suite_path, 'InRelease' + suffix),
-             SigningMode.CLEAR, suite),
-            ], log=log)
+        output_names = []
+        for output_path in self._makeSignatures([
+                (release_file_path,
+                 os.path.join(suite_path, 'Release.gpg' + suffix),
+                 SigningMode.DETACHED, suite),
+                (release_file_path,
+                 os.path.join(suite_path, 'InRelease' + suffix),
+                 SigningMode.CLEAR, suite),
+                ], log=log):
+            output_name = os.path.basename(output_path)
+            if suffix:
+                output_name = output_name[:-len(suffix)]
+            assert (
+                os.path.join(suite_path, output_name + suffix) == output_path)
+            output_names.append(output_name)
+        return output_names
 
     def signFile(self, suite, path, log=None):
         """See `ISignableArchive`."""

@@ -1264,12 +1264,10 @@ class Publisher(object):
         if signable_archive.can_sign:
             # Sign the repository.
             self.log.debug("Signing Release file for %s" % suite)
-            signable_archive.signRepository(
-                suite, pubconf=self._config, suffix=".new", log=self.log)
-            core_files.add("Release.gpg")
-            extra_by_hash_files["Release.gpg"] = "Release.gpg.new"
-            core_files.add("InRelease")
-            extra_by_hash_files["InRelease"] = "InRelease.new"
+            for signed_name in signable_archive.signRepository(
+                    suite, pubconf=self._config, suffix=".new", log=self.log):
+                core_files.add(signed_name)
+                extra_by_hash_files[signed_name] = signed_name + ".new"
         else:
             # Skip signature if the archive is not set up for signing.
             self.log.debug("No signing key available, skipping signature.")
