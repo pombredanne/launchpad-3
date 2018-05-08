@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Package information classes.
@@ -27,6 +27,8 @@ import re
 import rfc822
 import shutil
 import tempfile
+
+import scandir
 
 from lp.app.validators.version import valid_debian_version
 from lp.archivepublisher.diskpool import poolify
@@ -88,13 +90,13 @@ def get_dsc_path(name, version, component, archive_root):
         return filename, fullpath, component
 
     # Do a second pass, scrubbing through all components in the pool.
-    for alt_component in os.listdir(pool_root):
-        if not os.path.isdir(os.path.join(pool_root, alt_component)):
+    for alt_component_entry in scandir.scandir(pool_root):
+        if not alt_component_entry.is_dir():
             continue
-        pool_dir = poolify(name, alt_component)
+        pool_dir = poolify(name, alt_component_entry.name)
         fullpath = os.path.join(pool_root, pool_dir, filename)
         if os.path.exists(fullpath):
-            return filename, fullpath, alt_component
+            return filename, fullpath, alt_component_entry.name
 
     # Couldn't find the file anywhere -- too bad.
     raise PoolFileNotFound("File %s not in archive" % filename)

@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """HTTP and FTP walker.
@@ -30,6 +30,7 @@ from lazr.uri import (
     InvalidURIError,
     URI,
     )
+import scandir
 
 from lp.registry.scripts.productreleasefinder import log
 from lp.services.beautifulsoup import BeautifulSoup
@@ -63,7 +64,7 @@ class WalkerBase:
     """Base class for URL walkers.
 
     This class is a base class for those wishing to implement protocol
-    specific walkers.  Walkers behave much like the os.walk() function,
+    specific walkers.  Walkers behave much like the scandir.walk() function,
     but taking a URL and working remotely.
 
     A typical usage would be:
@@ -116,7 +117,7 @@ class WalkerBase:
         """Walk through the URL.
 
         Yields (dirpath, dirnames, filenames) for each path under the base;
-        dirnames can be modified as with os.walk.
+        dirnames can be modified as with scandir.walk.
         """
         try:
             self.open()
@@ -421,7 +422,7 @@ def walk(url, log_parent=None):
     elif scheme in ["http", "https"]:
         return HTTPWalker(url, log_parent)
     elif scheme in ["file"]:
-        return os.walk(path)
+        return scandir.walk(path)
     else:
         raise WalkerError("Unknown scheme: %s" % scheme)
 

@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Process a snap package upload."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import os
 
+import scandir
 from zope.component import getUtility
 
 from lp.archiveuploader.utils import UploadError
@@ -39,7 +40,7 @@ class SnapUpload:
 
         found_snap = False
         snap_paths = []
-        for dirpath, _, filenames in os.walk(self.upload_path):
+        for dirpath, _, filenames in scandir.walk(self.upload_path):
             if dirpath == self.upload_path:
                 # All relevant files will be in a subdirectory.
                 continue

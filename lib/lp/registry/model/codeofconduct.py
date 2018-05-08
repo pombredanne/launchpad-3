@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A module for CodeOfConduct (CoC) related classes.
@@ -14,6 +14,7 @@ from datetime import datetime
 import os
 
 import pytz
+import scandir
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -151,11 +152,11 @@ class CodeOfConductSet:
         cocs_path = getUtility(ICodeOfConductConf).path
 
         # iter through files and store the CoC Object
-        for filename in os.listdir(cocs_path):
+        for entry in scandir.scandir(cocs_path):
             # Select the correct filenames
-            if filename.endswith('.txt'):
+            if entry.name.endswith('.txt'):
                 # Extract the version from filename
-                version = filename.replace('.txt', '')
+                version = entry.name.replace('.txt', '')
                 releases.append(CodeOfConduct(version))
 
         # Return the available list of CoCs objects

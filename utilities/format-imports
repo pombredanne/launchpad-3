@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ Format import sections in python files
@@ -132,6 +132,8 @@ import os
 import re
 import sys
 from textwrap import dedent
+
+import scandir
 
 sys.path[0:0] = [os.path.dirname(__file__)]
 from python_standard_libs import python_standard_libs
@@ -385,7 +387,7 @@ def process_file(fpath):
 
 def process_tree(dpath):
     """Walk a directory tree and process all *.py files."""
-    for dirpath, dirnames, filenames in os.walk(dpath):
+    for dirpath, dirnames, filenames in scandir.walk(dpath):
         for filename in filenames:
             if filename.endswith('.py'):
                 process_file(os.path.join(dirpath, filename))

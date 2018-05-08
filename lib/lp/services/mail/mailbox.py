@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -16,6 +16,7 @@ import poplib
 import socket
 import threading
 
+import scandir
 from zope.interface import (
     implementer,
     Interface,
@@ -168,10 +169,10 @@ class DirectoryMailBox:
 
     def items(self):
         """See IMailBox."""
-        for name in os.listdir(self.mail_dir):
-            filename = os.path.join(self.mail_dir, name)
-            if os.path.isfile(filename):
-                yield (filename, open(filename).read())
+        for entry in scandir.scandir(self.mail_dir):
+            if entry.is_file():
+                with open(entry.path) as mail_file:
+                    yield (entry.path, mail_file.read())
 
     def delete(self, id):
         """See IMailBox."""

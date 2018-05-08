@@ -107,13 +107,14 @@ Now that the infrastructure is ready, we prepare a set of useful methods.
 Firstly, we need a way to copy a test upload into the queue (but skip
 lock files, which have names starting with a dot).
 
+    >>> import shutil
+    >>> import scandir
     >>> from lp.archiveuploader.tests import datadir
     >>> def punt_upload_into_queue(leaf, distro):
     ...     inc_dir = os.path.join(incoming_dir, leaf, distro)
     ...     os.makedirs(inc_dir)
-    ...     for file_leaf in os.listdir(datadir(os.path.join("suite", leaf))):
-    ...         os.system("cp %s %s" % (
-    ...             datadir(os.path.join("suite", leaf, file_leaf)), inc_dir))
+    ...     for entry in scandir.scandir(datadir(os.path.join("suite", leaf))):
+    ...         shutil.copy(entry.path, inc_dir)
 
 We need a way to count the items in a queue directory
 
@@ -227,7 +228,6 @@ given upload into the published state, so here's a very simplistic publisher
 We'll be doing a lot of uploads with sanity checks, and expect them to
 succeed.  A helper function, simulate_upload does that with all the checking.
 
-    >>> import shutil
     >>> from lp.services.mail import stub
 
     >>> def simulate_upload(

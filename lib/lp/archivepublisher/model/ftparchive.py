@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from collections import defaultdict
@@ -7,6 +7,7 @@ import re
 from StringIO import StringIO
 import time
 
+import scandir
 from storm.expr import (
     Desc,
     Join,
@@ -60,16 +61,16 @@ def make_clean_dir(path, clean_pattern=".*"):
         If omitted, all files are removed.
     """
     if os.path.isdir(path):
-        for name in os.listdir(path):
-            if name == "by-hash" or not re.match(clean_pattern, name):
+        for entry in list(scandir.scandir(path)):
+            if (entry.name == "by-hash" or
+                    not re.match(clean_pattern, entry.name)):
                 # Ignore existing by-hash directories; they will be cleaned
                 # up to match the rest of the directory tree later.
                 continue
-            child_path = os.path.join(path, name)
             # Directories containing index files should never have
             # subdirectories other than by-hash.  Guard against expensive
             # mistakes by not recursing here.
-            os.unlink(child_path)
+            os.unlink(entry.path)
     else:
         os.makedirs(path, 0o755)
 
