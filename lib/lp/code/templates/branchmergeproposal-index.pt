@@ -218,18 +218,25 @@
 
     Y.on('load', function() {
         var logged_in = LP.links['me'] !== undefined;
-        var ic = Y.lp.code.branchmergeproposal.inlinecomments;
-        var diffnav = new ic.DiffNav({srcNode: Y.one('#review-diff')});
+        var comment = null;
         if (logged_in) {
-            var comment = new Y.lp.app.comment.CodeReviewComment();
+            comment = new Y.lp.app.comment.CodeReviewComment();
             comment.render();
-            comment.on('CodeReviewComment.appended', function () {
-                diffnav.update_on_new_comment();
-            });
-            Y.lp.code.branchmergeproposal.status.connect_status(conf);
         }
-        Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
-        diffnav.render();
+
+        var review_diff_node = Y.one('#review-diff');
+        if (review_diff_node !== null) {
+            var ic = Y.lp.code.branchmergeproposal.inlinecomments;
+            var diffnav = new ic.DiffNav({srcNode: review_diff_node});
+            if (comment !== null) {
+                comment.on('CodeReviewComment.appended', function () {
+                    diffnav.update_on_new_comment();
+                });
+                Y.lp.code.branchmergeproposal.status.connect_status(conf);
+            }
+            Y.lp.code.branchmergeproposal.reviewcomment.connect_links();
+            diffnav.render();
+        }
 
         if (Y.Lang.isValue(LP.cache.merge_proposal_event_key)) {
             var upt = Y.lp.code.branchmergeproposal.updater;
@@ -247,6 +254,15 @@
                 diffnav.render();
             });
         }
+
+        LP.cache.comment_context = LP.cache.context;
+        var cl = new Y.lp.app.comment.CommentList({
+            comment_list_container: Y.one('#conversation')
+        });
+        if (comment !== null) {
+            comment.on('CodeReviewComment.appended', cl.bind_new_comment);
+        }
+        cl.render();
     }, window);
 
     Y.on('domready', function() {

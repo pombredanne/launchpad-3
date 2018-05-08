@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for branch merge proposals."""
@@ -43,6 +43,7 @@ from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implementer
+from zope.security.interfaces import Unauthorized
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -97,6 +98,7 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database.bulk import (
@@ -560,13 +562,29 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         return CodeReviewComment.selectBy(branch_merge_proposal=self.id)
 
     def getComment(self, id):
-        """See `IBranchMergeProposal`.
-
-        This function can raise WrongBranchMergeProposal."""
+        """See `IBranchMergeProposal`."""
         comment = CodeReviewComment.get(id)
         if comment.branch_merge_proposal != self:
             raise WrongBranchMergeProposal
         return comment
+
+    def userCanSetCommentVisibility(self, user):
+        """See `IBranchMergeProposal`."""
+        if user is None:
+            return False
+        roles = IPersonRoles(user)
+        return roles.in_admin or roles.in_registry_experts
+
+    def setCommentVisibility(self, user, comment_number, visible):
+        """See `IBranchMergeProposal`."""
+        comment = CodeReviewComment.get(comment_number)
+        if comment.branch_merge_proposal != self:
+            raise WrongBranchMergeProposal
+        if not comment.userCanSetCommentVisibility(user):
+            raise Unauthorized(
+                "User %s cannot hide or show code review comments." %
+                (user.name if user is not None else "<anonymous>"))
+        comment.message.setVisible(visible)
 
     def getVoteReference(self, id):
         """See `IBranchMergeProposal`.
