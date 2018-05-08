@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -43,8 +43,6 @@ import getopt
 import linecache
 import os
 import sys
-
-import scandir
 
 
 class ImportFinder(ASTVisitor):
@@ -169,7 +167,7 @@ class ModuleGraph(object):
 
     def parsePathname(self, pathname):
         if os.path.isdir(pathname):
-            for root, dirs, files in scandir.walk(pathname):
+            for root, dirs, files in os.walk(pathname):
                 for fn in files:
                     # ignore emacsish junk
                     if fn.endswith('.py') and not fn.startswith('.#'):
