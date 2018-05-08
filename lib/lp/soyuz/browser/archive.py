@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -454,6 +454,32 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
             return None
 
         return self.context.getArchiveDependency(archive)
+
+    @stepthrough('+sourcefiles')
+    def traverse_sourcefiles(self, sourcepackagename):
+        """Traverse to a source file in the archive.
+
+        Normally, files in an archive are unique by filename, so the +files
+        traversal is sufficient.  Unfortunately, a gina-imported archive may
+        contain the same filename with different contents due to a
+        combination of epochs and less stringent checks applied by the
+        upstream archive software.  (In practice this only happens for
+        source packages because that's normally all we import using gina.)
+        This provides an unambiguous way to traverse to such files even with
+        this problem.
+
+        The path scheme is::
+
+            +sourcefiles/:sourcename/:sourceversion/:filename
+        """
+        if len(self.request.stepstogo) < 2:
+            return None
+
+        version = self.request.stepstogo.consume()
+        filename = self.request.stepstogo.consume()
+
+        return self.context.getSourceFileByName(
+            sourcepackagename, version, filename)
 
 
 class ArchiveMenuMixin:
