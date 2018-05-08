@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table Archive."""
@@ -1686,6 +1686,29 @@ class Archive(SQLBase):
 
             raise NotFoundError(filename)
 
+        return archive_file
+
+    def getSourceFileByName(self, name, version, filename):
+        """See `IArchive`."""
+        result = IStore(LibraryFileAlias).find(
+            LibraryFileAlias,
+            SourcePackagePublishingHistory.archive == self,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                SourcePackageRelease.id,
+            SourcePackageRelease.sourcepackagename == SourcePackageName.id,
+            SourcePackageName.name == name,
+            SourcePackageRelease.version == version,
+            SourcePackageRelease.id ==
+                SourcePackageReleaseFile.sourcepackagereleaseID,
+            SourcePackageReleaseFile.libraryfileID == LibraryFileAlias.id,
+            LibraryFileAlias.filename == filename,
+            LibraryFileAlias.content != None)
+        result = result.config(distinct=True).order_by(LibraryFileAlias.id)
+        # Unlike `getFileByName`, we are guaranteed at most one match even
+        # for files in imported archives.
+        archive_file = result.one()
+        if archive_file is None:
+            raise NotFoundError(filename)
         return archive_file
 
     def getBinaryPackageRelease(self, name, version, archtag):

@@ -741,7 +741,7 @@ def _getDistributionAndSuite(parts, exc_type):
         % '/'.join(parts))
 
     # Uploads with undefined distribution defaults to 'ubuntu'.
-    if len(parts) == 0 or parts[0] is '':
+    if len(parts) == 0 or parts[0] == '':
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         return (ubuntu, None)
 

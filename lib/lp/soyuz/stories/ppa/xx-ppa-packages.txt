@@ -383,7 +383,7 @@ Links from files go to their on-archive locations:
     >>> expander_url = foo_browser.getLink(id=expander_id).url
     >>> anon_browser.open(expander_url)
     >>> print anon_browser.getLink("orig").url
-    http://.../+files/foo.orig.tar.gz
+    http://.../+sourcefiles/.../foo.orig.tar.gz
 
 The uploader name is linkified to that user's home page:
 

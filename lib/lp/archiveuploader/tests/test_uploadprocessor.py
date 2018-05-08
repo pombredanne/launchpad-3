@@ -1,7 +1,9 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
@@ -372,7 +374,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
             # This is now a MIMEMultipart message.
             body = msg.get_payload(0)
-            body = body.get_payload(decode=True)
+            body = body.get_payload(decode=True).decode("UTF-8")
 
             # Only check the recipient if the caller didn't explicitly pass
             # "recipient": None.
@@ -565,7 +567,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         [msg] = pop_notifications()
         # This is now a MIMEMultipart message.
         body = msg.get_payload(0)
-        body = body.get_payload(decode=True)
+        body = body.get_payload(decode=True).decode("UTF-8")
 
         self.assertEqual(
             "daniel.silverstone@canonical.com", msg["X-Envelope-To"])
@@ -976,7 +978,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         msg = pop_notifications()[-1]
         # This is now a MIMEMultipart message.
         body = msg.get_payload(0)
-        body = body.get_payload(decode=True)
+        body = body.get_payload(decode=True).decode("UTF-8")
 
         self.assertEqual(
             '[ubuntu/partner/breezy] foocomm 1.0-3 (Accepted)', msg['Subject'])
@@ -2374,7 +2376,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         # Unfold continuation lines.
         subject = mail['Subject'].replace('\n ', ' ')
         self.assertIn('Failed to upload', subject)
-        body = mail.get_payload(decode=True)
+        body = mail.get_payload(decode=True).decode('UTF-8')
         self.assertIn('Upload Log: http', body)
 
     def doDeletedRecipeBuild(self):

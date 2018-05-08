@@ -1410,9 +1410,10 @@ class TestSnapView(BaseTestSnapView):
 
     def test_store_channels_display(self):
         snap = self.factory.makeSnap(
-            store_channels=["track/stable", "track/edge"])
+            store_channels=["track/stable/fix-123", "track/edge/fix-123"])
         view = create_initialized_view(snap, "+index")
-        self.assertEqual("track/stable, track/edge", view.store_channels)
+        self.assertEqual(
+            "track/stable/fix-123, track/edge/fix-123", view.store_channels)
 
 
 class TestSnapRequestBuildsView(BaseTestSnapView):

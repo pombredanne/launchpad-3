@@ -375,11 +375,11 @@ for this package:
     ...     source_urls = webservice.named_get(
     ...         pub_link, 'sourceFileUrls').jsonBody()
     ...     print source_urls
-    [u'http://.../~cprov/+archive/ubuntu/ppa/+files/foobar-1.0.dsc']
-    [u'http://.../~cprov/+archive/ubuntu/ppa/+files/firefox_0.9.2.orig.tar.gz',
-     u'http://.../~cprov/+archive/ubuntu/ppa/+files/iceweasel-1.0.dsc']
+    [u'http://.../~cprov/+archive/ubuntu/ppa/+sourcefiles/cdrkit/1.0/foobar-1.0.dsc']
+    [u'http://.../~cprov/+archive/ubuntu/ppa/+sourcefiles/iceweasel/1.0/firefox_0.9.2.orig.tar.gz',
+     u'http://.../~cprov/+archive/ubuntu/ppa/+sourcefiles/iceweasel/1.0/iceweasel-1.0.dsc']
     []
-    [u'http://.../~cprov/+archive/ubuntu/ppa/+files/testwebservice_666.dsc']
+    [u'http://.../~cprov/+archive/ubuntu/ppa/+sourcefiles/testwebservice/666/testwebservice_666.dsc']
 
 binaryFileUrls() is similar:
 

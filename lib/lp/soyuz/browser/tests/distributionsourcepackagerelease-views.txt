@@ -24,14 +24,14 @@ simply mimics the `DistributionSourcePackageRelease.title`.
     u'testing-dspr 1.0 source package in ubuntutest'
 
 The 'files' property returns a list of files included in the source
-upload encapsulated as `ProxiedLibraryFileAlias` objects. Their
+upload encapsulated as `ProxiedSourceLibraryFileAlias` objects. Their
 'http_url' points to the LP proxied url which normalizes the path
 tofiles allowing them to be downloaded using `dget`.
 
     >>> for source_file in dspr_view.files:
     ...     print source_file.filename, source_file.http_url
     testing-dspr_1.0.dsc
-    http://.../ubuntutest/+archive/primary/+files/testing-dspr_1.0.dsc
+    http://.../ubuntutest/+archive/primary/+sourcefiles/testing-dspr/1.0/testing-dspr_1.0.dsc
 
 The 'sponsor' property indicates whether the upload was 'sponsored' or
 not. When the upload was signed by someone else than the source
