@@ -126,7 +126,7 @@ class SignableTagFile:
         if self.signingkey is not None:
             return self.signingkey.owner
 
-    def parse(self, verify_signature=True):
+    def parse(self, verify_signature=True, as_bytes=False):
         """Parse the tag file, optionally verifying the signature.
 
         If verify_signature is True, signingkey will be set to the signing
@@ -168,7 +168,7 @@ class SignableTagFile:
             self.parsed_content = self.raw_content
         try:
             self._dict = parse_tagfile_content(
-                self.parsed_content, filename=self.filepath)
+                self.parsed_content, filename=self.filepath, as_bytes=as_bytes)
         except TagFileParseError as error:
             raise UploadError(
                 "Unable to parse %s: %s" % (self.filename, error))
@@ -294,7 +294,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         SourceUploadFile.__init__(
             self, filepath, checksums, size, component_and_section, priority,
             package, version, changes, policy, logger)
-        self.parse(verify_signature=not policy.unsigned_dsc_ok)
+        self.parse(verify_signature=not policy.unsigned_dsc_ok, as_bytes=True)
 
         self.logger.debug("Performing DSC verification.")
         for mandatory_field in self.mandatory_fields:
