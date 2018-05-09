@@ -237,13 +237,13 @@ class File(resource.Resource):
 
         # static.File has HTTP range support, which would be nice to have.
         # Unfortunately, static.File isn't a good match for producing data
-        # dynamically by fetching it from Swift. This shouldn't be a problem
-        # as the Librarian sits behind Squid. If it is, I think we will need
-        # to cargo-cult the byte-range support and three Producer
-        # implementations from static.File, making the small modifications
-        # to cope with self.fileObject.read maybe returning a Deferred, and
-        # the static.File.makeProducer method to return the correct
-        # producer.
+        # dynamically by fetching it from Swift. The librarian used to sit
+        # behind Squid, which took care of this, but it no longer does. I
+        # think we will need to cargo-cult the byte-range support and three
+        # Producer implementations from static.File, making the small
+        # modifications to cope with self.fileObject.read maybe returning a
+        # Deferred, and the static.File.makeProducer method to return the
+        # correct producer.
         self._setContentHeaders(request)
         request.setResponseCode(http.OK)
         producer = FileProducer(request, self.stream)
