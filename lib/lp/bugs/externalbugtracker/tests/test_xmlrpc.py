@@ -5,8 +5,11 @@
 
 __metaclass__ = type
 
+import socket
 from urllib2 import URLError
 from xml.parsers.expat import ExpatError
+
+from fixtures import MockPatch
 
 from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
 from lp.bugs.tests.externalbugtracker import (
@@ -39,6 +42,10 @@ class TestUrlLib2Transport(TestCase):
         # Python's httplib doesn't like Unicode URLs much. Ensure that
         # they don't cause it to crash, and we get a post-serialisation
         # connection error instead.
+        self.useFixture(MockPatch(
+            "socket.getaddrinfo",
+            side_effect=socket.gaierror(
+                socket.EAI_NONAME, "Name or service not known")))
         transport = UrlLib2Transport(u"http://test.invalid/")
         self.assertRaisesWithContent(
             URLError, '<urlopen error [Errno -2] Name or service not known>',

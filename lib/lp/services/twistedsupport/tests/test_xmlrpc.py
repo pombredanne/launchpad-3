@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Twisted XML-RPC support."""
@@ -49,28 +49,30 @@ class TestTrapFault(TestCase):
         except:
             return Failure()
 
-    def assertRaisesFailure(self, failure, function, *args, **kwargs):
+    def assertRaisesExactException(self, exception, function, *args, **kwargs):
         try:
             function(*args, **kwargs)
-        except Failure as raised_failure:
-            self.assertEqual(failure, raised_failure)
+        except Exception as raised_exception:
+            self.assertEqual(raised_exception, exception)
 
     def test_raises_non_faults(self):
-        # trap_fault re-raises any failures it gets that aren't faults.
+        # trap_fault re-raises the underlying exception from any failures it
+        # gets that aren't faults.
         failure = self.makeFailure(RuntimeError, 'example failure')
-        self.assertRaisesFailure(failure, trap_fault, failure, TestFaultOne)
+        self.assertRaisesExactException(
+            failure.value, trap_fault, failure, TestFaultOne)
 
     def test_raises_faults_with_wrong_code(self):
-        # trap_fault re-raises any failures it gets that are faults but have
-        # the wrong fault code.
+        # trap_fault re-raises the underlying exception from any failures it
+        # gets that are faults but have the wrong fault code.
         failure = self.makeFailure(TestFaultOne)
-        self.assertRaisesFailure(failure, trap_fault, failure, TestFaultTwo)
+        self.assertRaisesExactException(
+            failure.value, trap_fault, failure, TestFaultTwo)
 
     def test_raises_faults_if_no_codes_given(self):
-        # If trap_fault is not given any fault codes, it re-raises the fault
-        # failure.
+        # If trap_fault is not given any fault codes, it re-raises the fault.
         failure = self.makeFailure(TestFaultOne)
-        self.assertRaisesFailure(failure, trap_fault, failure)
+        self.assertRaisesExactException(failure.value, trap_fault, failure)
 
     def test_returns_fault_if_code_matches(self):
         # trap_fault returns the Fault inside the Failure if the fault code

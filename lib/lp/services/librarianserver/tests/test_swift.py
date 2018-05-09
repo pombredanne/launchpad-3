@@ -55,7 +55,7 @@ class TestFeedSwift(TestCase):
         self.contents = [str(i) * i for i in range(1, 5)]
         self.lfa_ids = [
             self.add_file('file_{0}'.format(i), content, when=the_past)
-            for content in self.contents]
+            for i, content in enumerate(self.contents)]
         self.lfas = [
             IStore(LibraryFileAlias).get(LibraryFileAlias, lfa_id)
                 for lfa_id in self.lfa_ids]
@@ -64,6 +64,7 @@ class TestFeedSwift(TestCase):
     def tearDown(self):
         super(TestFeedSwift, self).tearDown()
         # Restart the Librarian so it picks up the feature flag change.
+        self.attachLibrarianLog(LibrarianLayer.librarian_fixture)
         LibrarianLayer.librarian_fixture.killTac()
         LibrarianLayer.librarian_fixture.setUp()
 
