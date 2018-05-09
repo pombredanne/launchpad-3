@@ -254,6 +254,17 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
             ]))
 
     @defer.inlineCallbacks
+    def test_extraBuildArgs_metadata_cannot_override_base(self):
+        # Items in the user-provided metadata cannot override the base
+        # arguments.
+        job = self.makeJob(
+            metadata={"project": "distro", "arch_tag": "nonsense"},
+            with_builder=True)
+        args = yield job.extraBuildArgs()
+        self.assertEqual("distro", args["project"])
+        self.assertEqual("i386", args["arch_tag"])
+
+    @defer.inlineCallbacks
     def test_composeBuildRequest(self):
         job = self.makeJob(with_builder=True)
         lfa = self.factory.makeLibraryFileAlias(db_only=True)

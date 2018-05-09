@@ -82,14 +82,16 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         Return the extra arguments required by the slave for the given build.
         """
         build = self.build
-        args = yield super(LiveFSBuildBehaviour, self).extraBuildArgs(
+        base_args = yield super(LiveFSBuildBehaviour, self).extraBuildArgs(
             logger=logger)
         # Non-trivial metadata values may have been security-wrapped, which
         # is pointless here and just gets in the way of xmlrpclib
         # serialisation.
-        args.update(removeSecurityProxy(build.livefs.metadata))
+        args = dict(removeSecurityProxy(build.livefs.metadata))
         if build.metadata_override is not None:
             args.update(removeSecurityProxy(build.metadata_override))
+        # Everything else overrides anything in the metadata.
+        args.update(base_args)
         args["pocket"] = build.pocket.name.lower()
         args["datestamp"] = build.version
         args["archives"], args["trusted_keys"] = (
