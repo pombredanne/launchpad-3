@@ -19,7 +19,7 @@ import sys
 import threading
 import time
 
-from amqplib import client_0_8 as amqp
+import amqp
 import transaction
 from transaction._transaction import Status as TransactionStatus
 from zope.interface import implementer
@@ -73,10 +73,12 @@ def connect():
     """
     if not is_configured():
         raise MessagingUnavailable("Incomplete configuration")
-    return amqp.Connection(
+    connection = amqp.Connection(
         host=config.rabbitmq.host, userid=config.rabbitmq.userid,
         password=config.rabbitmq.password,
-        virtual_host=config.rabbitmq.virtual_host, insist=False)
+        virtual_host=config.rabbitmq.virtual_host)
+    connection.connect()
+    return connection
 
 
 @implementer(IMessageSession)
@@ -97,9 +99,7 @@ class RabbitSession(threading.local):
     @property
     def is_connected(self):
         """See `IMessageSession`."""
-        return (
-            self._connection is not None and
-            self._connection.transport is not None)
+        return self._connection is not None and self._connection.connected
 
     def connect(self):
         """See `IMessageSession`.
@@ -107,7 +107,7 @@ class RabbitSession(threading.local):
         Open a connection for this thread if necessary. Connections cannot be
         shared between threads.
         """
-        if self._connection is None or self._connection.transport is None:
+        if self._connection is None or not self._connection.connected:
             self._connection = connect()
         return self._connection
 
@@ -281,8 +281,8 @@ class RabbitQueue(RabbitMessageBase):
                 else:
                     self.channel.basic_ack(message.delivery_tag)
                     return json.loads(message.body)
-            except amqp.AMQPChannelException as error:
-                if error.amqp_reply_code == 404:
+            except amqp.ChannelError as error:
+                if error.reply_code == 404:
                     raise QueueNotFound()
                 else:
                     raise
