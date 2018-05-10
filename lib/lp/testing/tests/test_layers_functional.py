@@ -19,7 +19,7 @@ import smtplib
 from urllib import urlopen
 import uuid
 
-from amqplib import client_0_8 as amqp
+import amqp
 from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
@@ -277,8 +277,8 @@ class BaseTestCase(testtools.TestCase):
                 host=rabbitmq.host,
                 userid=rabbitmq.userid,
                 password=rabbitmq.password,
-                virtual_host=rabbitmq.virtual_host,
-                insist=False)
+                virtual_host=rabbitmq.virtual_host)
+            conn.connect()
             conn.close()
 
 
