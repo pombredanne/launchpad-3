@@ -21,7 +21,7 @@ import os.path
 import socket
 import time
 
-import amqplib.client_0_8 as amqp
+import amqp
 from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
