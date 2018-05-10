@@ -1,4 +1,4 @@
-# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test RecipeBuildBehaviour."""
@@ -70,7 +70,7 @@ class TestRecipeBuilderBase(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def makeJob(self, recipe_registrant=None, recipe_owner=None,
-                archive=None, git=False):
+                archive=None, git=False, with_builder=False):
         """Create a sample `ISourcePackageRecipeBuild`."""
         spn = self.factory.makeSourcePackageName("apackage")
         if archive is None:
@@ -105,6 +105,10 @@ class TestRecipeBuilderBase(TestCaseWithFactory):
             sourcepackage=sourcepackage, archive=archive,
             recipe=recipe, requester=recipe_owner, distroseries=distroseries)
         job = IBuildFarmJobBehaviour(spb)
+        if with_builder:
+            builder = MockBuilder()
+            builder.processor = processor
+            job.setBuilder(builder, None)
         return job
 
 
@@ -171,16 +175,16 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
 
     @defer.inlineCallbacks
     def test_extraBuildArgs(self):
-        # _extraBuildArgs will return a sane set of additional arguments
+        # extraBuildArgs will return a sane set of additional arguments.
         self._setBuilderConfig()
-        job = self.makeJob()
+        job = self.makeJob(with_builder=True)
         distroarchseries = job.build.distroseries.architectures[0]
         expected_archives, expected_trusted_keys = (
             yield get_sources_list_for_building(
                 job.build, distroarchseries, None))
         expected_archives.insert(
             0, "deb http://foo %s main" % job.build.distroseries.name)
-        args = yield job._extraBuildArgs(distroarchseries)
+        args = yield job.extraBuildArgs()
         self.assertEqual({
             'arch_tag': 'i386',
             'archive_private': False,
@@ -190,6 +194,7 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
             'author_name': 'Joe User',
             'build_url': canonical_url(job.build),
             'distroseries_name': job.build.distroseries.name,
+            'fast_cleanup': True,
             'ogrecomponent': 'universe',
             'recipe_text':
                 '# bzr-builder format 0.3 '
@@ -207,11 +212,9 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
         # build logs.
         self._setBuilderConfig()
         archive = self.factory.makeArchive(private=True)
-        job = self.makeJob(archive=archive)
-        distroarchseries = job.build.distroseries.architectures[0]
-        extra_args = yield job._extraBuildArgs(distroarchseries)
-        self.assertEqual(
-            True, extra_args['archive_private'])
+        job = self.makeJob(archive=archive, with_builder=True)
+        extra_args = yield job.extraBuildArgs()
+        self.assertEqual(True, extra_args['archive_private'])
 
     @defer.inlineCallbacks
     def test_extraBuildArgs_team_owner_no_email(self):
@@ -224,9 +227,8 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
         recipe_owner = self.factory.makeTeam(
             name='vikings', members=[recipe_registrant])
 
-        job = self.makeJob(recipe_registrant, recipe_owner)
-        distroarchseries = job.build.distroseries.architectures[0]
-        extra_args = yield job._extraBuildArgs(distroarchseries)
+        job = self.makeJob(recipe_registrant, recipe_owner, with_builder=True)
+        extra_args = yield job.extraBuildArgs()
         self.assertEqual(
             "Launchpad Package Builder", extra_args['author_name'])
         self.assertEqual("noreply@launchpad.net", extra_args['author_email'])
@@ -241,9 +243,8 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
             name='vikings', email='everyone@vikings.r.us',
             members=[recipe_registrant])
 
-        job = self.makeJob(recipe_registrant, recipe_owner)
-        distroarchseries = job.build.distroseries.architectures[0]
-        extra_args = yield job._extraBuildArgs(distroarchseries)
+        job = self.makeJob(recipe_registrant, recipe_owner, with_builder=True)
+        extra_args = yield job.extraBuildArgs()
         self.assertEqual("Vikings", extra_args['author_name'])
         self.assertEqual("everyone@vikings.r.us", extra_args['author_email'])
 
@@ -254,28 +255,27 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
         owner = self.factory.makePerson()
         with person_logged_in(owner):
             owner.deactivate(comment='deactivating')
-        job = self.makeJob(owner)
-        distroarchseries = job.build.distroseries.architectures[0]
-        extra_args = yield job._extraBuildArgs(distroarchseries)
+        job = self.makeJob(owner, with_builder=True)
+        extra_args = yield job.extraBuildArgs()
         self.assertEqual(
             "Launchpad Package Builder", extra_args['author_name'])
         self.assertEqual("noreply@launchpad.net", extra_args['author_email'])
 
     @defer.inlineCallbacks
     def test_extraBuildArgs_withBadConfigForBzrBuilderPPA(self):
-        # Ensure _extraBuildArgs doesn't blow up with a badly formatted
+        # Ensure extraBuildArgs doesn't blow up with a badly formatted
         # bzr_builder_sources_list in the config.
         self.pushConfig(
             "builddmaster",
             bzr_builder_sources_list="deb http://foo %(series) main")
         # (note the missing 's' in %(series)
-        job = self.makeJob()
+        job = self.makeJob(with_builder=True)
         distroarchseries = job.build.distroseries.architectures[0]
         expected_archives, expected_trusted_keys = (
             yield get_sources_list_for_building(
                 job.build, distroarchseries, None))
         logger = BufferLogger()
-        extra_args = yield job._extraBuildArgs(distroarchseries, logger)
+        extra_args = yield job.extraBuildArgs(logger)
         self.assertEqual({
             'arch_tag': 'i386',
             'archive_private': False,
@@ -285,6 +285,7 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
             'author_name': 'Joe User',
             'build_url': canonical_url(job.build),
             'distroseries_name': job.build.distroseries.name,
+            'fast_cleanup': True,
             'ogrecomponent': 'universe',
             'recipe_text':
                 '# bzr-builder format 0.3 '
@@ -299,12 +300,12 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
             logger.getLogBuffer())
 
     @defer.inlineCallbacks
-    def test_extraBuildArgs_withNoBZrBuilderConfigSet(self):
-        # Ensure _extraBuildArgs doesn't blow up when
+    def test_extraBuildArgs_withNoBzrBuilderConfigSet(self):
+        # Ensure extraBuildArgs doesn't blow up when
         # bzr_builder_sources_list isn't set.
-        job = self.makeJob()
+        job = self.makeJob(with_builder=True)
         distroarchseries = job.build.distroseries.architectures[0]
-        args = yield job._extraBuildArgs(distroarchseries)
+        args = yield job.extraBuildArgs()
         expected_archives, expected_trusted_keys = (
             yield get_sources_list_for_building(
                 job.build, distroarchseries, None))
@@ -313,12 +314,12 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
 
     @defer.inlineCallbacks
     def test_extraBuildArgs_git(self):
-        job = self.makeJob(git=True)
+        job = self.makeJob(git=True, with_builder=True)
         distroarchseries = job.build.distroseries.architectures[0]
         expected_archives, expected_trusted_keys = (
             yield get_sources_list_for_building(
                 job.build, distroarchseries, None))
-        extra_args = yield job._extraBuildArgs(distroarchseries)
+        extra_args = yield job.extraBuildArgs()
         self.assertEqual({
             'arch_tag': 'i386',
             'archive_private': False,
@@ -328,6 +329,7 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
             'author_name': 'Joe User',
             'build_url': canonical_url(job.build),
             'distroseries_name': job.build.distroseries.name,
+            'fast_cleanup': True,
             'git': True,
             'ogrecomponent': 'universe',
             'recipe_text':
@@ -341,33 +343,30 @@ class TestAsyncRecipeBuilder(TestRecipeBuilderBase):
 
     @defer.inlineCallbacks
     def test_extraBuildArgs_archive_trusted_keys(self):
-        # If the archive has a signing key, _extraBuildArgs sends it.
+        # If the archive has a signing key, extraBuildArgs sends it.
         yield self.useFixture(InProcessKeyServerFixture()).start()
         archive = self.factory.makeArchive()
         key_path = os.path.join(gpgkeysdir, "ppa-sample@canonical.com.sec")
         yield IArchiveSigningKey(archive).setSigningKey(
             key_path, async_keyserver=True)
-        job = self.makeJob(archive=archive)
+        job = self.makeJob(archive=archive, with_builder=True)
         distroarchseries = job.build.distroseries.architectures[0]
         self.factory.makeBinaryPackagePublishingHistory(
             distroarchseries=distroarchseries, pocket=job.build.pocket,
             archive=archive, status=PackagePublishingStatus.PUBLISHED)
-        args = yield job._extraBuildArgs(distroarchseries)
+        args = yield job.extraBuildArgs()
         self.assertThat(args["trusted_keys"], MatchesListwise([
             Base64KeyMatches("0D57E99656BEFB0897606EE9A022DD1F5001B46D"),
             ]))
 
     @defer.inlineCallbacks
     def test_composeBuildRequest(self):
-        job = self.makeJob()
+        job = self.makeJob(with_builder=True)
         test_publisher = SoyuzTestPublisher()
         test_publisher.addFakeChroots(job.build.distroseries)
         das = job.build.distroseries.nominatedarchindep
-        builder = MockBuilder("bob-de-bouwer")
-        builder.processor = das.processor
-        job.setBuilder(builder, None)
         build_request = yield job.composeBuildRequest(None)
-        extra_args = yield job._extraBuildArgs(das)
+        extra_args = yield job.extraBuildArgs()
         self.assertEqual(
             ('sourcepackagerecipe', das, {}, extra_args), build_request)
 

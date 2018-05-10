@@ -116,6 +116,20 @@ class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
             '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
             upload_leaf)
 
+    def test_extraBuildArgs_virtualized(self):
+        # If the builder is virtualized, extraBuildArgs sends
+        # fast_cleanup: True.
+        behaviour = self._makeBehaviour(self._makeBuild())
+        behaviour.setBuilder(self.factory.makeBuilder(virtualized=True), None)
+        self.assertIs(True, behaviour.extraBuildArgs()["fast_cleanup"])
+
+    def test_extraBuildArgs_non_virtualized(self):
+        # If the builder is non-virtualized, extraBuildArgs sends
+        # fast_cleanup: False.
+        behaviour = self._makeBehaviour(self._makeBuild())
+        behaviour.setBuilder(self.factory.makeBuilder(virtualized=False), None)
+        self.assertIs(False, behaviour.extraBuildArgs()["fast_cleanup"])
+
 
 class TestDispatchBuildToSlave(TestCase):
 
