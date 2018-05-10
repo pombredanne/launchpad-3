@@ -69,7 +69,7 @@ class TestLiveFSBuildBehaviourBase(TestCaseWithFactory):
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
 
     def makeJob(self, archive=None, pocket=PackagePublishingPocket.RELEASE,
-                **kwargs):
+                with_builder=False, **kwargs):
         """Create a sample `ILiveFSBuildBehaviour`."""
         if archive is None:
             distribution = self.factory.makeDistribution(name="distro")
@@ -84,7 +84,12 @@ class TestLiveFSBuildBehaviourBase(TestCaseWithFactory):
         build = self.factory.makeLiveFSBuild(
             archive=archive, distroarchseries=distroarchseries, pocket=pocket,
             name="test-livefs", **kwargs)
-        return IBuildFarmJobBehaviour(build)
+        job = IBuildFarmJobBehaviour(build)
+        if with_builder:
+            builder = MockBuilder()
+            builder.processor = processor
+            job.setBuilder(builder, None)
+        return job
 
 
 class TestLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
@@ -185,20 +190,22 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
 
     @defer.inlineCallbacks
     def test_extraBuildArgs(self):
-        # _extraBuildArgs returns a reasonable set of additional arguments.
+        # extraBuildArgs returns a reasonable set of additional arguments.
         job = self.makeJob(
             date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC),
-            metadata={"project": "distro", "subproject": "special"})
+            metadata={"project": "distro", "subproject": "special"},
+            with_builder=True)
         expected_archives, expected_trusted_keys = (
             yield get_sources_list_for_building(
                 job.build, job.build.distro_arch_series, None))
-        extra_args = yield job._extraBuildArgs()
+        extra_args = yield job.extraBuildArgs()
         self.assertEqual({
             "archive_private": False,
             "archives": expected_archives,
             "arch_tag": "i386",
             "build_url": canonical_url(job.build),
             "datestamp": "20140425-103800",
+            "fast_cleanup": True,
             "pocket": "release",
             "project": "distro",
             "subproject": "special",
@@ -208,50 +215,62 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
 
     @defer.inlineCallbacks
     def test_extraBuildArgs_proposed(self):
-        # _extraBuildArgs returns appropriate arguments if asked to build a
+        # extraBuildArgs returns appropriate arguments if asked to build a
         # job for -proposed.
         job = self.makeJob(
             pocket=PackagePublishingPocket.PROPOSED,
-            metadata={"project": "distro"})
-        args = yield job._extraBuildArgs()
+            metadata={"project": "distro"}, with_builder=True)
+        args = yield job.extraBuildArgs()
         self.assertEqual("unstable", args["series"])
         self.assertEqual("proposed", args["pocket"])
 
     @defer.inlineCallbacks
     def test_extraBuildArgs_no_security_proxy(self):
-        # _extraBuildArgs returns an object without security wrapping, even
+        # extraBuildArgs returns an object without security wrapping, even
         # if values in the metadata are (say) lists and hence get proxied by
         # Zope.
-        job = self.makeJob(metadata={"lb_args": ["--option=value"]})
-        args = yield job._extraBuildArgs()
+        job = self.makeJob(
+            metadata={"lb_args": ["--option=value"]}, with_builder=True)
+        args = yield job.extraBuildArgs()
         self.assertEqual(["--option=value"], args["lb_args"])
         self.assertIsNot(Proxy, type(args["lb_args"]))
 
     @defer.inlineCallbacks
     def test_extraBuildArgs_archive_trusted_keys(self):
-        # If the archive has a signing key, _extraBuildArgs sends it.
+        # If the archive has a signing key, extraBuildArgs sends it.
         yield self.useFixture(InProcessKeyServerFixture()).start()
         archive = self.factory.makeArchive()
         key_path = os.path.join(gpgkeysdir, "ppa-sample@canonical.com.sec")
         yield IArchiveSigningKey(archive).setSigningKey(
             key_path, async_keyserver=True)
-        job = self.makeJob(archive=archive)
+        job = self.makeJob(archive=archive, with_builder=True)
         self.factory.makeBinaryPackagePublishingHistory(
             distroarchseries=job.build.distro_arch_series,
             pocket=job.build.pocket, archive=archive,
             status=PackagePublishingStatus.PUBLISHED)
-        args = yield job._extraBuildArgs()
+        args = yield job.extraBuildArgs()
         self.assertThat(args["trusted_keys"], MatchesListwise([
             Base64KeyMatches("0D57E99656BEFB0897606EE9A022DD1F5001B46D"),
             ]))
 
     @defer.inlineCallbacks
+    def test_extraBuildArgs_metadata_cannot_override_base(self):
+        # Items in the user-provided metadata cannot override the base
+        # arguments.
+        job = self.makeJob(
+            metadata={"project": "distro", "arch_tag": "nonsense"},
+            with_builder=True)
+        args = yield job.extraBuildArgs()
+        self.assertEqual("distro", args["project"])
+        self.assertEqual("i386", args["arch_tag"])
+
+    @defer.inlineCallbacks
     def test_composeBuildRequest(self):
-        job = self.makeJob()
+        job = self.makeJob(with_builder=True)
         lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
         build_request = yield job.composeBuildRequest(None)
-        args = yield job._extraBuildArgs()
+        args = yield job.extraBuildArgs()
         self.assertEqual(
             ('livefs', job.build.distro_arch_series, {}, args), build_request)
 

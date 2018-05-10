@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base and idle BuildFarmJobBehaviour classes."""
@@ -32,6 +32,7 @@ from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.librarian.utils import copy_and_close
 from lp.services.utils import sanitise_urls
+from lp.services.webapp import canonical_url
 
 
 SLAVE_LOG_FILENAME = 'buildlog'
@@ -48,10 +49,38 @@ class BuildFarmJobBehaviourBase:
         self.build = build
         self._builder = None
 
+    @property
+    def distro_arch_series(self):
+        if self.build is not None:
+            return self.build.distro_arch_series
+        else:
+            return None
+
     def setBuilder(self, builder, slave):
         """The builder should be set once and not changed."""
         self._builder = builder
         self._slave = slave
+
+    def determineFilesToSend(self):
+        """The default behaviour is to send no files."""
+        return {}
+
+    def extraBuildArgs(self, logger=None):
+        """The default behaviour is to send only common extra arguments."""
+        args = {}
+        args["arch_tag"] = self.distro_arch_series.architecturetag
+        args["archive_private"] = self.build.archive.private
+        args["build_url"] = canonical_url(self.build)
+        args["fast_cleanup"] = self._builder.virtualized
+        args["series"] = self.distro_arch_series.distroseries.name
+        return args
+
+    @defer.inlineCallbacks
+    def composeBuildRequest(self, logger):
+        args = yield self.extraBuildArgs(logger=logger)
+        defer.returnValue(
+            (self.builder_type, self.distro_arch_series,
+             self.determineFilesToSend(), args))
 
     def verifyBuildRequest(self, logger):
         """The default behaviour is a no-op."""

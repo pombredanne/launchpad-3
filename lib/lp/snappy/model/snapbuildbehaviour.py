@@ -30,7 +30,6 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
-from lp.services.webapp import canonical_url
 from lp.snappy.interfaces.snap import SnapBuildArchiveOwnerMismatch
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.adapters.archivedependencies import (
@@ -43,6 +42,8 @@ from lp.soyuz.interfaces.archive import ArchiveDisabled
 @implementer(IBuildFarmJobBehaviour)
 class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `SnapBuild` jobs to slaves."""
+
+    builder_type = "snap"
 
     def getLogFileName(self):
         das = self.build.distro_arch_series
@@ -79,12 +80,13 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 "Missing chroot for %s" % build.distro_arch_series.displayname)
 
     @defer.inlineCallbacks
-    def _extraBuildArgs(self, logger=None):
+    def extraBuildArgs(self, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
         build = self.build
-        args = {}
+        args = yield super(SnapBuildBehaviour, self).extraBuildArgs(
+            logger=logger)
         if config.snappy.builder_proxy_host and build.snap.allow_internet:
             token = yield self._requestProxyToken()
             args["proxy_url"] = (
@@ -98,8 +100,6 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                     endpoint=config.snappy.builder_proxy_auth_api_endpoint,
                     token=token['username']))
         args["name"] = build.snap.store_name or build.snap.name
-        args["series"] = build.distro_series.name
-        args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
         # some more fine-grained level.
         args["archives"], args["trusted_keys"] = (
@@ -108,8 +108,6 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 tools_source=config.snappy.tools_source,
                 tools_fingerprint=config.snappy.tools_fingerprint,
                 logger=logger))
-        args["archive_private"] = build.archive.private
-        args["build_url"] = canonical_url(build)
         if build.channels is not None:
             # We have to remove the security proxy that Zope applies to this
             # dict, since otherwise we'll be unable to serialise it to
@@ -167,11 +165,6 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             )
         token = json.loads(result)
         defer.returnValue(token)
-
-    @defer.inlineCallbacks
-    def composeBuildRequest(self, logger):
-        args = yield self._extraBuildArgs(logger=logger)
-        defer.returnValue(("snap", self.build.distro_arch_series, {}, args))
 
     def verifySuccessfulBuild(self):
         """See `IBuildFarmJobBehaviour`."""
