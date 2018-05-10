@@ -7,6 +7,8 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
+import re
+
 from soupmatchers import (
     HTMLContains,
     Tag,
@@ -208,6 +210,61 @@ class TestCodeReviewCommentHtmlMixin:
         comment = self.makeCodeReviewComment(body=contents)
         browser = self.getViewBrowser(comment, view_name='+reply')
         self.assertIn(contents, browser.contents)
+
+    def test_footer_for_mergeable_and_admin(self):
+        """An admin sees Hide/Reply links for a comment on a mergeable MP."""
+        comment = self.makeCodeReviewComment()
+        display_comment = CodeReviewDisplayComment(comment)
+        browser = self.getViewBrowser(
+            display_comment, user=self.factory.makeAdministrator())
+        footer = Tag('comment footer', 'div', {'class': 'boardCommentFooter'})
+        hide_link = Tag('hide link', 'a', text=re.compile(r'\s*Hide\s*'))
+        reply_link = Tag('reply link', 'a', text='Reply')
+        self.assertThat(
+            browser.contents, HTMLContains(hide_link.within(footer)))
+        self.assertThat(
+            browser.contents, HTMLContains(reply_link.within(footer)))
+
+    def test_footer_for_mergeable_and_non_admin(self):
+        """A mortal sees a Reply link for a comment on a mergeable MP."""
+        comment = self.makeCodeReviewComment()
+        display_comment = CodeReviewDisplayComment(comment)
+        browser = self.getViewBrowser(display_comment)
+        footer = Tag('comment footer', 'div', {'class': 'boardCommentFooter'})
+        hide_link = Tag('hide link', 'a', text=re.compile(r'\s*Hide\s*'))
+        reply_link = Tag('reply link', 'a', text='Reply')
+        self.assertThat(browser.contents, Not(HTMLContains(hide_link)))
+        self.assertThat(
+            browser.contents, HTMLContains(reply_link.within(footer)))
+
+    def test_footer_for_non_mergeable_and_admin(self):
+        """An admin sees a Hide link for a comment on a non-mergeable MP."""
+        comment = self.makeCodeReviewComment()
+        merge_proposal = comment.branch_merge_proposal
+        with person_logged_in(merge_proposal.registrant):
+            merge_proposal.markAsMerged(
+                merge_reporter=merge_proposal.registrant)
+        display_comment = CodeReviewDisplayComment(comment)
+        browser = self.getViewBrowser(
+            display_comment, user=self.factory.makeAdministrator())
+        footer = Tag('comment footer', 'div', {'class': 'boardCommentFooter'})
+        hide_link = Tag('hide link', 'a', text=re.compile(r'\s*Hide\s*'))
+        reply_link = Tag('reply link', 'a', text='Reply')
+        self.assertThat(
+            browser.contents, HTMLContains(hide_link.within(footer)))
+        self.assertThat(browser.contents, Not(HTMLContains(reply_link)))
+
+    def test_no_footer_for_non_mergeable_and_non_admin(self):
+        """A mortal sees no footer for a comment on a non-mergeable MP."""
+        comment = self.makeCodeReviewComment()
+        merge_proposal = comment.branch_merge_proposal
+        with person_logged_in(merge_proposal.registrant):
+            merge_proposal.markAsMerged(
+                merge_reporter=merge_proposal.registrant)
+        display_comment = CodeReviewDisplayComment(comment)
+        browser = self.getViewBrowser(display_comment)
+        footer = Tag('comment footer', 'div', {'class': 'boardCommentFooter'})
+        self.assertThat(browser.contents, Not(HTMLContains(footer)))
 
 
 class TestCodeReviewCommentHtmlBzr(
