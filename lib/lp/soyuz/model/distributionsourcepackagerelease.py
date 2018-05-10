@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes to represent source package releases in a distribution."""
@@ -136,7 +136,7 @@ class DistributionSourcePackageRelease:
     @property
     def sample_binary_packages(self):
         """See IDistributionSourcePackageRelease."""
-        #avoid circular imports.
+        # Avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
         from lp.soyuz.model.distroarchseries import DistroArchSeries
         from lp.soyuz.model.distroseriespackagecache import (
@@ -144,8 +144,7 @@ class DistributionSourcePackageRelease:
         archive_ids = list(self.distribution.all_distro_archive_ids)
         result_row = (
             SQL('DISTINCT ON(BinaryPackageName.name) 0 AS ignore'),
-            BinaryPackagePublishingHistory, DistroSeriesPackageCache,
-            BinaryPackageRelease, BinaryPackageName)
+            DistroSeries, BinaryPackageName, DistroSeriesPackageCache)
         tables = (
             BinaryPackagePublishingHistory,
             Join(
@@ -184,12 +183,8 @@ class DistributionSourcePackageRelease:
             BinaryPackageName.name)
 
         def make_dsb_package(row):
-            publishing = row[1]
-            package_cache = row[2]
-            return DistroSeriesBinaryPackage(
-                publishing.distroarchseries.distroseries,
-                publishing.binarypackagerelease.binarypackagename,
-                package_cache)
+            _, ds, bpn, package_cache = row
+            return DistroSeriesBinaryPackage(ds, bpn, package_cache)
         return DecoratedResultSet(all_published, make_dsb_package)
 
     def getBinariesForSeries(self, distroseries):
