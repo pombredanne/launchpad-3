@@ -230,10 +230,10 @@ Automat==0.6.0
 Babel==2.5.1
 backports.lzma==0.0.3
 BeautifulSoup==3.2.1
-billiard==3.3.0.20
+billiard==3.3.0.23
 bson==0.3.3
 bzr==2.6.0.lp.2
-celery==3.1.18
+celery==3.1.26.post2
 cffi==1.11.2
 Chameleon==2.11
 constantly==15.1.0
@@ -269,7 +269,7 @@ ipython==0.13.2
 iso8601==0.1.12
 jsautobuild==0.2
 keyring==0.6.2
-kombu==3.0.30
+kombu==3.0.37
 launchpad-buildd==159
 launchpadlib==1.10.5
 lazr.authentication==0.1.1
