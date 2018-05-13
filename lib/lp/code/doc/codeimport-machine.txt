@@ -36,16 +36,16 @@ hostname and online state information.
     >>> sample_machine.hostname
     u'bazaar-importer'
 
-    >>> print sample_machine.state.name
+    >>> print(sample_machine.state.name)
     ONLINE
 
 getByHostname looks for a machine of the given hostname, and returns
 None if there is no machine by that name in the database.
 
-    >>> print machine_set.getByHostname('bazaar-importer')
+    >>> print(machine_set.getByHostname('bazaar-importer'))
     <...CodeImportMachine...>
 
-    >>> print machine_set.getByHostname('unlikely-to-exist')
+    >>> print(machine_set.getByHostname('unlikely-to-exist'))
     None
 
 
@@ -57,13 +57,13 @@ need to have a canonical URL.  The CodeImportMachineSet also has a
 canonical URL for set based views.
 
     >>> from lp.services.webapp import canonical_url
-    >>> print canonical_url(machine_set)
+    >>> print(canonical_url(machine_set))
     http://code.launchpad.dev/+code-imports/+machines
 
 A single code import machine is identified by the hostname of the
 machine directly after the canonical URL of the code import machine set.
 
-    >>> print canonical_url(sample_machine)
+    >>> print(canonical_url(sample_machine))
     http://code.launchpad.dev/+code-imports/+machines/bazaar-importer
 
 
@@ -75,7 +75,7 @@ ICodeImportMachineSet.  New machines can be created in either the ONLINE
 or OFFLINE states, but are in the OFFLINE state by default.
 
     >>> new_machine = machine_set.new('frobisher')
-    >>> print new_machine.state.name
+    >>> print(new_machine.state.name)
     OFFLINE
 
 If they are created in the ONLINE state, an ONLINE event is created in
@@ -90,10 +90,10 @@ creation of CodeImportEvent objects.
     >>> new_events = NewEvents()
     >>> new_machine2 = machine_set.new(
     ...     'innocent', CodeImportMachineState.ONLINE)
-    >>> print new_machine2.state.name
+    >>> print(new_machine2.state.name)
     ONLINE
 
-    >>> print new_events.summary()
+    >>> print(new_events.summary())
     ONLINE innocent
 
 
@@ -103,7 +103,7 @@ Modifying CodeImportMachine
 Directly setting the state information on CodeImportMachines is not
 permitted.
 
-    >>> print new_machine.state.name
+    >>> print(new_machine.state.name)
     OFFLINE
 
     >>> new_machine.state = CodeImportMachineState.ONLINE
@@ -125,10 +125,10 @@ goes online.
 
     >>> new_events = NewEvents()
     >>> new_machine.setOnline()
-    >>> print new_machine.state.name
+    >>> print(new_machine.state.name)
     ONLINE
 
-    >>> print new_events.summary()
+    >>> print(new_events.summary())
     ONLINE frobisher
 
 
@@ -142,10 +142,10 @@ heartbeat for some time.
 
     >>> new_events = NewEvents()
     >>> new_machine.setOffline(CodeImportMachineOfflineReason.STOPPED)
-    >>> print new_machine.state.name
+    >>> print(new_machine.state.name)
     OFFLINE
 
-    >>> print new_events.summary()
+    >>> print(new_events.summary())
     OFFLINE frobisher
 
     >>> [new_event] = new_events
@@ -167,7 +167,7 @@ bazaar experts or more likely a LOSA (administrator).
     >>> new_machine.setOnline()
     >>> new_events = NewEvents()
     >>> new_machine.setQuiescing(admin, "1.1.42 rollout")
-    >>> print new_events.summary()
+    >>> print(new_events.summary())
     QUIESCE frobisher name16
 
     >>> [new_event] = new_events
@@ -237,12 +237,12 @@ must fail.
 
     >>> online_machine = new_machine_with_state(ONLINE)
     >>> online_machine.setQuiescing(admin, "Because.")
-    >>> print online_machine.state.name
+    >>> print(online_machine.state.name)
     QUIESCING
 
     >>> online_machine = new_machine_with_state(ONLINE)
     >>> online_machine.setOffline(some_reason)
-    >>> print online_machine.state.name
+    >>> print(online_machine.state.name)
     OFFLINE
 
     >>> online_machine = new_machine_with_state(ONLINE)
@@ -256,7 +256,7 @@ setQuiescing method must fail.
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
     >>> quiescing_machine.setOnline()
-    >>> print quiescing_machine.state.name
+    >>> print(quiescing_machine.state.name)
     ONLINE
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
@@ -267,7 +267,7 @@ setQuiescing method must fail.
 
     >>> quiescing_machine = new_machine_with_state(QUIESCING)
     >>> quiescing_machine.setOffline(some_reason)
-    >>> print quiescing_machine.state.name
+    >>> print(quiescing_machine.state.name)
     OFFLINE
 
 

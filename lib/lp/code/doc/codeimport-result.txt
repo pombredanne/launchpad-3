@@ -61,27 +61,27 @@ Then create a result object.
 CodeImportResult objects themselves have no behaviour, they are just
 read-only records of what happened.
 
-    >>> print new_result.machine.hostname
+    >>> print(new_result.machine.hostname)
     odin
-    >>> print new_result.requesting_user
+    >>> print(new_result.requesting_user)
     None
-    >>> print new_result.log_excerpt
+    >>> print(new_result.log_excerpt)
     log data
 
 In order to read the actual log file, the transaction needs to be committed
 for the Librarian to save the file.
 
-    >>> print new_result.log_file.read()
+    >>> print(new_result.log_file.read())
     several
     lines
     of
     log data
-    >>> print new_result.status.name
+    >>> print(new_result.status.name)
     SUCCESS
 
 A helper property exists to give the duration of the job run.
 
-    >>> print new_result.job_duration
+    >>> print(new_result.job_duration)
     4:00:00
 
 
