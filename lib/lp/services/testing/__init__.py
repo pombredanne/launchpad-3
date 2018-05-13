@@ -64,7 +64,8 @@ def build_doctest_suite(base_dir, tests_path, special_tests={},
 
 
 def build_test_suite(base_dir, special_tests={},
-                     layer=None, setUp=setUp, tearDown=tearDown):
+                     layer=None, setUp=setUp, tearDown=tearDown,
+                     pageTestsSetUp=None):
     """Build a test suite from a directory containing test files.
 
     The parent's 'stories' subdirectory will be checked for pagetests and
@@ -81,9 +82,14 @@ def build_test_suite(base_dir, special_tests={},
     :param layer: The layer in which to run the tests.
     """
     from lp.testing.layers import DatabaseFunctionalLayer
-    from lp.testing.pages import PageTestSuite
+    from lp.testing.pages import (
+        PageTestSuite,
+        setUpGlobs,
+        )
     if layer is None:
         layer = DatabaseFunctionalLayer
+    if pageTestsSetUp is None:
+        pageTestsSetUp = setUpGlobs
 
     suite = unittest.TestSuite()
 
@@ -94,14 +100,16 @@ def build_test_suite(base_dir, special_tests={},
     stories_dir = os.path.join(os.path.pardir, 'stories')
     stories_path = os.path.join(base_dir, stories_dir)
     if os.path.exists(stories_path):
-        suite.addTest(PageTestSuite(stories_dir, package))
+        suite.addTest(PageTestSuite(
+            stories_dir, package, setUp=pageTestsSetUp))
         for story_entry in scandir.scandir(stories_path):
             if not story_entry.is_dir():
                 continue
             story_path = os.path.join(stories_dir, story_entry.name)
             if story_path in special_tests:
                 continue
-            suite.addTest(PageTestSuite(story_path, package))
+            suite.addTest(PageTestSuite(
+                story_path, package, setUp=pageTestsSetUp))
 
     # Add the special doctests.
     for key, special_suite in sorted(special_tests.items()):

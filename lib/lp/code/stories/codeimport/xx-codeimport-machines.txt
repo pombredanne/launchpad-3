@@ -13,7 +13,7 @@ individual users, this seems like a fair compromise.
     >>> def print_table(browser):
     ...    table = find_tag_by_id(
     ...        browser.contents, 'code-import-machine-listing')
-    ...    print extract_text(table)
+    ...    print(extract_text(table))
 
 Initially only the machine in sample data is shown.
 
@@ -66,13 +66,13 @@ The heading of the page shows the import machine name, and the machine's
 current status.
 
     >>> def print_heading(browser):
-    ...     print find_main_content(browser.contents).h1.renderContents()
+    ...     print(find_main_content(browser.contents).h1.renderContents())
     >>> print_heading(browser)
     apollo: Online
 
 The page also shows the current running jobs for that machine.
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'current-jobs'))
+    >>> print(extract_text(find_tag_by_id(browser.contents, 'current-jobs')))
     Current jobs
     lp://dev/~.../.../... Started: ... ago Last heartbeat: ... ago
          Creating changeset 1
@@ -84,7 +84,7 @@ recent event first.
 
     >>> def print_events(browser):
     ...     recent_events = find_tag_by_id(browser.contents, 'recent-events')
-    ...     print extract_text(recent_events)
+    ...     print(extract_text(recent_events))
     >>> print_events(browser)
     Related events
     ...: Job Started lp://dev/~.../.../...
@@ -97,13 +97,13 @@ recent event first.
 If the user is an admin or member of VCS Imports, they are able to change
 the status of the machine.
 
-    >>> print find_tag_by_id(browser.contents, 'update-status')
+    >>> print(find_tag_by_id(browser.contents, 'update-status'))
     None
 
     >>> admin_browser.open(browser.url)
 
-    >>> print find_tag_by_id(admin_browser.contents,
-    ...     'update-status').h2.renderContents()
+    >>> print(find_tag_by_id(admin_browser.contents,
+    ...     'update-status').h2.renderContents())
     Update machine status
 
     >>> admin_browser.getControl('Reason').value = (

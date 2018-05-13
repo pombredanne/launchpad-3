@@ -10,7 +10,7 @@ ProjectGroups link their branch listing page.
 
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> browser.getLink('Code').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Code : The Mozilla Project
 
 
@@ -25,7 +25,7 @@ If there are branches, then they are displayed.
     >>> browser.open('http://code.launchpad.dev/mozilla')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.findAll('tr'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     lp://dev/~mark/firefox/release--0.9.1  Development   firefox ...
     lp://dev/~mark/firefox/release-0.8     Development   firefox ...
     lp://dev/~mark/firefox/release-0.9     Development   firefox ...
@@ -36,10 +36,10 @@ If there are branches, then they are displayed.
 If there are not any branches, a relevant message is shown.
 
     >>> browser.open('http://code.launchpad.dev/aaa')
-    >>> print browser.title
+    >>> print(browser.title)
     Code : the Test Project
     >>> message = find_tag_by_id(browser.contents, 'no-branchtable')
-    >>> print extract_text(message)
+    >>> print(extract_text(message))
     Launchpad does not know where any of
     the Test Project's
     projects host their code.

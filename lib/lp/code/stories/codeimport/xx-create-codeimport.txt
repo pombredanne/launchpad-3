@@ -7,20 +7,20 @@ the code home page "Import your project".
 
     >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> browser.open("http://code.launchpad.dev")
-    >>> print find_tag_by_id(browser.contents, "new-code-import")
+    >>> print(find_tag_by_id(browser.contents, "new-code-import"))
     <a href="/+code-imports/+new" id="new-code-import">
        <img alt="Import your project" ...>
     </a>
 
     >>> browser.getLink(id="new-code-import").click()
-    >>> print browser.title
+    >>> print(browser.title)
     Request a code import...
 
 There is a cancel link on this page near the buttons to take the
 user back to the main code page.
 
     >>> browser.getLink('Cancel').click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://code.launchpad.dev/
 
 For projects that don't officially use Launchpad for code, there is also a
@@ -73,7 +73,7 @@ for the import branch, and a Bazaar branch location.
 
 When the user clicks continue, the import branch is created
 
-    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
+    >>> print(extract_text(find_tag_by_id(browser.contents, "import-details")))
     Import Status: Reviewed
     This branch is an import of the Bazaar branch
     at http://bzr.example.com/firefox/trunk.
@@ -92,7 +92,7 @@ URL.
     ...     "http://user:password@bzr.example.com/firefox/trunk")
     >>> browser.getControl('Project').value = "firefox"
     >>> browser.getControl('Request Import').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
+    >>> print(extract_text(find_tag_by_id(browser.contents, "import-details")))
     Import Status: Reviewed
     This branch is an import of the Bazaar branch
     at http://user:password@bzr.example.com/firefox/trunk.
@@ -121,7 +121,7 @@ But a Launchpad Git URL is OK.
     >>> browser.getControl('Repo URL', index=0).value = (
     ...     "git://git.launchpad.net/firefox.git")
     >>> browser.getControl('Request Import').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
+    >>> print(extract_text(find_tag_by_id(browser.contents, "import-details")))
     Import Status: Reviewed
     This branch is an import of the HEAD branch of the Git repository at
     git://git.launchpad.net/firefox.git.
@@ -143,7 +143,7 @@ a name for the import branch, and a subversion branch location.
 
 When the user clicks continue, the import branch is created
 
-    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
+    >>> print(extract_text(find_tag_by_id(browser.contents, "import-details")))
     Import Status: Reviewed
     This branch is an import of the Subversion branch
     from http://svn.example.com/firefox/trunk.
@@ -157,9 +157,9 @@ The fact that this is an import via bzr-svn is indicated in a 'title'
 attribute on the text of 'Subversion'.
 
     >>> svn_span = find_tag_by_id(browser.contents, 'svn-import-details').span
-    >>> print extract_text(svn_span)
+    >>> print(extract_text(svn_span))
     Subversion
-    >>> print svn_span['title']
+    >>> print(svn_span['title'])
     Subversion via bzr-svn
 
 If the user wants, they can include a username and password in the
@@ -172,7 +172,7 @@ URL.
     ...     "http://user:password@svn.example.com/firefox/trunk")
     >>> browser.getControl('Project').value = "firefox"
     >>> browser.getControl('Request Import').click()
-    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
+    >>> print(extract_text(find_tag_by_id(browser.contents, "import-details")))
     Import Status: Reviewed
     This branch is an import of the Subversion branch
     from http://user:password@svn.example.com/firefox/trunk.
@@ -196,7 +196,7 @@ a name for the import branch, and a Git repository location.
 
 When the user clicks continue, the approved import branch is created.
 
-    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
+    >>> print(extract_text(find_tag_by_id(browser.contents, "import-details")))
     Import Status: Reviewed
     This branch is an import of the HEAD branch of the Git repository at
     git://example.com/firefox.git.
@@ -229,7 +229,7 @@ allowed to match that of an existing Bazaar-targeted import.
 
 When the user clicks continue, the approved import repository is created.
 
-    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
+    >>> print(extract_text(find_tag_by_id(browser.contents, "import-details")))
     Import Status: Reviewed
     This repository is an import of the Git repository at
     git://example.com/firefox.git.
@@ -251,7 +251,7 @@ to identify the CVS branch.  A project and branch name are also required.
     >>> browser.getControl('Module').value = "firefox"
     >>> browser.getControl('Request Import').click()
 
-    >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
+    >>> print(extract_text(find_tag_by_id(browser.contents, "import-details")))
     Import Status: Reviewed
     This branch is an import of the CVS module firefox from
     :pserver:anonymous@cvs.example.com:/mozilla/cvs.

@@ -50,7 +50,7 @@ registered branches.
     ...     browser.open('http://code.launchpad.dev')
     ...     branches = find_tag_by_id(browser.contents, 'recently-registered')
     ...     for list_item in branches.ul.findAll('li'):
-    ...         print "%r" % list_item.renderContents()
+    ...         print("%r" % list_item.renderContents())
 
 When there is no logged in user, only public branches should be visible.
 
@@ -110,11 +110,11 @@ listing tab.
     ...     # If there are no branches, the table is not shown.
     ...     # So print the text shown in the application summary.
     ...     if table is None:
-    ...         print extract_text(find_tag_by_id(
-    ...             browser.contents, 'branch-summary'))
+    ...         print(extract_text(find_tag_by_id(
+    ...             browser.contents, 'branch-summary')))
     ...     else:
     ...         for row in table.tbody.findAll('tr'):
-    ...             print extract_text(row)
+    ...             print(extract_text(row))
 
     >>> print_landscape_code_listing(anon_browser)
     Launchpad does not know where The Landscape Project hosts its code...
@@ -157,12 +157,12 @@ viewable branches.
     ...         branches.append(extract_text(row))
     ...     landscape_branches = [branch for branch in branches
     ...                           if 'landscape' in branch]
-    ...     print "Total of %d branches listed" % len(branches)
+    ...     print("Total of %d branches listed" % len(branches))
     ...     if landscape_branches:
     ...         for branch in landscape_branches:
-    ...             print branch
+    ...             print(branch)
     ...     else:
-    ...         print "No landscape branches"
+    ...         print("No landscape branches")
 
     >>> print_person_code_listing(anon_browser)
     Total of 9 branches listed
@@ -220,10 +220,10 @@ There are no branches linked to this bug.
     >>> def printBugBranchLinks(browser):
     ...     tags = find_tags_by_class(browser.contents, 'buglink-summary')
     ...     if len(tags) == 0:
-    ...         print 'No bug branch links'
+    ...         print('No bug branch links')
     ...     else:
     ...         for tag in tags:
-    ...             print extract_text(tag)
+    ...             print(extract_text(tag))
 
     >>> printBugBranchLinks(landscape_dev_browser)
     No bug branch links
@@ -261,21 +261,21 @@ those who shouldn't be able to see it.
 Since the admin user is able to see all private branches the branch details
 are shown.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'branch-details'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'branch-details')))
     lp://dev/... - Landscape Developers ...
 
 Landscape developers can see it.
 
     >>> landscape_dev_browser.open('http://launchpad.dev/landscape/trunk')
-    >>> print extract_text(find_tag_by_id(
-    ...     landscape_dev_browser.contents, 'branch-details'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     landscape_dev_browser.contents, 'branch-details')))
     lp://dev/... - Landscape Developers ...
 
 But normal people can't.
 
     >>> anon_browser.open('http://launchpad.dev/landscape/trunk')
-    >>> print extract_text(find_tag_by_id(
-    ...     anon_browser.contents, 'branch-details'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'branch-details')))
     No revision control details recorded for
     The Landscape Project trunk series.

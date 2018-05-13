@@ -44,18 +44,18 @@ saves roundtrips and provides potential performance improvements.
 
 We gave three URLs, so we get back a dict with three branches.
 
-    >>> print len(branches)
+    >>> print(len(branches))
     3
 
 The URL that refers to a branch that doesn't exist maps to None.
 
-    >>> print branches[doesnt_exist]
+    >>> print(branches[doesnt_exist])
     None
 
 The URLs that refer to real, honest-to-goodness existing branches map to those
 branches:
 
-    >>> print branches[branch_url]['unique_name'] == branch_unique_name
+    >>> print(branches[branch_url]['unique_name'] == branch_unique_name)
     True
-    >>> print branches[branch2_url]['unique_name'] == branch2_unique_name
+    >>> print(branches[branch2_url]['unique_name'] == branch2_unique_name)
     True
