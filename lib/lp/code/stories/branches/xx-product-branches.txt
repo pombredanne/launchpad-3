@@ -28,7 +28,7 @@ The default page for the code rootsite on a product is the code
 overview page.
 
     >>> browser.open('http://code.launchpad.dev/applets')
-    >>> print browser.title
+    >>> print(browser.title)
     Code : Gnome Applets
 
 If there are not any branches, a helpful message is shown.
@@ -36,7 +36,7 @@ If there are not any branches, a helpful message is shown.
     >>> def get_summary(browser):
     ...     return find_tag_by_id(browser.contents, 'branch-summary')
     >>> summary = get_summary(browser)
-    >>> print extract_text(summary)
+    >>> print(extract_text(summary))
     Launchpad does not know where Gnome Applets
     hosts its code.
     There are no branches for Gnome Applets
@@ -55,7 +55,7 @@ If there are not any branches, a helpful message is shown.
 The 'Help' links go to the help wiki.
 
     >>> for anchor in summary.findAll('a'):
-    ...     print anchor['href']
+    ...     print(anchor['href'])
     https://help.launchpad.net/Code
 
 
@@ -66,7 +66,7 @@ It is possible that a new person coming to the code tab would be interested
 in downloads that may have been added for the product.
 
     >>> browser.open('http://code.launchpad.dev/netapplet')
-    >>> print extract_text(get_summary(browser))
+    >>> print(extract_text(get_summary(browser)))
     Launchpad does not know where NetApplet hosts its code...
     There are no branches for NetApplet in Launchpad.
     ...
@@ -87,7 +87,7 @@ shown.
 
     >>> browser.open('http://code.launchpad.dev/evolution')
     >>> summary = get_summary(browser)
-    >>> print extract_text(get_summary(browser))
+    >>> print(extract_text(get_summary(browser)))
     Evolution hosts its code externally.
     You can learn more at the project's web page.
     Launchpad imports the master branch and you can create branches from
@@ -124,7 +124,7 @@ once, but both series are shown in the listing.
     >>> browser.open('http://code.launchpad.dev/firefox')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.findAll('tr')[0:2]:
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     lp://dev/firefox
       Series: trunk, 1.0                     Development ...
     lp://dev/~mark/firefox/release--0.9.1  Development ...
@@ -139,7 +139,7 @@ Firstly lets associate release--0.9.1 with the 1.0 series.
     >>> browser.open('http://code.launchpad.dev/firefox')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.findAll('tr')[0:2]:
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     lp://dev/firefox
       Series: trunk                 Development ...
     lp://dev/firefox/1.0
@@ -160,7 +160,7 @@ default listings.
     >>> browser.open('http://code.launchpad.dev/firefox')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.findAll('tr')[0:2]:
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     lp://dev/~mark/firefox/release-0.8     Development ...
 
 
@@ -185,10 +185,10 @@ The links are only shown if the user has permission to perform the task.
     >>> def print_links(browser):
     ...     links = find_tag_by_id(browser.contents, 'involvement')
     ...     if links is None:
-    ...         print 'None'
+    ...         print('None')
     ...         return
     ...     for link in links.findAll('a'):
-    ...         print extract_text(link)
+    ...         print(extract_text(link))
 
     >>> def setup_code_hosting(productname):
     ...     with celebrity_logged_in('admin'):
@@ -199,7 +199,7 @@ The links are only shown if the user has permission to perform the task.
 The involvement portlet is not shown if the product does not have code
 hosting configured or if it is not using Launchpad.
 
-    >>> print product.codehosting_usage.name
+    >>> print(product.codehosting_usage.name)
     UNKNOWN
     >>> logout()
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
@@ -208,7 +208,7 @@ hosting configured or if it is not using Launchpad.
 
     >>> setup_code_hosting('firefox')
     >>> login(ANONYMOUS)
-    >>> print product.codehosting_usage.name
+    >>> print(product.codehosting_usage.name)
     LAUNCHPAD
     >>> logout()
     >>> admin_browser.open('http://code.launchpad.dev/firefox')
@@ -257,9 +257,9 @@ shows correct singular and plural forms.
     ...     browser.open('http://code.launchpad.dev/%s' % product)
     ...     portlet = get_stats_portlet(browser)
     ...     if portlet is None:
-    ...         print 'None'
+    ...         print('None')
     ...     else:
-    ...         print normalize_whitespace(extract_text(portlet))
+    ...         print(normalize_whitespace(extract_text(portlet)))
 
     >>> setup_code_hosting('gnome-terminal')
     >>> print_portlet('gnome-terminal')
@@ -306,7 +306,7 @@ the portlets will not be shown.
     None
 
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
-    >>> print extract_text(message)
+    >>> print(extract_text(message))
     There are branches registered for iso-codes but none of them match the
     current filter criteria for this page. Try filtering on "Any Status".
 
@@ -321,6 +321,6 @@ we are given a different message.
     ...     'http://code.launchpad.dev/firefox/+branches'
     ...     '?field.lifecycle=Mature')
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
-    >>> print extract_text(message)
+    >>> print(extract_text(message))
     There are branches registered for Mozilla Firefox but none of them match
     the current filter criteria for this page. Try filtering on "Any Status".

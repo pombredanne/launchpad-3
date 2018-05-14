@@ -69,14 +69,14 @@ There is a cancel link shown with the buttons.
 Registering the merge proposal takes the user to the new merge proposal.
 
     >>> klingon_proposal = nopriv_browser.url
-    >>> print klingon_proposal
+    >>> print(klingon_proposal)
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/...
 
 The summary reflects the selected target and prerequisite.
 
     >>> def print_summary(browser):
-    ...     print extract_text(find_tag_by_id(
-    ...         browser.contents, 'proposal-summary'))
+    ...     print(extract_text(find_tag_by_id(
+    ...         browser.contents, 'proposal-summary')))
     >>> print_summary(nopriv_browser)
     Status:
     ...
@@ -151,7 +151,7 @@ has been defined or the branch owner will be used.
     >>> sample_browser.open(klingon_proposal)
     >>> pending = find_tag_by_id(
     ...     sample_browser.contents, 'code-review-votes')
-    >>> print extract_text(pending)
+    >>> print(extract_text(pending))
     Reviewer          Review Type    Date Requested    Status
     Sample Person                    ... ago           Pending [Review]
     Review via email: mp+...@code.launchpad.dev
@@ -181,7 +181,7 @@ Only the last request is listed, showing the last review type.
 
     >>> pending = find_tag_by_id(
     ...     sample_browser.contents, 'code-review-votes')
-    >>> print extract_text(pending)
+    >>> print(extract_text(pending))
     Reviewer          Review Type    Date Requested    Status
     Mark Shuttleworth                ... ago           Pending
     Sample Person     second         ... ago           Pending [Review]
@@ -210,7 +210,7 @@ People who are logged in can perform reviews.
     >>> nopriv_browser.getControl('Save Comment').click()
     >>> pending = find_tag_by_id(
     ...     nopriv_browser.contents, 'code-review-votes')
-    >>> print extract_text(pending)
+    >>> print(extract_text(pending))
     Reviewer                         Review Type  Date Requested Status
     No Privileges Person (community)                             Disapprove
     ...
@@ -224,7 +224,7 @@ People can claim reviews for teams of which they are a member.
     >>> sample_browser.getControl('Request Review').click()
     >>> pending = find_tag_by_id(
     ...     sample_browser.contents, 'code-review-votes')
-    >>> print extract_text(pending)
+    >>> print(extract_text(pending))
     Reviewer                         Review Type  Date Requested Status...
     HWDB Team                        claimable    ... ago        Pending ...
     >>> foobar_browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
@@ -235,7 +235,7 @@ People can claim reviews for teams of which they are a member.
 
 After claiming a review, the claimant is listed instead of their team.
 
-    >>> print extract_text(pending)
+    >>> print(extract_text(pending))
     Reviewer                         Review Type  Date Requested Status...
     Foo Bar                          claimable    ... ago        Pending ...
 
@@ -286,8 +286,8 @@ This takes the user to the resubmission page.
 The new merge proposal is created as needs review, and there is
 a link back to the superseded proposal.
 
-    >>> print extract_text(find_tag_by_id(
-    ...     eric_browser.contents, 'superseded-proposal'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     eric_browser.contents, 'superseded-proposal')))
     This proposal supersedes a proposal from ...
 
     >>> import re
@@ -300,8 +300,8 @@ a link back to the superseded proposal.
 The earlier superseded proposal also has a link back to the
 new proposal that supersedes it.
 
-    >>> print extract_text(find_tag_by_id(
-    ...     eric_browser.contents, 'superseded-by'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     eric_browser.contents, 'superseded-by')))
     This proposal has been superseded by a proposal from ...
     >>> link = eric_browser.getLink(re.compile('proposal from .*'))
     >>> superseding_url = link.url
@@ -313,7 +313,7 @@ proposal.  It can only be set to another inactive state like "rejected" or
     >>> eric_browser.getLink('Edit status').click()
     >>> def print_options(field):
     ...     for option in field.options:
-    ...         print option
+    ...         print(option)
     >>> print_options(eric_browser.getControl(name='field.queue_status'))
     REJECTED
     MERGED
@@ -382,7 +382,7 @@ branch widget is shown.
     ...     'http://code.launchpad.dev/~mark/firefox/release-0.8')
     >>> nopriv_browser.getLink('Propose for merging').click()
     >>> for widget in get_target_branch_widgets(nopriv_browser):
-    ...     print widget
+    ...     print(widget)
     <input type="text" ...
 
 Test validation of errors...
@@ -424,7 +424,7 @@ is shown.
     ...                 checked = widget['checked']
     ...             except KeyError:
     ...                 checked = ''
-    ...             print widget['value'], checked
+    ...             print(widget['value'], checked)
 
 Also the main development focus is selected.
 
@@ -463,9 +463,9 @@ in the source branch.
     ...     for id in 'related-bugs', 'related-blueprints':
     ...         links = find_tag_by_id(browser.contents, id)
     ...         if links == None:
-    ...             print links
+    ...             print(links)
     ...         else:
-    ...             print extract_text(links)
+    ...             print(extract_text(links))
 
     >>> login('admin@canonical.com')
     >>> bmp = factory.makeBranchMergeProposal()
@@ -551,8 +551,8 @@ Create merge proposal with a preview diff, and go to its index page.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from difflib import unified_diff
     >>> from lp.code.model.diff import PreviewDiff
-    >>> diff_text = ''.join(
-    ...     unified_diff('', ['Fake Diff' + u'\u1010'.encode('utf-8')]))
+    >>> diff_text = b''.join(
+    ...     unified_diff(b'', [b'Fake Diff' + u'\u1010'.encode('utf-8')]))
     >>> bmp = factory.makeBranchMergeProposal()
     >>> preview_diff = PreviewDiff.create(
     ...     bmp, diff_text, u'a', u'b', None, u'')
@@ -565,7 +565,7 @@ Create merge proposal with a preview diff, and go to its index page.
 
 The text of the review diff is in the page.
 
-    >>> print repr(extract_text(get_review_diff()))
+    >>> print(repr(extract_text(get_review_diff())))
     u'Preview Diff\n[H/L] Next/Prev Comment, [J/K] Next/Prev File, [N/P] Next/Prev Hunk\nDownload diff\nSide-by-side diff\n1\n---\n2\n+++\n3\n@@ -0,0 +1 @@\n4\n+Fake Diff\u1010'
 
 There is also a link to the diff URL, which is the preview diff URL plus
@@ -573,17 +573,17 @@ There is also a link to the diff URL, which is the preview diff URL plus
 restricted librarian.
 
     >>> link = get_review_diff().find('a')
-    >>> print extract_text(link)
+    >>> print(extract_text(link))
     Download diff
 
-    >>> print link['href']
+    >>> print(link['href'])
     http://.../+preview-diff/.../+files/preview.diff
 
     >>> from lazr.uri import URI
-    >>> print http(r"""
+    >>> print(http(r"""
     ... GET %s HTTP/1.1
     ... Authorization: Basic no-priv@canonical.com:test
-    ... """ % URI(link['href']).path)
+    ... """ % URI(link['href']).path))
     HTTP/1.1 303 See Other
     ...
     Location: https://...restricted.../...txt?token=...
@@ -595,15 +595,15 @@ If no diff is present, nothing is shown.
     >>> Store.of(preview_diff).remove(preview_diff)
     >>> from lp.services.propertycache import get_property_cache
     >>> del get_property_cache(bmp).preview_diffs
-    >>> print get_review_diff()
+    >>> print(get_review_diff())
     None
 
 If the review diff is empty, then we say it is empty.
 
     >>> login('admin@canonical.com')
-    >>> preview_diff = PreviewDiff.create(bmp, '', u'c', u'd', None, u'')
+    >>> preview_diff = PreviewDiff.create(bmp, b'', u'c', u'd', None, u'')
     >>> logout()
-    >>> print extract_text(get_review_diff())
+    >>> print(extract_text(get_review_diff()))
     Preview Diff
     Empty
 
@@ -613,7 +613,7 @@ Preview diff generation status
 
     >>> update = find_tag_by_id(
     ...     nopriv_browser.contents, 'diff-pending-update')
-    >>> print extract_text(update)
+    >>> print(extract_text(update))
     Updating diff...
     An updated diff will be available in a few minutes.  Reload to see the
     changes.
@@ -622,7 +622,7 @@ Preview diff generation status
     >>> job.complete()
     >>> transaction.commit()
     >>> nopriv_browser.open(url)
-    >>> print find_tag_by_id(nopriv_browser.contents, 'diff-pending-update')
+    >>> print(find_tag_by_id(nopriv_browser.contents, 'diff-pending-update'))
     None
 
 

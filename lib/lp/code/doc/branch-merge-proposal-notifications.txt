@@ -83,9 +83,9 @@ The value assigned to the recipient is a utility class to generate useful
 values for the email headers and footers.
 
     >>> [reason] = recipients.values()
-    >>> print reason.mail_header
+    >>> print(reason.mail_header)
     Subscriber
-    >>> print reason.getReason()
+    >>> print(reason.getReason())
     You are subscribed to branch ...
 
 
@@ -122,25 +122,25 @@ is created.  When those jobs are run, the email is sent from the registrant.
 An email is sent to subscribers of either branch and the default reviewer.
 
     >>> for notification in notifications:
-    ...     print notification['X-Envelope-To']
+    ...     print(notification['X-Envelope-To'])
     source@example.com
     target@example.com
     target_owner@example.com
 
     >>> notification = notifications[0]
-    >>> print notification['From']
+    >>> print(notification['From'])
     Eric <eric@example.com>
-    >>> print notification['Subject']
+    >>> print(notification['Subject'])
     [Merge] lp://dev/~person-name... into lp://dev/~person-name...
-    >>> print notification['X-Launchpad-Project']
+    >>> print(notification['X-Launchpad-Project'])
     product-name...
-    >>> print notification['X-Launchpad-Branch']
+    >>> print(notification['X-Launchpad-Branch'])
     ~person-name...
-    >>> print notification['X-Launchpad-Message-Rationale']
+    >>> print(notification['X-Launchpad-Message-Rationale'])
     Subscriber
-    >>> print notification['X-Launchpad-Message-For']
+    >>> print(notification['X-Launchpad-Message-For'])
     source-subscriber
-    >>> print notification.get_payload(decode=True)
+    >>> print(notification.get_payload(decode=True))
     Eric has proposed merging
     lp://dev/~person-name...into lp://dev/~person-name...
     --
@@ -178,16 +178,16 @@ in the email.
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
     >>> for notification in notifications:
-    ...     print "%s, %s, %s" % (
+    ...     print("%s, %s, %s" % (
     ...         notification['X-Envelope-To'],
     ...         notification['X-Launchpad-Message-Rationale'],
-    ...         notification['X-Launchpad-Message-For'])
+    ...         notification['X-Launchpad-Message-For']))
     bob@example.com, Reviewer, bob
     mary@example.com, Reviewer, mary
     source@example.com, Subscriber, source-subscriber
     target@example.com, Subscriber, target-subscriber
     >>> notification = notifications[0]
-    >>> print notification.get_payload()[0].get_payload(decode=True)
+    >>> print(notification.get_payload()[0].get_payload(decode=True))
     Eric has proposed merging
     lp://dev/~person-name...into lp://dev/~person-name...
     <BLANKLINE>

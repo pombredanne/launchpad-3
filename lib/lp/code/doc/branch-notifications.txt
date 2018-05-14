@@ -48,22 +48,22 @@ also sends the email to the list of recipients.
     >>> len(notifications)
     1
     >>> branch_notification = notifications[0]
-    >>> print branch_notification['To']
+    >>> print(branch_notification['To'])
     Sample Person <test@canonical.com>
-    >>> print branch_notification['From']
+    >>> print(branch_notification['From'])
     foo@canonical.com
-    >>> print branch_notification['Subject']
+    >>> print(branch_notification['Subject'])
     Subject line
-    >>> print branch_notification['X-Launchpad-Project']
+    >>> print(branch_notification['X-Launchpad-Project'])
     firefox
-    >>> print branch_notification['X-Launchpad-Branch']
+    >>> print(branch_notification['X-Launchpad-Branch'])
     ~name12/firefox/main
-    >>> print branch_notification['X-Launchpad-Message-Rationale']
+    >>> print(branch_notification['X-Launchpad-Message-Rationale'])
     Subscriber
-    >>> print branch_notification['X-Launchpad-Message-For']
+    >>> print(branch_notification['X-Launchpad-Message-For'])
     name12
     >>> notification_body = branch_notification.get_payload(decode=True)
-    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    >>> print(notification_body) #doctest: -NORMALIZE_WHITESPACE
     The contents.
     <BLANKLINE>
     --
@@ -153,7 +153,7 @@ Team are subscribed in the same way.
 And to make sure we have them:
 
     >>> for subscription in branch.subscriptions:
-    ...     print subscription.person.name
+    ...     print(subscription.person.name)
     no-priv
     name12
     carlos
@@ -183,7 +183,7 @@ to allow email filtering.
     >>> for email in recipients.getEmails():
     ...     subscription, header = recipients.getReason(email)
     ...     if subscription.notification_level in interested_levels:
-    ...         print email, subscription.max_diff_lines.title, header
+    ...         print(email, subscription.max_diff_lines.title, header)
     carlos@canonical.com          Don't send diffs  Subscriber
     celso.providelo@canonical.com 1000 lines        Subscriber
     daf@canonical.com             5000 lines        Subscriber
@@ -205,7 +205,7 @@ to allow email filtering.
     ...             attachment = '\n' + root[1].get_payload(decode=True)
     ...     else:
     ...         body = email.get_payload(decode=True)
-    ...     print 'To: %s\n%s%s' % (email['To'], body, attachment)
+    ...     print('To: %s\n%s%s' % (email['To'], body, attachment))
 
 We need to create some sufficiently large diffs to compare against.
 
@@ -230,11 +230,11 @@ Send the revision notifications.
 
 There are also some useful headers for filtering emails.
 
-    >>> print msg['X-Launchpad-Branch']
+    >>> print(msg['X-Launchpad-Branch'])
     ~name12/firefox/main
-    >>> print msg['X-Launchpad-Branch-Revision-Number']
+    >>> print(msg['X-Launchpad-Branch-Revision-Number'])
     1234
-    >>> print msg['X-Launchpad-Project']
+    >>> print(msg['X-Launchpad-Project'])
     firefox
     >>> print_to_and_body(notifications.pop(0))
     To: Celso Providelo <celso.providelo@canonical.com>
@@ -389,7 +389,7 @@ that is used rather than the email addresses of the seven members.
     >>> for email in recipients.getEmails():
     ...     subscription, header = recipients.getReason(email)
     ...     if subscription.notification_level in interested_levels:
-    ...         print email, subscription.max_diff_lines.title, header
+    ...         print(email, subscription.max_diff_lines.title, header)
     david.allouche@canonical.com  500 lines   Subscriber
     foo.bar@canonical.com        5000 lines   Subscriber @vcs-imports
     robertc@robertcollins.net    5000 lines   Subscriber @vcs-imports
@@ -406,8 +406,8 @@ that is used rather than the email addresses of the seven members.
     ...         body = body.decode(email.get_param('charset'))
     ...     else:
     ...         body = body.decode('iso-8859-1')
-    ...     print u'To: %s\nFrom: %s\nSubject: %s\n%s' % (
-    ...         email['To'], email['From'], email['Subject'], body)
+    ...     print(u'To: %s\nFrom: %s\nSubject: %s\n%s' % (
+    ...         email['To'], email['From'], email['Subject'], body))
 
 It is the form infrastructure that fires off the ObjectModifedEvent,
 so we'll fake that bit here.  The page tests will check the emails

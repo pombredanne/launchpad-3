@@ -7,17 +7,17 @@ A quick helper function to list the subscribed people.
     ...     subscriptions = find_tags_by_class(
     ...         contents, 'branch-subscribers')[0]
     ...     if subscriptions == None:
-    ...         print subscriptions
+    ...         print(subscriptions)
     ...         return
     ...     for subscriber in subscriptions.findAll('div'):
-    ...         print extract_text(subscriber.renderContents())
+    ...         print(extract_text(subscriber.renderContents()))
 
 Another to print the informational message.
 
     >>> def print_informational_message(contents):
     ...     message = find_tags_by_class(contents, 'informational message')
     ...     if message:
-    ...         print extract_text(message[0])
+    ...         print(extract_text(message[0]))
 
 
 Subscribing to Branches
@@ -238,7 +238,7 @@ the branch itself.
 
     >>> browser.getLink(url='+subscription/landscape').click()
     >>> main_content = find_main_content(browser.contents)
-    >>> print extract_text(main_content.h1)
+    >>> print(extract_text(main_content.h1))
     Edit subscription to branch for Landscape Developers
 
 From this page the branch subscription can be altered...

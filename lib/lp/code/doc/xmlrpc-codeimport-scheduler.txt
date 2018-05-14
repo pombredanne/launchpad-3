@@ -55,8 +55,8 @@ previously unseen hostnames.
 
     >>> from lp.code.interfaces.codeimportmachine import (
     ...     ICodeImportMachineSet)
-    >>> print getUtility(ICodeImportMachineSet).getByHostname(
-    ...     'doesnt-exist-yet')
+    >>> print(getUtility(ICodeImportMachineSet).getByHostname(
+    ...     'doesnt-exist-yet'))
     None
     >>> codeimportscheduler.getJobForMachine('doesnt-exist-yet', 1)
     0

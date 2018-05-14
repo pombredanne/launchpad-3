@@ -18,7 +18,8 @@ The PersonAdministerView is registered under the +review name.
     []
     >>> view.field_names
     ['name', 'display_name',
-     'personal_standing', 'personal_standing_reason']
+     'personal_standing', 'personal_standing_reason',
+     'require_strong_email_authentication']
     >>> view.label
     'Review person'
 
@@ -50,6 +51,8 @@ of a user's attributes.
     <DBItem PersonalStanding.POOR, ...>
     >>> print user.personal_standing_reason
     Zaphod's just this guy.
+    >>> user.require_strong_email_authentication
+    False
 
 Non administrators cannot access the +review view
 

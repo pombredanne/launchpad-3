@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -178,8 +178,7 @@ def get_person_or_team(person_name_or_email):
     return person_term.value
 
 
-def ensure_not_weakly_authenticated(signed_msg, context,
-                                    error_template='not-signed.txt'):
+def ensure_not_weakly_authenticated(signed_msg, context):
     """Make sure that the current principal is not weakly authenticated.
 
     NB: While handling an email, the authentication state is stored partly in

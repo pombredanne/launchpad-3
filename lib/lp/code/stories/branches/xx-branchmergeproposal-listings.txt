@@ -68,7 +68,7 @@ the number of active reviews and approved merges.
 The 'active reviews' text links to the active reviews page.
 
     >>> browser.getLink('active reviews').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Active reviews : Code : Fooix
 
 The proposals are listed in a table that shows the source and target branches,
@@ -147,7 +147,7 @@ shown a link and a count.
     3 branches proposed for merging into this one.
 
     >>> browser.getLink('3 branches').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Active reviews : trunk : Code : Fooix
 
 

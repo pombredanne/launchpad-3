@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related view classes."""
@@ -1231,7 +1231,9 @@ class PersonAdministerView(PersonRenameFormMixin):
     label = "Review person"
     field_names = [
         'name', 'display_name',
-        'personal_standing', 'personal_standing_reason']
+        'personal_standing', 'personal_standing_reason',
+        'require_strong_email_authentication',
+        ]
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
 

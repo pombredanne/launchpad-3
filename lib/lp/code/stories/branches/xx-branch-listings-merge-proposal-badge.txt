@@ -6,10 +6,10 @@
     ...         cells = row.findAll('td')
     ...         first_cell = cells[0]
     ...         anchors = first_cell.findAll('a')
-    ...         print anchors[0].get('href')
+    ...         print(anchors[0].get('href'))
     ...         # Badges in the next cell
     ...         for img in cells[1].findAll('img'):
-    ...             print img['title']
+    ...             print(img['title'])
 
 
     >>> login('foo.bar@canonical.com')

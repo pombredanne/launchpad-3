@@ -16,7 +16,7 @@ bazaar branches is shown to the user.
     >>> logout()
 
     >>> anon_browser.open("http://code.launchpad.dev/projects")
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Projects with active branches
 
 The `Projects with active branches` page shows a link for each project that has
@@ -25,6 +25,6 @@ the link is shown.
 
     >>> tags = find_tag_by_id(anon_browser.contents, 'project-tags')
     >>> for anchor in tags.findAll('a'):
-    ...     print anchor.renderContents(), anchor['class']
+    ...     print(anchor.renderContents(), anchor['class'])
     linux cloud-size-largest cloud-medium
     wibble cloud-size-smallest cloud-dark
