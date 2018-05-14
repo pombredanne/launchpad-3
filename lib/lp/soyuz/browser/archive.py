@@ -58,6 +58,7 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
@@ -99,7 +100,10 @@ from lp.services.browser_helpers import (
 from lp.services.database.bulk import load_related
 from lp.services.helpers import english_list
 from lp.services.job.model.job import Job
-from lp.services.librarian.browser import FileNavigationMixin
+from lp.services.librarian.browser import (
+    DeletedProxiedLibraryFileAlias,
+    FileNavigationMixin,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -120,6 +124,7 @@ from lp.services.webapp.interfaces import (
     IStructuredString,
     )
 from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.publisher import RedirectionView
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
@@ -478,8 +483,22 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
         version = self.request.stepstogo.consume()
         filename = self.request.stepstogo.consume()
 
-        return self.context.getSourceFileByName(
+        if not check_permission('launchpad.View', self.context):
+            raise Unauthorized()
+
+        library_file = self.context.getSourceFileByName(
             sourcepackagename, version, filename)
+
+        # Deleted library files result in a NotFound-like error.
+        if library_file.deleted:
+            raise DeletedProxiedLibraryFileAlias(filename, self.context)
+
+        # There can be no further path segments.
+        if len(self.request.stepstogo) > 0:
+            return None
+
+        return RedirectionView(
+            library_file.getURL(include_token=True), self.request)
 
 
 class ArchiveMenuMixin:

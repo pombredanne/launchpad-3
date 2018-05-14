@@ -17,6 +17,7 @@ from operator import attrgetter
 from lazr.delegates import delegate_to
 from zope.interface import implementer
 
+from lp.archiveuploader.utils import re_isadeb
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
@@ -287,8 +288,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
             custom_dict = {}
             custom_dict["filename"] = library_file.filename
             custom_dict["filesize"] = library_file.content.filesize
-            if (library_file.filename.endswith('.deb') or
-                library_file.filename.endswith('.udeb')):
+            if re_isadeb.match(library_file.filename):
                 custom_dict['class'] = 'binary'
                 custom_dict["url"] = ProxiedLibraryFileAlias(
                     library_file, self.context.archive).http_url
