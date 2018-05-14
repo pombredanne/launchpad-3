@@ -48,7 +48,7 @@ to the directory passed into combineImages(). The space between sprites
 in the file can be changed with the margin parameter.
 
     >>> import os, tempfile
-    >>> import Image
+    >>> from PIL import Image
     >>> from lp.services.spriteutils import SpriteUtil
     >>> root = os.path.abspath(os.path.join(__file__, '../../../../..'))
     >>> icing = os.path.join(root, 'lib/canonical/launchpad/icing')
