@@ -993,7 +993,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         find_spec = (
             DistributionSourcePackageCache,
             SourcePackageName,
-            SQL('rank(fti, ftq(?)) AS rank', params=(text,)),
+            SQL('ts_rank(fti, ftq(?)) AS rank', params=(text,)),
             )
         origin = [
             DistributionSourcePackageCache,
