@@ -194,16 +194,16 @@ class _BaseBranchNamespace:
 
     def validateBranchName(self, name):
         """See `IBranchNamespace`."""
-        existing_branch = self.getByName(name)
-        if existing_branch is not None:
-            raise BranchExists(existing_branch)
-
         # Not all code paths that lead to branch creation go via a
         # schema-validated form (e.g. pushing a new branch to codehosting),
         # so we validate the branch name here to give a nicer error message
         # than 'ERROR: new row for relation "branch" violates check
         # constraint "valid_name"...'.
         IBranch['name'].validate(unicode(name))
+
+        existing_branch = self.getByName(name)
+        if existing_branch is not None:
+            raise BranchExists(existing_branch)
 
     def validateMove(self, branch, mover, name=None):
         """See `IBranchNamespace`."""
