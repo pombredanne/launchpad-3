@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Infrastructure for setting up doctests."""
@@ -187,7 +187,10 @@ def stop():
         sys.stdout = old_stdout
 
 
-def setGlobs(test):
+# XXX cjwatson 2018-05-13: Once all doctests are made safe for the standard
+# __future__ imports, the `future=True` behaviour should become
+# unconditional.
+def setGlobs(test, future=False):
     """Add the common globals for testing system documentation."""
     test.globs['ANONYMOUS'] = ANONYMOUS
     test.globs['login'] = login
@@ -208,10 +211,16 @@ def setGlobs(test):
     test.globs['launchpadlib_credentials_for'] = launchpadlib_credentials_for
     test.globs['oauth_access_token_for'] = oauth_access_token_for
 
+    if future:
+        import __future__
+        for future_item in (
+                'absolute_import', 'print_function', 'unicode_literals'):
+            test.globs[future_item] = getattr(__future__, future_item)
 
-def setUp(test):
+
+def setUp(test, future=False):
     """Setup the common globals and login for testing system documentation."""
-    setGlobs(test)
+    setGlobs(test, future=future)
     # Set up an anonymous interaction.
     login(ANONYMOUS)
 

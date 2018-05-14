@@ -59,7 +59,7 @@ One has review_status set to NEW.
     >>> new_import_branch = branch_lookup.getByUniqueName(
     ...     '~vcs-imports/evolution/import')
     >>> new_import = code_import_set.getByBranch(new_import_branch)
-    >>> print new_import.review_status.name
+    >>> print(new_import.review_status.name)
     NEW
 
 The other one has review_status set to REVIEWED.
@@ -67,7 +67,7 @@ The other one has review_status set to REVIEWED.
     >>> reviewed_import_branch = branch_lookup.getByUniqueName(
     ...     '~vcs-imports/gnome-terminal/import')
     >>> reviewed_import = code_import_set.getByBranch(reviewed_import_branch)
-    >>> print reviewed_import.review_status.name
+    >>> print(reviewed_import.review_status.name)
     REVIEWED
 
 Some workflow methods expect the user that is requesting the action. We
@@ -145,12 +145,12 @@ is created.
     >>> unproxied_new_import = removeSecurityProxy(new_import)
     >>> unproxied_new_import.review_status = CodeImportReviewStatus.REVIEWED
     >>> new_job = workflow.newJob(new_import)
-    >>> print new_import.import_job
+    >>> print(new_import.import_job)
     <security proxied ...CodeImportJob instance at 0x...>
 
 Jobs are always created in PENDING state.
 
-    >>> print new_job.state.name
+    >>> print(new_job.state.name)
     PENDING
 
 When the code import is associated to existing CodeImportResult objects,
@@ -169,7 +169,7 @@ associated job is not running, the job is deleted.
 
     >>> unproxied_new_import.review_status = CodeImportReviewStatus.INVALID
     >>> workflow.deletePendingJob(new_import)
-    >>> print new_import.import_job
+    >>> print(new_import.import_job)
     None
 
 
@@ -192,12 +192,12 @@ possible.
 This records the requesting user in the job object and sets its date due
 for running as soon as possible.
 
-    >>> print pending_job.requesting_user.name
+    >>> print(pending_job.requesting_user.name)
     no-priv
 
 The job request is also recorded in the CodeImportEvent audit trail.
 
-    >>> print new_events.summary()
+    >>> print(new_events.summary())
     REQUEST ~vcs-imports/gnome-terminal/import no-priv
 
 Once a job has been requested by a user, it cannot be requested a
@@ -231,7 +231,7 @@ Run the job:
 
 The event is also recorded in the CodeImportEvent audit trail.
 
-    >>> print new_events.summary()
+    >>> print(new_events.summary())
     START ~vcs-imports/gnome-terminal/import bazaar-importer
 
 
