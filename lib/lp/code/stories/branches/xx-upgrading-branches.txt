@@ -39,7 +39,7 @@ Only those with edit permissions on a branch can request an upgrade.
     ...     auth='Basic fats@domino.com:test')
     >>> domino_browser.open(branch_url)
     >>> domino_browser.getLink("Upgrade this branch").click()
-    >>> print domino_browser.url
+    >>> print(domino_browser.url)
     http://code.launchpad.dev/~domino/.../+upgrade
     >>> domino_browser.getControl('Upgrade').click()
 

@@ -7,7 +7,7 @@ First, check that the condensed branch listing page works:
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> print browser.title
+    >>> print(browser.title)
     Code : Sample Person
 
 
@@ -21,8 +21,8 @@ If a person does not have any related branches, we print an informative
 message.
 
     >>> browser.open('http://code.launchpad.dev/~kinnison')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'no-branch-message'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(browser.contents, 'no-branch-message')))
     There are no branches related to Daniel Silverstone in Launchpad today.
 
 
@@ -32,8 +32,8 @@ Junk branches
 On the user's own code page, they will see directions on pushing a branch.
 
     >>> browser.open('http://code.launchpad.dev/~name12')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'junk-branch-directions'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(browser.contents, 'junk-branch-directions')))
     You can push (upload) personal branches
     (those not related to a project) with the following command:
     bzr push lp:~name12/+junk/BRANCHNAME
@@ -47,7 +47,7 @@ A person's owned branches are shown on their code application overview page.
     >>> browser.open('http://code.launchpad.dev/~name12')
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.findAll('tr'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     lp://dev/~name12/landscape/feature-x      Development
     ...
 
@@ -61,11 +61,11 @@ There is also a filter for registered branches.
     >>> browser.getControl(name='field.category').displayValue = [
     ...     'Registered']
     >>> browser.getControl('Filter').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Code : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.findAll('tr'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     lp://dev/~name12/landscape/feature-x      Development
     ...
 
@@ -80,11 +80,11 @@ subscribed branches.
     >>> browser.getControl(name='field.category').displayValue = [
     ...     'Subscribed']
     >>> browser.getControl('Filter').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Code : Sample Person
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.findAll('tr'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     lp://dev/~launchpad/gnome-terminal/launchpad  Development           ...
     lp://dev/~name12/+junk/junk.dev               Experimental  ...
 

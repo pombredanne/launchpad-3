@@ -30,5 +30,5 @@ distribution series ordered by most recently changed first.
     lp://dev/~eric/mint/stable/zope/new         Development ...
     ...
     >>> ordering_control = browser.getControl(name='field.sort_by')
-    >>> print ordering_control.displayValue
+    >>> print(ordering_control.displayValue)
     ['most recently changed first']

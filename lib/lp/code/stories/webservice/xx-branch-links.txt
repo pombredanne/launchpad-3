@@ -43,7 +43,7 @@ unlinked from the bug as well.
     ...     robots['self_link'], 'unlinkBug', bug=bug['self_link'])
     >>> bugs = webservice.get(
     ...     robots['linked_bugs_collection_link']).jsonBody()
-    >>> print len(bugs['entries'])
+    >>> print(len(bugs['entries']))
     0
 
 
@@ -73,5 +73,5 @@ unlinked from the spec as well.
     ...     robots['self_link'], 'unlinkSpecification', spec=spec['self_link'])
     >>> spec_links = webservice.get(
     ...     robots['spec_links_collection_link']).jsonBody()
-    >>> print len(spec_links['entries'])
+    >>> print(len(spec_links['entries']))
     0
