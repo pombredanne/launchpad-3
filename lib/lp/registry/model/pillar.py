@@ -214,7 +214,7 @@ class PillarNameSet:
         # row should get the highest search rank (9999999).
         # Each row in the PillarName table will join with only one
         # of either the Product, Project, or Distribution tables,
-        # so the coalesce() is necessary to find the rank() which
+        # so the coalesce() is necessary to find the ts_rank() which
         # is not null.
         result.order_by(SQL('''
             (CASE WHEN PillarName.name = lower(%(text)s)
@@ -222,9 +222,9 @@ class PillarNameSet:
                       OR lower(Project.title) = lower(%(text)s)
                       OR lower(Distribution.title) = lower(%(text)s)
                 THEN 9999999
-                ELSE coalesce(rank(Product.fti, ftq(%(text)s)),
-                              rank(Project.fti, ftq(%(text)s)),
-                              rank(Distribution.fti, ftq(%(text)s)))
+                ELSE coalesce(ts_rank(Product.fti, ftq(%(text)s)),
+                              ts_rank(Project.fti, ftq(%(text)s)),
+                              ts_rank(Distribution.fti, ftq(%(text)s)))
             END) DESC, PillarName.name
             ''' % sqlvalues(text=text)))
         # People shouldn't be calling this method with too big limits

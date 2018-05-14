@@ -236,17 +236,14 @@ Package-diff files, in the expandable-row area, are served via the PPA
 Retrieve file information for using the direct HTTP browsing API.
 
     >>> login('foo.bar@canonical.com')
-    >>> file_content = dsc_file.read()
-    >>> file_size = str(dsc_file.content.filesize)
-    >>> file_mimetype = dsc_file.mimetype
-    >>> file_lp_url = str(
-    ...     'http://launchpad.dev/~no-priv/+archive/ubuntu/p3a/+files/%s' %
-    ...     dsc_file.filename)
+    >>> dsc_file_lp_url = (
+    ...     'http://launchpad.dev/~no-priv/+archive/ubuntu/p3a/+sourcefiles/'
+    ...     'test-pkg/1.0/%s' % dsc_file.filename)
     >>> logout()
 
 Sample Person can't access the file.
 
-    >>> browser.open(file_lp_url)
+    >>> browser.open(dsc_file_lp_url)
     Traceback (most recent call last):
     ...
     Unauthorized
@@ -256,10 +253,30 @@ The 'No Privileges' user, the PPA owner, can download the DSC file.
     >>> print http(r"""
     ... GET %s HTTP/1.1
     ... Authorization: Basic no-priv@canonical.com:test
-    ... """ % (file_lp_url.replace('http://launchpad.dev', '')))
+    ... """ % (dsc_file_lp_url.replace('http://launchpad.dev', '')))
     HTTP/1.1 303 See Other
     ...
     Location: https://...restricted.../test-pkg_1.0.dsc?token=...
+    ...
+
+Binary files are served via '+files' rather than '+sourcefiles'.
+
+    >>> login('foo.bar@canonical.com')
+    >>> deb_file_lp_url = (
+    ...     'http://launchpad.dev/~no-priv/+archive/ubuntu/p3a/+files/%s' %
+    ...     deb_file.filename)
+    >>> logout()
+    >>> browser.open(deb_file_lp_url)
+    Traceback (most recent call last):
+    ...
+    Unauthorized
+    >>> print http(r"""
+    ... GET %s HTTP/1.1
+    ... Authorization: Basic no-priv@canonical.com:test
+    ... """ % (deb_file_lp_url.replace('http://launchpad.dev', '')))
+    HTTP/1.1 303 See Other
+    ...
+    Location: https://...restricted.../test-bin_1.0_all.deb?token=...
     ...
 
 If the associated PPA and the `LibraryFileAlias` are public, the +files/
@@ -286,8 +303,8 @@ binaries across to no-priv's public ppa.
     False
     >>> file_librarian_url = dsc_file.http_url
     >>> file_lp_url = str(
-    ...     'http://launchpad.dev/~no-priv/+archive/ubuntu/ppa/+files/%s' %
-    ...     dsc_file.filename)
+    ...     'http://launchpad.dev/~no-priv/+archive/ubuntu/ppa/+sourcefiles/'
+    ...     'test-pkg/1.0/%s' % dsc_file.filename)
 
     >>> transaction.commit()
     >>> logout()
@@ -318,9 +335,8 @@ If a script or otherwise is trying to access +archive/+files, we make
 sure that '+files' isn't understood as the PPA name, but instead
 redirect to the files for the default named PPA.
 
-    >>> file_lp_url_without_ppa_name = file_lp_url.replace('/ubuntu/ppa', '')
-    >>> print file_lp_url_without_ppa_name
-    http://launchpad.dev/~no-priv/+archive/+files/test-pkg_1.0.dsc
+    >>> file_lp_url_without_ppa_name = (
+    ...     'http://launchpad.dev/~no-priv/+archive/+files/test-pkg_1.0.dsc')
 
     >>> print http(r"""
     ... GET %s HTTP/1.1
@@ -390,7 +406,7 @@ If by any chance, mostly bookmarked URLs, it gets accessed via the
 LP proxy URL a proper NotFound error is raised.
 
     >>> print file_lp_url
-    http://launchpad.dev/~no-priv/+archive/ubuntu/ppa/+files/test-pkg_1.0.dsc
+    http://launchpad.dev/~no-priv/+archive/ubuntu/ppa/+sourcefiles/test-pkg/1.0/test-pkg_1.0.dsc
 
     >>> not_found_file = http(r"""
     ... GET %s HTTP/1.1
@@ -410,6 +426,6 @@ the error occurred based on the traceback included in the page.
     Lost something?
     ...
     NotFound:
-    Object: &lt;Archive at ...&gt;, name: u'test-pkg_1.0.dsc'...
+    Object: &lt;Archive at ...&gt;, name: u'test-pkg'...
     ...
 

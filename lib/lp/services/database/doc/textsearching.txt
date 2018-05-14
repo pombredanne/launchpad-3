@@ -563,11 +563,11 @@ Ranking
 -------
 
 We have ranking information stored in the indexes, as specified in fti.py.
-The rank of a result is calculated using the tsearch2 rank() function.
+The rank of a result is calculated using the ts_rank() function.
 
     >>> runsql(r"""
     ...     SELECT
-    ...         name, rank(fti, ftq('gnome')) AS rank
+    ...         name, ts_rank(fti, ftq('gnome')) AS rank
     ...     FROM product
     ...     WHERE fti @@ ftq('gnome')
     ...     ORDER BY rank DESC, name
@@ -581,7 +581,7 @@ The rank of a result is calculated using the tsearch2 rank() function.
 You can also build complex multi table queries and mush all the
 ranked results together. This query does a full text search on
 the Bug and Message tables, as well as substring name searches on
-SourcepackageName.name and Product.name. The rank() function returns an
+SourcepackageName.name and Product.name. The ts_rank() function returns an
 float between 0 and 1, so I just chose some arbitrary constants for name
 matches that seemed appropriate. It is also doing a full text search
 against the Product table, and manually lowering the rank (again using
@@ -589,7 +589,7 @@ an arbitrary constant that seemed appropriate).
 
     >>> runsql(r"""
     ...   SELECT title, max(ranking) FROM (
-    ...    SELECT Bug.title,rank(Bug.fti||Message.fti,ftq('firefox'))
+    ...    SELECT Bug.title,ts_rank(Bug.fti||Message.fti,ftq('firefox'))
     ...    AS ranking
     ...    FROM Bug, BugMessage, Message
     ...    WHERE Bug.id = BugMessage.bug AND Message.id = BugMessage.message
@@ -607,7 +607,7 @@ an arbitrary constant that seemed appropriate).
     ...       AND BugTask.product = Product.id
     ...       AND Product.name LIKE lower('%firefox%')
     ...    UNION
-    ...    SELECT Bug.title, rank(Product.fti, ftq('firefox')) - 0.3
+    ...    SELECT Bug.title, ts_rank(Product.fti, ftq('firefox')) - 0.3
     ...    AS ranking
     ...    FROM Bug, BugTask, Product
     ...    WHERE Bug.id = BugTask.bug
@@ -657,10 +657,10 @@ by relevance computed using an algorithm similar to TD-IDF
 
 Implementing something similar with tsearch2 is straightforward:
 tsearch2 to_tsquery() already removes stop-words (it also stems the
-words). Relevance can be computed using the rank() or rank_cd()
+words). Relevance can be computed using the ts_rank() or ts_rank_cd()
 functions. These are not TD-IDF scoring functions, but they take into
-account where the words appeared (in the case of rank()) or proximity
-of the words (in the case of rank_cd()). Both scoring functions can
+account where the words appeared (in the case of ts_rank()) or proximity
+of the words (in the case of ts_rank_cd()). Both scoring functions can
 normalize based on document length. So the only part left to implement
 is the >50% filtering part. Howevert the > 50% filtering is very expensive,
 and so is processing every single returned item (> 200000 for common queries
