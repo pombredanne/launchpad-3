@@ -31,9 +31,9 @@ helper function so we can format this output:
     >>> def print_rationales(rationale):
     ...   for address in rationale.getEmails():
     ...     text, header = rationale.getReason(address)
-    ...     print address
-    ...     print "    %s" % header
-    ...     print "    %s" % text
+    ...     print(address)
+    ...     print("    %s" % header)
+    ...     print("    %s" % text)
 
 And print them out. The first line is the email address; second is the
 text appropriate to be used in an X- header, and the last is the text
