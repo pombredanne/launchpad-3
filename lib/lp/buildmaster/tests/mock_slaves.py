@@ -20,6 +20,7 @@ __all__ = [
     ]
 
 import os
+import sys
 import types
 import xmlrpclib
 
@@ -37,6 +38,7 @@ from lp.buildmaster.enums import (
 from lp.buildmaster.interactor import BuilderSlave
 from lp.buildmaster.interfaces.builder import CannotFetchFile
 from lp.services.config import config
+from lp.services.daemons.tachandler import twistd_script
 from lp.services.webapp import urlappend
 from lp.testing.sampledata import I386_ARCHITECTURE_NAME
 
@@ -274,19 +276,28 @@ class DeadProxy(xmlrpc.Proxy):
         return defer.Deferred()
 
 
+class LPBuilddSlaveTestSetup(BuilddSlaveTestSetup):
+    """A BuilddSlaveTestSetup that uses the LP virtualenv."""
+
+    def setUp(self):
+        super(LPBuilddSlaveTestSetup, self).setUp(
+            python_path=sys.executable,
+            twistd_script=twistd_script)
+
+
 class SlaveTestHelpers(fixtures.Fixture):
 
     @property
     def base_url(self):
         """The URL for the XML-RPC service set up by `BuilddSlaveTestSetup`."""
-        return 'http://localhost:%d' % BuilddSlaveTestSetup().daemon_port
+        return 'http://localhost:%d' % LPBuilddSlaveTestSetup().daemon_port
 
     def getServerSlave(self):
         """Set up a test build slave server.
 
         :return: A `BuilddSlaveTestSetup` object.
         """
-        tachandler = self.useFixture(BuilddSlaveTestSetup())
+        tachandler = self.useFixture(LPBuilddSlaveTestSetup())
         self.addDetail(
             'xmlrpc-log-file',
             Content(
