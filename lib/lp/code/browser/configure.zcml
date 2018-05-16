@@ -442,6 +442,10 @@
         class="lp.code.browser.codeimport.CodeImportEditView"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
+    <class class="lp.code.browser.branch.BranchDiffView">
+        <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+               attributes="__call__"/>
+    </class>
     <browser:page
         name="+delete"
         for="lp.code.interfaces.branch.IBranch"

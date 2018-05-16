@@ -105,6 +105,7 @@ from lp.code.interfaces.branch import (
     WrongNumberOfReviewTypeArguments,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branchhosting import IBranchHostingClient
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -781,6 +782,12 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             bulk.load_related(
                 RevisionAuthor, revisions, ['revision_author_id'])
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
+
+    def getDiff(self, new, old=None):
+        """See `IBranch`."""
+        hosting_client = getUtility(IBranchHostingClient)
+        diff = hosting_client.getDiff(self.unique_name, new, old=old)
+        return diff
 
     def canBeDeleted(self):
         """See `IBranch`."""

@@ -765,6 +765,15 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         :param launchbag: `ILaunchBag`.
         """
 
+    def getDiff(new, old):
+        """Get the diff between two revisions in this branch.
+
+        :param new: The new revno or revision ID.
+        :param old: The old revno or revision ID.  Defaults to the parent
+            revision of `new`.
+        :return: The diff as a byte string.
+        """
+
     @export_read_operation()
     @operation_for_version('beta')
     def canBeDeleted():

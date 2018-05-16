@@ -1635,14 +1635,14 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
 
     def test_client_cache_bzr(self):
         # For Bazaar, the client cache contains the branch name and a
-        # loggerhead-based diff link.
+        # webapp-based diff link.
         bmp = self.factory.makeBranchMergeProposal()
         view = create_initialized_view(bmp, '+index')
         cache = IJSONRequestCache(view.request)
         self.assertThat(cache.objects, ContainsDict({
             'branch_name': Equals(bmp.source_branch.name),
             'branch_diff_link': Equals(
-                'https://code.launchpad.dev/+loggerhead/%s/diff/' %
+                'http://code.launchpad.dev/%s/+diff/' %
                 bmp.source_branch.unique_name),
             }))
 

@@ -16,6 +16,7 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -32,6 +33,7 @@ from lp.code.bzr import (
     RepositoryFormat,
     )
 from lp.code.enums import BranchType
+from lp.code.tests.helpers import BranchHostingFixture
 from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
@@ -1220,3 +1222,45 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
             InformationType.USERDATA.description, description.renderContents())
         self.assertIsNotNone(
             soup.find('a', id='privacy-link', attrs={'href': edit_url}))
+
+
+class TestBranchDiffView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_render(self):
+        diff = b"A fake diff\n"
+        hosting_fixture = self.useFixture(BranchHostingFixture(diff=diff))
+        person = self.factory.makePerson()
+        branch = self.factory.makeBranch(owner=person)
+        browser = self.getUserBrowser(
+            canonical_url(branch) + "/+diff/2/1")
+        with person_logged_in(person):
+            self.assertEqual(
+                [((branch.unique_name, "2"), {"old": "1"})],
+                hosting_fixture.getDiff.calls)
+        self.assertEqual("text/x-patch", browser.headers["Content-Type"])
+        self.assertEqual(str(len(diff)), browser.headers["Content-Length"])
+        self.assertEqual(
+            "attachment; filename=1_2.diff",
+            browser.headers["Content-Disposition"])
+        self.assertEqual(diff, browser.contents)
+
+    def test_security(self):
+        # A user who can see a private branch can fetch diffs from it, but
+        # other users cannot.
+        diff = b"A fake diff\n"
+        self.useFixture(BranchHostingFixture(diff=diff))
+        person = self.factory.makePerson()
+        project = self.factory.makeProduct(
+            owner=person, information_type=InformationType.PROPRIETARY)
+        with person_logged_in(person):
+            branch = self.factory.makeBranch(
+                owner=person, product=project,
+                information_type=InformationType.PROPRIETARY)
+            branch_url = canonical_url(branch)
+        browser = self.getUserBrowser(branch_url + "/+diff/2/1", user=person)
+        self.assertEqual(diff, browser.contents)
+        self.useFixture(FakeLogger())
+        self.assertRaises(
+            Unauthorized, self.getUserBrowser, branch_url + "/+diff/2/1")

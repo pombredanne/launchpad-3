@@ -8,6 +8,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 __all__ = [
     'add_revision_to_branch',
+    'BranchHostingFixture',
     'get_non_existant_source_package_branch_unique_name',
     'GitHostingFixture',
     'make_erics_fooix_project',
@@ -35,6 +36,7 @@ from zope.security.proxy import (
     )
 
 from lp.app.enums import InformationType
+from lp.code.interfaces.branchhosting import IBranchHostingClient
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )
@@ -299,6 +301,19 @@ def remove_all_sample_data_branches():
     c.execute('delete from codeimportjob')
     c.execute('delete from codeimport')
     c.execute('delete from branch')
+
+
+class BranchHostingFixture(fixtures.Fixture):
+    """A fixture that temporarily registers a fake Bazaar hosting client."""
+
+    def __init__(self, diff=None, inventory=None, blob=None):
+        self.create = FakeMethod()
+        self.getDiff = FakeMethod(result=diff or {})
+        self.getInventory = FakeMethod(result=inventory or {})
+        self.getBlob = FakeMethod(result=blob)
+
+    def _setUp(self):
+        self.useFixture(ZopeUtilityFixture(self, IBranchHostingClient))
 
 
 class GitHostingFixture(fixtures.Fixture):
