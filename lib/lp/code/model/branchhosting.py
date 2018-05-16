@@ -99,7 +99,7 @@ class BranchHostingClient:
                     "Requesting diff for %s from %s to %s" %
                     (unique_name, old, new))
             quoted_tail = "diff/%s/%s" % (
-                quote(old, safe=""), quote(new, safe=""))
+                quote(new, safe=""), quote(old, safe=""))
             return self._get(
                 unique_name, quoted_tail, as_json=False,
                 params={"context_lines": context_lines})

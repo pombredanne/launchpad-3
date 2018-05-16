@@ -92,14 +92,14 @@ class TestBranchHostingClient(TestCase):
         with self.mockRequests(content=b"---\n+++\n"):
             diff = self.client.getDiff("~owner/project/branch", "a", "b")
         self.assertEqual(b"---\n+++\n", diff)
-        self.assertRequest("~owner/project/branch/diff/a/b")
+        self.assertRequest("~owner/project/branch/diff/b/a")
 
     def test_getDiff_context_lines(self):
         with self.mockRequests(content=b"---\n+++\n"):
             diff = self.client.getDiff(
                 "~owner/project/branch", "a", "b", context_lines=4)
         self.assertEqual(b"---\n+++\n", diff)
-        self.assertRequest("~owner/project/branch/diff/a/b?context_lines=4")
+        self.assertRequest("~owner/project/branch/diff/b/a?context_lines=4")
 
     def test_getDiff_failure(self):
         with self.mockRequests(status_code=400, reason=b"Bad request"):
