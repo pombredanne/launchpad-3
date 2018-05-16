@@ -786,8 +786,7 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
     def getDiff(self, new, old=None):
         """See `IBranch`."""
         hosting_client = getUtility(IBranchHostingClient)
-        diff = hosting_client.getDiff(self.unique_name, new, old=old)
-        return diff
+        return hosting_client.getDiff(self.unique_name, new, old=old)
 
     def canBeDeleted(self):
         """See `IBranch`."""
