@@ -23,7 +23,6 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
-import yaml
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import Interface
@@ -44,6 +43,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
+from lp.app.errors import NotFoundError
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -52,10 +52,6 @@ from lp.app.widgets.itemswidgets import (
     )
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.browser.widgets.gitref import GitRefWidget
-from lp.code.errors import (
-    GitRepositoryBlobNotFound,
-    GitRepositoryScanFault,
-    )
 from lp.code.interfaces.gitref import IGitRef
 from lp.registry.enums import VCSType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -83,6 +79,8 @@ from lp.snappy.browser.widgets.snaparchive import SnapArchiveWidget
 from lp.snappy.browser.widgets.storechannels import StoreChannelsWidget
 from lp.snappy.interfaces.snap import (
     CannotAuthorizeStoreUploads,
+    CannotFetchSnapcraftYaml,
+    CannotParseSnapcraftYaml,
     ISnap,
     ISnapSet,
     NoSuchSnap,
@@ -424,34 +422,19 @@ class SnapAddView(
     @property
     def initial_values(self):
         store_name = None
-        if self.has_snappy_distro_series and IGitRef.providedBy(self.context):
+        if self.has_snappy_distro_series:
             # Try to extract Snap store name from snapcraft.yaml file.
             try:
-                paths = (
-                    'snap/snapcraft.yaml',
-                    'snapcraft.yaml',
-                    '.snapcraft.yaml',
-                    )
-                for i, path in enumerate(paths):
-                    try:
-                        blob = self.context.repository.getBlob(
-                            path, self.context.name)
-                        break
-                    except GitRepositoryBlobNotFound:
-                        if i == len(paths) - 1:
-                            raise
-                # Beware of unsafe yaml.load()!
-                store_name = yaml.safe_load(blob).get('name')
-            except GitRepositoryScanFault:
-                log.exception("Failed to get Snap manifest from Git %s",
-                              self.context.unique_name)
-            except (AttributeError, yaml.YAMLError):
-                # Ignore parsing errors from invalid, user-supplied YAML
+                snapcraft_data = getUtility(ISnapSet).getSnapcraftYaml(
+                    self.context, logger=log)
+            except (NotFoundError, CannotFetchSnapcraftYaml,
+                    CannotParseSnapcraftYaml):
                 pass
-            except Exception as e:
-                log.exception(
-                    "Failed to extract name from Snap manifest at Git %s: %s",
-                    self.context.unique_name, unicode(e))
+            else:
+                try:
+                    store_name = snapcraft_data.get('name')
+                except AttributeError:
+                    pass
 
         store_series = getUtility(ISnappySeriesSet).getAll().first()
         if store_series.preferred_distro_series is not None:

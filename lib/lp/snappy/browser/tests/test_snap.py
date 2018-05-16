@@ -25,7 +25,6 @@ from httmock import (
     HTTMock,
     )
 from mechanize import LinkNotFoundError
-import mock
 from pymacaroons import Macaroon
 import pytz
 import soupmatchers
@@ -42,10 +41,7 @@ from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
-from lp.code.errors import (
-    GitRepositoryBlobNotFound,
-    GitRepositoryScanFault,
-    )
+from lp.code.errors import GitRepositoryScanFault
 from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -260,7 +256,7 @@ class TestSnapAddView(BaseTestSnapView):
             MatchesTagText(content, "store_upload"))
 
     def test_create_new_snap_git(self):
-        self.useFixture(GitHostingFixture(blob=""))
+        self.useFixture(GitHostingFixture(blob=b""))
         [git_ref] = self.factory.makeGitRefs()
         source_display = git_ref.display_name
         browser = self.getViewBrowser(
@@ -508,74 +504,30 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertContentEqual(
             ["386", "amd64"], [proc.name for proc in snap.processors])
 
-    def test_initial_name_extraction_git_snap_snapcraft_yaml(self):
-        def getBlob(filename, *args, **kwargs):
-            if filename == "snap/snapcraft.yaml":
-                return "name: test-snap"
-            else:
-                raise GitRepositoryBlobNotFound("dummy", filename)
-
+    def test_initial_name_extraction_success(self):
+        self.useFixture(GitHostingFixture(blob=b"name: test-snap"))
         [git_ref] = self.factory.makeGitRefs()
-        git_ref.repository.getBlob = getBlob
         view = create_initialized_view(git_ref, "+new-snap")
         initial_values = view.initial_values
         self.assertIn('store_name', initial_values)
         self.assertEqual('test-snap', initial_values['store_name'])
 
-    def test_initial_name_extraction_git_plain_snapcraft_yaml(self):
-        def getBlob(filename, *args, **kwargs):
-            if filename == "snapcraft.yaml":
-                return "name: test-snap"
-            else:
-                raise GitRepositoryBlobNotFound("dummy", filename)
-
+    def test_initial_name_extraction_error(self):
+        self.useFixture(GitHostingFixture()).getBlob = FakeMethod(
+            failure=GitRepositoryScanFault)
         [git_ref] = self.factory.makeGitRefs()
-        git_ref.repository.getBlob = getBlob
-        view = create_initialized_view(git_ref, "+new-snap")
-        initial_values = view.initial_values
-        self.assertIn('store_name', initial_values)
-        self.assertEqual('test-snap', initial_values['store_name'])
-
-    def test_initial_name_extraction_git_dot_snapcraft_yaml(self):
-        def getBlob(filename, *args, **kwargs):
-            if filename == ".snapcraft.yaml":
-                return "name: test-snap"
-            else:
-                raise GitRepositoryBlobNotFound("dummy", filename)
-
-        [git_ref] = self.factory.makeGitRefs()
-        git_ref.repository.getBlob = getBlob
-        view = create_initialized_view(git_ref, "+new-snap")
-        initial_values = view.initial_values
-        self.assertIn('store_name', initial_values)
-        self.assertEqual('test-snap', initial_values['store_name'])
-
-    def test_initial_name_extraction_git_repo_error(self):
-        [git_ref] = self.factory.makeGitRefs()
-        git_ref.repository.getBlob = FakeMethod(failure=GitRepositoryScanFault)
         view = create_initialized_view(git_ref, "+new-snap")
         initial_values = view.initial_values
         self.assertIn('store_name', initial_values)
         self.assertIsNone(initial_values['store_name'])
 
-    def test_initial_name_extraction_git_invalid_data(self):
-        for invalid_result in (None, 123, '', '[][]', '#name:test', ']'):
-            [git_ref] = self.factory.makeGitRefs()
-            git_ref.repository.getBlob = FakeMethod(result=invalid_result)
-            view = create_initialized_view(git_ref, "+new-snap")
-            initial_values = view.initial_values
-            self.assertIn('store_name', initial_values)
-            self.assertIsNone(initial_values['store_name'])
-
-    def test_initial_name_extraction_git_safe_yaml(self):
+    def test_initial_name_extraction_no_name(self):
+        self.useFixture(GitHostingFixture(blob=b"some: nonsense"))
         [git_ref] = self.factory.makeGitRefs()
-        git_ref.repository.getBlob = FakeMethod(result='Malicious YAML!')
         view = create_initialized_view(git_ref, "+new-snap")
-        with mock.patch('yaml.load') as unsafe_load:
-            with mock.patch('yaml.safe_load') as safe_load:
-                view.initial_values
-        self.assertEqual(0, unsafe_load.call_count)
-        self.assertEqual(1, safe_load.call_count)
+        initial_values = view.initial_values
+        self.assertIn('store_name', initial_values)
+        self.assertIsNone(initial_values['store_name'])
 
 
 class TestSnapAdminView(BaseTestSnapView):
