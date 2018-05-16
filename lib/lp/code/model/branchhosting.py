@@ -91,15 +91,22 @@ class BranchHostingClient:
     def _get(self, unique_name, tail, **kwargs):
         return self._request("get", unique_name, tail, **kwargs)
 
-    def getDiff(self, unique_name, old, new, context_lines=None, logger=None):
+    def getDiff(self, unique_name, new, old=None, context_lines=None,
+                logger=None):
         """See `IBranchHostingClient`."""
         try:
             if logger is not None:
-                logger.info(
-                    "Requesting diff for %s from %s to %s" %
-                    (unique_name, old, new))
-            quoted_tail = "diff/%s/%s" % (
-                quote(new, safe=""), quote(old, safe=""))
+                if old is None:
+                    logger.info(
+                        "Requesting diff for %s from parent of %s to %s" %
+                        (unique_name, new, new))
+                else:
+                    logger.info(
+                        "Requesting diff for %s from %s to %s" %
+                        (unique_name, old, new))
+            quoted_tail = "diff/%s" % quote(new, safe="")
+            if old is not None:
+                quoted_tail += "/%s" % quote(old, safe="")
             return self._get(
                 unique_name, quoted_tail, as_json=False,
                 params={"context_lines": context_lines})

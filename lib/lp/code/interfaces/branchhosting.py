@@ -14,12 +14,13 @@ from zope.interface import Interface
 class IBranchHostingClient(Interface):
     """Interface for the internal API provided by Loggerhead."""
 
-    def getDiff(unique_name, old, new, context_lines=None, logger=None):
+    def getDiff(unique_name, new, old=None, context_lines=None, logger=None):
         """Get the diff between two revisions.
 
         :param unique_name: Unique name of the branch.
-        :param old: The old revno or revision ID.
         :param new: The new revno or revision ID.
+        :param old: The old revno or revision ID.  Defaults to the parent
+            revision of `new`.
         :param context_lines: Include this number of lines of context around
             each hunk.
         :param logger: An optional logger.

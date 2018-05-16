@@ -90,16 +90,22 @@ class TestBranchHostingClient(TestCase):
 
     def test_getDiff(self):
         with self.mockRequests(content=b"---\n+++\n"):
-            diff = self.client.getDiff("~owner/project/branch", "a", "b")
+            diff = self.client.getDiff("~owner/project/branch", "2", "1")
         self.assertEqual(b"---\n+++\n", diff)
-        self.assertRequest("~owner/project/branch/diff/b/a")
+        self.assertRequest("~owner/project/branch/diff/2/1")
+
+    def test_getDiff_no_old_revision(self):
+        with self.mockRequests(content=b"---\n+++\n"):
+            diff = self.client.getDiff("~owner/project/branch", "2")
+        self.assertEqual(b"---\n+++\n", diff)
+        self.assertRequest("~owner/project/branch/diff/2")
 
     def test_getDiff_context_lines(self):
         with self.mockRequests(content=b"---\n+++\n"):
             diff = self.client.getDiff(
-                "~owner/project/branch", "a", "b", context_lines=4)
+                "~owner/project/branch", "2", "1", context_lines=4)
         self.assertEqual(b"---\n+++\n", diff)
-        self.assertRequest("~owner/project/branch/diff/b/a?context_lines=4")
+        self.assertRequest("~owner/project/branch/diff/2/1?context_lines=4")
 
     def test_getDiff_failure(self):
         with self.mockRequests(status_code=400, reason=b"Bad request"):
@@ -107,7 +113,7 @@ class TestBranchHostingClient(TestCase):
                 BranchHostingFault,
                 "Failed to get diff from Bazaar branch: "
                 "400 Client Error: Bad request",
-                self.client.getDiff, "~owner/project/branch", "a", "b")
+                self.client.getDiff, "~owner/project/branch", "2", "1")
 
     def test_getInventory(self):
         with self.mockRequests(content=b'{"filelist": []}'):
