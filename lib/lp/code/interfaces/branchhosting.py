@@ -18,8 +18,8 @@ class IBranchHostingClient(Interface):
         """Get the diff between two revisions.
 
         :param unique_name: Unique name of the branch.
-        :param old: The old revision ID.
-        :param new: The new revision ID.
+        :param old: The old revno or revision ID.
+        :param new: The new revno or revision ID.
         :param context_lines: Include this number of lines of context around
             each hunk.
         :param logger: An optional logger.
@@ -33,7 +33,7 @@ class IBranchHostingClient(Interface):
         :param unique_name: Unique name of the branch.
         :param dirname: The name of the directory, relative to the root of
             the branch.
-        :param rev: An optional revision.  Defaults to 'head:'.
+        :param rev: An optional revno or revision ID.  Defaults to 'head:'.
         :param logger: An optional logger.
         :raises BranchFileNotFound: if the directory does not exist.
         :raises BranchHostingFault: if the API returned some other error.
@@ -47,7 +47,7 @@ class IBranchHostingClient(Interface):
         :param unique_name: Unique name of the branch.
         :param file_id: The file ID of the file.  (`getInventory` may be
             useful to retrieve this.)
-        :param rev: An optional revision.  Defaults to 'head:'.
+        :param rev: An optional revno or revision ID.  Defaults to 'head:'.
         :param logger: An optional logger.
         :raises BranchFileNotFound: if the directory does not exist.
         :raises BranchHostingFault: if the API returned some other error.
