@@ -41,8 +41,14 @@ from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
-from lp.code.errors import GitRepositoryScanFault
-from lp.code.tests.helpers import GitHostingFixture
+from lp.code.errors import (
+    BranchHostingFault,
+    GitRepositoryScanFault,
+    )
+from lp.code.tests.helpers import (
+    BranchHostingFixture,
+    GitHostingFixture,
+    )
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -504,7 +510,34 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertContentEqual(
             ["386", "amd64"], [proc.name for proc in snap.processors])
 
-    def test_initial_name_extraction_success(self):
+    def test_initial_name_extraction_bzr_success(self):
+        self.useFixture(BranchHostingFixture(
+            file_list={"snapcraft.yaml": "file-id"}, blob=b"name: test-snap"))
+        branch = self.factory.makeBranch()
+        view = create_initialized_view(branch, "+new-snap")
+        initial_values = view.initial_values
+        self.assertIn('store_name', initial_values)
+        self.assertEqual('test-snap', initial_values['store_name'])
+
+    def test_initial_name_extraction_bzr_error(self):
+        self.useFixture(BranchHostingFixture()).getInventory = FakeMethod(
+            failure=BranchHostingFault)
+        branch = self.factory.makeBranch()
+        view = create_initialized_view(branch, "+new-snap")
+        initial_values = view.initial_values
+        self.assertIn('store_name', initial_values)
+        self.assertIsNone(initial_values['store_name'])
+
+    def test_initial_name_extraction_bzr_no_name(self):
+        self.useFixture(BranchHostingFixture(
+            file_list={"snapcraft.yaml": "file-id"}, blob=b"some: nonsense"))
+        branch = self.factory.makeBranch()
+        view = create_initialized_view(branch, "+new-snap")
+        initial_values = view.initial_values
+        self.assertIn('store_name', initial_values)
+        self.assertIsNone(initial_values['store_name'])
+
+    def test_initial_name_extraction_git_success(self):
         self.useFixture(GitHostingFixture(blob=b"name: test-snap"))
         [git_ref] = self.factory.makeGitRefs()
         view = create_initialized_view(git_ref, "+new-snap")
@@ -512,7 +545,7 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertIn('store_name', initial_values)
         self.assertEqual('test-snap', initial_values['store_name'])
 
-    def test_initial_name_extraction_error(self):
+    def test_initial_name_extraction_git_error(self):
         self.useFixture(GitHostingFixture()).getBlob = FakeMethod(
             failure=GitRepositoryScanFault)
         [git_ref] = self.factory.makeGitRefs()
@@ -521,7 +554,7 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertIn('store_name', initial_values)
         self.assertIsNone(initial_values['store_name'])
 
-    def test_initial_name_extraction_no_name(self):
+    def test_initial_name_extraction_git_no_name(self):
         self.useFixture(GitHostingFixture(blob=b"some: nonsense"))
         [git_ref] = self.factory.makeGitRefs()
         view = create_initialized_view(git_ref, "+new-snap")

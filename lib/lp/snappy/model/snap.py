@@ -55,6 +55,8 @@ from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.processor import Processor
 from lp.code.errors import (
+    BranchFileNotFound,
+    BranchHostingFault,
     GitRepositoryBlobNotFound,
     GitRepositoryScanFault,
     )
@@ -937,11 +939,6 @@ class SnapSet:
         """See `ISnapSet`."""
         if ISnap.providedBy(context):
             context = context.source
-        if not IGitRef.providedBy(context):
-            raise CannotFetchSnapcraftYaml(
-                "Launchpad can currently only fetch snapcraft.yaml for snap "
-                "packages hosted in Git.")
-
         try:
             paths = (
                 "snap/snapcraft.yaml",
@@ -950,16 +947,19 @@ class SnapSet:
                 )
             for path in paths:
                 try:
-                    blob = context.repository.getBlob(path, context.name)
+                    if IBranch.providedBy(context):
+                        blob = context.getBlob(path)
+                    else:
+                        blob = context.repository.getBlob(path, context.name)
                     break
-                except GitRepositoryBlobNotFound:
+                except (BranchFileNotFound, GitRepositoryBlobNotFound):
                     pass
             else:
                 msg = "Cannot find snapcraft.yaml in %s"
                 if logger is not None:
                     logger.exception(msg, context.unique_name)
                 raise NotFoundError(msg % context.unique_name)
-        except GitRepositoryScanFault as e:
+        except (BranchHostingFault, GitRepositoryScanFault) as e:
             msg = "Failed to get snap manifest from %s"
             if logger is not None:
                 logger.exception(msg, context.unique_name)

@@ -48,10 +48,15 @@ from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.errors import (
+    BranchFileNotFound,
+    BranchHostingFault,
     GitRepositoryBlobNotFound,
     GitRepositoryScanFault,
     )
-from lp.code.tests.helpers import GitHostingFixture
+from lp.code.tests.helpers import (
+    BranchHostingFixture,
+    GitHostingFixture,
+    )
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -986,10 +991,61 @@ class TestSnapSet(TestCaseWithFactory):
             [snaps[0], snaps[2], snaps[4], snaps[6]],
             getUtility(ISnapSet).findByURLPrefixes(prefixes, owner=owners[0]))
 
-    def test_getSnapcraftYaml_bzr(self):
+    def test_getSnapcraftYaml_bzr_snap_snapcraft_yaml(self):
+        def getInventory(unique_name, dirname, *args, **kwargs):
+            if dirname == "snap":
+                return {"filelist": [{
+                    "filename": "snapcraft.yaml", "file_id": "some-file-id",
+                    }]}
+            else:
+                raise BranchFileNotFound("dummy", dirname)
+
+        self.useFixture(BranchHostingFixture(
+            blob=b"name: test-snap")).getInventory = getInventory
+        branch = self.factory.makeBranch()
+        self.assertEqual(
+            {"name": "test-snap"},
+            getUtility(ISnapSet).getSnapcraftYaml(branch))
+
+    def test_getSnapcraftYaml_bzr_plain_snapcraft_yaml(self):
+        def getInventory(unique_name, dirname, *args, **kwargs):
+            if dirname == "":
+                return {"filelist": [{
+                    "filename": "snapcraft.yaml", "file_id": "some-file-id",
+                    }]}
+            else:
+                raise BranchFileNotFound("dummy", dirname)
+
+        self.useFixture(BranchHostingFixture(
+            blob=b"name: test-snap")).getInventory = getInventory
+        branch = self.factory.makeBranch()
+        self.assertEqual(
+            {"name": "test-snap"},
+            getUtility(ISnapSet).getSnapcraftYaml(branch))
+
+    def test_getSnapcraftYaml_bzr_dot_snapcraft_yaml(self):
+        def getInventory(unique_name, dirname, *args, **kwargs):
+            if dirname == "":
+                return {"filelist": [{
+                    "filename": ".snapcraft.yaml", "file_id": "some-file-id",
+                    }]}
+            else:
+                raise BranchFileNotFound("dummy", dirname)
+
+        self.useFixture(BranchHostingFixture(
+            blob=b"name: test-snap")).getInventory = getInventory
+        branch = self.factory.makeBranch()
+        self.assertEqual(
+            {"name": "test-snap"},
+            getUtility(ISnapSet).getSnapcraftYaml(branch))
+
+    def test_getSnapcraftYaml_bzr_error(self):
+        self.useFixture(BranchHostingFixture()).getInventory = FakeMethod(
+            failure=BranchHostingFault)
+        branch = self.factory.makeBranch()
         self.assertRaises(
             CannotFetchSnapcraftYaml,
-            getUtility(ISnapSet).getSnapcraftYaml, self.factory.makeBranch())
+            getUtility(ISnapSet).getSnapcraftYaml, branch)
 
     def test_getSnapcraftYaml_git_snap_snapcraft_yaml(self):
         def getBlob(path, filename, *args, **kwargs):
@@ -1030,7 +1086,7 @@ class TestSnapSet(TestCaseWithFactory):
             {"name": "test-snap"},
             getUtility(ISnapSet).getSnapcraftYaml(git_ref))
 
-    def test_getSnapcraftYaml_git_repo_error(self):
+    def test_getSnapcraftYaml_git_error(self):
         self.useFixture(GitHostingFixture()).getBlob = FakeMethod(
             failure=GitRepositoryScanFault)
         [git_ref] = self.factory.makeGitRefs()
@@ -1038,7 +1094,23 @@ class TestSnapSet(TestCaseWithFactory):
             CannotFetchSnapcraftYaml,
             getUtility(ISnapSet).getSnapcraftYaml, git_ref)
 
-    def test_getSnapcraftYaml_git_invalid_data(self):
+    def test_getSnapcraftYaml_snap_bzr(self):
+        self.useFixture(BranchHostingFixture(
+            file_list={"snapcraft.yaml": "some-file-id"},
+            blob=b"name: test-snap"))
+        branch = self.factory.makeBranch()
+        snap = self.factory.makeSnap(branch=branch)
+        self.assertEqual(
+            {"name": "test-snap"}, getUtility(ISnapSet).getSnapcraftYaml(snap))
+
+    def test_getSnapcraftYaml_snap_git(self):
+        self.useFixture(GitHostingFixture(blob=b"name: test-snap"))
+        [git_ref] = self.factory.makeGitRefs()
+        snap = self.factory.makeSnap(git_ref=git_ref)
+        self.assertEqual(
+            {"name": "test-snap"}, getUtility(ISnapSet).getSnapcraftYaml(snap))
+
+    def test_getSnapcraftYaml_invalid_data(self):
         hosting_fixture = self.useFixture(GitHostingFixture())
         for invalid_result in (None, 123, b"", b"[][]", b"#name:test", b"]"):
             [git_ref] = self.factory.makeGitRefs()
@@ -1047,7 +1119,7 @@ class TestSnapSet(TestCaseWithFactory):
                 CannotParseSnapcraftYaml,
                 getUtility(ISnapSet).getSnapcraftYaml, git_ref)
 
-    def test_getSnapcraftYaml_git_safe_yaml(self):
+    def test_getSnapcraftYaml_safe_yaml(self):
         self.useFixture(GitHostingFixture(blob=b"Malicious YAML!"))
         [git_ref] = self.factory.makeGitRefs()
         unsafe_load = self.useFixture(MockPatch("yaml.load"))
@@ -1057,13 +1129,6 @@ class TestSnapSet(TestCaseWithFactory):
             getUtility(ISnapSet).getSnapcraftYaml, git_ref)
         self.assertEqual(0, unsafe_load.mock.call_count)
         self.assertEqual(1, safe_load.mock.call_count)
-
-    def test_getSnapcraftYaml_snap(self):
-        self.useFixture(GitHostingFixture(blob=b"name: test-snap"))
-        [git_ref] = self.factory.makeGitRefs()
-        snap = self.factory.makeSnap(git_ref=git_ref)
-        self.assertEqual(
-            {"name": "test-snap"}, getUtility(ISnapSet).getSnapcraftYaml(snap))
 
     def test__findStaleSnaps(self):
         # Stale; not built automatically.
