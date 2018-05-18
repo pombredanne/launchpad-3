@@ -37,44 +37,58 @@
       Hosting</a> for more details.
     </p>
 
-    <tal:no_vouchers condition="not: view/show_voucher_selection">
+    <tal:can-subscribe
+        condition="not: request/features/commercial_subscriptions.new.disabled">
+      <tal:no_vouchers condition="not: view/show_voucher_selection">
+        <p>
+          <strong>You do not have any redeemable commercial subscription vouchers.
+          Here are the steps to obtain a commercial subscription:</strong>
+        </p>
+
+        <ol>
+          <li>Purchase a Launchpad subscription from the
+            <a tal:define="config modules/lp.services.config/config"
+               tal:attributes="href config/commercial/purchase_subscription_url"
+               >Canonical Shop</a>.
+          </li>
+          <li>
+            You will receive an email that your order has been processed.
+          </li>
+          <li>
+            The shop will inform Launchpad of your purchase within 60 minutes.
+          </li>
+          <li>
+            Return to this page to choose the project the commercial
+            subscription is for.
+          </li>
+        </ol>
+      </tal:no_vouchers>
+
+      <tal:has_voucher condition="view/show_voucher_selection">
+        <div metal:use-macro="context/@@launchpad_form/form">
+          <metal:widgets fill-slot="widgets">
+            <table class="form">
+              <tal:widget define="widget nocall:view/widgets/project">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+              <tal:widget define="widget nocall:view/widgets/voucher">
+                <metal:block use-macro="context/@@launchpad_form/widget_row" />
+              </tal:widget>
+            </table>
+          </metal:widgets>
+        </div>
+      </tal:has_voucher>
+    </tal:can-subscribe>
+
+    <tal:cannot-subscribe
+        condition="request/features/commercial_subscriptions.new.disabled">
       <p>
-        <strong>You do not have any redeemable commercial subscription vouchers.
-        Here are the steps to obtain a commercial subscription:</strong>
+        New commercial subscriptions are no longer available.
+        <a href="mailto:commercial@launchpad.net">Contact us</a> if you have
+        authorization from Canonical to use Launchpad's commercial features
+        and need this to be applied to your project, or if you have any
+        other questions about this.
       </p>
-
-      <ol>
-        <li>Purchase a Launchpad subscription from the
-          <a tal:define="config modules/lp.services.config/config"
-             tal:attributes="href config/commercial/purchase_subscription_url"
-             >Canonical Shop</a>.
-        </li>
-        <li>
-          You will receive an email that your order has been processed.
-        </li>
-        <li>
-          The shop will inform Launchpad of your purchase within 60 minutes.
-        </li>
-        <li>
-          Return to this page to choose the project the commercial
-          subscription is for.
-        </li>
-      </ol>
-    </tal:no_vouchers>
-
-    <tal:has_voucher condition="view/show_voucher_selection">
-      <div metal:use-macro="context/@@launchpad_form/form">
-        <metal:widgets fill-slot="widgets">
-          <table class="form">
-            <tal:widget define="widget nocall:view/widgets/project">
-              <metal:block use-macro="context/@@launchpad_form/widget_row" />
-            </tal:widget>
-            <tal:widget define="widget nocall:view/widgets/voucher">
-              <metal:block use-macro="context/@@launchpad_form/widget_row" />
-            </tal:widget>
-          </table>
-        </metal:widgets>
-      </div>
-    </tal:has_voucher>
+    </tal:cannot-subscribe>
   </div>
 </html>
