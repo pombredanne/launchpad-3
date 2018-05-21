@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -236,7 +236,7 @@ flag_info = sorted([
      ''),
     ('sitesearch.engine.name',
      'space delimited',
-     'Name of the site search engine backend ("google" or "bing").',
+     'Name of the site search engine backend (only "bing" is available).',
      'bing',
      'Site search engine',
      ''),

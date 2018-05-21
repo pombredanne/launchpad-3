@@ -23,7 +23,6 @@ from lp.testing.systemdocs import (
 
 here = os.path.dirname(os.path.realpath(__file__))
 bing_flag = FeatureFixture({'sitesearch.engine.name': 'bing'})
-google_flag = FeatureFixture({'sitesearch.engine.name': 'google'})
 
 
 def setUp_bing(test):
@@ -31,18 +30,8 @@ def setUp_bing(test):
     bing_flag.setUp()
 
 
-def setUp_google(test):
-    setUpGlobs(test)
-    google_flag.setUp()
-
-
 def tearDown_bing(test):
     bing_flag.cleanUp()
-    tearDown(test)
-
-
-def tearDown_google(test):
-    google_flag.cleanUp()
     tearDown(test)
 
 
@@ -59,11 +48,6 @@ special = {
         '../stories/launchpad-search/',
         id_extensions=['site-search.txt(Bing)'],
         setUp=setUp_bing, tearDown=tearDown_bing,
-        ),
-    'stories/launchpad-search(Google)': PageTestSuite(
-        '../stories/launchpad-search/',
-        id_extensions=['site-search.txt(Google)'],
-        setUp=setUp_google, tearDown=tearDown_google,
         ),
     # Run these doctests again with the default search engine.
     '../stories/launchpad-search': PageTestSuite(
