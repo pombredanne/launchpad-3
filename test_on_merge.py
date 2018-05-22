@@ -120,14 +120,6 @@ def setup_test_database():
     # bedrock is crumbling.
     con = psycopg2.connect('dbname=launchpad_ftest_template')
     cur = con.cursor()
-    cur.execute('show search_path')
-    search_path = cur.fetchone()[0]
-    if search_path != '$user,public,ts2':
-        print 'Search path incorrect.'
-        print 'Add the following line to /etc/postgresql/postgresql.conf:'
-        print "    search_path = '$user,public,ts2'"
-        print "and tell postgresql to reload its configuration file."
-        return 1
     cur.execute("""
         select pg_encoding_to_char(encoding) as encoding from pg_database
         where datname='launchpad_ftest_template'

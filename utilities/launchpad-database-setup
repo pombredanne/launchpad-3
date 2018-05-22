@@ -83,8 +83,6 @@ sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
 ##
 ## Launchpad configuration
 ##
-# Enable launchpad full text searching in database
-search_path='$user,public,ts2'
 # Per Bug #90809, standard_conforming_strings should be 'on'
 standard_conforming_strings=off
 escape_string_warning=off
