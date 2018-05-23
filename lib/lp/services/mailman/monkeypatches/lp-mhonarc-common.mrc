@@ -161,6 +161,8 @@ PAGE-BOTTOM
       &nbsp;&bull;&nbsp;
       <a href="https://launchpad.net/legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
+      <a href="https://www.ubuntu.com/legal/dataprivacy">Data privacy</a>
+      &nbsp;&bull;&nbsp;
       <a href="https://launchpad.net/support">Contact Launchpad Support</a>
       &nbsp;&bull;&nbsp;
       <a href="http://blog.launchpad.net/">Blog</a>
