@@ -35,10 +35,14 @@
     </p>
     <p id='non-commercial-project-text'
        tal:condition="not: context/has_current_commercial_subscription|nothing">
-      Open source projects have limited access to sharing features. You can
-      <a href="https://help.launchpad.net/CommercialHosting">purchase a
-      commercial subscription</a> to enable more privacy options, such as
-      setting bugs and branches to be proprietary by default.
+      Open source projects have limited access to sharing features.
+      <tal:can-subscribe
+          condition="not: request/features/commercial_subscriptions.new.disabled">
+        You can
+        <a href="https://help.launchpad.net/CommercialHosting">purchase a
+        commercial subscription</a> to enable more privacy options, such as
+        setting bugs and branches to be proprietary by default.
+      </tal:can-subscribe>
     </p>
     </tal:what-shared>
       <table>
