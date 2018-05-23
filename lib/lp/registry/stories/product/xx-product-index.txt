@@ -143,6 +143,15 @@ direct the owner to purchase a subscription.
     >>> owner_browser.getLink('Canonical Shop')
     <Link...url='http://ubuntu.recycledmania.com...'>
 
+The link can be disabled by a feature flag.
+
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> with FeatureFixture({'commercial_subscriptions.new.disabled': 'true'}):
+    ...     owner_browser.getLink('Manage commercial subscriptions')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
 Any user can see that the project's licence is proprietary.
 
     >>> user_browser.open('http://launchpad.dev/firefox')

@@ -17,7 +17,7 @@
     <div id="container">
         <p class="page-number">10 of 11</p>
         <ul id="navigation-drop-down">
-            <li class="button-next"><a id="btnNext" href="join-launchpad" taborder="1" accesskey="1" title="Read about commercial subscriptions and free access to Launchpad">Next</a></li>
+            <li class="button-next"><a id="btnNext" href="join-launchpad" taborder="1" accesskey="1" title="Read about commercial features and free access to Launchpad">Next</a></li>
             <li class="home"><a href="index" accesskey="2">Launchpad tour home</a></li>
             <li><a href="bugs" accesskey="3">Cross-project bug tracking</a></li>
             <li><a href="branch-hosting-tracking" accesskey="4">Code hosting and review</a></li>
@@ -54,7 +54,7 @@ Launchpad&rsquo;s extensive search to discover your work.
                 <a title="Back to the spec tracking page" href="feature-tracking" accesskey="d" tabindex="2">Back</a>
             </li>        
             <li class="button-next">
-                <a href="join-launchpad" title="Read about commercial subscriptions and free access to Launchpad" accesskey="e" tabindex="3">Next</a>
+                <a href="join-launchpad" title="Read about commercial features and free access to Launchpad" accesskey="e" tabindex="3">Next</a>
             </li>
         </ul>
         <div id="further-information">
@@ -93,7 +93,7 @@ Launchpad calls these <em>series</em> and helps you to organise your work &mdash
                 <a title="Back to the spec tracking page" href="feature-tracking" accesskey="f" tabindex="4">Back</a>
             </li> 
             <li class="button-next">
-                <a href="join-launchpad" title="Read about commercial subscriptions and free access to Launchpad" accesskey="g" tabindex="5" title="Read about commercial subscriptions and free access to Launchpad">Next</a>
+                <a href="join-launchpad" title="Read about commercial features and free access to Launchpad" accesskey="g" tabindex="5" title="Read about commercial features and free access to Launchpad">Next</a>
             </li>
              <li class="copyright">
                 &copy; 2004-2018 Canonical Ltd. <a href="https://help.launchpad.net/Legal" accesskey="h" tabindex="6">Terms of Use</a> &#58; <a href="https://help.launchpad.net/Feedback" accesskey="i" tabindex="7">Feedback</a> &#58; <a href="https://answers.launchpad.net/launchpad-project/+faqs" accesskey="j" tabindex="8">FAQ</a>
