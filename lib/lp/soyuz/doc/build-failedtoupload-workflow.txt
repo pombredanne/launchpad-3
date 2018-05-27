@@ -25,13 +25,13 @@ Let's use a sampledata build record in FAILEDTOUPLOAD:
 
   >>> failedtoupload_candidate = buildset.getByID(22)
 
-  >>> print failedtoupload_candidate.title
+  >>> print(failedtoupload_candidate.title)
   i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
-  >>> print failedtoupload_candidate.status.name
+  >>> print(failedtoupload_candidate.status.name)
   FAILEDTOUPLOAD
 
-  >>> print failedtoupload_candidate.upload_log.filename
+  >>> print(failedtoupload_candidate.upload_log.filename)
   upload_22_log.txt
 
 FAILEDTOUPLOAD notification requires 'extra_info' argument to be filled:
@@ -79,7 +79,7 @@ Note that the generated notification contain the 'extra_info' content:
   'mark@example.com'
 
   >>> notification_body = build_notification.get_payload()
-  >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+  >>> print(notification_body) #doctest: -NORMALIZE_WHITESPACE
   <BLANKLINE>
    * Source Package: cdrkit
    * Version: 1.0
@@ -109,12 +109,12 @@ Note that the generated notification contain the 'extra_info' content:
 
 The other notifications are similar except for the footer.
 
-  >>> print notifications[1].get_payload()
+  >>> print(notifications[1].get_payload())
   <BLANKLINE>
   ...
   You are receiving this email because you are a buildd administrator.
   <BLANKLINE>
-  >>> print notifications[2].get_payload()
+  >>> print(notifications[2].get_payload())
   <BLANKLINE>
   ...
   You are receiving this email because you created this version of this

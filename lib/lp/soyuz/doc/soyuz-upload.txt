@@ -170,7 +170,7 @@ So, load the GPG key:
     >>> key_data = open(key_path).read()
     >>> key = gpg_handler.importPublicKey(key_data)
     >>> assert key is not None
-    >>> print key.fingerprint
+    >>> print(key.fingerprint)
     33C0A61893A5DC5EB325B29E415A12CAC2F30234
 
 
@@ -254,11 +254,11 @@ Check the four uploads are all where we expect - number 1 in rejected,
 the other three still in incoming.
 
     >>> for i in range(4):
-    ...     find_upload_dir_result(i + 1)
-    'rejected'
-    'incoming'
-    'incoming'
-    'incoming'
+    ...     print(find_upload_dir_result(i + 1))
+    rejected
+    incoming
+    incoming
+    incoming
 
 
 Now continue with the real upload.
@@ -272,8 +272,8 @@ Now continue with the real upload.
 
     >>> stdout, stderr = process.communicate()
     >>> if process.returncode != 0:
-    ...     print stdout
-    ...     print stderr
+    ...     print(stdout)
+    ...     print(stderr)
 
 
 Let's check if packages were uploaded correctly.
@@ -342,9 +342,11 @@ Same thing for etherwake:
 Check the four uploads all ended up where we expected.
 
     >>> for i in range(0, 4):
-    ...     find_upload_dir_result(i + 1)
-    'rejected'
-    'failed'
+    ...     print(find_upload_dir_result(i + 1))
+    rejected
+    None
+    None
+    failed
 
 Also check the upload folders contain all the files we uploaded.
 
@@ -369,7 +371,7 @@ as NEW and RELEASE.
 
     >>> from lp.soyuz.model.queue import PackageUploadSource
     >>> for name in package_names:
-    ...     print name
+    ...     print(name)
     ...     spn = SourcePackageName.selectOneBy(name=name)
     ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
     ...     us = PackageUploadSource.selectOneBy(
@@ -415,7 +417,7 @@ We use getPackageUploads to inspect the current NEW queue and accept items.
     ...          L.append("%s %s" % (queue_item.sourcepackagerelease.name,
     ...                              'ACCEPTED'))
     >>> L.sort()
-    >>> print "\n".join(L)
+    >>> print("\n".join(L))
     drdsl ACCEPTED
     etherwake ACCEPTED
 
@@ -438,9 +440,9 @@ These packages must now be in the publishing history. Let's check it.
     ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
     ...     sspph = SSPPH.selectOneBy(sourcepackagereleaseID=spr.id)
     ...     if sspph:
-    ...         print name, sspph.status.title
+    ...         print(name, sspph.status.title)
     ...     else:
-    ...         print name, 'not Published'
+    ...         print(name, 'not Published')
     drdsl Pending
     etherwake Pending
 
@@ -453,7 +455,7 @@ Invoke Publisher script against the 'ubuntutest' distribution:
     ...                            stdout=subprocess.PIPE,
     ...                            stderr=subprocess.PIPE)
     >>> stdout, stderr = process.communicate()
-    >>> print stdout
+    >>> print(stdout)
     <BLANKLINE>
 
     >>> transaction.commit()
@@ -473,10 +475,10 @@ with sorted output.
     ...     for key in sorted(deb822):
     ...         value = deb822.get_as_string(key)
     ...         if not value or value[0] == '\n':
-    ...             print '%s:%s' % (key, value)
+    ...             print('%s:%s' % (key, value))
     ...         else:
-    ...             print '%s: %s' % (key, value)
-    ...     print
+    ...             print('%s: %s' % (key, value))
+    ...     print()
 
 Check the generation of a correct Sources tag file for the main
 component of ubuntutest/breezy-autotest, containing the only the
@@ -490,7 +492,7 @@ required entry for 'etherwake':
     ...        "source/Sources.gz") as sources_file:
     ...     for source in Sources.iter_paragraphs(sources_file):
     ...         pprint_deb822(source)
-    ...     print 'END'
+    ...     print('END')
     Architecture: any
     Binary: etherwake
     Build-Depends: debhelper (>> 2.0)
@@ -535,7 +537,7 @@ Check if we have new pending publishing record as expected
     >>> for pub in SSPPH.selectBy(
     ...    sourcepackagereleaseID=etherwake_drspr.sourcepackagerelease.id,
     ...    orderBy=['id']):
-    ...    print pub.status.name, pub.component.name, pub.pocket.name
+    ...    print(pub.status.name, pub.component.name, pub.pocket.name)
     PUBLISHED universe RELEASE
     PENDING multiverse RELEASE
 
@@ -564,7 +566,7 @@ Check the publishing history again
     >>> for pub in SSPPH.selectBy(
     ...    sourcepackagereleaseID=etherwake_drspr.sourcepackagerelease.id,
     ...    orderBy=['id']):
-    ...    print pub.status.name, pub.component.name, pub.pocket.name
+    ...    print(pub.status.name, pub.component.name, pub.pocket.name)
     SUPERSEDED universe RELEASE
     PUBLISHED multiverse RELEASE
 
@@ -573,14 +575,14 @@ Check if the package was moved properly to the component 'multiverse':
     >>> main_sources = gzip.open(
     ...     "/var/tmp/archive/ubuntutest/dists/breezy-autotest"
     ...     "/main/source/Sources.gz").read()
-    >>> print main_sources + '\nEND'
+    >>> print(main_sources + '\nEND')
     <BLANKLINE>
     END
 
     >>> multiverse_sources = gzip.open(
     ...     "/var/tmp/archive/ubuntutest/dists/breezy-autotest"
     ...     "/multiverse/source/Sources.gz").read()
-    >>> print multiverse_sources + '\nEND'
+    >>> print(multiverse_sources + '\nEND')
     Package: drdsl
     ...
     Package: etherwake
@@ -600,7 +602,7 @@ and SHA256) for each index published.
 
     >>> releasefile_contents = open("/var/tmp/archive/ubuntutest/dists/"
     ...                             "breezy-autotest/Release").read()
-    >>> print releasefile_contents + '\nEND' #doctest: -NORMALIZE_WHITESPACE
+    >>> print(releasefile_contents + '\nEND') #doctest: -NORMALIZE_WHITESPACE
     Origin: ubuntutest
     Label: ubuntutest
     Suite: breezy-autotest
