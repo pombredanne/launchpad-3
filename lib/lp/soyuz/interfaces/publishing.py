@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publishing interfaces."""
@@ -1038,6 +1038,15 @@ class IPublishingSet(Interface):
             (`SourcePackagePublishingHistory`,
              `BinaryPackagePublishingHistory`,
              `BinaryPackageRelease`, `BinaryPackageName`, `DistroArchSeries`)
+        """
+
+    def getBuiltPackagesSummaryForSourcePublication(source_publication):
+        """Return a summary of the built packages for this source publication.
+
+        For each built package from this published source, return a
+        dictionary with keys "binarypackagename" and "summary", where
+        the binarypackagename is unique (i.e. it ignores the same package
+        published in more than one place/architecture.)
         """
 
     def getActiveArchSpecificPublications(sourcepackagerelease, archive,
