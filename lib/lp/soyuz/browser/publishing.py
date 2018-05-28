@@ -15,6 +15,7 @@ __all__ = [
 from operator import attrgetter
 
 from lazr.delegates import delegate_to
+from zope.component import getUtility
 from zope.interface import implementer
 
 from lp.archiveuploader.utils import re_isadeb
@@ -37,6 +38,7 @@ from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
+    IPublishingSet,
     ISourcePackagePublishingHistory,
     )
 
@@ -317,19 +319,9 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         the binarypackagename is unique (i.e. it ignores the same package
         published in more than one place/architecture.)
         """
-        results = []
-        packagenames = set()
-        for pub in self.context.getPublishedBinaries():
-            package = pub.binarypackagerelease
-            packagename = package.binarypackagename.name
-            if packagename not in packagenames:
-                entry = {
-                    "binarypackagename": packagename,
-                    "summary": package.summary,
-                    }
-                results.append(entry)
-                packagenames.add(packagename)
-        return results
+        publishing_set = getUtility(IPublishingSet)
+        return publishing_set.getBuiltPackagesSummaryForSourcePublication(
+            self.context)
 
     @cachedproperty
     def builds(self):

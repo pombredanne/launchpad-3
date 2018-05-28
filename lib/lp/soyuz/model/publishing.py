@@ -1448,6 +1448,22 @@ class PublishingSet:
 
         return result_set
 
+    def getBuiltPackagesSummaryForSourcePublication(self, source_publication):
+        """See `IPublishingSet`."""
+        result_set = IStore(BinaryPackageName).find(
+            (BinaryPackageName.name, BinaryPackageRelease.summary,
+             DistroArchSeries.architecturetag,
+             BinaryPackagePublishingHistory.id),
+            self._getSourceBinaryJoinForSources([source_publication.id]))
+        result_set.config(distinct=(BinaryPackageName.name,))
+        result_set.order_by(
+            BinaryPackageName.name,
+            DistroArchSeries.architecturetag,
+            Desc(BinaryPackagePublishingHistory.id))
+        return [
+            {"binarypackagename": name, "summary": summary}
+            for name, summary, _, _ in result_set]
+
     def getActiveArchSpecificPublications(self, sourcepackagerelease, archive,
                                           distroseries, pocket):
         """See `IPublishingSet`."""
