@@ -1,4 +1,4 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests cronscript for retriving components from remote Bugzillas"""
@@ -8,8 +8,9 @@ __metaclass__ = type
 __all__ = []
 
 import os
-from urllib2 import HTTPError
+import re
 
+import responses
 import transaction
 
 from lp.bugs.scripts.bzremotecomponentfinder import (
@@ -32,33 +33,8 @@ def read_test_file(name):
     Test files are located in lib/canonical/launchpad/ftests/testfiles
     """
     file_path = os.path.join(os.path.dirname(__file__), 'testfiles', name)
-    test_file = open(file_path, 'r')
-    return test_file.read()
-
-
-class StaticTextBugzillaRemoteComponentScraper(
-    BugzillaRemoteComponentScraper):
-    """A scraper that just returns static text for getPage()"""
-    def __init__(self):
-        BugzillaRemoteComponentScraper.__init__(
-            self, "http://www.example.com")
-
-    def getPage(self):
-        return read_test_file("bugzilla-fdo-advanced-query.html")
-
-
-class FaultyBugzillaRemoteComponentScraper(
-    BugzillaRemoteComponentScraper):
-    """A scraper that trips asserts when getPage() is called"""
-
-    def __init__(self, error=None):
-        BugzillaRemoteComponentScraper.__init__(
-            self, "http://www.example.com")
-        self.error = error
-
-    def getPage(self):
-        raise self.error
-        return None
+    with open(file_path, 'r') as test_file:
+        return test_file.read()
 
 
 class TestBugzillaRemoteComponentScraper(TestCaseWithFactory):
@@ -130,6 +106,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
             asserted = e
         self.assertIs(None, asserted)
 
+    @responses.activate
     def test_store(self):
         """Check that already-parsed data gets stored to database"""
         lp_bugtracker = self.factory.makeBugTracker()
@@ -173,17 +150,19 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         comp = comp_group.getComponent(u'four')
         self.assertEqual(u'four', comp.name)
 
+    @responses.activate
     def test_get_remote_products_and_components(self):
         """Does a full retrieve and storing of data."""
         lp_bugtracker = self.factory.makeBugTracker(
             title="fdo-example",
             name="fdo-example")
         transaction.commit()
-        bz_scraper = StaticTextBugzillaRemoteComponentScraper()
 
-        finder = BugzillaRemoteComponentFinder(
-            logger=BufferLogger(),
-            static_bugzilla_scraper=bz_scraper)
+        finder = BugzillaRemoteComponentFinder(logger=BufferLogger())
+        responses.add(
+            "GET", re.compile(r".*/query\.cgi\?format=advanced"),
+            match_querystring=True, content_type="text/html",
+            body=read_test_file("bugzilla-fdo-advanced-query.html"))
         finder.getRemoteProductsAndComponents(bugtracker_name="fdo-example")
 
         self.assertEqual(
@@ -195,48 +174,60 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         self.assertIsNot(None, comp)
         self.assertEqual(u'Driver/Radeon', comp.name)
 
+    @responses.activate
     def test_get_remote_products_and_components_encounters_301(self):
-        self.factory.makeBugTracker()
+        def redirect_callback(request):
+            new_url = request.url.replace("query.cgi", "newquery.cgi")
+            return (301, {"Location": new_url}, "")
+
+        lp_bugtracker = self.factory.makeBugTracker(
+            title="fdo-example",
+            name="fdo-example")
         transaction.commit()
-        bz_scraper = FaultyBugzillaRemoteComponentScraper(
-            error=HTTPError("http://bugzilla.example.com",
-                            301, 'Moved Permanently', {}, None))
-        finder = BugzillaRemoteComponentFinder(
-            logger=BufferLogger(), static_bugzilla_scraper=bz_scraper)
 
-        self.assertGetRemoteProductsAndComponentsDoesNotAssert(finder)
+        finder = BugzillaRemoteComponentFinder(logger=BufferLogger())
+        responses.add_callback(
+            "GET", re.compile(r".*/query\.cgi"), callback=redirect_callback)
+        responses.add(
+            "GET", re.compile(r".*/newquery\.cgi\?format=advanced"),
+            match_querystring=True, content_type="text/html",
+            body=read_test_file("bugzilla-fdo-advanced-query.html"))
+        finder.getRemoteProductsAndComponents(bugtracker_name="fdo-example")
 
+        self.assertEqual(
+            109, len(list(lp_bugtracker.getAllRemoteComponentGroups())))
+        comp_group = lp_bugtracker.getRemoteComponentGroup(u'xorg')
+        self.assertIsNot(None, comp_group)
+        self.assertEqual(146, len(list(comp_group.components)))
+        comp = comp_group.getComponent(u'Driver/Radeon')
+        self.assertIsNot(None, comp)
+        self.assertEqual(u'Driver/Radeon', comp.name)
+
+    @responses.activate
     def test_get_remote_products_and_components_encounters_400(self):
         self.factory.makeBugTracker()
         transaction.commit()
-        bz_scraper = FaultyBugzillaRemoteComponentScraper(
-            error=HTTPError("http://bugzilla.example.com",
-                            400, 'Bad Request', {}, None))
-        finder = BugzillaRemoteComponentFinder(
-            logger=BufferLogger(), static_bugzilla_scraper=bz_scraper)
+        finder = BugzillaRemoteComponentFinder(logger=BufferLogger())
 
+        responses.add("GET", re.compile(r".*/query\.cgi"), status=400)
         self.assertGetRemoteProductsAndComponentsDoesNotAssert(finder)
 
+    @responses.activate
     def test_get_remote_products_and_components_encounters_404(self):
         self.factory.makeBugTracker()
         transaction.commit()
-        bz_scraper = FaultyBugzillaRemoteComponentScraper(
-            error=HTTPError("http://bugzilla.example.com",
-                            404, 'Not Found', {}, None))
-        finder = BugzillaRemoteComponentFinder(
-            logger=BufferLogger(), static_bugzilla_scraper=bz_scraper)
+        finder = BugzillaRemoteComponentFinder(logger=BufferLogger())
 
+        responses.add("GET", re.compile(r".*/query\.cgi"), status=404)
         self.assertGetRemoteProductsAndComponentsDoesNotAssert(finder)
 
+    @responses.activate
     def test_get_remote_products_and_components_encounters_500(self):
         self.factory.makeBugTracker()
         transaction.commit()
-        bz_scraper = FaultyBugzillaRemoteComponentScraper(
-            error=HTTPError("http://bugzilla.example.com",
-                            500, 'Internal Server Error', {}, None))
-        finder = BugzillaRemoteComponentFinder(
-            logger=BufferLogger(), static_bugzilla_scraper=bz_scraper)
+        finder = BugzillaRemoteComponentFinder(logger=BufferLogger())
 
+        responses.add("GET", re.compile(r".*/query\.cgi"), status=500)
         self.assertGetRemoteProductsAndComponentsDoesNotAssert(finder)
 
 # FIXME: This takes ~9 sec to run, but mars says new testsuites need to

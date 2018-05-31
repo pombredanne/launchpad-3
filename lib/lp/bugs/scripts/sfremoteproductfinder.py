@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for the sfremoteproductfinder cronscript"""
@@ -9,17 +9,19 @@ __all__ = [
     ]
 
 import urllib
-from urllib2 import (
-    HTTPError,
-    urlopen,
-    )
 
+import requests
 from zope.component import getUtility
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.product import IProductSet
 from lp.services.beautifulsoup import BeautifulSoup
+from lp.services.config import config
 from lp.services.scripts.logger import log as default_log
+from lp.services.timeout import (
+    override_timeout,
+    urlfetch,
+    )
 from lp.services.webapp import (
     urlappend,
     urlsplit,
@@ -43,7 +45,12 @@ class SourceForgeRemoteProductFinder:
     def _getPage(self, page):
         """GET the specified page on the remote HTTP server."""
         page_url = urlappend(self.sourceforge_baseurl, page)
-        return urlopen(page_url).read()
+        proxies = {}
+        if config.launchpad.http_proxy:
+            proxies['http'] = config.launchpad.http_proxy
+            proxies['https'] = config.launchpad.http_proxy
+        with override_timeout(config.updatesourceforgeremoteproduct.timeout):
+            return urlfetch(page_url, proxies=proxies).content
 
     def getRemoteProductFromSourceForge(self, sf_project):
         """Return the remote product of a SourceForge project.
@@ -55,7 +62,7 @@ class SourceForgeRemoteProductFinder:
         # First, fetch the project page.
         try:
             soup = BeautifulSoup(self._getPage("projects/%s" % sf_project))
-        except HTTPError as error:
+        except requests.HTTPError as error:
             self.logger.error(
                 "Error fetching project %s: %s" %
                 (sf_project, error))
@@ -75,7 +82,7 @@ class SourceForgeRemoteProductFinder:
         tracker_url = tracker_url.lstrip('/')
         try:
             soup = BeautifulSoup(self._getPage(tracker_url))
-        except HTTPError as error:
+        except requests.HTTPError as error:
             self.logger.error(
                 "Error fetching project %s: %s" %
                 (sf_project, error))

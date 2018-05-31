@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for the update-bugzilla-remote-components cronscript"""
@@ -10,11 +10,8 @@ __all__ = [
     ]
 
 import re
-from urllib2 import (
-    HTTPError,
-    urlopen,
-    )
 
+import requests
 import transaction
 from zope.component import getUtility
 
@@ -24,9 +21,14 @@ from lp.bugs.interfaces.bugtracker import (
     )
 from lp.bugs.model.bugtracker import BugTrackerComponent
 from lp.services.beautifulsoup import BeautifulSoup
+from lp.services.config import config
 from lp.services.database import bulk
 from lp.services.database.interfaces import IStore
 from lp.services.scripts.logger import log as default_log
+from lp.services.timeout import (
+    override_timeout,
+    urlfetch,
+    )
 
 
 def dictFromCSV(line):
@@ -54,7 +56,12 @@ class BugzillaRemoteComponentScraper:
 
     def getPage(self):
         """Download and return content from the Bugzilla page"""
-        return urlopen(self.url).read()
+        proxies = {}
+        if config.launchpad.http_proxy:
+            proxies['http'] = config.launchpad.http_proxy
+            proxies['https'] = config.launchpad.http_proxy
+        with override_timeout(config.updatebugzillaremotecomponents.timeout):
+            return urlfetch(self.url, proxies=proxies).content
 
     def parsePage(self, page_text):
         """Builds self.product using HTML content in page_text"""
@@ -106,20 +113,14 @@ class BugzillaRemoteComponentFinder:
         u"mozilla.org",
         ]
 
-    def __init__(self, logger=None, static_bugzilla_scraper=None):
+    def __init__(self, logger=None):
         """Instantiates object, without performing any parsing.
 
         :param logger: A logger object
-        :param static_bugzilla_scraper: Substitute this custom bugzilla
-         scraper object instead of constructing a new
-         BugzillaRemoteComponentScraper for each bugtracker's URL.  This
-         is intended for testing purposes to avoid needing to make remote
-         web connections.
         """
         self.logger = logger
         if logger is None:
             self.logger = default_log
-        self.static_bugzilla_scraper = static_bugzilla_scraper
 
     def getRemoteProductsAndComponents(self, bugtracker_name=None):
         """Retrieves, parses, and stores component data for each bugtracker"""
@@ -141,20 +142,17 @@ class BugzillaRemoteComponentFinder:
             self.logger.info("%s: %s" % (
                 lp_bugtracker.name, lp_bugtracker.baseurl))
 
-            if self.static_bugzilla_scraper is not None:
-                bz_bugtracker = self.static_bugzilla_scraper
-            else:
-                bz_bugtracker = BugzillaRemoteComponentScraper(
-                    base_url=lp_bugtracker.baseurl)
+            bz_bugtracker = BugzillaRemoteComponentScraper(
+                base_url=lp_bugtracker.baseurl)
 
             try:
                 self.logger.debug("...Fetching page")
                 page_text = bz_bugtracker.getPage()
-            except HTTPError as error:
+            except requests.HTTPError as error:
                 self.logger.warning("Could not fetch %s: %s" % (
                     lp_bugtracker.baseurl, error))
                 continue
-            except:
+            except Exception:
                 self.logger.warning("Failed to access %s" % (
                     lp_bugtracker.baseurl))
                 continue
