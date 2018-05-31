@@ -1,4 +1,4 @@
-# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """timeout.py tests.
@@ -24,6 +24,7 @@ from testtools.matchers import MatchesStructure
 from lp.services.timeout import (
     default_timeout,
     get_default_timeout_function,
+    override_timeout,
     reduced_timeout,
     set_default_timeout_function,
     TimeoutError,
@@ -246,6 +247,15 @@ class TestTimeout(TestCase):
                 self.assertEqual(2.0, get_default_timeout_function()())
         finally:
             clear_request_started()
+
+    def test_override_timeout(self):
+        """override_timeout temporarily overrides the default timeout."""
+        self.addCleanup(set_default_timeout_function, None)
+        with override_timeout(1.0):
+            self.assertEqual(1.0, get_default_timeout_function()())
+        set_default_timeout_function(lambda: 5.0)
+        with override_timeout(1.0):
+            self.assertEqual(1.0, get_default_timeout_function()())
 
     def make_test_socket(self):
         """One common use case for timing out is when making an HTTP request

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     "default_timeout",
     "get_default_timeout_function",
+    "override_timeout",
     "reduced_timeout",
     "SafeTransportWithTimeout",
     "set_default_timeout_function",
@@ -104,6 +105,21 @@ def reduced_timeout(clearance, webapp_max=None, default=None):
             return remaining
 
     set_default_timeout_function(timeout)
+    try:
+        yield
+    finally:
+        set_default_timeout_function(original_timeout_function)
+
+
+@contextmanager
+def override_timeout(timeout):
+    """A context manager that temporarily overrides the default timeout.
+
+    :param timeout: The new timeout to use.
+    """
+    original_timeout_function = get_default_timeout_function()
+
+    set_default_timeout_function(lambda: timeout)
     try:
         yield
     finally:
