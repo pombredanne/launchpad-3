@@ -239,6 +239,7 @@ cffi==1.11.2
 Chameleon==2.11
 chardet==3.0.4
 constantly==15.1.0
+cookies==2.2.1
 cryptography==2.1.4
 cssselect==0.9.1
 cssutils==0.9.10
@@ -258,7 +259,6 @@ fixtures==3.0.0
 FormEncode==1.2.4
 grokcore.component==1.6
 html5browser==0.0.9
-httmock==1.2.3
 httplib2==0.8
 hyperlink==18.0.0
 idna==2.6
@@ -337,6 +337,7 @@ PyYAML==3.10
 rabbitfixture==0.3.6
 requests==2.7.0
 requests-toolbelt==0.6.2
+responses==0.9.0
 scandir==1.7
 service-identity==17.0.0
 setproctitle==1.1.7

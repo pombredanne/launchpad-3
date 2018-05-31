@@ -20,14 +20,11 @@ from urlparse import (
     )
 
 from fixtures import FakeLogger
-from httmock import (
-    all_requests,
-    HTTMock,
-    )
 from mechanize import LinkNotFoundError
 import mock
 from pymacaroons import Macaroon
 import pytz
+import responses
 import soupmatchers
 from testtools.matchers import (
     MatchesSetwise,
@@ -403,6 +400,7 @@ class TestSnapAddView(BaseTestSnapView):
             "Pocket for automatic builds:\nSecurity\nEdit snap package",
             MatchesTagText(content, "auto_build_pocket"))
 
+    @responses.activate
     def test_create_new_snap_store_upload(self):
         # Creating a new snap and asking for it to be automatically uploaded
         # to the store sets all the appropriate fields and redirects to SSO
@@ -422,19 +420,12 @@ class TestSnapAddView(BaseTestSnapView):
             urlsplit(config.launchpad.openid_provider_root).netloc, "",
             "dummy")
         root_macaroon_raw = root_macaroon.serialize()
-
-        @all_requests
-        def handler(url, request):
-            self.request = request
-            return {
-                "status_code": 200,
-                "content": {"macaroon": root_macaroon_raw},
-                }
-
         self.pushConfig("snappy", store_url="http://sca.example/")
-        with HTTMock(handler):
-            redirection = self.assertRaises(
-                HTTPError, browser.getControl("Create snap package").click)
+        responses.add(
+            "POST", "http://sca.example/dev/api/acl/",
+            json={"macaroon": root_macaroon_raw})
+        redirection = self.assertRaises(
+            HTTPError, browser.getControl("Create snap package").click)
         login_person(self.person)
         snap = getUtility(ISnapSet).getByName(self.person, "snap-name")
         self.assertThat(snap, MatchesStructure.byEquality(
@@ -443,7 +434,8 @@ class TestSnapAddView(BaseTestSnapView):
             store_series=self.snappyseries, store_name="store-name",
             store_secrets={"root": root_macaroon_raw},
             store_channels=["track/edge"]))
-        self.assertThat(self.request, MatchesStructure.byEquality(
+        [call] = responses.calls
+        self.assertThat(call.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         expected_body = {
             "packages": [{
@@ -452,7 +444,7 @@ class TestSnapAddView(BaseTestSnapView):
                 }],
             "permissions": ["package_upload"],
             }
-        self.assertEqual(expected_body, json.loads(self.request.body))
+        self.assertEqual(expected_body, json.loads(call.request.body))
         self.assertEqual(303, redirection.code)
         parsed_location = urlsplit(redirection.hdrs["Location"])
         self.assertEqual(
@@ -969,6 +961,7 @@ class TestSnapEditView(BaseTestSnapView):
         self.assertNeedStoreReauth(
             True, {"store_upload": False}, {"store_upload": True})
 
+    @responses.activate
     def test_edit_store_upload(self):
         # Changing store upload settings on a snap sets all the appropriate
         # fields and redirects to SSO for reauthorization.
@@ -989,30 +982,24 @@ class TestSnapEditView(BaseTestSnapView):
             urlsplit(config.launchpad.openid_provider_root).netloc, "",
             "dummy")
         root_macaroon_raw = root_macaroon.serialize()
-
-        @all_requests
-        def handler(url, request):
-            self.request = request
-            return {
-                "status_code": 200,
-                "content": {"macaroon": root_macaroon_raw},
-                }
-
         self.pushConfig("snappy", store_url="http://sca.example/")
-        with HTTMock(handler):
-            redirection = self.assertRaises(
-                HTTPError, browser.getControl("Update snap package").click)
+        responses.add(
+            "POST", "http://sca.example/dev/api/acl/",
+            json={"macaroon": root_macaroon_raw})
+        redirection = self.assertRaises(
+            HTTPError, browser.getControl("Update snap package").click)
         login_person(self.person)
         self.assertThat(snap, MatchesStructure.byEquality(
             store_name="two", store_secrets={"root": root_macaroon_raw},
             store_channels=["stable", "edge"]))
-        self.assertThat(self.request, MatchesStructure.byEquality(
+        [call] = responses.calls
+        self.assertThat(call.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         expected_body = {
             "packages": [{"name": "two", "series": self.snappyseries.name}],
             "permissions": ["package_upload"],
             }
-        self.assertEqual(expected_body, json.loads(self.request.body))
+        self.assertEqual(expected_body, json.loads(call.request.body))
         self.assertEqual(303, redirection.code)
         parsed_location = urlsplit(redirection.hdrs["Location"])
         self.assertEqual(
@@ -1047,6 +1034,7 @@ class TestSnapAuthorizeView(BaseTestSnapView):
             Unauthorized, self.getUserBrowser,
             canonical_url(self.snap) + "/+authorize", user=other_person)
 
+    @responses.activate
     def test_begin_authorization(self):
         # With no special form actions, we return a form inviting the user
         # to begin authorization.  This allows (re-)authorizing uploads of
@@ -1058,22 +1046,16 @@ class TestSnapAuthorizeView(BaseTestSnapView):
             urlsplit(config.launchpad.openid_provider_root).netloc, '',
             'dummy')
         root_macaroon_raw = root_macaroon.serialize()
-
-        @all_requests
-        def handler(url, request):
-            self.request = request
-            return {
-                "status_code": 200,
-                "content": {"macaroon": root_macaroon_raw},
-                }
-
         self.pushConfig("snappy", store_url="http://sca.example/")
-        with HTTMock(handler):
-            browser = self.getNonRedirectingBrowser(
-                url=snap_url + "/+authorize", user=self.snap.owner)
-            redirection = self.assertRaises(
-                HTTPError, browser.getControl("Begin authorization").click)
-        self.assertThat(self.request, MatchesStructure.byEquality(
+        responses.add(
+            "POST", "http://sca.example/dev/api/acl/",
+            json={"macaroon": root_macaroon_raw})
+        browser = self.getNonRedirectingBrowser(
+            url=snap_url + "/+authorize", user=self.snap.owner)
+        redirection = self.assertRaises(
+            HTTPError, browser.getControl("Begin authorization").click)
+        [call] = responses.calls
+        self.assertThat(call.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         with person_logged_in(owner):
             expected_body = {
@@ -1083,7 +1065,7 @@ class TestSnapAuthorizeView(BaseTestSnapView):
                     }],
                 "permissions": ["package_upload"],
                 }
-            self.assertEqual(expected_body, json.loads(self.request.body))
+            self.assertEqual(expected_body, json.loads(call.request.body))
             self.assertEqual(
                 {"root": root_macaroon_raw}, self.snap.store_secrets)
         self.assertEqual(303, redirection.code)
