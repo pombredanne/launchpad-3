@@ -28,8 +28,10 @@ Let's fill a IPackageRelationshipSet:
 Note that iterations over PackageRelationshipSet are sorted
 alphabetically according to the relationship 'name':
 
-  >>> [relationship.name for relationship in relationship_set]
-  ['foobar', 'test']
+  >>> for relationship in relationship_set:
+  ...     print(relationship.name)
+  foobar
+  test
 
 It will cause all the relationship contents to be rendered in this order.
 
