@@ -26,13 +26,13 @@ of changes to the bug status:
     >>> len(notifications)
     1
 
-    >>> print notifications[0].metadata['recipient_set']
+    >>> print(notifications[0].metadata['recipient_set'])
     ASKER_SUBSCRIBER
 
-    >>> print notifications[0].subject
+    >>> print(notifications[0].subject)
     [Question #...]: Status of bug #... changed to 'Confirmed' in Ubuntu
 
-    >>> print notifications[0].body
+    >>> print(notifications[0].body)
     Bug #... status changed in Ubuntu:
     <BLANKLINE>
         New => Confirmed

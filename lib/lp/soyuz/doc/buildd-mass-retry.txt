@@ -36,7 +36,7 @@ Passing only suite, request retry on all failed states:
     >>> stdout, stderr = process.communicate()
     >>> process.returncode
     0
-    >>> print stderr
+    >>> print(stderr)
     INFO    Creating lockfile: ...
     INFO    Initializing Build Mass-Retry for
     'The Hoary Hedgehog Release/RELEASE'
@@ -62,7 +62,7 @@ and set it to SUPERSEDED.
 Let's mark the build from the previous run superseded.
 
     >>> pub.status = PackagePublishingStatus.SUPERSEDED
-    >>> print build.current_source_publication
+    >>> print(build.current_source_publication)
     None
     >>> transaction.commit()
 
@@ -74,7 +74,7 @@ A new run doesn't pick it up.
     >>> stdout, stderr = process.communicate()
     >>> process.returncode
     0
-    >>> print stderr
+    >>> print(stderr)
     INFO    Creating lockfile: ...
     INFO    Initializing Build Mass-Retry for
     'The Hoary Hedgehog Release/RELEASE'
@@ -103,7 +103,7 @@ nothing is done:
     >>> stdout, stderr = process.communicate()
     >>> process.returncode
     0
-    >>> print stderr
+    >>> print(stderr)
     INFO    Creating lockfile: ...
     INFO    Initializing Build Mass-Retry for
     'The Hoary Hedgehog Release for hppa (hppa)/RELEASE'
@@ -124,7 +124,7 @@ Selecting only a specific failed state:
     >>> stdout, stderr = process.communicate()
     >>> process.returncode
     0
-    >>> print stderr
+    >>> print(stderr)
     INFO    Creating lockfile: ...
     INFO    Initializing Build Mass-Retry for
     'The Hoary Hedgehog Release/RELEASE'

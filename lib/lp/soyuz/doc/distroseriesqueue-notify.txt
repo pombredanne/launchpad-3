@@ -10,7 +10,7 @@ changes file which are all needed for successful operation of notify().
 
     >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
     >>> netapplet_upload = getUtility(IPackageUploadSet)[3]
-    >>> print netapplet_upload.displayname
+    >>> print(netapplet_upload.displayname)
     netapplet
 
 Set up some library files for the netapplet source package.  These are
@@ -84,7 +84,7 @@ uploader's email address.
 
 The mail body contains a list of files that were accepted:
 
-    >>> print notification.get_payload(0) # doctest: -NORMALIZE_WHITESPACE
+    >>> print(notification.get_payload(0)) # doctest: -NORMALIZE_WHITESPACE
     From nobody ...
     ...
     NEW: netapplet_1.0-1.dsc
@@ -156,7 +156,7 @@ The announcement email contains the series's changeslist.
     ...         key=to_lower)
 
     >>> for msg in msgs:
-    ...     print msg['To']
+    ...     print(msg['To'])
     Daniel Silverstone <daniel.silverstone@canonical.com>
     Foo Bar <foo.bar@canonical.com>
     autotest_changes@ubuntu.com
@@ -165,26 +165,26 @@ The mail 'Bcc:' address is the uploader.  The announcement has the
 uploader and the Debian derivatives address for the package uploaded.
 
     >>> for msg in msgs:
-    ...     print extract_addresses(msg['Bcc'])
-    ['Root <root@localhost>']
-    ['Root <root@localhost>']
-    ['netapplet_derivatives@packages.qa.debian.org', 'Root <root@localhost>']
+    ...     print(extract_addresses(msg['Bcc']))
+    [u'Root <root@localhost>']
+    [u'Root <root@localhost>']
+    [u'netapplet_derivatives@packages.qa.debian.org', u'Root <root@localhost>']
 
 The mail 'From:' addresses are the uploader (for acknowledgements sent to
 the uploader and the changer) and the changer.
 
     >>> for msg in msgs:
-    ...     print msg['From']
+    ...     print(msg['From'])
     Root <root@localhost>
     Root <root@localhost>
     Daniel Silverstone <daniel.silverstone@canonical.com>
 
-    >>> print msgs[0]['Subject']
+    >>> print(msgs[0]['Subject'])
     [ubuntu/breezy-autotest] netapplet 0.99.6-1 (Accepted)
 
 The mail body contains the same list of files again:
 
-    >>> print msgs[0].get_payload(0) # doctest: -NORMALIZE_WHITESPACE
+    >>> print(msgs[0].get_payload(0)) # doctest: -NORMALIZE_WHITESPACE
     From nobody ...
     ...
      OK: netapplet_1.0-1.dsc
@@ -237,24 +237,24 @@ Two emails are generated, one to the changer and one to the signer:
 
 The mail headers are the same as before:
 
-    >>> print changer_notification['To']
+    >>> print(changer_notification['To'])
     Daniel Silverstone <daniel.silverstone@canonical.com>
-    >>> print signer_notification['To']
+    >>> print(signer_notification['To'])
     Foo Bar <foo.bar@canonical.com>
 
-    >>> print changer_notification['Bcc']
+    >>> print(changer_notification['Bcc'])
     Root <root@localhost>
-    >>> print signer_notification['Bcc']
+    >>> print(signer_notification['Bcc'])
     Root <root@localhost>
 
-    >>> print changer_notification['Subject']
+    >>> print(changer_notification['Subject'])
     [ubuntu/breezy-autotest] netapplet 0.99.6-1 (New)
-    >>> print signer_notification['Subject']
+    >>> print(signer_notification['Subject'])
     [ubuntu/breezy-autotest] netapplet 0.99.6-1 (New)
 
 The mail body contains the same list of files again:
 
-    >>> print changer_notification.get_payload(0)
+    >>> print(changer_notification.get_payload(0))
     ... # doctest: -NORMALIZE_WHITESPACE
     From nobody ...
     ...
@@ -271,7 +271,7 @@ The mail body contains the same list of files again:
     You are receiving this email because you are the most recent person
     listed in this package's changelog.
     <BLANKLINE>
-    >>> print signer_notification.get_payload(0)
+    >>> print(signer_notification.get_payload(0))
     ... # doctest: -NORMALIZE_WHITESPACE
     From nobody ...
     ...
