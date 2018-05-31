@@ -207,6 +207,7 @@ setup(
         'PyYAML',
         'rabbitfixture',
         'requests',
+        'requests-file',
         'requests-toolbelt',
         'responses',
         'scandir',

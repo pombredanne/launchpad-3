@@ -40,6 +40,7 @@ from requests.packages.urllib3.connectionpool import (
     )
 from requests.packages.urllib3.exceptions import ClosedPoolError
 from requests.packages.urllib3.poolmanager import PoolManager
+from requests_file import FileAdapter
 from six import reraise
 
 
@@ -316,21 +317,29 @@ class CleanableHTTPAdapter(HTTPAdapter):
 class URLFetcher:
     """Object fetching remote URLs with a time out."""
 
-    @staticmethod
-    def _makeSession(trust_env=None):
-        session = Session()
-        if trust_env is not None:
-            session.trust_env = trust_env
-        # Mount our custom adapters.
-        session.mount("https://", CleanableHTTPAdapter())
-        session.mount("http://", CleanableHTTPAdapter())
-        return session
-
     @with_timeout(cleanup='cleanup')
-    def fetch(self, url, trust_env=None, **request_kwargs):
-        """Fetch the URL using a custom HTTP handler supporting timeout."""
+    def fetch(self, url, trust_env=None, allow_file=False, **request_kwargs):
+        """Fetch the URL using a custom HTTP handler supporting timeout.
+
+        :param url: The URL to fetch.
+        :param trust_env: If not None, set the session's trust_env to this
+            to determine whether it fetches proxy configuration from the
+            environment.
+        :param allow_file: If True, allow file:// URLs.  (Be careful to only
+            pass this if the URL is trusted.)
+        :param request_kwargs: Additional keyword arguments passed on to
+            `Session.request`.
+        """
+        self.session = Session()
+        if trust_env is not None:
+            self.session.trust_env = trust_env
+        # Mount our custom adapters.
+        self.session.mount("https://", CleanableHTTPAdapter())
+        self.session.mount("http://", CleanableHTTPAdapter())
+        if allow_file:
+            self.session.mount("file://", FileAdapter())
+
         request_kwargs.setdefault("method", "GET")
-        self.session = self._makeSession(trust_env=trust_env)
         response = self.session.request(url=url, **request_kwargs)
         response.raise_for_status()
         # Make sure the content has been consumed before returning.
