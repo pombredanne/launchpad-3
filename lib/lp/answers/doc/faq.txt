@@ -37,7 +37,7 @@ contacts.)
 
     >>> from lp.services.webapp.interfaces import ILaunchBag
     >>> sample_person = getUtility(ILaunchBag).user
-    >>> print firefox.owner.displayname
+    >>> print(firefox.owner.displayname)
     Sample Person
 
     >>> firefox_faq = firefox.newFAQ(
@@ -128,28 +128,28 @@ FAQ document provides the IFAQ interface.
 
 The FAQ document information is available in the object attributes.
 
-    >>> print firefox_faq.title
+    >>> print(firefox_faq.title)
     How can I see the Fnords?
 
-    >>> print firefox_faq.content
+    >>> print(firefox_faq.content)
     Install the Fnords highlighter extension and see the Fnords!
 
-    >>> print firefox_faq.owner.displayname
+    >>> print(firefox_faq.owner.displayname)
     Sample Person
 
 The project that contains the FAQ is available using the target
 attribute:
 
-    >>> print firefox_faq.target.name
+    >>> print(firefox_faq.target.name)
     firefox
 
 IFAQ has two attributes used to track the last modification to the FAQ.
 Initially, the last_updated_by and date_last_updated are not set.
 
-    >>> print firefox_faq.last_updated_by
+    >>> print(firefox_faq.last_updated_by)
     None
 
-    >>> print firefox_faq.date_last_updated
+    >>> print(firefox_faq.date_last_updated)
     None
 
 When the FAQ is modified, the attributes are automatically updated.
@@ -163,7 +163,7 @@ When the FAQ is modified, the attributes are automatically updated.
     >>> notify(ObjectModifiedEvent(
     ...     firefox_faq, old_faq, ['keywords'], user=sample_person))
 
-    >>> print firefox_faq.last_updated_by.displayname
+    >>> print(firefox_faq.last_updated_by.displayname)
     Sample Person
 
     >>> firefox_faq.date_last_updated is not None
@@ -184,7 +184,7 @@ Only the project owners or answer contacts can edit an IFAQ.
 So Sample Person (the project owner) has edit permission:
 
     >>> login('test@canonical.com')
-    >>> print firefox.owner.displayname
+    >>> print(firefox.owner.displayname)
     Sample Person
 
     >>> check_permission('launchpad.Edit', firefox_faq)
@@ -233,7 +233,7 @@ The searchFAQs() method can be used to find FAQs by keywords or owner.
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> for faq in faqset.searchFAQs(
     ...     search_text=u'java OR flash', owner=foo_bar):
-    ...     print '%s (%s)' % (faq.title, faq.target.displayname)
+    ...     print('%s (%s)' % (faq.title, faq.target.displayname))
     How do I install plugins (Shockwave, QuickTime, etc.)? (Mozilla Firefox)
     How can I play MP3/Divx/DVDs/Quicktime/Realmedia files
         or view Flash/Java web pages (Ubuntu)
@@ -262,15 +262,15 @@ Any user can link an existing FAQ to a question.
 
 Once the FAQ is linked, the question is considered 'answered':
 
-    >>> print message.action.title
+    >>> print(message.action.title)
     Answer
 
-    >>> print fnord_question.status.title
+    >>> print(fnord_question.status.title)
     Answered
 
 The 'faq' attribute contains the FAQ supposed to answer the question:
 
-    >>> print fnord_question.faq.title
+    >>> print(fnord_question.faq.title)
     How can I see the Fnords?
 
 The FAQ's 'related_questions' attribute contains the questions that are
@@ -279,7 +279,7 @@ answered by the FAQ:
     # Flush the faq attribute change.
 
     >>> for question in firefox_faq.related_questions:
-    ...     print question.title
+    ...     print(question.title)
     Are there Fnords on the web?
 
 A FAQ can be linked to multiple question:
@@ -289,14 +289,14 @@ A FAQ can be linked to multiple question:
     ...     no_priv, firefox_faq,
     ...     'If you lose focus and gets stuck it must be the fnords!')
 
-    >>> print other_question.faq.title
+    >>> print(other_question.faq.title)
     How can I see the Fnords?
 
-    >>> print other_question.status.title
+    >>> print(other_question.status.title)
     Answered
 
     >>> for question in firefox_faq.related_questions:
-    ...     print question.title
+    ...     print(question.title)
     Firefox loses focus and gets stuck
     Are there Fnords on the web?
 
@@ -305,21 +305,21 @@ again:
 
     >>> message = other_question.linkFAQ(
     ...     no_priv, None, "This has nothing to do with Fnords.")
-    >>> print other_question.faq
+    >>> print(other_question.faq)
     None
 
 After this, only the original question will remain linked to the FAQ.
 
     >>> for question in firefox_faq.related_questions:
-    ...     print question.title
+    ...     print(question.title)
     Are there Fnords on the web?
 
 That change is also considered an answer:
 
-    >>> print message.action.title
+    >>> print(message.action.title)
     Answer
 
-    >>> print other_question.status.title
+    >>> print(other_question.status.title)
     Answered
 
 It is not possible to modify the faq attribute directly:
@@ -343,17 +343,15 @@ not changed.
     >>> login('foo.bar@canonical.com')
     >>> confirm_message = other_question.confirmAnswer(
     ...     "That answered my question.", answer=other_question.messages[-1])
-    >>> print other_question.status.title
+    >>> print(other_question.status.title)
     Solved
 
     >>> login('no-priv@canonical.com')
     >>> message = other_question.linkFAQ(
     ...     no_priv, firefox_faq,
     ...     'If you look carefully, you will find the fnords!')
-    >>> print message.action.title
+    >>> print(message.action.title)
     Comment
 
-    >>> print other_question.status.title
+    >>> print(other_question.status.title)
     Solved
-
-
