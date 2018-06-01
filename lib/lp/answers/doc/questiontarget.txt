@@ -44,11 +44,11 @@ to UTC_NOW.
 
     >>> question = target.newQuestion(sample_person, 'New question',
     ...     'Question description', datecreated=now)
-    >>> print question.title
+    >>> print(question.title)
     New question
-    >>> print question.description
+    >>> print(question.description)
     Question description
-    >>> print question.owner.displayname
+    >>> print(question.owner.displayname)
     Sample Person
     >>> question.datecreated == now
     True
@@ -58,18 +58,18 @@ to UTC_NOW.
 The created question starts in the 'Open' status and should have the owner
 subscribed to the question.
 
-    >>> print question.status.title
+    >>> print(question.status.title)
     Open
 
     >>> for subscription in question.subscriptions:
-    ...     print subscription.person.displayname
+    ...     print(subscription.person.displayname)
     Sample Person
 
 Questions can be written in any languages supported in Launchpad.  The
 language of the request is available in the 'language' attribute.  By default,
 requests are assumed to be written in English.
 
-    >>> print question.language.code
+    >>> print(question.language.code)
     en
 
 It is possible to create questions in another language than English, by
@@ -81,7 +81,7 @@ passing in the language that the question is written in.
     ...     sample_person, "De l'aide S.V.P.",
     ...     "Pouvez-vous m'aider?", language=french,
     ...     datecreated=now + timedelta(seconds=30))
-    >>> print question.language.code
+    >>> print(question.language.code)
     fr
 
 Anonymous users cannot use newQuestion().
@@ -106,9 +106,9 @@ particular target.
 If you pass in a non-existent id or a question for a different target, the
 method returns None.
 
-    >>> print target.getQuestion(2)
+    >>> print(target.getQuestion(2))
     None
-    >>> print target.getQuestion(12345)
+    >>> print(target.getQuestion(12345))
     None
 
 
@@ -164,7 +164,7 @@ passed in text.  The standard text searching algorithm is used; see
 ../../../canonical/launchpad/doct/textsearching.txt.
 
     >>> for t in target.searchQuestions(search_text=u'new'):
-    ...     print t.title
+    ...     print(t.title)
     New question
     Another question
 
@@ -180,7 +180,7 @@ The searchQuestions() method can also filter questions by status.
 
     >>> from lp.answers.enums import QuestionStatus
     >>> for t in target.searchQuestions(status=QuestionStatus.OPEN):
-    ...     print t.title
+    ...     print(t.title)
     Another question
     Question title2
     Question title1
@@ -192,7 +192,7 @@ In this previous example, because there is no sort text, the
 default sort order is from newest to oldest.
 
     >>> for t in target.searchQuestions(status=QuestionStatus.INVALID):
-    ...     print t.title
+    ...     print(t.title)
     Question title4
 
 You can pass in a list of statuses, and you can also use the search_text and
@@ -202,7 +202,7 @@ questions with the word 'index'.
     >>> for t in target.searchQuestions(
     ...     search_text=u'request index',
     ...     status=(QuestionStatus.OPEN, QuestionStatus.INVALID)):
-    ...     print t.title
+    ...     print(t.title)
     Question title4
     Question title2
     Question title1
@@ -220,7 +220,7 @@ You can sort also from oldest to newest using the OLDEST_FIRST constant.
     >>> from lp.answers.enums import QuestionSort
     >>> for t in target.searchQuestions(search_text='new',
     ...                                 sort=QuestionSort.OLDEST_FIRST):
-    ...     print t.title
+    ...     print(t.title)
     New question
     Another question
 
@@ -232,7 +232,7 @@ EXPIRED questions are excluded.
     >>> for t in target.searchQuestions(search_text='request index',
     ...                                 status=None,
     ...                                 sort=QuestionSort.STATUS):
-    ...     print t.status.title, t.title
+    ...     print(t.status.title, t.title)
     Open Question title2
     Open Question title1
     Open Question title0
@@ -245,7 +245,7 @@ the questions will be sorted NEWEST_FIRST.
     # 'Question title4' is not shown in this case because it has INVALID as
     # its status.
     >>> for t in target.searchQuestions(sort=QuestionSort.RELEVANCY):
-    ...     print t.title
+    ...     print(t.title)
     Another question
     Question title3
     Question title2
@@ -262,7 +262,7 @@ datelastquery attribute.
     # after the others were created.
     >>> for t in target.searchQuestions(
     ...                             sort=QuestionSort.RECENT_OWNER_ACTIVITY):
-    ...     print t.title
+    ...     print(t.title)
     Question title0
     Another question
     Question title3
@@ -278,7 +278,7 @@ Owner
 You can find question owned by a particular user by using the owner parameter.
 
     >>> for t in target.searchQuestions(owner=foo_bar):
-    ...     print t.title
+    ...     print(t.title)
     Question title3
     Question title1
 
@@ -291,11 +291,11 @@ particular language.
 
     >>> english = getUtility(ILanguageSet)['en']
     >>> for t in target.searchQuestions(language=french):
-    ...     print t.title
+    ...     print(t.title)
     De l'aide S.V.P.
 
     >>> for t in target.searchQuestions(language=(english, french)):
-    ...     print t.title
+    ...     print(t.title)
     Another question
     Question title3
     Question title2
@@ -330,7 +330,7 @@ information, and that are back in the OPEN state, are also included.
 
     >>> login(ANONYMOUS)
     >>> for t in target.searchQuestions(needs_attention_from=foo_bar):
-    ...     print t.status.title, t.title, t.owner.displayname
+    ...     print(t.status.title, t.title, t.owner.displayname)
     Answered Question title3 Foo Bar
     Needs information Question title1 Foo Bar
     Open Question title0 Sample Person
@@ -343,7 +343,7 @@ The 'unsupported' criteria is used to select questions that are in a
 language that is not spoken by any of the Support Contacts.
 
     >>> for t in target.searchQuestions(unsupported=True):
-    ...     print t.title
+    ...     print(t.title)
     De l'aide S.V.P.
 
 
@@ -357,7 +357,7 @@ target text.  The questions don't have to contain all the words of the text.
     # all other words in the text are either common ('question', 'title') or
     # stop words ('with', 'a').
     >>> for t in target.findSimilarQuestions('new questions with a title'):
-    ...     print t.title
+    ...     print(t.title)
     New question
     Another question
 
@@ -400,12 +400,12 @@ was already on the list.
     >>> people = [p.name for p in target.answer_contacts]
     >>> len(people)
     1
-    >>> print people[0]
+    >>> print(people[0])
     name18
     >>> people = [p.name for p in target.direct_answer_contacts]
     >>> len(people)
     1
-    >>> print people[0]
+    >>> print(people[0])
     name18
     >>> target.addAnswerContact(name18, name18)
     False
@@ -455,14 +455,14 @@ support when there are no answer contacts.
     >>> codes = [lang.code for lang in target.getSupportedLanguages()]
     >>> len(codes)
     1
-    >>> print codes[0]
+    >>> print(codes[0])
     en
 
     # Let's add some answer contacts which speak different languages.
     >>> login('carlos@canonical.com')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> for language in carlos.languages:
-    ...     print language.code
+    ...     print(language.code)
     ca
     en
     es
@@ -474,7 +474,7 @@ While daf has en_GB as one of his preferred languages...
     >>> login('daf@canonical.com')
     >>> daf = getUtility(IPersonSet).getByName('daf')
     >>> for language in daf.languages:
-    ...     print language.code
+    ...     print(language.code)
     en_GB
     ja
     cy
@@ -485,10 +485,10 @@ While daf has en_GB as one of his preferred languages...
 English variants are converted to English.
 
     >>> from operator import attrgetter
-    >>> print ', '.join(
+    >>> print(', '.join(
     ...     language.code
     ...     for language in sorted(target.getSupportedLanguages(),
-    ...                            key=attrgetter('code')))
+    ...                            key=attrgetter('code'))))
     ca, cy, en, es, ja
 
 
@@ -502,12 +502,12 @@ list because he speaks an English variant, which is treated as English.
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> answer_contacts = target.getAnswerContactsForLanguage(spanish)
     >>> for person in answer_contacts:
-    ...     print person.name
+    ...     print(person.name)
     carlos
 
     >>> answer_contacts = target.getAnswerContactsForLanguage(english)
     >>> for person in sorted(answer_contacts, key=lambda person: person.name):
-    ...     print person.name
+    ...     print(person.name)
     carlos
     daf
 
@@ -518,9 +518,9 @@ A question's languages
 The getQuestionLanguages() method returns the set of languages used by all
 of the target's questions.
 
-    >>> print ', '.join(
+    >>> print(', '.join(
     ...     sorted(language.code
-    ...            for language in target.getQuestionLanguages()))
+    ...            for language in target.getQuestionLanguages())))
     en, fr
 
 
@@ -549,20 +549,20 @@ copied to the question.
 
     >>> target_question = target.createQuestionFromBug(target_bug)
 
-    >>> print target_question.owner.displayname
+    >>> print(target_question.owner.displayname)
     Sample Person
-    >>> print target_question.title
+    >>> print(target_question.title)
     Print is broken
-    >>> print target_question.description
+    >>> print(target_question.description)
     blah blah blah
     >>> question_message = target_question.messages[-1]
-    >>> print question_message.text_contents
+    >>> print(question_message.text_contents)
     This is really a question.
 
     >>> for bug in target_question.bugs:
-    ...     print bug.title
+    ...     print(bug.title)
     Print is broken
-    >>> print target_question.messages[-1].text_contents
+    >>> print(target_question.messages[-1].text_contents)
     This is really a question.
 
 The question's creation date is the same as the bug's creation date.  The
@@ -578,5 +578,5 @@ questions made from old bugs as old questions and would expire them.
 The question language is always English because all bugs in Launchpad are
 written in English.
 
-    >>> print target_question.language.code
+    >>> print(target_question.language.code)
     en

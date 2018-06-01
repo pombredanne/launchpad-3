@@ -76,7 +76,7 @@ the getFAQ() method.
 
 It returns None when there is FAQ with that ID in the context:
 
-    >>> print collection.getFAQ(12345)
+    >>> print(collection.getFAQ(12345))
     None
 
 It also returns None when using the ID of a FAQ that isn't in the
@@ -96,7 +96,7 @@ requested collection:
     ...     'https://help.ubuntu.com/community/Installation')
 
     >>> login(ANONYMOUS)
-    >>> print collection.getFAQ(ubuntu_faq.id)
+    >>> print(collection.getFAQ(ubuntu_faq.id))
     None
 
 
@@ -110,7 +110,7 @@ When no criteria are given, all the FAQs in the collection are returned.
 (The default sort order is most recent first.)
 
     >>> for faq in collection.searchFAQs():
-    ...     print faq.title
+    ...     print(faq.title)
     What were the famous last words?
     Who really shot JFK?
     How do I play the Game of Life?
@@ -127,7 +127,7 @@ keywords specified. Keywords are looked for in the title, content and
 keywords field of the FAQ.
 
     >>> for faq in collection.searchFAQs(search_text=u'install'):
-    ...     print faq.title
+    ...     print(faq.title)
     How do I install Foo?
     How do I play the Game of Life?
     How do I make money quickly off the Internet?
@@ -144,7 +144,7 @@ The other filtering criteria is 'owner'. It will select only FAQs that
 were created by the specified user.
 
     >>> for faq in collection.searchFAQs(owner=no_priv):
-    ...     print faq.title
+    ...     print(faq.title)
     What were the famous last words?
     How do I play the Game of Life?
     How do I install Foo?
@@ -161,7 +161,7 @@ You can combine multiple criterias. Only FAQs matching all the criterias
 
     >>> for faq in collection.searchFAQs(
     ...         search_text=u'install', owner=no_priv):
-    ...     print faq.title
+    ...     print(faq.title)
     How do I install Foo?
     How do I play the Game of Life?
 
@@ -177,7 +177,7 @@ date of creation (most recent first):
     >>> from lp.answers.interfaces.faqcollection import FAQSort
     >>> for faq in collection.searchFAQs(
     ...         search_text=u'install', sort=FAQSort.NEWEST_FIRST):
-    ...     print faq.title
+    ...     print(faq.title)
     How do I play the Game of Life?
     How do I make money quickly off the Internet?
     How do I install Foo?
@@ -186,12 +186,10 @@ The FAQSort.OLDEST_FIRST can be used to have the oldest FAQs sorted
 first:
 
     >>> for faq in collection.searchFAQs(sort=FAQSort.OLDEST_FIRST):
-    ...     print faq.title
+    ...     print(faq.title)
     How do I install Foo?
     What is The Meaning of Life?
     How do I make money quickly off the Internet?
     How do I play the Game of Life?
     Who really shot JFK?
     What were the famous last words?
-
-
