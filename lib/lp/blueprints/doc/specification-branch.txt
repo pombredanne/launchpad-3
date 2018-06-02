@@ -20,7 +20,7 @@ the Ubuntu media-integrity-check specifcation has a branch link:
     >>> spec = ubuntu.getSpecification('media-integrity-check')
 
     >>> for branchlink in spec.linked_branches:
-    ...     print branchlink.branch.unique_name
+    ...     print(branchlink.branch.unique_name)
     ~name12/+junk/junk.dev
 
 We can create a new branch link with the linkBranch() method:
@@ -32,20 +32,20 @@ We can create a new branch link with the linkBranch() method:
 
 The branch link records the person who created the link as the registrant.
 
-    >>> print branchlink.registrant.displayname
+    >>> print(branchlink.registrant.displayname)
     Sample Person
 
 Now the branch has two branch links:
 
     >>> for branchlink in spec.linked_branches:
-    ...     print branchlink.branch.unique_name
+    ...     print(branchlink.branch.unique_name)
     ~name12/+junk/junk.dev
     ~name12/+junk/junk.contrib
 
 Similarly, the branch has a list of attached specifications:
 
     >>> for speclink in branch.spec_links:
-    ...     print speclink.specification.name
+    ...     print(speclink.specification.name)
     media-integrity-check
 
 We can also look up a branch link with the getBranchLink() method:
@@ -61,5 +61,5 @@ method:
 
     >>> spec.unlinkBranch(branch, user)
     >>> for branchlink in spec.linked_branches:
-    ...     print branchlink.branch.unique_name
+    ...     print(branchlink.branch.unique_name)
     ~name12/+junk/junk.dev
