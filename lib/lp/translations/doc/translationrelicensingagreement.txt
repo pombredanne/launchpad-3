@@ -21,20 +21,20 @@ under BSD or not.
 
 When Karl has not made his selection yet, it is marked as None.
 
-    >>> print translations_person.translations_relicensing_agreement
+    >>> print(translations_person.translations_relicensing_agreement)
     None
     >>> choice = TranslationRelicensingAgreement.selectOneBy(person=person)
-    >>> print choice
+    >>> print(choice)
     None
 
 Setting a value will create a new TranslationRelicensingAgreement
 object.
 
     >>> translations_person.translations_relicensing_agreement = True
-    >>> print translations_person.translations_relicensing_agreement
+    >>> print(translations_person.translations_relicensing_agreement)
     True
     >>> choice = TranslationRelicensingAgreement.selectOneBy(person=person)
-    >>> print choice.allow_relicensing
+    >>> print(choice.allow_relicensing)
     True
 
 A `choice` implements ITranslationRelicensingAgreement interface:
@@ -45,8 +45,8 @@ A `choice` implements ITranslationRelicensingAgreement interface:
 A translator can also change their mind later.
 
     >>> translations_person.translations_relicensing_agreement = False
-    >>> print translations_person.translations_relicensing_agreement
+    >>> print(translations_person.translations_relicensing_agreement)
     False
     >>> choice = TranslationRelicensingAgreement.selectOneBy(person=person)
-    >>> print choice.allow_relicensing
+    >>> print(choice.allow_relicensing)
     False

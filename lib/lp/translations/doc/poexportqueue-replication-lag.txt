@@ -53,7 +53,7 @@ getRequest at this point returns the oldest request.
     ...         else:
     ...             summary.append('(template)')
     ...     for entry in sorted(summary):
-    ...         print entry
+    ...         print(entry)
 
     >>> summarize_request(queue.getRequest())
     (template)
@@ -75,7 +75,7 @@ can reproduce this by not committing the removal).  The second request
 is still technically on the queue, but no longer "live."
 
     >>> person, sources, format, request_ids = repeated_request
-    >>> print len(request_ids)
+    >>> print(len(request_ids))
     3
     >>> queue.removeRequest(request_ids)
 

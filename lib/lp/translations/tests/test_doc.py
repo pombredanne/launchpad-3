@@ -18,6 +18,7 @@ from lp.testing.layers import (
 from lp.testing.pages import PageTestSuite
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
+    setGlobs,
     setUp,
     tearDown,
     )
@@ -29,23 +30,28 @@ here = os.path.dirname(os.path.realpath(__file__))
 special = {
     'poexport-queue.txt': LayeredDocFileSuite(
         '../doc/poexport-queue.txt',
-        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
         ),
     'translationimportqueue.txt': LayeredDocFileSuite(
         '../doc/translationimportqueue.txt',
-        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
         ),
     'rosetta-karma.txt': LayeredDocFileSuite(
         '../doc/rosetta-karma.txt',
-        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
         ),
     'translationmessage-destroy.txt': LayeredDocFileSuite(
         '../doc/translationmessage-destroy.txt',
-        layer=LaunchpadZopelessLayer
+        setUp=lambda test: setGlobs(test, future=True),
+        layer=LaunchpadZopelessLayer,
         ),
     'translationsoverview.txt': LayeredDocFileSuite(
         '../doc/translationsoverview.txt',
-        layer=LaunchpadZopelessLayer
+        setUp=lambda test: setGlobs(test, future=True),
+        layer=LaunchpadZopelessLayer,
         ),
     }
 
@@ -79,7 +85,8 @@ def test_suite():
     for filename in filenames:
         path = os.path.join('../doc/', filename)
         one_test = LayeredDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown,
+            path,
+            setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)

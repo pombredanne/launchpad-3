@@ -41,7 +41,7 @@ translations.
 
 We can look at a POTMsgSet with no plural forms:
 
-    >>> print potmsgset.plural_text
+    >>> print(potmsgset.plural_text)
     None
 
 Any TranslationMessage for such a POTMsgSet returns a single plural form in
@@ -57,7 +57,7 @@ language:
     1
 
     >>> divehi = getUtility(ILanguageSet)['dv']
-    >>> print divehi.pluralforms
+    >>> print(divehi.pluralforms)
     None
     >>> current_dv = potmsgset.getCurrentTranslationMessageOrDummy(
     ...     DummyPOFile(potemplate, divehi))
@@ -82,7 +82,7 @@ forms per language (3 for Serbian, as specified in the language).
 In case the language doesn't have number of plural forms defined, we return
 a default of 2, which is the most common number of plural forms:
 
-    >>> print divehi.pluralforms
+    >>> print(divehi.pluralforms)
     None
     >>> current_dv = potmsgset_plural.getCurrentTranslationMessageOrDummy(
     ...     DummyPOFile(potemplate, divehi))
@@ -247,9 +247,9 @@ These are POTranslation references, not strings.
 
     >>> for translation in message.all_msgstrs:
     ...     if translation is None:
-    ...         print 'None'
+    ...         print('None')
     ...     else:
-    ...         print translation.translation
+    ...         print(translation.translation)
     new
     None
     None
@@ -271,7 +271,7 @@ eyes.
 The helper function make_plurals_fragment repeats a fragment of text
 for the number of plural forms we support (starting at zero).
 
-    >>> print make_plurals_fragment("x%(form)dx", ", ")
+    >>> print(make_plurals_fragment("x%(form)dx", ", "))
     x0x,
     x1x,
     x2x,
@@ -283,7 +283,7 @@ Composing text like this happens most in WHERE clauses of SQL queries.
 The make_plurals_sql_fragment helper adds some parentheses and spaces
 where you might otherwise forget them--or want to.
 
-    >>> print make_plurals_sql_fragment("msgstr%(form)d IS NOT NULL")
+    >>> print(make_plurals_sql_fragment("msgstr%(form)d IS NOT NULL"))
     (msgstr0 IS NOT NULL) AND
     (msgstr1 IS NOT NULL) AND
     (msgstr2 IS NOT NULL) AND
@@ -293,7 +293,7 @@ where you might otherwise forget them--or want to.
 
 The sub-clauses don't have to be tied together with AND:
 
-    >>> print make_plurals_sql_fragment("msgstr%(form)d IS NULL", "OR")
+    >>> print(make_plurals_sql_fragment("msgstr%(form)d IS NULL", "OR"))
     (msgstr0 IS NULL) OR
     (msgstr1 IS NULL) OR
     (msgstr2 IS NULL) OR
