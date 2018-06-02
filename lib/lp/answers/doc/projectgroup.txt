@@ -37,7 +37,7 @@ project group's searchQuestions() method.
     ...     " inlined.")
 
     >>> for question in mozilla_project.searchQuestions(search_text=u'svg'):
-    ...     print question.title, question.target.displayname
+    ...     print(question.title, question.target.displayname)
     SVG attachments aren't displayed            Mozilla Thunderbird
     Problem showing the SVG demo on W3C site    Mozilla Firefox
 
@@ -55,7 +55,7 @@ See questiontarget.txt for the full details.
     >>> for question in mozilla_project.searchQuestions(
     ...     owner=sample_person, status=QuestionStatus.OPEN,
     ...     sort=QuestionSort.OLDEST_FIRST):
-    ...     print question.title, question.target.displayname
+    ...     print(question.title, question.target.displayname)
     Problem showing the SVG demo on W3C site    Mozilla Firefox
     SVG attachments aren't displayed            Mozilla Thunderbird
 
@@ -68,9 +68,9 @@ questions in the project group's projects.
 
     # The Firefox project group has one question created in Brazilian
     # Portuguese.
-    >>> print ', '.join(
+    >>> print(', '.join(
     ...     sorted(language.code
-    ...            for language in mozilla_project.getQuestionLanguages()))
+    ...            for language in mozilla_project.getQuestionLanguages())))
     en, pt_BR
 
 In the case where a project group has no projects, there are no results.

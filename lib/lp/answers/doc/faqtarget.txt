@@ -37,7 +37,7 @@ the target.
     False
 
     >>> no_priv = getUtility(ILaunchBag).user
-    >>> #target.newFAQ(no_priv, 'Title', 'Summary', content='Content')
+    >>> target.newFAQ(no_priv, 'Title', 'Summary', content='Content')
     Traceback (most recent call last):
       ...
     Unauthorized: ...
@@ -89,16 +89,16 @@ FAQ's keywords.
     ...     no_priv, 'How to do something', 'Explain how to do something.',
     ...     keywords='documentation howto', date_created=now)
 
-    >>> print faq.owner.displayname
+    >>> print(faq.owner.displayname)
     No Privileges Person
 
-    >>> print faq.title
+    >>> print(faq.title)
     How to do something
 
-    >>> print faq.content
+    >>> print(faq.content)
     Explain how to do something.
 
-    >>> print faq.keywords
+    >>> print(faq.keywords)
     documentation howto
 
     >>> faq.date_created == now
@@ -122,7 +122,7 @@ id of the FAQ by using the get() method.
 
 It returns None when there is FAQ with that ID in the context:
 
-    >>> print target.getFAQ(12345)
+    >>> print(target.getFAQ(12345))
     None
 
 It also returns None when asking an ID for a FAQ that isn't in the
@@ -144,7 +144,7 @@ requested target:
     ...     'https://help.ubuntu.com/community/Installation')
 
     >>> login('no-priv@canonical.com')
-    >>> print target.getFAQ(ubuntu_faq.id)
+    >>> print(target.getFAQ(ubuntu_faq.id))
     None
 
 
@@ -176,7 +176,7 @@ words and stop words.
     ...     'https://help.launchpad.net/BugTrackerEmailInterface')
 
     >>> for faq in target.findSimilarFAQs('How do I use the Answer Tracker'):
-    ...     print faq.title
+    ...     print(faq.title)
     How to answer a question
     How to become a Launchpad king
 
@@ -187,7 +187,7 @@ appear in the content in the other document).
 If there are no similar FAQ, no result should be returned:
 
     >>> for faq in target.findSimilarFAQs('How do I do this?'):
-    ...     print faq.title
+    ...     print(faq.title)
 
 Since only common and stop words are in that summary, no similar FAQ
 could be found.
