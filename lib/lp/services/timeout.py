@@ -317,6 +317,9 @@ class CleanableHTTPAdapter(HTTPAdapter):
 class URLFetcher:
     """Object fetching remote URLs with a time out."""
 
+    def __init__(self):
+        self.session = None
+
     @with_timeout(cleanup='cleanup')
     def fetch(self, url, trust_env=None, allow_file=False, **request_kwargs):
         """Fetch the URL using a custom HTTP handler supporting timeout.
@@ -348,7 +351,9 @@ class URLFetcher:
 
     def cleanup(self):
         """Reset the connection when the operation timed out."""
-        self.session.close()
+        if self.session is not None:
+            self.session.close()
+        self.session = None
 
 
 def urlfetch(url, trust_env=None, **request_kwargs):
