@@ -133,7 +133,7 @@ characters and can't be reported without triggering an error themselves.
 Those are specially handled and reported.
 
     >>> try:
-    ...     raise AssertionError, "Really nasty \xc3 non-ASCII error!"
+    ...     raise AssertionError, b"Really nasty \xc3 non-ASCII error!"
     ... except AssertionError:
     ...     result.addFailure()
     >>> result.notify()
@@ -351,7 +351,7 @@ Exporting this pofile yields both messages in the resulting file.
     >>> process_queue(transaction, logging.getLogger())
     INFO:root:Stored file at http://...eo.po
 
-    >>> print get_newest_librarian_file().read()
+    >>> print(get_newest_librarian_file().read())
     # Esperanto translation for ...
     ...
     "X-Generator: Launchpad (build ...)\n"
@@ -372,7 +372,7 @@ in Ubuntu compared to upstream.
     >>> process_queue(transaction, logging.getLogger())
     INFO:root:Stored file at http://...eo.po
 
-    >>> print get_newest_librarian_file().read()
+    >>> print(get_newest_librarian_file().read())
     # IMPORTANT: This file does NOT contain a complete PO file structure.
     # DO NOT attempt to import this file back into Launchpad.
     ...
@@ -391,5 +391,3 @@ anything:
     >>> process_queue(fake_transaction, logging.getLogger())
     >>> len(pop_notifications())
     0
-
-

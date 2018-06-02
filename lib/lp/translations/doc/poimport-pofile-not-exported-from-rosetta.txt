@@ -66,7 +66,7 @@ And now, we import a .po file, not uploaded by the maintainer, that lacks the
 header 'X-Rosetta-Export-Date'. That header is the one that notes that the
 file comes from a previous export from Rosetta and when did it happen.
 
-    >>> pofile_contents = r'''
+    >>> pofile_contents = br'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-06-03 19:41+0100\n"
@@ -100,7 +100,7 @@ And the method returned an email with a notification of the error.
     >>> subject
     u'Import problem - Welsh (cy) - firefox in Mozilla Firefox trunk'
 
-    >>> print message
+    >>> print(message)
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ..., you uploaded a file with
@@ -127,7 +127,7 @@ And the method returned an email with a notification of the error.
 A much shorter version of that information is stored in the entry's
 error_output.
 
-    >>> print entry.error_output
+    >>> print(entry.error_output)
     File was not exported from Launchpad.
 
 We should also be sure that we don't block any import that is coming from
@@ -168,14 +168,13 @@ The status is now IMPORTED:
 The import code has also composed an email with the notification of the
 import.
 
-    >>> print subject
+    >>> print(subject)
     None
-    >>> print message
+    >>> print(message)
     Hello Mark Shuttleworth,
     ...
 
 There was no error output this time.
 
-    >>> print entry.error_output
+    >>> print(entry.error_output)
     None
-

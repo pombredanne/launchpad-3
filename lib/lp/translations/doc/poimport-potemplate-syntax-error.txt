@@ -52,7 +52,7 @@ Now, is time to create the new potemplate
 Let's import a .pot file that is missing its header. That's a
 TranslationFormatSyntaxError
 
-    >>> potemplate_contents = r'''
+    >>> potemplate_contents = br'''
     ... msgid "foo"
     ... msgstr ""
     ... '''
@@ -66,17 +66,17 @@ TranslationFormatSyntaxError
 
 The import failed.
 
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     FAILED
 
-    >>> print entry.error_output
+    >>> print(entry.error_output)
     No header found in this pofile
 
 And the code composed email with a notification of the error.
 
     >>> subject
     u'Import problem - firefox in Mozilla Firefox trunk'
-    >>> print message
+    >>> print(message)
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ..., you uploaded a file with translation templates for firefox in
@@ -128,15 +128,15 @@ Encoding errors
 
 The import failed.
 
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     FAILED
 
 The uploader receives an email about the encoding problem.
 
-    >>> print subject
+    >>> print(subject)
     Import problem - nonascii in Mozilla Firefox trunk
 
-    >>> print message
+    >>> print(message)
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ..., you uploaded a file with translation templates for nonascii
@@ -160,6 +160,6 @@ The uploader receives an email about the encoding problem.
 The queue entry's error_output field also contains a brief
 description of the error.
 
-    >>> print entry.error_output
+    >>> print(entry.error_output)
     'ascii' codec can't decode byte ... in position ...: ordinal not in
     range(128)
