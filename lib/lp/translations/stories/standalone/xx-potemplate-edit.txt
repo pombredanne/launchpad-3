@@ -33,7 +33,7 @@ page.
     ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
     ...     'evolution-2.2/')
     >>> browser.getLink('Change details').click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.../evolution/trunk/+pots/evolution-2.2/+edit
 
 The owner of a product has access to edit page for PO templates.
@@ -42,7 +42,7 @@ The owner of a product has access to edit page for PO templates.
     >>> browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
     ...     'evolution-2.2/+edit')
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.../evolution/trunk/+pots/evolution-2.2/+edit
 
 Owner will not see admin fields, only those fields designated for the
@@ -121,7 +121,7 @@ The visible fields can be changed and saved.
     >>> browser.getControl(name='field.owner').value = u'name12'
     >>> browser.getControl(name='field.description').value = u'foo'
     >>> browser.getControl('Change').click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evo
 
 The changed values will be stored and visible by accesing again the edit
@@ -172,7 +172,7 @@ about what values are accepted for the priority field.
     ...     'evolution-2.2/+edit')
     >>> admin_browser.getControl(name='field.priority').value = '-1'
     >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://translations.../evolution/trunk/+pots/evolution-2.2/+edit
 
     >>> print_feedback_messages(admin_browser.contents)
@@ -184,7 +184,7 @@ about what values are accepted for the priority field.
     ...     'evolution-2.2/+edit')
     >>> admin_browser.getControl(name='field.priority').value = '100001'
     >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://translations.../evolution/trunk/+pots/evolution-2.2/+edit
 
     >>> print_feedback_messages(admin_browser.contents)
@@ -216,7 +216,5 @@ template index page.
     ...   'http://translations.launchpad.dev/evolution/trunk/+pots/'
     ...   'evolution-2.2/+edit')
     >>> admin_browser.getLink('Cancel').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2
-
-
