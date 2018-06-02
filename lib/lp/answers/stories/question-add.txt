@@ -6,13 +6,13 @@ one involes two steps. First, go to the product or distribution for
 which support is desired:
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu')
-    >>> print browser.title
+    >>> print(browser.title)
     Questions : Ubuntu
 
 The user sees an involvement link to ask a question.
 
     >>> link = find_tag_by_id(browser.contents, 'involvement').a
-    >>> print extract_text(link)
+    >>> print(extract_text(link))
     Ask a question
 
 Asking a new question requires logging in:
@@ -23,7 +23,7 @@ Asking a new question requires logging in:
     Unauthorized...
     >>> user_browser.open('http://answers.launchpad.dev/ubuntu/')
     >>> user_browser.getLink('Ask a question').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Ask a question...
 
 
@@ -39,11 +39,11 @@ associated with the source package of the used application.
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+sources/mozilla-firefox/+gethelp')
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Help and support...
 
     >>> user_browser.getLink('Ask a question').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Ask a question...
 
 
@@ -82,15 +82,15 @@ For now, use a closer search:
     >>> user_browser.getControl('Continue').click()
     >>> contents = find_main_content(user_browser.contents)
     >>> similar_faqs = contents.find(id='similar-faqs')
-    >>> print extract_text(similar_faqs)
+    >>> print(extract_text(similar_faqs))
     How can I play MP3/Divx/DVDs/Quicktime/Realmedia files or view
         Flash/Java web pages
     >>> similar_faqs.a['href']
     u'http://answers.launchpad.dev/ubuntu/+faq/...'
 
     >>> similar_questions = contents.find(id='similar-questions')
-    >>> print extract_text(similar_questions).encode(
-    ...     'ascii', 'backslashreplace')
+    >>> print(extract_text(similar_questions).encode(
+    ...     'ascii', 'backslashreplace'))
     8: Installation of Java Runtime Environment for Mozilla  (Answered)
         posted on ... in ...mozilla-firefox... package in Ubuntu
     >>> similar_questions.a['href']
@@ -102,7 +102,7 @@ mouse is left over the question's title.
     >>> import re
     >>> question_link = contents.find(
     ...     'a', text=re.compile('Installation of Java'))
-    >>> print question_link.findParent('li')['title']
+    >>> print(question_link.findParent('li')['title'])
     <BLANKLINE>
     When opening http://www.gotomypc.com/ with Mozilla, a java run time
     ennvironment plugin is requested.
@@ -117,7 +117,7 @@ hovers on the FAQ's title:
 
     >>> faq_link = contents.find(
     ...     'a', text=re.compile('How can I play MP3/Divx'))
-    >>> print faq_link.findParent('li')['title']
+    >>> print(faq_link.findParent('li')['title'])
     Playing many common formats such as DVIX, MP3, DVD, or Flash
     animations require the installation of plugins.
     <BLANKLINE>
@@ -162,12 +162,12 @@ redirect the user to the question page.
     >>> user_browser.getControl('Post Question').click()
     >>> user_browser.url
     '.../ubuntu/+source/mozilla-firefox/+question/...'
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Question #... : Questions : mozilla-firefox package : Ubuntu
 
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'registration'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'registration')))
     Asked by No Privileges Person ...
     >>> contents = find_main_content(user_browser.contents)
-    >>> print extract_text(contents.find('div', 'report'))
+    >>> print(extract_text(contents.find('div', 'report')))
     I use Ubuntu on AMD64 ...

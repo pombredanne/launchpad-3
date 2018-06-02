@@ -27,10 +27,10 @@ This view is used to subscribe and unsubscribe from a question.
 Subscription is done when the user click on the 'Subscribe' button.
 
     >>> view = create_initialized_view(question_three, name='+subscribe')
-    >>> print view.label
+    >>> print(view.label)
     Subscribe to question
 
-    >>> print view.page_title
+    >>> print(view.page_title)
     Subscription
 
     >>> form = {'subscribe': 'Subscribe'}
@@ -43,7 +43,7 @@ A notification message is displayed and the view redirect to the
 question view page.
 
     >>> for notice in view.request.notifications:
-    ...     print notice.message
+    ...     print(notice.message)
     You have subscribed to this question.
 
     >>> view.request.response.getHeader('Location')
@@ -52,7 +52,7 @@ question view page.
 Unsubscription works in a similar manner.
 
     >>> view = create_initialized_view(question_three, name='+subscribe')
-    >>> print view.label
+    >>> print(view.label)
     Unsubscribe from question
 
     >>> form = {'subscribe': 'Unsubscribe'}
@@ -62,7 +62,7 @@ Unsubscription works in a similar manner.
     False
 
     >>> for notice in view.request.notifications:
-    ...     print notice.message
+    ...     print(notice.message)
     You have unsubscribed from this question.
 
     >>> view.request.response.getHeader('Location')
@@ -84,37 +84,37 @@ the form.
     >>> workflow_harness = LaunchpadFormHarness(
     ...     firefox_question, QuestionWorkflowView)
 
-    # Let's define a helper method that will return the names of the
+    # Let's define a helper method that will print the names of the
     # available actions.
 
-    >>> def getAvailableActionNames(view):
+    >>> def printAvailableActionNames(view):
     ...     names = [action.__name__.split('.')[-1]
     ...              for action in view.actions
     ...              if action.available()]
-    ...     return sorted(names)
+    ...     for name in sorted(names):
+    ...         print(name)
 
 Unlogged-in users cannot post any comments on the question:
 
     >>> login(ANONYMOUS)
     >>> workflow_harness.submit('', {})
-    >>> getAvailableActionNames(workflow_harness.view)
-    []
+    >>> printAvailableActionNames(workflow_harness.view)
 
 When question is in the OPEN state, the owner can comment, answer their
 own question or provide more information.
 
     >>> login('test@canonical.com')
     >>> workflow_harness.submit('', {})
-    >>> getAvailableActionNames(workflow_harness.view)
-    ['comment', 'giveinfo', 'selfanswer']
+    >>> printAvailableActionNames(workflow_harness.view)
+    comment giveinfo selfanswer
 
 But when another user sees the question, they can comment, provide an
 answer or request more information.
 
     >>> login('no-priv@canonical.com')
     >>> workflow_harness.submit('', {})
-    >>> getAvailableActionNames(workflow_harness.view)
-    ['answer', 'comment', 'requestinfo']
+    >>> printAvailableActionNames(workflow_harness.view)
+    answer comment requestinfo
 
 When the other user requests for more information, a confirmation is
 displayed, the question status is changed to NEEDSINFO and the user is
@@ -125,10 +125,10 @@ redirected back to the question page.
     ...         'field.message': 'Can you provide an example of an URL'
     ...             'displaying the problem?'})
     >>> for notification in workflow_harness.request.response.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     Thanks for your information request.
 
-    >>> print firefox_question.status.name
+    >>> print(firefox_question.status.name)
     NEEDSINFO
 
     >>> workflow_harness.redirectionTarget()
@@ -137,15 +137,15 @@ redirected back to the question page.
 The available actions for that other user are still comment, give an
 answer or request more information:
 
-    >>> getAvailableActionNames(workflow_harness.view)
-    ['answer', 'comment', 'requestinfo']
+    >>> printAvailableActionNames(workflow_harness.view)
+    answer comment requestinfo
 
 And the question owner still has the same possibilities as at first:
 
     >>> login('test@canonical.com')
     >>> workflow_harness.submit('', {})
-    >>> getAvailableActionNames(workflow_harness.view)
-    ['comment', 'giveinfo', 'selfanswer']
+    >>> printAvailableActionNames(workflow_harness.view)
+    comment giveinfo selfanswer
 
 If they reply with the requested information, the question is moved back
 to the OPEN state.
@@ -156,10 +156,10 @@ to the OPEN state.
     ...     }
     >>> workflow_harness.submit('giveinfo', form)
     >>> for notification in workflow_harness.request.response.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     Thanks for adding more information to your question.
 
-    >>> print firefox_question.status.name
+    >>> print(firefox_question.status.name)
     OPEN
 
     >>> workflow_harness.redirectionTarget()
@@ -174,10 +174,10 @@ The other user can come back and gives an answer:
     ...             "available with SVG support enabled. Using apt-get or "
     ...             "adept you should be able to upgrade."})
     >>> for notification in workflow_harness.request.response.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     Thanks for your answer.
 
-    >>> print firefox_question.status.name
+    >>> print(firefox_question.status.name)
     ANSWERED
 
     >>> workflow_harness.redirectionTarget()
@@ -190,8 +190,8 @@ isn't working.
 
     >>> login('test@canonical.com')
     >>> workflow_harness.submit('', {})
-    >>> getAvailableActionNames(workflow_harness.view)
-    ['comment', 'confirm', 'reopen', 'selfanswer']
+    >>> printAvailableActionNames(workflow_harness.view)
+    comment confirm reopen selfanswer
 
 Let's say they confirm the previous answer, in this case, the question
 will move to the 'SOLVED' state. Note that the UI doesn't enable the
@@ -202,10 +202,10 @@ user to enter a confirmation message at that stage.
     ...     'confirm', {'answer_id': answer_message_number,
     ...                 'field.message': ''})
     >>> for notification in workflow_harness.request.response.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     Thanks for your feedback.
 
-    >>> print firefox_question.status.name
+    >>> print(firefox_question.status.name)
     SOLVED
 
     >>> workflow_harness.redirectionTarget()
@@ -213,15 +213,15 @@ user to enter a confirmation message at that stage.
 
 Since no confirmation message was given, a default one was used.
 
-    >>> print firefox_question.messages[-1].text_contents
+    >>> print(firefox_question.messages[-1].text_contents)
     Thanks No Privileges Person, that solved my question.
 
 Once in the SOLVED state, when the answerer is a person other than the
 question owner, the owner can now only either add a comment or reopen
 the question:
 
-    >>> getAvailableActionNames(workflow_harness.view)
-    ['comment', 'reopen']
+    >>> printAvailableActionNames(workflow_harness.view)
+    comment reopen
 
 Adding a comment doesn't change the status:
 
@@ -230,21 +230,21 @@ Adding a comment doesn't change the status:
     ...         'field.message': "The example now displays "
     ...         "correctly. Thanks."})
     >>> for notification in workflow_harness.request.response.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     Thanks for your comment.
 
     >>> workflow_harness.redirectionTarget()
     '.../+question/2'
 
-    >>> print firefox_question.status.name
+    >>> print(firefox_question.status.name)
     SOLVED
 
 And the other user can only comment on the question:
 
     >>> login('no-priv@canonical.com')
     >>> workflow_harness.submit('', {})
-    >>> getAvailableActionNames(workflow_harness.view)
-    ['comment']
+    >>> printAvailableActionNames(workflow_harness.view)
+    comment
 
 If the question owner reopens the question, its status is changed back
 to 'OPEN'.
@@ -257,10 +257,10 @@ to 'OPEN'.
     ...         "http://people.w3.org/maxf/ChessGML/immortal.svg doesn't "
     ...         "display correctly."})
     >>> for notification in workflow_harness.request.response.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     Your question was reopened.
 
-    >>> print firefox_question.status.name
+    >>> print(firefox_question.status.name)
     OPEN
 
     >>> workflow_harness.redirectionTarget()
@@ -275,14 +275,14 @@ but no answer message is assigned to the answer.
     ...         'field.message': "OK, this example requires some "
     ...         "SVG features that will only be available in Firefox 2.0."})
     >>> for notification in workflow_harness.request.response.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     Your question is solved. If a particular message helped you solve the
     problem, use the <em>'This solved my problem'</em> button.
 
-    >>> print firefox_question.status.name
+    >>> print(firefox_question.status.name)
     SOLVED
 
-    >>> print firefox_question.answerer.displayname
+    >>> print(firefox_question.answerer.displayname)
     Sample Person
 
     >>> firefox_question.answer is None
@@ -297,19 +297,19 @@ path permits the question owner to state how the problem was solved,
 then attribute an answerer as a contributor to the solution. The
 answerer's message is attributed as the answer in this case.
 
-    >>> getAvailableActionNames(workflow_harness.view)
-    ['comment', 'confirm', 'reopen']
+    >>> printAvailableActionNames(workflow_harness.view)
+    comment confirm reopen
 
     >>> workflow_harness.submit(
     ...     'confirm', {'answer_id': answer_message_number,
     ...                 'field.message': ''})
-    >>> print firefox_question.status.name
+    >>> print(firefox_question.status.name)
     SOLVED
 
-    >>> print firefox_question.answerer.displayname
+    >>> print(firefox_question.answerer.displayname)
     No Privileges Person
 
-    >>> print firefox_question.answer.owner.displayname
+    >>> print(firefox_question.answer.owner.displayname)
     No Privileges Person
 
     >>> answer_id = firefox_question.messages[answer_message_number].id
@@ -338,13 +338,13 @@ the bug to the question.
     []
 
     >>> makebug.initialize()
-    >>> print question_three.bugs[0].title
+    >>> print(question_three.bugs[0].title)
     Bug title
 
-    >>> print question_three.bugs[0].description
+    >>> print(question_three.bugs[0].description)
     Bug description.
 
-    >>> print makebug.user.name
+    >>> print(makebug.user.name)
     name16
 
     >>> question_three.bugs[0].isSubscribed(makebug.user)
@@ -367,7 +367,7 @@ created.
     >>> makebug = getMultiAdapter((question_three, request), name='+makebug')
     >>> makebug.initialize()
     >>> for n in request.notifications:
-    ...     print n.message
+    ...     print(n.message)
     You cannot create a bug report...
 
 
@@ -395,10 +395,10 @@ question.
     >>> view = getMultiAdapter((firefox_question, request), name='+reject')
     >>> view.initialize()
     >>> for notice in request.notifications:
-    ...     print notice.message
+    ...     print(notice.message)
     You have rejected this question.
 
-    >>> print firefox_question.status.title
+    >>> print(firefox_question.status.title)
     Invalid
 
 
@@ -417,10 +417,10 @@ outside of the comment workflow.
     ...     (firefox_question, request), name='+change-status')
     >>> view.initialize()
     >>> for notice in request.notifications:
-    ...     print notice.message
+    ...     print(notice.message)
     Question status updated.
 
-    >>> print firefox_question.status.title
+    >>> print(firefox_question.status.title)
     Solved
 
 
@@ -447,13 +447,13 @@ product and whiteboard.
 
     >>> view = getMultiAdapter((question_three, request), name='+edit')
     >>> view.initialize()
-    >>> print question_three.distribution.name
+    >>> print(question_three.distribution.name)
     ubuntu
 
-    >>> print question_three.sourcepackagename.name
+    >>> print(question_three.sourcepackagename.name)
     mozilla-firefox
 
-    >>> print question_three.product
+    >>> print(question_three.product)
     None
 
 Since a user must have launchpad.Edit (question creator or target answer
@@ -496,10 +496,10 @@ fields will be updated:
     >>> question_three.description
     u'A better description.'
 
-    >>> print question_three.assignee.displayname
+    >>> print(question_three.assignee.displayname)
     Foo Bar
 
-    >>> print question_three.whiteboard
+    >>> print(question_three.whiteboard)
     Some note
 
 The question language can be set to any language registered with
@@ -532,13 +532,13 @@ a distribution question:
     >>> question_three.sourcepackagename is None
     True
 
-    >>> print question_three.distribution
+    >>> print(question_three.distribution)
     None
 
-    >>> print question_three.sourcepackagename
+    >>> print(question_three.sourcepackagename)
     None
 
-    >>> print question_three.product.name
+    >>> print(question_three.product.name)
     firefox
 
     # Reassign back the question to ubuntu
@@ -743,7 +743,7 @@ searchResults() method. The returned results are batched.
     <lp.services.webapp.batching.BatchNavigator ...>
 
     >>> for question in questions.batch:
-    ...     print question.title.encode('us-ascii', 'backslashreplace')
+    ...     print(question.title.encode('us-ascii', 'backslashreplace'))
     Problema al recompilar kernel con soporte smp (doble-n\xfacleo)
     Continue playing after shutdown
     Play DVDs in Totem
@@ -761,7 +761,7 @@ tweak the search and filter the results:
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
     >>> for question in questions.batch:
-    ...     print question.title, question.status.title
+    ...     print(question.title, question.status.title)
     mailto: problem in webpage Solved
 
 Specific views can provide a default filter by returning the default
@@ -779,14 +779,14 @@ default.
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
     >>> for question in questions.batch:
-    ...     print question.title
+    ...     print(question.title)
     mailto: problem in webpage
     Better Title
 
 The status widget displays the default criteria used:
 
     >>> for status in search_view.widgets['status']._getFormValue():
-    ...     print status.title
+    ...     print(status.title)
     Solved
     Invalid
 
@@ -801,11 +801,11 @@ criteria.
     >>> search_view = search_view_harness.view
     >>> questions = search_view.searchResults()
     >>> for question in questions.batch:
-    ...     print question.title
+    ...     print(question.title)
     mailto: problem in webpage
 
     >>> for status in search_view.widgets['status']._getFormValue():
-    ...     print status.title
+    ...     print(status.title)
     Solved
 
 The base view computes the page heading and the message displayed when
@@ -813,19 +813,19 @@ no results are found based on the selected search filter:
 
     >>> from zope.i18n import translate
     >>> search_view_harness.submit('', {})
-    >>> print translate(search_view_harness.view.page_title)
+    >>> print(translate(search_view_harness.view.page_title))
     Questions for Ubuntu
 
-    >>> print translate(search_view_harness.view.empty_listing_message)
+    >>> print(translate(search_view_harness.view.empty_listing_message))
     There are no questions for Ubuntu with the requested statuses.
 
     >>> MyCustomSearchQuestionsView.default_filter = dict(
     ...     status=[QuestionStatus.OPEN], search_text='Firefox')
     >>> search_view_harness.submit('', {})
-    >>> print translate(search_view_harness.view.page_title)
+    >>> print(translate(search_view_harness.view.page_title))
     Open questions matching "Firefox" for Ubuntu
 
-    >>> print translate(search_view_harness.view.empty_listing_message)
+    >>> print(translate(search_view_harness.view.empty_listing_message))
     There are no open questions matching "Firefox" for Ubuntu.
 
 It works also with user submitted values:
@@ -835,10 +835,10 @@ It works also with user submitted values:
     ...     'field.search_text': '',
     ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
-    >>> print translate(search_view_harness.view.page_title)
+    >>> print(translate(search_view_harness.view.page_title))
     Expired questions for Ubuntu
 
-    >>> print translate(search_view_harness.view.empty_listing_message)
+    >>> print(translate(search_view_harness.view.empty_listing_message))
     There are no expired questions for Ubuntu.
 
     >>> search_view_harness.submit('search', {
@@ -846,10 +846,10 @@ It works also with user submitted values:
     ...     'field.search_text': 'evolution',
     ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
-    >>> print translate(search_view_harness.view.page_title)
+    >>> print(translate(search_view_harness.view.page_title))
     Questions matching "evolution" for Ubuntu
 
-    >>> print translate(search_view_harness.view.empty_listing_message)
+    >>> print(translate(search_view_harness.view.empty_listing_message))
     There are no questions matching "evolution" for Ubuntu with the
     requested statuses.
 
@@ -874,7 +874,7 @@ Summary, Created, Submitter, Assignee, and Status.
 
     >>> table = find_tag_by_id(view.render(), 'question-listing')
     >>> for row in table.findAll('tr'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     Summary                Created     Submitter      Assignee  Status
     6 Newly installed...  2005-10-14   Sample Person  &mdash;   Answered ...
 
@@ -891,7 +891,7 @@ package is displayed if it exists.
 
     >>> table = find_tag_by_id(view.render(), 'question-listing')
     >>> for row in table.findAll('tr'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     Summary  Created     Submitter      Source Package   Assignee  Status ...
     8 ...    2006-07-20  Sample Person  mozilla-firefox  &mdash;   Answered
     7 ...    2005-10-14  Foo Bar        &mdash;          &mdash;   Needs ...
@@ -911,7 +911,7 @@ ProjectGroups display the "In" column to show the product name.
 
     >>> table = find_tag_by_id(view.render(), 'question-listing')
     >>> for row in table.findAll('tr'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     Summary  Created     Submitter      In               Assignee  Status
     6 ...    2005-10-14  Sample Person  Mozilla Firefox  &mdash;   Answered...
 
@@ -931,7 +931,7 @@ to the question, or an m-dash if there is no assignee.
 
     >>> table = find_tag_by_id(view.render(), 'question-listing')
     >>> for row in table.findAll('tr'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     Summary  Created     Submitter      Assignee  Status
     6 ...    2005-10-14  Sample Person  Bob       Answered
     4 ...    2005-09-05  Foo Bar        &mdash;   Open ...
@@ -972,7 +972,7 @@ himself or the Ubuntu Team as answer contact for ubuntu:
 The view adds notifications about the answer contacts added:
 
     >>> for notification in request.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     <...Your preferred languages... were updated to include ...English (en).
     You have been added as an answer contact for Ubuntu.
     English was added to Ubuntu Team's ...preferred languages...
@@ -998,7 +998,7 @@ can only subscribe himself:
     [u'Daniel Silverstone', u'Jeff Waugh', u'Ubuntu Team']
 
     >>> for notification in request.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     <...Your preferred languages... were updated to include ...English (en).
     You have been added as an answer contact for Ubuntu.
 
@@ -1017,7 +1017,7 @@ can only remove their own registration.
     [u'Jeff Waugh', u'Ubuntu Team']
 
     >>> for notification in request.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     You have been removed as an answer contact for Ubuntu.
 
 It can also be used to remove a team registration when the user is a
@@ -1037,5 +1037,5 @@ team administrator:
     [u'Jeff Waugh']
 
     >>> for notification in request.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     Ubuntu Team has been removed as an answer contact for Ubuntu.
