@@ -34,7 +34,6 @@ to the product series.
 
 Now we request that the queue be processed.
 
-    >>> import logging
     >>> import transaction
     >>> from lp.translations.scripts.po_export_queue import process_queue
     >>> logger = FakeLogger()
@@ -89,7 +88,7 @@ Let's download it and make sure the contents look ok.
     >>> from lp.services.helpers import string_to_tarfile
     >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
     >>> for name in sorted(tarball.getnames()):
-    ...     print name
+    ...     print(name)
     evolution-2.2
     evolution-2.2/evolution-2.2-es.po
     po
