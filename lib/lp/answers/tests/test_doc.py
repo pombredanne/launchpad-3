@@ -22,6 +22,7 @@ from lp.testing import (
     login,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import setUpGlobs
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -124,4 +125,5 @@ special = {
 
 def test_suite():
     return build_test_suite(
-        here, special, setUp=lambda test: setUp(test, future=True))
+        here, special, setUp=lambda test: setUp(test, future=True),
+        pageTestsSetUp=lambda test: setUpGlobs(test, future=True))

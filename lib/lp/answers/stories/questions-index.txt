@@ -17,14 +17,14 @@ First, we need to set some values for the later tests.
     >>> transaction.commit()
 
     >>> anon_browser.open('http://answers.launchpad.dev/')
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Launchpad Answers
 
 It shows the 5 latest questions asked:
 
     >>> latest_questions_asked = find_tag_by_id(
     ...     anon_browser.contents, 'latest-questions-asked')
-    >>> print latest_questions_asked.find('h2').renderContents()
+    >>> print(latest_questions_asked.find('h2').renderContents())
     Latest questions asked
     >>> for row in latest_questions_asked.findAll('li'):
     ...     row.find('a').renderContents()
@@ -38,7 +38,7 @@ As well as the 5 latest questions solved:
 
     >>> latest_questions_solved = find_tag_by_id(
     ...     anon_browser.contents, 'latest-questions-solved')
-    >>> print latest_questions_solved.find('h2').renderContents()
+    >>> print(latest_questions_solved.find('h2').renderContents())
     Latest questions solved
     >>> for row in latest_questions_solved.findAll('li'):
     ...     row.find('a').renderContents()
@@ -48,8 +48,8 @@ The application footer also contains a sample of stats for the application:
 
     # Replace numbers with X in output.
     >>> import re
-    >>> print re.sub('\d+', 'X', extract_text(find_tag_by_id(
-    ...     anon_browser.contents, 'application-footer')))
+    >>> print(re.sub('\d+', 'X', extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'application-footer'))))
     X questions answered and X questions solved out of
     X questions asked across X projects
 
@@ -57,8 +57,8 @@ The page also contains the projects actively using the Answer tracker.
 (Since sample data contains no projects with a question asked in the
 last 60 days, this list is empty):
 
-    >>> print extract_text(find_tag_by_id(
-    ...     anon_browser.contents, 'most-active-projects'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'most-active-projects')))
     Most active projects
 
 Add some recent questions so that this listing contains something.
@@ -72,8 +72,8 @@ Add some recent questions so that this listing contains something.
     >>> logout()
 
     >>> anon_browser.open('http://answers.launchpad.dev/')
-    >>> print extract_text(find_tag_by_id(
-    ...     anon_browser.contents, 'most-active-projects'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'most-active-projects')))
     Most active projects
     Ubuntu
     Mozilla Firefox
@@ -82,7 +82,7 @@ Clicking on these project links will bring the user to the project
 Answers front page:
 
     >>> anon_browser.getLink('Ubuntu').click()
-    >>> print anon_browser.url
+    >>> print(anon_browser.url)
     http://answers.launchpad.dev/ubuntu
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Questions : Ubuntu

@@ -14,12 +14,12 @@ title and description.
     >>> test_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> test_browser.open('http://launchpad.dev/firefox/+question/2')
     >>> test_browser.getLink('Edit question').click()
-    >>> print test_browser.url
+    >>> print(test_browser.url)
     http://answers.launchpad.dev/firefox/+question/2/+edit
 
 There is a cancel link should the user decide otherwise:
 
-    >>> print test_browser.getLink('Cancel').url
+    >>> print(test_browser.getLink('Cancel').url)
     http://answers.launchpad.dev/firefox/+question/2
 
 When we post the form, we should be redirected back to the question page.
@@ -32,25 +32,25 @@ When we post the form, we should be redirected back to the question page.
     >>> test_browser.getControl('Summary').value = summary
     >>> test_browser.getControl('Save Changes').click()
 
-    >>> print test_browser.url
+    >>> print(test_browser.url)
     http://answers.launchpad.dev/firefox/+question/2
 
 And viewing that page should show the updated information.
 
     >>> soup = find_main_content(test_browser.contents)
-    >>> print soup.find('div', 'report').renderContents().strip()
+    >>> print(soup.find('div', 'report').renderContents().strip())
     <p>Hi! I&#x27;m trying to learn about SVG but I can&#x27;t get it to
     work at all in firefox. Maybe there is a plugin? Help! Thanks.
     Mark</p>
-    >>> print soup.find('h1').renderContents()
+    >>> print(soup.find('h1').renderContents())
     Problem showing the SVG demo on W3C web site
 
 You can even modify the title and description of 'Answered' and
 'Invalid' questions:
 
     >>> def print_question_status(browser):
-    ...     print extract_text(
-    ...         find_tag_by_id(browser.contents, 'question-status'))
+    ...     print(extract_text(
+    ...         find_tag_by_id(browser.contents, 'question-status')))
 
     >>> test_browser.open('http://launchpad.dev/ubuntu/+question/3')
     >>> print_question_status(test_browser)
@@ -97,7 +97,7 @@ edit the Status Whiteboard using the 'Edit Question' page.
     >>> browser.getControl('Save Changes').click()
 
     >>> soup = find_main_content(browser.contents)
-    >>> print extract_text(find_tag_by_id(soup, 'question-whiteboard'))
+    >>> print(extract_text(find_tag_by_id(soup, 'question-whiteboard')))
     Whiteboard: Some note
     >>> portlet_details = find_tag_by_id(browser.contents, 'portlet-details')
 
@@ -113,5 +113,3 @@ These fields cannot be modified by a non-privileged user:
     Traceback (most recent call last):
     ...
     LookupError...
-
-
