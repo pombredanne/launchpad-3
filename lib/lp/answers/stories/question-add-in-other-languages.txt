@@ -13,7 +13,7 @@ The user may choose from any of their preferred languages and there is a
 link to enable to change their preferred languages:
 
     >>> user_browser.getLink('Change your preferred languages').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Language preferences...
     >>> user_browser.url
     '.../~no-priv/+editlanguages'
@@ -55,7 +55,7 @@ understood by any member of the support community.
     #'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
-    ...     print tag.renderContents()
+    ...     print(tag.renderContents())
     <strong>Portuguese (Brazil) (pt_BR)</strong> doesn't seem to be
     a language spoken by any answer contacts in this community. If you
     go ahead and ask a question in that language, no answer
@@ -83,7 +83,7 @@ from asking a question in the language of their choice.
     >>> browser.getControl('Post Question').click()
     >>> browser.url
     '.../ubuntu/+question/...'
-    >>> print browser.title
+    >>> print(browser.title)
     Question #... : Questions : Ubuntu
 
 The page reports the question language both in the content and in the
@@ -93,11 +93,11 @@ the language in the question details portlet.
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
-    >>> print soup.find('div', id='question')['lang']
+    >>> print(soup.find('div', id='question')['lang'])
     pt-BR
-    >>> print soup.html['dir']
+    >>> print(soup.html['dir'])
     ltr
-    >>> print extract_text(find_tag_by_id(soup, 'question-lang'))
+    >>> print(extract_text(find_tag_by_id(soup, 'question-lang')))
     Language: Portuguese (Brazil) ...
 
 It's also possible that the user chose English in the first page but
@@ -129,7 +129,7 @@ Welsh, we'll have to warn them.
     'http://launchpad.dev/ubuntu/+addquestion'
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
-    ...     print tag.renderContents()
+    ...     print(tag.renderContents())
     <strong>Welsh (cy)</strong> doesn't seem to be
     a language spoken by any answer contacts in this community. If you
     go ahead and ask a question in that language, no answer
@@ -147,7 +147,7 @@ display the warning again.
     >>> browser.getControl('Post Question').click()
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
-    ...     print tag.renderContents()
+    ...     print(tag.renderContents())
     <strong>Japanese (ja)</strong> doesn't seem to be
     a language spoken by any answer contacts in this community. If you
     go ahead and ask a question in that language, no answer
@@ -160,6 +160,6 @@ new question.
     >>> browser.getControl('Post Question').click()
     >>> browser.url
     '.../ubuntu/+question/...'
-    >>> print browser.title.decode('utf-8')
+    >>> print(browser.title.decode('utf-8'))
     Question #... : Questions : Ubuntu
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-details')
