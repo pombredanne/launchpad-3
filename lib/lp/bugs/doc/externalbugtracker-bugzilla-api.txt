@@ -123,6 +123,14 @@ This works whether the UTC offset is positive or negative.
     CALLED Bugzilla.time()
     datetime.datetime(2009, 8, 19, 22, 2, 2, tzinfo=<UTC>)
 
+Bugzilla >= 3.6 guarantees that db_time and web_time are in UTC, and
+Bugzilla >= 5.1.1 drops the web_time_utc flag.  We can cope with that.
+
+    >>> test_transport.include_utc_time_fields = False
+    >>> bugzilla.getCurrentDBTime()
+    CALLED Bugzilla.time()
+    datetime.datetime(2009, 8, 19, 22, 2, 2, tzinfo=<UTC>)
+
 
 Initializing the bug database
 -----------------------------
