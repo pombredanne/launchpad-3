@@ -17,13 +17,13 @@ By default, this is nothing.
     >>> product = factory.makeProduct()
     >>> trunk = product.getSeries('trunk')
     >>> entry = queue.addOrUpdateEntry(
-    ...     'la.po', '# contents', False, product.owner, productseries=trunk)
+    ...     'la.po', b'# contents', False, product.owner, productseries=trunk)
     >>> entry_url = canonical_url(entry, rootsite='translations')
     >>> logout()
 
     >>> admin_browser.open(entry_url)
     >>> output_panel = find_error_output(admin_browser)
-    >>> print output_panel
+    >>> print(output_panel)
     None
 
 The section showing the output only shows up when there is output to
@@ -32,7 +32,7 @@ show.
     >>> entry.error_output = "Things went horribly wrong."
     >>> admin_browser.open(entry_url)
     >>> output_panel = find_error_output(admin_browser)
-    >>> print extract_text(output_panel)
+    >>> print(extract_text(output_panel))
     Error output for this entry:
     Things went horribly wrong.
 
@@ -41,6 +41,6 @@ The output is properly HTML-escaped, so is safe to display in this way.
     >>> entry.error_output = "<h1>Injection &amp; subterfuge</h1>"
     >>> admin_browser.open(entry_url)
     >>> output_panel = find_error_output(admin_browser)
-    >>> print output_panel.renderContents()
+    >>> print(output_panel.renderContents())
     Error output for this entry:
     ...&lt;h1&gt;Injection &amp;amp; subterfuge&lt;/h1&gt;...

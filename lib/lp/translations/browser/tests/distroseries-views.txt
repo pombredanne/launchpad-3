@@ -54,16 +54,16 @@ reveal its translations to the public or hide them from the public.
     ...     distroseries.hide_all_translations = False
     ...     objection = check_translations_access(distroseries)
     ...     if objection is None:
-    ...         print "User can access revealed translations."
+    ...         print("User can access revealed translations.")
     ...     else:
-    ...         print "No access to revealed translations!", objection
+    ...         print("No access to revealed translations!", objection)
     ...
     ...     distroseries.hide_all_translations = True
     ...     objection = check_translations_access(distroseries)
     ...     if objection is None:
-    ...         print "User can access hidden translations."
+    ...         print("User can access hidden translations.")
     ...     else:
-    ...         print "User can not access hidden translations:", objection
+    ...         print("User can not access hidden translations:", objection)
     ...
     ...     distroseries.hide_all_translations = original_hide_flag
 
@@ -158,4 +158,3 @@ Exactly what message is displayed depends on the series' status.
     User can access revealed translations.
     User can not access hidden translations:
     Translations for this release series are not available yet.
-
