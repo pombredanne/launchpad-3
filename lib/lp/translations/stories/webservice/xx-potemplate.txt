@@ -34,7 +34,7 @@ Anonymous users have read access to PO templates attributes.
 
     >>> translation_files = anon_webservice.get(
     ...     potemplate['translation_files_collection_link']).jsonBody()
-    >>> print translation_files['total_size']
+    >>> print(translation_files['total_size'])
     9
     >>> print(translation_files['entries'][0]['resource_type_link'])
     http://.../#translation_file
@@ -118,4 +118,3 @@ All translation templates for a source package are available using the
     True
     >>> print(all_translation_templates['entries'][0]['resource_type_link'])
     http://.../#translation_template
-

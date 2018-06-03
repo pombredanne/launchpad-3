@@ -20,7 +20,7 @@ Mark is a qualified user.
     >>> download = browser.getLink('download a full tarball')
     >>> download_url = download.url
     >>> download.click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla/+export
 
 
@@ -170,7 +170,7 @@ format, and request the download.
 
     >>> browser.getControl('Request Download').click()
 
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.launchpad.dev/ubuntu/hoary/+source/mozilla
 
     >>> print_feedback_messages(browser.contents)
