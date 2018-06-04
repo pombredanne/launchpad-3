@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper classes for testing ExternalSystem."""
@@ -871,6 +871,8 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
             },
         }
 
+    include_utc_time_fields = True
+
     def __init__(self, *args, **kwargs):
         """Ensure mutable class data is copied to the instance."""
         TestBugzillaXMLRPCTransport.__init__(self, *args, **kwargs)
@@ -903,17 +905,26 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         # data. We do this the old fashioned way because XML-RPC
         # Transports don't support new-style classes.
         time_dict = TestBugzillaXMLRPCTransport.time(self)
-        offset_hours = (self.utc_offset / 60) / 60
-        offset_string = '+%02d00' % offset_hours
 
-        return {
-            'db_time': time_dict['local_time'],
-            'tz_name': time_dict['tz_name'],
-            'tz_offset': offset_string,
-            'tz_short_name': time_dict['tz_name'],
-            'web_time': time_dict['local_time'],
-            'web_time_utc': time_dict['utc_time'],
-            }
+        if self.include_utc_time_fields:
+            # Bugzilla < 5.1.1 (although as of 3.6 the UTC offset is always
+            # 0).
+            offset_hours = (self.utc_offset / 60) / 60
+            offset_string = '+%02d00' % offset_hours
+            return {
+                'db_time': time_dict['local_time'],
+                'tz_name': time_dict['tz_name'],
+                'tz_offset': offset_string,
+                'tz_short_name': time_dict['tz_name'],
+                'web_time': time_dict['local_time'],
+                'web_time_utc': time_dict['utc_time'],
+                }
+        else:
+            # Bugzilla >= 5.1.1.
+            return {
+                'db_time': time_dict['utc_time'],
+                'web_time': time_dict['utc_time'],
+                }
 
     def get(self, arguments):
         """Return a list of bug dicts for a given set of bug ids."""
