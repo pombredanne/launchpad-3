@@ -56,12 +56,8 @@ class BugzillaRemoteComponentScraper:
 
     def getPage(self):
         """Download and return content from the Bugzilla page"""
-        proxies = {}
-        if config.launchpad.http_proxy:
-            proxies['http'] = config.launchpad.http_proxy
-            proxies['https'] = config.launchpad.http_proxy
         with override_timeout(config.updatebugzillaremotecomponents.timeout):
-            return urlfetch(self.url, proxies=proxies).content
+            return urlfetch(self.url, trust_env=False, use_proxy=True).content
 
     def parsePage(self, page_text):
         """Builds self.product using HTML content in page_text"""

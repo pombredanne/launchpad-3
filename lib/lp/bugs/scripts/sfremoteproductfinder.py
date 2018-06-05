@@ -45,12 +45,8 @@ class SourceForgeRemoteProductFinder:
     def _getPage(self, page):
         """GET the specified page on the remote HTTP server."""
         page_url = urlappend(self.sourceforge_baseurl, page)
-        proxies = {}
-        if config.launchpad.http_proxy:
-            proxies['http'] = config.launchpad.http_proxy
-            proxies['https'] = config.launchpad.http_proxy
         with override_timeout(config.updatesourceforgeremoteproduct.timeout):
-            return urlfetch(page_url, proxies=proxies).content
+            return urlfetch(page_url, trust_env=False, use_proxy=True).content
 
     def getRemoteProductFromSourceForge(self, sf_project):
         """Return the remote product of a SourceForge project.

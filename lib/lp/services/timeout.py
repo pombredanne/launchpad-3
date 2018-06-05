@@ -42,6 +42,8 @@ from requests.packages.urllib3.exceptions import ClosedPoolError
 from requests.packages.urllib3.poolmanager import PoolManager
 from six import reraise
 
+from lp.services.config import config
+
 
 default_timeout_function = None
 
@@ -327,9 +329,13 @@ class URLFetcher:
         return session
 
     @with_timeout(cleanup='cleanup')
-    def fetch(self, url, trust_env=None, **request_kwargs):
+    def fetch(self, url, trust_env=None, use_proxy=False, **request_kwargs):
         """Fetch the URL using a custom HTTP handler supporting timeout."""
         request_kwargs.setdefault("method", "GET")
+        if use_proxy and config.launchpad.http_proxy:
+            request_kwargs.setdefault("proxies", {})
+            request_kwargs["proxies"]["http"] = config.launchpad.http_proxy
+            request_kwargs["proxies"]["https"] = config.launchpad.http_proxy
         self.session = self._makeSession(trust_env=trust_env)
         response = self.session.request(url=url, **request_kwargs)
         response.raise_for_status()
