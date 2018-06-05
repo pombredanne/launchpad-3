@@ -1,4 +1,4 @@
-# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """timeout.py tests.
@@ -15,6 +15,8 @@ from textwrap import dedent
 import threading
 import xmlrpclib
 
+from fixtures import MonkeyPatch
+from requests import Response
 from requests.exceptions import (
     ConnectionError,
     InvalidSchema,
@@ -24,6 +26,7 @@ from testtools.matchers import MatchesStructure
 from lp.services.timeout import (
     default_timeout,
     get_default_timeout_function,
+    override_timeout,
     reduced_timeout,
     set_default_timeout_function,
     TimeoutError,
@@ -37,6 +40,7 @@ from lp.services.webapp.adapter import (
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCase
+from lp.testing.fakemethod import FakeMethod
 
 
 @with_timeout()
@@ -247,6 +251,15 @@ class TestTimeout(TestCase):
         finally:
             clear_request_started()
 
+    def test_override_timeout(self):
+        """override_timeout temporarily overrides the default timeout."""
+        self.addCleanup(set_default_timeout_function, None)
+        with override_timeout(1.0):
+            self.assertEqual(1.0, get_default_timeout_function()())
+        set_default_timeout_function(lambda: 5.0)
+        with override_timeout(1.0):
+            self.assertEqual(1.0, get_default_timeout_function()())
+
     def make_test_socket(self):
         """One common use case for timing out is when making an HTTP request
         to an external site to fetch content. To this end, the timeout
@@ -354,6 +367,37 @@ class TestTimeout(TestCase):
         e = self.assertRaises(InvalidSchema, urlfetch, url)
         self.assertEqual(
             "No connection adapters were found for '%s'" % url, str(e))
+
+    def test_urlfetch_no_proxy_by_default(self):
+        """urlfetch does not use a proxy by default."""
+        self.pushConfig('launchpad', http_proxy='http://proxy.example:3128/')
+        set_default_timeout_function(lambda: 1)
+        self.addCleanup(set_default_timeout_function, None)
+        fake_send = FakeMethod(result=Response())
+        self.useFixture(
+            MonkeyPatch('requests.adapters.HTTPAdapter.send', fake_send))
+        # XXX cjwatson 2018-06-04: Eventually we'll set trust_env=False
+        # everywhere, but for now we just do that as part of the test in
+        # order to avoid environment variation.
+        urlfetch('http://example.com/', trust_env=False)
+        self.assertEqual({}, fake_send.calls[0][1]['proxies'])
+
+    def test_urlfetch_uses_proxies_if_requested(self):
+        """urlfetch uses proxies if explicitly requested."""
+        proxy = 'http://proxy.example:3128/'
+        self.pushConfig('launchpad', http_proxy=proxy)
+        set_default_timeout_function(lambda: 1)
+        self.addCleanup(set_default_timeout_function, None)
+        fake_send = FakeMethod(result=Response())
+        self.useFixture(
+            MonkeyPatch('requests.adapters.HTTPAdapter.send', fake_send))
+        # XXX cjwatson 2018-06-04: Eventually we'll set trust_env=False
+        # everywhere, but for now we just do that as part of the test in
+        # order to avoid environment variation.
+        urlfetch('http://example.com/', trust_env=False, use_proxy=True)
+        self.assertEqual(
+            {scheme: proxy for scheme in ('http', 'https')},
+            fake_send.calls[0][1]['proxies'])
 
     def test_xmlrpc_transport(self):
         """ Another use case for timeouts is communicating with external

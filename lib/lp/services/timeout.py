@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     "default_timeout",
     "get_default_timeout_function",
+    "override_timeout",
     "reduced_timeout",
     "SafeTransportWithTimeout",
     "set_default_timeout_function",
@@ -40,6 +41,8 @@ from requests.packages.urllib3.connectionpool import (
 from requests.packages.urllib3.exceptions import ClosedPoolError
 from requests.packages.urllib3.poolmanager import PoolManager
 from six import reraise
+
+from lp.services.config import config
 
 
 default_timeout_function = None
@@ -104,6 +107,21 @@ def reduced_timeout(clearance, webapp_max=None, default=None):
             return remaining
 
     set_default_timeout_function(timeout)
+    try:
+        yield
+    finally:
+        set_default_timeout_function(original_timeout_function)
+
+
+@contextmanager
+def override_timeout(timeout):
+    """A context manager that temporarily overrides the default timeout.
+
+    :param timeout: The new timeout to use.
+    """
+    original_timeout_function = get_default_timeout_function()
+
+    set_default_timeout_function(lambda: timeout)
     try:
         yield
     finally:
@@ -311,9 +329,13 @@ class URLFetcher:
         return session
 
     @with_timeout(cleanup='cleanup')
-    def fetch(self, url, trust_env=None, **request_kwargs):
+    def fetch(self, url, trust_env=None, use_proxy=False, **request_kwargs):
         """Fetch the URL using a custom HTTP handler supporting timeout."""
         request_kwargs.setdefault("method", "GET")
+        if use_proxy and config.launchpad.http_proxy:
+            request_kwargs.setdefault("proxies", {})
+            request_kwargs["proxies"]["http"] = config.launchpad.http_proxy
+            request_kwargs["proxies"]["https"] = config.launchpad.http_proxy
         self.session = self._makeSession(trust_env=trust_env)
         response = self.session.request(url=url, **request_kwargs)
         response.raise_for_status()
