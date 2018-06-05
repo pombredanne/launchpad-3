@@ -249,7 +249,7 @@ succeed.  A helper function, simulate_upload does that with all the checking.
     ...     if len(rejected_contents) > 0:
     ...         # Clean up rejected entry
     ...         shutil.rmtree(os.path.join(rejected_dir, leafname))
-    ...         print "Rejected uploads: %s" % rejected_contents
+    ...         print("Rejected uploads: %s" % ", ".join(rejected_contents))
     ...         return
     ...
     ...     assert len(os.listdir(failed_dir)) == 0, (
@@ -260,7 +260,7 @@ succeed.  A helper function, simulate_upload does that with all the checking.
     ...     assert simple_publish(distro=distro), (
     ...             "Should publish at least one item")
     ...     if loglevel is None or loglevel <= logging.INFO:
-    ...         print "Upload complete."
+    ...         print("Upload complete.")
 
     >>> from lp.testing.mail_helpers import (
     ...     pop_notifications,
@@ -274,10 +274,10 @@ succeed.  A helper function, simulate_upload does that with all the checking.
     ...     line.
     ...     """
     ...     for message in pop_notifications(commit=False):
-    ...         print "To:", sort_addresses(message['to'])
-    ...         print "Subject:", message['subject']
-    ...         print message.get_payload()[0].as_string()
-    ...         print ''
+    ...         print("To:", sort_addresses(message['to']))
+    ...         print("Subject:", message['subject'])
+    ...         print(message.get_payload()[0].as_string())
+    ...         print()
 
 The 'bar' package' is an arch-all package. We have four stages to the
 bar test. Each stage should be simple enough. First we have a new
@@ -301,7 +301,7 @@ to a different 'bar_1.0.orig.tar.gz'.
 
     >>> stub.test_emails = []
     >>> simulate_upload('bar_1.0-3', loglevel=logging.ERROR)
-    Rejected uploads: ['bar_1.0-3']
+    Rejected uploads: bar_1.0-3
 
     >>> read_email()
     To: Daniel Silverstone <daniel.silverstone@canonical.com>
@@ -579,7 +579,7 @@ published inside the target pocket should be rejected:
     INFO Upload was rejected:
     INFO foo_1.0-3.dsc: Version older than that in the archive. 1.0-3 <= 2.9-2
     ...
-    Rejected uploads: ['foo_1.0-3']
+    Rejected uploads: foo_1.0-3
 
 Note that the ancestry pointed in the rejection message (2.9-2) is what
 we expect.
@@ -625,9 +625,9 @@ First a couple helpers.
     ...         args.append("-P")
     ...     script = os.path.join(config.root, "scripts", "publish-distro.py")
     ...     result, stdout, stderr = run_script(script, args)
-    ...     print stderr
+    ...     print(stderr)
     ...     if result != 0:
-    ...         print "Script returned", result
+    ...         print("Script returned", result)
 
     >>> def release_file_has_uncompressed_packages(path):
     ...     """Does the release file include uncompressed Packages?"""

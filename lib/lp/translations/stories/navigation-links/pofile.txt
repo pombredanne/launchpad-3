@@ -8,7 +8,7 @@ Taking an IPOFile for IProductSeries context:
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
     ...     'evolution-2.2/es')
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es
 
 The Application tabs should point to IProduct URLs.
@@ -26,7 +26,7 @@ Taking an IPOFile for ISourcePackage context:
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
     ...     '+pots/evolution-2.2/es')
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es
 
 The Application tabs should point to IDistributionSourcePackage URLs.
@@ -38,4 +38,3 @@ The Application tabs should point to IDistributionSourcePackage URLs.
     * Blueprints - not linked
     * Translations (selected) - http://translations.launchpad.dev/ubuntu/+source/evolution
     * Answers - http://answers.launchpad.dev/ubuntu/+source/evolution
-

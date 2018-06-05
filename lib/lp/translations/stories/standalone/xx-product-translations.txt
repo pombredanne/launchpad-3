@@ -4,9 +4,9 @@ Product Translations
 Each product in Launchpad has a Translations page.
 
     >>> anon_browser.open('http://translations.launchpad.dev/evolution')
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Translations : Evolution
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print(extract_text(find_main_content(anon_browser.contents)))
     Translation overview
     ...
 
@@ -15,18 +15,18 @@ A helper method to print out language chart.
     >>> def print_language_stats(browser):
     ...     table = find_tag_by_id(browser.contents, 'languagestats')
     ...     if table is None:
-    ...         print "No translations."
+    ...         print("No translations.")
     ...         return
     ...     language_rows = find_tags_by_class(str(table), 'stats')
-    ...     print "%-25s %13s %13s" % (
-    ...         "Language", "Untranslated", "Unreviewed")
+    ...     print("%-25s %13s %13s" % (
+    ...         "Language", "Untranslated", "Unreviewed"))
     ...     for row in language_rows:
     ...         cols = row.findAll('td')
     ...         language = extract_text(cols[0])
     ...         untranslated = extract_text(cols[2])
     ...         unreviewed = extract_text(cols[3])
-    ...         print "%-25s %13d %13d" % (
-    ...             language, int(untranslated), int(unreviewed))
+    ...         print("%-25s %13d %13d" % (
+    ...             language, int(untranslated), int(unreviewed)))
 
 We even have a language chart table.
 
@@ -42,14 +42,14 @@ translation, or link the product to a translatable package.
     >>> registrant = setupBrowser(auth='Basic mark@example.com:test')
     >>> registrant.open(
     ...     'http://translations.launchpad.dev/gnomebaker')
-    >>> print extract_text(
+    >>> print(extract_text(
     ...     find_tag_by_id(
-    ...         registrant.contents, 'not-translated-in-launchpad'))
+    ...         registrant.contents, 'not-translated-in-launchpad')))
     Launchpad does not know where gnomebaker translates its messages.
 
-    >>> print extract_text(
+    >>> print(extract_text(
     ...     find_tag_by_id(
-    ...         registrant.contents, 'translations-explanation'))
+    ...         registrant.contents, 'translations-explanation')))
     Launchpad allows communities to translate projects using imports or a
     branch.
     Getting started with translating your project in Launchpad
@@ -65,7 +65,7 @@ configuration page, where they can configure the project to use
 Launchpad for translations if desired.
 
     >>> registrant.getLink('Translations').click()
-    >>> print registrant.url
+    >>> print(registrant.url)
     http://.../gnomebaker/+configure-translations
 
 (The template upload process is tested in xx-translation-import-queue.txt.)
@@ -76,7 +76,7 @@ are not being used, and provides access to help.
 
     >>> unprivileged = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> unprivileged.open('http://translations.launchpad.dev/gnomebaker')
-    >>> print extract_text(find_main_content(unprivileged.contents))
+    >>> print(extract_text(find_main_content(unprivileged.contents)))
     Translation overview
     Help for translations
     Launchpad does not know where
@@ -107,7 +107,7 @@ If you're not logged in at all, you aren't shown the registrant
 options, either.
 
     >>> anon_browser.open('http://translations.launchpad.dev/gnomebaker')
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print(extract_text(find_main_content(anon_browser.contents)))
     Translation overview
     Help for translations
     Launchpad does not know where
@@ -118,16 +118,16 @@ Translations it doesn't show any translation template:
 
     >>> anon_browser.open('http://launchpad.dev/netapplet')
     >>> anon_browser.getLink('Translations').click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Translations : NetApplet
-    >>> print find_main_content(anon_browser.contents)
+    >>> print(find_main_content(anon_browser.contents))
     <...
     ...Translation overview...
 
 And since the Network Applet isn't currently using Launchpad for
 Translations, there is no language chart shown.
 
-    >>> print find_tag_by_id(anon_browser.contents, 'language-chart')
+    >>> print(find_tag_by_id(anon_browser.contents, 'language-chart'))
     None
 
 If the netapplet project is updated to use Launchpad for translations...
@@ -145,16 +145,16 @@ If the netapplet project is updated to use Launchpad for translations...
 ...there are no longer any obsolete entries.
 
     >>> admin_browser.getLink('Translations', index=1).click()
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     Configure translations : Translations : NetApplet
-    >>> print find_tag_by_id(admin_browser.contents,
-    ...                'portlet-obsolete-translatable-series')
+    >>> print(find_tag_by_id(admin_browser.contents,
+    ...                'portlet-obsolete-translatable-series'))
     None
 
 Also, we will get some translation status for network applet.
 
     >>> anon_browser.open('http://translations.launchpad.dev/netapplet')
-    >>> print find_main_content(anon_browser.contents)
+    >>> print(find_main_content(anon_browser.contents))
     <...
     ...Translation overview...
     >>> print_language_stats(anon_browser)
@@ -179,13 +179,13 @@ The page mentions which product series should be translated.
 That's all an anonymous user will see.
 
     >>> anon_browser.open(product_url)
-    >>> print find_translation_recommendation(anon_browser)
+    >>> print(find_translation_recommendation(anon_browser))
     Launchpad currently recommends translating Evolution trunk series.
 
 A logged-in user is also invited to download translations.
 
     >>> user_browser.open(product_url)
-    >>> print find_translation_recommendation(user_browser)
+    >>> print(find_translation_recommendation(user_browser))
     Launchpad currently recommends translating Evolution trunk series.
     You can also download translations for trunk.
 
@@ -193,7 +193,7 @@ A user with upload rights sees the invitation not just to download but
 to upload as well.
 
     >>> admin_browser.open(product_url)
-    >>> print find_translation_recommendation(admin_browser)
+    >>> print(find_translation_recommendation(admin_browser))
     Launchpad currently recommends translating Evolution trunk series.
     You can also download or upload translations for trunk.
 
@@ -213,7 +213,7 @@ through some hoops to create that situation.
     ...     potemplate.iscurrent = False
     >>> logout()
     >>> admin_browser.open(product_url)
-    >>> print find_translation_recommendation(admin_browser)
+    >>> print(find_translation_recommendation(admin_browser))
     None
 
 At the moment, translatable source packages are not recommended, although
@@ -221,14 +221,14 @@ the product is linked to one.
 
     >>> source_package = find_tag_by_id(
     ...     admin_browser.contents, 'portlet-translatable-packages')
-    >>> print extract_text(source_package)
+    >>> print(extract_text(source_package))
     All translatable distribution packages
     evolution source package in Hoary
 
 Instead a notice is displayed that the product has no translations.
 
     >>> notice = first_tag_by_class(admin_browser.contents, 'notice')
-    >>> print extract_text(notice)
+    >>> print(extract_text(notice))
     Getting started with translating your project in Launchpad
     Configure Translations
     There are no translations for this project.

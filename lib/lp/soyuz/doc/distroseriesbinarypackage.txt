@@ -21,29 +21,29 @@ Series:
 
 It has a name, summary, description and title:
 
-    >>> print firefox_dsbp.name
+    >>> print(firefox_dsbp.name)
     mozilla-firefox
 
-    >>> print firefox_dsbp.summary
+    >>> print(firefox_dsbp.summary)
     Mozilla Firefox Web Browser
 
-    >>> print firefox_dsbp.description
+    >>> print(firefox_dsbp.description)
     Mozilla Firefox Web Browser is .....
 
-    >>> print firefox_dsbp.title
+    >>> print(firefox_dsbp.title)
     Binary package "mozilla-firefox" in ubuntu warty
 
-    >>> print firefox_dsbp.distribution.name
+    >>> print(firefox_dsbp.distribution.name)
     ubuntu
 
 It provides the current publishings for the binary package in the
 distro series (ordered by architecture then datecreated):
 
     >>> for published in firefox_dsbp.current_publishings:
-    ...     print "%s %s in %s" % (
+    ...     print("%s %s in %s" % (
     ...         published.distroarchseriesbinarypackagerelease.name,
     ...         published.distroarchseriesbinarypackagerelease.version,
-    ...         published.distroarchseries.architecturetag)
+    ...         published.distroarchseries.architecturetag))
     mozilla-firefox 0.9 in hppa
     mozilla-firefox 0.9 in i386
     mozilla-firefox 1.0 in i386
@@ -56,7 +56,7 @@ The last published binary can also be accessed directly:
 
 It also provides access to the last DistributionSourcePackageRelease:
 
-    >>> print firefox_dsbp.last_sourcepackagerelease.title
+    >>> print(firefox_dsbp.last_sourcepackagerelease.title)
     iceweasel 1.0 source package in Ubuntu
 
 If a DistroSeriesBinaryPackage doesn't have a DistroSeriesPackageCache,
@@ -75,11 +75,11 @@ whatever reason), then last_published returns None.
     >>> firefox_hoary_dsbp.current_publishings
     []
     
-    >>> print firefox_hoary_dsbp.last_published
+    >>> print(firefox_hoary_dsbp.last_published)
     None
 
 In this case, the last DistributionSourcePackageRelease will also be None:
 
-    >>> print firefox_hoary_dsbp.last_sourcepackagerelease
+    >>> print(firefox_hoary_dsbp.last_sourcepackagerelease)
     None
 

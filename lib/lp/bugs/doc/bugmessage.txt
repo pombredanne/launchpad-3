@@ -32,7 +32,7 @@ bug watch.
     >>> for message in bug_15.messages:
     ...     bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
     ...         bug_15, message)
-    ...     print bug_message.bugwatch
+    ...     print(bug_message.bugwatch)
     None
     <security proxied lp.bugs.model.bugwatch.BugWatch ...>
     ...
@@ -42,7 +42,7 @@ bug watch.
     >>> imported_comments.count()
     6
     >>> for bug_message in imported_comments:
-    ...     print bug_message.bugwatch
+    ...     print(bug_message.bugwatch)
     <security proxied lp.bugs.model.bugwatch.BugWatch ...>
     ...
 
@@ -86,10 +86,10 @@ scores.
     >>> bug_watch_updater = getUtility(IPersonSet).getByName(
     ...     'bug-watch-updater')
     >>> for cve in bug_one.cves:
-    ...     print cve.displayname
+    ...     print(cve.displayname)
     CVE-1999-8979
     >>> for bugwatch in bug_one.watches:
-    ...     print bugwatch.url
+    ...     print(bugwatch.url)
     https://bugzilla.mozilla.org/show_bug.cgi?id=123543
     https://bugzilla.mozilla.org/show_bug.cgi?id=2000
     https://bugzilla.mozilla.org/show_bug.cgi?id=42
@@ -103,11 +103,11 @@ scores.
     ...                See also CVE-1991-9911
     ...             """)
     >>> for cve in bug_one.cves:
-    ...     print cve.displayname
+    ...     print(cve.displayname)
     CVE-1991-9911
     CVE-1999-8979
     >>> for bugwatch in bug_one.watches:
-    ...     print bugwatch.url
+    ...     print(bugwatch.url)
     https://bugzilla.mozilla.org/show_bug.cgi?id=123543
     https://bugzilla.mozilla.org/show_bug.cgi?id=2000
     https://bugzilla.mozilla.org/show_bug.cgi?id=42
@@ -119,9 +119,9 @@ the bug, the message and the watch are not linked because the message
 was not imported by the bug watch.
 
     >>> bug_message = bug_one.bug_messages[-1]
-    >>> print bug_message.message == test_message
+    >>> print(bug_message.message == test_message)
     True
-    >>> print bug_message.bugwatch
+    >>> print(bug_message.bugwatch)
     None
 
 CVE watches and bug watches are also created, when a message is imported from
@@ -142,12 +142,12 @@ an external bug tracker.
     >>> bugmsg.index
     4
     >>> for cve in bug_one.cves:
-    ...     print cve.displayname
+    ...     print(cve.displayname)
     CVE-1991-3333
     CVE-1991-9911
     CVE-1999-8979
     >>> for bugwatch in bug_one.watches:
-    ...     print bugwatch.url
+    ...     print(bugwatch.url)
     https://bugzilla.mozilla.org/show_bug.cgi?id=123543
     https://bugzilla.mozilla.org/show_bug.cgi?id=2000
     https://bugzilla.mozilla.org/show_bug.cgi?id=42

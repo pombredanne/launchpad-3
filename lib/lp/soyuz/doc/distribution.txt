@@ -72,7 +72,7 @@ PPAs can be reached passing a filter matching (via fti) its description
 and its  'contents description' (see package-cache.txt).
 
     >>> for owner in [cprov, mark, no_priv]:
-    ...     print "%s: %s" % (owner.name, owner.archive.description)
+    ...     print("%s: %s" % (owner.name, owner.archive.description))
     cprov: packages to help my friends.
     mark: packages to help the humanity (you know, ubuntu)
     no-priv: I am not allowed to say, I have no privs.
@@ -198,7 +198,7 @@ source to another location within the PPA.
     >>> warty = ubuntu['warty']
     >>> pocket_release = PackagePublishingPocket.RELEASE
     >>> src_pub = cprov_src.copyTo(warty, pocket_release, cprov.archive)
-    >>> print src_pub.status.name
+    >>> print(src_pub.status.name)
     PENDING
 
     >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
@@ -255,7 +255,7 @@ The copied binaries are pending publication, thus Celso's PPA gets
 listed in the PPA pending-publication results.
 
     >>> for pub in pending_binaries:
-    ...     print pub.status.name
+    ...     print(pub.status.name)
     PENDING
     PENDING
 
@@ -302,7 +302,7 @@ the distribution.  This list does not, therefore, include PPAs.
 
     >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
     >>> for archive in ubuntutest.all_distro_archives:
-    ...     print archive.purpose.title
+    ...     print(archive.purpose.title)
     Primary Archive
     Partner Archive
 
@@ -310,11 +310,11 @@ the distribution.  This list does not, therefore, include PPAs.
 component name.  If the component is unknown, None is returned.
 
     >>> partner_archive = ubuntutest.getArchiveByComponent('partner')
-    >>> print partner_archive.displayname
+    >>> print(partner_archive.displayname)
     Partner Archive for Ubuntu Test
 
     >>> other_archive = ubuntutest.getArchiveByComponent('dodgycomponent')
-    >>> print other_archive
+    >>> print(other_archive)
     None
 
 Multiple components, specially the debian-compatibility ones points to
@@ -322,13 +322,13 @@ the PRIMARY archive. This relationship is established so we can import
 their packages in the correct archive.
 
     >>> main_archive = ubuntutest.getArchiveByComponent('main')
-    >>> print main_archive.displayname
+    >>> print(main_archive.displayname)
     Primary Archive for Ubuntu Test
 
     >>> non_free_archive = ubuntutest.getArchiveByComponent('non-free')
-    >>> print non_free_archive.displayname
+    >>> print(non_free_archive.displayname)
     Primary Archive for Ubuntu Test
 
     >>> contrib_archive = ubuntutest.getArchiveByComponent('contrib')
-    >>> print contrib_archive.displayname
+    >>> print(contrib_archive.displayname)
     Primary Archive for Ubuntu Test

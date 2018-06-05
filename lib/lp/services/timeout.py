@@ -43,6 +43,8 @@ from requests.packages.urllib3.poolmanager import PoolManager
 from requests_file import FileAdapter
 from six import reraise
 
+from lp.services.config import config
+
 
 default_timeout_function = None
 
@@ -321,13 +323,15 @@ class URLFetcher:
         self.session = None
 
     @with_timeout(cleanup='cleanup')
-    def fetch(self, url, trust_env=None, allow_file=False, **request_kwargs):
+    def fetch(self, url, trust_env=None, use_proxy=False, allow_file=False,
+              **request_kwargs):
         """Fetch the URL using a custom HTTP handler supporting timeout.
 
         :param url: The URL to fetch.
         :param trust_env: If not None, set the session's trust_env to this
             to determine whether it fetches proxy configuration from the
             environment.
+        :param use_proxy: If True, use Launchpad's configured proxy.
         :param allow_file: If True, allow file:// URLs.  (Be careful to only
             pass this if the URL is trusted.)
         :param request_kwargs: Additional keyword arguments passed on to
@@ -343,6 +347,10 @@ class URLFetcher:
             self.session.mount("file://", FileAdapter())
 
         request_kwargs.setdefault("method", "GET")
+        if use_proxy and config.launchpad.http_proxy:
+            request_kwargs.setdefault("proxies", {})
+            request_kwargs["proxies"]["http"] = config.launchpad.http_proxy
+            request_kwargs["proxies"]["https"] = config.launchpad.http_proxy
         response = self.session.request(url=url, **request_kwargs)
         response.raise_for_status()
         # Make sure the content has been consumed before returning.

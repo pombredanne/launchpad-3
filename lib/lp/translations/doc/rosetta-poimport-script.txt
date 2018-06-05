@@ -28,11 +28,11 @@ We don't care about a POTemplate we are working with, so just pick any.
 Provide a POFile with Last-Translator set to a user not existing in
 the sampledata.
 
-    >>> print getUtility(IPersonSet).getByEmail('danilo@canonical.com')
+    >>> print(getUtility(IPersonSet).getByEmail('danilo@canonical.com'))
     None
 
     >>> pofile = potemplate.newPOFile('sr')
-    >>> pofile_content = r'''
+    >>> pofile_content = br'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-06-04 20:41+0100\n"
@@ -88,7 +88,7 @@ has enough privileges for the script to run to completion.
     >>> stdout, stderr = process.communicate()
     >>> process.returncode
     0
-    >>> print stderr
+    >>> print(stderr)
     INFO    Creating lockfile: /var/lock/launchpad-rosetta-poimport.lock
     INFO    Importing: Serbian (sr) ... of evolution-2.2 in Evolution trunk
     INFO    Import requests completed.
@@ -101,4 +101,3 @@ A new Account for 'danilo@canonical.com' is created.
     ...     filter_status=False)
     >>> danilo.displayname
     u'Danilo \u0160egan'
-

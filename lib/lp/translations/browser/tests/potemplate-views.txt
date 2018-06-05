@@ -42,9 +42,12 @@ we check that it only has two items from sample data.
 The FileUpload class needs a class with the attributes: filename, file and
 headers.
 
+XXX cjwatson 2018-06-02: FileUploadArgument.filename can become a native
+string again once we're on zope.publisher >= 4.0.0a1.
+
     >>> class FileUploadArgument:
-    ...     filename='po/foo.pot'
-    ...     file=StringIO('foos')
+    ...     filename=b'po/foo.pot'
+    ...     file=StringIO(b'foos')
     ...     headers=''
 
 Now, we do the upload.
@@ -73,9 +76,12 @@ the entry should be linked with the IPOTemplate we are using.
 From the IPOTemplate upload form, we can also upload .po files. Let's check
 that feature...
 
+XXX cjwatson 2018-06-02: FileUploadArgument.filename can become a native
+string again once we're on zope.publisher >= 4.0.0a1.
+
     >>> class FileUploadArgument:
-    ...     filename='po/es.po'
-    ...     file=StringIO('foos')
+    ...     filename=b'po/es.po'
+    ...     file=StringIO(b'foos')
     ...     headers=''
 
 We do the upload...

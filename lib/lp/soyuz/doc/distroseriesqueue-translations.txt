@@ -108,7 +108,7 @@ package.
 
     >>> from lp.registry.model.sourcepackage import SourcePackage
     >>> dapper_pmount = SourcePackage(pmount_sourcepackagename, dapper)
-    >>> print len(dapper_pmount.getLatestTranslationsUploads())
+    >>> print(len(dapper_pmount.getLatestTranslationsUploads()))
     0
 
     >>> success = pmount_upload.do_accept(build=build)
@@ -124,7 +124,7 @@ package.
 # no longer exists and this content is impossible to check at the moment
 # since no email is generated because the recipients are not LP Persons.
 # (So why is it being checked in the first place?)
-#>>> print pmount_upload.getNotificationSummary()
+#>>> print(pmount_upload.getNotificationSummary())
 #NEW: pmount_0.9.7-2ubuntu2_amd64.deb
 #OK: pmount_0.9.7-2ubuntu2_amd64_translations.tar.gz
 
@@ -133,7 +133,7 @@ package.
 
     >>> latest_translations_uploads = list(
     ...     dapper_pmount.getLatestTranslationsUploads())
-    >>> print len(latest_translations_uploads)
+    >>> print(len(latest_translations_uploads))
     1
 
 We'll get back to that uploaded file later.
@@ -184,9 +184,9 @@ or rosetta-admins. In this case, as findPersonToNotify returns nothing,
 the spph creator is the requester.
 
     >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
-    ...     print '%s/%s by %s: %s' % (
+    ...     print('%s/%s by %s: %s' % (
     ...         entry.distroseries.name, entry.sourcepackagename.name,
-    ...         entry.importer.name, entry.path)
+    ...         entry.importer.name, entry.path))
     dapper/pmount by john-doe: po/es_ES.po
     dapper/pmount by john-doe: po/ca.po
     dapper/pmount by john-doe: po/de.po
@@ -243,13 +243,13 @@ But an upload to the UPDATE pocket will add items to the import queue:
 As we can see from the translation import queue content, as the publication
 has no creator specified, it falls back to rosetta-admins as the requester.
 
-    >>> print spph.creator
+    >>> print(spph.creator)
     None
 
     >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
-    ...     print '%s/%s by %s: %s' % (
+    ...     print('%s/%s by %s: %s' % (
     ...         entry.distroseries.name, entry.sourcepackagename.name,
-    ...         entry.importer.name, entry.path)
+    ...         entry.importer.name, entry.path))
     dapper/pmount by rosetta-admins: po/es_ES.po
     dapper/pmount by rosetta-admins: po/ca.po
     dapper/pmount by rosetta-admins: po/de.po
@@ -281,9 +281,9 @@ Uploads to restricted component are accepted too.
 As we can see from the translation import queue content.
 
     >>> for entry in translation_import_queue.getAllEntries(target=ubuntu):
-    ...     print '%s/%s by %s: %s' % (
+    ...     print('%s/%s by %s: %s' % (
     ...         entry.distroseries.name, entry.sourcepackagename.name,
-    ...         entry.importer.name, entry.path)
+    ...         entry.importer.name, entry.path))
     dapper/pmount by rosetta-admins: po/es_ES.po
     dapper/pmount by rosetta-admins: po/ca.po
     dapper/pmount by rosetta-admins: po/de.po
@@ -394,7 +394,7 @@ package.
     ...     if entry.name.endswith('.po') or entry.name.endswith('.pot')
     ...     ])
     >>> for filename in translation_files:
-    ...     print filename
+    ...     print(filename)
     ./source/po/ca.po
     ./source/po/cs.po
     ./source/po/de.po

@@ -29,7 +29,7 @@ following file type in its context.
  * Build upload logs: '_log.txt';
  * Built files: '*deb';
 
-    >>> print build.title
+    >>> print(build.title)
     i386 build of test-pkg 1.0 in ubuntutest breezy-autotest RELEASE
 
 Unsupported filename lookups also result in a `NotFoundError`.
@@ -37,19 +37,19 @@ Unsupported filename lookups also result in a `NotFoundError`.
     >>> build.getFileByName('biscuit.cookie')
     Traceback (most recent call last):
     ...
-    NotFoundError: 'biscuit.cookie'
+    NotFoundError: u'biscuit.cookie'
 
 And unreachable files in `NotFoundError`.
 
     >>> build.getFileByName('boing.changes')
     Traceback (most recent call last):
     ...
-    NotFoundError: 'boing.changes'
+    NotFoundError: u'boing.changes'
 
 Retrieving a binary changesfile.  "test_1.0_i386.changes" is created when
 SoyuzTestPublisher creates the "test" binary publication.
 
-    >>> print build.upload_changesfile.filename
+    >>> print(build.upload_changesfile.filename)
     test_1.0_i386.changes
 
     >>> build.upload_changesfile == build.getFileByName(

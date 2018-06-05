@@ -75,16 +75,16 @@ attribute of the ProductSeries.
     ...           'field.actions.save_settings': 'Save Settings'})
     >>> view = ProductSeriesTranslationsSettingsView(
     ...     productseries, request)
-    >>> print productseries.translations_autoimport_mode.title
+    >>> print(productseries.translations_autoimport_mode.title)
     None
     >>> view.initialize()
-    >>> print productseries.translations_autoimport_mode.title
+    >>> print(productseries.translations_autoimport_mode.title)
     Import template files
 
 Also, a branch job to upload the full set of translation files has been
 created to create the initial database entries from the files in the branch.
 
-    >>> print isUploadJobCreatedForBranch(productseries)
+    >>> print(isUploadJobCreatedForBranch(productseries))
     True
 
 
@@ -104,5 +104,5 @@ is created that has force_translations_upload set to true.
     >>> view = ProductSeriesTranslationsBzrImportView(
     ...     productseries, request)
     >>> view.initialize()
-    >>> print isUploadJobCreatedForBranch(productseries, True)
+    >>> print(isUploadJobCreatedForBranch(productseries, True))
     True
