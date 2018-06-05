@@ -15,14 +15,22 @@ from textwrap import dedent
 import threading
 import xmlrpclib
 
-from fixtures import MonkeyPatch
+from fixtures import (
+    MonkeyPatch,
+    TempDir,
+    )
 from requests import Response
 from requests.exceptions import (
     ConnectionError,
     InvalidSchema,
     )
-from testtools.matchers import MatchesStructure
+from testtools.matchers import (
+    ContainsDict,
+    Equals,
+    MatchesStructure,
+    )
 
+from lp.services.osutils import write_file
 from lp.services.timeout import (
     default_timeout,
     get_default_timeout_function,
@@ -368,6 +376,17 @@ class TestTimeout(TestCase):
         self.assertEqual(
             "No connection adapters were found for '%s'" % url, str(e))
 
+    def test_urlfetch_does_not_support_file_urls_by_default(self):
+        """urlfetch() does not support file urls by default."""
+        set_default_timeout_function(lambda: 1)
+        self.addCleanup(set_default_timeout_function, None)
+        test_path = self.useFixture(TempDir()).join('file')
+        write_file(test_path, '')
+        url = 'file://' + test_path
+        e = self.assertRaises(InvalidSchema, urlfetch, url)
+        self.assertEqual(
+            "No connection adapters were found for '%s'" % url, str(e))
+
     def test_urlfetch_no_proxy_by_default(self):
         """urlfetch does not use a proxy by default."""
         self.pushConfig('launchpad', http_proxy='http://proxy.example:3128/')
@@ -398,6 +417,18 @@ class TestTimeout(TestCase):
         self.assertEqual(
             {scheme: proxy for scheme in ('http', 'https')},
             fake_send.calls[0][1]['proxies'])
+
+    def test_urlfetch_supports_file_urls_if_allow_file(self):
+        """urlfetch() supports file urls if explicitly asked to do so."""
+        set_default_timeout_function(lambda: 1)
+        self.addCleanup(set_default_timeout_function, None)
+        test_path = self.useFixture(TempDir()).join('file')
+        write_file(test_path, 'Success.')
+        url = 'file://' + test_path
+        self.assertThat(urlfetch(url, allow_file=True), MatchesStructure(
+            status_code=Equals(200),
+            headers=ContainsDict({'Content-Length': Equals(8)}),
+            content=Equals('Success.')))
 
     def test_xmlrpc_transport(self):
         """ Another use case for timeouts is communicating with external
