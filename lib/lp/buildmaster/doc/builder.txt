@@ -20,11 +20,11 @@ As expected, it implements IBuilder.
 
     >>> from lp.testing import verifyObject
 
-    >>> print builder.name
+    >>> print(builder.name)
     bob
-    >>> print builder.builderok
+    >>> print(builder.builderok)
     True
-    >>> print builder.failnotes
+    >>> print(builder.failnotes)
     None
 
 
@@ -42,7 +42,7 @@ Builders and groups thereof are managed through a utility, IBuilderSet.
 Iterating over a BuilderSet yields all registered builders.
 
     >>> for b in builderset:
-    ...     print b.name
+    ...     print(b.name)
     bob
     frog
 
@@ -53,16 +53,16 @@ count() return the number of builders registered:
 
 Builders can be retrieved by name.
 
-    >>> print builderset['bob'].name
+    >>> print(builderset['bob'].name)
     bob
-    >>> print builderset['bad']
+    >>> print(builderset['bad'])
     None
 
 And also by ID.
 
-    >>> print builderset.get(2).name
+    >>> print(builderset.get(2).name)
     frog
-    >>> print builderset.get(100).name
+    >>> print(builderset.get(100).name)
     Traceback (most recent call last):
     ...
     SQLObjectNotFound: Object not found
@@ -80,7 +80,7 @@ The 'new' method will create a new builder in the database.
 virtualization status, architecture, then name.
 
     >>> for b in builderset.getBuilders():
-    ...     print b.name
+    ...     print(b.name)
     bob
     dummy
     frog
@@ -88,7 +88,7 @@ virtualization status, architecture, then name.
     >>> bnew.active = False
     >>> login(ANONYMOUS)
     >>> for b in builderset.getBuilders():
-    ...     print b.name
+    ...     print(b.name)
     bob
     frog
 
@@ -149,5 +149,5 @@ show up in the calculated queue size.
     ...     distroseries=ubuntu.currentseries).queueBuild()
     >>> transaction.commit()
     >>> queue_sizes = builderset.getBuildQueueSizes()
-    >>> print queue_sizes['virt']['386']
+    >>> print(queue_sizes['virt']['386'])
     (1L, datetime.timedelta(0, 600))
