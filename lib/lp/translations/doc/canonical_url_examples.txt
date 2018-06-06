@@ -65,7 +65,7 @@ Also, we can get the url to a translation message.
     >>> translationmessage = potmsgset.getCurrentTranslation(
     ...     pofile.potemplate, pofile.language, potemplate.translation_side)
     >>> translationmessage.setPOFile(pofile)
-    >>> print canonical_url(translationmessage)
+    >>> print(canonical_url(translationmessage))
     http://transl.../hoary/+source/evolution/+pots/evolution-2.2/es/1
 
 Even for a dummy one.
@@ -73,7 +73,7 @@ Even for a dummy one.
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
     >>> translationmessage = potmsgset.getCurrentTranslationMessageOrDummy(
     ...     pofile)
-    >>> print canonical_url(translationmessage)
+    >>> print(canonical_url(translationmessage))
     http://transl.../hoary/+source/evolution/+pots/evolution-2.2/es/20
 
 Upstream POTemplateSubsets work in much the same way, except they hang off a
@@ -103,7 +103,7 @@ Also, we can get the url to a dummy one
     >>> translationmessage = potmsgset.getCurrentTranslation(
     ...     pofile.potemplate, pofile.language, potemplate.translation_side)
     >>> translationmessage.setPOFile(pofile)
-    >>> print canonical_url(translationmessage)
+    >>> print(canonical_url(translationmessage))
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/1
 
 Even for a dummy PO msgset
@@ -111,7 +111,7 @@ Even for a dummy PO msgset
     >>> potmsgset = potemplate.getPOTMsgSetBySequence(20)
     >>> translationmessage = potmsgset.getCurrentTranslationMessageOrDummy(
     ...     pofile)
-    >>> print canonical_url(translationmessage)
+    >>> print(canonical_url(translationmessage))
     http://translations.../evolution/trunk/+pots/evolution-2.2/es/20
 
 

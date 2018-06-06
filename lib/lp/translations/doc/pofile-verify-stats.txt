@@ -109,7 +109,7 @@ The Translations administrators also receive an email about the error.
     ...     if in_header:
     ...         in_header = (line != '')
     ...     else:
-    ...         print line
+    ...         print(line)
     The POFile statistics verifier encountered errors while checking cached
     statistics in the database:
     <BLANKLINE>
@@ -129,10 +129,9 @@ fixed by running the verifier directly.
     >>> from lp.testing.script import run_script
     >>> (returncode, out, err) = run_script(
     ...     'cronscripts/rosetta-pofile-stats.py', ['--start-id=99'])
-    >>> print returncode
+    >>> print(returncode)
     0
-    >>> print err
+    >>> print(err)
     INFO    Creating lockfile: /var/lock/launchpad-pofile-stats.lock
     INFO    Starting verification of POFile stats at id 99
     INFO    Done.
-

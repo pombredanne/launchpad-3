@@ -63,27 +63,27 @@ representations of the source package name, version, component and section.
 This is mostly as a convenience to API users so that we don't need to export
 tiny 2-column content classes and force the users to retrieve those.
 
-    >>> print spph.source_package_name
+    >>> print(spph.source_package_name)
     pmount
 
-    >>> print spph.source_package_version
+    >>> print(spph.source_package_version)
     0.1-1
 
-    >>> print spph.component_name
+    >>> print(spph.component_name)
     main
 
-    >>> print spph.section_name
+    >>> print(spph.section_name)
     base
 
 Other properties are shortcuts to the source package's properties:
 
-    >>> print spph.package_creator
+    >>> print(spph.package_creator)
     <Person at ... mark (Mark Shuttleworth)>
 
-    >>> print spph.package_maintainer
+    >>> print(spph.package_maintainer)
     <Person at ... mark (Mark Shuttleworth)>
 
-    >>> print spph.package_signer
+    >>> print(spph.package_signer)
     <Person at ... name16 (Foo Bar)>
 
 The signer can also be None for packages that were synced (e.g. from Debian):
@@ -91,7 +91,7 @@ The signer can also be None for packages that were synced (e.g. from Debian):
     >>> from lp.services.propertycache import get_property_cache
     >>> spph.sourcepackagerelease.signing_key_owner = None
     >>> spph.sourcepackagerelease.signing_key_fingerprint = None
-    >>> print spph.package_signer
+    >>> print(spph.package_signer)
     None
 
 There is also a method that returns the .changes file URL. This is proxied
@@ -104,13 +104,13 @@ could be private and thus in the restricted librarian.
 
 The pmount source has no packageupload in the sampledata:
 
-    >>> print spph.changesFileUrl()
+    >>> print(spph.changesFileUrl())
     None
 
 The iceweasel source has good data:
 
     >>> pub = spph.archive.getPublishedSources(name=u"iceweasel").first()
-    >>> print pub.changesFileUrl()
+    >>> print(pub.changesFileUrl())
     http://.../ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
 
 There is also a helper property to determine whether the current release for
@@ -118,7 +118,7 @@ this package in the distroseries is newer than this publishing. Nothing is
 returned if there is no package in the distroseries primary archive with a
 later version.
 
-    >>> print pub.newer_distroseries_version
+    >>> print(pub.newer_distroseries_version)
     None
 
 If we publish iceweasel 1.1 in the same distroseries, then the distroseries
@@ -133,14 +133,14 @@ source package release will be returned.
     ...     sourcename='iceweasel')
 
     >>> del get_property_cache(pub).newer_distroseries_version
-    >>> print pub.newer_distroseries_version.title
+    >>> print(pub.newer_distroseries_version.title)
     iceweasel 1.1 source package in Ubuntu
 
 We can calculate the newer_distroseries_version for many spph objects at once.
 
     >>> del get_property_cache(pub).newer_distroseries_version
     >>> pub.distroseries.setNewerDistroSeriesVersions([pub])
-    >>> print get_property_cache(pub).newer_distroseries_version.title
+    >>> print(get_property_cache(pub).newer_distroseries_version.title)
     iceweasel 1.1 source package in Ubuntu
 
 A helper is also included to create a summary of the build statuses for
@@ -159,10 +159,10 @@ Create a helper for printing the build status summary:
 
     >>> import operator
     >>> def print_build_status_summary(summary):
-    ...     print summary['status'].title
+    ...     print(summary['status'].title)
     ...     for build in sorted(
     ...         summary['builds'], key=operator.attrgetter('title')):
-    ...         print build.title
+    ...         print(build.title)
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
     FULLYBUILT_PENDING
@@ -176,7 +176,7 @@ The underlying method being used here is getUnpublishedBuildsForSources():
     >>> ps = getUtility(IPublishingSet)
     >>> unpublished_builds = ps.getUnpublishedBuildsForSources([spph])
     >>> for _, b, _ in sorted(unpublished_builds, key=lambda b:b[1].title):
-    ...     print b.title
+    ...     print(b.title)
     hppa build of abc 666 in ubuntutest breezy-autotest RELEASE
     i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
@@ -209,7 +209,7 @@ If one of the builds becomes published, it will not appear in the summary:
 Nor will it be included in the unpublished builds:
 
     >>> for _, build, _ in ps.getUnpublishedBuildsForSources([spph]):
-    ...     print build.title
+    ...     print(build.title)
     i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
 By default, only FULLYBUILT builds are included in the returned
@@ -218,14 +218,14 @@ unpublished builds:
     >>> builds[1].updateStatus(
     ...     BuildStatus.SUPERSEDED, force_invalid_transition=True)
     >>> for _, build, _ in ps.getUnpublishedBuildsForSources([spph]):
-    ...     print build.title
+    ...     print(build.title)
 
 But the returned build-states can be set explicitly:
 
     >>> for _, build, _ in ps.getUnpublishedBuildsForSources(
     ...     [spph],
     ...     build_states=[BuildStatus.FULLYBUILT, BuildStatus.SUPERSEDED]):
-    ...     print build.title
+    ...     print(build.title)
     i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
 Just switch it back to FULLYBUILT before continuing:
@@ -248,7 +248,7 @@ per normal:
 There are no longer any unpublished builds for the source package:
 
     >>> for _, build, _ in ps.getUnpublishedBuildsForSources([spph]):
-    ...     print build.title
+    ...     print(build.title)
 
 If a build is deleted, it does not cause the build status summary to change:
 
@@ -293,16 +293,16 @@ IBinaryPackagePublishingHistory also contains similar API conveniences.
     >>> verifyObject(IBinaryPackagePublishingHistory, bpph)
     True
 
-    >>> print bpph.binary_package_name
+    >>> print(bpph.binary_package_name)
     def-bin
 
-    >>> print bpph.binary_package_version
+    >>> print(bpph.binary_package_version)
     666
 
-    >>> print bpph.component_name
+    >>> print(bpph.component_name)
     main
 
-    >>> print bpph.section_name
+    >>> print(bpph.section_name)
     base
 
 
@@ -314,7 +314,7 @@ Retrieve any SourcePackagePublishingHistory entry.
     ...     IBinaryPackagePublishingHistory)
     >>> spph = SourcePackagePublishingHistory.get(10)
 
-    >>> print spph.displayname
+    >>> print(spph.displayname)
     alsa-utils 1.0.8-1ubuntu1 in warty
 
 
@@ -358,10 +358,10 @@ Inspecting the modified record shows it's ready for domination:
     >>> modified_spph.datesuperseded == transaction_timestamp
     True
 
-    >>> print modified_spph.removed_by.name
+    >>> print(modified_spph.removed_by.name)
     mark
 
-    >>> print modified_spph.removal_comment
+    >>> print(modified_spph.removal_comment)
     testing deletion
 
 requstObsolescence takes no additional arguments:
@@ -405,11 +405,11 @@ two architecture-specific binaries in ubuntu/breezy-autotest.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.PROPOSED)
 
-    >>> print source.displayname
+    >>> print(source.displayname)
     ghi 666 in breezy-autotest
 
     >>> for bin in binaries:
-    ...     print bin.displayname
+    ...     print(bin.displayname)
     ghi-bin 666 in breezy-autotest i386
     ghi-bin 666 in breezy-autotest hppa
 
@@ -425,7 +425,7 @@ We can also inspect the builds created for a source publication
 without retrieving its binaries.
 
     >>> for build in source.getBuilds():
-    ...     print build.title
+    ...     print(build.title)
     hppa build of ghi 666 in ubuntutest breezy-autotest PROPOSED
     i386 build of ghi 666 in ubuntutest breezy-autotest PROPOSED
 
@@ -472,11 +472,11 @@ Copied publications are created as PENDING, so the publisher will have
 a chance to verify it's contents and include it in the destination
 archive index.
 
-    >>> print copied_source.status.name
+    >>> print(copied_source.status.name)
     PENDING
 
     >>> for bin in copied_binaries:
-    ...     print bin.status.name
+    ...     print(bin.status.name)
     PENDING
     PENDING
 
@@ -499,12 +499,12 @@ related only with their corresponding binaries, see bug #181834 for
 previous broken implementation in this area.
 
     >>> for bin in source.getPublishedBinaries():
-    ...     print bin.displayname, bin.pocket.name, bin.status.name
+    ...     print(bin.displayname, bin.pocket.name, bin.status.name)
     ghi-bin 666 in breezy-autotest hppa PROPOSED PUBLISHED
     ghi-bin 666 in breezy-autotest i386 PROPOSED PUBLISHED
 
     >>> for bin in copied_source.getPublishedBinaries():
-    ...     print bin.displayname, bin.pocket.name, bin.status.name
+    ...     print(bin.displayname, bin.pocket.name, bin.status.name)
     ghi-bin 666 in breezy-autotest hppa UPDATES PENDING
     ghi-bin 666 in breezy-autotest i386 UPDATES PENDING
 
@@ -588,7 +588,7 @@ Not only do the two copied binaries show up in getPublishedBinaries(),
 but also the override just done.
 
     >>> for pub in copied_source.getPublishedBinaries():
-    ...     print pub.displayname, pub.component.name
+    ...     print(pub.displayname, pub.component.name)
     ghi-bin 666 in breezy-autotest hppa universe
     ghi-bin 666 in breezy-autotest hppa main
     ghi-bin 666 in breezy-autotest i386 main
@@ -601,7 +601,7 @@ On the other hand, getBuiltBinaries() will return only 2 binary
 publications and the hppa one is the overridden one.
 
     >>> for pub in copied_source.getBuiltBinaries():
-    ...     print pub.displayname, pub.component.name
+    ...     print(pub.displayname, pub.component.name)
     ghi-bin 666 in breezy-autotest hppa universe
     ghi-bin 666 in breezy-autotest i386 main
 
@@ -630,11 +630,11 @@ using it.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.PROPOSED)
 
-    >>> print source_all.displayname
+    >>> print(source_all.displayname)
     pirulito 666 in breezy-autotest
 
     >>> for bin in binaries_all:
-    ...     print bin.displayname
+    ...     print(bin.displayname)
     pirulito 666 in breezy-autotest i386
     pirulito 666 in breezy-autotest hppa
 
@@ -643,7 +643,7 @@ request.
 
     >>> copied_source_all = source_all.copyTo(distroseries, pocket, archive)
 
-    >>> print copied_source_all.displayname
+    >>> print(copied_source_all.displayname)
     pirulito 666 in breezy-autotest
 
 Architecture independent binaries, however, when copied results in
@@ -664,7 +664,7 @@ atomic.
 The same binary is published in both supported architecture.
 
     >>> for bin in binary_copies:
-    ...     print bin.displayname
+    ...     print(bin.displayname)
     pirulito 666 in breezy-autotest hppa
     pirulito 666 in breezy-autotest i386
 
@@ -675,7 +675,7 @@ binary.
     >>> copied_binaries_all = copied_source_all.getPublishedBinaries()
 
     >>> for bin in copied_binaries_all:
-    ...     print bin.displayname
+    ...     print(bin.displayname)
     pirulito 666 in breezy-autotest hppa
     pirulito 666 in breezy-autotest i386
 
@@ -690,7 +690,7 @@ distroseries).
 
     >>> [built_binary] = copied_source_all.getBuiltBinaries()
 
-    >>> print built_binary.displayname
+    >>> print(built_binary.displayname)
     pirulito 666 in breezy-autotest i386
 
 
@@ -711,11 +711,11 @@ suite. To simulate this we will create a publication in Celso's PPA.
     ...     pub_source=ppa_source,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
-    >>> print ppa_source.displayname, ppa_source.archive.displayname
+    >>> print(ppa_source.displayname, ppa_source.archive.displayname)
     jkl 666 in breezy-autotest PPA for Celso Providelo
 
     >>> for bin in ppa_binaries:
-    ...     print bin.displayname, bin.archive.displayname
+    ...     print(bin.displayname, bin.archive.displayname)
     jkl-bin 666 in breezy-autotest i386 PPA for Celso Providelo
     jkl-bin 666 in breezy-autotest hppa PPA for Celso Providelo
 
@@ -803,7 +803,7 @@ Let's perform the copy of the source and its i386 binary.
     >>> copied_source = ppa_source.copyTo(series, pocket, archive)
 
     >>> ppa_binary_i386 = ppa_binaries[0]
-    >>> print ppa_binary_i386.displayname
+    >>> print(ppa_binary_i386.displayname)
     mno-bin 999 in breezy-autotest i386
 
     >>> copied_binary = ppa_binary_i386.copyTo(series, pocket, archive)
@@ -811,11 +811,11 @@ Let's perform the copy of the source and its i386 binary.
 The source and binary are present in hoary-test:
 
     >>> copied_source = SourcePackagePublishingHistory.get(copied_source.id)
-    >>> print copied_source.displayname
+    >>> print(copied_source.displayname)
     mno 999 in hoary-test
 
     >>> for bin in copied_source.getPublishedBinaries():
-    ...     print bin.displayname
+    ...     print(bin.displayname)
     mno-bin 999 in hoary-test amd64
     mno-bin 999 in hoary-test i386
 
@@ -834,7 +834,7 @@ files associated with this publication.
 Using the same Ubuntu source publishing example as above:
 
     >>> for file in source.getSourceAndBinaryLibraryFiles():
-    ...     print file.filename
+    ...     print(file.filename)
     ghi-bin_666_hppa.deb
     ghi-bin_666_i386.deb
     ghi_666.dsc
@@ -851,7 +851,7 @@ We can also publish a package in a PPA and query on its files:
     ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> for file in ppa_source.getSourceAndBinaryLibraryFiles():
-    ...     print file.filename
+    ...     print(file.filename)
     pqr-bin_666_all.deb
     pqr_666.dsc
 
@@ -880,7 +880,7 @@ BinaryPackageFile and IBinaryPackagePublishingHistory
     ...     IBinaryPackageFile)
 
     >>> bpph = BinaryPackagePublishingHistory.get(15)
-    >>> print bpph.displayname
+    >>> print(bpph.displayname)
     mozilla-firefox 0.9 in woody i386
 
     >>> IBinaryPackagePublishingHistory.providedBy(bpph)
@@ -896,7 +896,7 @@ BinaryPackageFile and IBinaryPackagePublishingHistory
 Binary publishing records also have a download count, which contains
 the number of downloads of this binary package release in this archive.
 
-    >>> print bpph.getDownloadCount()
+    >>> print(bpph.getDownloadCount())
     0
 
     >>> from datetime import date
@@ -911,7 +911,7 @@ the number of downloads of this binary package release in this archive.
     >>> bpph.archive.updatePackageDownloadCount(
     ...     bpph.binarypackagerelease, date(2010, 2, 21), uk, 4)
 
-    >>> print bpph.getDownloadCount()
+    >>> print(bpph.getDownloadCount())
     16
 
 We can also use getDownloadCounts to find the raw download counts per
@@ -1005,7 +1005,7 @@ the PPA publication will always be main:
     ...     component=test_source_pub.component,
     ...     section=test_source_pub.section,
     ...     pocket=test_source_pub.pocket)
-    >>> print ppa_pub.component.name
+    >>> print(ppa_pub.component.name)
     main
 
 IPublishingSet is an essential component for
@@ -1019,7 +1019,7 @@ ever published in Celso's PPA.
     >>> len(cprov_sources)
     8
     >>> for spph in cprov_sources:
-    ...     print spph.displayname
+    ...     print(spph.displayname)
     cdrkit 1.0 in breezy-autotest
     iceweasel 1.0 in warty
     jkl 666 in hoary-test
@@ -1071,7 +1071,7 @@ other PPA.
 
     >>> build = binaries[0].binarypackagerelease.build
     >>> source_pub = build.source_package_release.publishings[0]
-    >>> print build.archive.name
+    >>> print(build.archive.name)
     otherppa
 
     # Copy the source into Celso's PPA, ensuring that the binaries
@@ -1148,19 +1148,19 @@ ascending `DistroArchSeries.architecturetag and descending
     >>> (source_pub, binary_pub, binary, binary_name,
     ...  arch) = cprov_binaries.last()
 
-    >>> print source_pub.displayname
+    >>> print(source_pub.displayname)
     pqr 666 in breezy-autotest
 
-    >>> print binary_pub.displayname
+    >>> print(binary_pub.displayname)
     pqr-bin 666 in breezy-autotest i386
 
-    >>> print binary.title
+    >>> print(binary.title)
     pqr-bin-666
 
-    >>> print binary_name.name
+    >>> print(binary_name.name)
     pqr-bin
 
-    >>> print arch.displayname
+    >>> print(arch.displayname)
     ubuntutest Breezy Badger Autotest i386
 
 We can retrieve all files related with Celso's PPA publications.
@@ -1181,7 +1181,7 @@ sites are responsible to order them appropriately.
     >>> ordered_filenames = sorted(
     ...    file.filename for source, file, content in cprov_files)
 
-    >>> print ordered_filenames[0]
+    >>> print(ordered_filenames[0])
     firefox_0.9.2.orig.tar.gz
 
 We can also retrieve just the binary files related with Celso's PPA
@@ -1201,7 +1201,7 @@ Please note how the result set is ordered by the id of `LibraryFileAlias`
     True
 
     >>> for source, file, content in binary_files:
-    ...     print file.filename
+    ...     print(file.filename)
     mozilla-firefox_0.9_i386.deb
     jkl-bin_666_all.deb
     jkl-bin_666_all.deb
@@ -1231,19 +1231,19 @@ The returned ResultSet element is tuple containing:
 
     >>> source_pub, upload, source, file, content = a_change
 
-    >>> print source_pub.displayname
+    >>> print(source_pub.displayname)
     iceweasel 1.0 in warty
 
-    >>> print upload.displayname
+    >>> print(upload.displayname)
     iceweasel
 
-    >>> print source.title
+    >>> print(source.title)
     iceweasel - 1.0
 
-    >>> print file.filename
+    >>> print(file.filename)
     mozilla-firefox_0.9_i386.changes
 
-    >>> print content.md5
+    >>> print(content.md5)
     e4a7193a8f72fa2755e2162512069093
 
 Last but not least the publishing set class allows for the bulk deletion
@@ -1253,7 +1253,7 @@ of publishing history records.
     ...     cprov.archive.getPublishedSources(
     ...     status=PackagePublishingStatus.PUBLISHED),
     ...     key=operator.attrgetter('id'))
-    >>> print len(cprov_sources)
+    >>> print(len(cprov_sources))
     6
 
 We will delete the first two source publishing history records and
@@ -1283,7 +1283,7 @@ The number of published sources will decrease by two as expected.
     >>> cprov_sources = list(
     ...     cprov.archive.getPublishedSources(
     ...     status=PackagePublishingStatus.PUBLISHED))
-    >>> print len(cprov_sources)
+    >>> print(len(cprov_sources))
     4
 
 Analogously, the number of associated published binaries will be less
@@ -1315,7 +1315,7 @@ We will use all published sources in Celso's PPA as our initial set.
     >>> cprov_published_sources = cprov.archive.getPublishedSources(
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> for spph in cprov_published_sources:
-    ...     print spph.displayname
+    ...     print(spph.displayname)
     jkl 666 in breezy-autotest
     mno 999 in breezy-autotest
     pmount 0.1-1 in warty
@@ -1363,9 +1363,9 @@ The decorated objects are returned in the same order used in the given
     ...     given_ids = [obj.id for obj in given]
     ...     returned_ids = [obj.id for obj in returned]
     ...     if given_ids == returned_ids:
-    ...        print 'Matches'
+    ...        print('Matches')
     ...     else:
-    ...        print 'Mismatch:', given_ids, returned_ids
+    ...        print('Mismatch:', given_ids, returned_ids)
 
     >>> compare_ids(cprov_published_sources, decorated_set)
     Matches
@@ -1413,7 +1413,7 @@ LibraryFileAlias).
 
     >>> all_cprov_sources = cprov.archive.getPublishedSources()
     >>> for spph in all_cprov_sources:
-    ...     print spph.displayname
+    ...     print(spph.displayname)
     cdrkit 1.0 in breezy-autotest
     foo 666 in breezy-autotest
     iceweasel 1.0 in warty
@@ -1430,7 +1430,7 @@ We select the only available publication in Celso's PPA with a valid
     >>> pub_with_changes = all_cprov_sources[2]
     >>> the_source = pub_with_changes.sourcepackagerelease
     >>> the_change = the_source.upload_changesfile
-    >>> print the_change.filename
+    >>> print(the_change.filename)
     mozilla-firefox_0.9_i386.changes
 
 The same control-publication is reachable in the dictionary returned
@@ -1439,7 +1439,7 @@ by getChangesFileBySources().
     >>> decorated_changes = ArchiveSourcePublications(all_cprov_sources)
     >>> changes_by_source = decorated_changes.getChangesFileBySource()
     >>> decorated_change = changes_by_source.get(pub_with_changes)
-    >>> print decorated_change.filename
+    >>> print(decorated_change.filename)
     mozilla-firefox_0.9_i386.changes
 
 Enough internals! What really matters for callsites is that, when
@@ -1451,7 +1451,7 @@ publications.
 
     >>> decorated_pub = list(decorated_set)[1]
 
-    >>> print decorated_pub
+    >>> print(decorated_pub)
     <...ArchiveSourcePublication ...>
 
     >>> verifyObject(ISourcePackagePublishingHistory, decorated_pub)
@@ -1471,13 +1471,13 @@ objects.
     >>> pub_with_changes = cprov_published_sources[1]
     >>> the_source = pub_with_changes.sourcepackagerelease
     >>> changesfile = the_source.upload_changesfile
-    >>> print '%s (%s)' % (changesfile.filename, changesfile.content.md5)
+    >>> print('%s (%s)' % (changesfile.filename, changesfile.content.md5))
     mno_999_source.changes (6168e17ba012fc3db6dc77e255243bd1)
 
     >>> decorated_pub_with_changes = list(decorated_set)[1]
     >>> decorated_source = decorated_pub_with_changes.sourcepackagerelease
     >>> changesfile = decorated_source.upload_changesfile
-    >>> print '%s (%s)' % (changesfile.filename, changesfile.content.md5)
+    >>> print('%s (%s)' % (changesfile.filename, changesfile.content.md5))
     mno_999_source.changes (6168e17ba012fc3db6dc77e255243bd1)
 
 `ArchiveSourcePublication` also has a decorated version of the
@@ -1517,18 +1517,18 @@ First we'll create two source publishing history records:
 Create a small function for displaying the results:
 
     >>> def print_build_summary(summary):
-    ...     print "%s\n%s\nRelevant builds:\n%s" % (
+    ...     print("%s\n%s\nRelevant builds:\n%s" % (
     ...         summary['status'].title,
     ...         summary['status'].description,
     ...         "\n".join(
     ...             " - %s" % build.title for build in summary['builds'])
-    ...     )
+    ...     ))
 
     >>> def print_build_summaries(summaries):
     ...     count = 0
     ...     for source_id, summary in sorted(summaries.items()):
     ...         count += 1
-    ...         print "Source number: %s" % count
+    ...         print("Source number: %s" % count)
     ...         print_build_summary(summary)
 
 And then grab the build summaries for firefox and foo:

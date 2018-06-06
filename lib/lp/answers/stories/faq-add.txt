@@ -28,11 +28,11 @@ from various sources about the subject.
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> owner_browser.open('http://answers.launchpad.dev/firefox')
     >>> owner_browser.getLink('All FAQs').click()
-    >>> print owner_browser.title
+    >>> print(owner_browser.title)
     FAQs for Mozilla Firefox : Questions : Mozilla Firefox
 
-    >>> print extract_text(
-    ...     find_tag_by_id(owner_browser.contents, 'faqs-listing'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(owner_browser.contents, 'faqs-listing')))
     What's the keyboard shortcut for [random feature]?
     How do I install plugins (Shockwave, QuickTime, etc.)?
     How do I troubleshoot problems with extensions/themes?
@@ -47,7 +47,7 @@ content field. They then submit the form using the 'Create' button.
 
     >>> owner_browser.url
     'http://answers.launchpad.dev/firefox/+createfaq'
-    >>> print owner_browser.title
+    >>> print(owner_browser.title)
     Create a FAQ for...
 
     >>> owner_browser.getControl('Title').value
@@ -66,7 +66,7 @@ The FAQ is created and the browser displays the page for Sample Person.
 
     >>> owner_browser.url
     'http://answers.launchpad.dev/firefox/+faq/...'
-    >>> print owner_browser.title
+    >>> print(owner_browser.title)
     FAQ #... : Questions : Mozilla Firefox
 
     >>> content = find_main_content(owner_browser.contents)
@@ -79,14 +79,13 @@ They return to the project's list of FAQs to verify that the newest
 FAQ is listed first.
 
     >>> owner_browser.getLink('List all FAQs').click()
-    >>> print owner_browser.title
+    >>> print(owner_browser.title)
     FAQs for Mozilla Firefox : Questions : Mozilla Firefox
 
-    >>> print extract_text(
-    ...     find_tag_by_id(owner_browser.contents, 'faqs-listing'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(owner_browser.contents, 'faqs-listing')))
     How do I read RSS?
     What's the keyboard shortcut for [random feature]?
     How do I install plugins (Shockwave, QuickTime, etc.)?
     How do I troubleshoot problems with extensions/themes?
     How do I install Extensions?
-

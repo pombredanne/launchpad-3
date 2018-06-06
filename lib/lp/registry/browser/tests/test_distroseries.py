@@ -1541,8 +1541,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             '+localpackagediffs')
 
         radio_title = (
-            "&nbsp;Ignored packages with a higher version than in "
-            "&#x27;Lucid&#x27;")
+            u"\xa0Ignored packages with a higher version than in 'Lucid'")
         radio_option_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 "radio displays parent's name", 'label',
@@ -1559,8 +1558,8 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             derived_series,
             '+localpackagediffs')
 
-        radio_title = \
-            "&nbsp;Ignored packages with a higher version than in parent"
+        radio_title = (
+            u"\xa0Ignored packages with a higher version than in parent")
         radio_option_matches = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 "radio displays parent's name", 'label',

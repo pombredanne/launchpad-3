@@ -12,7 +12,7 @@ Since we still don't have any POTemplates assigned, we must use the general
 translations upload link.
 
   >>> browser.getLink('upload').click()
-  >>> print browser.url
+  >>> print(browser.url)
   http://translations.launchpad.dev/firefox/trunk/+translations-upload
 
 Get the XPI file we are going to upload.
@@ -26,19 +26,19 @@ Now, lets upload this file.
   ...     xpifile, 'application/zip', 'en-US.xpi')
   >>> browser.getControl('Upload').click()
 
-  >>> print browser.url
+  >>> print(browser.url)
   http://translations.launchpad.dev/firefox/trunk/+translations-upload
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
-  ...     print extract_text(tag.renderContents())
+  ...     print(extract_text(tag.renderContents()))
   Thank you for your upload.  It will be automatically reviewed...
 
 Lets check the import queue to edit this entry and set the name.
 
   >>> browser.getLink('Translation Import Queue').click()
-  >>> print browser.getLink(url='en-US.xpi').url
+  >>> print(browser.getLink(url='en-US.xpi').url)
   http://.../en-US.xpi
   >>> browser.getLink(url='/+imports/').click()
-  >>> print browser.url
+  >>> print(browser.url)
   http://translations.launchpad.dev/+imports/...
   >>> qid = int(browser.url.rsplit('/', 1)[-1])
 
@@ -49,7 +49,7 @@ where will be imported. In this case, it's 'firefox'.
   >>> browser.getControl('Name').value = 'firefox'
   >>> browser.getControl('Translation domain').value = 'firefox'
   >>> browser.getControl('Approve').click()
-  >>> print browser.url
+  >>> print(browser.url)
   http://translations.launchpad.dev/firefox/trunk/+imports
   >>> browser.getControl(name='field.status_%d' % qid).value
   ['APPROVED']

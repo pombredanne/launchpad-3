@@ -19,7 +19,7 @@ We will create the entry by hand but need a person to be named as importer.
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> importer = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-    >>> print importer.displayname
+    >>> print(importer.displayname)
     Foo Bar
 
 A real entry would have been uploaded in the context of productseries or a
@@ -29,18 +29,18 @@ our entry.
     >>> from lp.registry.interfaces.productseries import (
     ...     IProductSeriesSet)
     >>> productseries = getUtility(IProductSeriesSet).get(3)
-    >>> print productseries.name
+    >>> print(productseries.name)
     trunk
-    >>> print productseries.summary
+    >>> print(productseries.summary)
     The primary "trunk" of development for this product...
 
 Now we create the entry in the queue.
 
     >>> queue = getUtility(ITranslationImportQueue)
     >>> pot_entry = queue.addOrUpdateEntry(
-    ...     'demo.pot', '# foo', False,
+    ...     'demo.pot', b'# foo', False,
     ...     importer, productseries=productseries)
-    >>> print pot_entry.path
+    >>> print(pot_entry.path)
     demo.pot
 
 The view is named "+index" and it is found on the TranslationsLayer. We want
@@ -53,7 +53,7 @@ to get it new for each subsequent test.
 
 Upon initialization the view sets the file type.
 
-    >>> print view.initial_values['file_type']
+    >>> print(view.initial_values['file_type'])
     Template
 
 Validating correct data should not produce an error.
@@ -68,7 +68,7 @@ Validating correct data should not produce an error.
     >>> def validate(view, data):
     ...     view.validate(data)
     ...     for err in view.errors:
-    ...         print err
+    ...         print(err)
     >>> validate(view, data)
 
 But declaring a different file type would require different data, so we get
@@ -154,7 +154,7 @@ The Ubuntu distribution gets special treatment for the language pack flag.
 We can upload to a sourcepackagename in the Ubuntu series.
 
     >>> ubuntu_entry = queue.addOrUpdateEntry(
-    ...     'demo.pot', '# foo', True,
+    ...     'demo.pot', b'# foo', True,
     ...     importer, distroseries=ubuntuseries,
     ...     sourcepackagename=packagename)
     >>> ubuntu_view = create_initialized_view(ubuntu_entry, '+index')
@@ -195,7 +195,7 @@ For a product template, languagepack is not displayed.
 
     >>> other_series = factory.makeProductSeries()
     >>> other_entry = queue.addOrUpdateEntry(
-    ...     'demo.pot', '# foo', True,
+    ...     'demo.pot', b'# foo', True,
     ...     importer, productseries=other_series)
     >>> other_view = create_initialized_view(other_entry, '+index')
     >>> 'languagepack' in other_view.field_names
@@ -205,9 +205,9 @@ When importing po files, only the relevant templates should be made
 available for selection.
 
     >>> po_entry = queue.addOrUpdateEntry(
-    ...     'demo.po', '# foo', False,
+    ...     'demo.po', b'# foo', False,
     ...     importer, productseries=productseries)
-    >>> print po_entry.path
+    >>> print(po_entry.path)
     demo.po
 
 The drop-down list is fed from a vocabulary.
@@ -215,7 +215,7 @@ The drop-down list is fed from a vocabulary.
     >>> from lp.translations.vocabularies import TranslationTemplateVocabulary
     >>> vocab = TranslationTemplateVocabulary(po_entry)
     >>> for term in vocab:
-    ...     print term.title
+    ...     print(term.title)
     demo-name
     evolution-2.2
     evolution-2.2-test
@@ -229,6 +229,6 @@ importing po files.
 
     >>> vocab = TranslationTemplateVocabulary(po_entry)
     >>> for term in vocab:
-    ...     print term.title
+    ...     print(term.title)
     evolution-2.2
     evolution-2.2-test

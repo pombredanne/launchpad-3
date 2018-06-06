@@ -58,7 +58,7 @@ We create the POFile object where we are going to attach the .po file.
 Let's import a .po file that misses the '"' char after msgstr. That's a
 syntax error.
 
-    >>> pofile_contents = r'''
+    >>> pofile_contents = br'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-06-03 20:41+0100\n"
@@ -84,10 +84,10 @@ We must approve the entry to be able to import it.
 The import fails.
 
     >>> (subject, message) = pofile.importFromQueue(entry)
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     FAILED
 
-    >>> print entry.error_output
+    >>> print(entry.error_output)
     Line 12: String is not quoted
 
 And the code composed an email with the notification of the error.
@@ -95,7 +95,7 @@ And the code composed an email with the notification of the error.
     >>> subject
     u'Import problem - Welsh (cy) - firefox in Mozilla Firefox trunk'
 
-    >>> print message
+    >>> print(message)
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ..., you uploaded a file with Welsh (cy) translations for firefox in
@@ -143,7 +143,7 @@ explanatory text.
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> transaction.commit()
     >>> (subject, message) = pofile.importFromQueue(entry)
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     FAILED
 
 An email describes the problem in relatively helpful terms.
@@ -151,7 +151,7 @@ An email describes the problem in relatively helpful terms.
     >>> subject
     u'Import problem - Frisian (fy) - firefox in Mozilla Firefox trunk'
 
-    >>> print message
+    >>> print(message)
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ..., you uploaded a file with Frisian (fy) translations for
@@ -175,7 +175,7 @@ An email describes the problem in relatively helpful terms.
 
 The error output field is more terse.
 
-    >>> print entry.error_output
+    >>> print(entry.error_output)
     'ascii' codec can't decode byte ... in position ...: ordinal not in
     range(128)
 
@@ -194,7 +194,7 @@ In his rush to be the first Sumerian translator for Firefox, Mark
 submits a translation with a nonsensical plurals definition.
 
     >>> pofile = potemplate.newPOFile('sux')
-    >>> pofile_contents = r'''
+    >>> pofile_contents = br'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-06-29 11:44+0100\n"
@@ -215,13 +215,13 @@ submits a translation with a nonsensical plurals definition.
 
 The submission is rejected with a syntax error.
 
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     FAILED
 
     >>> subject
     u'Import problem - Sumerian (sux) - firefox in Mozilla Firefox trunk'
 
-    >>> print message
+    >>> print(message)
     Hello Mark Shuttleworth,
     ...
     <BLANKLINE>
@@ -238,7 +238,7 @@ Not enough forms
 Mark mistakenly attempts to import a translation with "zero" plural
 forms.  He receives an email notifying him of a syntax error.
 
-    >>> pofile_contents = r'''
+    >>> pofile_contents = br'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-06-14 18:33+0100\n"
@@ -257,13 +257,13 @@ forms.  He receives an email notifying him of a syntax error.
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     FAILED
 
     >>> subject
     u'Import problem - Sumerian (sux) - firefox in Mozilla Firefox trunk'
 
-    >>> print message
+    >>> print(message)
     Hello Mark Shuttleworth,
     ...
     <BLANKLINE>
@@ -276,7 +276,7 @@ forms.  He receives an email notifying him of a syntax error.
 On his next attempt, Mark accidentally types a negative number of plural
 forms.  The same error is given.
 
-    >>> pofile_contents = r'''
+    >>> pofile_contents = br'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-06-15 19:04+0100\n"
@@ -295,13 +295,13 @@ forms.  The same error is given.
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     FAILED
 
     >>> subject
     u'Import problem - Sumerian (sux) - firefox in Mozilla Firefox trunk'
 
-    >>> print message
+    >>> print(message)
     Hello Mark Shuttleworth,
     ...
     We were unable to import the file because of errors in its format:
@@ -325,7 +325,7 @@ to get that information corrected if need be.
     >>> pofile = potemplate.newPOFile('ar')
 
     # PO file with nplurals=7, a value we can't handle.
-    >>> pofile_contents = r'''
+    >>> pofile_contents = br'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-07-01 08:35+0100\n"
@@ -351,13 +351,13 @@ to get that information corrected if need be.
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     FAILED
 
     >>> subject
     u'Import problem - Arabic (ar) - firefox in Mozilla Firefox trunk'
 
-    >>> print message
+    >>> print(message)
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ..., you uploaded a file with Arabic (ar) translations for firefox in
@@ -389,7 +389,7 @@ Once Mark has checked the language page and corrected the number of
 plural forms, the file imports just fine.
 
     # Same PO file as before, but with nplurals=6.
-    >>> pofile_contents = r'''
+    >>> pofile_contents = br'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-07-01 08:35+0100\n"
@@ -414,7 +414,5 @@ plural forms, the file imports just fine.
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     IMPORTED
-
-

@@ -134,26 +134,26 @@ We can use TranslationGroupSet to check what translation groups a person
 is a part of:
 
     >>> for group in translation_group_set.getByPerson(carlos):
-    ...     print group.name
+    ...     print(group.name)
     testing-translation-team
 
     >>> for group in translation_group_set.getByPerson(no_priv):
-    ...     print group.name
+    ...     print(group.name)
     foo-translators
 
     >>> translators = getUtility(ITranslatorSet)
     >>> for trans in translators.getByTranslator(carlos):
-    ...     print trans.language.code
-    ...     print trans.translationgroup.name
-    ...     print trans.style_guide_url
+    ...     print(trans.language.code)
+    ...     print(trans.translationgroup.name)
+    ...     print(trans.style_guide_url)
     es
     testing-translation-team
     None
 
     >>> for trans in translators.getByTranslator(no_priv):
-    ...     print trans.language.code
-    ...     print trans.translationgroup.name
-    ...     print trans.style_guide_url
+    ...     print(trans.language.code)
+    ...     print(trans.translationgroup.name)
+    ...     print(trans.style_guide_url)
     cy
     foo-translators
     None
@@ -183,7 +183,7 @@ group membership entry"), its language, and the actual team or person
 assigned to that language.
 
     >>> for (translator, language, team) in group.fetchTranslatorData():
-    ...     print translator.language.code, language.code, team.name
+    ...     print(translator.language.code, language.code, team.name)
     nl nl nl-team
     de de de-team
     la la la-team
@@ -191,7 +191,7 @@ assigned to that language.
 The members are sorted by language name in English.
 
     >>> for (translator, language, person) in group.fetchTranslatorData():
-    ...     print language.englishname
+    ...     print(language.englishname)
     Dutch
     German
     Latin

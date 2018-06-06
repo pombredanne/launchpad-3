@@ -12,7 +12,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=299009
     ...     """Find and print [tags] in browser.contents. End each with '--'."""
     ...     soup = find_main_content(browser.contents)
     ...     for tag in soup.findAll(attrs={'id': tags}):
-    ...         print "%s\n--\n" % tag.renderContents()
+    ...         print("%s\n--\n" % tag.renderContents(encoding=None))
 
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open(
@@ -40,9 +40,10 @@ answer should have exactly those strings.
     >>> browser.getControl(
     ...     name='msgset_149_es_translation_0_new').value = '\r\nfoo\r\n\r\n'
     >>> browser.getControl(name='submit_translations').click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1
-    >>> print find_tag_by_id(browser.contents, 'msgset_149_es_translation_0_new')
+    >>> print(find_tag_by_id(
+    ...     browser.contents, 'msgset_149_es_translation_0_new'))
     <textarea ... name="msgset_149_es_translation_0_new"...>
 
     foo
@@ -58,11 +59,11 @@ change the test, to be 100% sure that the textarea content is the right one.
     ...         'msgset_149_es_translation_0_new']
     >>> browser.getControl(name='msgset_149_es_translation_0_new').value = 'foo'
     >>> browser.getControl(name='submit_translations').click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1
-    >>> print find_tag_by_id(
+    >>> print(find_tag_by_id(
     ...     browser.contents,
-    ...     'msgset_149_es_translation_0_new') #doctest: -NORMALIZE_WHITESPACE
+    ...     'msgset_149_es_translation_0_new')) #doctest: -NORMALIZE_WHITESPACE
     <textarea ... name="msgset_149_es_translation_0_new"...>
     foo</textarea>
 
@@ -76,12 +77,12 @@ Launchpad adds it automatically.
     ...     name='msgset_165_es_translation_0_radiobutton').value = [
     ...         'msgset_165_es_translation_0_new']
     >>> browser.getControl(name='msgset_165_es_translation_0_new').value = (
-    ...     '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua')
+    ...     b'%s: la opcion \xc2\xab%s\xc2\xbb es ambigua')
     >>> browser.getControl(name='submit_translations').click()
 
 We were redirected to the next form, the translation was accepted.
 
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1
 
 Get previous page to check that the save translation is the right one.
@@ -106,12 +107,12 @@ Now, we do the right submit, with one trailing new line...
     ...     name='msgset_165_es_translation_0_radiobutton').value = [
     ...         'msgset_165_es_translation_0_new']
     >>> browser.getControl(name='msgset_165_es_translation_0_new').value = (
-    ...     '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua\r\n')
+    ...     b'%s: la opcion \xc2\xab%s\xc2\xbb es ambigua\r\n')
     >>> browser.getControl(name='submit_translations').click()
 
 We were redirected to the next form, the translation was accepted.
 
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1
 
 Get previous page to check that the save translation is the right one.
@@ -136,12 +137,12 @@ Last check, the user sends two new line chars instead of just one...
     ...     name='msgset_165_es_translation_0_radiobutton').value = [
     ...         'msgset_165_es_translation_0_new']
     >>> browser.getControl(name='msgset_165_es_translation_0_new').value = (
-    ...     '%s: la opcion \xc2\xab%s\xc2\xbb es ambigua\r\n\r\n')
+    ...     b'%s: la opcion \xc2\xab%s\xc2\xbb es ambigua\r\n\r\n')
     >>> browser.getControl(name='submit_translations').click()
 
 We were redirected to the next form, the translation was accepted.
 
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1
 
 Get previous page to check that the save translation is the right one.

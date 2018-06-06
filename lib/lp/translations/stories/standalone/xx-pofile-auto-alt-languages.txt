@@ -11,7 +11,7 @@ should have the Spanish language selected as its alternate, by default.
   >>> browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
   ...     'evolution-2.2/es_MX/+translate')
-  >>> print browser.url
+  >>> print(browser.url)
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es_MX/+translate
 
   >>> browser.getControl(name='field.alternative_language', index=0).value
@@ -23,7 +23,7 @@ not show pt by default for pt_BR translators:
   >>> browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
   ...     'evolution-2.2/pt_BR/+translate')
-  >>> print browser.url
+  >>> print(browser.url)
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/pt_BR/+translate
 
   >>> browser.getControl(name='field.alternative_language', index=0).value
@@ -35,10 +35,8 @@ French!
   >>> browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
   ...     'evolution-2.2/fr/+translate')
-  >>> print browser.url
+  >>> print(browser.url)
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/fr/+translate
 
   >>> browser.getControl(name='field.alternative_language', index=0).value
   ['']
-
-

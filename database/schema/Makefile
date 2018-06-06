@@ -135,22 +135,8 @@ create:
 
 # Confirm that launchpad-XX-00-0.sql hasn't been messed with - this file
 # is our baseline telling us what was installed into production
-check: search_path
+check:
 	@if [ "`md5sum ${BASELINE}`" != "${MD5SUM}" ]; then echo "* ${BASELINE} is corrupt or has been modified"; exit 1; else echo "* Using ${BASELINE} as baseline"; fi
-
-search_path:
-	@psql -d template1 -q -A -t -c 'show search_path'
-	@if [ `psql -d template1 -q -A -t -c 'show search_path'` != '$$user,public,ts2' ] && [ `psql -d template1 -q -A -t -c 'show search_path'` != '"$$user",public,ts2' ]; then \
-		echo "* It appears your search path is unconfigured."; \
-		echo "	Have you read <https://launchpad.canonical.com/DatabaseSetup>?";  \
-		echo; \
-		echo "* Add the following to /etc/postgresql/X.X/main/postgresql.conf"; \
-		echo " (where X.X is the version of the PostgreSQL DB you're connecting to):"; \
-		echo "    search_path='\$$user,public,ts2'"; \
-		echo "* Then reload PostgreSQL:";  \
-		echo "    sudo /etc/init.d/postgresql reload";  \
-		exit 1; \
-	 fi
 
 
 all: dev test
@@ -172,5 +158,5 @@ lintdata:
 	$(call build_new_sampledata,${TEMPLATE_WITH_TEST_SAMPLEDATA},${LINTDATA})
 	$(call build_new_sampledata,${TEMPLATE_WITH_DEV_SAMPLEDATA},${LINTDATA_DEV})
 
-.PHONY: default test dev create check search_path all doc diagram newsampledata_test newsampledata_dev newsampledata lintdata
+.PHONY: default test dev create check all doc diagram newsampledata_test newsampledata_dev newsampledata lintdata
 

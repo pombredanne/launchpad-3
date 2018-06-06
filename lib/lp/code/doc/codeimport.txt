@@ -546,6 +546,9 @@ which is also described in the email that is sent.
     The branch whiteboard was changed to:
     <BLANKLINE>
     stuff
+    <BLANKLINE>
+    This code import is from:
+        hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
     >>> print(cvs_import.branch.whiteboard)
     stuff
 
@@ -556,5 +559,8 @@ Setting the whiteboard to None is how it is deleted.
     >>> print(make_email_body_for_code_import_update(
     ...     cvs_import, modify_event, ''))
     The branch whiteboard was deleted.
+    <BLANKLINE>
+    This code import is from:
+        hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
     >>> print(cvs_import.branch.whiteboard)
     None

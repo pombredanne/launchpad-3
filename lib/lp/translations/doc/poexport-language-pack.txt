@@ -38,7 +38,7 @@ This is handy for examining the tar files that are generated.
     ...             size = 'bin'
     ...         else:
     ...             size = len(tarfile.extractfile(member).readlines())
-    ...         print "| %5s | %s" % (size, member.name)
+    ...         print("| %5s | %s" % (size, member.name))
 
 
 Base language pack export using Librarian
@@ -60,7 +60,7 @@ to None.
 
 Check that the log looks ok.
 
-    >>> print logger.getLogBuffer()
+    >>> print(logger.getLogBuffer())
     DEBUG Selecting PO files for export
     INFO  Number of PO files to export: 12
     DEBUG Exporting PO file ... (1/12)
@@ -78,7 +78,7 @@ Check that the log looks ok.
 The tarball has the right members.
 
     >>> for member in tarfile.getmembers():
-    ...     print member.name
+    ...     print(member.name)
     rosetta-hoary
     ...
     rosetta-hoary/es
@@ -91,8 +91,8 @@ The tarball has the right members.
 Directory permissions allow correct use of those directories:
 
     >>> directory = tarfile.getmember('rosetta-hoary')
-    >>> '0o%o' % directory.mode
-    '0o755'
+    >>> print('0o%o' % directory.mode)
+    0o755
 
 And one of the included .po files look like what we expected.
 
@@ -119,7 +119,7 @@ xpi/translation_domain/
 Get hold of a person.
 
     >>> mark = getUtility(IPersonSet).getByName('mark')
-    >>> print mark.displayname
+    >>> print(mark.displayname)
     Mark Shuttleworth
 
 Get the Grumpy distro series.
@@ -301,7 +301,7 @@ Create a Welsh PO file, with an active translation submission created on
 First, export without any existing base language pack: should get both
 PO files.
 
-    >>> print series.language_pack_base
+    >>> print(series.language_pack_base)
     None
 
     >>> logger = BufferLogger()
@@ -317,7 +317,7 @@ PO files.
 
 Check that the log looks ok.
 
-    >>> print logger.getLogBuffer()
+    >>> print(logger.getLogBuffer())
     DEBUG Selecting PO files for export
     INFO  Number of PO files to export: 4
     DEBUG Exporting PO file ... (1/4)
@@ -353,7 +353,7 @@ Check that the log looks ok.
 Check the files look OK.
 
     >>> fh = tarfile.extractfile('rosetta-grumpy/es/LC_MESSAGES/test.po')
-    >>> print fh.read().decode('UTF-8')
+    >>> print(fh.read().decode('UTF-8'))
     # Spanish translation for evolution
     # Copyright (c) ... Rosetta Contributors and Canonical Ltd ...
     # This file is distributed under the same license as the evolution pack...
@@ -377,7 +377,7 @@ Check the files look OK.
     msgstr "blah (es)"
 
     >>> fh = tarfile.extractfile('rosetta-grumpy/cy/LC_MESSAGES/test.po')
-    >>> print fh.read().decode('UTF-8')
+    >>> print(fh.read().decode('UTF-8'))
     # Welsh translation for evolution
     # Copyright (c) ... Rosetta Contributors and Canonical Ltd ...
     # This file is distributed under the same license as the evolution pack...
@@ -513,7 +513,7 @@ number of command-line arguments is wrong.
 
     >>> proc = get_subprocess('cronscripts/language-pack-exporter.py')
     >>> (out, err) = proc.communicate()
-    >>> print err
+    >>> print(err)
     Traceback (most recent call last):
      ...
     lp.services.scripts.base.LaunchpadScriptFailure:
@@ -536,7 +536,7 @@ different distribution and series combinations.
     >>> proc = get_subprocess(
     ...     'cronscripts/language-pack-exporter.py ubuntu hoary')
     >>> (out, err) = proc.communicate()
-    >>> print err
+    >>> print(err)
     INFO    Setting lockfile name to
             launchpad-language-pack-exporter__ubuntu__hoary.lock.
     INFO    Creating lockfile:
@@ -549,10 +549,8 @@ different distribution and series combinations.
     INFO    Done.
     INFO    Registered the language pack.
 
-    >>> print out
+    >>> print(out)
     <BLANKLINE>
 
     >>> proc.returncode
     0
-
-

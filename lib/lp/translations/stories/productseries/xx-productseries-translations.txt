@@ -27,30 +27,30 @@ Listing languages with translations is best checked with a helper method.
     >>> def print_language_stats(browser):
     ...     table = find_tag_by_id(browser.contents, 'languagestats')
     ...     if table is None:
-    ...         print "No translations."
+    ...         print("No translations.")
     ...         return
     ...     language_rows = find_tags_by_class(str(table), 'stats')
-    ...     print "%-25s %13s %13s" % (
-    ...         "Language", "Untranslated", "Unreviewed")
+    ...     print("%-25s %13s %13s" % (
+    ...         "Language", "Untranslated", "Unreviewed"))
     ...     for row in language_rows:
     ...         cols = row.findAll('td')
     ...         language = extract_text(cols[0])
     ...         untranslated = extract_link_info(cols[2])
     ...         unreviewed = extract_link_info(cols[3])
-    ...         print "%-25s %13d %13d\n" % (
-    ...             language, untranslated[0], unreviewed[0])
-    ...         print "Untranslated link: %s\n" % untranslated[1]
-    ...         print "Unreviewed link: %s\n" % unreviewed[1]
+    ...         print("%-25s %13d %13d\n" % (
+    ...             language, untranslated[0], unreviewed[0]))
+    ...         print("Untranslated link: %s\n" % untranslated[1])
+    ...         print("Unreviewed link: %s\n" % unreviewed[1])
 
 When there are no translatable templates, series is considered as not
 being set up for translation.
 
     >>> anon_browser.open(frobnicator_trunk_url)
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Series trunk : Translations : Frobnicator
 
     >>> main_content = find_main_content(anon_browser.contents)
-    >>> print extract_text(main_content.findAll('h1')[0])
+    >>> print(extract_text(main_content.findAll('h1')[0]))
     Translation status by language
 
     >>> print_language_stats(anon_browser)
@@ -59,7 +59,7 @@ being set up for translation.
 Explanation is shown to indicate that there are no translations for
 this series.
 
-    >>> print extract_text(main_content.findAll('p')[0])
+    >>> print(extract_text(main_content.findAll('p')[0]))
     There are no translations for this release series.
 
 Administrator will also see instructions on how to set up a project for
@@ -68,7 +68,7 @@ translation.
     >>> admin_browser.open(frobnicator_trunk_url)
     >>> main_content = find_main_content(admin_browser.contents)
     >>> paragraphs = main_content.findAll('p')
-    >>> print extract_text(main_content.findAll('p')[1])
+    >>> print(extract_text(main_content.findAll('p')[1]))
     To start translating your project...
 
 With one translatable template (with fake stats for 10 messages), a listing
@@ -145,8 +145,8 @@ not appear there.
     >>> owner_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'evolution/trunk/+translations-upload')
-    >>> print find_tag_by_id(
-    ...     owner_browser.contents, 'not-translated-in-launchpad')
+    >>> print(find_tag_by_id(
+    ...     owner_browser.contents, 'not-translated-in-launchpad'))
     None
 
 Nor does it appear on the template upload pages.
@@ -154,8 +154,8 @@ Nor does it appear on the template upload pages.
     >>> owner_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'evolution/trunk/+pots/evolution-2.2/+upload')
-    >>> print find_tag_by_id(
-    ...     owner_browser.contents, 'not-translated-in-launchpad')
+    >>> print(find_tag_by_id(
+    ...     owner_browser.contents, 'not-translated-in-launchpad'))
     None
 
 Now this is changed: Evolution's owner configures it not to use
@@ -171,13 +171,13 @@ When the owner now visits the upload page for trunk, there's a notice.
     >>> owner_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'bazaar/trunk/+translations-upload')
-    >>> print extract_text(
+    >>> print(extract_text(
     ...     find_tag_by_id(
-    ...         owner_browser.contents, 'not-translated-in-launchpad'))
+    ...         owner_browser.contents, 'not-translated-in-launchpad')))
     trunk does not translate its messages.
-    >>> print extract_text(
+    >>> print(extract_text(
     ...     find_tag_by_id(
-    ...         owner_browser.contents, 'translations-explanation'))
+    ...         owner_browser.contents, 'translations-explanation')))
     Launchpad allows communities to translate projects using
     imports or a branch.
     Getting started with translating your project in Launchpad
@@ -186,7 +186,7 @@ When the owner now visits the upload page for trunk, there's a notice.
 The notice links to the page for configuring translations on the project.
 
     >>> owner_browser.getLink('Translations', index=1).click()
-    >>> print owner_browser.url
+    >>> print(owner_browser.url)
     http://.../bazaar/+configure-translations
 
 An administrator also sees the notice.
@@ -194,13 +194,13 @@ An administrator also sees the notice.
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'bazaar/trunk/+translations-upload')
-    >>> print extract_text(
+    >>> print(extract_text(
     ...     find_tag_by_id(
-    ...         admin_browser.contents, 'not-translated-in-launchpad'))
+    ...         admin_browser.contents, 'not-translated-in-launchpad')))
     trunk does not translate its messages.
-    >>> print extract_text(
+    >>> print(extract_text(
     ...     find_tag_by_id(
-    ...         admin_browser.contents, 'translations-explanation'))
+    ...         admin_browser.contents, 'translations-explanation')))
     Launchpad allows communities to translate projects using
     imports or a branch.
     Getting started with translating your project in Launchpad
@@ -235,9 +235,9 @@ notice but not the link to the project's settings.
     ...     'http://translations.launchpad.dev/'
     ...     'bazaar/trunk/+translations-upload')
 
-    >>> print extract_text(
+    >>> print(extract_text(
     ...     find_tag_by_id(
-    ...         jtv_browser.contents, 'not-translated-in-launchpad'))
+    ...         jtv_browser.contents, 'not-translated-in-launchpad')))
     trunk does not translate its messages.
 
 Branch synchronization options
@@ -248,7 +248,7 @@ When no imports or exports have been set up, the page indicates that
     >>> browser.open(frobnicator_trunk_url)
     >>> sync_settings = first_tag_by_class(
     ...     browser.contents, 'automatic-synchronization')
-    >>> print extract_text(sync_settings)
+    >>> print(extract_text(sync_settings))
     Automatic synchronization
     This project is currently not using any synchronization
     with bazaar branches.
@@ -269,7 +269,7 @@ Imports are not mentioned until a series branch has been set.
     >>> browser.open(frobnicator_trunk_url)
     >>> sync_settings = first_tag_by_class(
     ...     browser.contents, 'automatic-synchronization')
-    >>> print extract_text(sync_settings)
+    >>> print(extract_text(sync_settings))
     Automatic synchronization
     Translations are exported daily to branch
     lp://dev/~person-name.../frobnicator/branch....
@@ -287,7 +287,7 @@ that no synchronization has been set up.
     >>> browser.open(frobnicator_trunk_url)
     >>> sync_settings = first_tag_by_class(
     ...     browser.contents, 'automatic-synchronization')
-    >>> print extract_text(sync_settings)
+    >>> print(extract_text(sync_settings))
     Automatic synchronization
     This project is currently not using any synchronization
     with bazaar branches.
@@ -301,7 +301,7 @@ Imports are indicated in likewise manner once a series branch has been set.
     >>> browser.open(frobnicator_trunk_url)
     >>> sync_settings = first_tag_by_class(
     ...     browser.contents, 'automatic-synchronization')
-    >>> print extract_text(sync_settings)
+    >>> print(extract_text(sync_settings))
     Automatic synchronization
     Translations are imported with every update from branch
     lp://dev/frobnicator.
@@ -317,11 +317,11 @@ release series should be translated.
     >>> distribution = factory.makeDistribution(name='earthian')
     >>> distroseries = factory.makeDistroSeries(
     ...     name='1.4', distribution=distribution)
-    >>> print distribution.translation_focus
+    >>> print(distribution.translation_focus)
     None
     >>> logout()
     >>> admin_browser.open('http://translations.launchpad.dev/earthian/1.4')
-    >>> print find_tag_by_id(admin_browser.contents, 'translation-focus')
+    >>> print(find_tag_by_id(admin_browser.contents, 'translation-focus'))
     None
 
 If focus is set, nice explanatory text is displayed.
@@ -332,8 +332,8 @@ If focus is set, nice explanatory text is displayed.
     >>> distribution.translation_focus = focus_series
     >>> logout()
     >>> admin_browser.open('http://translations.launchpad.dev/earthian/1.4')
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'translation-focus'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'translation-focus')))
     Launchpad currently recommends translating 1.6.
 
 
@@ -374,7 +374,7 @@ the new series.
     ...     'http://translations.launchpad.dev/evolution')
     >>> untranslatable = find_tag_by_id(
     ...     admin_browser.contents, 'portlet-untranslatable-branches')
-    >>> print extract_text(untranslatable)
+    >>> print(extract_text(untranslatable))
     Set up translations for a series...
     evo-new series — manual or automatic...
 
@@ -382,13 +382,13 @@ For each series there is a link for accesing the series translations
 page togheter with link for uploading a template from that series
 (manual) and setting automatic imports.
 
-    >>> print admin_browser.getLink('Evolution evo-new series').url
+    >>> print(admin_browser.getLink('Evolution evo-new series').url)
     http://translations.launchpad.dev/evolution/evo-new/+translations
 
-    >>> print admin_browser.getLink(
-    ... 'manual', url='/evolution/evo-new/+translations-upload').url
+    >>> print(admin_browser.getLink(
+    ... 'manual', url='/evolution/evo-new/+translations-upload').url)
     http://translations.launchpad.dev/evolution/evo-new/+translations-upload
 
-    >>> print admin_browser.getLink(
-    ... 'automatic', url='/evolution/evo-new/+translations-settings').url
+    >>> print(admin_browser.getLink(
+    ... 'automatic', url='/evolution/evo-new/+translations-settings').url)
     http://translations.launchpad.dev/evolution/evo-new/+translations-settings

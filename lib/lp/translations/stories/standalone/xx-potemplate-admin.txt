@@ -23,7 +23,7 @@ Jordi, a Rosetta expert, can.
     >>> browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
     ...     'evolution-2.2/+admin')
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations...dev/evolution/trunk/+pots/evolution-2.2/+admin
 
 Now, we should be sure that the admin form gets all required fields to allow
@@ -35,7 +35,7 @@ a Rosetta Expert to administer it.
     'evolution-2.2'
     >>> browser.getControl(name='field.description').value
     'Template for evolution in hoary'
-    >>> print browser.getControl(name='field.header').value
+    >>> print(browser.getControl(name='field.header').value)
     Project-Id-Version: PACKAGE VERSION
     Report-Msgid-Bugs-To:
     POT-Creation-Date: 2005-08-25 14:56+0200
@@ -69,7 +69,7 @@ An administrator can also access the POTemplate administration page.
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
     ...     'evolution-2.2/+admin')
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://translations...dev/evolution/trunk/+pots/evolution-2.2/+admin
 
 Now, we should be sure that the admin form gets all required fields to allow
@@ -81,7 +81,7 @@ an admin to administer it.
     'evolution-2.2'
     >>> admin_browser.getControl(name='field.description').value
     'Template for evolution in hoary'
-    >>> print admin_browser.getControl(name='field.header').value
+    >>> print(admin_browser.getControl(name='field.header').value)
     Project-Id-Version: PACKAGE VERSION
     Report-Msgid-Bugs-To:
     POT-Creation-Date: 2005-08-25 14:56+0200
@@ -119,7 +119,7 @@ And that we are able to POST it.
 
     >>> admin_browser.getControl('Translation domain').value = 'foo'
     >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2
 
 Going back to the form we can see that the changes are saved and also,
@@ -156,7 +156,7 @@ And now let's get back to renaming.
     >>> admin_browser.getControl(name='field.name').value = (
     ...     'evolution-renamed')
     >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-renamed
 
 Administrators can disable and then make changes to a disabled template.
@@ -166,7 +166,7 @@ Administrators can disable and then make changes to a disabled template.
     ...     'evolution-renamed/+admin')
     >>> admin_browser.getControl(name='field.iscurrent').value = False
     >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-renamed
 
 Now we will reenable the template.
@@ -176,7 +176,7 @@ Now we will reenable the template.
     ...     'evolution-renamed/+admin')
     >>> admin_browser.getControl(name='field.iscurrent').value = True
     >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-renamed
 
 
@@ -220,7 +220,7 @@ A distribution's owner can manage the distribution's templates.
     >>> distro_owner_browser.getControl(name='field.path').value = 'bar.pot'
     >>> distro_owner_browser.getControl('Change').click()
 
-    >>> print template.path
+    >>> print(template.path)
     bar.pot
 
 This privilege also extends to items that require "edit" permissions.
@@ -238,7 +238,7 @@ can manage the distribution's translation templates as well.
     >>> group_owner_browser.getControl(name='field.priority').value = '543'
     >>> group_owner_browser.getControl('Change').click()
 
-    >>> print template.path
+    >>> print(template.path)
     splat.pot
 
 Distribution translation coordinators can disable and manage disabled

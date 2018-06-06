@@ -7,7 +7,7 @@ evolution do not have such a link.
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/'
     ...     '+pots/evolution-2.2/es/+translate')
-    >>> print first_tag_by_class(anon_browser.contents, 'style_guide_url')
+    >>> print(first_tag_by_class(anon_browser.contents, 'style_guide_url'))
     None
 
 Carlos is the owner of the testing-translation-team group and can change
@@ -17,7 +17,7 @@ translators.
     >>> carlos_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     '+groups/testing-translation-team/es/+admin')
-    >>> print carlos_browser.title
+    >>> print(carlos_browser.title)
     Just a testing team...
 
 This way he can also set the documentation URL.
@@ -25,17 +25,17 @@ This way he can also set the documentation URL.
     >>> carlos_browser.getControl('Translation guidelines').value = (
     ...     'http://www.ubuntu.com/')
     >>> carlos_browser.getControl('Change').click()
-    >>> print carlos_browser.url
+    >>> print(carlos_browser.url)
     http://translations.launchpad.dev/+groups/testing-translation-team
 
 The link now appears in the table next to the name of the team.
 
     >>> team = first_tag_by_class(carlos_browser.contents, 'translator-team')
-    >>> print extract_text(team.findAll('a')[0])
+    >>> print(extract_text(team.findAll('a')[0]))
     testing Spanish team
 
     >>> link = first_tag_by_class(carlos_browser.contents, 'translator-link')
-    >>> print link.findAll('a')[0]['href']
+    >>> print(link.findAll('a')[0]['href'])
     http://www.ubuntu.com/
 
 Back on the translations page, the link is now present, too.
@@ -45,9 +45,9 @@ Back on the translations page, the link is now present, too.
     ...     '+pots/evolution-2.2/es/+translate')
     >>> style_guide_url = first_tag_by_class(
     ...     anon_browser.contents, 'style-guide-url')
-    >>> print extract_text(style_guide_url)
+    >>> print(extract_text(style_guide_url))
     testing Spanish team guidelines
-    >>> print style_guide_url['href']
+    >>> print(style_guide_url['href'])
     http://www.ubuntu.com/
 
 Carlos appoints Sample Person as a translator for Esperanto.
@@ -58,7 +58,7 @@ Carlos appoints Sample Person as a translator for Esperanto.
     >>> carlos_browser.getControl('Language').value = ['eo']
     >>> carlos_browser.getControl('Translator').value = 'name12'
     >>> carlos_browser.getControl('Appoint').click()
-    >>> print carlos_browser.url
+    >>> print(carlos_browser.url)
     http://translations.launchpad.dev/+groups/testing-translation-team
 
 Sample Person can not administer their ITranslator record but they can edit
@@ -71,22 +71,22 @@ the documentation url through the edit view.
     ...         'http://translations.launchpad.dev/'
     ...         '+groups/testing-translation-team/eo/+admin')
     ... except Unauthorized as e:
-    ...     print e
+    ...     print(e)
     (...'launchpad.Admin')
     >>> test_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     '+groups/testing-translation-team/eo/+edit')
-    >>> print test_browser.title
+    >>> print(test_browser.title)
     Set Esperanto guidelines...
 
     >>> test_browser.getControl('Translation guidelines').value = (
     ...     'http://www.launchpad.net/')
     >>> test_browser.getControl('Set guidelines').click()
-    >>> print test_browser.url
+    >>> print(test_browser.url)
     http://translations.launchpad.dev/~name12
     >>> translator_listing = find_tag_by_id(
     ...     test_browser.contents, 'translation-group-memberships')
-    >>> print extract_text(translator_listing)
+    >>> print(extract_text(translator_listing))
     Translation group
     Language
     Translation guidelines
@@ -135,7 +135,7 @@ When no documentation URLs are set, no notification will be displayed.
     >>> set_team_url(carlos_browser, '')
 
     >>> browser.open(evolution_spanish_url)
-    >>> print get_notification_content(browser)
+    >>> print(get_notification_content(browser))
     None
 
 Setting a group documentation URL will show the notification with the link
@@ -144,7 +144,7 @@ to said documentation.
     >>> set_group_url(carlos_browser, u'https://help.launchpad.net/')
     >>> browser.open(evolution_spanish_url)
     >>> notification = get_notification_content(browser)
-    >>> print extract_text(notification)
+    >>> print(extract_text(notification))
     Before translating, be sure to go through Just a testing team
     instructions.
 
@@ -157,7 +157,7 @@ Adding the Spanish team documentation URL adds another link.
     >>> set_team_url(carlos_browser, 'https://help.launchpad.net/Spanish')
     >>> browser.open(evolution_spanish_url)
     >>> notification = get_notification_content(browser)
-    >>> print extract_text(notification)
+    >>> print(extract_text(notification))
     Before translating, be sure to go through Just a testing team
     instructions and Spanish guidelines.
 
@@ -173,7 +173,7 @@ the narrative is changed a bit to include the full team name.
     >>> set_group_url(carlos_browser, '')
     >>> browser.open(evolution_spanish_url)
     >>> notification = get_notification_content(browser)
-    >>> print extract_text(notification)
+    >>> print(extract_text(notification))
     Before translating, be sure to go through testing Spanish team
     guidelines.
 

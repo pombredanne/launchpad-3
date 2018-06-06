@@ -14,13 +14,10 @@ from datetime import (
 import json
 from urlparse import urlsplit
 
-from httmock import (
-    all_requests,
-    HTTMock,
-    )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from pymacaroons import Macaroon
 import pytz
+import responses
 from storm.exceptions import LostObjectError
 from storm.locals import Store
 from testtools.matchers import (
@@ -1919,21 +1916,16 @@ class TestSnapWebservice(TestCaseWithFactory):
             urlsplit(config.launchpad.openid_provider_root).netloc, '',
             'dummy')
         root_macaroon_raw = root_macaroon.serialize()
-
-        @all_requests
-        def handler(url, request):
-            self.request = request
-            return {
-                "status_code": 200,
-                "content": {"macaroon": root_macaroon_raw},
-                }
-
         self.pushConfig("snappy", store_url="http://sca.example/")
         logout()
-        with HTTMock(handler):
+        with responses.RequestsMock() as requests_mock:
+            requests_mock.add(
+                "POST", "http://sca.example/dev/api/acl/",
+                json={"macaroon": root_macaroon_raw})
             response = self.webservice.named_post(
                 snap_url, "beginAuthorization", **kwargs)
-        self.assertThat(self.request, MatchesStructure.byEquality(
+            [call] = requests_mock.calls
+        self.assertThat(call.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         with person_logged_in(self.person):
             expected_body = {
@@ -1943,7 +1935,7 @@ class TestSnapWebservice(TestCaseWithFactory):
                     }],
                 "permissions": ["package_upload"],
                 }
-            self.assertEqual(expected_body, json.loads(self.request.body))
+            self.assertEqual(expected_body, json.loads(call.request.body))
             self.assertEqual({"root": root_macaroon_raw}, snap.store_secrets)
         return response, root_macaroon.third_party_caveats()[0]
 

@@ -28,7 +28,7 @@ For starters, Carlos uploads a tarball with 100 files to the queue.
     ...     tarball, 'application/x-gzip', 'foo.tar.gz')
     >>> browser.getControl('Upload').click()
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
-    ...     print tag
+    ...     print(tag)
     <div...Thank you for your upload. 100 files from the tarball will be
     automatically reviewed...
 
@@ -52,13 +52,14 @@ already included in the sample data.
     ...     """Print "x -> y of z results" batch navigator heading."""
     ...     heading = find_tags_by_class(
     ...         browser.contents, 'batch-navigation-index')[0]
-    ...     print extract_text(heading).encode('us-ascii', 'backslashreplace')
+    ...     print(
+    ...         extract_text(heading).encode('us-ascii', 'backslashreplace'))
 
     >>> def print_dropdown(browser, name, index=0):
     ...     """Print contents of named dropdown."""
     ...     dropdown = browser.getControl(name=name, index=index)
     ...     for item in dropdown.displayOptions:
-    ...         print item
+    ...         print(item)
 
     >>> def print_targets(browser):
     ...     """Print contents of the import target dropdown."""
@@ -165,7 +166,7 @@ Next Carlos filters for Approved entries.
     ['APPROVED']
     >>> browser.getControl(name='field.filter_extension', index=0).value
     ['all']
-    >>> print browser.contents
+    >>> print(browser.contents)
     <!DOCTYPE...
     ...There are no entries that match this filtering...
 
@@ -185,7 +186,7 @@ Carlos changes the status of the third entry to Blocked.
     ['NEEDS_REVIEW']
     >>> browser.getControl(name='field.status_%d' % qid1).value = ['BLOCKED']
     >>> browser.getControl('Change status').click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.launchpad.dev/+imports/+index
 
 The entry now shows up in the Blocked filter.
@@ -285,7 +286,7 @@ Carlos uploads files for Evolution in Ubuntu Hoary.
     ...     StringIO('foo'), 'application/x-po', 'foo.pot')
     >>> admin_browser.getControl('Upload').click()
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print extract_text(tag.renderContents())
+    ...     print(extract_text(tag.renderContents()))
     Thank you for your upload. It will be automatically reviewed...
 
     # Commit the transaction so librarian stores the uploaded file.
@@ -299,7 +300,7 @@ Carlos selects that option and filters for it.
     >>> user_browser.getControl(
     ...     name='field.filter_target', index=0).value = ['ubuntu/hoary']
     >>> user_browser.getControl('Filter').click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://.../+imports/+index?field.filter_target=ubuntu/hoary&...
 
 The only entry that shows up now is the one Carlos just uploaded.
@@ -311,7 +312,7 @@ The only entry that shows up now is the one Carlos just uploaded.
     >>> import_list = find_tag_by_id(
     ...     user_browser.contents, 'import-entries-list')
     >>> first_entry = import_list.findNext('tr')
-    >>> print represent_queue_entry(first_entry)
+    >>> print(represent_queue_entry(first_entry))
     foo.pot in evolution in Ubuntu Hoary
     Needs Review
 
@@ -354,7 +355,7 @@ Evolution (a separate project registered in Launchpad).
 The "Any project" filter here shows only those Evolution uploads.
 
     >>> displayed_entries = summarize_displayed_queue_entries(user_browser)
-    >>> print displayed_entries
+    >>> print(displayed_entries)
     po/evolution-2.2-test.pot in Evolution trunk series ...
     po/pt_BR.po in Evolution trunk series ...
     foo-01.po in Evolution trunk series ...
@@ -363,7 +364,7 @@ The "Any project" filter here shows only those Evolution uploads.
 
 None of the Hoary uploads are shown.
 
-    >>> print re.findall('Hoary', displayed_entries)
+    >>> print(re.findall('Hoary', displayed_entries))
     []
 
 The "Any distribution" filter on the other hand shows the Hoary upload
@@ -375,10 +376,10 @@ project.
     >>> user_browser.getControl('Filter').click()
 
     >>> displayed_entries = summarize_displayed_queue_entries(user_browser)
-    >>> print displayed_entries
+    >>> print(displayed_entries)
     foo.pot in evolution in Ubuntu Hoary ...
 
-    >>> print re.findall('Evolution', displayed_entries)
+    >>> print(re.findall('Evolution', displayed_entries))
     []
 
 
@@ -393,4 +394,3 @@ mistyped URL, an UnexpectedFormData is raised.
     Traceback (most recent call last):
     ...
     UnexpectedFormData: Unknown target.
-

@@ -27,7 +27,7 @@ Project in this case.
 
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Ask a question...
 
 The workflow is identical to the regular one, except that the user must
@@ -36,23 +36,23 @@ products associated with the project. Note that the site policy is to
 use the word 'Project' for 'Products' (and 'Distributions') so that
 users do not have to learn our business' semantics.
 
-    >>> print user_browser.getControl('Project').displayOptions
+    >>> print(user_browser.getControl('Project').displayOptions)
     ['Mozilla Firefox', 'Mozilla Thunderbird']
 
 The first item in the list is the default value, and it will be
 submitted if the user does not change it.
 
-    >>> print user_browser.getControl('Project').displayValue
+    >>> print(user_browser.getControl('Project').displayValue)
     ['Mozilla Firefox']
 
 Like for the regular workflow, the user is shown a list of languages,
 with the supported languages flagged with an asterisk.
 
-    >>> print user_browser.getControl('Language').displayValue
+    >>> print(user_browser.getControl('Language').displayValue)
     ['English (en) *']
 
     >>> langs = sorted(user_browser.getControl('Language').displayOptions)
-    >>> for lang in langs: print lang
+    >>> for lang in langs: print(lang)
     Afrikaans (af)
     English (en) *
     Sotho, Southern (st)
@@ -73,7 +73,7 @@ that they submitted:
     >>> similar_questions = find_tag_by_id(
     ...     user_browser.contents, 'similar-questions')
     >>> for row in similar_questions.findAll('li'):
-    ...     print row.a.renderContents()
+    ...     print(row.a.renderContents())
     2: Problem showing the SVG demo on W3C site
 
 No Privileged Person can still change the product for which they're asking
@@ -93,14 +93,14 @@ An error message in the page informs the user that the summary is
 missing:
 
     >>> soup = find_main_content(user_browser.contents)
-    >>> print soup.find('div', 'message').renderContents()
+    >>> print(soup.find('div', 'message').renderContents())
     You must enter a summary of your problem.
 
 The product Thunderbird that they selected on the previous screen is still
 selected. No Privileged Person re-enters their question summary, and
 submits the form.
 
-    >>> print user_browser.getControl('Project').displayValue
+    >>> print(user_browser.getControl('Project').displayValue)
     ['Mozilla Thunderbird']
 
     >>> user_browser.getControl('Summary').value = (
@@ -112,7 +112,7 @@ Thunderbird. Since there are no similar questions against Thunderbird,
 an appropriate message is displayed to inform them of this:
 
     >>> soup = find_main_content(user_browser.contents)
-    >>> print soup.find('p').renderContents()
+    >>> print(soup.find('p').renderContents())
     There are no existing FAQs or questions similar to the summary you
     entered.
 
@@ -132,7 +132,7 @@ workflow. (see 30-question-workflow.txt for the details).
     >>> user_browser.url
     '.../thunderbird/+question/...'
 
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Question #... : Questions : Mozilla Thunderbird
 
 
@@ -156,7 +156,7 @@ speaks Japanese, so we will use him.
 
     >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:test')
     >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
-    >>> print daf_browser.title
+    >>> print(daf_browser.title)
     Language preferences...
 
     >>> daf_browser.getControl('Japanese').selected
@@ -164,7 +164,7 @@ speaks Japanese, so we will use him.
 
     >>> daf_browser.open(
     ...     'http://answers.launchpad.dev/thunderbird/+answer-contact')
-    >>> print daf_browser.title
+    >>> print(daf_browser.title)
     Answer contact for...
 
     >>> daf_browser.getControl('I want to be an answer contact for '
@@ -172,7 +172,7 @@ speaks Japanese, so we will use him.
     >>> daf_browser.getControl('Continue').click()
     >>> content = find_main_content(daf_browser.contents)
     >>> for message in content.findAll('div', 'informational message'):
-    ...      print message.renderContents()
+    ...      print(message.renderContents())
     You have been added as an answer contact for Mozilla Thunderbird.
 
 And we add Japanese to No Privileges Person's preferred languages. We
@@ -182,13 +182,13 @@ match. This condition demonstrates the supported language behaviour.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/~no-priv/+editlanguages')
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Language preferences...
 
     >>> user_browser.getControl('Japanese').selected = True
     >>> user_browser.getControl('Save').click()
     >>> soup = find_main_content(user_browser.contents)
-    >>> print soup.find('div', 'informational message').renderContents()
+    >>> print(soup.find('div', 'informational message').renderContents())
     Added Japanese to your preferred languages.
 
 So if No Privileges Person were to visit the Ask a Question page for
@@ -199,7 +199,7 @@ and expect someone to reply in the same language.
 
     >>> user_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+addquestion')
-    >>> print user_browser.getControl('Language').displayOptions
+    >>> print(user_browser.getControl('Language').displayOptions)
     ['English (en) *', 'Japanese (ja)']
 
 The supported languages will not be shown immediately when Sample Person
@@ -227,17 +227,17 @@ Japanese.
 
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Ask a question...
 
 The page displays a list of products associated with the project. The
 first item in the list is the default value, and it will be submitted if
 the user does not change it.
 
-    >>> print user_browser.getControl('Project').displayOptions
+    >>> print(user_browser.getControl('Project').displayOptions)
     ['Mozilla Firefox', 'Mozilla Thunderbird']
 
-    >>> print user_browser.getControl('Project').displayValue
+    >>> print(user_browser.getControl('Project').displayValue)
     ['Mozilla Firefox']
 
 Like for the regular workflow, the user is shown a list of languages,
@@ -248,7 +248,7 @@ languages other than the default language of English. If the user were
 to submit their question in another language, they might find that the
 language is supported on the next page.
 
-    >>> print user_browser.getControl('Language').displayOptions
+    >>> print(user_browser.getControl('Language').displayOptions)
     ['English (en) *', 'Japanese (ja)']
 
     >>> user_browser.getControl('Language').value = ['en']
@@ -267,7 +267,7 @@ They can see which of their preferred languages are supported for the
 Firefox product by reviewing which languages has asterisks in the
 Languages list--only English in the example.
 
-    >>> print user_browser.getControl('Language').displayOptions
+    >>> print(user_browser.getControl('Language').displayOptions)
     ['English (en) *', 'Japanese (ja)']
 
 No Privileges Person can still change the product for which they're asking
@@ -278,7 +278,7 @@ language list does not change because the Thunderbird was not submitted
 as the product.
 
     >>> user_browser.getControl('Mozilla Thunderbird').selected = True
-    >>> print user_browser.getControl('Language').displayOptions
+    >>> print(user_browser.getControl('Language').displayOptions)
     ['English (en) *', 'Japanese (ja)']
 
 If No Privileges Person asks a question in Japanese, it will be
@@ -297,7 +297,7 @@ question.
 
     >>> user_browser.open('http://answers.launchpad.dev/mozilla')
     >>> user_browser.getLink('Ask a question').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Ask a question...
 
     >>> user_browser.getControl('Mozilla Thunderbird').selected = True
@@ -305,7 +305,7 @@ question.
 They write their summary in English as he sees that is the only supported
 Language, and 'Continues' to the next page.
 
-    >>> print user_browser.getControl('Language').displayOptions
+    >>> print(user_browser.getControl('Language').displayOptions)
     ['English (en) *', 'Japanese (ja)']
 
     >>> user_browser.getControl('Summary').value = (
@@ -319,14 +319,14 @@ list. Japanese is supported because Dafydd speaks Japanese and is an
 answer contact for Thunderbird. We see this only after a question
 summary is submitted for a product.
 
-    >>> print user_browser.getControl('Language').displayOptions
+    >>> print(user_browser.getControl('Language').displayOptions)
     ['English (en) *', 'Japanese (ja) *']
 
 No Privileges Person sets the language to Japanese, changes their question
 summary, writes a description, and submits the form with the 'Post
 Question' button.
 
-    >>> print user_browser.getControl('Project').displayValue
+    >>> print(user_browser.getControl('Project').displayValue)
     ['Mozilla Thunderbird']
 
     >>> user_browser.getControl('Japanese (ja) *').selected = True
@@ -343,5 +343,5 @@ is created.
     >>> user_browser.url
     '.../thunderbird/+question/...'
 
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Question #... : Questions : Mozilla Thunderbird

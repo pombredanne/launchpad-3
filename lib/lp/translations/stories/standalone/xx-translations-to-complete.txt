@@ -38,14 +38,14 @@ The dashboard shows a listing of translations that need Jean's help.
 
     >>> tag = find_tag_by_id(
     ...     jean_browser.contents, 'translations-to-complete-table')
-    >>> print tag.renderContents()
+    >>> print(tag.renderContents())
 
 Only Jean sees his personal listing.
 
     >>> user_browser.open(jean_home)
     >>> tag = find_tag_by_id(
     ...     user_browser.contents, 'translations-to-complete-table')
-    >>> print tag
+    >>> print(tag)
     None
 
 Pierre is not a translator.  Pierre does not get such a listing either.
@@ -58,7 +58,7 @@ Pierre is not a translator.  Pierre does not get such a listing either.
     >>> pierre_browser.open('http://translations.launchpad.dev/~pierre')
     >>> tag = find_tag_by_id(
     ...     pierre_browser.contents, 'translations-to-complete-table')
-    >>> print tag
+    >>> print(tag)
     None
 
 
@@ -82,5 +82,5 @@ page does not show any translations to complete--even to a member of the team.
     >>> experts_home = 'http://translations.launchpad.dev/~rosetta-admins'
     >>> carlos_browser.open(experts_home)
 
-    >>> print extract_text(find_tag_by_id(
-    ...     jean_browser.contents, 'translations-to-complete-table'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     jean_browser.contents, 'translations-to-complete-table')))
