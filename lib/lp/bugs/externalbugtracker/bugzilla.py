@@ -858,7 +858,12 @@ class BugzillaAPI(Bugzilla):
         comment_id = int(comment_id)
 
         comment = self._bugs[actual_bug_id]['comments'][comment_id]
-        display_name, email = parseaddr(comment['author'])
+        if 'creator' in comment:
+            # Bugzilla >= 4.0
+            creator = comment['creator']
+        else:
+            creator = comment['author']
+        display_name, email = parseaddr(creator)
 
         # If the email isn't valid, return the email address as the
         # display name (a Launchpad Person will be created with this

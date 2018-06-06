@@ -450,7 +450,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         }
 
     # Comments are mapped to bug IDs.
-    comment_id_index = 5
+    comment_id_index = 6
     new_comment_time = datetime(2008, 6, 20, 11, 42, 42)
     _bug_comments = {
         1: {
@@ -867,6 +867,15 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
                 'is_private': False,
                 'text': "I never could get the hang of Thursdays.",
                 'time': datetime(2008, 6, 19, 9, 30, 0),
+                },
+            4: {'creator': 'Slartibartfast <slarti@magrathea.example.net>',
+                'bug_id': 2,
+                'id': 6,
+                'is_private': False,
+                'text': (
+                    "You know the fjords in Norway?  I got a prize for "
+                    "creating those, you know."),
+                'time': datetime(2008, 6, 20, 12, 37, 0),
                 },
             },
         }

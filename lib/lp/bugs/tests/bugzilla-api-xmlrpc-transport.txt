@@ -353,6 +353,13 @@ the comments for those bugs.
         text: I never could get the hang of Thursdays.
         time: 2008-06-19 09:30:00
     <BLANKLINE>
+        bug_id: 2
+        creator: Slartibartfast <slarti@magrathea.example.net>
+        id: 6
+        is_private: False
+        text: You know the fjords in Norway?  I got a prize for creating those, you know.
+        time: 2008-06-20 12:37:00
+    <BLANKLINE>
     <BLANKLINE>
 
 Passing a list of comment IDs to Bug.comments will cause it to return
@@ -393,7 +400,7 @@ Passing an include_fields parameter allows us to limit which fields are
 returned for each comment.
 
     >>> return_dict = server.Bug.comments(
-    ...     {'ids': [1, 2], 'include_fields': ('id', 'author')})
+    ...     {'ids': [1, 2], 'include_fields': ('id', 'author', 'creator')})
     >>> bugs_dict = return_dict['bugs']
 
     >>> print_bug_comments(bugs_dict, sort_key='id')
@@ -414,6 +421,9 @@ returned for each comment.
     <BLANKLINE>
         author: arthur.dent@earth.example.com
         id: 5
+    <BLANKLINE>
+        creator: Slartibartfast <slarti@magrathea.example.net>
+        id: 6
 
     >>> return_dict = server.Bug.comments(
     ...     {'comment_ids': [1, 4], 'include_fields': ('id', 'author')})
@@ -455,12 +465,12 @@ on the remote server.
     >>> bugzilla_transport.auth_cookie = 'open sesame'
     >>> return_dict = server.Bug.add_comment({'id': 1, 'comment': comment})
     >>> return_dict
-    {'id': 6}
+    {'id': 7}
 
 The comment will be stored with the other comments on the remote server.
 
     >>> return_dict = server.Bug.comments({
-    ...     'id': [1], 'comment_ids': [6]})
+    ...     'id': [1], 'comment_ids': [7]})
     >>> comments_dict = return_dict['comments']
 
     >>> for comment_id, comment in comments_dict.items():
@@ -468,10 +478,10 @@ The comment will be stored with the other comments on the remote server.
     ...     for comment_key in sorted(comment):
     ...         print "    %s: %s" % (
     ...             comment_key, comment[comment_key])
-    Comment 6:
+    Comment 7:
         author: launchpad
         bug_id: 1
-        id: 6
+        id: 7
         is_private: False
         text: I'm supposed to write something apposite here.
         time: ...
