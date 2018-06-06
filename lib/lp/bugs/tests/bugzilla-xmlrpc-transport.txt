@@ -451,17 +451,17 @@ on the remote server.
     >>> return_dict = server.Launchpad.add_comment(
     ...     {'id': 1, 'comment': comment})
     >>> print return_dict['comment_id']
-    6
+    7
 
 The comment will be stored with the other comments on the remote server.
 
-    >>> return_dict = server.Launchpad.comments({'bug_ids': [1], 'ids': [6]})
+    >>> return_dict = server.Launchpad.comments({'bug_ids': [1], 'ids': [7]})
     >>> bugs_dict = return_dict['bugs']
 
     >>> print_bug_comments(bugs_dict, sort_key='id')
     Bug 1:
         author: launchpad
-        id: 6
+        id: 7
         number: 3
         text: Didn't we have a lovely time the day we went to Bangor?
         time: ...
