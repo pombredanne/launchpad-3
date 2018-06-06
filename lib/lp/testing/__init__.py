@@ -893,7 +893,8 @@ class TestCaseWithFactory(TestCase):
                 db_branch = self.factory.makeAnyBranch(**kwargs)
             else:
                 db_branch = self.factory.makeProductBranch(product, **kwargs)
-        branch_url = 'lp-internal:///' + db_branch.unique_name
+        branch_url = (
+            'lp-internal:///' + removeSecurityProxy(db_branch).unique_name)
         if not self.direct_database_server:
             transaction.commit()
         bzr_branch = self.createBranchAtURL(branch_url, format=format)

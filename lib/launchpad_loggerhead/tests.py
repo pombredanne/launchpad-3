@@ -1,29 +1,44 @@
 # Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import urllib
-
 import lazr.uri
 from paste.httpexceptions import HTTPExceptionHandler
+import requests
+from six.moves.urllib_parse import (
+    urlencode,
+    urlsplit,
+    )
+import soupmatchers
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 import wsgi_intercept
 from wsgi_intercept.urllib2_intercept import (
     install_opener,
     uninstall_opener,
     )
 import wsgi_intercept.zope_testbrowser
+from zope.security.proxy import removeSecurityProxy
 
 from launchpad_loggerhead.app import RootApp
 from launchpad_loggerhead.session import SessionHandler
+from launchpad_loggerhead.testing import LoggerheadFixture
+from lp.app.enums import InformationType
 from lp.services.config import config
 from lp.services.webapp.vhosts import allvhosts
-from lp.testing import TestCase
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
+from lp.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
 
 
 SESSION_VAR = 'lh.session'
 
-# See sourcecode/launchpad-loggerhead/start-loggerhead.py for the production
-# mechanism for getting the secret.
+# See lib/launchpad_loggerhead/wsgi.py for the production mechanism for
+# getting the secret.
 SECRET = 'secret'
 
 
@@ -132,8 +147,7 @@ class TestLogout(TestCase):
         self.intercept(dummy_root, dummy_destination)
         self.browser.open(
             config.codehosting.secure_codebrowse_root +
-            '+logout?' +
-            urllib.urlencode(dict(next_to=dummy_root + '+logout')))
+            '+logout?' + urlencode(dict(next_to=dummy_root + '+logout')))
 
         # We are logged out, as before.
         self.assertEqual(self.session, {})
@@ -142,3 +156,51 @@ class TestLogout(TestCase):
         self.assertEqual(self.browser.url, dummy_root + '+logout')
         self.assertEqual(self.browser.contents,
                          'This is a dummy destination.\n')
+
+
+class TestWSGI(TestCaseWithFactory):
+    """Smoke tests for Launchpad's loggerhead WSGI server."""
+
+    layer = AppServerLayer
+
+    def setUp(self):
+        super(TestWSGI, self).setUp()
+        self.useBzrBranches()
+        loggerhead_fixture = self.useFixture(LoggerheadFixture())
+
+        def get_debug_log_bytes():
+            try:
+                with open(loggerhead_fixture.logfile, "rb") as logfile:
+                    return [logfile.read()]
+            except IOError:
+                return [b""]
+
+        self.addDetail(
+            "loggerhead-debug", Content(UTF8_TEXT, get_debug_log_bytes))
+
+    def test_public_port_public_branch(self):
+        # Requests for public branches on the public port are allowed.
+        db_branch, _ = self.create_branch_and_tree()
+        branch_url = "http://127.0.0.1:%d/%s" % (
+            config.codebrowse.port, db_branch.unique_name)
+        response = requests.get(branch_url)
+        self.assertEqual(200, response.status_code)
+        title_tag = soupmatchers.Tag(
+            "page title", "title", text="%s : changes" % db_branch.unique_name)
+        self.assertThat(response.text, soupmatchers.HTMLContains(title_tag))
+
+    def test_public_port_private_branch(self):
+        # Requests for private branches on the public port send the user
+        # through the login workflow.
+        db_branch, _ = self.create_branch_and_tree(
+            information_type=InformationType.USERDATA)
+        naked_branch = removeSecurityProxy(db_branch)
+        branch_url = "http://127.0.0.1:%d/%s" % (
+            config.codebrowse.port, naked_branch.unique_name)
+        response = requests.get(
+            branch_url, headers={"X-Forwarded-Scheme": "https"},
+            allow_redirects=False)
+        self.assertEqual(301, response.status_code)
+        self.assertEqual(
+            "testopenid.dev:8085",
+            urlsplit(response.headers["Location"]).netloc)

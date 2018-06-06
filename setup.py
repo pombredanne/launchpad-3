@@ -159,6 +159,7 @@ setup(
         'FeedParser',
         'feedvalidator',
         'fixtures',
+        'gunicorn[gthread]',
         'html5browser',
         'importlib-resources',
         'ipython',

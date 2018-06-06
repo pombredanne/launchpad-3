@@ -44,7 +44,7 @@ def find_lp_scripts():
     return sorted(scripts)
 
 
-def run_script(script_relpath, args, expect_returncode=0):
+def run_script(script_relpath, args, expect_returncode=0, extra_env=None):
     """Run a script for testing purposes.
 
     :param script_relpath: The relative path to the script, from the tree
@@ -52,11 +52,16 @@ def run_script(script_relpath, args, expect_returncode=0):
     :param args: Arguments to provide to the script.
     :param expect_returncode: The return code expected.  If a different value
         is returned, and exception will be raised.
+    :param extra_env: A dictionary of extra environment variables to provide
+        to the script, or None.
     """
     script = os.path.join(config.root, script_relpath)
     args = [script] + args
+    env = dict(os.environ)
+    if extra_env is not None:
+        env.update(extra_env)
     process = subprocess.Popen(
-        args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
     stdout, stderr = process.communicate()
     if process.returncode != expect_returncode:
         raise AssertionError('Failed:\n%s\n%s' % (stdout, stderr))
