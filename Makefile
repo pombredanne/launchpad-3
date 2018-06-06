@@ -306,10 +306,10 @@ run_all: build inplace stop
 	memcached,rabbitmq,txlongpoll -i $(LPCONFIG)
 
 run_codebrowse: compile
-	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
+	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py
 
 start_codebrowse: compile
-	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) scripts/start-loggerhead.py
+	BZR_PLUGIN_PATH=$(shell pwd)/bzrplugins $(PY) scripts/start-loggerhead.py --daemon
 
 stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
