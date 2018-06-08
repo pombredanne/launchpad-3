@@ -8,9 +8,12 @@ __all__ = [
     'LoggerheadApplication',
     ]
 
+import atexit
 import logging
 from optparse import OptionParser
 import os.path
+import signal
+import sys
 import time
 import traceback
 
@@ -29,7 +32,10 @@ from launchpad_loggerhead.app import (
 from launchpad_loggerhead.session import SessionHandler
 import lp.codehosting
 from lp.services.config import config
-from lp.services.pidfile import pidfile_path
+from lp.services.pidfile import (
+    pidfile_path,
+    remove_pidfile,
+    )
 from lp.services.scripts import (
     logger,
     logger_options,
@@ -87,6 +93,16 @@ class LoggerheadLogger(Logger):
         oidutil.log = lambda message, level=0: log.debug(message)
 
 
+def _on_starting_hook(arbiter):
+    # Normally lp.services.pidfile.make_pidfile does this, but in this case
+    # we have to do it ourselves since gunicorn creates the pidfile.
+    atexit.register(remove_pidfile, "codebrowse")
+    # Register a trivial SIGTERM handler so that the atexit hook is called
+    # on SIGTERM.
+    signal.signal(
+        signal.SIGTERM, lambda signum, frame: sys.exit(-signal.SIGTERM))
+
+
 class LoggerheadApplication(Application):
 
     def __init__(self, **kwargs):
@@ -106,12 +122,14 @@ class LoggerheadApplication(Application):
             "bind": [
                 "%s:%s" % (listen_host, config.codebrowse.port),
                 ],
+            "capture_output": True,
             "errorlog": os.path.join(log_folder, "debug.log"),
             # Trust that firewalls only permit sending requests to
             # loggerhead via a frontend.
             "forwarded_allow_ips": "*",
             "logger_class": "launchpad_loggerhead.wsgi.LoggerheadLogger",
             "loglevel": "debug",
+            "on_starting": _on_starting_hook,
             "pidfile": pidfile_path("codebrowse"),
             "preload_app": True,
             # XXX cjwatson 2018-05-15: These are gunicorn defaults plus
