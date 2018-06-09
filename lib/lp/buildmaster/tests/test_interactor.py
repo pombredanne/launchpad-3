@@ -1,7 +1,9 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test BuilderInteractor features."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __all__ = [
     'FakeBuildQueue',
@@ -20,13 +22,13 @@ from testtools.matchers import (
     HasLength,
     MatchesDict,
     )
+from testtools.testcase import ExpectedException
 from testtools.twistedsupport import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     AsynchronousDeferredRunTestForBrokenTwisted,
     SynchronousDeferredRunTest,
     )
-from testtools.testcase import ExpectedException
 from twisted.internet import (
     defer,
     reactor as default_reactor,

@@ -1,6 +1,8 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Test BuildQueue features."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 from datetime import timedelta
 
@@ -54,7 +56,7 @@ def print_build_setup(builds):
     def processor_name(bq):
         return ('None' if bq.processor is None else bq.processor.name)
 
-    print ""
+    print("")
     queue_entries = [build.buildqueue_record for build in builds]
     queue_entries = sorted(
         queue_entries, key=lambda qe: qe.job.id, reverse=True)
@@ -65,10 +67,10 @@ def print_build_setup(builds):
             source = getattr(queue_entry.specific_build, attr, None)
             if source is not None:
                 break
-        print "%5s, %18s, p:%5s, v:%5s e:%s *** s:%5s" % (
+        print("%5s, %18s, p:%5s, v:%5s e:%s *** s:%5s" % (
             queue_entry.id, source.name, processor_name(queue_entry),
             queue_entry.virtualized, queue_entry.estimated_duration,
-            queue_entry.lastscore)
+            queue_entry.lastscore))
 
 
 class TestBuildCancellation(TestCaseWithFactory):
