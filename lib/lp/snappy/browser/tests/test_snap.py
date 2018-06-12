@@ -133,6 +133,7 @@ class TestSnapViewsFeatureFlag(TestCaseWithFactory):
     def test_private_feature_flag_disabled(self):
         # Without a private_snap feature flag, we will not create Snaps for
         # private contexts.
+        self.useFixture(BranchHostingFixture())
         self.snap_store_client = FakeMethod()
         self.snap_store_client.listChannels = FakeMethod(result=[])
         self.useFixture(
@@ -202,6 +203,7 @@ class TestSnapAddView(BaseTestSnapView):
     def test_initial_store_distro_series(self):
         # The initial store_distro_series uses the preferred distribution
         # series for the latest snappy series.
+        self.useFixture(BranchHostingFixture(blob=b""))
         lts = self.factory.makeUbuntuDistroSeries(
             version="16.04", status=SeriesStatus.CURRENT)
         current = self.factory.makeUbuntuDistroSeries(
@@ -226,6 +228,7 @@ class TestSnapAddView(BaseTestSnapView):
             no_login=True)
 
     def test_create_new_snap_bzr(self):
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         source_display = branch.display_name
         browser = self.getViewBrowser(
@@ -300,6 +303,7 @@ class TestSnapAddView(BaseTestSnapView):
 
     def test_create_new_snap_users_teams_as_owner_options(self):
         # Teams that the user is in are options for the snap package owner.
+        self.useFixture(BranchHostingFixture(blob=b""))
         self.factory.makeTeam(
             name="test-team", displayname="Test Team", members=[self.person])
         branch = self.factory.makeAnyBranch()
@@ -312,6 +316,7 @@ class TestSnapAddView(BaseTestSnapView):
 
     def test_create_new_snap_public(self):
         # Public owner implies public snap.
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
 
         browser = self.getViewBrowser(
@@ -344,6 +349,7 @@ class TestSnapAddView(BaseTestSnapView):
 
     def test_create_new_snap_private(self):
         # Private teams will automatically create private snaps.
+        self.useFixture(BranchHostingFixture(blob=b""))
         login_person(self.person)
         self.factory.makeTeam(
             name='super-private', owner=self.person,
@@ -365,6 +371,7 @@ class TestSnapAddView(BaseTestSnapView):
 
     def test_create_new_snap_build_source_tarball(self):
         # We can create a new snap and ask for it to build a source tarball.
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
@@ -380,6 +387,7 @@ class TestSnapAddView(BaseTestSnapView):
     def test_create_new_snap_auto_build(self):
         # Creating a new snap and asking for it to be automatically built
         # sets all the appropriate fields.
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         archive = self.factory.makeArchive()
         browser = self.getViewBrowser(
@@ -409,6 +417,7 @@ class TestSnapAddView(BaseTestSnapView):
         # Creating a new snap and asking for it to be automatically uploaded
         # to the store sets all the appropriate fields and redirects to SSO
         # for authorization.
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         view_url = canonical_url(branch, view_name="+new-snap")
         browser = self.getNonRedirectingBrowser(url=view_url, user=self.person)
@@ -470,6 +479,7 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertEqual(expected_args, parse_qs(parsed_location[3]))
 
     def test_create_new_snap_display_processors(self):
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         self.setUpDistroSeries()
         browser = self.getViewBrowser(
@@ -483,6 +493,7 @@ class TestSnapAddView(BaseTestSnapView):
 
     def test_create_new_snap_display_restricted_processors(self):
         # A restricted processor is shown disabled in the UI.
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         distroseries = self.setUpDistroSeries()
         proc_armhf = self.factory.makeProcessor(
@@ -497,6 +508,7 @@ class TestSnapAddView(BaseTestSnapView):
             processors, ["386", "amd64", "hppa"], ["armhf"])
 
     def test_create_new_snap_processors(self):
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         self.setUpDistroSeries()
         browser = self.getViewBrowser(
