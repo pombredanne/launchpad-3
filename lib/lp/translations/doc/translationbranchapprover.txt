@@ -62,7 +62,7 @@ the import queue.
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
     >>> queue = getUtility(ITranslationImportQueue)
-    >>> entry = queue.addOrUpdateEntry("foo.pot", "foo pot content", True,
+    >>> entry = queue.addOrUpdateEntry("foo.pot", b"foo pot content", True,
     ...     series.owner, productseries=series)
 
 The job initializes the approver with the list of template files in the tree,
@@ -73,15 +73,15 @@ which has only one entry. This is situtation 2 (see above).
 
 It approves the entry which leads to the creation of a new POTemplate object.
 
-    >>> print entry.potemplate
+    >>> print(entry.potemplate)
     None
     >>> entry = approver.approve(entry)
-    >>> print repr(entry.potemplate)
+    >>> print(repr(entry.potemplate))
     <POTemplate at ...>
     >>> foo_potemplate = entry.potemplate
-    >>> print foo_potemplate.name
+    >>> print(foo_potemplate.name)
     foo
-    >>> print repr(entry.status)
+    >>> print(repr(entry.status))
     <DBItem RosettaImportStatus.APPROVED, (1) Approved>
 
 Now the project owner wants to use two translation domains in their project
@@ -89,7 +89,7 @@ and thus creates another template file in the branch. The branch upload job
 detects this new file on its next run and places it into the import queue
 (but not the first one which is left unchanged).
 
-    >>> entry = queue.addOrUpdateEntry("bar.pot", "bar pot content", True,
+    >>> entry = queue.addOrUpdateEntry("bar.pot", b"bar pot content", True,
     ...     series.owner, productseries=series)
 
 The job does know about all the template files in the tree and so it
@@ -101,15 +101,15 @@ initializes the approver accordingly. This is situtation 2 again.
 It approves the entry which leads to the creation of another POTemplate
 object.
 
-    >>> print entry.potemplate
+    >>> print(entry.potemplate)
     None
     >>> entry = approver.approve(entry)
-    >>> print repr(entry.potemplate)
+    >>> print(repr(entry.potemplate))
     <POTemplate at ...>
     >>> bar_potemplate = entry.potemplate
-    >>> print bar_potemplate.name
+    >>> print(bar_potemplate.name)
     bar
-    >>> print repr(entry.status)
+    >>> print(repr(entry.status))
     <DBItem RosettaImportStatus.APPROVED, (1) Approved>
 
 
@@ -120,9 +120,9 @@ correctly. Also, they start using a tool that calls the template
 upload job detects two changed files and places them in the upload queue.
 
     >>> foo_entry = queue.addOrUpdateEntry("po/foo/messages.pot",
-    ...     "foo pot content", True, series.owner, productseries=series)
+    ...     b"foo pot content", True, series.owner, productseries=series)
     >>> bar_entry = queue.addOrUpdateEntry("po/bar/messages.pot",
-    ...     "bar pot content", True, series.owner, productseries=series)
+    ...     b"bar pot content", True, series.owner, productseries=series)
 
 Since these two files are all the translation template files in the tree,
 the job initializes the approver with their names. This is situation 1.
@@ -135,18 +135,18 @@ Upon approval both entries retain their POTemplate links but the path
 attributes of the linked objects are updated.
 
     >>> foo_entry = approver.approve(foo_entry)
-    >>> print foo_entry.potemplate == foo_potemplate
+    >>> print(foo_entry.potemplate == foo_potemplate)
     True
-    >>> print foo_potemplate.path
+    >>> print(foo_potemplate.path)
     po/foo/messages.pot
-    >>> print repr(foo_entry.status)
+    >>> print(repr(foo_entry.status))
     <DBItem RosettaImportStatus.APPROVED, (1) Approved>
     >>> bar_entry = approver.approve(bar_entry)
-    >>> print bar_entry.potemplate == bar_potemplate
+    >>> print(bar_entry.potemplate == bar_potemplate)
     True
-    >>> print bar_potemplate.path
+    >>> print(bar_potemplate.path)
     po/bar/messages.pot
-    >>> print repr(bar_entry.status)
+    >>> print(repr(bar_entry.status))
     <DBItem RosettaImportStatus.APPROVED, (1) Approved>
 
 But now the branch owner messes things up and renames the bar template
@@ -154,7 +154,7 @@ completely. The branch import job picks up on this and places the file in the
 queue.
 
     >>> spam_entry = queue.addOrUpdateEntry("po/spam/messages.pot",
-    ...     "bar pot content", True, series.owner, productseries=series)
+    ...     b"bar pot content", True, series.owner, productseries=series)
 
 Since these two files are again all the translation template files in the
 tree, the job initializes the approver with their names. But this is
@@ -170,21 +170,20 @@ knowing if and how the unmatached file and the unmatched object relate to
 each other.
 
     >>> spam_entry = approver.approve(spam_entry)
-    >>> print spam_entry.potemplate
+    >>> print(spam_entry.potemplate)
     None
-    >>> print repr(spam_entry.status)
+    >>> print(repr(spam_entry.status))
     <DBItem RosettaImportStatus.NEEDS_REVIEW, (5) Needs Review>
 
 It is however still possible to update the foo template as this can be matched
 safely against the existing foo_template object, even in situation 3.
 
     >>> foo_entry = queue.addOrUpdateEntry("po/foo/messages.pot",
-    ...     "CHANGED foo pot content", True,
+    ...     b"CHANGED foo pot content", True,
     ...     series.owner, productseries=series)
     >>> approver = TranslationBranchApprover(
     ...     ['po/foo/messages.pot', 'po/spam/messages.pot'],
     ...     productseries=series)
     >>> foo_entry = approver.approve(foo_entry)
-    >>> print repr(foo_entry.status)
+    >>> print(repr(foo_entry.status))
     <DBItem RosettaImportStatus.APPROVED, (1) Approved>
-

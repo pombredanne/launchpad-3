@@ -8,9 +8,9 @@ translation, and also reminds him that he has full editing privileges.
     ...     """Find and print tag with given id."""
     ...     tag = find_tag_by_id(page, id)
     ...     if tag is None:
-    ...         print 'None'
+    ...         print('None')
     ...     else:
-    ...         print tag.renderContents()
+    ...         print(tag.renderContents())
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'
@@ -69,7 +69,7 @@ If the two groups are identical, however, it is only listed once.
     ...     'evolution/trunk/+pots/evolution-2.2/es/+translate')
     >>> managers_tag = find_tag_by_id(
     ...     admin_browser.contents, 'translation-managers').renderContents()
-    >>> print re.search(',\s+and', managers_tag)
+    >>> print(re.search(',\s+and', managers_tag))
     None
 
 If no translation group is assigned, the page also mentions that.

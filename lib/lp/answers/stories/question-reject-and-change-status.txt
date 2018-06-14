@@ -31,14 +31,14 @@ To reject the question, the user clicks on the 'Reject Question' link.
 They need to enter a message explaining the rejection:
 
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print message.renderContents()
+    ...     print(message.renderContents())
     There is 1 error.
     You must provide an explanation message.
 
 At this point the user might decide this is a bad idea, so there is a
 cancel link to take them back to the question:
 
-    >>> print admin_browser.getLink('Cancel').url
+    >>> print(admin_browser.getLink('Cancel').url)
     http://answers.launchpad.dev/firefox/+question/2
 
 Entering an explanation message and clicking the 'Reject' button,
@@ -51,14 +51,14 @@ will reject the question.
 Once the question is rejected, a confirmation message is shown;
 
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print message.renderContents()
+    ...     print(message.renderContents())
     You have rejected this question.
 
 its status is changed to 'Invalid';
 
     >>> def print_question_status(browser):
-    ...     print extract_text(
-    ...         find_tag_by_id(browser.contents, 'question-status'))
+    ...     print(extract_text(
+    ...         find_tag_by_id(browser.contents, 'question-status')))
 
     >>> print_question_status(admin_browser)
     Status: Invalid ...
@@ -66,22 +66,22 @@ its status is changed to 'Invalid';
 and the rejection message is added to the question board.
 
     >>> content = find_main_content(admin_browser.contents)
-    >>> print content.findAll('div', 'boardCommentBody')[-1].renderContents()
+    >>> print(content.findAll('div', 'boardCommentBody')[-1].renderContents())
     <p>Rejecting because it&#x27;s a duplicate of <a...>bug #1</a>.</p>
 
 The call to help with this problem is not displayed.
 
-    >>> print content.find(id='can-you-help-with-this-problem')
+    >>> print(content.find(id='can-you-help-with-this-problem'))
     None
 
 Selecting the 'Reject' action again, will simply display a message
 stating that the question is already rejected:
 
     >>> admin_browser.getLink('Reject question').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://answers.launchpad.dev/firefox/+question/2
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print message.renderContents()
+    ...     print(message.renderContents())
     The question is already rejected.
 
 = Changing the Question Status =
@@ -116,7 +116,7 @@ The form has a select widget displaying the current status.
 
 There is also a cancel link should the user decide otherwise:
 
-    >>> print admin_browser.getLink('Cancel').url
+    >>> print(admin_browser.getLink('Cancel').url)
     http://answers.launchpad.dev/firefox/+question/2
 
 The user needs to select a status and enter a message explaining the
@@ -124,7 +124,7 @@ status change:
 
     >>> admin_browser.getControl('Change Status').click()
     >>> for error in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print error.renderContents()
+    ...     print(error.renderContents())
     There are 2 errors.
     You didn&#x27;t change the status.
     You must provide an explanation message.
@@ -141,7 +141,7 @@ select back the 'Open' status and provide an appropriate message:
 Once the operation is completed, a confirmation message is displayed;
 
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print message.renderContents()
+    ...     print(message.renderContents())
     Question status updated.
 
 its status is updated;
@@ -152,6 +152,6 @@ its status is updated;
 and the explanation message is added to the question discussion:
 
     >>> content = find_main_content(admin_browser.contents)
-    >>> print content.findAll('div', 'boardCommentBody')[-1].renderContents()
+    >>> print(content.findAll('div', 'boardCommentBody')[-1].renderContents())
     <p>Setting status back to &#x27;Open&#x27;. Questions similar to a
     bug report should be linked to it, not rejected.</p>

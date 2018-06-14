@@ -56,7 +56,7 @@ And this is the POTemplate where the import will be done.
 
 This is the file that'll get imported.
 
-    >>> potemplate_contents = r'''
+    >>> potemplate_contents = br'''
     ... msgid ""
     ... msgstr ""
     ... "POT-Creation-Date: 2004-07-11 16:16+0900\n"
@@ -125,7 +125,7 @@ Now, we tell the PO template to import from the file data it has.
 
 Our request has now been serviced.
 
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     IMPORTED
 
 The last update date is the one we got.
@@ -135,12 +135,12 @@ The last update date is the one we got.
 
 We don't send mail about successful imports.
 
-    >>> print subject
+    >>> print(subject)
     None
 
 Since there was no error, the queue entry's error_output is blank.
 
-    >>> print entry.error_output
+    >>> print(entry.error_output)
     None
 
 The correct message IDs now show up in the template.
@@ -195,7 +195,7 @@ Now let's get a PO file to import.
 
 By default, we got a safe path to prevent collisions with other IPOFile.
 
-    >>> print pofile.path
+    >>> print(pofile.path)
     unique-...-cy.po
 
 Let's override the default good path with one we know is the right one.
@@ -220,7 +220,7 @@ Import With Errors
 Here are the contents of the file we'll be importing. It has some
 validation errors.
 
-    >>> pofile_with_errors = r'''
+    >>> pofile_with_errors = br'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-06-03 19:41+0100\n"
@@ -288,7 +288,7 @@ And we do the import.
 
 The status is now IMPORTED:
 
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     IMPORTED
 
 Three translations have been properly imported. Note that the translation
@@ -296,9 +296,9 @@ Three translations have been properly imported. Note that the translation
 not appear in the POTemplate.
 
     >>> def show_translation_details(translationmessage, pofile):
-    ...     print translationmessage.potmsgset.singular_text,
-    ...     print translationmessage.translations,
-    ...     print translationmessage.potmsgset.getSequence(pofile.potemplate)
+    ...     print(translationmessage.potmsgset.singular_text, end=' ')
+    ...     print(translationmessage.translations, end=' ')
+    ...     print(translationmessage.potmsgset.getSequence(pofile.potemplate))
     >>> for translationmessage in pofile.translation_messages:
     ...     if translationmessage.is_current_ubuntu:
     ...         show_translation_details(translationmessage, pofile)
@@ -321,7 +321,7 @@ Here's a current message: i.e. it has a corresponding current message
 set in the PO template.
 
     >>> message = pofile.translation_messages[1]
-    >>> print message.potmsgset.singular_text
+    >>> print(message.potmsgset.singular_text)
     foo
 
 And should be accepted by our validator.
@@ -339,7 +339,7 @@ Fuzzy translations are ignored.
     ...         pofile.potemplate, pofile.language,
     ...         pofile.potemplate.translation_side)
     >>> message = get_pofile_translation_message(pofile, u'bar')
-    >>> print message
+    >>> print(message)
     None
 
 Check that the plural form was imported correctly.
@@ -348,7 +348,7 @@ Check that the plural form was imported correctly.
     ...     u'Singular %d', u'Plural %d')
     >>> imported_translationmessage = potmsgset.getOtherTranslation(
     ...     pofile.language, pofile.potemplate.translation_side)
-    >>> print imported_translationmessage.validation_status.name
+    >>> print(imported_translationmessage.validation_status.name)
     OK
 
     >>> imported_translationmessage.translations
@@ -365,10 +365,10 @@ The import process produces an email warning us of partial failure, but
 doesn't send it out for published uploads (indicated with subject of
 None).
 
-    >>> print subject
+    >>> print(subject)
     None
 
-    >>> print body
+    >>> print(body)
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ..., you uploaded 5
@@ -391,7 +391,7 @@ None).
 The error information is also stored more compactly in the entry's
 error_output.
 
-    >>> print entry.error_output
+    >>> print(entry.error_output)
     Imported, but with errors:
     <BLANKLINE>
     4. "format spec... 'msgid' and 'msgstr' for argument 1 are not the same":
@@ -410,7 +410,7 @@ instance) and they don't mean that any messages failed to import.
 
 For example, here's a gettext PO file with two headers.
 
-    >>> pofile_with_warning = r'''
+    >>> pofile_with_warning = br'''
     ... msgid ""
     ... msgstr ""
     ... "Content-Type: text/plain; charset=UTF-8\n"
@@ -441,7 +441,7 @@ particular warning condition is recognized fairly late, so the line
 number points at the next message.  There's not much we can do about
 that, but it should help a bit.
 
-    >>> print message
+    >>> print(message)
     Hello ...
     This mail is to notify you that all translations have now been
     imported.
@@ -456,7 +456,7 @@ that, but it should help a bit.
     <BLANKLINE>
     The Launchpad team
 
-    >>> print warning_entry.error_output
+    >>> print(warning_entry.error_output)
     There were warnings while parsing the file.  These are not
     fatal, but please correct them if you can.
     <BLANKLINE>
@@ -471,7 +471,7 @@ Import Without Errors
 Now, let's import one without errors. This file changes one translation
 and adds another one.
 
-    >>> pofile_without_errors = r'''
+    >>> pofile_without_errors = br'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-06-03 20:41+0100\n"
@@ -498,7 +498,7 @@ and adds another one.
 
 The new upload clears the entry's error_output.
 
-    >>> print entry.error_output
+    >>> print(entry.error_output)
     None
 
 The guess IPOFile should be the same we already had.
@@ -520,7 +520,7 @@ We do the import.
 
 The status is now IMPORTED:
 
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     IMPORTED
 
 Since the translations from the older imports are still present,
@@ -543,17 +543,17 @@ This time, our notification email reports complete success, except
 that nothing is emailed out (subject is None) because this is an upstream
 upload.
 
-    >>> print subject
+    >>> print(subject)
     None
 
-    >>> print body
+    >>> print(body)
     Hello Rosetta Administrators,
     <BLANKLINE>
     ...
 
 There was no error output either.
 
-    >>> print entry.error_output
+    >>> print(entry.error_output)
     None
 
 The translation has been augmented with the strings from the imported
@@ -621,7 +621,7 @@ default to two plural forms (the most common value for the number of
 plural forms).
 
     >>> language = factory.makeLanguage()
-    >>> print language.pluralforms
+    >>> print(language.pluralforms)
     None
 
     >>> potemplate = factory.makePOTemplate(
@@ -632,7 +632,7 @@ plural forms).
 
 We'll import a POFile with 3 plural forms into this POFile:
 
-    >>> pofile_with_plurals = r'''
+    >>> pofile_with_plurals = br'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-06-03 19:41+0100\n"
@@ -662,7 +662,7 @@ package:
     >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, body) = pofile.importFromQueue(entry, FakeLogger())
     >>> flush_database_updates()
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     IMPORTED
 
 If we get a current translation for this PO file, it will list only two
@@ -690,7 +690,7 @@ Upstream import notifications
 Add a maintainer POFile import (i.e. from a package or bzr branch),
 approve and import it.
 
-    >>> pofile_contents = r'''
+    >>> pofile_contents = br'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-05-03 20:41+0100\n"
@@ -717,7 +717,7 @@ Import succeeds but no email is sent out.
     >>> entry.status == RosettaImportStatus.IMPORTED
     True
 
-    >>> print subject
+    >>> print(subject)
     None
 
 For syntax errors, failure notification is still sent out.

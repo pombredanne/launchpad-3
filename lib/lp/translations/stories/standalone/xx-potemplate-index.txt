@@ -11,7 +11,7 @@ evolution-2.2 POTemplate page.
 
     >>> anon_browser.open("http://translations.launchpad.dev/"
     ...     "ubuntu/hoary/+source/evolution/+pots/evolution-2.2/")
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Template ...evolution-2.2... : Hoary (5.04) :
     Translations : evolution package : Ubuntu
 
@@ -19,7 +19,7 @@ The owner of the template is diplayed.
 
     >>> owner_display = find_tag_by_id(anon_browser.contents,
     ...                                'potemplate-owner')
-    >>> print extract_text(owner_display)
+    >>> print(extract_text(owner_display))
     Owner: Rosetta Administrators
 
 The page lists the status of all the translations. It merges the
@@ -30,12 +30,12 @@ show the number of messages that are untranslated, the percentage
 that represents, when the translation was updated, and by whom.
 
     >>> content = find_main_content(anon_browser.contents)
-    >>> print extract_text(content.findAll('h1')[0])
+    >>> print(extract_text(content.findAll('h1')[0]))
     Translation status
 
     >>> table = content.findAll('table')[0]
     >>> for row in table.findAll('tr'):
-    ...     print extract_text(row).encode('us-ascii', 'backslashreplace')
+    ...     print(extract_text(row).encode('us-ascii', 'backslashreplace'))
     Language        Status  Untranslated Need review Changed Last    Edited By
     Afrikaans               22           ...         ...     &mdash; &mdash;
     Japanese                21           ...         ...     ...     Carlos...
@@ -54,7 +54,7 @@ English translations, but they are not displayed to the user.
     ...     '+source/mozilla/+pots/pkgconf-mozilla')
     >>> table = find_tag_by_id(anon_browser.contents, 'language-chart')
     >>> for row in table.findAll('tr')[0:6]:
-    ...     print extract_text(row).encode('us-ascii', 'backslashreplace')
+    ...     print(extract_text(row).encode('us-ascii', 'backslashreplace'))
     Language    Status  Untranslated Need review Changed Last  Edited By
     Afrikaans             9            ...         ...   ...   &mdash;
     Czech                 ...          ...         ...   ...   Miroslav Kure
@@ -73,12 +73,12 @@ the Ubuntu source package. This information is displayed on the page.
     ...     '/trunk/+pots/evolution-2.2')
     >>> sharing_info = find_tag_by_id(
     ...     anon_browser.contents, 'sharing-information')
-    >>> print extract_text(sharing_info)
+    >>> print(extract_text(sharing_info))
     Sharing Information
     This template is sharing translations with
     evolution in Ubuntu Hoary template evolution-2.2.
     View sharing details
-    >>> print sharing_info
+    >>> print(sharing_info)
     <div...<a href="/ubuntu/hoary/+source/evolution/+pots/evolution-2.2"...
 
 Likewise, the Ubuntu template gives information about how it is sharing
@@ -88,12 +88,12 @@ translations with the upstream project.
     ...     '/hoary/+source/evolution/+pots/evolution-2.2')
     >>> sharing_info = find_tag_by_id(
     ...     anon_browser.contents, 'sharing-information')
-    >>> print extract_text(sharing_info)
+    >>> print(extract_text(sharing_info))
     Sharing Information
     This template is sharing translations with
     Evolution trunk series template evolution-2.2.
     View sharing details
-    >>> print sharing_info
+    >>> print(sharing_info)
     <div...<a href="/evolution/trunk/+pots/evolution-2.2"...
 
 If the user has the right permissions, they are offered to edit the sharing
@@ -103,9 +103,9 @@ information.
     ...     '/trunk/+pots/evolution-2.2')
     >>> sharing_details = find_tag_by_id(
     ...     admin_browser.contents, 'sharing-details')
-    >>> print extract_text(sharing_details)
+    >>> print(extract_text(sharing_details))
     Edit sharing details
-    >>> print sharing_details['href']
+    >>> print(sharing_details['href'])
     http://.../ubuntu/hoary/+source/evolution/+sharing-details
 
 
@@ -120,12 +120,12 @@ that there are alternates that may be translated.
     ...     "evolution/trunk/+pots/evolution-2.2-test")
     >>> alternate_notice = find_tag_by_id(anon_browser.contents,
     ...                                   'potemplate-relatives')
-    >>> print extract_text(alternate_notice)
+    >>> print(extract_text(alternate_notice))
     Other templates here: evolution-2.2.
 
 The notice links to the alternate template.
 
-    >>> print alternate_notice
+    >>> print(alternate_notice)
     <p...>
     <span>Other templates here:</span>
     <a href="/evolution/trunk/+pots/evolution-2.2">evolution-2.2</a>...
@@ -170,7 +170,7 @@ templates.
     ...     package.name, template.name))
     >>> relatives = find_tag_by_id(
     ...     browser.contents, 'potemplate-relatives')
-    >>> print extract_text(relatives)
+    >>> print(extract_text(relatives))
     Other templates here: first, forth, second, third.
 
 For five templates, the page displays the first four templates in
@@ -190,7 +190,7 @@ Another template is added to the same source package.
     ...     package.name, template.name))
     >>> relatives = find_tag_by_id(
     ...     browser.contents, 'potemplate-relatives')
-    >>> print extract_text(relatives)
+    >>> print(extract_text(relatives))
     Other templates here: fifth, first, forth, second
     and one other template.
 
@@ -214,7 +214,7 @@ Another template is added to the same source package.
     ...     package.name, template.name))
     >>> relatives = find_tag_by_id(
     ...     browser.contents, 'potemplate-relatives')
-    >>> print extract_text(relatives)
+    >>> print(extract_text(relatives))
     Other templates here: fifth, first, forth, second
     and 2 other templates.
 
@@ -256,7 +256,7 @@ A product series with 7 templates is created.
     ...     "fusa/trunk/+pots/%s") % template.name)
     >>> relatives = find_tag_by_id(
     ...     browser.contents, 'potemplate-relatives')
-    >>> print extract_text(relatives)
+    >>> print(extract_text(relatives))
     Other templates here: fifth, first, forth, second
     and 2 other templates.
 
@@ -298,7 +298,7 @@ but not the one for uploading file to this potemplate.
     LinkNotFoundError
 
     >>> user_browser.getLink('download').click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export
 
 Translation administrators will see both download and upload links.
@@ -309,28 +309,26 @@ and "Change details" should be also accessible.
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> admin_browser.getLink('upload').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> admin_browser.getLink('download').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> admin_browser.getLink('Administer this template').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
     >>> admin_browser.getLink('Change details').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+edit
-
-

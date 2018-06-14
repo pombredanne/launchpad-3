@@ -89,7 +89,7 @@ template template3 was not copied.
     ...     IPOTemplateSet).getSubset(distroseries=carty)
     >>> len(carty_templates)
     2
-    >>> print sorted([template.name for template in carty_templates])
+    >>> print(sorted([template.name for template in carty_templates]))
     [u'template1', u'template2']
     >>> carty_template1 = carty_templates.getPOTemplateByName('template1')
     >>> carty_template2 = carty_templates.getPOTemplateByName('template2')
@@ -102,7 +102,7 @@ All POFiles for the copied POTemplates have also been copied.
 
     >>> all_pofiles = sum(
     ...     [list(template.pofiles) for template in carty_templates], [])
-    >>> print sorted([pofile.path for pofile in all_pofiles])
+    >>> print(sorted([pofile.path for pofile in all_pofiles]))
     [u'template1-domain-eo.po',
     u'template2-domain-de.po',
     u'template2-domain-eo.po']
@@ -111,13 +111,13 @@ All POTMsgSets from  the parent series that were not obsolete are now found
 in the new series.
 
     >>> potmsgsets = carty_template1.getPOTMsgSets()
-    >>> print potmsgsets.count()
+    >>> print(potmsgsets.count())
     1
     >>> potmsgsets[0] == msgset11
     True
 
     >>> potmsgsets = carty_template2.getPOTMsgSets()
-    >>> print potmsgsets.count()
+    >>> print(potmsgsets.count())
     2
     >>> potmsgsets[0] == msgset21
     True
@@ -164,7 +164,7 @@ set.
     ...     ['--distribution=foobuntu', '--series=darty'])
     >>> returnvalue
     1
-    >>> print error_output
+    >>> print(error_output)
     INFO    Creating lockfile:
       /var/lock/launchpad-copy-missing-translations-foobuntu-darty.lock
     ERROR   Before this process starts, set the hide_all_translations and
@@ -192,7 +192,7 @@ sets the defer_translation_imports flag itself before copying.
     ...     ['--distribution=foobuntu', '--series=darty', '--force'])
     >>> returnvalue
     0
-    >>> print error_output
+    >>> print(error_output)
     INFO    Creating lockfile:
       /var/lock/launchpad-copy-missing-translations-foobuntu-darty.lock
     INFO    Starting...
@@ -229,7 +229,7 @@ templates of the parent series.
     >>> dartempls = getUtility(IPOTemplateSet).getSubset(distroseries=darty)
     >>> len(dartempls)
     2
-    >>> print sorted([template.name for template in dartempls])
+    >>> print(sorted([template.name for template in dartempls]))
     [u'template1', u'template2']
 
 The script defaults to copying from the given series' previous_series,
@@ -246,7 +246,7 @@ but that can be overridden.
     ...     ['--distribution=notbuntu', '--series=grumpy'])
     >>> returnvalue
     2
-    >>> print error_output
+    >>> print(error_output)
     INFO    Creating lockfile:
       /var/lock/launchpad-copy-missing-translations-notbuntu-grumpy.lock
     Usage: copy-distroseries-translations.py [options]
@@ -260,7 +260,7 @@ but that can be overridden.
     ...      '--from-distribution=foobuntu' , '--from-series=darty'])
     >>> returnvalue
     0
-    >>> print error_output
+    >>> print(error_output)
     INFO    Creating lockfile:
       /var/lock/launchpad-copy-missing-translations-notbuntu-grumpy.lock
     INFO    Starting...

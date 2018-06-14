@@ -25,30 +25,30 @@ they are, they simply need to be provide ILFA interface):
 Check if getPocketChroot returns None for unknown chroots:
 
   >>> p_chroot = hoary_i386.getPocketChroot()
-  >>> print p_chroot
+  >>> print(p_chroot)
   None
 
 Check if getChroot returns the 'default' argument on not found chroots:
 
-  >>> hoary_i386.getChroot(default='duuuuh')
-  'duuuuh'
+  >>> print(hoary_i386.getChroot(default='duuuuh'))
+  duuuuh
 
 Invoke addOrUpdateChroot for missing chroot, so it will insert a new
 record in PocketChroot:
 
   >>> p_chroot1 = hoary_i386.addOrUpdateChroot(chroot=chroot1)
-  >>> print p_chroot1.distroarchseries.architecturetag
+  >>> print(p_chroot1.distroarchseries.architecturetag)
   i386
-  >>> print p_chroot1.chroot.id,
+  >>> print(p_chroot1.chroot.id)
   1
 
 Invoke addOrUpdateChroot on an existing PocketChroot, it will update
 the chroot:
 
   >>> p_chroot2 = hoary_i386.addOrUpdateChroot(chroot=chroot2)
-  >>> print p_chroot2.distroarchseries.architecturetag
+  >>> print(p_chroot2.distroarchseries.architecturetag)
   i386
-  >>> print p_chroot2.chroot.id,
+  >>> print(p_chroot2.chroot.id)
   2
   >>> p_chroot2 == p_chroot1
   True

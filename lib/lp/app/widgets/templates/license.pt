@@ -75,7 +75,8 @@
        tal:attributes="href config/commercial/licensing_policy_url" class="sprite new-window">
       licensing policies</a>.
     <br/>
-    <div id="proprietary" class="hidden">
+    <div id="proprietary" class="hidden"
+         tal:condition="not: request/features/commercial_subscriptions.new.disabled">
       Commercial and proprietary projects do not qualify for free hosting;
       therefore a subscription needs to be purchased in order to host this
       project on Launchpad.
@@ -96,6 +97,15 @@
       </ol>
       <a href="mailto:commercial@launchpad.net">Contact us</a>
       for more information regarding commercial subscriptions.
+    </div>
+    <div id="proprietary" class="hidden"
+         tal:condition="request/features/commercial_subscriptions.new.disabled">
+      Commercial and proprietary projects do not qualify for free hosting.
+      If you have authorization from Canonical to use Launchpad's commercial
+      features, then <a href="mailto:commercial@launchpad.net">contact us</a>
+      to have that applied to this project.  Otherwise, you may only use
+      Launchpad for software projects that comply with the licensing policies
+      above.
     </div>
 </div>
 </tal:root>

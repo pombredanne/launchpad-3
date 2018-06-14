@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bugzilla ExternalBugTracker utility."""
@@ -654,11 +654,18 @@ class BugzillaAPI(Bugzilla):
         # is sane, we work out the server's offset from UTC by looking
         # at the difference between the web_time and the web_time_utc
         # values.
-        server_web_datetime = time_dict['web_time']
-        server_web_datetime_utc = time_dict['web_time_utc']
-        server_utc_offset = server_web_datetime - server_web_datetime_utc
-        server_db_datetime = time_dict['db_time']
-        server_utc_datetime = server_db_datetime - server_utc_offset
+        if 'web_time_utc' in time_dict:
+            # Bugzilla < 5.1.1 (although as of 3.6 the UTC offset is always
+            # 0).
+            server_web_datetime = time_dict['web_time']
+            server_web_datetime_utc = time_dict['web_time_utc']
+            server_utc_offset = server_web_datetime - server_web_datetime_utc
+            server_db_datetime = time_dict['db_time']
+            server_utc_datetime = server_db_datetime - server_utc_offset
+        else:
+            # Bugzilla >= 5.1.1.  Times are always in UTC, so we can just
+            # use db_time directly.
+            server_utc_datetime = time_dict['db_time']
         return server_utc_datetime.replace(tzinfo=pytz.timezone('UTC'))
 
     def _getActualBugId(self, bug_id):
@@ -851,7 +858,12 @@ class BugzillaAPI(Bugzilla):
         comment_id = int(comment_id)
 
         comment = self._bugs[actual_bug_id]['comments'][comment_id]
-        display_name, email = parseaddr(comment['author'])
+        if 'creator' in comment:
+            # Bugzilla >= 4.0
+            creator = comment['creator']
+        else:
+            creator = comment['author']
+        display_name, email = parseaddr(creator)
 
         # If the email isn't valid, return the email address as the
         # display name (a Launchpad Person will be created with this

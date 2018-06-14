@@ -14,9 +14,9 @@ under the revised BSD licence.
 Karl realises that he is not on the translate page, he can see that
 that this page has information about relicensing.
 
-    >>> print browser.title
+    >>> print(browser.title)
     Licensing : Translations...
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> print(extract_text(find_main_content(browser.contents)))
     Translations licensing by Karl Tilbury
     ...
 
@@ -50,10 +50,10 @@ nor input boxes available.
     >>> main_content = find_tag_by_id(
     ...     browser.contents, 'messages_to_translate')
     >>> for textarea in main_content.findAll('textarea'):
-    ...     print 'Found textarea:\n%s' % textarea
+    ...     print('Found textarea:\n%s' % textarea)
 
     >>> for input in main_content.findAll('input'):
-    ...     print 'Found input:\n%s' % input
+    ...     print('Found input:\n%s' % input)
 
 Karl changes his mind. He returns to the licensing page.
 
@@ -61,13 +61,13 @@ Karl changes his mind. He returns to the licensing page.
     >>> browser.getLink('Translations licensing').click()
     >>> browser.url
     'http://translations.launchpad.dev/~karl/+licensing'
-    >>> print browser.title
+    >>> print(browser.title)
     Licensing : Translations...
 
 Karl sees that the current value is 'no', which he set before.
 
     >>> radiobuttons = browser.getControl(name='field.allow_relicensing')
-    >>> print radiobuttons.value
+    >>> print(radiobuttons.value)
     ['REMOVE']
 
 He changes it again.
@@ -84,7 +84,7 @@ Karl can now browse to a +translate page without being forwarded.
     ...              '+pots/alsa-utils/es/+translate')
     >>> browser.url
     'http://.../alsa-utils/trunk/+pots/alsa-utils/es/+translate'
-    >>> print browser.title
+    >>> print(browser.title)
     Spanish (es) : Template ...alsa-utils... : Series trunk :
     Translations : alsa-utils
 

@@ -86,9 +86,9 @@ As well as adding a comment:
 Make sure that whenever the view actions is modified, this test
 requires update:
 
-    >>> print "\n".join(sorted(
+    >>> print("\n".join(sorted(
     ...     action.__name__.split('.')[-1]
-    ...     for action in workflow_harness.view.actions))
+    ...     for action in workflow_harness.view.actions)))
     answer
     comment
     confirm

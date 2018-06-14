@@ -18,11 +18,67 @@
         </p>
 
         <p>
-          By deactivating your account, you give up the ability to log into
-          Launchpad, and you will not receive any further emails from us.
-          <strong>You may want to simply
+          Deactivating your account will remove your Launchpad profile and
+          permanently delete all of your:
+        </p>
+
+        <ul class="bulleted">
+          <li>bug, blueprint, question, and code subscriptions</li>
+          <li>bug and blueprint assignments</li>
+          <li>
+            team memberships - ownership of teams, projects, and project
+            groups will be reassigned to the Registry Administrators team
+          </li>
+          <li>Code of Conduct signatures</li>
+          <li>assignments as bug contact for packages</li>
+          <li>assignments as answer contact for projects or distributions</li>
+        </ul>
+
+        <p>
+          You will still be credited for any work that you have done that is
+          recorded in Launchpad.  For example, if you reported a bug, you
+          will still be shown as its reporter.  If you do not want your
+          personal details associated with this work, then you should
           <a tal:attributes="href string:${context/fmt:url}/+edit">change
-          your account details</a> rather than deactivate it.</strong>
+          your account details</a> first to remove any identifying
+          information.
+        </p>
+
+        <p>
+          If you deactivate your account, you will not receive any further
+          emails from us.
+        </p>
+
+        <p>
+          If you later decide that you want to start using Launchpad again,
+          you can reactivate your account by <a href="/+login">signing
+          up</a> again using one of the email addresses from your
+          deactivated account.  (We store these email addresses to ensure
+          that only the original owner of an account can reactivate it, and
+          for no other purpose; they are never shown to other Launchpad
+          users.)  Reactivating an account will not restore any information
+          that was deleted when you deactivated it.
+        </p>
+
+        <h2>Alternatives to deactivating your account</h2>
+
+        <p>
+          If you want to keep your Launchpad account but would prefer to
+          reduce the amount of email you receive, try removing your
+          <a tal:attributes="
+            href string:${context/fmt:url}/+subscribedbugs">bug
+            subscriptions</a>
+          and
+          <a tal:attributes="
+            href string:${context/fmt:url}/+specs?role=subscriber">blueprint
+            subscriptions</a>.
+        </p>
+
+        <p>
+          If you want to reduce the amount of information about you in
+          Launchpad, you can
+          <a tal:attributes="href string:${context/fmt:url}/+edit">change
+          your account details</a>.
         </p>
       </div>
     </div>

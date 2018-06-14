@@ -50,7 +50,7 @@ Its main attributes are:
     >>> verifyObject(IPerson, package_diff.requester)
     True
 
-    >>> print package_diff.requester.displayname
+    >>> print(package_diff.requester.displayname)
     Celso Providelo
 
  * 'from_source', which maps to a `ISourcePackageRelease`, the base
@@ -61,7 +61,7 @@ Its main attributes are:
     >>> verifyObject(ISourcePackageRelease, package_diff.from_source)
     True
 
-    >>> print package_diff.from_source.title
+    >>> print(package_diff.from_source.title)
     pmount - 0.1-1
 
  * 'to_source', which maps to a `ISourcePackageRelease`, the result
@@ -70,31 +70,31 @@ Its main attributes are:
     >>> verifyObject(ISourcePackageRelease, package_diff.to_source)
     True
 
-    >>> print package_diff.to_source.title
+    >>> print(package_diff.to_source.title)
     pmount - 0.1-2
 
 The PackageDiff record is not yet 'performed', so 'status' is PENDING
 and both 'date_fullfiled' and 'diff_content' fields are empty.
 
-    >>> print package_diff.date_fulfilled
+    >>> print(package_diff.date_fulfilled)
     None
 
-    >>> print package_diff.diff_content
+    >>> print(package_diff.diff_content)
     None
 
-    >>> print package_diff.status.name
+    >>> print(package_diff.status.name)
     PENDING
 
 IPackageDiff offers a property that return the 'title' of the diff
 request.
 
-    >>> print package_diff.title
+    >>> print(package_diff.title)
     diff from 0.1-1 to 0.1-2
 
 IPackageDiff has a property which indicates whether a diff content
 should be private or not. See section 'PackageDiff privacy' below.
 
-    >>> print package_diff.private
+    >>> print(package_diff.private)
     False
 
 An attempt to record an already recorded DiffRequest will result in an
@@ -167,7 +167,7 @@ requests a diff, since there is a suitable ancestry.
     ...     '1.0-8', policy='sync')
 
     >>> [diff] = biscuit_eight_pub.sourcepackagerelease.package_diffs
-    >>> print diff.title
+    >>> print(diff.title)
     diff from 1.0-1 to 1.0-8
 
 We will release ubuntu/hoary so we can upload to post-RELEASE pockets
@@ -185,7 +185,7 @@ the last published version in the RELEASE pocket.
     ...     '1.0-9', policy='sync', suite='hoary-updates')
 
     >>> [diff] = biscuit_nine_pub.sourcepackagerelease.package_diffs
-    >>> print diff.title
+    >>> print(diff.title)
     diff from 1.0-8 to 1.0-9
 
 Now version 1.0-12 gets uploaded to the just opened distroseries. It
@@ -199,7 +199,7 @@ present in ubuntu distribution, the hoary-updates one.
     ...     '1.0-12', policy='sync', suite='breezy-autotest')
 
     >>> [diff] = biscuit_twelve_pub.sourcepackagerelease.package_diffs
-    >>> print diff.title
+    >>> print(diff.title)
     diff from 1.0-8 to 1.0-12
 
 The subsequent version uploaded to hoary-updates will get a diff
@@ -211,7 +211,7 @@ against 1.0-9.
     ...     '1.0-10', policy='sync', suite='hoary-updates')
 
     >>> [diff] = biscuit_ten_pub.sourcepackagerelease.package_diffs
-    >>> print diff.title
+    >>> print(diff.title)
     diff from 1.0-9 to 1.0-10
 
 An upload to other pocket, in this case hoary-proposed, will get a diff
@@ -223,7 +223,7 @@ against the last version in the RELEASE pocket.
     ...     '1.0-11', policy='sync', suite='hoary-proposed')
 
     >>> [diff] = biscuit_eleven_pub.sourcepackagerelease.package_diffs
-    >>> print diff.title
+    >>> print(diff.title)
     diff from 1.0-8 to 1.0-11
 
 For testing diffs in the PPA context we need to activate the PPA for
@@ -245,7 +245,7 @@ version in the PRIMARY archive in the RELEASE pocket.
     ...     '1.0-2', archive=foobar.archive)
 
     >>> [diff] = biscuit_two_pub.sourcepackagerelease.package_diffs
-    >>> print diff.title
+    >>> print(diff.title)
     diff from 1.0-8 (in Ubuntu) to 1.0-2
 
 A subsequent upload in the PPA context will get a diff against 1.0-2,
@@ -257,7 +257,7 @@ the version found in its context.
     ...     '1.0-3', archive=foobar.archive)
 
     >>> [diff] = biscuit_three_pub.sourcepackagerelease.package_diffs
-    >>> print diff.title
+    >>> print(diff.title)
     diff from 1.0-2 to 1.0-3
 
 
@@ -318,13 +318,13 @@ The PackageDiff record is not yet 'performed', so both,
 'date_fullfiled' and 'diff_content' fields, are empty and 'status' is
 PENDING.
 
-    >>> print diff.status.name
+    >>> print(diff.status.name)
     PENDING
 
-    >>> print diff.date_fulfilled
+    >>> print(diff.date_fulfilled)
     None
 
-    >>> print diff.diff_content
+    >>> print(diff.diff_content)
     None
 
 Performing the diff.
@@ -338,16 +338,16 @@ to a LibraryFileAlias with a proper mimetype.
     >>> diff.date_fulfilled is not None
     True
 
-    >>> print diff.status.name
+    >>> print(diff.status.name)
     COMPLETED
 
-    >>> print diff.diff_content.filename
+    >>> print(diff.diff_content.filename)
     biscuit_1.0-1_1.0-8.diff.gz
 
-    >>> print diff.diff_content.mimetype
+    >>> print(diff.diff_content.mimetype)
     application/gzipped-patch
 
-    >>> print diff.diff_content.restricted
+    >>> print(diff.diff_content.restricted)
     False
 
 Since it stores the diff results in the librarian we need to commit the
@@ -358,7 +358,7 @@ transaction before we can access the file.
 Now we can compare the package diff outcome to the debdiff output
 (obtained manually on the shell) for the packages in question.
 
-    >>> print get_diff_results(diff)
+    >>> print(get_diff_results(diff))
     --- biscuit-1.0/contents
     +++ biscuit-1.0/contents
     @@ -2,0 +3 @@
@@ -392,10 +392,10 @@ for users to view it.
     >>> resp = con.getresponse()
     >>> headers = dict(resp.getheaders())
 
-    >>> print headers['content-encoding']
+    >>> print(headers['content-encoding'])
     gzip
 
-    >>> print headers['content-type']
+    >>> print(headers['content-type'])
     text/plain
 
 
@@ -424,8 +424,8 @@ stored.
     ...     diff_first_id = diffs[0].id
     ...     for diff in diff_set:
     ...         id_diff = diff.id - diff_first_id
-    ...         print diff.from_source.name, diff.title, \
-    ...               diff.date_fulfilled is not None, id_diff
+    ...         print(diff.from_source.name, diff.title,
+    ...               diff.date_fulfilled is not None, id_diff)
 
     >>> print_diffs(packagediff_set)
     biscuit diff from 1.0-2 to 1.0-3               False   0
@@ -492,7 +492,7 @@ if it builds correctly.
     >>> staging_ppa_pub = packager.uploadSourceVersion(
     ...     '1.0-1', archive=foobar.archive)
     >>> [diff] = staging_ppa_pub.sourcepackagerelease.package_diffs
-    >>> print diff.title
+    >>> print(diff.title)
     diff from 1.0-1 (in Ubuntu) to 1.0-1
 
 Commit the transaction for make the uploaded files available in
@@ -509,17 +509,17 @@ the diff file can be retrieved.
 The PackageDiff request was correctly performed and the result is a
 empty library file, which is what the user expects.
 
-    >>> print diff.status.name
+    >>> print(diff.status.name)
     COMPLETED
 
     >>> diff.date_fulfilled is not None
     True
 
-    >>> print diff.diff_content.filename
+    >>> print(diff.diff_content.filename)
     staging_1.0-1_1.0-1.diff.gz
 
     >>> get_diff_results(diff)
-    ''
+    u''
 
 Now we will simulate a version collision when generating the diff.
 
@@ -545,7 +545,7 @@ version before uploading it again to Foo Bar's PPA.
     >>> collision_ppa_pub = packager.uploadSourceVersion(
     ...     '1.0-1', archive=foobar.archive)
     >>> [diff] = collision_ppa_pub.sourcepackagerelease.package_diffs
-    >>> print diff.title
+    >>> print(diff.title)
     diff from 1.0-1 (in Ubuntu) to 1.0-1
 
 Note that, despite of having the same name and version, the diff.gz
@@ -563,7 +563,7 @@ and dsc files have different contents.
 
     >>> distinct_files = [filename for filename, md5 in file_set]
     >>> for filename in sorted(distinct_files):
-    ...     print filename
+    ...     print(filename)
     collision_1.0-1.diff.gz
     collision_1.0-1.diff.gz
     collision_1.0-1.dsc
@@ -586,16 +586,16 @@ Let's do the commit dance again and generate the diff.
 The package-diff subsystem has dealt with the filename conflicts and
 the diff was properly generated.
 
-    >>> print diff.status.name
+    >>> print(diff.status.name)
     COMPLETED
 
     >>> diff.date_fulfilled is not None
     True
 
-    >>> print diff.diff_content.filename
+    >>> print(diff.diff_content.filename)
     collision_1.0-1_1.0-1.diff.gz
 
-    >>> print get_diff_results(diff)
+    >>> print(get_diff_results(diff))
     --- collision-1.0/contents
     +++ collision-1.0/contents
     @@ -2,0 +3 @@
@@ -633,7 +633,7 @@ uploaded source.
     >>> fillLibrarianFile(dsc.libraryfile.id)
 
     >>> [broken_diff] = pub.sourcepackagerelease.package_diffs
-    >>> print broken_diff.title
+    >>> print(broken_diff.title)
     diff from 1.0-1 (in Ubuntu) to 1.0-2
 
 With a tainted DSC 'debdiff' cannot do much and fails, resulting in a
@@ -642,13 +642,13 @@ FAILED request (empty 'diff_content' and 'date_fullfilled').
     >>> broken_diff.performDiff()
     >>> transaction.commit()
 
-    >>> print broken_diff.status.name
+    >>> print(broken_diff.status.name)
     FAILED
 
     >>> broken_diff.date_fulfilled is None
     True
 
-    >>> print broken_diff.diff_content
+    >>> print(broken_diff.diff_content)
     None
 
 
@@ -664,27 +664,27 @@ Let's use one of the diffs already requested in this test setup to
 explain how this mechanism works.
 
     >>> [diff] = biscuit_two_pub.sourcepackagerelease.package_diffs
-    >>> print diff.title
+    >>> print(diff.title)
     diff from 1.0-8 (in Ubuntu) to 1.0-2
 
 The chosen diff is for a source uploaded to a public PPA.
 
-    >>> print diff.to_source.upload_archive.displayname
+    >>> print(diff.to_source.upload_archive.displayname)
     PPA for Foo Bar
 
-    >>> print diff.to_source.upload_archive.private
+    >>> print(diff.to_source.upload_archive.private)
     False
 
 Thus it's also considered public and the generated 'diff_content' is
 stored in the public librarian.
 
-    >>> print diff.private
+    >>> print(diff.private)
     False
 
     >>> diff.performDiff()
     >>> transaction.commit()
 
-    >>> print diff.diff_content.restricted
+    >>> print(diff.diff_content.restricted)
     False
 
 If the diff is attached to a private PPA, the diff becomes 'private' and
@@ -695,11 +695,11 @@ the new 'diff_content' is stored in the restricted librarian instance.
     >>> removeSecurityProxy(diff.to_source).upload_archive = private_ppa
     >>> removeSecurityProxy(biscuit_two_pub).archive = private_ppa
 
-    >>> print diff.private
+    >>> print(diff.private)
     True
 
     >>> diff.performDiff()
     >>> transaction.commit()
 
-    >>> print diff.diff_content.restricted
+    >>> print(diff.diff_content.restricted)
     True

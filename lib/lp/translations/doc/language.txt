@@ -11,7 +11,7 @@ concrete language.
     # translations.  That other person is Foo Bar (name16).
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
-    >>> print foo_bar.displayname
+    >>> print(foo_bar.displayname)
     Foo Bar
 
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -22,6 +22,6 @@ concrete language.
     ...     for karma_category_cache in translator.karma_category_caches:
     ...         if (karma_category_cache.category.name == 'translations'):
     ...             karma = karma_category_cache.karmavalue
-    ...     print (translator.displayname, karma)
+    ...     print((translator.displayname, karma))
     (u'Foo Bar', 164)
     (u'Carlos Perell\xf3 Mar\xedn', 9)

@@ -52,7 +52,7 @@ somebody are subject to expiration.
 
     # An old question in NEEDSINFO the state.
     >>> old_needs_info_question = questionset.get(7)
-    >>> print old_needs_info_question.status.title
+    >>> print(old_needs_info_question.status.title)
     Needs information
 
     # An open question assigned to somebody.
@@ -135,7 +135,7 @@ somebody are subject to expiration.
     ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
-    >>> print err
+    >>> print(err)
     INFO    Creating lockfile: /var/lock/launchpad-expire-questions.lock
     INFO    Expiring OPEN and NEEDSINFO questions without activity for the
             last 15 days.
@@ -143,7 +143,7 @@ somebody are subject to expiration.
     INFO    Expired 5 questions.
     INFO    Finished expiration run.
     <BLANKLINE>
-    >>> print out
+    >>> print(out)
     <BLANKLINE>
     >>> process.returncode
     0
@@ -156,43 +156,41 @@ somebody are subject to expiration.
 The status of the OPEN and NEEDSINFO questions that had recent activity
 wasn't modified by the script:
 
-    >>> print recent_open_question.status.title
+    >>> print(recent_open_question.status.title)
     Open
-    >>> print recent_needsinfo_question.status.title
+    >>> print(recent_needsinfo_question.status.title)
     Needs information
 
 Neither the old one which was assigned to Foo Bar:
 
-    >>> print old_assigned_open_question.status.title
+    >>> print(old_assigned_open_question.status.title)
     Open
 
 The old question with non-Invalid bug link is still Open status:
 
-    >>> print bug_link_question.status.title
+    >>> print(bug_link_question.status.title)
     Open
 
 But the other ones status was changed to 'Expired':
 
-    >>> print old_needs_info_question.status.title
+    >>> print(old_needs_info_question.status.title)
     Expired
-    >>> print old_open_question.status.title
+    >>> print(old_open_question.status.title)
     Expired
-    >>> print invalid_bug_question.status.title
+    >>> print(invalid_bug_question.status.title)
     Expired
 
 The message explaining the reason for the expiration was posted by the
 Launchpad Janitor celebrity:
 
     >>> expiration_message = old_needs_info_question.messages[-1]
-    >>> print expiration_message.action.name
+    >>> print(expiration_message.action.name)
     EXPIRE
-    >>> print expiration_message.new_status.title
+    >>> print(expiration_message.new_status.title)
     Expired
-    >>> print expiration_message.owner.name
+    >>> print(expiration_message.owner.name)
     janitor
 
-    >>> print expiration_message.text_contents
+    >>> print(expiration_message.text_contents)
     This question was expired because it remained in the
     'Needs information' state without activity for the last 15 days.
-
-

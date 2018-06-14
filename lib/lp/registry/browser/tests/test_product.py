@@ -999,7 +999,7 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         tag = Tag(
             'error', 'div', attrs={'class': 'message'},
             text=(
-                'The URI scheme &quot;svn&quot; is not allowed.  '
+                'The URI scheme "svn" is not allowed.  '
                 'Only URIs with the following schemes may be used: '
                 'git, http, https'))
         self.assertThat(browser.contents, HTMLContains(tag))

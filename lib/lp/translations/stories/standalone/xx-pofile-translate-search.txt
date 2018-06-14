@@ -30,7 +30,7 @@ Searching for a single-letter string fails.
 A warning is displayed.
 
     >>> tags = find_tags_by_class(user_browser.contents, 'warning message')
-    >>> print extract_text(tags[0])
+    >>> print(extract_text(tags[0]))
     Please try searching for a longer string.
 
 And no filtering is applied: all messages are shown.

@@ -21,7 +21,7 @@ First, we need to feed the import queue.
   >>> browser.url
   'http://translations.launchpad.dev/alsa-utils/trunk/+translations-upload'
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
-  ...     print tag
+  ...     print(tag)
   <div...Thank you for your upload. 2 files from the tarball...
 
 Let's check the values we get by default from the .pot file. The name field

@@ -35,7 +35,7 @@ into Rosetta.
     >>> def print_list(strings):
     ...     """Print list of strings as list of lines."""
     ...     for string in strings:
-    ...         print string
+    ...         print(string)
 
 
 getGuessedPOFile
@@ -81,7 +81,7 @@ Attach the file to the product series, without associating it with any
 potemplate.
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/sr.po', 'foo', True, rosetta_experts,
+    ...     u'po/sr.po', b'foo', True, rosetta_experts,
     ...      productseries=evolution_productseries)
 
 This entry has no information about the IPOFile where it should be attached
@@ -103,7 +103,7 @@ IPOTemplate.
     >>> hoary_distroseries = DistroSeries.get(3)
     >>> evolution_sourcepackagename = SourcePackageName.get(9)
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/sr.po', 'foo', True, rosetta_experts,
+    ...     u'po/sr.po', b'foo', True, rosetta_experts,
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=evolution_sourcepackagename)
     >>> transaction.commit()
@@ -139,7 +139,7 @@ And store current creation and status change date:
 Now, we do a new upload.
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/sr.po', 'foo', True, rosetta_experts,
+    ...     u'po/sr.po', b'foo', True, rosetta_experts,
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=evolution_sourcepackagename)
     >>> transaction.commit()
@@ -178,13 +178,13 @@ Do the new upload. It will be an upload by the maintainer.
 
     >>> by_maintainer = True
     >>> po_sr_entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/sr.po', 'foo', by_maintainer, rosetta_experts,
+    ...     u'po/sr.po', b'foo', by_maintainer, rosetta_experts,
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=evolution_sourcepackagename)
 
 And the new status is
 
-    >>> print po_sr_entry.status.title
+    >>> print(po_sr_entry.status.title)
     Needs Review
 
 The dateimported remains the same as it was already waiting to be imported.
@@ -200,7 +200,7 @@ However the date_status_changed is still updated.
 First, we import a new .pot file.
 
     >>> pot_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/evolution-2.2.pot', 'foo', True, rosetta_experts,
+    ...     'po/evolution-2.2.pot', b'foo', True, rosetta_experts,
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=evolution_sourcepackagename)
 
@@ -287,7 +287,7 @@ file come and the others have .po files.
 Let's attach the .pot file
 
     >>> kde_pot_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/kdebugdialog.pot', 'foo content', True, rosetta_experts,
+    ...     'po/kdebugdialog.pot', b'foo content', True, rosetta_experts,
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=kdebase)
 
@@ -311,7 +311,7 @@ And set this entry as already imported.
 Let's attach a .po file from kde-i18n-es
 
     >>> es_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'messages/kdebase/kdebugdialog.po', 'foo content', True,
+    ...     'messages/kdebase/kdebugdialog.po', b'foo content', True,
     ...     rosetta_experts, distroseries=hoary_distroseries,
     ...      sourcepackagename=kde_i18n_es)
 
@@ -325,7 +325,7 @@ be able to know that.
 
     >>> sr_latin = factory.makeLanguage('sr@latin', 'Serbian Latin')
     >>> sr_latin_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'messages/kdebase/kdebugdialog.po', 'foo content', True,
+    ...     'messages/kdebase/kdebugdialog.po', b'foo content', True,
     ...     rosetta_experts, distroseries=hoary_distroseries,
     ...      sourcepackagename=kde_l10n_sr_latin)
 
@@ -338,7 +338,7 @@ Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.
 
     >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'messages/kdebase/konqueror.po', 'foo content', True,
+    ...     'messages/kdebase/konqueror.po', b'foo content', True,
     ...     rosetta_experts, distroseries=hoary_distroseries,
     ...      sourcepackagename=kde_i18n_es)
 
@@ -354,7 +354,7 @@ using the translation domain instead the name.
 We will see it working here with this example:
 
     >>> kde_pot_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/kio_sftp.pot', 'foo content', True, rosetta_experts,
+    ...     'po/kio_sftp.pot', b'foo content', True, rosetta_experts,
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=kdebase)
 
@@ -376,7 +376,7 @@ And set this entry as already imported.
 Let's attach a .po file from kde-i18n-es
 
     >>> es_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'messages/kdebase/kio_sftp.po', 'foo content', True,
+    ...     'messages/kdebase/kio_sftp.po', b'foo content', True,
     ...     rosetta_experts, distroseries=hoary_distroseries,
     ...      sourcepackagename=kde_i18n_es)
 
@@ -415,7 +415,7 @@ file come and the other for the .po files.
 Let's attach the .pot file
 
     >>> koffice_pot_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/koffice.pot', 'foo content', True, rosetta_experts,
+    ...     'po/koffice.pot', b'foo content', True, rosetta_experts,
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=koffice)
 
@@ -440,7 +440,7 @@ Let's attach a .po file from koffice-l10n
 
     >>> es_entry = translationimportqueue.addOrUpdateEntry(
     ...     'koffice-i18n-es-1.5.2/messages/koffice/koffice.po',
-    ...     'foo content', True, rosetta_experts,
+    ...     b'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=koffice_l10n)
 
 And we will get the right IPOFile.
@@ -453,7 +453,7 @@ Let's try now a language with variant information like sr@latin.
     >>> sr_latin = factory.makeLanguage('sr@latin', 'Serbian Latin')
     >>> sr_latin_entry = translationimportqueue.addOrUpdateEntry(
     ...     'koffice-i18n-sr@latin-1.5.2/messages/koffice/koffice.po',
-    ...     'foo content', True, rosetta_experts,
+    ...     b'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=koffice_l10n)
 
 And we will get the right IPOFile.
@@ -466,7 +466,7 @@ that is not yet imported.
 
     >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
     ...     'koffice-i18n-es-1.5.2/messages/koffice/kchart.po',
-    ...     'foo content', True, rosetta_experts,
+    ...     b'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=koffice_l10n)
 
 We don't know the IPOFile where it should be imported.
@@ -516,7 +516,7 @@ sourcepackagename to test that layout.
 Let's attach the .pot file
 
     >>> adept_pot_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/adept.pot', 'foo content', True, rosetta_experts,
+    ...     'po/adept.pot', b'foo content', True, rosetta_experts,
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=adept)
 
@@ -539,7 +539,7 @@ And set this entry as already imported.
 Let's attach a .po file now.
 
     >>> es_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/es/adept.po', 'foo content', True,
+    ...     'po/es/adept.po', b'foo content', True,
     ...     rosetta_experts, distroseries=hoary_distroseries,
     ...      sourcepackagename=adept)
 
@@ -552,7 +552,7 @@ Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.
 
     >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/es/adept-foo.po', 'foo content', True,
+    ...     'po/es/adept-foo.po', b'foo content', True,
     ...     rosetta_experts, distroseries=hoary_distroseries,
     ...      sourcepackagename=adept)
 
@@ -569,7 +569,7 @@ sourcepackagename and test that layout.
 Let's attach the .pot file
 
     >>> ktorrent_pot_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/ktorrent.pot', 'foo content', True, rosetta_experts,
+    ...     'po/ktorrent.pot', b'foo content', True, rosetta_experts,
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=ktorrent)
 
@@ -592,7 +592,7 @@ And set this entry as already imported.
 Let's attach a .po file now.
 
     >>> es_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'translations/es/messages/ktorrent.po', 'foo content', True,
+    ...     'translations/es/messages/ktorrent.po', b'foo content', True,
     ...     rosetta_experts, distroseries=hoary_distroseries,
     ...      sourcepackagename=ktorrent)
 
@@ -605,7 +605,7 @@ Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.
 
     >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'translations/es/messages/ktorrent-foo.po', 'foo content', True,
+    ...     'translations/es/messages/ktorrent-foo.po', b'foo content', True,
     ...     rosetta_experts, distroseries=hoary_distroseries,
     ...      sourcepackagename=ktorrent)
 
@@ -624,7 +624,7 @@ Let's attach the .pot file
     >>> zope_pot_entry = translationimportqueue.addOrUpdateEntry(
     ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/'
     ...     'locales/zope.pot',
-    ...     'foo content', True, rosetta_experts,
+    ...     b'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=zope)
 
 Create the template name and attach this new import to it.
@@ -650,7 +650,7 @@ Let's attach a .po file now.
     >>> es_entry = translationimportqueue.addOrUpdateEntry(
     ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/locales'
     ...     '/es/LC_MESSAGES/zope.po',
-    ...     'foo content', True, rosetta_experts,
+    ...     b'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=zope)
 
 And we will get the right IPOFile.
@@ -664,7 +664,7 @@ that is not yet imported.
     >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
     ...     'debian/zope3/usr/lib/python2.4/site-packages/zope/app/'
     ...     'locales/es/LC_MESSAGES/zope-test.po',
-    ...     'foo content', True, rosetta_experts,
+    ...     b'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=zope)
 
 We don't know the IPOFile where it should be imported.
@@ -682,7 +682,7 @@ from where the translations come.
 Let's attach the .pot file
 
     >>> k3b_pot_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'po/k3b.pot', 'foo content', True, rosetta_experts,
+    ...     'po/k3b.pot', b'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=k3b)
 
 Create the template name and attach this new import to it.
@@ -702,7 +702,7 @@ And set this entry as already imported.
 Let's attach a .po file now.
 
     >>> es_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'es/messages/k3b.po', 'foo content', True, rosetta_experts,
+    ...     'es/messages/k3b.po', b'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=k3b_i18n)
 
 And we will get the right IPOFile.
@@ -714,7 +714,7 @@ Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.
 
     >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'es/messages/libk3b.po', 'foo content', True, rosetta_experts,
+    ...     'es/messages/libk3b.po', b'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=k3b_i18n)
 
 We don't know the IPOFile where it should be imported.
@@ -730,7 +730,7 @@ sourcepackagename that will host the .pot and .po files.
 Let's attach the .pot file
 
     >>> terminal_pot_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'drivemount/help/drivemount.pot', 'foo content', True,
+    ...     'drivemount/help/drivemount.pot', b'foo content', True,
     ...     rosetta_experts, distroseries=hoary_distroseries,
     ...     sourcepackagename=gnome_terminal)
 
@@ -752,7 +752,7 @@ And set this entry as already imported.
 Let's attach a .po file now.
 
     >>> es_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'drivemount/help/es/es.po', 'foo content', True, rosetta_experts,
+    ...     'drivemount/help/es/es.po', b'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries,
     ...     sourcepackagename=gnome_terminal)
 
@@ -765,7 +765,7 @@ Now, we are going to see what happens if we get a .po file for a template
 that is not yet imported.
 
     >>> es_without_potemplate_entry = translationimportqueue.addOrUpdateEntry(
-    ...     'wanda/help/es/es.po', 'foo content', True, rosetta_experts,
+    ...     'wanda/help/es/es.po', b'foo content', True, rosetta_experts,
     ...     distroseries=hoary_distroseries, sourcepackagename=gnome_terminal)
 
 We don't know the IPOFile where it should be imported.
@@ -873,7 +873,7 @@ We need to attach a new entry to play with:
 
     >>> productseries = ProductSeries.get(1)
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     'foo/bar.po', 'foo content', True,
+    ...     'foo/bar.po', b'foo content', True,
     ...     rosetta_experts, productseries=productseries)
 
 When we just import it, this method tells us that it's "just requested"
@@ -989,7 +989,7 @@ We will need this helper function to print the queue content.
     ...         template = 'None'
     ...         if entry.potemplate is not None:
     ...             template = entry.potemplate.name
-    ...         print '%s | %s | %s' % (context, template, entry.path)
+    ...         print('%s | %s | %s' % (context, template, entry.path))
 
 Current entries in the queue are:
 
@@ -1058,47 +1058,47 @@ It is possible to update the content of an entry in the queue.
 
     >>> existing_entry = getFirstEvoEntryByPath(queue, 'foo.pot')
     >>> existing_entry = removeSecurityProxy(existing_entry)
-    >>> print existing_entry.content.read()
+    >>> print(existing_entry.content.read())
     Foo template
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     "foo.pot", "New content", by_maintainer, rosetta_experts,
+    ...     "foo.pot", b"New content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries,
     ...     potemplate=evolution_22_test_template)
     >>> entry = removeSecurityProxy(entry)
     >>> transaction.commit()
     >>> entry is existing_entry
     True
-    >>> print entry.content.read()
+    >>> print(entry.content.read())
     New content
 
 Not specifying the potemplate in this situation still selects the same entry
 on a best match basis. The entry is updated.
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     "foo.pot", "Even newer content", by_maintainer, rosetta_experts,
+    ...     "foo.pot", b"Even newer content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries)
     >>> entry = removeSecurityProxy(entry)
     >>> transaction.commit()
     >>> entry is existing_entry
     True
-    >>> print entry.content.read()
+    >>> print(entry.content.read())
     Even newer content
 
 Same goes for pofile entries.
 
     >>> existing_entry = getFirstEvoEntryByPath(queue, 'es.po')
     >>> existing_entry = removeSecurityProxy(existing_entry)
-    >>> print existing_entry.content.read()
+    >>> print(existing_entry.content.read())
     Spanish translation
 
     >>> entry = removeSecurityProxy(translationimportqueue.addOrUpdateEntry(
-    ...     "es.po", "New po content", by_maintainer, rosetta_experts,
+    ...     "es.po", b"New po content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries))
     >>> transaction.commit()
     >>> entry is existing_entry
     True
-    >>> print entry.content.read()
+    >>> print(entry.content.read())
     New po content
 
 Now, attaching the same layout to a different template for the same product,
@@ -1128,20 +1128,20 @@ the extra three entries.
 Not specifying the potemplate now is ambiguous and so no entry is added or
 updated.
 
-    >>> print queue.addOrUpdateEntry(
-    ...     "foo.pot", "Latest content", by_maintainer, rosetta_experts,
-    ...     productseries=evolution_productseries)
+    >>> print(queue.addOrUpdateEntry(
+    ...     "foo.pot", b"Latest content", by_maintainer, rosetta_experts,
+    ...     productseries=evolution_productseries))
     None
 
 Ambiguity is also resolved when a file is uploaded to the product first and
 then to a specific template.
 
     >>> existing_entry = queue.addOrUpdateEntry(
-    ...     "bar.pot", "Bar content", by_maintainer, rosetta_experts,
+    ...     "bar.pot", b"Bar content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries)
     >>> existing_entry = removeSecurityProxy(existing_entry)
     >>> entry = queue.addOrUpdateEntry(
-    ...     "bar.pot", "Bar content", by_maintainer, rosetta_experts,
+    ...     "bar.pot", b"Bar content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries,
     ...     potemplate=evolution_22_template)
 
@@ -1158,13 +1158,13 @@ These files are put into different entries.
 When uploading to the prouct now, the best matching entry is updated.
 
     >>> entry = queue.addOrUpdateEntry(
-    ...     "bar.pot", "New bar content", by_maintainer, rosetta_experts,
+    ...     "bar.pot", b"New bar content", by_maintainer, rosetta_experts,
     ...     productseries=evolution_productseries)
     >>> entry = removeSecurityProxy(entry)
     >>> transaction.commit()
     >>> entry is existing_entry
     True
-    >>> print entry.content.read()
+    >>> print(entry.content.read())
     New bar content
 
 Filename filters
@@ -1226,14 +1226,14 @@ raise errors about them.
     >>> def print_import_failures(import_script):
     ...     """List failures recorded in an import script instance."""
     ...     for reason, entries in script.failures.iteritems():
-    ...         print reason
+    ...         print(reason)
     ...         for entry in entries:
-    ...             print "-> " + entry
+    ...             print("-> " + entry)
 
     >>> clear_queue(translationimportqueue)
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/sr.po', 'foo', True, rosetta_experts,
+    ...     u'po/sr.po', b'foo', True, rosetta_experts,
     ...      productseries=evolution_productseries)
 
     >>> entry.import_into is None
@@ -1260,7 +1260,7 @@ Set the entry to approved, which is only possible if we don't use setStatus.
 
 The entry is marked as Failed.
 
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     FAILED
 
 This happens for distribution packages as well as products.
@@ -1268,7 +1268,7 @@ This happens for distribution packages as well as products.
     >>> clear_queue(translationimportqueue)
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/th.po', 'bar', False, rosetta_experts,
+    ...     u'po/th.po', b'bar', False, rosetta_experts,
     ...     distroseries=hoary_distroseries,
     ...     sourcepackagename=evolution_sourcepackagename)
 
@@ -1285,7 +1285,7 @@ Set the entry to approved, which is only possible if we don't use setStatus.
     Entry is approved but has no place to import to.
     -> 'po/th.po' (id ...) in ubuntu Hoary package evolution
 
-    >>> print entry.status.name
+    >>> print(entry.status.name)
     FAILED
 
     >>> clear_queue(translationimportqueue)
@@ -1319,7 +1319,7 @@ For instance, successfully imported entries are cleaned up after a few
 days.
 
     >>> entry = translationimportqueue.addOrUpdateEntry(
-    ...     u'po/nl.po', 'hoi', True, rosetta_experts,
+    ...     u'po/nl.po', b'hoi', True, rosetta_experts,
     ...      productseries=evolution_productseries)
     >>> entry.pofile = factory.makePOFile('nl')
     >>> entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
@@ -1357,7 +1357,7 @@ A user sets up Jokosher for translation, and uploads a template.
     ...     # In another completely arbitrary move, we make all import
     ...     # requests for products non-imported.
     ...     return translationimportqueue.addOrUpdateEntry('messages.pot',
-    ...         'dummy file', False, rosetta_experts, productseries=series,
+    ...         b'dummy file', False, rosetta_experts, productseries=series,
     ...         potemplate=template)
 
     >>> jokosher = productset['jokosher']

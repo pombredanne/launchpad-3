@@ -18,11 +18,11 @@ Logged in as a regular user, the +export page is accessible.
     ...     '/+source/evolution/+pots/evolution-2.2/es')
     >>> user_browser.getLink('Download').click()
 
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Download translation : Spanish (es)... : Hoary (5.04) :
     Translations : evolution package : Ubuntu
 
-    >>> print find_main_content(user_browser.contents)
+    >>> print(find_main_content(user_browser.contents))
     <...
     ...Download Spanish translation...
     Once the file is ready for download, Launchpad will email
@@ -33,7 +33,7 @@ If we POST the page, it should add the request to the queue.
 
     >>> user_browser.getControl(name='format').value = ['PO']
     >>> user_browser.getControl('Request Download').click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://translatio.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es
 
     >>> for tag in find_tags_by_class(user_browser.contents, 'informational'):
@@ -50,12 +50,12 @@ No Privileges Person.
 
     >>> user_browser.getControl(name='format').value = ['PO']
     >>> user_browser.getControl('Request Download').click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/cy
 
     >>> for tag in find_tags_by_class(
     ...     user_browser.contents, 'informational'):
-    ...     print tag.renderContents()
+    ...     print(tag.renderContents())
     Your request has been received. Expect to receive an email shortly.
 
 If the POFile first has to be created, the requester becomes its owner.
@@ -72,7 +72,7 @@ evolution yet; it will be created at the moment the export is requested.
 
     >>> browser.getControl(name='format').value = ['PO']
     >>> browser.getControl('Request Download').click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv
 
     >>> for tag in find_tags_by_class(browser.contents, 'informational'):
@@ -97,7 +97,7 @@ https://launchpad.net/rosetta/+bug/1558).
 
     >>> browser.getControl(name='format').value = ['PO']
     >>> browser.getControl('Request Download').click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/sv
 
     >>> for tag in find_tags_by_class(browser.contents, 'informational'):

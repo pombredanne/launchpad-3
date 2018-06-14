@@ -28,7 +28,7 @@ The search_text parameter will limit the questions to those matching
 the query using the regular full text algorithm.
 
     >>> for question in foo_bar.searchQuestions(search_text=u'firefox'):
-    ...     print question.title, question.status.title
+    ...     print(question.title, question.status.title)
     Firefox loses focus and gets stuck              Open
     mailto: problem in webpage                      Solved
     Newly installed plug-in doesn't seem to be used Answered
@@ -44,7 +44,7 @@ the constant defined in the QuestionSort enumeration.
     >>> from lp.answers.enums import QuestionSort
     >>> for question in foo_bar.searchQuestions(
     ...     search_text=u'firefox', sort=QuestionSort.OLDEST_FIRST):
-    ...     print question.id, question.title, question.status.title
+    ...     print(question.id, question.title, question.status.title)
     4 Firefox loses focus and gets stuck              Open
     6 Newly installed plug-in doesn't seem to be used Answered
     9 mailto: problem in webpage                      Solved
@@ -52,7 +52,7 @@ the constant defined in the QuestionSort enumeration.
 When no text search is done, the default sort order is newest first.
 
     >>> for question in foo_bar.searchQuestions():
-    ...     print question.id, question.title, question.status.title
+    ...     print(question.id, question.title, question.status.title)
     11 Continue playing after shutdown                      Open
     10 Play DVDs in Totem                                   Answered
      9 mailto: problem in webpage                           Solved
@@ -71,14 +71,14 @@ parameter can be used to control the list of statuses to select.
     >>> from lp.answers.enums import QuestionStatus
     >>> for question in foo_bar.searchQuestions(
     ...         status=QuestionStatus.INVALID):
-    ...     print question.title, question.status.title
+    ...     print(question.title, question.status.title)
     Firefox is slow and consumes too much RAM   Invalid
 
 The status parameter can also take a list of statuses.
 
     >>> for question in foo_bar.searchQuestions(
     ...         status=(QuestionStatus.SOLVED, QuestionStatus.INVALID)):
-    ...     print question.title, question.status.title
+    ...     print(question.title, question.status.title)
     mailto: problem in webpage                  Solved
     Firefox is slow and consumes too much RAM   Invalid
 
@@ -96,7 +96,7 @@ QuestionParticipation.COMMENTER is used.
     >>> from lp.answers.enums import QuestionParticipation
     >>> for question in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.COMMENTER, status=None):
-    ...     print question.title
+    ...     print(question.title)
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
@@ -108,7 +108,7 @@ person is subscribed.
 
     >>> for question in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.SUBSCRIBER, status=None):
-    ...     print question.title
+    ...     print(question.title)
     Slow system
     Firefox is slow and consumes too much RAM
 
@@ -116,7 +116,7 @@ QuestionParticipation.OWNER selects the questions that the person created.
 
     >>> for question in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.OWNER, status=None):
-    ...     print question.title
+    ...     print(question.title)
     Slow system
     Firefox loses focus and gets stuck
     Firefox is slow and consumes too much RAM
@@ -126,7 +126,7 @@ an answer.
 
     >>> for question in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.ANSWERER, status=None):
-    ...     print question.title
+    ...     print(question.title)
     mailto: problem in webpage
     Firefox is slow and consumes too much RAM
 
@@ -144,7 +144,7 @@ will be selected.
     ...         participation=(QuestionParticipation.OWNER,
     ...                        QuestionParticipation.ANSWERER),
     ...         status=None):
-    ...     print question.title
+    ...     print(question.title)
     mailto: problem in webpage
     Slow system
     Firefox loses focus and gets stuck
@@ -174,7 +174,7 @@ But Carlos has one.
     >>> carlos = IQuestionsPerson(carlos_raw)
     >>> for question in carlos.searchQuestions(
     ...         language=(english, spanish)):
-    ...     print question.title, question.language.code
+    ...     print(question.title, question.language.code)
     Problema al recompilar kernel con soporte smp (doble-núcleo)    es
 
 
@@ -187,8 +187,8 @@ also includes questions on which the person requested more information or gave
 an answer and are back in the OPEN state.
 
     >>> for question in foo_bar.searchQuestions(needs_attention=True):
-    ...     print question.status.title, question.owner.displayname, (
-    ...         question.title)
+    ...     print(question.status.title, question.owner.displayname,
+    ...           question.title)
     Open              Sample Person Continue playing after shutdown
     Needs information Foo Bar       Slow system
 
@@ -202,7 +202,7 @@ The results are the intersection of the sets delimited by each criteria.
     ...         search_text=u'firefox OR Java',
     ...         status=QuestionStatus.ANSWERED,
     ...         participation=QuestionParticipation.COMMENTER):
-    ...     print question.title, question.status.title
+    ...     print(question.title, question.status.title)
     Installation of Java Runtime Environment for Mozilla    Answered
     Newly installed plug-in doesn't seem to be used         Answered
 
@@ -214,9 +214,9 @@ IQuestionsPerson also defines a getQuestionLanguages() attribute which
 contains the set of languages used by all of the questions in which this
 person is involved.
 
-    >>> print ', '.join(
+    >>> print(', '.join(
     ...     sorted(language.code
-    ...            for language in foo_bar.getQuestionLanguages()))
+    ...            for language in foo_bar.getQuestionLanguages())))
     en
 
 This includes questions which the person owns, and questions that the user is
@@ -228,9 +228,9 @@ subscribed to...
     >>> pt_BR_question.subscribe(foo_bar_raw)
     <QuestionSubscription...>
 
-    >>> print ', '.join(
+    >>> print(', '.join(
     ...     sorted(language.code
-    ...            for language in foo_bar.getQuestionLanguages()))
+    ...            for language in foo_bar.getQuestionLanguages())))
     en, pt_BR
 
 ...and questions for which they're the answerer...
@@ -239,17 +239,17 @@ subscribed to...
     >>> es_question.reject(foo_bar_raw, 'Reject question.')
     <QuestionMessage...>
 
-    >>> print ', '.join(
+    >>> print(', '.join(
     ...     sorted(language.code
-    ...            for language in foo_bar.getQuestionLanguages()))
+    ...            for language in foo_bar.getQuestionLanguages())))
     en, es, pt_BR
 
 ...as well as questions which are assigned to the user...
 
     >>> pt_BR_question.assignee = carlos_raw
-    >>> print ', '.join(
+    >>> print(', '.join(
     ...     sorted(language.code
-    ...            for language in carlos.getQuestionLanguages()))
+    ...            for language in carlos.getQuestionLanguages())))
     es, pt_BR
 
 ...and questions on which the user commented.
@@ -259,9 +259,9 @@ subscribed to...
     >>> en_question.addComment(carlos_raw, 'A simple comment.')
     <QuestionMessage...>
 
-    >>> print ', '.join(
+    >>> print(', '.join(
     ...     sorted(language.code
-    ...            for language in carlos.getQuestionLanguages()))
+    ...            for language in carlos.getQuestionLanguages())))
     en, es, pt_BR
 
 
@@ -286,7 +286,7 @@ as an answer contact.
     True
 
     >>> for target in no_priv.getDirectAnswerQuestionTargets():
-    ...    print target.name
+    ...    print(target.name)
     firefox
 
 
@@ -308,9 +308,9 @@ contact through their team membership.
     >>> ubuntu.addAnswerContact(landscape_team, landscape_team.teamowner)
     True
 
-    >>> print ', '.join(
+    >>> print(', '.join(
     ...     sorted(target.name
-    ...            for target in no_priv.getTeamAnswerQuestionTargets()))
+    ...            for target in no_priv.getTeamAnswerQuestionTargets())))
     ubuntu
 
 Indirect team membership is also taken in consideration.  For example, when
@@ -336,9 +336,9 @@ IQuestionTargets.
     >>> evolution_package.addAnswerContact(
     ...     translator_team, translator_team.teamowner)
     True
-    >>> print ', '.join(
+    >>> print(', '.join(
     ...     sorted(target.name
-    ...            for target in no_priv.getTeamAnswerQuestionTargets()))
+    ...            for target in no_priv.getTeamAnswerQuestionTargets())))
     evolution, ubuntu
 
 
@@ -366,7 +366,7 @@ visible.  These relationships are persistent for cases where we only want is
 deactivated for a short period.
 
     >>> firefox.active = True
-    >>> print ', '.join(
+    >>> print(', '.join(
     ...     sorted(target.name
-    ...            for target in no_priv.getDirectAnswerQuestionTargets()))
+    ...            for target in no_priv.getDirectAnswerQuestionTargets())))
     firefox

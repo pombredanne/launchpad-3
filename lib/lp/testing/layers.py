@@ -28,8 +28,6 @@ __all__ = [
     'DatabaseFunctionalLayer',
     'DatabaseLayer',
     'FunctionalLayer',
-    'GoogleLaunchpadFunctionalLayer',
-    'GoogleServiceLayer',
     'LaunchpadFunctionalLayer',
     'LaunchpadLayer',
     'LaunchpadScriptLayer',
@@ -130,9 +128,6 @@ from lp.services.rabbit.server import RabbitServer
 from lp.services.scripts import execute_zcml_for_scripts
 from lp.services.sitesearch.tests.bingserviceharness import (
     BingServiceTestSetup,
-    )
-from lp.services.sitesearch.tests.googleserviceharness import (
-    GoogleServiceTestSetup,
     )
 from lp.services.testing.profiled import profiled
 from lp.services.timeout import (
@@ -1239,31 +1234,6 @@ class TwistedLayer(BaseLayer):
         TwistedLayer._restore_signals()
 
 
-class GoogleServiceLayer(BaseLayer):
-    """Tests for Google web service integration."""
-
-    @classmethod
-    def setUp(cls):
-        google = GoogleServiceTestSetup()
-        google.setUp()
-
-    @classmethod
-    def tearDown(cls):
-        GoogleServiceTestSetup().tearDown()
-
-    @classmethod
-    def testSetUp(self):
-        # We need to override BaseLayer.testSetUp(), or else we will
-        # get a LayerIsolationError.
-        pass
-
-    @classmethod
-    def testTearDown(self):
-        # We need to override BaseLayer.testTearDown(), or else we will
-        # get a LayerIsolationError.
-        pass
-
-
 class BingServiceLayer(BaseLayer):
     """Tests for Bing web service integration."""
 
@@ -1376,31 +1346,6 @@ class AuditorLayer(LaunchpadFunctionalLayer):
         # Can't pop the config above, so bail here and let the test runner
         # start a sub-process.
         raise NotImplementedError
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        pass
-
-
-class GoogleLaunchpadFunctionalLayer(LaunchpadFunctionalLayer,
-                                     GoogleServiceLayer):
-    """Provides Google service in addition to LaunchpadFunctionalLayer."""
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        pass
 
     @classmethod
     @profiled
@@ -1596,8 +1541,7 @@ class MockHTTPTask:
         return self.request._orig_env
 
 
-class PageTestLayer(LaunchpadFunctionalLayer,
-                    BingServiceLayer, GoogleServiceLayer):
+class PageTestLayer(LaunchpadFunctionalLayer, BingServiceLayer):
     """Environment for page tests.
     """
 

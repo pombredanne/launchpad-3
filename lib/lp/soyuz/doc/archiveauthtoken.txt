@@ -51,7 +51,7 @@ But now that the subscription is there, we can create a token as Brad.
 
 By default the tokens are 20 characters long.
 
-    >>> print len(token_with_random_string.token)
+    >>> print(len(token_with_random_string.token))
     20
 
 It is not possible to create a second token when one already exists:
@@ -74,16 +74,16 @@ We can also specify our own token for testing purposes:
 
 The new token is returned and reflects the data:
 
-    >>> print new_token.archive.displayname
+    >>> print(new_token.archive.displayname)
     PPA for Joe Smith
 
-    >>> print new_token.person.name
+    >>> print(new_token.person.name)
     bradsmith
 
-    >>> print new_token.token
+    >>> print(new_token.token)
     testtoken
 
-    >>> print new_token.archive_url
+    >>> print(new_token.archive_url)
     http://bradsmith:testtoken@private-ppa.launchpad.dev/joe/ppa/...
 
 Commit the new token to the database.
@@ -96,7 +96,7 @@ Tokens also contain some date information:
     >>> new_token.date_created is not None
     True
 
-    >>> print new_token.date_deactivated
+    >>> print(new_token.date_deactivated)
     None
 
 
@@ -123,26 +123,26 @@ Log in as Brad Smith, who is the person in the token.
 
 And retrieve the token by id and by token data:
 
-    >>> print token_set.get(new_token.id).token
+    >>> print(token_set.get(new_token.id).token)
     testtoken
 
-    >>> print token_set.getByToken(u"testtoken").person.name
+    >>> print(token_set.getByToken(u"testtoken").person.name)
     bradsmith
 
 It's also possible to retrieve a set of all the tokens for an archive.
 
     >>> tokens = token_set.getByArchive(joe_private_ppa)
-    >>> print tokens.count()
+    >>> print(tokens.count())
     1
 
     >>> for token in tokens:
-    ...     print token.person.name
+    ...     print(token.person.name)
     bradsmith
 
 Tokens can also be retreived by archive and person:
 
-    >>> print token_set.getActiveTokenForArchiveAndPerson(
-    ...     new_token.archive, new_token.person).token
+    >>> print(token_set.getActiveTokenForArchiveAndPerson(
+    ...     new_token.archive, new_token.person).token)
     testtoken
 
 
@@ -181,7 +181,7 @@ previous count of 1 is now reduced to 0.
 The IArchiveAuthTokenSet.getActiveTokenForArchiveAndPerson() method will
 also not return tokens that have been deactivated:
 
-    >>> print token_set.getActiveTokenForArchiveAndPerson(
-    ...     new_token.archive, new_token.person)
+    >>> print(token_set.getActiveTokenForArchiveAndPerson(
+    ...     new_token.archive, new_token.person))
     None
 

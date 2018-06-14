@@ -8,8 +8,8 @@ contributors.
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
     ...     'evolution-2.2/es/+details')
-    >>> print extract_text(find_main_content(anon_browser.contents)).encode(
-    ...     'ascii', 'backslashreplace')
+    >>> print(extract_text(find_main_content(anon_browser.contents)).encode(
+    ...     'ascii', 'backslashreplace'))
     Details for Spanish translation
     ...
     Latest contributor:
@@ -25,7 +25,7 @@ User can filter any contributions done by Carlos (the first person
 appearing among contributors), by choosing the 'filter' link:
 
     >>> anon_browser.getLink('filter').click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Translations by Carlos ... in ...
 
 To display all the translations submitted by Carlos, and allow easier
@@ -63,7 +63,7 @@ a separate method to pretty-print all the translations.
     ...         contents = get_columns(cells)
     ...         if len(contents) > 50:
     ...             contents = contents[:47] + '...'
-    ...         print "%-10s %s" % (types[type], contents)
+    ...         print("%-10s %s" % (types[type], contents))
 
 A user can see all the submissions Carlos has made to this POFile.
 Note that 'english' in the first column indicates a msgid, and 'used',
@@ -102,9 +102,9 @@ only a single unused suggestion instead:
 A POTMsgSet sequence number is also a link to edit a translation.
 
     >>> anon_browser.getLink('14.').click()
-    >>> print anon_browser.url
+    >>> print(anon_browser.url)
     http://.../evolution/trunk/+pots/evolution-2.2/es/14/+translate
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Browsing Spanish translation...
 
 
@@ -164,7 +164,7 @@ We'll create two new accounts to demonstrate this.
     ...     "ubuntu/hoary/+source/%s/+pots/%s/%s/+details") % (
     ...     package.name, template.name, language_code))
     >>> main_text = extract_text(find_main_content(browser.contents))
-    >>> print main_text
+    >>> print(main_text)
     Details for ...
     Contributors to this translation
     The following people have made some contribution to this specific
@@ -192,7 +192,7 @@ A POFile's details page shows translation statistics.
 
     >>> browser.open(pofile_url)
     >>> stats_portlet = find_tag_by_id(browser.contents, 'portlet-stats')
-    >>> print extract_text(stats_portlet)
+    >>> print(extract_text(stats_portlet))
     Statistics
     Messages: 10
     Translated: 7 (70.0%)

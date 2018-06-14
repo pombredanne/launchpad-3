@@ -37,7 +37,7 @@ with upstream.
 
 Let's say that we have this .pot file to import:
 
-    >>> potemplate_contents = r'''
+    >>> potemplate_contents = br'''
     ... msgid ""
     ... msgstr ""
     ... "Content-Type: text/plain; charset=CHARSET\n"
@@ -121,7 +121,7 @@ Let's say that we have this .po file to import:
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
-    >>> pofile_contents = r'''
+    >>> pofile_contents = br'''
     ... msgid ""
     ... msgstr ""
     ... "Content-Type: text/plain; charset=UTF-8\n"
@@ -193,7 +193,7 @@ Tell the PO file to import from the file data it has.
 Now, the user is going to upload a local edition of the .po file. In this
 case, we will give karma *only* because the translation change.
 
-    >>> pofile_contents = r'''
+    >>> pofile_contents = br'''
     ... msgid ""
     ... msgstr ""
     ... "Content-Type: text/plain; charset=UTF-8\n"
