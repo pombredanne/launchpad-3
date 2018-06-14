@@ -51,8 +51,8 @@ Thus the view class also knows about the plural forms information.
 
 We know that we want all messages.
 
-    >>> pofile_view.show
-    'all'
+    >>> print(pofile_view.show)
+    all
 
 This time, we are going to see what happens if we get an IPOFile without
 the plural form information.
@@ -81,8 +81,8 @@ Check the argument to filter messagesets.
 
 Yeah, it detects it correctly and stores the attribute as it should be.
 
-    >>> pofile_view.show
-    'translated'
+    >>> print(pofile_view.show)
+    translated
 
 Let's move to the navigation URLS testing.
 
@@ -149,9 +149,9 @@ listed in the page.
     >>> for translationmessage_view in (
     ...     pofile_view.translationmessage_views):
     ...     translationmessage_view.initialize()
-    >>> print pofile_view.autofocus_html_id
+    >>> print(pofile_view.autofocus_html_id)
     msgset_130_es_translation_0_new
-    >>> print pofile_view.translations_order
+    >>> print(pofile_view.translations_order)
     msgset_130_es_translation_0_new msgset_131_es_translation_0_new
     msgset_132_es_translation_0_new msgset_133_es_translation_0_new
     msgset_134_es_translation_0_new msgset_135_es_translation_0_new
@@ -207,7 +207,7 @@ The messages displayed on the +translate page are always in ascending order of
 their POTMsgSets' sequence numbers.
 
     >>> for potmsgset in pofile_view._getSelectedPOTMsgSets():
-    ...     print potmsgset.getSequence(pofile_es.potemplate)
+    ...     print(potmsgset.getSequence(pofile_es.potemplate))
     1
     2
     3
@@ -293,11 +293,11 @@ what's inside.
 #    >>> pomsgset.potmsgset.id
 #    144
 #    >>> for text in pomsgset.active_texts:
-#    ...     print text
+#    ...     print(text)
 #    %d contacto
 #    %d contactos
 #    >>> for text in pomsgset.published_texts:
-#    ...     print text
+#    ...     print(text)
 #    %d contacto
 #    %d contactos
 #    >>> list(pomsgset.getNewSubmissions(0))
@@ -305,10 +305,10 @@ what's inside.
 #    >>> list(pomsgset.getNewSubmissions(1))
 #    []
 #    >>> for submission in pomsgset.getCurrentSubmissions(0):
-#    ...     print submission.datecreated.isoformat()
+#    ...     print(submission.datecreated.isoformat())
 #    2005-04-07T...
 #    >>> for submission in pomsgset.getCurrentSubmissions(1):
-#    ...     print submission.datecreated.isoformat()
+#    ...     print(submission.datecreated.isoformat())
 #    2005-04-07T...
 
 The POMsgSet we're looking at had its submissions cache pre-populated by the
@@ -326,11 +326,11 @@ exact same results.
 #    >>> pomsgset.potmsgset.id
 #    144
 #    >>> for text in pomsgset.active_texts:
-#    ...     print text
+#    ...     print(text)
 #    %d contacto
 #    %d contactos
 #    >>> for text in pomsgset.published_texts:
-#    ...     print text
+#    ...     print(text)
 #    %d contacto
 #    %d contactos
 #    >>> list(pomsgset.getNewSubmissions(0))
@@ -338,10 +338,10 @@ exact same results.
 #    >>> list(pomsgset.getNewSubmissions(1))
 #    []
 #    >>> for submission in pomsgset.getCurrentSubmissions(0):
-#    ...     print submission.datecreated.isoformat()
+#    ...     print(submission.datecreated.isoformat())
 #    2005-04-07T...
 #    >>> for submission in pomsgset.getCurrentSubmissions(1):
-#    ...     print submission.datecreated.isoformat()
+#    ...     print(submission.datecreated.isoformat())
 #    2005-04-07T...
 
 Now, we are going to check the alternative language submission.
@@ -369,16 +369,19 @@ we check that it contains only sample data entries.
     >>> translationimportqueue.countEntries()
     2
     >>> for entry in translationimportqueue.getAllEntries():
-    ...     print entry.id, entry.content.filename
+    ...     print(entry.id, entry.content.filename)
     1 evolution-2.2-test.pot
     2 pt_BR.po
 
 The FileUpload class needs a class with the attributes: filename, file and
 headers.
 
+XXX cjwatson 2018-06-02: FileUploadArgument.filename can become a native
+string again once we're on zope.publisher >= 4.0.0a1.
+
     >>> class FileUploadArgument:
-    ...     filename='po/es.po'
-    ...     file=StringIO('foos')
+    ...     filename=b'po/es.po'
+    ...     file=StringIO(b'foos')
     ...     headers=''
 
 Now, we do the upload.
@@ -497,5 +500,5 @@ index page.
 
 And we are redirected to the index page, as expected:
 
-    >>> print pofile_view.request.response.getHeader('Location')
+    >>> print(pofile_view.request.response.getHeader('Location'))
     http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es

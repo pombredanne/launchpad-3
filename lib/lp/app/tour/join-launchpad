@@ -43,7 +43,7 @@
             <p class="intro-text">
                 <strong><a href="https://launchpad.net/projects/+new">Register your project</a> to collaborate with a community of thousands.</strong> Join <a href="https://launchpad.net/mysql">MySQL</a>, <a href="https://launchpad.net/zope">Zope</a> and <a href="https://launchpad.net/ubuntu">Ubuntu</a> in choosing Launchpad for your project.
 <br /><br />
-Launchpad is free to use for <a href="https://help.launchpad.net/Legal/ProjectLicensing">open source</a> software projects and available at a low annual subscription for all other projects. Read on for details of our <a href="#commercial">commercial plans</a>.</p>
+Launchpad is free to use for <a href="https://help.launchpad.net/Legal/ProjectLicensing">open source</a> software projects.</p>
             <div id="link-holder"><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>
@@ -60,11 +60,11 @@ Launchpad is free to use for <a href="https://help.launchpad.net/Legal/ProjectLi
                 <div class="furthur-information-block-top"></div>
                 <div class="furthur-information-block-mid">
                     <div class="block">
-                        <h3><a name="commercial"></a>Subscriptions for commercial projects</h3>
-                        <h4>Host your closed-source project and join our beta of additional privacy features by buying a commercial subscription.</h4>
+                        <h3><a name="commercial"></a>Commercial projects</h3>
+                        <h4>Host your closed-source project using additional privacy features.</h4>
                         <p class="screen-holder">
                             <img src="images/join/1.png" alt="Commercial subscriptions" />                        </p>
-                        <p>Get all the benefits of hosting your closed-source project on Launchpad for just $250* a year. Easily share bug reports, code and more across your development community and, optionally, plug into the open source projects you rely on.</p><br />
+                        <p>Easily share bug reports, code and more across your development community and, optionally, plug into the open source projects you rely on.</p><br />
                         <p>At the same time, try out our privacy features, including:</p><br />
 			<ul>
 				<li>private code branches</li>
@@ -72,12 +72,7 @@ Launchpad is free to use for <a href="https://help.launchpad.net/Legal/ProjectLi
 				<li>private teams and mailing lists</li>
 				<li>private PPAs.</li>
 			</ul><br />
-			<p>To get going, register your project and select <em>Other/Proprietary</em> as its licence.</p><br />
-			<p>Want to know more? <a href="mailto:commercial@launchpad.net">Get in touch</a>!</p><br />
-			<p><small>* US Dollars. Add VAT at 20% if you're in the European Union. Subscription is per project. Prices may change in the future.</small></p>
-			<p style="float: right;"><a href="https://launchpad.net/projects/+new">Register your project &gt;</a></p><br />
-
-                        </p>
+                        <p>Using these features requires authorization from Canonical. <a href="https://www.ubuntu.com/support/contact-us">Contact us</a> if you're interested.</p>
                     </div>
                     <div class="block odd">
                         <h3>What Launchpad offers your project</h3>

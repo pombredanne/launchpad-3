@@ -12,7 +12,7 @@ to that branch.
     0
     >>> stdout
     ''
-    >>> print stderr
+    >>> print(stderr)
     INFO Creating lockfile:
     /var/lock/launchpad-translations-export-to-branch.lock
     INFO Exporting to translations branches.
@@ -256,10 +256,10 @@ won't work, so we email a notification to the branch owner.
 
     >>> sender, recipients, body = stub.test_emails.pop()
     >>> message = message_from_string(body)
-    >>> print message['Subject']
+    >>> print(message['Subject'])
     Launchpad: translations branch has not been set up.
 
-    >>> print message.get_payload()
+    >>> print(message.get_payload())
     Hello,
     There was a problem with translations branch synchronization for
     ...

@@ -64,7 +64,6 @@ PIP_BIN = \
     bin/bingtestservice \
     bin/build-twisted-plugin-cache \
     bin/combine-css \
-    bin/googletestservice \
     bin/harness \
     bin/iharness \
     bin/ipy \

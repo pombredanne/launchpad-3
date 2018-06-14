@@ -15,7 +15,7 @@ integer.
   ...     name='msgset_142_es_translation_0_radiobutton').value = [
   ...         'msgset_142_es_translation_0_new']
   >>> browser.getControl(name='msgset_142_es_translation_0_new').value = (
-  ...     'Migrando \xc2\xab%i\xc2\xbb')
+  ...     b'Migrando \xc2\xab%i\xc2\xbb')
 
 We are going to add a valid translation too so we are sure that it's stored
 even when there is an error in another message of the same form.
@@ -31,19 +31,19 @@ And submit the form.
 
 We remain at the same page:
 
-  >>> print browser.url
+  >>> print(browser.url)
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=10&batch=5
 
 The valid translation is stored:
 
-  >>> print find_tag_by_id(
-  ...     browser.contents, 'msgset_140_es_translation_0').renderContents()
+  >>> print(find_tag_by_id(
+  ...     browser.contents, 'msgset_140_es_translation_0').renderContents())
   Foo
 
 And the error is noted in the page.
 
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
-  ...     print tag
+  ...     print(tag)
   <div class="error message">There is an error in a translation you provided.
     Please correct it before continuing.</div>
   <tr class="error translation">

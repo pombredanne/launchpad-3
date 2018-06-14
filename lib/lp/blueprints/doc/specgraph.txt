@@ -43,13 +43,13 @@ SpecGraph to keep track of the nodes that have been added.
     >>> foo = Spec('foo', title='something with " and \n in it')
     >>> root = g.newNode(foo, root=True)
 
-    >>> print root
+    >>> print(root)
     <fnord-foo>
 
 Note that the root DOT data doesn't have a URL.  This is because we
 don't want a link to the spec we're currently looking at.
 
-    >>> print root.getDOTNodeStatement()
+    >>> print(root.getDOTNodeStatement())
     "fnord-foo"
         [
         "color"="red",
@@ -58,10 +58,10 @@ don't want a link to the spec we're currently looking at.
         "tooltip"="something with \" and \n in it"
         ]
 
-    >>> print g.root_node
+    >>> print(g.root_node)
     <fnord-foo>
 
-    >>> print root.name, root.label, root.URL, root.color
+    >>> print(root.name, root.label, root.URL, root.color)
     fnord-foo foo http://whatever/foo red
 
     >>> other_spec = factory.makeSpecification()
@@ -71,7 +71,7 @@ don't want a link to the spec we're currently looking at.
     >>> g.getNode(foo) is root
     True
 
-    >>> print g.listNodes()
+    >>> print(g.listNodes())
     Root is <fnord-foo>
     <fnord-foo>:
 
@@ -95,10 +95,10 @@ don't want a link to the spec we're currently looking at.
     ...     return g
 
     >>> def print_graph(dependency=True, blocked=False):
-    ...     print make_graph(dependency, blocked).listNodes()
+    ...     print(make_graph(dependency, blocked).listNodes())
 
     >>> def print_graph_dot(dependency=True, blocked=False):
-    ...     print make_graph(dependency, blocked).getDOTGraphStatement()
+    ...     print(make_graph(dependency, blocked).getDOTGraphStatement())
 
     >>> print_graph()
     Root is <fnord-foo>
@@ -261,7 +261,7 @@ tag when the render() method is called.
     >>> isinstance(graph_view, SpecificationTreeImageTag)
     True
 
-    >>> print graph_view.render()
+    >>> print(graph_view.render())
     <img src="deptree.png" usemap="#deptree" />
     <map id="deptree" name="deptree"> ...
 
@@ -314,13 +314,13 @@ The SpecificationTreeImageTag.render() method captures the raised error
 and directly converts it into an oops report. The markup contains a
 message explaining that the image was not linked.
 
-    >>> print graph_view.render()
+    >>> print(graph_view.render())
     <img src="deptree.png" usemap="#deptree" />
     <p class="error message">There was an error linking the dependency tree
     to its specs.</p>
 
     >>> oops_report = graph_view.request.oops
-    >>> print oops_report['type'], oops_report['value']
+    >>> print(oops_report['type'], oops_report['value'])
     ProblemRenderingGraph (... syntax error in line 1 near 'bad'...)
 
     # Restore the getDotFileText() method.
@@ -350,13 +350,13 @@ The OSError raised creating the image map does not break the spec index
 page. Again, the image map was replaced with an suggestion to reload the
 page to link the image.
 
-    >>> print graph_view.render()
+    >>> print(graph_view.render())
     <img src="deptree.png" usemap="#deptree" />
     <p class="error message">There was an error linking the dependency tree
     to its specs. Reload the page to link the image.</p>
 
     >>> oops_report = graph_view.request.oops
-    >>> print oops_report['type'], oops_report['value']
+    >>> print(oops_report['type'], oops_report['value'])
     OSError [Errno 12] Cannot allocate memory
 
 If an error occurs during the render of the PNG image, the fail over
@@ -372,7 +372,7 @@ image (icing/blueprints-deptree-error.png) is returned. It's size is
     OSError: [Errno 12] Cannot allocate memory
 
     >>> image = graph_view.render()
-    >>> image.startswith('\x89PNG')
+    >>> image.startswith(b'\x89PNG')
     True
 
     >>> fail_over_image_length = len(image)
@@ -389,7 +389,7 @@ The dependency graph image is rendered correctly when Popen is restored.
     ...     (svg_support, request), name="deptree.png")
     >>> graph_view.initialize()
     >>> image = graph_view.render()
-    >>> image.startswith('\x89PNG')
+    >>> image.startswith(b'\x89PNG')
     True
 
     >>> len(image) != fail_over_image_length

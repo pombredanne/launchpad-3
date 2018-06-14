@@ -43,7 +43,7 @@ create a PackageUpload with it.
     >>> spr_test = SourcePackageRelease.get(20)
     >>> sp_test = spr_test.upload_distroseries.getSourcePackage(
     ...     spr_test.sourcepackagename)
-    >>> print spr_test.title
+    >>> print(spr_test.title)
     pmount - 0.1-1
 
     >>> from lp.soyuz.interfaces.packagetranslationsuploadjob import (
@@ -86,7 +86,7 @@ And the queue should have 2 entries, with exactly the same contents.
     2
 
     >>> for entry in queue_entries:
-    ...     print entry.path, entry.importer.name
+    ...     print(entry.path, entry.importer.name)
     something/en-US.xpi  maria
     po/es.po             maria
 
@@ -105,7 +105,7 @@ The first one, approves the import.
     ...     stderr=subprocess.STDOUT
     ...     )
     >>> (output, empty) = process.communicate()
-    >>> print output
+    >>> print(output)
     INFO    Creating lockfile:
          /var/lock/launchpad-translations-import-queue-gardener.lock
     INFO    The automatic approval system approved some entries.
@@ -121,7 +121,7 @@ The second one, executes the import.
     ...     stderr=subprocess.STDOUT
     ...     )
     >>> (output, empty) = process.communicate()
-    >>> print output
+    >>> print(output)
     INFO    Creating lockfile: /var/lock/launchpad-rosetta-poimport.lock
     INFO    Importing: Spanish (es) translation of pmount in Ubuntu Hoary
             package "pmount"
@@ -139,51 +139,49 @@ names found in the tarball:
 
 Anything not in the "source/" directory is ignored.
 
-    >>> print _filter_ubuntu_translation_file('foo/bar.po')
+    >>> print(_filter_ubuntu_translation_file('foo/bar.po'))
     None
 
 Files in source/ have that directory stripped off.
 
-    >>> print _filter_ubuntu_translation_file('source/bar.po')
+    >>> print(_filter_ubuntu_translation_file('source/bar.po'))
     bar.po
 
 Files in source/debian/po/* and a few other paths are ignored.
 
 Ones in debian/po are generally debconf translations, unused in Ubuntu.
 
-    >>> print _filter_ubuntu_translation_file('source/debian/po/bar.po')
+    >>> print(_filter_ubuntu_translation_file('source/debian/po/bar.po'))
     None
 
 Ones in d-i are Debian Installer translations.  Ubuntu builds those
 translations very differently from how Debian does it, so we don't need
 these uploads.
 
-    >>> print _filter_ubuntu_translation_file('source/d-i/foo.po')
+    >>> print(_filter_ubuntu_translation_file('source/d-i/foo.po'))
     None
 
 Then there are some documentation directories whose contents we can't
 translate in Launchpad.
 
-    >>> print _filter_ubuntu_translation_file('source/help/xx.pot')
+    >>> print(_filter_ubuntu_translation_file('source/help/xx.pot'))
     None
 
-    >>> print _filter_ubuntu_translation_file('source/man/po/yy.po')
+    >>> print(_filter_ubuntu_translation_file('source/man/po/yy.po'))
     None
 
-    >>> print _filter_ubuntu_translation_file('source/man/po4a/zz.pot')
+    >>> print(_filter_ubuntu_translation_file('source/man/po4a/zz.pot'))
     None
 
 The match is on a path component boundary, so we don't filter other
 uploads whose paths happen to begin with the same words as a directory
 we filter.
 
-    >>> print _filter_ubuntu_translation_file('source/debian/pool.pot')
+    >>> print(_filter_ubuntu_translation_file('source/debian/pool.pot'))
     debian/pool.pot
 
-    >>> print _filter_ubuntu_translation_file('source/d-input.pot')
+    >>> print(_filter_ubuntu_translation_file('source/d-input.pot'))
     d-input.pot
 
-    >>> print _filter_ubuntu_translation_file('source/man/positive/nl.po')
+    >>> print(_filter_ubuntu_translation_file('source/man/positive/nl.po'))
     man/positive/nl.po
-
-

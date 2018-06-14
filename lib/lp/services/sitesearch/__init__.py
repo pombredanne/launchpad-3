@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'BingSearchService',
-    'GoogleSearchService',
     'PageMatch',
     'PageMatches',
     ]
@@ -18,7 +17,6 @@ from urlparse import (
     parse_qsl,
     urlunparse,
     )
-import xml.etree.cElementTree as ET
 
 from lazr.restful.utils import get_current_browser_request
 from lazr.uri import URI
@@ -27,7 +25,6 @@ from zope.interface import implementer
 
 from lp.services.config import config
 from lp.services.sitesearch.interfaces import (
-    GoogleWrongGSPVersion,
     ISearchResult,
     ISearchResults,
     ISearchService,
@@ -160,182 +157,6 @@ class PageMatches:
     def __iter__(self):
         """See `ISearchResults`."""
         return iter(self._matches)
-
-
-@implementer(ISearchService)
-class GoogleSearchService:
-    """See `ISearchService`.
-
-    A search service that searches Google for launchpad.net pages.
-    """
-
-    _default_values = {
-        'client': 'google-csbe',
-        'cx': None,
-        'ie': 'utf8',
-        'num': 20,
-        'oe': 'utf8',
-        'output': 'xml_no_dtd',
-        'start': 0,
-        'q': None,
-        }
-
-    @property
-    def client_id(self):
-        """The client-id issued by Google.
-
-        Google requires that each client of the Google Search Engine
-        service to pass its id as a parameter in the request URL.
-        """
-        return config.google.client_id
-
-    @property
-    def site(self):
-        """The URL to the Google Search Engine service.
-
-        The URL is probably http://www.google.com/search.
-        """
-        return config.google.site
-
-    def search(self, terms, start=0):
-        """See `ISearchService`.
-
-        The config.google.client_id is used as Google client-id in the
-        search request. Search returns 20 or fewer results for each query.
-        For terms that match more than 20 results, the start param can be
-        used over multiple queries to get successive sets of results.
-
-        :return: `ISearchResults` (PageMatches).
-        :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
-        """
-        search_url = self.create_search_url(terms, start=start)
-        request = get_current_browser_request()
-        timeline = get_request_timeline(request)
-        action = timeline.start("google-search-api", search_url)
-        try:
-            response = urlfetch(search_url)
-        except (TimeoutError, requests.RequestException) as error:
-            # Google search service errors are not code errors. Let the
-            # call site choose to handle the unavailable service.
-            raise SiteSearchResponseError(
-                "The response errored: %s" % str(error))
-        finally:
-            action.finish()
-        page_matches = self._parse_search_response(response.content)
-        return page_matches
-
-    def _checkParameter(self, name, value, is_int=False):
-        """Check that a parameter value is not None or an empty string."""
-        if value in (None, ''):
-            raise ValueError("Missing value for parameter '%s'." % name)
-        if is_int:
-            try:
-                int(value)
-            except ValueError:
-                raise ValueError(
-                    "Value for parameter '%s' is not an int." % name)
-
-    def create_search_url(self, terms, start=0):
-        """Return a Google search url."""
-        self._checkParameter('q', terms)
-        self._checkParameter('start', start, is_int=True)
-        self._checkParameter('cx', self.client_id)
-        search_params = dict(self._default_values)
-        search_params['q'] = terms.encode('utf8')
-        search_params['start'] = start
-        search_params['cx'] = self.client_id
-        query_string = urllib.urlencode(sorted(search_params.items()))
-        return self.site + '?' + query_string
-
-    def _getElementsByAttributeValue(self, doc, path, name, value):
-        """Return a list of elements whose named attribute matches the value.
-
-        The cElementTree implementation does not support attribute selection
-        (@) or conditional expressions (./PARAM[@name = 'start']).
-
-        :param doc: An ElementTree of an XML document.
-        :param path: A string path to match the first element.
-        :param name: The attribute name to check.
-        :param value: The string value of the named attribute.
-        """
-        elements = doc.findall(path)
-        return [element for element in elements
-                if element.get(name) == value]
-
-    def _getElementByAttributeValue(self, doc, path, name, value):
-        """Return the first element whose named attribute matches the value.
-
-        :param doc: An ElementTree of an XML document.
-        :param path: A string path to match an element.
-        :param name: The attribute name to check.
-        :param value: The string value of the named attribute.
-        """
-        return self._getElementsByAttributeValue(doc, path, name, value)[0]
-
-    def _parse_search_response(self, gsp_xml):
-        """Return a `PageMatches` object.
-
-        :param gsp_xml: A string that should be Google Search Protocol
-            version 3.2 XML. There is no guarantee that other GSP versions
-            can be parsed.
-        :return: `ISearchResults` (PageMatches).
-        :raise: `SiteSearchResponseError` if the xml is incomplete.
-        :raise: `GoogleWrongGSPVersion` if the xml cannot be parsed.
-        """
-        try:
-            gsp_doc = ET.fromstring(gsp_xml)
-            start_param = self._getElementByAttributeValue(
-                gsp_doc, './PARAM', 'name', 'start')
-        except (SyntaxError, IndexError):
-            raise SiteSearchResponseError(
-                "The response was incomplete, no xml.")
-        try:
-            start = int(start_param.get('value'))
-        except (AttributeError, ValueError):
-            # The datatype is not what PageMatches requires.
-            raise GoogleWrongGSPVersion(
-                "Could not get the 'start' from the GSP XML response.")
-        page_matches = []
-        total = 0
-        results = gsp_doc.find('RES')
-        if results is None:
-            # Google did not match any pages. Return an empty PageMatches.
-            return PageMatches(page_matches, start, total)
-
-        try:
-            total = int(results.find('M').text)
-        except (AttributeError, ValueError):
-            # The datatype is not what PageMatches requires.
-            raise GoogleWrongGSPVersion(
-                "Could not get the 'total' from the GSP XML response.")
-        if total < 0:
-            # See bug 683115.
-            total = 0
-        for result in results.findall('R'):
-            url_tag = result.find('U')
-            title_tag = result.find('T')
-            summary_tag = result.find('S')
-            if None in (url_tag, title_tag, summary_tag):
-                # Google indexed a bad page, or the page may be marked for
-                # removal from the index. We should not include this.
-                continue
-            title = title_tag.text
-            url = url_tag.text
-            summary = summary_tag.text
-            if None in (url, title, summary):
-                # There is not enough data to create a PageMatch object.
-                # This can be caused by an empty title or summary which
-                # has been observed for pages that are from vhosts that
-                # should not be indexed.
-                continue
-            summary = summary.replace('<br>', '')
-            page_matches.append(PageMatch(title, url, summary))
-        if len(page_matches) == 0 and total > 20:
-            # No viable page matches could be found in the set and there
-            # are more possible matches; the XML may be the wrong version.
-            raise GoogleWrongGSPVersion(
-                "Could not get any PageMatches from the GSP XML response.")
-        return PageMatches(page_matches, start, total)
 
 
 @implementer(ISearchService)

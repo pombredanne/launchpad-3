@@ -37,7 +37,7 @@ from lp.testing.layers import (
 
 SESSION_VAR = 'lh.session'
 
-# See lib/launchpad-loggerhead/wsgi.py for the production mechanism for
+# See lib/launchpad_loggerhead/wsgi.py for the production mechanism for
 # getting the secret.
 SECRET = 'secret'
 

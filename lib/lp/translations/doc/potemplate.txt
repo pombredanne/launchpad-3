@@ -70,7 +70,7 @@ When we create a template, it is initialized with a default header.
     >>> new_template = alsa_subset.new(
     ...        'testtemplate', 'testing', 'po/testing.pot', user)
 
-    >>> print new_template.header
+    >>> print(new_template.header)
     Project-Id-Version: PACKAGE VERSION
     Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
     POT-Creation-Date: ...
@@ -95,7 +95,7 @@ name is the given one.
 
     >>> potemplate = potemplatesubset.getPOTemplateByName(
     ...        'evolution-2.2')
-    >>> print potemplate.title
+    >>> print(potemplate.title)
     Template "evolution-2.2" in Evolution trunk
 
 
@@ -107,7 +107,7 @@ path in the source code is the given one.
 
     >>> potemplate = potemplatesubset.getPOTemplateByPath(
     ...        'po/evolution-2.2-test.pot')
-    >>> print potemplate.title
+    >>> print(potemplate.title)
     Template "evolution-2.2-test" in Evolution trunk
 
 
@@ -140,7 +140,7 @@ value.
     ...        productseries=productseries)
 
     >>> for template in potemplatesubset:
-    ...       print template.path
+    ...       print(template.path)
     po/evolution-2.2.pot
     po/evolution-2.2-test.pot
 
@@ -154,7 +154,7 @@ Now, we move to the NetApplet product, we should detect it.
     ...        productseries=productseries)
 
     >>> for template in potemplatesubset:
-    ...       print template.path
+    ...       print(template.path)
     po/netapplet.pot
 
     >>> potemplatesubset.getClosestPOTemplate('po') is None
@@ -192,7 +192,7 @@ getPOFileByPath
 We can get an IPOFile inside a template based on its path.
 
     >>> pofile = potemplate.getPOFileByPath('es.po')
-    >>> print pofile.title
+    >>> print(pofile.title)
     Spanish (es) translation of evolution-2.2 in Evolution trunk
 
 
@@ -206,7 +206,7 @@ in the language.
     >>> xx_language = factory.makeLanguage(
     ...        'xx@test', name='Test language')
     >>> xx_pofile = potemplate.getDummyPOFile(xx_language)
-    >>> print xx_pofile.title
+    >>> print(xx_pofile.title)
     Test language (xx@test) translation of evolution-2.2 in Evolution trunk
 
 
@@ -249,13 +249,13 @@ First, we can see the relatives in a IProductSeries context.
 
     >>> for relative_potemplate in potemplate.relatives_by_source:
     ...        assert relative_potemplate.iscurrent
-    ...        print relative_potemplate.title
+    ...        print(relative_potemplate.title)
     Template "evolution-2.2-test" in Evolution trunk
 
 Let's get a new IPOTemplate that belongs to an IDistroSeries:
 
     >>> potemplate = POTemplate.get(4)
-    >>> print potemplate.title
+    >>> print(potemplate.title)
     Template "evolution-2.2" in Ubuntu Hoary package "evolution"
 
 And this is the list of templates related with this one based on its
@@ -263,7 +263,7 @@ context:
 
     >>> for relative_potemplate in potemplate.relatives_by_source:
     ...        assert relative_potemplate.iscurrent
-    ...        print relative_potemplate.title
+    ...        print(relative_potemplate.title)
     Template "man" in Ubuntu Hoary package "evolution"
 
 But we can see that there is a third template in this context:
@@ -294,7 +294,7 @@ Templates can be exported to its native format.
     ...        if 'X-Launchpad-Export-Date' in line:
     ...            # Avoid a time bomb in our tests and ignore this field.
     ...            continue
-    ...        print line
+    ...        print(line)
     #, fuzzy
     msgid ""
     msgstr ""
@@ -569,7 +569,7 @@ The file format we will get depends on the default template file format.
 In this case, we are going to see how a PO template is exported with
 translations.
 
-    >>> print potemplate.source_file_format.name
+    >>> print(potemplate.source_file_format.name)
     PO
 
     >>> exported_translation_file = potemplate.exportWithTranslations()
@@ -577,7 +577,7 @@ translations.
 PO file format doesn't have a native way to export template +
 translations, instead, we get a tarball with all those files.
 
-    >>> print exported_translation_file.content_type
+    >>> print(exported_translation_file.content_type)
     application/x-gtar
 
 Inspecting the tarball content, we have the list of entries exported.
@@ -606,7 +606,7 @@ And GNU tar can cope with it.
     >>> from lp.services.helpers import simple_popen2
     >>> contents = simple_popen2(['tar', 'ztf', '-'], tarfile_string)
     >>> for line in sorted(contents.splitlines()):
-    ...        print line
+    ...        print(line)
     evolution-2.2/
     evolution-2.2/evolution-2.2-es.po
     evolution-2.2/evolution-2.2-ja.po
@@ -618,6 +618,5 @@ And GNU tar can cope with it.
     >>> pofile = simple_popen2(
     ...        ['tar', 'zxfO', '-', 'evolution-2.2/evolution-2.2-es.po'],
     ...        tarfile_string)
-    >>> pofile.split('\n')[0]
+    >>> pofile.split(b'\n')[0]
     '# traducci\xc3\xb3n de es.po al Spanish'
-
