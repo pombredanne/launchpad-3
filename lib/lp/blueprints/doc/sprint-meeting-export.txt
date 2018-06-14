@@ -55,7 +55,7 @@ have a priority above LOW, so they are the only ones exposed by the view:
     2
 
     >>> for spec in view.specifications:
-    ...     print spec['spec'].name
+    ...     print(spec['spec'].name)
     svg-support
     extension-manager-upgrades
 
@@ -99,23 +99,23 @@ The person is also included in the list of attendees:
     >>> len(view.attendees)
     1
 
-    >>> print view.attendees[0]['name']
+    >>> print(view.attendees[0]['name'])
     name12
 
-    >>> print view.attendees[0]['displayname']
+    >>> print(view.attendees[0]['displayname'])
     Sample Person
 
-    >>> print view.attendees[0]['start']
+    >>> print(view.attendees[0]['start'])
     2005-10-08T07:00:00Z
 
-    >>> print view.attendees[0]['end']
+    >>> print(view.attendees[0]['end'])
     2005-11-17T20:00:00Z
 
 If a specification's priority is undefined or marked as not for us, then
 it is not included in the meeting list for the sprint.  The javascript
 spec is one such spec.  First we will accept it for the sprint:
 
-    >>> print js_spec.priority.name
+    >>> print(js_spec.priority.name)
     NOTFORUS
 
     >>> link = js_spec.sprint_links[0]

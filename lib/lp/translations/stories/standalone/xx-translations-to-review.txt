@@ -56,20 +56,20 @@ Xowxz is a Khmer reviewer.
     ...         count = 0
     ...         for tr in listing.findAll('tr'):
     ...             tds = [td.renderContents() for td in tr.findAll('td')]
-    ...             print '    '.join(tds)
+    ...             print('    '.join(tds))
     ...             count += 1
-    ...         print "Listing contains %d translation(s)." % count
+    ...         print("Listing contains %d translation(s)." % count)
     ...     else:
-    ...         print "No listing found."
+    ...         print("No listing found.")
 
     >>> def show_reviewables_link(browser):
     ...     """Show the "view all n unreviewed translations" link."""
     ...     soup = BeautifulSoup(browser.contents)
     ...     link = soup.find(id="translations-to-review-link")
     ...     if link:
-    ...         print link.renderContents()
+    ...         print(link.renderContents())
     ...     else:
-    ...         print "No link."
+    ...         print("No link.")
 
 There are no translations for xowxz to review, so the listing does not
 show up.

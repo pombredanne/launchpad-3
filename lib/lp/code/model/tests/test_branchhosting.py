@@ -12,12 +12,10 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 
 from contextlib import contextmanager
+import re
 
-from httmock import (
-    all_requests,
-    HTTMock,
-    )
 from lazr.restful.utils import get_current_browser_request
+import responses
 from testtools.matchers import MatchesStructure
 from zope.component import getUtility
 from zope.interface import implementer
@@ -55,22 +53,12 @@ class TestBranchHostingClient(TestCase):
         super(TestBranchHostingClient, self).setUp()
         self.client = getUtility(IBranchHostingClient)
         self.endpoint = removeSecurityProxy(self.client).endpoint
-        self.request = None
+        self.requests = []
 
     @contextmanager
-    def mockRequests(self, status_code=200, content=b"", reason=None,
-                     set_default_timeout=True):
-        @all_requests
-        def handler(url, request):
-            self.assertIsNone(self.request)
-            self.request = request
-            return {
-                "status_code": status_code,
-                "content": content,
-                "reason": reason,
-                }
-
-        with HTTMock(handler):
+    def mockRequests(self, method, set_default_timeout=True, **kwargs):
+        with responses.RequestsMock() as requests_mock:
+            requests_mock.add(method, re.compile(r".*"), **kwargs)
             original_timeout_function = get_default_timeout_function()
             if set_default_timeout:
                 set_default_timeout_function(lambda: 60.0)
@@ -78,9 +66,11 @@ class TestBranchHostingClient(TestCase):
                 yield
             finally:
                 set_default_timeout_function(original_timeout_function)
+            self.requests = [call.request for call in requests_mock.calls]
 
     def assertRequest(self, url_suffix, **kwargs):
-        self.assertThat(self.request, MatchesStructure.byEquality(
+        [request] = self.requests
+        self.assertThat(request, MatchesStructure.byEquality(
             url=urlappend(self.endpoint, url_suffix), method="GET", **kwargs))
         timeline = get_request_timeline(get_current_browser_request())
         action = timeline.actions[-1]
@@ -89,34 +79,34 @@ class TestBranchHostingClient(TestCase):
             "/" + url_suffix.split("?", 1)[0], action.detail.split(" ", 1)[0])
 
     def test_getDiff(self):
-        with self.mockRequests(content=b"---\n+++\n"):
+        with self.mockRequests("GET", body="---\n+++\n"):
             diff = self.client.getDiff("~owner/project/branch", "2", "1")
         self.assertEqual(b"---\n+++\n", diff)
         self.assertRequest("~owner/project/branch/diff/2/1")
 
     def test_getDiff_no_old_revision(self):
-        with self.mockRequests(content=b"---\n+++\n"):
+        with self.mockRequests("GET", body="---\n+++\n"):
             diff = self.client.getDiff("~owner/project/branch", "2")
         self.assertEqual(b"---\n+++\n", diff)
         self.assertRequest("~owner/project/branch/diff/2")
 
     def test_getDiff_context_lines(self):
-        with self.mockRequests(content=b"---\n+++\n"):
+        with self.mockRequests("GET", body="---\n+++\n"):
             diff = self.client.getDiff(
                 "~owner/project/branch", "2", "1", context_lines=4)
         self.assertEqual(b"---\n+++\n", diff)
         self.assertRequest("~owner/project/branch/diff/2/1?context_lines=4")
 
     def test_getDiff_failure(self):
-        with self.mockRequests(status_code=400, reason=b"Bad request"):
+        with self.mockRequests("GET", status=400):
             self.assertRaisesWithContent(
                 BranchHostingFault,
                 "Failed to get diff from Bazaar branch: "
-                "400 Client Error: Bad request",
+                "400 Client Error: Bad Request",
                 self.client.getDiff, "~owner/project/branch", "2", "1")
 
     def test_getInventory(self):
-        with self.mockRequests(content=b'{"filelist": []}'):
+        with self.mockRequests("GET", json={"filelist": []}):
             response = self.client.getInventory(
                 "~owner/project/branch", "dir/path/file/name")
         self.assertEqual({"filelist": []}, response)
@@ -124,7 +114,7 @@ class TestBranchHostingClient(TestCase):
             "~owner/project/branch/+json/files/head%3A/dir/path/file/name")
 
     def test_getInventory_revision(self):
-        with self.mockRequests(content=b'{"filelist": []}'):
+        with self.mockRequests("GET", json={"filelist": []}):
             response = self.client.getInventory(
                 "~owner/project/branch", "dir/path/file/name", rev="a")
         self.assertEqual({"filelist": []}, response)
@@ -132,7 +122,7 @@ class TestBranchHostingClient(TestCase):
             "~owner/project/branch/+json/files/a/dir/path/file/name")
 
     def test_getInventory_not_found(self):
-        with self.mockRequests(status_code=404, reason=b"Not found"):
+        with self.mockRequests("GET", status=404):
             self.assertRaisesWithContent(
                 BranchFileNotFound,
                 "Branch ~owner/project/branch has no file dir/path/file/name",
@@ -140,7 +130,7 @@ class TestBranchHostingClient(TestCase):
                 "~owner/project/branch", "dir/path/file/name")
 
     def test_getInventory_revision_not_found(self):
-        with self.mockRequests(status_code=404, reason=b"Not found"):
+        with self.mockRequests("GET", status=404):
             self.assertRaisesWithContent(
                 BranchFileNotFound,
                 "Branch ~owner/project/branch has no file dir/path/file/name "
@@ -149,16 +139,16 @@ class TestBranchHostingClient(TestCase):
                 "~owner/project/branch", "dir/path/file/name", rev="a")
 
     def test_getInventory_failure(self):
-        with self.mockRequests(status_code=400, reason=b"Bad request"):
+        with self.mockRequests("GET", status=400):
             self.assertRaisesWithContent(
                 BranchHostingFault,
                 "Failed to get inventory from Bazaar branch: "
-                "400 Client Error: Bad request",
+                "400 Client Error: Bad Request",
                 self.client.getInventory,
                 "~owner/project/branch", "dir/path/file/name")
 
     def test_getInventory_url_quoting(self):
-        with self.mockRequests(content=b'{"filelist": []}'):
+        with self.mockRequests("GET", json={"filelist": []}):
             self.client.getInventory(
                 "~owner/project/branch", "+file/ name?", rev="+rev/ id?")
         self.assertRequest(
@@ -167,28 +157,28 @@ class TestBranchHostingClient(TestCase):
 
     def test_getBlob(self):
         blob = b"".join(chr(i) for i in range(256))
-        with self.mockRequests(content=blob):
+        with self.mockRequests("GET", body=blob):
             response = self.client.getBlob("~owner/project/branch", "file-id")
         self.assertEqual(blob, response)
         self.assertRequest("~owner/project/branch/download/head%3A/file-id")
 
     def test_getBlob_revision(self):
         blob = b"".join(chr(i) for i in range(256))
-        with self.mockRequests(content=blob):
+        with self.mockRequests("GET", body=blob):
             response = self.client.getBlob(
                 "~owner/project/branch", "file-id", rev="a")
         self.assertEqual(blob, response)
         self.assertRequest("~owner/project/branch/download/a/file-id")
 
     def test_getBlob_not_found(self):
-        with self.mockRequests(status_code=404, reason=b"Not found"):
+        with self.mockRequests("GET", status=404):
             self.assertRaisesWithContent(
                 BranchFileNotFound,
                 "Branch ~owner/project/branch has no file with ID file-id",
                 self.client.getBlob, "~owner/project/branch", "file-id")
 
     def test_getBlob_revision_not_found(self):
-        with self.mockRequests(status_code=404, reason=b"Not found"):
+        with self.mockRequests("GET", status=404):
             self.assertRaisesWithContent(
                 BranchFileNotFound,
                 "Branch ~owner/project/branch has no file with ID file-id "
@@ -197,16 +187,16 @@ class TestBranchHostingClient(TestCase):
                 "~owner/project/branch", "file-id", rev="a")
 
     def test_getBlob_failure(self):
-        with self.mockRequests(status_code=400, reason=b"Bad request"):
+        with self.mockRequests("GET", status=400):
             self.assertRaisesWithContent(
                 BranchHostingFault,
                 "Failed to get file from Bazaar branch: "
-                "400 Client Error: Bad request",
+                "400 Client Error: Bad Request",
                 self.client.getBlob, "~owner/project/branch", "file-id")
 
     def test_getBlob_url_quoting(self):
         blob = b"".join(chr(i) for i in range(256))
-        with self.mockRequests(content=blob):
+        with self.mockRequests("GET", body=blob):
             self.client.getBlob(
                 "~owner/project/branch", "+file/ id?", rev="+rev/ id?")
         self.assertRequest(
@@ -226,7 +216,7 @@ class TestBranchHostingClient(TestCase):
 
             def run(self):
                 with self.testcase.mockRequests(
-                        content=blob, set_default_timeout=False):
+                        "GET", body=blob, set_default_timeout=False):
                     self.blob = self.testcase.client.getBlob(
                         "~owner/project/branch", "file-id")
                 # We must make this assertion inside the job, since the job

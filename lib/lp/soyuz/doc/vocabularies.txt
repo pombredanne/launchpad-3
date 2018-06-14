@@ -159,7 +159,7 @@ collection. It provides the IHugeVocabulary interface.
     >>> verifyObject(IHugeVocabulary, vocabulary)
     True
 
-    >>> print vocabulary.displayname
+    >>> print(vocabulary.displayname)
     Select a PPA
 
 Iterations over the PPA vocabulary will return on PPA archives.
@@ -175,13 +175,13 @@ PPA vocabulary terms contain:
 
     >>> cprov_term = vocabulary.getTermByToken('~cprov/ubuntu/ppa')
 
-    >>> print cprov_term.token
+    >>> print(cprov_term.token)
     ~cprov/ubuntu/ppa
 
-    >>> print cprov_term.value
+    >>> print(cprov_term.value)
     <... lp.soyuz.model.archive.Archive instance ...>
 
-    >>> print cprov_term.title
+    >>> print(cprov_term.title)
     packages to help my friends.
 
 Not found terms result in LookupError.
@@ -196,7 +196,7 @@ PPA vocabulary searches consider the owner FTI and the PPA FTI.
     >>> def print_search_results(results):
     ...     for archive in results:
     ...         term = vocabulary.toTerm(archive)
-    ...         print '%s: %s' % (term.token, term.title)
+    ...         print('%s: %s' % (term.token, term.title))
 
     >>> cprov_search = vocabulary.search(u'cprov')
     >>> print_search_results(cprov_search)
@@ -256,14 +256,14 @@ line of the PPA description.
     >>> flush_database_updates()
 
     >>> cprov_term = vocabulary.getTermByToken('~cprov/ubuntu/ppa')
-    >>> print cprov_term.title
+    >>> print(cprov_term.title)
     Single line.
 
     >>> cprov.archive.description = "First line\nSecond line."
     >>> flush_database_updates()
 
     >>> cprov_term = vocabulary.getTermByToken('~cprov/ubuntu/ppa')
-    >>> print cprov_term.title
+    >>> print(cprov_term.title)
     First line
 
 PPAs with empty description are identified and have a title saying so.
@@ -272,7 +272,7 @@ PPAs with empty description are identified and have a title saying so.
     >>> flush_database_updates()
 
     >>> cprov_term = vocabulary.getTermByToken('~cprov/ubuntu/ppa')
-    >>> print cprov_term.title
+    >>> print(cprov_term.title)
     No description available
 
 Queries on empty strings also results in a valid SelectResults.

@@ -21,7 +21,7 @@ listed which Carlos has contributed to.
     # Prints a heading and formatted list of POFiles and latest submissions.
     >>> def print_activity_list(listing):
     ...     for row in listing.findAll('tr'):
-    ...         print extract_text(row)
+    ...         print(extract_text(row))
 
     >>> listing = find_tag_by_id(anon_browser.contents, 'activity-table')
     >>> print_activity_list(listing)
@@ -44,7 +44,7 @@ contributions to the selected translation.
     >>> alsa_utils_link = (
     ...     'Spanish (es) translation of alsa-utils in alsa-utils trunk')
     >>> anon_browser.getLink(alsa_utils_link).click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Translations by ...Spanish (es)...
 
 
@@ -71,11 +71,11 @@ encoded link to a filtered PO file page.
     >>> table = find_tag_by_id(user_browser.contents, 'activity-table')
     >>> link = table.find('a')
     >>> url = link['href']
-    >>> print url.split('/')[-1]
+    >>> print(url.split('/')[-1])
     +filter?person=a%2Bb
 
 Because of this, the link actually works.
 
     >>> user_browser.open(url.encode('ascii'))
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Translations by A+b in...Serbian (sr) translation...

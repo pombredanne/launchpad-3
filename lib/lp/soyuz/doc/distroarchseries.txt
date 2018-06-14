@@ -34,7 +34,7 @@ Properties
 Enabled is a boolean flag that says whether the arch will receive new builds
 and publish them.
 
-    >>> print hoary_i386.enabled
+    >>> print(hoary_i386.enabled)
     True
 
 `DistroSeries.enabled_architectures` is a `ResultSet` containing the
@@ -70,7 +70,7 @@ not fti-matchable, such as "linux-2.6.12", and substrings:
     1
     >>> results = warty_i386.searchBinaryPackages(text=u'a')
     >>> for dasbp in results:
-    ...     print "%s: %s" % (dasbp.__class__.__name__, dasbp.name)
+    ...     print("%s: %s" % (dasbp.__class__.__name__, dasbp.name))
     DistroArchSeriesBinaryPackageRelease: at
     DistroArchSeriesBinaryPackageRelease: mozilla-firefox
     DistroArchSeriesBinaryPackageRelease: mozilla-firefox
@@ -142,7 +142,7 @@ Supersede current publication:
     >>> pmount_hoary_i386.publishing_history.count()
     3
 
-    >>> print pub.status.name, pub.datesuperseded is not None
+    >>> print(pub.status.name, pub.datesuperseded is not None)
     SUPERSEDED True
 
 
@@ -169,7 +169,7 @@ via the 'architectures' property.
     ...             result += 'ppa'
     ...         if arch.official or arch.supports_virtualized:
     ...             result += ')'
-    ...         print result
+    ...         print(result)
 
     >>> print_architectures(warty.architectures)
     The Warty Warthog Release for hppa (hppa)
@@ -228,7 +228,7 @@ returned.
 The architecture also has a 'chroot_url' attribute directly referencing
 the file.
 
-    >>> print hoary.getDistroArchSeries('hppa').chroot_url
+    >>> print(hoary.getDistroArchSeries('hppa').chroot_url)
     http://.../filename...
     >>> hoary.getDistroArchSeries('hppa').chroot_url == \
     ...     chroot.http_url
@@ -236,7 +236,7 @@ the file.
 
 If there is no chroot, chroot_url will be None.
 
-    >>> print hoary.getDistroArchSeries('i386').chroot_url
+    >>> print(hoary.getDistroArchSeries('i386').chroot_url)
     None
 
 `DistroSeries.buildable_architectures` results are ordered

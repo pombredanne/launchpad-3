@@ -10,7 +10,7 @@ Taking an IPOMsgSet for IProductSeries context:
 We get a +translate page because that's the only page for an IPOMsgSet and the
 system forwards automatically there.
 
-  >>> print browser.url
+  >>> print(browser.url)
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/1/+translate
 
 The Application tabs should point to IProductSeries URLs.
@@ -32,7 +32,7 @@ Taking an IPOMsgSet for ISourcePackage context:
 We get a +translate page because that's the only page for an IPOMsgSet and the
 system forwards automatically there.
 
-  >>> print browser.url
+  >>> print(browser.url)
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
 
 The Application tabs should point to ISourcePackage URLs.

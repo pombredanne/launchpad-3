@@ -15,14 +15,14 @@ Unprivileged users can see the recommended series for translation,
 but have no access to the 'Configure translations' menu.
 
     >>> admin_browser.open(fooproject_url)
-    >>> print extract_text(
+    >>> print(extract_text(
     ...     find_tags_by_class(admin_browser.contents,
-    ...                        'menu-link-configure_translations')[0])
+    ...                        'menu-link-configure_translations')[0]))
     Configure Translations
 
     >>> browser.open(fooproject_url)
-    >>> print extract_text(
-    ...     find_tags_by_class(browser.contents, 'edit sprite')[0])
+    >>> print(extract_text(
+    ...     find_tags_by_class(browser.contents, 'edit sprite')[0]))
     Traceback (most recent call last):
     ...
     IndexError: list index out of range
@@ -41,12 +41,13 @@ When the translation focus is not set, Launchpad suggests the
 development focus as the current series to be translated.
 It needs to be translatable.
 
-    >>> print fooproject.translation_focus
+    >>> print(fooproject.translation_focus)
     None
 
     >>> logout()
     >>> browser.open(fooproject_url)
-    >>> print extract_text(find_tags_by_class(browser.contents, 'portlet')[0])
+    >>> print(extract_text(
+    ...     find_tags_by_class(browser.contents, 'portlet')[0]))
     Translation details...
     Launchpad currently recommends translating... Fooproject trunk series.
     ...
@@ -59,12 +60,13 @@ won't consider it because there'll be nothing to translate.
     ...     product=fooproject,
     ...     name="untranslatable-series")
     >>> fooproject.translation_focus = fooproject_untranslatableseries
-    >>> print removeSecurityProxy(fooproject.translation_focus.name)
+    >>> print(removeSecurityProxy(fooproject.translation_focus.name))
     untranslatable-series
 
     >>> logout()
     >>> browser.open(fooproject_url)
-    >>> print extract_text(find_tags_by_class(browser.contents, 'portlet')[0])
+    >>> print(extract_text(
+    ...     find_tags_by_class(browser.contents, 'portlet')[0]))
     Translation details...
     Launchpad currently recommends translating... Fooproject trunk series.
     ...
@@ -83,7 +85,8 @@ We need to create a translatable series so we can set it as translation focus.
     >>> logout()
 
     >>> browser.open(fooproject_url)
-    >>> print extract_text(find_tags_by_class(browser.contents, 'portlet')[0])
+    >>> print(extract_text(
+    ...     find_tags_by_class(browser.contents, 'portlet')[0]))
     Translation details...
     Launchpad currently recommends translating...
     Fooproject other-series series.

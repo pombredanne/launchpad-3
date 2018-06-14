@@ -42,9 +42,9 @@ BugActivity records are created.
 
     >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> print(latest_notification.message.owner.displayname)
     No Privileges Person
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     ** Changed in: firefox
            Status: New => Confirmed
 
@@ -62,7 +62,7 @@ bugtask already has the specified status, None is returned.
 
     >>> firefox_bugtask.status.name
     'CONFIRMED'
-    >>> print bug.setStatus(firefox, BugTaskStatus.CONFIRMED, no_priv)
+    >>> print(bug.setStatus(firefox, BugTaskStatus.CONFIRMED, no_priv))
     None
 
 === Product series ===

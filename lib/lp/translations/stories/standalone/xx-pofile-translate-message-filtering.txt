@@ -34,8 +34,8 @@ messages in the batches of 10 items.
     ...     # Print matching HTML tags, in numeric order of msgset id
     ...     for msgset_id in sorted(translations.keys()):
     ...         translation = translations[msgset_id]
-    ...         print "%d: '%s'" % (
-    ...             msgset_id, translation.renderContents().strip())
+    ...         print("%d: '%s'" % (
+    ...             msgset_id, translation.renderContents().strip()))
 
 
 Filters
@@ -47,7 +47,7 @@ review the state of the translation.
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Spanish (es) : Template ...evolution-2.2... :
     Hoary (5.04) : Translations : evolution package : Ubuntu
 
@@ -61,7 +61,7 @@ There is also an option for changing which items to show/translate on
 this page, and which alternate language to get suggestions from (tested
 in xx-pofile-translate-alternative-language.txt).
 
-    >>> print contents
+    >>> print(contents)
     <... Translating ... using ... as a guide...
 
 
@@ -77,10 +77,10 @@ to filter the messages. They see 15 messages are not translated.
     >>> re.match('[^?]*', user_browser.url).group()
     'http://.../evolution-2.2/es/+translate'
 
-    >>> print extract_url_parameter(user_browser.url, 'batch')
+    >>> print(extract_url_parameter(user_browser.url, 'batch'))
     batch=10
 
-    >>> print extract_url_parameter(user_browser.url, 'show')
+    >>> print(extract_url_parameter(user_browser.url, 'show'))
     show=untranslated
 
     >>> contents = find_main_content(user_browser.contents)
@@ -124,7 +124,7 @@ translations into Australian English.
     ...     '+source/evolution/+pots/evolution-2.2/en_AU/+translate')
     >>> user_browser.getControl(name='show', index=1).value = ['untranslated']
     >>> user_browser.getControl('Change').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     English (Australia) (en_AU) : Template ...evolution-2.2... :
     Hoary (5.04) : Translations : evolution package : Ubuntu
 
@@ -156,8 +156,8 @@ displayed.
     >>> print_batch_header(contents)
     1 ... 10  of 21 results
 
-    >>> print find_tag_by_id(
-    ...     user_browser.contents, 'msgset_130_en_AU_translation_0')
+    >>> print(find_tag_by_id(
+    ...     user_browser.contents, 'msgset_130_en_AU_translation_0'))
     None
 
 Projects can restrict translation to privileged users. The messages that
@@ -192,7 +192,7 @@ navigation.
     ...     'evolution/trunk/+pots/evolution-2.2/en_AU/+translate')
     >>> user_browser.getControl(name='show', index=1).value = ['untranslated']
     >>> user_browser.getControl('Change').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     English (Australia) (en_AU) : Template ...evolution-2.2... :
     Series trunk : Translations : Evolution
 
@@ -235,10 +235,10 @@ There is only one message in the batch.
     >>> user_browser.getControl(name='show', index=1).displayValue = [
     ...     'changed in Ubuntu']
     >>> user_browser.getControl('Change').click()
-    >>> print extract_url_parameter(user_browser.url, 'batch')
+    >>> print(extract_url_parameter(user_browser.url, 'batch'))
     batch=10
 
-    >>> print extract_url_parameter(user_browser.url, 'show')
+    >>> print(extract_url_parameter(user_browser.url, 'show'))
     show=changed_in_ubuntu
 
     >>> contents = find_main_content(user_browser.contents)
@@ -253,10 +253,10 @@ is only one page of messages. If No Privileges Person submits the form,
 the browser is redirected to the first batch.
 
     >>> user_browser.getControl('Save & Continue').click()
-    >>> print extract_url_parameter(user_browser.url, 'batch')
+    >>> print(extract_url_parameter(user_browser.url, 'batch'))
     batch=10
 
-    >>> print extract_url_parameter(user_browser.url, 'show')
+    >>> print(extract_url_parameter(user_browser.url, 'show'))
     show=changed_in_ubuntu
 
     >>> print_shown_messages(user_browser)
@@ -276,10 +276,10 @@ the batch.
     >>> user_browser.getControl(name='show', index=1).displayValue = [
     ...     'with new suggestions']
     >>> user_browser.getControl('Change').click()
-    >>> print extract_url_parameter(user_browser.url, 'batch')
+    >>> print(extract_url_parameter(user_browser.url, 'batch'))
     batch=10
 
-    >>> print extract_url_parameter(user_browser.url, 'show')
+    >>> print(extract_url_parameter(user_browser.url, 'show'))
     show=new_suggestions
 
     >>> print_shown_messages(user_browser)
@@ -300,7 +300,7 @@ it, the filter for new suggestions is empty now.
 
     >>> description = first_tag_by_class(user_browser.contents,
     ...     'documentDescription')
-    >>> print extract_text(description)
+    >>> print(extract_text(description))
     There are no messages that match this filtering.
 
 
@@ -358,8 +358,8 @@ No Privileges Person submits a bad translation, one that lacks
 conversion specifications the original message has, and is shown an
 error.
 
-    >>> print find_tag_by_id(
-    ...     user_browser.contents, 'msgset_142_singular').renderContents()
+    >>> print(find_tag_by_id(
+    ...     user_browser.contents, 'msgset_142_singular').renderContents())
     Migrating ...%s...
 
     >>> user_browser.getControl(
@@ -391,7 +391,7 @@ The exact same batch of messages is shown again, but with the error.
     142: '(no translation yet)'
 
     >>> for tag in find_tags_by_class(user_browser.contents, 'error'):
-    ...     print tag.renderContents()
+    ...     print(tag.renderContents())
     There is an error in a translation you provided.
     Please correct it before continuing.
     ...Error in Translation:...
@@ -428,7 +428,7 @@ suggestions.
     >>> user_browser.getLink("Previous").click()
 
     >>> text = extract_text(find_main_content(user_browser.contents))
-    >>> print text.encode('UTF-8')
+    >>> print(text.encode('UTF-8'))
     Translating...
     English: current addressbook folder
     Current Chinese (China): (no translation yet)

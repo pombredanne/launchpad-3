@@ -10,7 +10,7 @@ Launchpad's services. If you wish to reactivate the project contact us
 at commercial@launchpad.net to discuss your options.
 
 A commercial subscription allows you to host your commercial project
-on Launchpad in the same way as any other project. Project's with a
+on Launchpad in the same way as any other project. Projects with a
 commercial subscription may have private-by-default bugs, and you
 may also request the setup of private code hosting.
 

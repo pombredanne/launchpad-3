@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for runlaunchpad.py"""
@@ -151,8 +151,6 @@ class ServersToStart(testtools.TestCase):
         # run.
         if config.bing_test_service.launch:
             expected.append(SERVICES['bing-webservice'])
-        if config.google_test_service.launch:
-            expected.append(SERVICES['google-webservice'])
 
         # RabbitMQ may or may not be asked to run.
         if config.rabbitmq.launch:

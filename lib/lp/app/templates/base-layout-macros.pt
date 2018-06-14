@@ -298,6 +298,8 @@
       &nbsp;&bull;&nbsp;
       <a tal:attributes="href string:${rooturl}legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
+      <a href="https://www.ubuntu.com/legal/dataprivacy">Data privacy</a>
+      &nbsp;&bull;&nbsp;
       <a tal:condition="not: view/user|nothing"
         href="/feedback">Contact Launchpad Support</a>
       <a tal:condition="view/user|nothing"

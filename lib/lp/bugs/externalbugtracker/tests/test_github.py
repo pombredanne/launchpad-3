@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the GitHub Issues BugTracker."""
@@ -9,16 +9,22 @@ __metaclass__ = type
 
 from datetime import datetime
 import json
-from urlparse import (
+
+import pytz
+import responses
+from six.moves.urllib_parse import (
     parse_qs,
+    urlsplit,
     urlunsplit,
     )
-
-from httmock import (
-    HTTMock,
-    urlmatch,
+from testtools.matchers import (
+    Contains,
+    ContainsDict,
+    Equals,
+    MatchesListwise,
+    MatchesStructure,
+    Not,
     )
-import pytz
 import transaction
 from zope.component import getUtility
 
@@ -49,6 +55,14 @@ from lp.testing.layers import (
     )
 
 
+def _add_rate_limit_response(host, limit=5000, remaining=4000,
+                             reset=1000000000):
+    limits = {"limit": limit, "remaining": remaining, "reset": reset}
+    responses.add(
+        "GET", "https://%s/rate_limit" % host,
+        json={"resources": {"core": limits}})
+
+
 class TestGitHubRateLimit(TestCase):
 
     layer = ZopelessLayer
@@ -58,77 +72,61 @@ class TestGitHubRateLimit(TestCase):
         self.rate_limit = getUtility(IGitHubRateLimit)
         self.addCleanup(self.rate_limit.clearCache)
 
-    @urlmatch(path=r"^/rate_limit$")
-    def _rate_limit_handler(self, url, request):
-        self.rate_limit_request = request
-        self.rate_limit_headers = request.headers
-        return {
-            "status_code": 200,
-            "content": {"resources": {"core": self.initial_rate_limit}},
-            }
-
-    @urlmatch(path=r"^/$")
-    def _target_handler(self, url, request):
-        self.target_request = request
-        return {"status_code": 200, "content": b"test"}
-
+    @responses.activate
     def test_makeRequest_no_token(self):
-        self.initial_rate_limit = {
-            "limit": 60, "remaining": 50, "reset": 1000000000}
-        with HTTMock(self._rate_limit_handler, self._target_handler):
-            response = self.rate_limit.makeRequest(
-                "GET", "http://example.org/")
-        self.assertNotIn("Authorization", self.rate_limit_headers)
+        _add_rate_limit_response("example.org", limit=60, remaining=50)
+        responses.add("GET", "http://example.org/", body="test")
+        response = self.rate_limit.makeRequest("GET", "http://example.org/")
+        self.assertThat(responses.calls[0].request, MatchesStructure(
+            path_url=Equals("/rate_limit"),
+            headers=Not(Contains("Authorization"))))
         self.assertEqual(b"test", response.content)
         limit = self.rate_limit._limits[("example.org", None)]
         self.assertEqual(49, limit["remaining"])
         self.assertEqual(1000000000, limit["reset"])
 
         limit["remaining"] = 0
-        self.rate_limit_request = None
-        with HTTMock(self._rate_limit_handler, self._target_handler):
-            self.assertRaisesWithContent(
-                GitHubExceededRateLimit,
-                "Rate limit for example.org exceeded "
-                "(resets at Sun Sep  9 07:16:40 2001)",
-                self.rate_limit.makeRequest,
-                "GET", "http://example.org/")
-        self.assertIsNone(self.rate_limit_request)
+        responses.reset()
+        self.assertRaisesWithContent(
+            GitHubExceededRateLimit,
+            "Rate limit for example.org exceeded "
+            "(resets at Sun Sep  9 07:16:40 2001)",
+            self.rate_limit.makeRequest,
+            "GET", "http://example.org/")
+        self.assertEqual(0, len(responses.calls))
         self.assertEqual(0, limit["remaining"])
 
+    @responses.activate
     def test_makeRequest_check_token(self):
-        self.initial_rate_limit = {
-            "limit": 5000, "remaining": 4000, "reset": 1000000000}
-        with HTTMock(self._rate_limit_handler, self._target_handler):
-            response = self.rate_limit.makeRequest(
-                "GET", "http://example.org/", token="abc")
-        self.assertEqual("token abc", self.rate_limit_headers["Authorization"])
+        _add_rate_limit_response("example.org")
+        responses.add("GET", "http://example.org/", body="test")
+        response = self.rate_limit.makeRequest(
+            "GET", "http://example.org/", token="abc")
+        self.assertThat(responses.calls[0].request, MatchesStructure(
+            path_url=Equals("/rate_limit"),
+            headers=ContainsDict({"Authorization": Equals("token abc")})))
         self.assertEqual(b"test", response.content)
         limit = self.rate_limit._limits[("example.org", "abc")]
         self.assertEqual(3999, limit["remaining"])
         self.assertEqual(1000000000, limit["reset"])
 
         limit["remaining"] = 0
-        self.rate_limit_request = None
-        with HTTMock(self._rate_limit_handler, self._target_handler):
-            self.assertRaisesWithContent(
-                GitHubExceededRateLimit,
-                "Rate limit for example.org exceeded "
-                "(resets at Sun Sep  9 07:16:40 2001)",
-                self.rate_limit.makeRequest,
-                "GET", "http://example.org/", token="abc")
-        self.assertIsNone(self.rate_limit_request)
+        responses.reset()
+        self.assertRaisesWithContent(
+            GitHubExceededRateLimit,
+            "Rate limit for example.org exceeded "
+            "(resets at Sun Sep  9 07:16:40 2001)",
+            self.rate_limit.makeRequest,
+            "GET", "http://example.org/", token="abc")
+        self.assertEqual(0, len(responses.calls))
         self.assertEqual(0, limit["remaining"])
 
+    @responses.activate
     def test_makeRequest_check_503(self):
-        @urlmatch(path=r"^/rate_limit$")
-        def rate_limit_handler(url, request):
-            return {"status_code": 503}
-
-        with HTTMock(rate_limit_handler):
-            self.assertRaises(
-                BugTrackerConnectError, self.rate_limit.makeRequest,
-                "GET", "http://example.org/")
+        responses.add("GET", "https://example.org/rate_limit", status=503)
+        self.assertRaises(
+            BugTrackerConnectError, self.rate_limit.makeRequest,
+            "GET", "http://example.org/")
 
 
 class TestGitHub(TestCase):
@@ -156,105 +154,108 @@ class TestGitHub(TestCase):
         self.assertRaises(
             BadGitHubURL, GitHub, "https://github.com/user/repository")
 
-    @urlmatch(path=r"^/rate_limit$")
-    def _rate_limit_handler(self, url, request):
-        self.rate_limit_request = request
-        rate_limit = {"limit": 5000, "remaining": 4000, "reset": 1000000000}
-        return {
-            "status_code": 200,
-            "content": {"resources": {"core": rate_limit}},
-            }
-
+    @responses.activate
     def test__getPage_authenticated(self):
-        @urlmatch(path=r".*/test$")
-        def handler(url, request):
-            self.request = request
-            return {"status_code": 200, "content": json.dumps("success")}
-
+        _add_rate_limit_response("api.github.com")
+        responses.add(
+            "GET", "https://api.github.com/repos/user/repository/test",
+            json="success")
         self.pushConfig(
             "checkwatches.credentials", **{"api.github.com.token": "sosekrit"})
         tracker = GitHub("https://github.com/user/repository/issues")
-        with HTTMock(self._rate_limit_handler, handler):
-            self.assertEqual("success", tracker._getPage("test").json())
-        self.assertEqual(
-            "https://api.github.com/repos/user/repository/test",
-            self.request.url)
-        self.assertEqual(
-            "token sosekrit", self.request.headers["Authorization"])
-        self.assertEqual(
-            "token sosekrit", self.rate_limit_request.headers["Authorization"])
+        self.assertEqual("success", tracker._getPage("test").json())
+        requests = [call.request for call in responses.calls]
+        self.assertThat(requests, MatchesListwise([
+            MatchesStructure(
+                path_url=Equals("/rate_limit"),
+                headers=ContainsDict({
+                    "Authorization": Equals("token sosekrit"),
+                    })),
+            MatchesStructure(
+                path_url=Equals("/repos/user/repository/test"),
+                headers=ContainsDict({
+                    "Authorization": Equals("token sosekrit"),
+                    })),
+            ]))
 
+    @responses.activate
     def test__getPage_unauthenticated(self):
-        @urlmatch(path=r".*/test$")
-        def handler(url, request):
-            self.request = request
-            return {"status_code": 200, "content": json.dumps("success")}
-
+        _add_rate_limit_response("api.github.com")
+        responses.add(
+            "GET", "https://api.github.com/repos/user/repository/test",
+            json="success")
         tracker = GitHub("https://github.com/user/repository/issues")
-        with HTTMock(self._rate_limit_handler, handler):
-            self.assertEqual("success", tracker._getPage("test").json())
-        self.assertEqual(
-            "https://api.github.com/repos/user/repository/test",
-            self.request.url)
-        self.assertNotIn("Authorization", self.request.headers)
-        self.assertNotIn("Authorization", self.rate_limit_request.headers)
+        self.assertEqual("success", tracker._getPage("test").json())
+        requests = [call.request for call in responses.calls]
+        self.assertThat(requests, MatchesListwise([
+            MatchesStructure(
+                path_url=Equals("/rate_limit"),
+                headers=Not(Contains("Authorization"))),
+            MatchesStructure(
+                path_url=Equals("/repos/user/repository/test"),
+                headers=Not(Contains("Authorization"))),
+            ]))
 
+    @responses.activate
     def test_getRemoteBug(self):
-        @urlmatch(path=r".*/issues/1$")
-        def handler(url, request):
-            self.request = request
-            return {"status_code": 200, "content": self.sample_bugs[0]}
-
+        _add_rate_limit_response("api.github.com")
+        responses.add(
+            "GET", "https://api.github.com/repos/user/repository/issues/1",
+            json=self.sample_bugs[0])
         tracker = GitHub("https://github.com/user/repository/issues")
-        with HTTMock(self._rate_limit_handler, handler):
-            self.assertEqual(
-                (1, self.sample_bugs[0]), tracker.getRemoteBug("1"))
+        self.assertEqual((1, self.sample_bugs[0]), tracker.getRemoteBug("1"))
         self.assertEqual(
             "https://api.github.com/repos/user/repository/issues/1",
-            self.request.url)
+            responses.calls[-1].request.url)
 
-    @urlmatch(path=r".*/issues$")
-    def _issues_handler(self, url, request):
-        self.issues_request = request
-        return {"status_code": 200, "content": json.dumps(self.sample_bugs)}
+    def _addIssuesResponse(self):
+        responses.add(
+            "GET", "https://api.github.com/repos/user/repository/issues",
+            json=self.sample_bugs)
 
+    @responses.activate
     def test_getRemoteBugBatch(self):
+        _add_rate_limit_response("api.github.com")
+        self._addIssuesResponse()
         tracker = GitHub("https://github.com/user/repository/issues")
-        with HTTMock(self._rate_limit_handler, self._issues_handler):
-            self.assertEqual(
-                {bug["id"]: bug for bug in self.sample_bugs[:2]},
-                tracker.getRemoteBugBatch(["1", "2"]))
+        self.assertEqual(
+            {bug["id"]: bug for bug in self.sample_bugs[:2]},
+            tracker.getRemoteBugBatch(["1", "2"]))
         self.assertEqual(
             "https://api.github.com/repos/user/repository/issues?state=all",
-            self.issues_request.url)
+            responses.calls[-1].request.url)
 
+    @responses.activate
     def test_getRemoteBugBatch_last_accessed(self):
+        _add_rate_limit_response("api.github.com")
+        self._addIssuesResponse()
         tracker = GitHub("https://github.com/user/repository/issues")
         since = datetime(2015, 1, 1, 12, 0, 0, tzinfo=pytz.UTC)
-        with HTTMock(self._rate_limit_handler, self._issues_handler):
-            self.assertEqual(
-                {bug["id"]: bug for bug in self.sample_bugs[:2]},
-                tracker.getRemoteBugBatch(["1", "2"], last_accessed=since))
+        self.assertEqual(
+            {bug["id"]: bug for bug in self.sample_bugs[:2]},
+            tracker.getRemoteBugBatch(["1", "2"], last_accessed=since))
         self.assertEqual(
             "https://api.github.com/repos/user/repository/issues?"
             "state=all&since=2015-01-01T12%3A00%3A00Z",
-            self.issues_request.url)
+            responses.calls[-1].request.url)
 
+    @responses.activate
     def test_getRemoteBugBatch_caching(self):
+        _add_rate_limit_response("api.github.com")
+        self._addIssuesResponse()
         tracker = GitHub("https://github.com/user/repository/issues")
-        with HTTMock(self._rate_limit_handler, self._issues_handler):
-            tracker.initializeRemoteBugDB(
-                [str(bug["id"]) for bug in self.sample_bugs])
-            self.issues_request = None
-            self.assertEqual(
-                {bug["id"]: bug for bug in self.sample_bugs[:2]},
-                tracker.getRemoteBugBatch(["1", "2"]))
-            self.assertIsNone(self.issues_request)
+        tracker.initializeRemoteBugDB(
+            [str(bug["id"]) for bug in self.sample_bugs])
+        responses.reset()
+        self.assertEqual(
+            {bug["id"]: bug for bug in self.sample_bugs[:2]},
+            tracker.getRemoteBugBatch(["1", "2"]))
+        self.assertEqual(0, len(responses.calls))
 
+    @responses.activate
     def test_getRemoteBugBatch_pagination(self):
-        @urlmatch(path=r".*/issues")
-        def handler(url, request):
-            self.issues_requests.append(request)
+        def issues_callback(request):
+            url = urlsplit(request.url)
             base_url = urlunsplit(list(url[:3]) + ["", ""])
             page = int(parse_qs(url.query).get("page", ["1"])[0])
             links = []
@@ -266,27 +267,29 @@ class TestGitHub(TestCase):
                 links.append('<%s?page=%d>; rel="prev"' % (base_url, page - 1))
             start = (page - 1) * 2
             end = page * 2
-            return {
-                "status_code": 200,
-                "headers": {"Link": ", ".join(links)},
-                "content": json.dumps(self.sample_bugs[start:end]),
-                }
+            return (
+                200, {"Link": ", ".join(links)},
+                json.dumps(self.sample_bugs[start:end]))
 
-        self.issues_requests = []
+        _add_rate_limit_response("api.github.com")
+        responses.add_callback(
+            "GET", "https://api.github.com/repos/user/repository/issues",
+            callback=issues_callback, content_type="application/json")
         tracker = GitHub("https://github.com/user/repository/issues")
-        with HTTMock(self._rate_limit_handler, handler):
-            self.assertEqual(
-                {bug["id"]: bug for bug in self.sample_bugs},
-                tracker.getRemoteBugBatch(
-                    [str(bug["id"]) for bug in self.sample_bugs]))
+        self.assertEqual(
+            {bug["id"]: bug for bug in self.sample_bugs},
+            tracker.getRemoteBugBatch(
+                [str(bug["id"]) for bug in self.sample_bugs]))
         expected_urls = [
+            "https://api.github.com/rate_limit",
             "https://api.github.com/repos/user/repository/issues?state=all",
             "https://api.github.com/repos/user/repository/issues?page=2",
             "https://api.github.com/repos/user/repository/issues?page=3",
             ]
         self.assertEqual(
-            expected_urls, [request.url for request in self.issues_requests])
+            expected_urls, [call.request.url for call in responses.calls])
 
+    @responses.activate
     def test_status_open(self):
         self.sample_bugs = [
             {"id": 1, "state": "open", "labels": []},
@@ -294,9 +297,10 @@ class TestGitHub(TestCase):
             {"id": 2, "state": "open",
              "labels": [{"name": "feature"}, {"name": "closed"}]},
             ]
+        _add_rate_limit_response("api.github.com")
+        self._addIssuesResponse()
         tracker = GitHub("https://github.com/user/repository/issues")
-        with HTTMock(self._rate_limit_handler, self._issues_handler):
-            tracker.initializeRemoteBugDB(["1", "2"])
+        tracker.initializeRemoteBugDB(["1", "2"])
         remote_status = tracker.getRemoteStatus("1")
         self.assertEqual("open", remote_status)
         lp_status = tracker.convertRemoteStatus(remote_status)
@@ -306,6 +310,7 @@ class TestGitHub(TestCase):
         lp_status = tracker.convertRemoteStatus(remote_status)
         self.assertEqual(BugTaskStatus.NEW, lp_status)
 
+    @responses.activate
     def test_status_closed(self):
         self.sample_bugs = [
             {"id": 1, "state": "closed", "labels": []},
@@ -313,9 +318,10 @@ class TestGitHub(TestCase):
             {"id": 2, "state": "closed",
              "labels": [{"name": "feature"}, {"name": "open"}]},
             ]
+        _add_rate_limit_response("api.github.com")
+        self._addIssuesResponse()
         tracker = GitHub("https://github.com/user/repository/issues")
-        with HTTMock(self._rate_limit_handler, self._issues_handler):
-            tracker.initializeRemoteBugDB(["1", "2"])
+        tracker.initializeRemoteBugDB(["1", "2"])
         remote_status = tracker.getRemoteStatus("1")
         self.assertEqual("closed", remote_status)
         lp_status = tracker.convertRemoteStatus(remote_status)
@@ -330,22 +336,13 @@ class TestGitHubUpdateBugWatches(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    @urlmatch(path=r"^/rate_limit$")
-    def _rate_limit_handler(self, url, request):
-        self.rate_limit_request = request
-        rate_limit = {"limit": 5000, "remaining": 4000, "reset": 1000000000}
-        return {
-            "status_code": 200,
-            "content": {"resources": {"core": rate_limit}},
-            }
-
+    @responses.activate
     def test_process_one(self):
         remote_bug = {"id": 1234, "state": "open", "labels": []}
-
-        @urlmatch(path=r".*/issues/1234$")
-        def handler(url, request):
-            return {"status_code": 200, "content": remote_bug}
-
+        _add_rate_limit_response("api.github.com")
+        responses.add(
+            "GET", "https://api.github.com/repos/user/repository/issues/1234",
+            json=remote_bug)
         bug = self.factory.makeBug()
         bug_tracker = self.factory.makeBugTracker(
             base_url="https://github.com/user/repository/issues",
@@ -360,8 +357,7 @@ class TestGitHubUpdateBugWatches(TestCaseWithFactory):
         logger = BufferLogger()
         bug_watch_updater = CheckwatchesMaster(transaction, logger=logger)
         github = get_external_bugtracker(bug_tracker)
-        with HTTMock(self._rate_limit_handler, handler):
-            bug_watch_updater.updateBugWatches(github, bug_tracker.watches)
+        bug_watch_updater.updateBugWatches(github, bug_tracker.watches)
         self.assertEqual(
             "INFO Updating 1 watches for 1 bugs on "
             "https://api.github.com/repos/user/repository\n",
@@ -371,17 +367,17 @@ class TestGitHubUpdateBugWatches(TestCaseWithFactory):
             [(watch.remotebug, github.convertRemoteStatus(watch.remotestatus))
              for watch in bug_tracker.watches])
 
+    @responses.activate
     def test_process_many(self):
         remote_bugs = [
             {"id": bug_id,
              "state": "open" if (bug_id % 2) == 0 else "closed",
              "labels": []}
             for bug_id in range(1000, 1010)]
-
-        @urlmatch(path=r".*/issues$")
-        def handler(url, request):
-            return {"status_code": 200, "content": json.dumps(remote_bugs)}
-
+        _add_rate_limit_response("api.github.com")
+        responses.add(
+            "GET", "https://api.github.com/repos/user/repository/issues",
+            json=remote_bugs)
         bug = self.factory.makeBug()
         bug_tracker = self.factory.makeBugTracker(
             base_url="https://github.com/user/repository/issues",
@@ -394,8 +390,7 @@ class TestGitHubUpdateBugWatches(TestCaseWithFactory):
         logger = BufferLogger()
         bug_watch_updater = CheckwatchesMaster(transaction, logger=logger)
         github = get_external_bugtracker(bug_tracker)
-        with HTTMock(self._rate_limit_handler, handler):
-            bug_watch_updater.updateBugWatches(github, bug_tracker.watches)
+        bug_watch_updater.updateBugWatches(github, bug_tracker.watches)
         self.assertEqual(
             "INFO Updating 10 watches for 10 bugs on "
             "https://api.github.com/repos/user/repository\n",

@@ -15,7 +15,7 @@ information.
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> soup = find_main_content(anon_browser.contents)
     >>> for question in soup.findAll('td', 'questionTITLE'):
-    ...     print question.find('a').renderContents()
+    ...     print(question.find('a').renderContents())
     Continue playing after shutdown
     Play DVDs in Totem
     mailto: problem in webpage
@@ -26,7 +26,7 @@ information.
     >>> anon_browser.getLink('Next').click()
     >>> soup = find_main_content(anon_browser.contents)
     >>> for question in soup.findAll('td', 'questionTITLE'):
-    ...     print question.find('a').renderContents()
+    ...     print(question.find('a').renderContents())
     Installation failed
 
 The questions match the languages inferred from by GeoIP
@@ -58,7 +58,7 @@ browsers and search engine robots need help. Each row in the list
 of questions declares its language and text direction.
 
     >>> for question in table.findAll('tr', lang=True):
-    ...     print 'lang="%s" dir="%s"' % (question['lang'], question['dir'])
+    ...     print('lang="%s" dir="%s"' % (question['lang'], question['dir']))
     lang="es" dir="ltr"
     lang="en" dir="ltr"
     lang="en" dir="ltr"
@@ -78,7 +78,7 @@ Arabic and is written from right-to-left.
     '\xd8\xb9\xd9\x83\xd8\xb3 ...
 
     >>> for question in table.findAll('tr', lang=True):
-    ...     print 'lang="%s" dir="%s"' % (question['lang'], question['dir'])
+    ...     print('lang="%s" dir="%s"' % (question['lang'], question['dir']))
     lang="en" dir="ltr"
     lang="en" dir="ltr"
     lang="ar" dir="rtl"
@@ -101,10 +101,10 @@ language controls.
     >>> anon_browser.getControl(name='field.language')
     Traceback (most recent call last):
       ...
-    LookupError: name 'field.language...
+    LookupError: name u'field.language...
 
     >>> content = find_main_content(anon_browser.contents).find('p')
-    >>> print content.renderContents()
+    >>> print(content.renderContents())
     There are no questions for Kubuntu with the requested statuses.
 
 When the project has questions in only one language, and that language
@@ -119,7 +119,7 @@ mapped, we assume they speak the default language of English.
     >>> anon_browser.getControl(name='field.language')
     Traceback (most recent call last):
       ...
-    LookupError: name 'field.language...
+    LookupError: name u'field.language...
 
 But if the user configures their browser to accept Spanish and English
 then questions with those language will be displayed:
@@ -172,7 +172,7 @@ that language, we do not show the language controls.
     >>> user_browser.getControl(name='field.language')
     Traceback (most recent call last):
       ...
-    LookupError: name 'field.language...
+    LookupError: name u'field.language...
 
 When No Privileges Person adds Spanish and English to their browser, they
 are added to the language controls.
@@ -268,12 +268,12 @@ questions going unanswered.
 
     >>> user_browser.open('http://answers.launchpad.dev/kubuntu')
     >>> paragraph = find_main_content(user_browser.contents).find('p')
-    >>> print extract_text(paragraph)
+    >>> print(extract_text(paragraph))
     There are no questions for Kubuntu with the requested statuses.
 
     >>> user_browser.open('http://answers.launchpad.dev/firefox')
     >>> paragraph = find_main_content(user_browser.contents).find('p')
-    >>> print extract_text(paragraph)
+    >>> print(extract_text(paragraph))
     Mozilla Firefox has unanswered questions in the following languages:
     1 in Portuguese (Brazil). Can you help?
 
@@ -284,11 +284,11 @@ OPEN. No Privileges Person sees a single question as indicated by
 the preceding page.
 
     >>> user_browser.getLink('Portuguese (Brazil)').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Portuguese (Brazil) questions in Mozilla Firefox : Questions : Mozilla Firefox
 
     >>> language_field = user_browser.getControl(name='field.language')
-    >>> print language_field.type
+    >>> print(language_field.type)
     hidden
 
     >>> labels = user_browser.getControl(name='field.status').displayValue
@@ -315,13 +315,13 @@ project. They can see the question on the second page of "My questions"...
     >>> sample_person_browser.open('http://answers.launchpad.dev/ubuntu')
     >>> sample_person_browser.getLink('My questions').click()
     >>> sample_person_browser.getLink('Next').click()
-    >>> print sample_person_browser.title
+    >>> print(sample_person_browser.title)
     Questions you asked about Ubuntu : Questions : Ubuntu
 
     >>> questions = find_tag_by_id(
     ...     sample_person_browser.contents, 'question-listing')
     >>> for key in ('lang', 'dir'):
-    ...     print '%s: %s ' % (key, questions.tbody.tr[key])
+    ...     print('%s: %s ' % (key, questions.tbody.tr[key]))
     lang: ar
     dir: rtl
 
@@ -333,7 +333,7 @@ project. They can see the question on the second page of "My questions"...
 
     >>> sample_person_browser.getLink(
     ...     'Change your preferred languages').click()
-    >>> print sample_person_browser.title
+    >>> print(sample_person_browser.title)
     Language preferences...
 
     >>> sample_person_browser.getControl('Arabic', index=0).selected

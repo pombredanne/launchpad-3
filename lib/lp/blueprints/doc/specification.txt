@@ -28,7 +28,7 @@ To create a new Specification, use ISpecificationSet.new:
     ...     'http://www.silly.me/SpecName', 'we really need this',
     ...     SpecificationDefinitionStatus.APPROVED, mark,
     ...     target=upstream_firefox)
-    >>> print newspec.name
+    >>> print(newspec.name)
     mng
 
 To retrieve a specification by its ID, we use `ISpecificationSet.get`.
@@ -44,7 +44,7 @@ It should be possible to retrieve a specification by its name
 And if we try to retrieve a non-existent specification we should get
 None
 
-    >>> print upstream_firefox.getSpecification('nonexistentspec')
+    >>> print(upstream_firefox.getSpecification('nonexistentspec'))
     None
 
 It's also possible to retrieve a specification by its URL
@@ -54,13 +54,13 @@ It's also possible to retrieve a specification by its URL
 
 And if there's no specification with the given URL we should get None
 
-    >>> print specset.getByURL('http://no-url.com')
+    >>> print(specset.getByURL('http://no-url.com'))
     None
 
 A specification could be attached to a distribution, or a product. We
 call this the specification target.
 
-    >>> print newspec.target.name
+    >>> print(newspec.target.name)
     firefox
 
 We attach now a spec to a distribution.
@@ -75,7 +75,7 @@ We attach now a spec to a distribution.
     ...                       SpecificationDefinitionStatus.APPROVED,
     ...                       mark,
     ...                       target=ubuntu)
-    >>> print ubuspec.name
+    >>> print(ubuspec.name)
     fix-spec-permissions
 
 The Ubuntu distro is owned by the Ubuntu team, ubuntu-team. jdub is a
@@ -83,7 +83,7 @@ member, and therefore should be able to edit any spec attached to it
 (but not specs attached to mozilla-firefox).
 
     >>> from lp.services.webapp.authorization import check_permission
-    >>> print ubuntu.owner.name
+    >>> print(ubuntu.owner.name)
     ubuntu-team
 
     >>> jdub = Person.byName('jdub')
@@ -141,58 +141,58 @@ Now, let's do a bunch of changes, and see what the result looks like:
     >>> delta.user == jdub
     True
 
-    >>> print delta.title
+    >>> print(delta.title)
     New Title
 
-    >>> print delta.summary
+    >>> print(delta.summary)
     New summary.
 
-    >>> print delta.specurl
+    >>> print(delta.specurl)
     http://www.ubuntu.com/NewSpec
 
-    >>> print delta.distroseries.name
+    >>> print(delta.distroseries.name)
     hoary
 
-    >>> print delta.name['old']
+    >>> print(delta.name['old'])
     fix-spec-permissions
 
-    >>> print delta.name['new']
+    >>> print(delta.name['new'])
     new-spec
 
-    >>> print delta.priority['old'].title
+    >>> print(delta.priority['old'].title)
     Undefined
 
-    >>> print delta.priority['new'].title
+    >>> print(delta.priority['new'].title)
     Low
 
-    >>> print delta.definition_status['old'].title
+    >>> print(delta.definition_status['old'].title)
     Approved
 
-    >>> print delta.definition_status['new'].title
+    >>> print(delta.definition_status['new'].title)
     Drafting
 
-    >>> print delta.approver['old'] is None
+    >>> print(delta.approver['old'] is None)
     True
 
-    >>> print delta.approver['new'] == mark
+    >>> print(delta.approver['new'] == mark)
     True
 
-    >>> print delta.assignee['old'] is None
+    >>> print(delta.assignee['old'] is None)
     True
 
-    >>> print delta.assignee['new'] == jdub
+    >>> print(delta.assignee['new'] == jdub)
     True
 
-    >>> print delta.drafter['old'] is None
+    >>> print(delta.drafter['old'] is None)
     True
 
-    >>> print delta.drafter['new'] == jdub
+    >>> print(delta.drafter['new'] == jdub)
     True
 
-    >>> print delta.whiteboard['old'] is None
+    >>> print(delta.whiteboard['old'] is None)
     True
 
-    >>> print delta.whiteboard['new']
+    >>> print(delta.whiteboard['new'])
     New whiteboard comments.
 
     >>> [linked_bug.id for linked_bug in delta.bugs_linked]
@@ -220,7 +220,7 @@ We can filter for specifications that contain specific text, across all
 specifications:
 
     >>> for spec in specset.specifications(None, filter=[u'install']):
-    ...     print spec.name, spec.target.name
+    ...     print(spec.name, spec.target.name)
     cluster-installation kubuntu
     extension-manager-upgrades firefox
     media-integrity-check ubuntu
@@ -237,7 +237,7 @@ Specs from inactive products are filtered out.
     >>> upstream_firefox.active = False
     >>> flush_database_updates()
     >>> for spec in specset.specifications(None, filter=[u'install']):
-    ...     print spec.name, spec.target.name
+    ...     print(spec.name, spec.target.name)
     cluster-installation kubuntu
     media-integrity-check ubuntu
 
@@ -259,25 +259,25 @@ block-them-too.
     >>> from lp.registry.interfaces.product import IProductSet
     >>> efourx = getUtility(IProductSet).getByName(
     ...     'firefox').getSpecification('e4x')
-    >>> for spec in efourx.getDependencies(): print spec.name
+    >>> for spec in efourx.getDependencies(): print(spec.name)
     svg-support
 
-    >>> for spec in efourx.all_deps(): print spec.name
+    >>> for spec in efourx.all_deps(): print(spec.name)
     svg-support
 
-    >>> for spec in efourx.getBlockedSpecs(): print spec.name
+    >>> for spec in efourx.getBlockedSpecs(): print(spec.name)
     canvas
 
-    >>> for spec in efourx.all_blocked(): print spec.name
+    >>> for spec in efourx.all_blocked(): print(spec.name)
     canvas
 
     >>> canvas = efourx.getBlockedSpecs()[0]
     >>> svg = efourx.getDependencies()[0]
-    >>> for spec in svg.all_blocked(): print spec.name
+    >>> for spec in svg.all_blocked(): print(spec.name)
     canvas
     e4x
 
-    >>> for spec in canvas.all_deps(): print spec.name
+    >>> for spec in canvas.all_deps(): print(spec.name)
     e4x
     svg-support
 
@@ -332,9 +332,9 @@ mapping between them.
     >>> spec_deps = [(specset.get(key).name, value) for
     ...              (key,value) in deps_dict.items()]
     >>> for (spec_name, deps) in sorted(spec_deps):
-    ...     print '%s --> %s' % (
+    ...     print('%s --> %s' % (
     ...         spec_name,
-    ...         ', '.join([dep.name for dep in deps]))
+    ...         ', '.join([dep.name for dep in deps])))
     spec-a --> spec-b, spec-c
     spec-c --> spec-d
 
@@ -354,16 +354,16 @@ spec will be passed on to you too!).
 It is possible to indicate that some subscribers are essential to the
 discussion of the spec.
 
-    >>> for subscriber in canvas.subscribers: print subscriber.name
+    >>> for subscriber in canvas.subscribers: print(subscriber.name)
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> jdub = getUtility(IPersonSet).getByName('jdub')
     >>> sub = canvas.subscribe(jdub, jdub, False)
-    >>> print sub.essential
+    >>> print(sub.essential)
     False
 
     >>> samesub = canvas.getSubscriptionByName('jdub')
-    >>> print samesub.essential
+    >>> print(samesub.essential)
     False
 
 
@@ -463,7 +463,7 @@ First, lets show that canvas has not really progressed very far.
     >>> canvas.implementation_status.title
     'Unknown'
 
-    >>> print canvas.starter
+    >>> print(canvas.starter)
     None
 
     >>> canvas.informational
@@ -478,7 +478,7 @@ metadata. First we will make the spec "started".
     >>> newstate is None
     False
 
-    >>> print newstate.title
+    >>> print(newstate.title)
     Started
 
     >>> canvas.starter is not None # update should have set starter
@@ -511,7 +511,7 @@ of this work.
     >>> newstate is None
     False
 
-    >>> print newstate.title
+    >>> print(newstate.title)
     Not started
 
     >>> canvas.starter is not None # update should have reset starter
@@ -535,7 +535,7 @@ Now, let's say that we have actually completed this spec.
     >>> newstate is None
     False
 
-    >>> print newstate.title
+    >>> print(newstate.title)
     Complete
 
     >>> canvas.starter is not None # update should have set starter
@@ -560,7 +560,7 @@ all the way to "not started".
     >>> newstate is None
     False
 
-    >>> print newstate.title
+    >>> print(newstate.title)
     Not started
 
     >>> canvas.starter is not None # update should have reset starter
@@ -584,7 +584,7 @@ OK. Let's make it complete again.
     >>> newstate is None
     False
 
-    >>> print newstate.title
+    >>> print(newstate.title)
     Complete
 
     >>> canvas.starter is not None # update should have set starter
@@ -608,7 +608,7 @@ And finally show the rollback to "started".
     >>> newstate is None
     False
 
-    >>> print newstate.title
+    >>> print(newstate.title)
     Started
 
     >>> canvas.starter is not None # update should have set starter

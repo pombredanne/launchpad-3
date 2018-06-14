@@ -81,16 +81,16 @@ subscription for joesmith:
 
 The new subscription is returned and reflects the data:
 
-    >>> print new_sub.displayname
+    >>> print(new_sub.displayname)
     Joe Smith's access to PPA named p3a for Celso Providelo
 
-    >>> print new_sub.registrant.name
+    >>> print(new_sub.registrant.name)
     cprov
 
-    >>> print new_sub.description
+    >>> print(new_sub.description)
     subscription for joesmith
 
-    >>> print new_sub.status.name
+    >>> print(new_sub.status.name)
     CURRENT
 
 Subscriptions also contain some date information:
@@ -98,7 +98,7 @@ Subscriptions also contain some date information:
     >>> new_sub.date_created is not None
     True
 
-    >>> print new_sub.date_expires
+    >>> print(new_sub.date_expires)
     None
 
 An email is sent to the subscribed person when the ArchiveSubscriber
@@ -253,18 +253,18 @@ Log in as joesmith, who is the person in the subscription.
 
 And retrieve the subscription by subscriber and archive:
 
-    >>> print sub_set.getBySubscriber(
-    ...     new_sub.subscriber)[0].archive.displayname
+    >>> print(sub_set.getBySubscriber(
+    ...     new_sub.subscriber)[0].archive.displayname)
     PPA named p3a for Celso Providelo
 
-    >>> print sub_set.getByArchive(new_sub.archive)[1].subscriber.name
+    >>> print(sub_set.getByArchive(new_sub.archive)[1].subscriber.name)
     joesmith
 
 The getBySubscriber() method takes an optional archive parameter for
 finding a subscription for a particular user in a particular archive:
 
-    >>> print sub_set.getBySubscriber(
-    ...     new_sub.subscriber, new_sub.archive)[0].archive.displayname
+    >>> print(sub_set.getBySubscriber(
+    ...     new_sub.subscriber, new_sub.archive)[0].archive.displayname)
     PPA named p3a for Celso Providelo
 
 By default the getBySubscriber() and getByArchive() methods return
@@ -272,17 +272,17 @@ all current subscriptions, most recently created first:
 
     >>> login('mark@example.com')
     >>> for subscription in sub_set.getBySubscriber(new_sub.subscriber):
-    ...     print subscription.archive.displayname
-    ...     print subscription.date_created.date()
+    ...     print(subscription.archive.displayname)
+    ...     print(subscription.date_created.date())
     PPA named p3a for Celso Providelo      2009-02-26
     PPA named p3a for Mark Shuttleworth    2009-02-22
 
 getByArchive() sorts by subscriber name.
 
     >>> for subscription in sub_set.getByArchive(mark_private_ppa):
-    ...     print subscription.subscriber.name
-    ...     print subscription.subscriber.displayname
-    ...     print subscription.date_created.date()
+    ...     print(subscription.subscriber.name)
+    ...     print(subscription.subscriber.displayname)
+    ...     print(subscription.date_created.date())
     joesmith            Joe Smith       2009-02-22
     team-name-...       Team Cprov      2009-02-24
 
@@ -313,8 +313,8 @@ to which the provided subscriber belongs:
 
     >>> joesmith.join(team_cprov)
     >>> for subscription in sub_set.getBySubscriber(joesmith):
-    ...     print subscription.archive.displayname
-    ...     print subscription.description
+    ...     print(subscription.archive.displayname)
+    ...     print(subscription.description)
     PPA named p3a for Celso Providelo        subscription for joesmith
     PPA named p3a for Mark Shuttleworth      Access for cprov team
 
@@ -336,8 +336,8 @@ Now print out all subscriptions with their tokens for joesmith:
     ...             token_text = token.token
     ...         else:
     ...             token_text = "None"
-    ...         print subscription.archive.displayname
-    ...         print token_text
+    ...         print(subscription.archive.displayname)
+    ...         print(token_text)
     >>> print_subscriptions_with_tokens(
     ...     sub_set.getBySubscriberWithActiveToken(joesmith))
     PPA named p3a for Celso Providelo            test_token
@@ -347,7 +347,7 @@ There's a also related method on IPerson that will return the archive URLs
 for the activated tokens.
 
     >>> for url in joesmith.getArchiveSubscriptionURLs(joesmith):
-    ...     print url
+    ...     print(url)
     http://joesmith:test_token@private-ppa.launchpad.dev/cprov/p3a/ubuntu
 
 This method can only be used by someone with launchpad.Edit on the context
@@ -435,10 +435,10 @@ CANCELLED.
     >>> new_sub.date_cancelled is not None
     True
 
-    >>> print new_sub.cancelled_by.name
+    >>> print(new_sub.cancelled_by.name)
     cprov
 
-    >>> print new_sub.status.name
+    >>> print(new_sub.status.name)
     CANCELLED
 
 We can do this as an admin too:
@@ -458,8 +458,8 @@ For example, Joe already has an (unactivated) subscription to Mark's PPA
 via the cprov_team:
 
     >>> for subscription in sub_set.getBySubscriber(joesmith):
-    ...     print subscription.archive.displayname
-    ...     print subscription.description
+    ...     print(subscription.archive.displayname)
+    ...     print(subscription.description)
     PPA named p3a for Mark Shuttleworth      Access for cprov team
 
     >>> subscription = sub_set.getBySubscriber(joesmith).first()
@@ -468,7 +468,7 @@ So the getNonActiveSubscribers() method for this team subscription will
 currently include Joe:
 
     >>> for person, email in subscription.getNonActiveSubscribers():
-    ...     print person.displayname, email.email
+    ...     print(person.displayname, email.email)
     Celso Providelo   celso.providelo@canonical.com
     Joe Smith         joe@example.com
     John Smith        john@example.com
@@ -479,7 +479,7 @@ subscriber for this subscription:
 
     >>> joesmith_token = mark_private_ppa.newAuthToken(joesmith)
     >>> for person, email in subscription.getNonActiveSubscribers():
-    ...     print person.displayname
+    ...     print(person.displayname)
     Celso Providelo
     John Smith
 
@@ -493,7 +493,7 @@ will return a list with the single subscriber as expected:
     >>> subscription = mark_private_ppa.newSubscription(
     ...     harrysmith, mark, description=u"subscription for joesmith")
     >>> for person, email in subscription.getNonActiveSubscribers():
-    ...     print person.displayname
+    ...     print(person.displayname)
     Harry Smith
 
 If Harry activates a token for his new subscription then
@@ -501,7 +501,7 @@ getNonActiveSubscribers will return an empty result set as he is now
 "active".
 
     >>> harry_token = mark_private_ppa.newAuthToken(harrysmith)
-    >>> print subscription.getNonActiveSubscribers().count()
+    >>> print(subscription.getNonActiveSubscribers().count())
     0
 
 If the subscription is for a group which itself contains a group, all
@@ -513,7 +513,7 @@ indirect members that are not themselves groups are included:
     >>> subscription = mark_private_ppa.newSubscription(
     ...     launchpad_devs, mark, description=u"LP team too")
     >>> for person, email in subscription.getNonActiveSubscribers():
-    ...     print person.displayname
+    ...     print(person.displayname)
     Celso Providelo
     John Smith
     Foo Bar

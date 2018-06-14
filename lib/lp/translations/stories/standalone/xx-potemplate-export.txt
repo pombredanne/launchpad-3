@@ -47,7 +47,7 @@ added to the export queue and individual requests are added for the PO files.
   >>> browser.getControl('Everything').selected = True
   >>> browser.getControl('Format:').value = ['PO']
   >>> browser.getControl('Request Download').click()
-  >>> print browser.url
+  >>> print(browser.url)
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2
 
   >>> print_feedback_messages(browser.contents)
@@ -62,9 +62,8 @@ This is a no-op: (See bug https://launchpad.net/rosetta/+bug/1558)
   >>> browser.getControl('The PO template').selected = True
   >>> browser.getControl('Format:').value = ['PO']
   >>> browser.getControl('Request Download').click()
-  >>> print browser.url
+  >>> print(browser.url)
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2
 
   >>> print_feedback_messages(browser.contents)
   Your request has been received. Expect to receive an email shortly.
-

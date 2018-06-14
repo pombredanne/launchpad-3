@@ -50,7 +50,7 @@ be quickly ascertained through a set operation.
 
     >>> import operator
     >>> for name in sorted(names, key=operator.attrgetter('name')):
-    ...     print name.name
+    ...     print(name.name)
     mozilla-firefox
     pmount
 
@@ -135,7 +135,7 @@ it. We will create a helper function to inspect binary packagefiles.
 
     >>> def print_files(binary):
     ...     for bin_file in binary.files:
-    ...         print bin_file.libraryfile.filename, bin_file.filetype.name
+    ...         print(bin_file.libraryfile.filename, bin_file.filetype.name)
 
     >>> print_files(a_binary)
     foo-bin_666_all.deb DEB

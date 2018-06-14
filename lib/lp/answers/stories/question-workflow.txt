@@ -17,15 +17,15 @@ the Firefox product which was filed by 'Sample Person'.
     # added and the status of the question.
 
     >>> def find_request_status(contents):
-    ...     print extract_text(
-    ...         find_tag_by_id(contents, 'question-status'))
+    ...     print(extract_text(
+    ...         find_tag_by_id(contents, 'question-status')))
 
     >>> def  find_last_comment(contents):
     ...     soup = find_main_content(contents)
     ...     return soup.findAll('div', 'boardCommentBody')[-1]
 
     >>> def print_last_comment(contents):
-    ...     print extract_text(find_last_comment(contents))
+    ...     print(extract_text(find_last_comment(contents)))
 
 
 Logging In
@@ -34,7 +34,7 @@ Logging In
 To participate in a question, the user must be logged in.
 
     >>> anon_browser.open('http://launchpad.dev/firefox/+question/2')
-    >>> print anon_browser.contents
+    >>> print(anon_browser.contents)
     <!DOCTYPE...
     ...
     To post a message you must <a href="+login">log in</a>.
@@ -58,11 +58,11 @@ on the 'Add Information Request' button.
     ...     'http://launchpad.dev/firefox/+question/2')
     >>> content = find_tag_by_id(
     ...     support_browser.contents, 'can-you-help-with-this-problem')
-    >>> print content.h2.renderContents()
+    >>> print(content.h2.renderContents())
     Can you help with this problem?
 
-    >>> print extract_text(
-    ...     find_tag_by_id(support_browser.contents, 'horizontal-menu'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(support_browser.contents, 'horizontal-menu')))
     Link existing bug
     Create bug report
     Link to a FAQ
@@ -86,7 +86,7 @@ you an error.
 
     >>> support_browser.getControl('Add Information Request').click()
     >>> soup = find_main_content(support_browser.contents)
-    >>> print soup.find('div', 'message').renderContents()
+    >>> print(soup.find('div', 'message').renderContents())
     Please enter a message.
 
 
@@ -104,7 +104,7 @@ Add a Comment' button.
 This appends the comment to the question and it doesn't change its
 status:
 
-    >>> print find_request_status(support_browser.contents)
+    >>> print(find_request_status(support_browser.contents))
     Status: Needs information ...
 
     >>> print_last_comment(support_browser.contents)
@@ -137,7 +137,7 @@ Once the owner replied with the, hopefully, requested information, the
 status is changed to Open and their answer appended to the question
 discussion.
 
-    >>> print find_request_status(owner_browser.contents)
+    >>> print(find_request_status(owner_browser.contents))
     Status: Open ...
 
     >>> print_last_comment(owner_browser.contents)
@@ -162,7 +162,7 @@ clicking the 'Propose Answer' button.
 This moves the question to the Answered state and adds the answer to
 the end of the discussion:
 
-    >>> print find_request_status(support_browser.contents)
+    >>> print(find_request_status(support_browser.contents))
     Status: Answered ...
 
     >>> print_last_comment(support_browser.contents)
@@ -191,7 +191,7 @@ the 'This Solved My Problem' button.
 
     >>> answer_button_paragraph = find_tag_by_id(
     ...     owner_browser.contents, 'answer-button-hint')
-    >>> print extract_text(answer_button_paragraph)
+    >>> print(extract_text(answer_button_paragraph))
     To confirm an answer, use the 'This Solved My Problem' button located at
     the bottom of the answer.
 
@@ -202,7 +202,7 @@ Clicking that button will confirm that the answer solved the problem.
 This changes the status of the question to 'Solved' and mark 'No
 Privileges Person' as the solver.
 
-    >>> print find_request_status(owner_browser.contents)
+    >>> print(find_request_status(owner_browser.contents))
     Status: Solved ...
 
 Since no message can be provided when that button is clicked. A default
@@ -215,18 +215,18 @@ The confirmed answer is also highlighted.
 
     >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.findAll('div', 'boardComment')[-2]
-    >>> print bestAnswer.find('img')
+    >>> print(bestAnswer.find('img'))
     <img src="/@@/favourite-yes" ... title="Marked as best answer" />
 
-    >>> print soup.find(
-    ...     'div', 'boardCommentBody highlighted').renderContents()
+    >>> print(soup.find(
+    ...     'div', 'boardCommentBody highlighted').renderContents())
     <p>New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.</p>
 
 The History link should now show up.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(support_browser.contents, 'horizontal-menu'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(support_browser.contents, 'horizontal-menu')))
     History
     Link existing bug
     Create bug report
@@ -248,7 +248,7 @@ The user simply enters the comment in the 'Message' box and clicks the
 This appends the comment to the question and it doesn't change its
 status:
 
-    >>> print find_request_status(owner_browser.contents)
+    >>> print(find_request_status(owner_browser.contents))
     Status: Solved ...
 
     >>> print_last_comment(owner_browser.contents)
@@ -273,7 +273,7 @@ button.
 This appends the new information to the question discussion and changes
 its status back to 'Open'.
 
-    >>> print find_request_status(owner_browser.contents)
+    >>> print(find_request_status(owner_browser.contents))
     Status: Open ...
 
     >>> print_last_comment(owner_browser.contents)
@@ -299,8 +299,8 @@ answerer back to None.
 In addition, this creates a reopening record that is displayed in the
 reopening portlet.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(owner_browser.contents, 'portlet-reopenings'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(owner_browser.contents, 'portlet-reopenings')))
     This question was reopened ... Sample Person
 
 
@@ -334,7 +334,7 @@ solved and suggesting that the user choose an answer that helped the
 question owner to solve their problem.
 
     >>> for message in soup.findAll('div', 'informational message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     Your question is solved. If a particular message helped you solve the
     problem, use the 'This solved my problem' button.
 
@@ -349,21 +349,21 @@ The answer's message is also highlighted as the best answer.
 
     >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.find('img', {'title' : 'Marked as best answer'})
-    >>> print bestAnswer
+    >>> print(bestAnswer)
     <img src="/@@/favourite-yes" ... title="Marked as best answer" />
 
     >>> answerer = bestAnswer.parent.find('a')
-    >>> print extract_text(answerer)
+    >>> print(extract_text(answerer))
     No Privileges Person (no-priv)
 
     >>> message = soup.find(
     ...     'div', 'boardCommentBody highlighted')
-    >>> print message
+    >>> print(message)
     <div class="boardCommentBody highlighted"
     itemprop="commentText"><p>New version of the firefox package are
     available with SVG support enabled. You can use apt-get or adept to
     upgrade.</p></div>
-    >>> print extract_text(message)
+    >>> print(extract_text(message))
     New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.
 
@@ -376,7 +376,7 @@ The history of the question is available on the 'History' page.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
     >>> anon_browser.getLink('History').click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     History of question #2...
 
 It lists all the actions performed through workflow on the question:
@@ -384,7 +384,7 @@ It lists all the actions performed through workflow on the question:
     >>> soup = find_main_content(anon_browser.contents)
     >>> action_listing = soup.find('table', 'listing')
     >>> for header in action_listing.findAll('th'):
-    ...     print header.renderContents()
+    ...     print(header.renderContents())
     When
     Who
     Action
@@ -395,7 +395,7 @@ It lists all the actions performed through workflow on the question:
     ...     who = extract_text(cells[1].find('a'))
     ...     action = cells[2].renderContents()
     ...     new_status = cells[3].renderContents()
-    ...     print who.lstrip('&nbsp;'), action, new_status
+    ...     print(who.lstrip('&nbsp;'), action, new_status)
     No Privileges Person Request for more information Needs information
     No Privileges Person Comment Needs information
     Sample Person        Give more information        Open
@@ -421,7 +421,7 @@ choosing an answer that helped him solve his problem.
 
     >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> carlos_browser.open('http://launchpad.dev/firefox/+question/12')
-    >>> print find_request_status(carlos_browser.contents)
+    >>> print(find_request_status(carlos_browser.contents))
     Status: Open ...
 
     >>> answer_button_paragraph = find_tag_by_id(
@@ -432,7 +432,7 @@ choosing an answer that helped him solve his problem.
     >>> carlos_browser.getControl('Message').value = (
     ...     "There is a bug in that version. SMP is fine after upgrading.")
     >>> carlos_browser.getControl("Problem Solved").click()
-    >>> print find_request_status(carlos_browser.contents)
+    >>> print(find_request_status(carlos_browser.contents))
     Status: Solved ...
 
     >>> content = find_main_content(carlos_browser.contents)
@@ -456,9 +456,9 @@ similar problem so they ask their own question.
     >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
 
     >>> content = find_main_content(user_browser.contents)
-    >>> print content.find(id='can-you-help-with-this-problem')
+    >>> print(content.find(id='can-you-help-with-this-problem'))
     None
 
     >>> user_browser.getLink('Ask a question').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Ask a question about...

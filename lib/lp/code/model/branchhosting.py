@@ -18,7 +18,6 @@ import requests
 from six import reraise
 from six.moves.urllib_parse import (
     quote,
-    urlencode,
     urljoin,
     )
 from zope.interface import implementer

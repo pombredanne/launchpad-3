@@ -19,7 +19,7 @@ textarea, and
 
 We are in next form page.
 
-  >>> print user_browser.url
+  >>> print(user_browser.url)
   http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/hr/+translate?memo=10&start=10
 
 Let's go back to the modified message.
@@ -30,6 +30,6 @@ And we can see that we escaped the tags:
 
   >>> text = find_tag_by_id(
   ...     user_browser.contents, 'msgset_67_hr_translation_0')
-  >>> print extract_text(text.renderContents())
+  >>> print(extract_text(text.renderContents()))
   Upotreba:
   %s [opcije] &lt;foo&gt; [&lt;etiketa&gt;]%s%s%s
