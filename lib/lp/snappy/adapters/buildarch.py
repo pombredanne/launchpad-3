@@ -164,5 +164,13 @@ def determine_architectures_to_build(snapcraft_data, supported_arches):
 
     architectures_to_build = set()
     for arch in architectures:
-        architectures_to_build.add(SnapBuildInstance(arch, supported_arches))
+        try:
+            architectures_to_build.add(
+                SnapBuildInstance(arch, supported_arches))
+        except UnsupportedBuildOnError:
+            # Snaps are allowed to declare that they build on architectures
+            # that Launchpad doesn't currently support (perhaps they're
+            # upcoming, or perhaps they used to be supported).  We just
+            # ignore those.
+            pass
     return architectures_to_build

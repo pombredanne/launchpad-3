@@ -205,6 +205,18 @@ class TestDetermineArchitecturesToBuild(WithScenarios, TestCase):
             "supported_architectures": ["amd64", "i386", "armhf"],
             "expected": [{"architecture": "amd64", "required": True}],
             }),
+        ("more architectures listed than are supported", {
+            "architectures": [
+                {"build-on": "amd64"},
+                {"build-on": "i386"},
+                {"build-on": "armhf"},
+                ],
+            "supported_architectures": ["amd64", "i386"],
+            "expected": [
+                {"architecture": "amd64", "required": True},
+                {"architecture": "i386", "required": True},
+                ],
+            })
     ]
 
     def test_parser(self):
