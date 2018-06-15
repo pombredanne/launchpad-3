@@ -110,6 +110,7 @@ from lp.services.database.stormexpr import (
     NullsLast,
     )
 from lp.services.features import getFeatureFlag
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -129,6 +130,7 @@ from lp.snappy.interfaces.snap import (
     CannotRequestAutoBuilds,
     DuplicateSnapName,
     ISnap,
+    ISnapBuildRequest,
     ISnapSet,
     NoSourceForSnap,
     NoSuchSnap,
@@ -137,11 +139,13 @@ from lp.snappy.interfaces.snap import (
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
     SnapBuildDisallowedArchitecture,
+    SnapBuildRequestStatus,
     SnapNotOwner,
     SnapPrivacyMismatch,
     SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
+from lp.snappy.interfaces.snapjob import ISnapRequestBuildsJobSource
 from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snapbuild import SnapBuild
@@ -160,6 +164,43 @@ def snap_modified(snap, event):
     events on snap packages.
     """
     removeSecurityProxy(snap).date_last_modified = UTC_NOW
+
+
+@implementer(ISnapBuildRequest)
+class SnapBuildRequest:
+    """See `ISnapBuildRequest`.
+
+    This is not directly backed by a database table; instead, it is a
+    webservice-friendly view of an asynchronous build request.
+    """
+
+    def __init__(self, snap, id):
+        self._job = getUtility(ISnapRequestBuildsJobSource).getBySnapAndID(
+            snap, id)
+        self.snap = snap
+        self.id = id
+
+    @property
+    def status(self):
+        """See `ISnapBuildRequest`."""
+        status_map = {
+            JobStatus.WAITING: SnapBuildRequestStatus.PENDING,
+            JobStatus.RUNNING: SnapBuildRequestStatus.PENDING,
+            JobStatus.COMPLETED: SnapBuildRequestStatus.COMPLETED,
+            JobStatus.FAILED: SnapBuildRequestStatus.FAILED,
+            JobStatus.SUSPENDED: SnapBuildRequestStatus.PENDING,
+            }
+        return status_map[self._job.job.status]
+
+    @property
+    def error_message(self):
+        """See `ISnapBuildRequest`."""
+        return self._job.error_message
+
+    @property
+    def builds(self):
+        """See `ISnapBuildRequest`."""
+        return self._job.builds
 
 
 @implementer(ISnap, IHasOwner)
@@ -502,6 +543,13 @@ class Snap(Storm, WebhookTargetMixin):
         build.queueBuild()
         return build
 
+    def requestBuilds(self, requester, archive, pocket, channels=None):
+        """See `ISnap`."""
+        self._checkRequestBuild(requester, archive)
+        job = getUtility(ISnapRequestBuildsJobSource).create(
+            self, requester, archive, pocket, channels)
+        return self.getBuildRequest(job.job_id)
+
     def requestBuildsFromJob(self, requester, archive, pocket, channels=None,
                              logger=None):
         """See `ISnap`."""
@@ -571,6 +619,10 @@ class Snap(Storm, WebhookTargetMixin):
                         " - %s/%s/%s: %s",
                         self.owner.name, self.name, arch.architecturetag, e)
         return builds
+
+    def getBuildRequest(self, job_id):
+        """See `ISnap`."""
+        return SnapBuildRequest(self, job_id)
 
     def _getBuilds(self, filter_term, order_by):
         """The actual query to get the builds."""

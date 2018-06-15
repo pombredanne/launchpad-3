@@ -23,6 +23,7 @@ import responses
 from storm.exceptions import LostObjectError
 from storm.locals import Store
 from testtools.matchers import (
+    AfterPreprocessing,
     ContainsDict,
     Equals,
     Is,
@@ -69,6 +70,8 @@ from lp.services.features.testing import (
     FeatureFixture,
     MemoryFeatureFixture,
     )
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.runner import JobRunner
 from lp.services.log.logger import BufferLogger
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.interfaces import OAuthPermission
@@ -84,6 +87,7 @@ from lp.snappy.interfaces.snap import (
     SNAP_TESTING_FLAGS,
     SnapBuildAlreadyPending,
     SnapBuildDisallowedArchitecture,
+    SnapBuildRequestStatus,
     SnapPrivacyMismatch,
     SnapPrivateFeatureDisabled,
     )
@@ -362,6 +366,30 @@ class TestSnap(TestCaseWithFactory):
         snap.requestBuild(
             snap.owner, snap.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.UPDATES)
+
+    def test_requestBuilds(self):
+        # requestBuilds schedules a job and returns a corresponding
+        # SnapBuildRequest.
+        snap = self.factory.makeSnap()
+        with person_logged_in(snap.owner.teamowner):
+            request = snap.requestBuilds(
+                snap.owner.teamowner, snap.distro_series.main_archive,
+                PackagePublishingPocket.UPDATES,
+                channels={"snapcraft": "edge"})
+        self.assertThat(request, MatchesStructure(
+            snap=Equals(snap),
+            status=Equals(SnapBuildRequestStatus.PENDING),
+            error_message=Is(None),
+            builds=AfterPreprocessing(set, MatchesSetwise())))
+        [job] = getUtility(ISnapRequestBuildsJobSource).iterReady()
+        self.assertThat(job, MatchesStructure(
+            job_id=Equals(request.id),
+            job=MatchesStructure.byEquality(status=JobStatus.WAITING),
+            snap=Equals(snap),
+            requester=Equals(snap.owner.teamowner),
+            archive=Equals(snap.distro_series.main_archive),
+            pocket=Equals(PackagePublishingPocket.UPDATES),
+            channels=Equals({"snapcraft": "edge"})))
 
     def makeRequestBuildsJob(self, arch_tags):
         distro = self.factory.makeDistribution()
@@ -2407,6 +2435,128 @@ class TestSnapWebservice(TestCaseWithFactory):
             "Snap package builds against private archives are only allowed "
             "if the snap package owner and the archive owner are equal.",
             response.body)
+
+    def test_requestBuilds(self):
+        # Requests for builds for all relevant architectures can be
+        # performed over the webservice, and the returned entry indicates
+        # the status of the asynchronous job.
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        processors = [
+            self.factory.makeProcessor(supports_virtualized=True)
+            for _ in range(3)]
+        for processor in processors:
+            self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, architecturetag=processor.name,
+                processor=processor, owner=self.person)
+        archive_url = api_url(distroseries.main_archive)
+        [git_ref] = self.factory.makeGitRefs()
+        snap = self.makeSnap(
+            git_ref=git_ref, distroseries=distroseries, processors=processors)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuilds", archive=archive_url,
+            pocket="Updates", channels={"snapcraft": "edge"})
+        self.assertEqual(201, response.status)
+        build_request_url = response.getHeader("Location")
+        build_request = self.webservice.get(build_request_url).jsonBody()
+        self.assertThat(build_request, ContainsDict({
+            "snap_link": Equals(snap["self_link"]),
+            "status": Equals("Pending"),
+            "error_message": Is(None),
+            "builds_collection_link": Equals(build_request_url + "/builds"),
+            }))
+        self.assertEqual([], self.getCollectionLinks(build_request, "builds"))
+        with person_logged_in(self.person):
+            snapcraft_yaml = "architectures:\n"
+            for processor in processors:
+                snapcraft_yaml += "  - build-on: %s\n" % processor.name
+            self.useFixture(GitHostingFixture(blob=snapcraft_yaml))
+            [job] = getUtility(ISnapRequestBuildsJobSource).iterReady()
+            with dbuser(config.ISnapRequestBuildsJobSource.dbuser):
+                JobRunner([job]).runAll()
+        build_request = self.webservice.get(
+            build_request["self_link"]).jsonBody()
+        self.assertThat(build_request, ContainsDict({
+            "snap_link": Equals(snap["self_link"]),
+            "status": Equals("Completed"),
+            "error_message": Is(None),
+            "builds_collection_link": Equals(build_request_url + "/builds"),
+            }))
+        builds = self.webservice.get(
+            build_request["builds_collection_link"]).jsonBody()["entries"]
+        with person_logged_in(self.person):
+            self.assertThat(builds, MatchesSetwise(*(
+                ContainsDict({
+                    "snap_link": Equals(snap["self_link"]),
+                    "archive_link": Equals(
+                        self.getURL(distroseries.main_archive)),
+                    "arch_tag": Equals(processor.name),
+                    "pocket": Equals("Updates"),
+                    "channels": Equals({"snapcraft": "edge"}),
+                    })
+                for processor in processors)))
+
+    def test_requestBuilds_failure(self):
+        # If the asynchronous build request job fails, this is reflected in
+        # the build request entry.
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, architecturetag=processor.name,
+            processor=processor, owner=self.person)
+        archive_url = api_url(distroseries.main_archive)
+        [git_ref] = self.factory.makeGitRefs()
+        snap = self.makeSnap(
+            git_ref=git_ref, distroseries=distroseries,
+            processors=[processor])
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuilds", archive=archive_url,
+            pocket="Updates")
+        self.assertEqual(201, response.status)
+        build_request_url = response.getHeader("Location")
+        build_request = self.webservice.get(build_request_url).jsonBody()
+        self.assertThat(build_request, ContainsDict({
+            "snap_link": Equals(snap["self_link"]),
+            "status": Equals("Pending"),
+            "error_message": Is(None),
+            "builds_collection_link": Equals(build_request_url + "/builds"),
+            }))
+        self.assertEqual([], self.getCollectionLinks(build_request, "builds"))
+        with person_logged_in(self.person):
+            self.useFixture(GitHostingFixture()).getBlob.failure = Exception(
+                "Something went wrong")
+            [job] = getUtility(ISnapRequestBuildsJobSource).iterReady()
+            with dbuser(config.ISnapRequestBuildsJobSource.dbuser):
+                JobRunner([job]).runAll()
+        build_request = self.webservice.get(
+            build_request["self_link"]).jsonBody()
+        self.assertThat(build_request, ContainsDict({
+            "snap_link": Equals(snap["self_link"]),
+            "status": Equals("Failed"),
+            "error_message": Equals("Something went wrong"),
+            "builds_collection_link": Equals(build_request_url + "/builds"),
+            }))
+        self.assertEqual([], self.getCollectionLinks(build_request, "builds"))
+
+    def test_requestBuilds_not_owner(self):
+        # If the requester is not the owner or a member of the owner team,
+        # build requests are rejected.
+        other_team = self.factory.makeTeam(displayname="Other Team")
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        archive_url = api_url(distroseries.main_archive)
+        other_webservice = webservice_for_person(
+            other_team.teamowner, permission=OAuthPermission.WRITE_PUBLIC)
+        other_webservice.default_api_version = "devel"
+        login(ANONYMOUS)
+        snap = self.makeSnap(
+            owner=other_team, distroseries=distroseries,
+            webservice=other_webservice)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuilds", archive=archive_url,
+            pocket="Updates")
+        self.assertEqual(401, response.status)
+        self.assertEqual(
+            "Test Person cannot create snap package builds owned by Other "
+            "Team.", response.body)
 
     def test_requestAutoBuilds(self):
         # requestAutoBuilds can be performed over the webservice.

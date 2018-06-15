@@ -42,6 +42,13 @@
         <allow interface="lp.snappy.interfaces.snap.ISnapSet" />
     </securedutility>
 
+    <!-- SnapBuildRequest -->
+    <class class="lp.snappy.model.snap.SnapBuildRequest">
+        <require
+            permission="launchpad.View"
+            interface="lp.snappy.interfaces.snap.ISnapBuildRequest" />
+    </class>
+
     <!-- SnapBuild -->
     <class class="lp.snappy.model.snapbuild.SnapBuild">
         <require

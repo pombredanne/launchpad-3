@@ -187,6 +187,20 @@ class SnapRequestBuildsJob(SnapJobDerived):
         job.celeryRunOnCommit()
         return job
 
+    @classmethod
+    def getBySnapAndID(cls, snap, job_id):
+        """See `ISnapRequestBuildsJobSource`."""
+        snap_job = IStore(SnapJob).find(
+            SnapJob,
+            SnapJob.job_id == job_id,
+            SnapJob.snap == snap,
+            SnapJob.job_type == cls.class_job_type).one()
+        if snap_job is None:
+            raise NotFoundError(
+                "No REQUEST_BUILDS job with ID %d found for %r" %
+                (job_id, snap))
+        return cls(snap_job)
+
     def getOperationDescription(self):
         return "requesting builds of %s" % self.snap.name
 
