@@ -6,10 +6,12 @@ __all__ = [
     'Snap',
     ]
 
+from collections import OrderedDict
 from datetime import (
     datetime,
     timedelta,
     )
+from operator import attrgetter
 from urlparse import urlsplit
 
 from pymacaroons import Macaroon
@@ -116,6 +118,7 @@ from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
+from lp.snappy.adapters.buildarch import determine_architectures_to_build
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     BadSnapSource,
@@ -463,20 +466,24 @@ class Snap(Storm, WebhookTargetMixin):
             return False
         return True
 
-    def requestBuild(self, requester, archive, distro_arch_series, pocket,
-                     channels=None):
-        """See `ISnap`."""
+    def _checkRequestBuild(self, requester, archive):
+        """May `requester` request builds of this snap from `archive`?"""
         if not requester.inTeam(self.owner):
             raise SnapNotOwner(
                 "%s cannot create snap package builds owned by %s." %
                 (requester.displayname, self.owner.displayname))
         if not archive.enabled:
             raise ArchiveDisabled(archive.displayname)
-        if distro_arch_series not in self.getAllowedArchitectures():
-            raise SnapBuildDisallowedArchitecture(distro_arch_series)
         if archive.private and self.owner != archive.owner:
             # See rationale in `SnapBuildArchiveOwnerMismatch` docstring.
             raise SnapBuildArchiveOwnerMismatch()
+
+    def requestBuild(self, requester, archive, distro_arch_series, pocket,
+                     channels=None):
+        """See `ISnap`."""
+        self._checkRequestBuild(requester, archive)
+        if distro_arch_series not in self.getAllowedArchitectures():
+            raise SnapBuildDisallowedArchitecture(distro_arch_series)
 
         pending = IStore(self).find(
             SnapBuild,
@@ -495,8 +502,42 @@ class Snap(Storm, WebhookTargetMixin):
         build.queueBuild()
         return build
 
+    def requestBuildsFromJob(self, requester, archive, pocket, channels=None,
+                             logger=None):
+        """See `ISnap`."""
+        snapcraft_data = removeSecurityProxy(
+            getUtility(ISnapSet).getSnapcraftYaml(self))
+        # Sort by Processor.id for determinism.  This is chosen to be the
+        # same order as in BinaryPackageBuildSet.createForSource, to
+        # minimise confusion.
+        supported_arches = OrderedDict(
+            (das.architecturetag, das) for das in sorted(
+                self.getAllowedArchitectures(),
+                key=attrgetter("processor.id")))
+        architectures_to_build = determine_architectures_to_build(
+            snapcraft_data, supported_arches.keys())
+
+        builds = []
+        for build_instance in architectures_to_build:
+            arch = build_instance.architecture
+            try:
+                build = self.requestBuild(
+                    requester, archive, supported_arches[arch], pocket,
+                    channels)
+                if logger is not None:
+                    logger.debug(
+                        " - %s/%s/%s: Build requested.",
+                        self.owner.name, self.name, arch)
+                builds.append(build)
+            except SnapBuildAlreadyPending as e:
+                if logger is not None:
+                    logger.warning(
+                        " - %s/%s/%s: %s",
+                        self.owner.name, self.name, arch, e)
+        return builds
+
     def requestAutoBuilds(self, allow_failures=False, logger=None):
-        """See `ISnapSet`."""
+        """See `ISnap`."""
         builds = []
         if self.auto_build_archive is None:
             raise CannotRequestAutoBuilds("auto_build_archive")

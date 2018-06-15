@@ -12,6 +12,7 @@ from datetime import (
     timedelta,
     )
 import json
+from textwrap import dedent
 from urlparse import urlsplit
 
 from fixtures import MockPatch
@@ -91,6 +92,7 @@ from lp.snappy.interfaces.snapbuild import (
     ISnapBuildSet,
     )
 from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
+from lp.snappy.interfaces.snapjob import ISnapRequestBuildsJobSource
 from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snap import SnapSet
 from lp.snappy.model.snapbuild import SnapFile
@@ -360,6 +362,65 @@ class TestSnap(TestCaseWithFactory):
         snap.requestBuild(
             snap.owner, snap.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.UPDATES)
+
+    def makeRequestBuildsJob(self, arch_tags):
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        processors = [
+            self.factory.makeProcessor(
+                name=arch_tag, supports_virtualized=True)
+            for arch_tag in arch_tags]
+        for processor in processors:
+            das = self.factory.makeDistroArchSeries(
+                distroseries=distroseries, architecturetag=processor.name,
+                processor=processor)
+            das.addOrUpdateChroot(self.factory.makeLibraryFileAlias(
+                filename="fake_chroot.tar.gz", db_only=True))
+        [git_ref] = self.factory.makeGitRefs()
+        snap = self.factory.makeSnap(
+            git_ref=git_ref, distroseries=distroseries, processors=processors)
+        return getUtility(ISnapRequestBuildsJobSource).create(
+            snap, snap.owner.teamowner, distro.main_archive,
+            PackagePublishingPocket.RELEASE, {"snapcraft": "edge"})
+
+    def assertRequestedBuildsMatch(self, builds, job, arch_tags):
+        self.assertThat(builds, MatchesSetwise(
+            *(MatchesStructure(
+                requester=Equals(job.requester),
+                snap=Equals(job.snap),
+                archive=Equals(job.archive),
+                distro_arch_series=Equals(job.snap.distro_series[arch_tag]),
+                pocket=Equals(job.pocket),
+                channels=Equals(job.channels))
+              for arch_tag in arch_tags)))
+
+    def test_requestBuildsFromJob_restricts_explicit_list(self):
+        # requestBuildsFromJob limits builds targeted at an explicit list of
+        # architectures to those allowed for the snap.
+        self.useFixture(GitHostingFixture(blob=dedent("""\
+            architectures:
+              - build-on: sparc
+              - build-on: i386
+              - build-on: avr
+            """)))
+        job = self.makeRequestBuildsJob(["sparc"])
+        with person_logged_in(job.requester):
+            builds = job.snap.requestBuildsFromJob(
+                job.requester, job.archive, job.pocket,
+                removeSecurityProxy(job.channels))
+        self.assertRequestedBuildsMatch(builds, job, ["sparc"])
+
+    def test_requestBuildsFromJob_no_explicit_architectures(self):
+        # If the snap doesn't specify any architectures,
+        # requestBuildsFromJob requests builds for all configured
+        # architectures.
+        self.useFixture(GitHostingFixture(blob="name: foo\n"))
+        job = self.makeRequestBuildsJob(["mips64el", "riscv64"])
+        with person_logged_in(job.requester):
+            builds = job.snap.requestBuildsFromJob(
+                job.requester, job.archive, job.pocket,
+                removeSecurityProxy(job.channels))
+        self.assertRequestedBuildsMatch(builds, job, ["mips64el", "riscv64"])
 
     def test_requestAutoBuilds(self):
         # requestAutoBuilds creates new builds for all configured

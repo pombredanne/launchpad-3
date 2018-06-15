@@ -1,4 +1,4 @@
-<!-- Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -127,6 +127,18 @@
     </securedutility>
 
     <!-- Snap-related jobs -->
+    <class class="lp.snappy.model.snapjob.SnapJob">
+        <allow interface="lp.snappy.interfaces.snapjob.ISnapJob" />
+    </class>
+    <securedutility
+        component="lp.snappy.model.snapjob.SnapRequestBuildsJob"
+        provides="lp.snappy.interfaces.snapjob.ISnapRequestBuildsJobSource">
+        <allow interface="lp.snappy.interfaces.snapjob.ISnapRequestBuildsJobSource" />
+    </securedutility>
+    <class class="lp.snappy.model.snapjob.SnapRequestBuildsJob">
+        <allow interface="lp.snappy.interfaces.snapjob.ISnapJob" />
+        <allow interface="lp.snappy.interfaces.snapjob.ISnapRequestBuildsJob" />
+    </class>
     <class class="lp.snappy.model.snapbuildjob.SnapBuildJob">
         <allow interface="lp.snappy.interfaces.snapbuildjob.ISnapBuildJob" />
     </class>
