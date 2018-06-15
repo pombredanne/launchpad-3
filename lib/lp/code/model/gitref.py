@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,11 +12,16 @@ __all__ = [
 from datetime import datetime
 from functools import partial
 import json
-from urllib import quote_plus
+import re
+from urllib import (
+    quote,
+    quote_plus,
+    )
 from urlparse import urlsplit
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
+import requests
 from storm.locals import (
     DateTime,
     Int,
@@ -42,6 +47,8 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     BranchMergeProposalExists,
+    GitRepositoryBlobNotFound,
+    GitRepositoryScanFault,
     InvalidBranchMergeProposal,
     )
 from lp.code.event.branchmergeproposal import (
@@ -69,6 +76,7 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.timeout import urlfetch
 from lp.services.webapp.interfaces import ILaunchBag
 
 
@@ -386,6 +394,10 @@ class GitRefMixin:
                 commit["merge_proposal"] = merge_proposal_commits.get(
                     commit["sha1"])
         return commits
+
+    def getBlob(self, filename):
+        """See `IGitRef`."""
+        return self.repository.getBlob(filename, rev=self.path)
 
     @property
     def recipes(self):
@@ -724,6 +736,41 @@ class GitRefRemote(GitRefMixin):
     def getLatestCommits(self, *args, **kwargs):
         """See `IGitRef`."""
         return []
+
+    def getBlob(self, filename):
+        """See `IGitRef`."""
+        # In general, we can't easily get hold of a blob from a remote
+        # repository without cloning the whole thing.  In future we might
+        # dispatch a build job or a code import or something like that to do
+        # so.  For now, we just special-case some providers where we know
+        # how to fetch a blob on its own.
+        url = urlsplit(self.repository_url)
+        if (url.hostname == "github.com" and
+                len(url.path.strip("/").split("/")) == 2):
+            repo_path = url.path.strip("/")
+            if repo_path.endswith(".git"):
+                repo_path = repo_path[:len(".git")]
+            try:
+                response = urlfetch(
+                    "https://raw.githubusercontent.com/%s/%s/%s" % (
+                        repo_path,
+                        # GitHub supports either branch or tag names here,
+                        # but both must be shortened.
+                        quote(re.sub(r"^refs/(?:heads|tags)/", "", self.path)),
+                        quote(filename)),
+                    use_proxy=True)
+            except requests.RequestException as e:
+                if e.response.status_code == requests.codes.NOT_FOUND:
+                    raise GitRepositoryBlobNotFound(
+                        self.repository_url, filename, rev=self.path)
+                else:
+                    raise GitRepositoryScanFault(
+                        "Failed to get file from Git repository at %s: %s" %
+                        (self.repository_url, str(e)))
+            return response.content
+        raise GitRepositoryScanFault(
+            "Cannot fetch blob from external Git repository at %s" %
+            self.repository_url)
 
     @property
     def recipes(self):

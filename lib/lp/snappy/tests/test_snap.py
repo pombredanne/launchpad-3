@@ -74,6 +74,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
 from lp.services.log.logger import BufferLogger
 from lp.services.propertycache import clear_property_cache
+from lp.services.timeout import default_timeout
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
@@ -1195,6 +1196,21 @@ class TestSnapSet(TestCaseWithFactory):
         snap = self.factory.makeSnap(git_ref=git_ref)
         self.assertEqual(
             {"name": "test-snap"}, getUtility(ISnapSet).getSnapcraftYaml(snap))
+
+    @responses.activate
+    def test_getSnapcraftYaml_snap_git_external_github(self):
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/HEAD/"
+            "snap/snapcraft.yaml",
+            body=b"name: test-snap")
+        git_ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name", path="HEAD")
+        snap = self.factory.makeSnap(git_ref=git_ref)
+        with default_timeout(1.0):
+            self.assertEqual(
+                {"name": "test-snap"},
+                getUtility(ISnapSet).getSnapcraftYaml(snap))
 
     def test_getSnapcraftYaml_invalid_data(self):
         hosting_fixture = self.useFixture(GitHostingFixture())

@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git references."""
@@ -15,6 +15,7 @@ import hashlib
 import json
 
 import pytz
+import responses
 from testtools.matchers import (
     ContainsDict,
     EndsWith,
@@ -29,7 +30,11 @@ from zope.component import getUtility
 from lp.app.enums import InformationType
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
-from lp.code.errors import InvalidBranchMergeProposal
+from lp.code.errors import (
+    GitRepositoryBlobNotFound,
+    GitRepositoryScanFault,
+    InvalidBranchMergeProposal,
+    )
 from lp.code.tests.helpers import GitHostingFixture
 from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient
@@ -269,6 +274,83 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 "merge_proposal": Is(None),
                 }),
             ]))
+
+
+class TestGitRefGetBlob(TestCaseWithFactory):
+    """Tests for retrieving blobs from a Git reference."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_local(self):
+        [ref] = self.factory.makeGitRefs()
+        hosting_fixture = self.useFixture(GitHostingFixture(blob=b"foo"))
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+        self.assertEqual(
+            [((ref.repository.getInternalPath(), "dir/file"),
+              {"rev": ref.path})],
+            hosting_fixture.getBlob.calls)
+
+    @responses.activate
+    def test_remote_github_branch(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name",
+            path="refs/heads/path")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/path/dir/file",
+            body=b"foo")
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+
+    @responses.activate
+    def test_remote_github_tag(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name",
+            path="refs/tags/1.0")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/1.0/dir/file",
+            body=b"foo")
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+
+    @responses.activate
+    def test_remote_github_HEAD(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name", path="HEAD")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/HEAD/dir/file",
+            body=b"foo")
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+
+    @responses.activate
+    def test_remote_github_404(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name", path="HEAD")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/HEAD/dir/file",
+            status=404)
+        self.assertRaises(GitRepositoryBlobNotFound, ref.getBlob, "dir/file")
+
+    @responses.activate
+    def test_remote_github_error(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name", path="HEAD")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/HEAD/dir/file",
+            status=500)
+        self.assertRaises(GitRepositoryScanFault, ref.getBlob, "dir/file")
+
+    def test_remote_github_bad_repository_path(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name/extra")
+        self.assertRaises(GitRepositoryScanFault, ref.getBlob, "dir/file")
+
+    def test_remote_unknown_host(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://example.com/foo")
+        self.assertRaises(GitRepositoryScanFault, ref.getBlob, "dir/file")
 
 
 class TestGitRefCreateMergeProposal(TestCaseWithFactory):

@@ -1040,10 +1040,7 @@ class SnapSet:
                 )
             for path in paths:
                 try:
-                    if IBranch.providedBy(context):
-                        blob = context.getBlob(path)
-                    else:
-                        blob = context.repository.getBlob(path, context.name)
+                    blob = context.getBlob(path)
                     break
                 except (BranchFileNotFound, GitRepositoryBlobNotFound):
                     pass
