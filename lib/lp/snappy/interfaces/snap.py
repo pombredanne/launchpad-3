@@ -406,6 +406,7 @@ class ISnapView(Interface):
         """
 
     def requestBuildsFromJob(requester, archive, pocket, channels=None,
+                             allow_failures=False, fetch_snapcraft_yaml=True,
                              logger=None):
         """Synchronous part of `Snap.requestBuilds`.
 
@@ -416,6 +417,13 @@ class ISnapView(Interface):
         :param pocket: The pocket that should be targeted.
         :param channels: A dictionary mapping snap names to channels to use
             for these builds.
+        :param allow_failures: If True, log exceptions other than "already
+            pending" from individual build requests; if False, raise them to
+            the caller.
+        :param fetch_snapcraft_yaml: If True, fetch snapcraft.yaml from the
+            appropriate branch or repository and use it to decide which
+            builds to request; if False, fall back to building for all
+            supported architectures.
         :param logger: An optional logger.
         :return: A sequence of `ISnapBuild` instances.
         """

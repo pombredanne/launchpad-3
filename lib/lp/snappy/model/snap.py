@@ -552,18 +552,22 @@ class Snap(Storm, WebhookTargetMixin):
         return self.getBuildRequest(job.job_id)
 
     def requestBuildsFromJob(self, requester, archive, pocket, channels=None,
+                             allow_failures=False, fetch_snapcraft_yaml=True,
                              logger=None):
         """See `ISnap`."""
-        try:
-            snapcraft_data = removeSecurityProxy(
-                getUtility(ISnapSet).getSnapcraftYaml(self))
-        except CannotFetchSnapcraftYaml as e:
-            if not e.unsupported_remote:
-                raise
-            # The only reason we can't fetch the file is because we don't
-            # support fetching from this repository's host.  In this case
-            # the best thing is to fall back to building for all supported
-            # architectures.
+        if fetch_snapcraft_yaml:
+            try:
+                snapcraft_data = removeSecurityProxy(
+                    getUtility(ISnapSet).getSnapcraftYaml(self))
+            except CannotFetchSnapcraftYaml as e:
+                if not e.unsupported_remote:
+                    raise
+                # The only reason we can't fetch the file is because we
+                # don't support fetching from this repository's host.  In
+                # this case the best thing is to fall back to building for
+                # all supported architectures.
+                snapcraft_data = {}
+        else:
             snapcraft_data = {}
         # Sort by Processor.id for determinism.  This is chosen to be the
         # same order as in BinaryPackageBuildSet.createForSource, to
@@ -592,11 +596,17 @@ class Snap(Storm, WebhookTargetMixin):
                     logger.warning(
                         " - %s/%s/%s: %s",
                         self.owner.name, self.name, arch, e)
+            except Exception as e:
+                if not allow_failures:
+                    raise
+                elif logger is not None:
+                    logger.exception(
+                        " - %s/%s/%s: %s",
+                        self.owner.name, self.name, arch, e)
         return builds
 
     def requestAutoBuilds(self, allow_failures=False, logger=None):
         """See `ISnap`."""
-        builds = []
         if self.auto_build_archive is None:
             raise CannotRequestAutoBuilds("auto_build_archive")
         if self.auto_build_pocket is None:
@@ -606,29 +616,10 @@ class Snap(Storm, WebhookTargetMixin):
             logger.debug(
                 "Scheduling builds of snap package %s/%s",
                 self.owner.name, self.name)
-        for arch in self.getAllowedArchitectures():
-            try:
-                build = self.requestBuild(
-                    self.owner, self.auto_build_archive, arch,
-                    self.auto_build_pocket, self.auto_build_channels)
-                if logger is not None:
-                    logger.debug(
-                        " - %s/%s/%s: Build requested.",
-                        self.owner.name, self.name, arch.architecturetag)
-                builds.append(build)
-            except SnapBuildAlreadyPending as e:
-                if logger is not None:
-                    logger.warning(
-                        " - %s/%s/%s: %s",
-                        self.owner.name, self.name, arch.architecturetag, e)
-            except Exception as e:
-                if not allow_failures:
-                    raise
-                elif logger is not None:
-                    logger.exception(
-                        " - %s/%s/%s: %s",
-                        self.owner.name, self.name, arch.architecturetag, e)
-        return builds
+        return self.requestBuildsFromJob(
+            self.owner, self.auto_build_archive, self.auto_build_pocket,
+            channels=self.auto_build_channels, allow_failures=allow_failures,
+            fetch_snapcraft_yaml=False, logger=logger)
 
     def getBuildRequest(self, job_id):
         """See `ISnap`."""
