@@ -48,6 +48,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchMergeProposalExists,
     GitRepositoryBlobNotFound,
+    GitRepositoryBlobUnsupportedRemote,
     GitRepositoryScanFault,
     InvalidBranchMergeProposal,
     )
@@ -768,9 +769,7 @@ class GitRefRemote(GitRefMixin):
                         "Failed to get file from Git repository at %s: %s" %
                         (self.repository_url, str(e)))
             return response.content
-        raise GitRepositoryScanFault(
-            "Cannot fetch blob from external Git repository at %s" %
-            self.repository_url)
+        raise GitRepositoryBlobUnsupportedRemote(self.repository_url)
 
     @property
     def recipes(self):

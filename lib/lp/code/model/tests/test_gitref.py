@@ -32,6 +32,7 @@ from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
 from lp.code.errors import (
     GitRepositoryBlobNotFound,
+    GitRepositoryBlobUnsupportedRemote,
     GitRepositoryScanFault,
     InvalidBranchMergeProposal,
     )
@@ -345,12 +346,14 @@ class TestGitRefGetBlob(TestCaseWithFactory):
     def test_remote_github_bad_repository_path(self):
         ref = self.factory.makeGitRefRemote(
             repository_url="https://github.com/owner/name/extra")
-        self.assertRaises(GitRepositoryScanFault, ref.getBlob, "dir/file")
+        self.assertRaises(
+            GitRepositoryBlobUnsupportedRemote, ref.getBlob, "dir/file")
 
     def test_remote_unknown_host(self):
         ref = self.factory.makeGitRefRemote(
             repository_url="https://example.com/foo")
-        self.assertRaises(GitRepositoryScanFault, ref.getBlob, "dir/file")
+        self.assertRaises(
+            GitRepositoryBlobUnsupportedRemote, ref.getBlob, "dir/file")
 
 
 class TestGitRefCreateMergeProposal(TestCaseWithFactory):

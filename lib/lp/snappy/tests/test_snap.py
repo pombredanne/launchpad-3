@@ -392,7 +392,7 @@ class TestSnap(TestCaseWithFactory):
             pocket=Equals(PackagePublishingPocket.UPDATES),
             channels=Equals({"snapcraft": "edge"})))
 
-    def makeRequestBuildsJob(self, arch_tags):
+    def makeRequestBuildsJob(self, arch_tags, git_ref=None):
         distro = self.factory.makeDistribution()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         processors = [
@@ -405,7 +405,8 @@ class TestSnap(TestCaseWithFactory):
                 processor=processor)
             das.addOrUpdateChroot(self.factory.makeLibraryFileAlias(
                 filename="fake_chroot.tar.gz", db_only=True))
-        [git_ref] = self.factory.makeGitRefs()
+        if git_ref is None:
+            [git_ref] = self.factory.makeGitRefs()
         snap = self.factory.makeSnap(
             git_ref=git_ref, distroseries=distroseries, processors=processors)
         return getUtility(ISnapRequestBuildsJobSource).create(
@@ -445,6 +446,20 @@ class TestSnap(TestCaseWithFactory):
         # architectures.
         self.useFixture(GitHostingFixture(blob="name: foo\n"))
         job = self.makeRequestBuildsJob(["mips64el", "riscv64"])
+        with person_logged_in(job.requester):
+            builds = job.snap.requestBuildsFromJob(
+                job.requester, job.archive, job.pocket,
+                removeSecurityProxy(job.channels))
+        self.assertRequestedBuildsMatch(builds, job, ["mips64el", "riscv64"])
+
+    def test_requestBuilds_unsupported_remote(self):
+        # If the snap is based on an external Git repository from which we
+        # don't support fetching blobs, requestBuildsFromJob falls back to
+        # requesting builds for all configured architectures.
+        git_ref = self.factory.makeGitRefRemote(
+            repository_url="https://example.com/foo.git")
+        job = self.makeRequestBuildsJob(
+            ["mips64el", "riscv64"], git_ref=git_ref)
         with person_logged_in(job.requester):
             builds = job.snap.requestBuildsFromJob(
                 job.requester, job.archive, job.pocket,

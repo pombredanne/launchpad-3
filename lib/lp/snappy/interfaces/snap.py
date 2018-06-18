@@ -248,6 +248,10 @@ class CannotRequestAutoBuilds(Exception):
 class CannotFetchSnapcraftYaml(Exception):
     """Launchpad cannot fetch this snap package's snapcraft.yaml."""
 
+    def __init__(self, message, unsupported_remote=False):
+        super(CannotFetchSnapcraftYaml, self).__init__(message)
+        self.unsupported_remote = unsupported_remote
+
 
 class CannotParseSnapcraftYaml(Exception):
     """Launchpad cannot parse this snap package's snapcraft.yaml."""
