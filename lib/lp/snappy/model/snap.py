@@ -605,7 +605,8 @@ class Snap(Storm, WebhookTargetMixin):
                         self.owner.name, self.name, arch, e)
         return builds
 
-    def requestAutoBuilds(self, allow_failures=False, logger=None):
+    def requestAutoBuilds(self, allow_failures=False,
+                          fetch_snapcraft_yaml=False, logger=None):
         """See `ISnap`."""
         if self.auto_build_archive is None:
             raise CannotRequestAutoBuilds("auto_build_archive")
@@ -619,7 +620,7 @@ class Snap(Storm, WebhookTargetMixin):
         return self.requestBuildsFromJob(
             self.owner, self.auto_build_archive, self.auto_build_pocket,
             channels=self.auto_build_channels, allow_failures=allow_failures,
-            fetch_snapcraft_yaml=False, logger=logger)
+            fetch_snapcraft_yaml=fetch_snapcraft_yaml, logger=logger)
 
     def getBuildRequest(self, job_id):
         """See `ISnap`."""
@@ -1107,7 +1108,7 @@ class SnapSet:
         builds = []
         for snap in snaps:
             builds.extend(snap.requestAutoBuilds(
-                allow_failures=True, logger=logger))
+                allow_failures=True, fetch_snapcraft_yaml=True, logger=logger))
         return builds
 
     def detachFromBranch(self, branch):

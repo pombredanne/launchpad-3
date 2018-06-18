@@ -122,12 +122,12 @@ class SnapBuildInstance:
 
 
 def determine_architectures_to_build(snapcraft_data, supported_arches):
-    """Return a set of architectures to build based on snapcraft.yaml.
+    """Return a list of architectures to build based on snapcraft.yaml.
 
     :param snapcraft_data: A parsed snapcraft.yaml.
     :param supported_arches: An ordered list of all architecture tags that
         we can create builds for.
-    :return: a set of `SnapBuildInstance`s.
+    :return: a list of `SnapBuildInstance`s.
     """
     architectures_list = snapcraft_data.get("architectures")
 
@@ -162,10 +162,10 @@ def determine_architectures_to_build(snapcraft_data, supported_arches):
     if duplicates:
         raise DuplicateBuildOnError(duplicates)
 
-    architectures_to_build = set()
+    architectures_to_build = []
     for arch in architectures:
         try:
-            architectures_to_build.add(
+            architectures_to_build.append(
                 SnapBuildInstance(arch, supported_arches))
         except UnsupportedBuildOnError:
             # Snaps are allowed to declare that they build on architectures
