@@ -140,5 +140,5 @@ class SSHKeyAdditionError(Exception):
             msg = "Invalid SSH key type: '%s'" % kind
         if 'exception' in kwargs:
             exception = kwargs.pop('exception')
-            msg = "%s (%s)" % (msg, exception)
+            msg = "%s (%s)" % (msg, str(exception).decode('utf-8', 'ignore'))
         super(SSHKeyAdditionError, self).__init__(msg, *args, **kwargs)

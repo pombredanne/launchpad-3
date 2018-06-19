@@ -172,6 +172,13 @@ class TestSSHKeySet(TestCaseWithFactory):
         )
         self.assertRaisesWithContent(
             SSHKeyAdditionError,
+            "Invalid SSH key data: 'ssh-rsa asdfasdf comment' "
+            "(unknown blob type: _)",
+            keyset.new,
+            person, 'ssh-rsa asdfasdf comment'
+        )
+        self.assertRaisesWithContent(
+            SSHKeyAdditionError,
             "Invalid SSH key data: 'None'",
             keyset.new,
             person, None
