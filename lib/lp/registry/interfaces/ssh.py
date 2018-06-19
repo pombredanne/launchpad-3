@@ -124,4 +124,21 @@ class ISSHKeySet(Interface):
 
 @error_status(httplib.BAD_REQUEST)
 class SSHKeyAdditionError(Exception):
-    """Raised when the SSH public key is invalid."""
+    """Raised when the SSH public key is invalid.
+
+    WARNING: Be careful when changing the message format as
+    SSO uses a regex to recognize it.
+    """
+
+    def __init__(self, *args, **kwargs):
+        msg = ""
+        if 'key' in kwargs:
+            key = kwargs.pop('key')
+            msg = "Invalid SSH key data: '%s'" % key
+        if 'kind' in kwargs:
+            kind = kwargs.pop('kind')
+            msg = "Invalid SSH key type: '%s'" % kind
+        if 'exception' in kwargs:
+            exception = kwargs.pop('exception')
+            msg = "%s (%s)" % (msg, exception)
+        super(SSHKeyAdditionError, self).__init__(msg, *args, **kwargs)

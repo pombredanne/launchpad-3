@@ -4137,8 +4137,7 @@ class SSHKeySet:
             try:
                 Key.fromString(sshkey)
             except Exception as e:
-                raise SSHKeyAdditionError(
-                    "Invalid SSH key data: '%s' (%s)" % (sshkey, e))
+                raise SSHKeyAdditionError(key=sshkey, exception=e)
 
         if send_notification:
             person.security_field_changed(
@@ -4171,15 +4170,14 @@ class SSHKeySet:
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
         except (ValueError, AttributeError):
-            raise SSHKeyAdditionError("Invalid SSH key data: '%s'" % sshkey)
+            raise SSHKeyAdditionError(key=sshkey)
 
         if not (kind and keytext and comment):
-            raise SSHKeyAdditionError("Invalid SSH key data: '%s'" % sshkey)
+            raise SSHKeyAdditionError(key=sshkey)
 
         keytype = SSH_TEXT_TO_KEY_TYPE.get(kind)
         if keytype is None:
-            raise SSHKeyAdditionError(
-                "Invalid SSH key type: '%s'" % kind)
+            raise SSHKeyAdditionError(kind=kind)
         return keytype, keytext, comment
 
 
