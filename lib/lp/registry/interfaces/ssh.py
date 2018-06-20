@@ -25,6 +25,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
     )
+import six
 from zope.interface import Interface
 from zope.schema import (
     Choice,
@@ -124,4 +125,27 @@ class ISSHKeySet(Interface):
 
 @error_status(httplib.BAD_REQUEST)
 class SSHKeyAdditionError(Exception):
-    """Raised when the SSH public key is invalid."""
+    """Raised when the SSH public key is invalid.
+
+    WARNING: Be careful when changing the message format as
+    SSO uses a regex to recognize it.
+    """
+
+    def __init__(self, *args, **kwargs):
+        msg = ""
+        if 'key' in kwargs:
+            key = kwargs.pop('key')
+            msg = "Invalid SSH key data: '%s'" % key
+        if 'kind' in kwargs:
+            kind = kwargs.pop('kind')
+            msg = "Invalid SSH key type: '%s'" % kind
+        if 'exception' in kwargs:
+            exception = kwargs.pop('exception')
+            try:
+                exception_text = six.text_type(exception)
+            except UnicodeDecodeError:
+                # On Python 2, Key.fromString can raise exceptions with
+                # non-UTF-8 messages.
+                exception_text = bytes(exception).decode('unicode_escape')
+            msg = "%s (%s)" % (msg, exception_text)
+        super(SSHKeyAdditionError, self).__init__(msg, *args, **kwargs)
