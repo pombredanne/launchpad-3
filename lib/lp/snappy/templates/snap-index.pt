@@ -141,6 +141,18 @@
         </tr>
       </thead>
       <tbody>
+        <tal:snap-build-requests repeat="request context/pending_build_requests">
+          <tr tal:attributes="id string:request-${request/id}">
+            <td colspan="3"
+                tal:attributes="class string:request_status ${request/status/name}">
+              <span tal:replace="structure request/image:icon"/>
+              <tal:title replace="request/status/title"/> build request
+            </td>
+            <td>
+              <tal:archive replace="structure request/archive/fmt:link"/>
+            </td>
+          </tr>
+        </tal:snap-build-requests>
         <tal:snap-builds repeat="build view/builds">
           <tr tal:attributes="id string:build-${build/id}">
             <td tal:attributes="class string:build_status ${build/status/name}">

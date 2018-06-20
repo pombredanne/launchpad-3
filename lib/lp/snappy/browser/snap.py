@@ -248,11 +248,16 @@ class SnapRequestBuildsView(LaunchpadFormView):
         archive = Reference(IArchive, title=u'Source archive', required=True)
         distro_arch_series = List(
             Choice(vocabulary='SnapDistroArchSeries'),
-            title=u'Architectures', required=True)
+            title=u'Architectures', required=True,
+            description=(
+                u'If you do not explicitly select any architectures, then '
+                u'the snap package will be built for all architectures '
+                u'allowed by its configuration.'))
         pocket = Choice(
             title=u'Pocket', vocabulary=PackagePublishingPocket, required=True,
-            description=u'The package stream within the source distribution '
-                'series to use when building the snap package.')
+            description=(
+                u'The package stream within the source distribution series '
+                u'to use when building the snap package.'))
 
     custom_widget('archive', SnapArchiveWidget)
     custom_widget('distro_arch_series', LabeledMultiCheckBoxWidget)
@@ -271,17 +276,9 @@ class SnapRequestBuildsView(LaunchpadFormView):
         """See `LaunchpadFormView`."""
         return {
             'archive': self.context.distro_series.main_archive,
-            'distro_arch_series': self.context.getAllowedArchitectures(),
+            'distro_arch_series': [],
             'pocket': PackagePublishingPocket.UPDATES,
             }
-
-    def validate(self, data):
-        """See `LaunchpadFormView`."""
-        arches = data.get('distro_arch_series', [])
-        if not arches:
-            self.setFieldError(
-                'distro_arch_series',
-                "You need to select at least one architecture.")
 
     def requestBuild(self, data):
         """User action for requesting a number of builds.
@@ -309,12 +306,18 @@ class SnapRequestBuildsView(LaunchpadFormView):
 
     @action('Request builds', name='request')
     def request_action(self, action, data):
-        builds, informational = self.requestBuild(data)
+        if data['distro_arch_series']:
+            builds, informational = self.requestBuild(data)
+            already_pending = informational.get('already_pending')
+            notification_text = new_builds_notification_text(
+                builds, already_pending)
+            self.request.response.addNotification(notification_text)
+        else:
+            self.context.requestBuilds(
+                self.user, data['archive'], data['pocket'])
+            self.request.response.addNotification(
+                _('Builds will be dispatched soon.'))
         self.next_url = self.cancel_url
-        already_pending = informational.get('already_pending')
-        notification_text = new_builds_notification_text(
-            builds, already_pending)
-        self.request.response.addNotification(notification_text)
 
 
 class ISnapEditSchema(Interface):

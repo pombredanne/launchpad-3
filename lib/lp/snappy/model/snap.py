@@ -43,7 +43,10 @@ from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.browser.tales import (
+    ArchiveFormatterAPI,
+    DateTimeFormatterAPI,
+    )
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.errors import (
     IncompatibleArguments,
@@ -117,7 +120,9 @@ from lp.services.librarian.model import (
     LibraryFileContent,
     )
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+from lp.services.webapp.authorization import precache_permission_for_objects
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import canonical_url
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
 from lp.snappy.adapters.buildarch import determine_architectures_to_build
@@ -175,9 +180,19 @@ class SnapBuildRequest:
     webservice-friendly view of an asynchronous build request.
     """
 
-    def __init__(self, snap, id):
-        self._job = getUtility(ISnapRequestBuildsJobSource).getBySnapAndID(
-            snap, id)
+    def __init__(self, snap, id, job=None):
+        if job is None:
+            job_source = getUtility(ISnapRequestBuildsJobSource)
+            job = job_source.getBySnapAndID(snap, id)
+        if snap != job.snap:
+            raise AssertionError(
+                "Mismatched SnapRequestBuildsJob: expected %r, got %r" %
+                (snap, job.snap))
+        if id != job.job_id:
+            raise AssertionError(
+                "Mismatched SnapRequestBuildsJob: expected %d, got %d" %
+                (id, job.job_id))
+        self._job = job
         self.snap = snap
         self.id = id
 
@@ -202,6 +217,11 @@ class SnapBuildRequest:
     def builds(self):
         """See `ISnapBuildRequest`."""
         return self._job.builds
+
+    @property
+    def archive(self):
+        """See `ISnapBuildRequest`."""
+        return self._job.archive
 
 
 @implementer(ISnap, IHasOwner)
@@ -626,6 +646,15 @@ class Snap(Storm, WebhookTargetMixin):
         """See `ISnap`."""
         return SnapBuildRequest(self, job_id)
 
+    @property
+    def pending_build_requests(self):
+        """See `ISnap`."""
+        job_source = getUtility(ISnapRequestBuildsJobSource)
+        return [
+            SnapBuildRequest(self, job.job_id, job=job)
+            for job in job_source.findBySnap(
+                self, statuses=(JobStatus.WAITING, JobStatus.RUNNING))]
+
     def _getBuilds(self, filter_term, order_by):
         """The actual query to get the builds."""
         query_args = [
@@ -656,6 +685,10 @@ class Snap(Storm, WebhookTargetMixin):
         order_by = Desc(SnapBuild.id)
         builds = self._getBuilds(filter_term, order_by)
 
+        # The user can obviously see this snap, and Snap._getBuilds ensures
+        # that they can see the relevant archive for each build as well.
+        precache_permission_for_objects(None, "launchpad.View", builds)
+
         # Prefetch data to keep DB query count constant
         lfas = load_related(LibraryFileAlias, builds, ["log_id"])
         load_related(LibraryFileContent, lfas, ["contentID"])
@@ -679,6 +712,67 @@ class Snap(Storm, WebhookTargetMixin):
                 "build_log_url": build.log_url,
                 "build_log_size": build_log_size,
                 }
+        return result
+
+    def getBuildSummaries(self, request_ids=None, build_ids=None):
+        """See `ISnap`."""
+        all_build_ids = []
+        result = {"requests": {}, "builds": {}}
+
+        if request_ids:
+            job_source = getUtility(ISnapRequestBuildsJobSource)
+            jobs = job_source.findBySnap(self, job_ids=request_ids)
+            requests = [
+                SnapBuildRequest(self, job.job_id, job=job) for job in jobs]
+            builds_by_request = job_source.findBuildsForJobs(jobs)
+            for builds in builds_by_request.values():
+                # It's safe to remove the proxy here, because the IDs will
+                # go through Snap._getBuilds which checks visibility.  This
+                # saves an Archive query per build in the security adapter.
+                all_build_ids.extend(
+                    [removeSecurityProxy(build).id for build in builds])
+        else:
+            requests = []
+
+        if build_ids:
+            all_build_ids.extend(build_ids)
+
+        all_build_summaries = self.getBuildSummariesForSnapBuildIds(
+            all_build_ids)
+
+        for request in requests:
+            build_summaries = []
+            for build in sorted(
+                    builds_by_request[request.id], key=attrgetter("id"),
+                    reverse=True):
+                if build.id in all_build_summaries:
+                    # Include enough information for
+                    # snap.update_build_statuses.js to populate new build
+                    # rows.
+                    build_summary = {
+                        "self_link": canonical_url(
+                            build, path_only_if_possible=True),
+                        "id": build.id,
+                        "distro_arch_series_link": canonical_url(
+                            build.distro_arch_series,
+                            path_only_if_possible=True),
+                        "architecture_tag": (
+                            build.distro_arch_series.architecturetag),
+                        "archive_link": ArchiveFormatterAPI(
+                            build.archive).link(None),
+                        }
+                    build_summary.update(all_build_summaries[build.id])
+                    build_summaries.append(build_summary)
+            result["requests"][request.id] = {
+                "status": request.status.name,
+                "error_message": request.error_message,
+                "builds": build_summaries,
+                }
+
+        for build_id in (build_ids or []):
+            if build_id in all_build_summaries:
+                result["builds"][build_id] = all_build_summaries[build_id]
+
         return result
 
     @property
