@@ -25,6 +25,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
     )
+import six
 from zope.interface import Interface
 from zope.schema import (
     Choice,
@@ -140,5 +141,11 @@ class SSHKeyAdditionError(Exception):
             msg = "Invalid SSH key type: '%s'" % kind
         if 'exception' in kwargs:
             exception = kwargs.pop('exception')
-            msg = "%s (%s)" % (msg, str(exception).decode('utf-8', 'ignore'))
+            try:
+                exception_text = six.text_type(exception)
+            except UnicodeDecodeError:
+                # On Python 2, Key.fromString can raise exceptions with
+                # non-UTF-8 messages.
+                exception_text = bytes(exception).decode('unicode_escape')
+            msg = "%s (%s)" % (msg, exception_text)
         super(SSHKeyAdditionError, self).__init__(msg, *args, **kwargs)
