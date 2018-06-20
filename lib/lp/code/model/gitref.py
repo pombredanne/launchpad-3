@@ -761,7 +761,8 @@ class GitRefRemote(GitRefMixin):
                         quote(filename)),
                     use_proxy=True)
             except requests.RequestException as e:
-                if e.response.status_code == requests.codes.NOT_FOUND:
+                if (e.response is not None and
+                        e.response.status_code == requests.codes.NOT_FOUND):
                     raise GitRepositoryBlobNotFound(
                         self.repository_url, filename, rev=self.path)
                 else:
