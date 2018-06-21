@@ -1237,7 +1237,7 @@ class TestBranchDiffView(BrowserTestCase):
             canonical_url(branch) + "/+diff/2/1")
         with person_logged_in(person):
             self.assertEqual(
-                [((branch.unique_name, "2"), {"old": "1"})],
+                [((branch.id, "2"), {"old": "1"})],
                 hosting_fixture.getDiff.calls)
         self.assertEqual("text/x-patch", browser.headers["Content-Type"])
         self.assertEqual(str(len(diff)), browser.headers["Content-Length"])
