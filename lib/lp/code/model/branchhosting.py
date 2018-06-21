@@ -91,9 +91,22 @@ class BranchHostingClient:
     def _get(self, branch_id, tail, **kwargs):
         return self._request("get", branch_id, tail, **kwargs)
 
+    def _checkRevision(self, rev):
+        """Check that a revision is well-formed.
+
+        We don't have a lot of scope for validation here, since Bazaar
+        allows revision IDs to be basically anything; but let's at least
+        exclude / as an extra layer of defence against path traversal
+        attacks.
+        """
+        if rev is not None and "/" in rev:
+            raise ValueError("Revision ID '%s' is not well-formed." % rev)
+
     def getDiff(self, branch_id, new, old=None, context_lines=None,
                 logger=None):
         """See `IBranchHostingClient`."""
+        self._checkRevision(old)
+        self._checkRevision(new)
         try:
             if logger is not None:
                 if old is None:
@@ -116,6 +129,7 @@ class BranchHostingClient:
 
     def getInventory(self, branch_id, dirname, rev=None, logger=None):
         """See `IBranchHostingClient`."""
+        self._checkRevision(rev)
         try:
             if logger is not None:
                 logger.info(
@@ -133,6 +147,7 @@ class BranchHostingClient:
 
     def getBlob(self, branch_id, file_id, rev=None, logger=None):
         """See `IBranchHostingClient`."""
+        self._checkRevision(rev)
         try:
             if logger is not None:
                 logger.info(

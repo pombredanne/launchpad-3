@@ -24,6 +24,7 @@ class IBranchHostingClient(Interface):
         :param context_lines: Include this number of lines of context around
             each hunk.
         :param logger: An optional logger.
+        :raises ValueError: if `old` or `new` is ill-formed.
         :raises BranchHostingFault: if the API returned an error.
         :return: The diff between `old` and `new` as a byte string.
         """
@@ -36,6 +37,7 @@ class IBranchHostingClient(Interface):
             the branch.
         :param rev: An optional revno or revision ID.  Defaults to 'head:'.
         :param logger: An optional logger.
+        :raises ValueError: if `rev` is ill-formed.
         :raises BranchFileNotFound: if the directory does not exist.
         :raises BranchHostingFault: if the API returned some other error.
         :return: The directory inventory as a dict: see
@@ -50,6 +52,7 @@ class IBranchHostingClient(Interface):
             useful to retrieve this.)
         :param rev: An optional revno or revision ID.  Defaults to 'head:'.
         :param logger: An optional logger.
+        :raises ValueError: if `rev` is ill-formed.
         :raises BranchFileNotFound: if the directory does not exist.
         :raises BranchHostingFault: if the API returned some other error.
         :return: The blob content as a byte string.

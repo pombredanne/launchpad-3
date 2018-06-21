@@ -96,6 +96,12 @@ class TestBranchHostingClient(TestCase):
         self.assertEqual(b"---\n+++\n", diff)
         self.assertRequest("+branch-id/123/diff/2/1?context_lines=4")
 
+    def test_getDiff_bad_old_revision(self):
+        self.assertRaises(ValueError, self.client.getDiff, 123, "x/y", "1")
+
+    def test_getDiff_bad_new_revision(self):
+        self.assertRaises(ValueError, self.client.getDiff, 123, "1", "x/y")
+
     def test_getDiff_failure(self):
         with self.mockRequests("GET", status=400):
             self.assertRaisesWithContent(
@@ -132,6 +138,11 @@ class TestBranchHostingClient(TestCase):
                 "Branch ID 123 has no file dir/path/file/name at revision a",
                 self.client.getInventory, 123, "dir/path/file/name", rev="a")
 
+    def test_getInventory_bad_revision(self):
+        self.assertRaises(
+            ValueError, self.client.getInventory,
+            123, "dir/path/file/name", rev="x/y")
+
     def test_getInventory_failure(self):
         with self.mockRequests("GET", status=400):
             self.assertRaisesWithContent(
@@ -142,9 +153,9 @@ class TestBranchHostingClient(TestCase):
 
     def test_getInventory_url_quoting(self):
         with self.mockRequests("GET", json={"filelist": []}):
-            self.client.getInventory(123, "+file/ name?", rev="+rev/ id?")
+            self.client.getInventory(123, "+file/ name?", rev="+rev id?")
         self.assertRequest(
-            "+branch-id/123/+json/files/%2Brev%2F%20id%3F/%2Bfile/%20name%3F")
+            "+branch-id/123/+json/files/%2Brev%20id%3F/%2Bfile/%20name%3F")
 
     def test_getBlob(self):
         blob = b"".join(chr(i) for i in range(256))
@@ -174,6 +185,10 @@ class TestBranchHostingClient(TestCase):
                 "Branch ID 123 has no file with ID file-id at revision a",
                 self.client.getBlob, 123, "file-id", rev="a")
 
+    def test_getBlob_bad_revision(self):
+        self.assertRaises(
+            ValueError, self.client.getBlob, 123, "file-id", rev="x/y")
+
     def test_getBlob_failure(self):
         with self.mockRequests("GET", status=400):
             self.assertRaisesWithContent(
@@ -185,9 +200,9 @@ class TestBranchHostingClient(TestCase):
     def test_getBlob_url_quoting(self):
         blob = b"".join(chr(i) for i in range(256))
         with self.mockRequests("GET", body=blob):
-            self.client.getBlob(123, "+file/ id?", rev="+rev/ id?")
+            self.client.getBlob(123, "+file/ id?", rev="+rev id?")
         self.assertRequest(
-            "+branch-id/123/download/%2Brev%2F%20id%3F/%2Bfile%2F%20id%3F")
+            "+branch-id/123/download/%2Brev%20id%3F/%2Bfile%2F%20id%3F")
 
     def test_works_in_job(self):
         # `BranchHostingClient` is usable from a running job.
