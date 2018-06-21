@@ -27,6 +27,7 @@ from lp.code.errors import (
     BranchHostingFault,
     )
 from lp.code.interfaces.branchhosting import IBranchHostingClient
+from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
 from lp.services.config import config
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.services.timeout import (
@@ -47,7 +48,7 @@ class BranchHostingClient:
     def __init__(self):
         self.endpoint = config.codehosting.internal_bzr_api_endpoint
 
-    def _request(self, method, unique_name, quoted_tail, as_json=False,
+    def _request(self, method, branch_id, quoted_tail, as_json=False,
                  **kwargs):
         """Make a request to the Loggerhead API."""
         # Fetch the current timeout before starting the timeline action,
@@ -55,10 +56,10 @@ class BranchHostingClient:
         # OverlappingActionError.
         get_default_timeout_function()()
         timeline = get_request_timeline(get_current_browser_request())
+        components = [BRANCH_ID_ALIAS_PREFIX, str(branch_id)]
         if as_json:
-            components = [unique_name, "+json", quoted_tail]
-        else:
-            components = [unique_name, quoted_tail]
+            components.append("+json")
+        components.append(quoted_tail)
         path = "/" + "/".join(components)
         action = timeline.start(
             "branch-hosting-%s" % method, "%s %s" % (path, json.dumps(kwargs)))
@@ -87,10 +88,10 @@ class BranchHostingClient:
         else:
             return response.content
 
-    def _get(self, unique_name, tail, **kwargs):
-        return self._request("get", unique_name, tail, **kwargs)
+    def _get(self, branch_id, tail, **kwargs):
+        return self._request("get", branch_id, tail, **kwargs)
 
-    def getDiff(self, unique_name, new, old=None, context_lines=None,
+    def getDiff(self, branch_id, new, old=None, context_lines=None,
                 logger=None):
         """See `IBranchHostingClient`."""
         try:
@@ -98,55 +99,53 @@ class BranchHostingClient:
                 if old is None:
                     logger.info(
                         "Requesting diff for %s from parent of %s to %s" %
-                        (unique_name, new, new))
+                        (branch_id, new, new))
                 else:
                     logger.info(
                         "Requesting diff for %s from %s to %s" %
-                        (unique_name, old, new))
+                        (branch_id, old, new))
             quoted_tail = "diff/%s" % quote(new, safe="")
             if old is not None:
                 quoted_tail += "/%s" % quote(old, safe="")
             return self._get(
-                unique_name, quoted_tail, as_json=False,
+                branch_id, quoted_tail, as_json=False,
                 params={"context_lines": context_lines})
         except requests.RequestException as e:
             raise BranchHostingFault(
                 "Failed to get diff from Bazaar branch: %s" % e)
 
-    def getInventory(self, unique_name, dirname, rev=None, logger=None):
+    def getInventory(self, branch_id, dirname, rev=None, logger=None):
         """See `IBranchHostingClient`."""
         try:
             if logger is not None:
                 logger.info(
                     "Requesting inventory at %s from branch %s" %
-                    (dirname, unique_name))
+                    (dirname, branch_id))
             quoted_tail = "files/%s/%s" % (
                 quote(rev or "head:", safe=""), quote(dirname.lstrip("/")))
-            return self._get(unique_name, quoted_tail, as_json=True)
+            return self._get(branch_id, quoted_tail, as_json=True)
         except requests.RequestException as e:
             if e.response.status_code == requests.codes.NOT_FOUND:
-                raise BranchFileNotFound(
-                    unique_name, filename=dirname, rev=rev)
+                raise BranchFileNotFound(branch_id, filename=dirname, rev=rev)
             else:
                 raise BranchHostingFault(
                     "Failed to get inventory from Bazaar branch: %s" % e)
 
-    def getBlob(self, unique_name, file_id, rev=None, logger=None):
+    def getBlob(self, branch_id, file_id, rev=None, logger=None):
         """See `IBranchHostingClient`."""
         try:
             if logger is not None:
                 logger.info(
                     "Fetching file ID %s from branch %s" %
-                    (file_id, unique_name))
+                    (file_id, branch_id))
             return self._get(
-                unique_name,
+                branch_id,
                 "download/%s/%s" % (
                     quote(rev or "head:", safe=""), quote(file_id, safe="")),
                 as_json=False)
         except requests.RequestException as e:
             if e.response.status_code == requests.codes.NOT_FOUND:
-                raise BranchFileNotFound(
-                    unique_name, file_id=file_id, rev=rev)
+                raise BranchFileNotFound(branch_id, file_id=file_id, rev=rev)
             else:
                 raise BranchHostingFault(
                     "Failed to get file from Bazaar branch: %s" % e)
