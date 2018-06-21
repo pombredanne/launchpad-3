@@ -97,6 +97,7 @@ from lp.services.webapp.batching import TableBatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.publisher import DataDownloadView
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.hassnaps import HasSnapsViewMixin
 
@@ -638,23 +639,24 @@ class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
 
 
 @implementer(IBrowserPublisher)
-class GitRepositoryDiffView:
+class GitRepositoryDiffView(DataDownloadView):
+
+    content_type = "text/x-patch"
+    charset = "UTF-8"
 
     def __init__(self, context, request, old, new):
+        super(GitRepositoryDiffView, self).__init__(context, request)
         self.context = context
         self.request = request
         self.old = old
         self.new = new
 
-    def __call__(self):
-        content = self.context.getDiff(self.old, self.new)
-        filename = "%s_%s.diff" % (self.old, self.new)
-        self.request.response.setHeader(
-            "Content-Type", 'text/x-patch; charset="UTF-8"')
-        self.request.response.setHeader("Content-Length", str(len(content)))
-        self.request.response.setHeader(
-            "Content-Disposition", "attachment; filename=%s" % filename)
-        return content
+    @property
+    def filename(self):
+        return "%s_%s.diff" % (self.old, self.new)
+
+    def getBody(self):
+        return self.context.getDiff(self.old, self.new)
 
     def browserDefault(self, request):
         return self, ()

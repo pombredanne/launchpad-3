@@ -1257,7 +1257,7 @@ class TestBranchDiffView(BrowserTestCase):
         self.assertEqual("text/x-patch", browser.headers["Content-Type"])
         self.assertEqual(str(len(diff)), browser.headers["Content-Length"])
         self.assertEqual(
-            "attachment; filename=1_2.diff",
+            'attachment; filename="1_2.diff"',
             browser.headers["Content-Disposition"])
         self.assertEqual(diff, browser.contents)
 
@@ -1279,3 +1279,17 @@ class TestBranchDiffView(BrowserTestCase):
         self.useFixture(FakeLogger())
         self.assertRaises(
             Unauthorized, self.getUserBrowser, branch_url + "/+diff/2/1")
+
+    def test_filename_quoting(self):
+        # If we construct revisions containing metacharacters and somehow
+        # manage to get that past the hosting service, the Content-Disposition
+        # header is quoted properly.
+        diff = b"A fake diff\n"
+        self.useFixture(BranchHostingFixture(diff=diff))
+        person = self.factory.makePerson()
+        branch = self.factory.makeBranch(owner=person)
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+diff/foo"/"bar')
+        self.assertEqual(
+            r'attachment; filename="\"bar_foo\".diff"',
+            browser.headers["Content-Disposition"])

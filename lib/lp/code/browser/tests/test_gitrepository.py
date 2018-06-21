@@ -886,7 +886,7 @@ class TestGitRepositoryDiffView(BrowserTestCase):
             'text/x-patch;charset=UTF-8', browser.headers["Content-Type"])
         self.assertEqual(str(len(diff)), browser.headers["Content-Length"])
         self.assertEqual(
-            "attachment; filename=0123456^_0123456.diff",
+            'attachment; filename="0123456^_0123456.diff"',
             browser.headers["Content-Disposition"])
         self.assertEqual(diff, browser.contents)
 
@@ -910,6 +910,20 @@ class TestGitRepositoryDiffView(BrowserTestCase):
         self.assertRaises(
             Unauthorized, self.getUserBrowser,
             repository_url + "/+diff/0123456/0123456^")
+
+    def test_filename_quoting(self):
+        # If we construct revisions containing metacharacters and somehow
+        # manage to get that past the hosting service, the
+        # Content-Disposition header is quoted properly.
+        diff = "A fake diff\n"
+        self.useFixture(GitHostingFixture(diff={"patch": diff}))
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=person)
+        browser = self.getUserBrowser(
+            canonical_url(repository) + '/+diff/foo"/"bar')
+        self.assertEqual(
+            r'attachment; filename="\"bar_foo\".diff"',
+            browser.headers["Content-Disposition"])
 
 
 class TestGitRepositoryDeletionView(BrowserTestCase):
