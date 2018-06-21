@@ -12,6 +12,7 @@ from textwrap import dedent
 
 from fixtures import FakeLogger
 import pytz
+from six.moves.urllib_error import HTTPError
 from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
@@ -40,6 +41,7 @@ from lp.registry.interfaces.person import PersonVisibility
 from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
+from lp.services.features.testing import FeatureFixture
 from lp.services.helpers import truncate_text
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -1227,6 +1229,19 @@ class TestBranchPrivacyPortlet(TestCaseWithFactory):
 class TestBranchDiffView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
+
+    def test_feature_disabled(self):
+        self.useFixture(
+            FeatureFixture({u"code.bzr.diff.disable_proxy": u"on"}))
+        hosting_fixture = self.useFixture(BranchHostingFixture())
+        person = self.factory.makePerson()
+        branch = self.factory.makeBranch(owner=person)
+        e = self.assertRaises(
+            HTTPError, self.getUserBrowser,
+            canonical_url(branch) + "/+diff/2/1")
+        self.assertEqual(401, e.code)
+        self.assertEqual("Proxying of branch diffs is disabled.\n", e.read())
+        self.assertEqual([], hosting_fixture.getDiff.calls)
 
     def test_render(self):
         diff = b"A fake diff\n"

@@ -617,8 +617,16 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         super(BranchMergeProposalView, self).initialize()
         cache = IJSONRequestCache(self.request)
         cache.objects['branch_name'] = self.context.merge_source.name
-        cache.objects['branch_diff_link'] = (
-            canonical_url(self.context.parent) + '/+diff/')
+        if (IBranch.providedBy(self.context.merge_source) and
+                getFeatureFlag("code.bzr.diff.disable_proxy")):
+            # This fallback works for public branches, but not private ones.
+            cache.objects['branch_diff_link'] = (
+                'https://%s/+loggerhead/%s/diff/' % (
+                    config.launchpad.code_domain,
+                    self.context.source_branch.unique_name))
+        else:
+            cache.objects['branch_diff_link'] = (
+                canonical_url(self.context.parent) + '/+diff/')
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
             cache.objects['merge_proposal_event_key'] = subscribe(
                 self.context).event_key

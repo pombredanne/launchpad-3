@@ -1309,6 +1309,10 @@ class BranchDiffView:
         self.old = old
 
     def __call__(self):
+        if getFeatureFlag(u"code.bzr.diff.disable_proxy"):
+            self.request.response.setStatus(401)
+            return "Proxying of branch diffs is disabled.\n"
+
         content = self.context.getDiff(self.new, old=self.old)
         if self.old is None:
             filename = "%s.diff" % self.new
