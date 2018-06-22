@@ -1231,8 +1231,7 @@ class TestBranchDiffView(BrowserTestCase):
     layer = DatabaseFunctionalLayer
 
     def test_feature_disabled(self):
-        self.useFixture(
-            FeatureFixture({u"code.bzr.diff.disable_proxy": u"on"}))
+        self.useFixture(FeatureFixture({"code.bzr.diff.disable_proxy": "on"}))
         hosting_fixture = self.useFixture(BranchHostingFixture())
         person = self.factory.makePerson()
         branch = self.factory.makeBranch(owner=person)
