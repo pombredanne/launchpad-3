@@ -355,6 +355,12 @@ class URLFetcher:
         response.raise_for_status()
         # Make sure the content has been consumed before returning.
         response.content
+        # The responses library doesn't persist cookies in the session
+        # (https://github.com/getsentry/responses/issues/80).  Work around
+        # this.
+        session_cookies = request_kwargs.get("cookies")
+        if session_cookies is not None and response.cookies:
+            session_cookies.update(response.cookies)
         return response
 
     def cleanup(self):
