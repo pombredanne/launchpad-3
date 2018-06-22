@@ -653,7 +653,7 @@ class GitRepositoryDiffView(DataDownloadView):
 
     @property
     def filename(self):
-        return "%s_%s.diff" % (self.old, self.new)
+        return "%s_%s_%s.diff" % (self.context.name, self.old, self.new)
 
     def getBody(self):
         return self.context.getDiff(self.old, self.new)

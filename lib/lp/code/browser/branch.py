@@ -1319,9 +1319,9 @@ class BranchDiffView(DataDownloadView):
     @property
     def filename(self):
         if self.old is None:
-            return "%s.diff" % self.new
+            return "%s_%s.diff" % (self.context.name, self.new)
         else:
-            return "%s_%s.diff" % (self.old, self.new)
+            return "%s_%s_%s.diff" % (self.context.name, self.old, self.new)
 
     def getBody(self):
         return self.context.getDiff(self.new, old=self.old)

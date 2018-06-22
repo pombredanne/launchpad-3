@@ -1246,7 +1246,7 @@ class TestBranchDiffView(BrowserTestCase):
         diff = b"A fake diff\n"
         hosting_fixture = self.useFixture(BranchHostingFixture(diff=diff))
         person = self.factory.makePerson()
-        branch = self.factory.makeBranch(owner=person)
+        branch = self.factory.makeBranch(owner=person, name="some-branch")
         browser = self.getUserBrowser(
             canonical_url(branch) + "/+diff/2/1")
         with person_logged_in(person):
@@ -1256,7 +1256,7 @@ class TestBranchDiffView(BrowserTestCase):
         self.assertEqual("text/x-patch", browser.headers["Content-Type"])
         self.assertEqual(str(len(diff)), browser.headers["Content-Length"])
         self.assertEqual(
-            'attachment; filename="1_2.diff"',
+            'attachment; filename="some-branch_1_2.diff"',
             browser.headers["Content-Disposition"])
         self.assertEqual(diff, browser.contents)
 
@@ -1286,9 +1286,9 @@ class TestBranchDiffView(BrowserTestCase):
         diff = b"A fake diff\n"
         self.useFixture(BranchHostingFixture(diff=diff))
         person = self.factory.makePerson()
-        branch = self.factory.makeBranch(owner=person)
+        branch = self.factory.makeBranch(owner=person, name="some-branch")
         browser = self.getUserBrowser(
             canonical_url(branch) + '/+diff/foo"/"bar')
         self.assertEqual(
-            r'attachment; filename="\"bar_foo\".diff"',
+            r'attachment; filename="some-branch_\"bar_foo\".diff"',
             browser.headers["Content-Disposition"])
