@@ -24,7 +24,7 @@ from lp.bugs.externalbugtracker import (
     BugNotFound,
     BugTrackerConnectError,
     BugWatchUpdateError,
-    ExternalBugTrackerRequests,
+    ExternalBugTracker,
     InvalidBugId,
     LookupTree,
     UnknownRemoteStatusError,
@@ -165,7 +165,7 @@ class MantisBugBatchParser:
             raise UnparsableBugData("Exception parsing CSV file: %s." % error)
 
 
-class Mantis(ExternalBugTrackerRequests):
+class Mantis(ExternalBugTracker):
     """An `ExternalBugTracker` for dealing with Mantis instances.
 
     For a list of tested Mantis instances and their behaviour when

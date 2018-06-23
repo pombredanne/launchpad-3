@@ -12,7 +12,6 @@ __all__ = [
     'BugWatchUpdateError',
     'BugWatchUpdateWarning',
     'ExternalBugTracker',
-    'ExternalBugTrackerRequests',
     'InvalidBugId',
     'LookupTree',
     'LP_USER_AGENT',
@@ -27,9 +26,6 @@ __all__ = [
     'UnsupportedBugTrackerVersion',
     ]
 
-
-import urllib
-import urllib2
 
 import requests
 from six.moves.urllib_parse import (
@@ -176,14 +172,6 @@ class ExternalBugTracker:
                 ISupportsCommentImport.providedBy(self) or
                 ISupportsBackLinking.providedBy(self)))
 
-    @ensure_no_transaction
-    def urlopen(self, request, data=None):
-        if self.url_opener:
-            func = self.url_opener.open
-        else:
-            func = urllib2.urlopen
-        return func(request, data, self.timeout)
-
     def getExternalBugTrackerToUse(self):
         """See `IExternalBugTracker`."""
         return self
@@ -260,56 +248,6 @@ class ExternalBugTracker:
         # For some reason, bugs.kde.org doesn't allow the regular urllib
         # user-agent string (Python-urllib/2.x) to access their bugzilla.
         return {'User-Agent': LP_USER_AGENT, 'Host': self.basehost}
-
-    def _fetchPage(self, page, data=None):
-        """Fetch a page from the remote server.
-
-        A BugTrackerConnectError will be raised if anything goes wrong.
-        """
-        if not isinstance(page, urllib2.Request):
-            page = urllib2.Request(page, headers=self._getHeaders())
-        try:
-            return self.urlopen(page, data)
-        except (urllib2.HTTPError, urllib2.URLError) as val:
-            raise BugTrackerConnectError(self.baseurl, val)
-
-    def _getPage(self, page):
-        """GET the specified page on the remote HTTP server."""
-        request = urllib2.Request(
-            "%s/%s" % (self.baseurl, page), headers=self._getHeaders())
-        return self._fetchPage(request).read()
-
-    def _post(self, url, data):
-        """Post to a given URL."""
-        request = urllib2.Request(url, headers=self._getHeaders())
-        return self._fetchPage(request, data=data)
-
-    def _postPage(self, page, form, repost_on_redirect=False):
-        """POST to the specified page and form.
-
-        :param form: is a dict of form variables being POSTed.
-        :param repost_on_redirect: override RFC-compliant redirect handling.
-            By default, if the POST receives a redirect response, the
-            request to the redirection's target URL will be a GET.  If
-            `repost_on_redirect` is True, this method will do a second POST
-            instead.  Do this only if you are sure that repeated POST to
-            this page is safe, as is usually the case with search forms.
-        """
-        url = "%s/%s" % (self.baseurl, page)
-        post_data = urllib.urlencode(form)
-        response = self._post(url, data=post_data)
-
-        if repost_on_redirect and response.url != url:
-            response = self._post(response.url, data=post_data)
-
-        return response.read()
-
-
-class ExternalBugTrackerRequests(ExternalBugTracker):
-    """An external bug tracker that uses `requests`.
-
-    This is temporary until all bug tracker types have been converted.
-    """
 
     @ensure_no_transaction
     def makeRequest(self, method, url, **kwargs):
