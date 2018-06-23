@@ -78,9 +78,9 @@ work with the right database user.
 The authorisation cookie will be stored in the auth_cookie property of
 the XML-RPC transport.
 
-    >>> test_transport.cookie_processor.cookiejar
-    <...CookieJar[Cookie(version=0, name='Bugzilla_login'...),
-                  Cookie(version=0, name='Bugzilla_logincookie'...)]>
+    >>> test_transport.cookie_jar
+    <RequestsCookieJar[Cookie(version=0, name='Bugzilla_login'...),
+                       Cookie(version=0, name='Bugzilla_logincookie'...)]>
 
 The externalbugtracker.bugzilla module contains a decorator,
 needs_authentication, which can be used to ensure that a
