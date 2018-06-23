@@ -67,8 +67,8 @@ We use a specially hacked Mantis instance that doesn't do network
 calls to verify here. We set its batch_query_threshold to 0 so as to
 force it to use the CSV import code:
 
-    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker.baseurl)
-    >>> example_ext_bug_tracker.batch_query_threshold = 0
+    >>> mantis = TestMantis(example_bug_tracker.baseurl)
+    >>> mantis.batch_query_threshold = 0
 
 Collect the Example.com watches:
 
@@ -84,8 +84,9 @@ And have our special Mantis instance process them:
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> bug_watch_updater = CheckwatchesMaster(
     ...     transaction, logger=FakeLogger())
-    >>> bug_watch_updater.updateBugWatches(
-    ...     example_ext_bug_tracker, example_bug_tracker.watches)
+    >>> with mantis.responses():
+    ...     bug_watch_updater.updateBugWatches(
+    ...         mantis, example_bug_tracker.watches)
     INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> for bug_watch in example_bug_tracker.watches:
@@ -117,7 +118,7 @@ Let's add a few more watches:
     ...         bug=example_bug, owner=sample_person,
     ...         bugtracker=example_bug_tracker,
     ...         remotebug=str(remote_bug_id))
-    ...     example_ext_bug_tracker.bugs[remote_bug_id] = remote_bug
+    ...     mantis.bugs[remote_bug_id] = remote_bug
     ...     expected_remote_statuses[remote_bug_id] = (
     ...         "%s: %s" % (remote_bug['status'], remote_bug['resolution']))
 
@@ -125,14 +126,14 @@ Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:
 
     >>> from lp.services.propertycache import get_property_cache
-    >>> del get_property_cache(example_ext_bug_tracker).csv_data
+    >>> del get_property_cache(mantis).csv_data
 
-    >>> example_ext_bug_tracker.trace_calls = True
-    >>> bug_watch_updater.updateBugWatches(
-    ...     example_ext_bug_tracker, example_bug_tracker.watches)
+    >>> with mantis.responses(trace_calls=True):
+    ...     bug_watch_updater.updateBugWatches(
+    ...         mantis, example_bug_tracker.watches)
     INFO Updating 6 watches for 6 bugs on http://bugs.some.where
-    CALLED _postPage('view_all_set.php?f=3', ...)
-    CALLED _getPage('csv_export.php')
+    POST http://bugs.some.where/view_all_set.php?f=3
+    GET http://bugs.some.where/csv_export.php
 
     >>> remote_statuses = dict(
     ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
@@ -164,8 +165,6 @@ updateBugWatches() issues only one request to update all watches:
      * Expected << assigned: open >>
      *      Got << assigned: open >>
 
-    >>> example_ext_bug_tracker.trace_calls = False
-
 updateBugWatches() updates the lastchecked attribute on the watches, so
 now no bug watches are in need of updating:
 
@@ -183,8 +182,7 @@ updated:
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
-    >>> bug_watch_updater.updateBugWatches(
-    ...     example_ext_bug_tracker, [bug_watch])
+    >>> bug_watch_updater.updateBugWatches(mantis, [bug_watch])
     INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> bug_watch.lastchanged == old_last_changed

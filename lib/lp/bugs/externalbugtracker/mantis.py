@@ -1,25 +1,30 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Mantis ExternalBugTracker utility."""
 
 __metaclass__ = type
-__all__ = ['Mantis', 'MantisLoginHandler']
+__all__ = [
+    'Mantis',
+    'mantis_login_hook',
+    ]
 
-import cgi
 import csv
 import logging
-import urllib
-import urllib2
-from urlparse import urlunparse
 
 from BeautifulSoup import Comment
+from requests.cookies import RequestsCookieJar
+from six.moves.urllib_parse import (
+    parse_qsl,
+    urlencode,
+    urlunparse,
+    )
 
 from lp.bugs.externalbugtracker import (
     BugNotFound,
     BugTrackerConnectError,
     BugWatchUpdateError,
-    ExternalBugTracker,
+    ExternalBugTrackerRequests,
     InvalidBugId,
     LookupTree,
     UnknownRemoteStatusError,
@@ -38,9 +43,8 @@ from lp.services.propertycache import cachedproperty
 from lp.services.webapp.url import urlparse
 
 
-class MantisLoginHandler(urllib2.HTTPRedirectHandler):
-    """Handler for urllib2.build_opener to automatically log-in
-    to Mantis anonymously if needed.
+def mantis_login_hook(response, *args, **kwargs):
+    """requests hook to automatically log into Mantis anonymously if needed.
 
     The ALSA bug tracker is the only tested Mantis installation that
     actually needs this. For ALSA bugs, the dance is like so:
@@ -60,42 +64,41 @@ class MantisLoginHandler(urllib2.HTTPRedirectHandler):
       4. Mantis accepts our credentials then redirects us to the bug
          view page via a cookie test page (login_cookie_test.php)
     """
+    if response.status_code not in (301, 302, 303, 307):
+        return response
+    if 'Location' not in response.headers:
+        return response
 
-    def rewrite_url(self, url):
-        scheme, host, path, params, query, fragment = urlparse(url)
+    url = response.headers['Location']
+    scheme, host, path, params, query, fragment = urlparse(url)
 
-        # If we can, skip the login page and submit credentials
-        # directly. The query should contain a 'return' parameter
-        # which, if our credentials are accepted, means we'll be
-        # redirected back from whence we came. In other words, we'll
-        # end up back at the bug page we first requested.
-        login_page = '/login_page.php'
-        if path.endswith(login_page):
-            path = path[:-len(login_page)] + '/login.php'
-            query = cgi.parse_qs(query, True)
-            query['username'] = query['password'] = ['guest']
-            if 'return' not in query:
-                raise BugTrackerConnectError(
-                    url, ("Mantis redirected us to the login page "
-                          "but did not set a return path."))
+    # If we can, skip the login page and submit credentials directly.  The
+    # query should contain a 'return' parameter which, if our credentials
+    # are accepted, means we'll be redirected back whence we came.  In other
+    # words, we'll end up back at the bug page we first requested.
+    login_page = '/login_page.php'
+    if path.endswith(login_page):
+        path = path[:-len(login_page)] + '/login.php'
+        query_list = [('username', 'guest'), ('password', 'guest')]
+        query_list.extend(parse_qsl(query, True))
+        if not any(name == 'return' for name, _ in query_list):
+            raise BugTrackerConnectError(
+                url, ("Mantis redirected us to the login page "
+                      "but did not set a return path."))
 
-            query = urllib.urlencode(query, True)
-            url = urlunparse(
-                (scheme, host, path, params, query, fragment))
+        query = urlencode(query_list, True)
+        url = urlunparse((scheme, host, path, params, query, fragment))
 
-        # Previous versions of the Mantis external bug tracker fetched
-        # login_anon.php in addition to the login.php method above, but none
-        # of the Mantis installations tested actually needed this. For
-        # example, the ALSA bugtracker actually issues an error "Your account
-        # may be disabled" when accessing this page. For now it's better to
-        # *not* try this page because we may end up annoying admins with
-        # spurious login attempts.
+    # Previous versions of the Mantis external bug tracker fetched
+    # login_anon.php in addition to the login.php method above, but none of
+    # the Mantis installations tested actually needed this.  For example,
+    # the ALSA bugtracker actually issues an error "Your account may be
+    # disabled" when accessing this page.  For now it's better to *not* try
+    # this page because we may end up annoying admins with spurious login
+    # attempts.
 
-        return url
-
-    def redirect_request(self, request, fp, code, msg, hdrs, new_url):
-        return urllib2.HTTPRedirectHandler.redirect_request(
-            self, request, fp, code, msg, hdrs, self.rewrite_url(new_url))
+    response.headers['Location'] = url
+    return response
 
 
 class MantisBugBatchParser:
@@ -162,7 +165,7 @@ class MantisBugBatchParser:
             raise UnparsableBugData("Exception parsing CSV file: %s." % error)
 
 
-class Mantis(ExternalBugTracker):
+class Mantis(ExternalBugTrackerRequests):
     """An `ExternalBugTracker` for dealing with Mantis instances.
 
     For a list of tested Mantis instances and their behaviour when
@@ -173,12 +176,17 @@ class Mantis(ExternalBugTracker):
 
     def __init__(self, baseurl):
         super(Mantis, self).__init__(baseurl)
-        # Custom cookie aware opener that automatically sends anonymous
-        # credentials to Mantis if (and only if) needed.
-        self._cookie_handler = urllib2.HTTPCookieProcessor()
-        self.url_opener = urllib2.build_opener(
-            self._cookie_handler, MantisLoginHandler())
+        self._cookie_jar = RequestsCookieJar()
         self._logger = logging.getLogger()
+
+    def makeRequest(self, method, url, hooks=None, **kwargs):
+        """See `ExternalBugTracker`."""
+        hooks = dict(hooks) if hooks is not None else {}
+        if not isinstance(hooks.setdefault('response', []), list):
+            hooks['response'] = [hooks['response']]
+        hooks['response'].append(mantis_login_hook)
+        return super(Mantis, self).makeRequest(
+            method, url, cookies=self._cookie_jar, hooks=hooks, **kwargs)
 
     @cachedproperty
     def csv_data(self):
@@ -241,13 +249,14 @@ class Mantis(ExternalBugTracker):
         # MANTIS_VIEW_ALL_COOKIE set in the previous step to specify
         # what's being viewed.
         try:
-            csv_data = self._getPage("csv_export.php")
+            csv_data = self._getPage("csv_export.php").content
         except BugTrackerConnectError as value:
             # Some Mantis installations simply return a 500 error
             # when the csv_export.php page is accessed. Since the
             # bug data may be nevertheless available from ordinary
             # web pages, we simply ignore this error.
-            if value.error.startswith('HTTP Error 500'):
+            if (value.error.response is not None and
+                    value.error.response.status_code == 500):
                 return None
             raise
 
@@ -295,7 +304,7 @@ class Mantis(ExternalBugTracker):
         # _checkForApplicationError) then we could be much more
         # specific than this.
         bug_page = BeautifulSoup(
-            self._getPage('view.php?id=%s' % bug_id),
+            self._getPage('view.php?id=%s' % bug_id).content,
             convertEntities=BeautifulSoup.HTML_ENTITIES,
             parseOnlyThese=SoupStrainer('table'))
 
