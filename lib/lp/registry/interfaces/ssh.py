@@ -146,6 +146,7 @@ class SSHKeyAdditionError(Exception):
             except UnicodeDecodeError:
                 # On Python 2, Key.fromString can raise exceptions with
                 # non-UTF-8 messages.
-                exception_text = bytes(exception).decode('unicode_escape')
+                exception_text = bytes(exception).decode(
+                    'unicode_escape').encode('unicode_escape')
             msg = "%s (%s)" % (msg, exception_text)
         super(SSHKeyAdditionError, self).__init__(msg, *args, **kwargs)

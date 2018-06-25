@@ -95,7 +95,6 @@ import oops_datedir_repo.serializer_rfc822
 import pytz
 import scandir
 import simplejson
-import six
 from storm.store import Store
 import subunit
 import testtools
@@ -652,7 +651,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         match what was raised an AssertionError is raised.
         """
         err = self.assertRaises(exception, func, *args, **kwargs)
-        self.assertEqual(exception_content, six.text_type(err))
+        self.assertEqual(exception_content, str(err))
 
     def assertBetween(self, lower_bound, variable, upper_bound):
         """Assert that 'variable' is strictly between two boundaries."""
