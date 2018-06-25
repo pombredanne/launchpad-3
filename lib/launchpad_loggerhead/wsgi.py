@@ -121,6 +121,7 @@ class LoggerheadApplication(Application):
             "accesslog": os.path.join(log_folder, "access.log"),
             "bind": [
                 "%s:%s" % (listen_host, config.codebrowse.port),
+                "%s:%s" % (listen_host, config.codebrowse.private_port),
                 ],
             "capture_output": True,
             "errorlog": os.path.join(log_folder, "debug.log"),
