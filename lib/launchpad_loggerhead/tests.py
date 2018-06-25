@@ -204,3 +204,28 @@ class TestWSGI(TestCaseWithFactory):
         self.assertEqual(
             "testopenid.dev:8085",
             urlsplit(response.headers["Location"]).netloc)
+
+    def test_private_port_public_branch(self):
+        # Requests for public branches on the private port are allowed.
+        db_branch, _ = self.create_branch_and_tree()
+        branch_url = "http://127.0.0.1:%d/%s" % (
+            config.codebrowse.private_port, db_branch.unique_name)
+        response = requests.get(branch_url)
+        self.assertEqual(200, response.status_code)
+        title_tag = soupmatchers.Tag(
+            "page title", "title", text="%s : changes" % db_branch.unique_name)
+        self.assertThat(response.text, soupmatchers.HTMLContains(title_tag))
+
+    def test_private_port_private_branch(self):
+        # Requests for private branches on the private port are allowed.
+        db_branch, _ = self.create_branch_and_tree(
+            information_type=InformationType.USERDATA)
+        naked_branch = removeSecurityProxy(db_branch)
+        branch_url = "http://127.0.0.1:%d/%s" % (
+            config.codebrowse.private_port, naked_branch.unique_name)
+        response = requests.get(branch_url)
+        self.assertEqual(200, response.status_code)
+        title_tag = soupmatchers.Tag(
+            "page title", "title",
+            text="%s : changes" % naked_branch.unique_name)
+        self.assertThat(response.text, soupmatchers.HTMLContains(title_tag))

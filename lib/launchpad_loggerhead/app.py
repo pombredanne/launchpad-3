@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
@@ -45,6 +45,7 @@ from paste.request import (
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT,
     LAUNCHPAD_ANONYMOUS,
+    LAUNCHPAD_SERVICES,
     )
 from lp.codehosting.safe_open import safe_open
 from lp.codehosting.vfs import get_lp_server
@@ -185,6 +186,8 @@ class RootApp:
         raise HTTPMovedPermanently(next_url)
 
     def __call__(self, environ, start_response):
+        request_is_private = (
+            environ['SERVER_PORT'] == str(config.codebrowse.private_port))
         environ['loggerhead.static.url'] = environ['SCRIPT_NAME']
         if environ['PATH_INFO'].startswith('/static/'):
             path_info_pop(environ)
@@ -193,15 +196,23 @@ class RootApp:
             return favicon_app(environ, start_response)
         elif environ['PATH_INFO'] == '/robots.txt':
             return robots_app(environ, start_response)
-        elif environ['PATH_INFO'].startswith('/+login'):
-            return self._complete_login(environ, start_response)
-        elif environ['PATH_INFO'].startswith('/+logout'):
-            return self._logout(environ, start_response)
+        elif not request_is_private:
+            if environ['PATH_INFO'].startswith('/+login'):
+                return self._complete_login(environ, start_response)
+            elif environ['PATH_INFO'].startswith('/+logout'):
+                return self._logout(environ, start_response)
         path = environ['PATH_INFO']
         trailingSlashCount = len(path) - len(path.rstrip('/'))
-        identity_url = environ[self.session_var].get(
-            'identity_url', LAUNCHPAD_ANONYMOUS)
-        user = environ[self.session_var].get('user', LAUNCHPAD_ANONYMOUS)
+        if request_is_private:
+            # Requests on the private port are internal API requests from
+            # something that has already performed security checks.  As
+            # such, they get read-only access to everything.
+            identity_url = LAUNCHPAD_SERVICES
+            user = LAUNCHPAD_SERVICES
+        else:
+            identity_url = environ[self.session_var].get(
+                'identity_url', LAUNCHPAD_ANONYMOUS)
+            user = environ[self.session_var].get('user', LAUNCHPAD_ANONYMOUS)
         lp_server = get_lp_server(
             identity_url, branch_transport=self.get_transport())
         lp_server.start_server()
