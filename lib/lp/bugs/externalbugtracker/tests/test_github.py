@@ -17,6 +17,7 @@ from six.moves.urllib_parse import (
     urlsplit,
     urlunsplit,
     )
+from testtools import ExpectedException
 from testtools.matchers import (
     Contains,
     ContainsDict,
@@ -73,60 +74,60 @@ class TestGitHubRateLimit(TestCase):
         self.addCleanup(self.rate_limit.clearCache)
 
     @responses.activate
-    def test_makeRequest_no_token(self):
+    def test_checkLimit_no_token(self):
         _add_rate_limit_response("example.org", limit=60, remaining=50)
-        responses.add("GET", "http://example.org/", body="test")
-        response = self.rate_limit.makeRequest("GET", "http://example.org/")
+        with self.rate_limit.checkLimit("http://example.org/", 30):
+            pass
         self.assertThat(responses.calls[0].request, MatchesStructure(
             path_url=Equals("/rate_limit"),
             headers=Not(Contains("Authorization"))))
-        self.assertEqual(b"test", response.content)
         limit = self.rate_limit._limits[("example.org", None)]
         self.assertEqual(49, limit["remaining"])
         self.assertEqual(1000000000, limit["reset"])
 
         limit["remaining"] = 0
         responses.reset()
-        self.assertRaisesWithContent(
-            GitHubExceededRateLimit,
-            "Rate limit for example.org exceeded "
-            "(resets at Sun Sep  9 07:16:40 2001)",
-            self.rate_limit.makeRequest,
-            "GET", "http://example.org/")
+        with ExpectedException(
+                GitHubExceededRateLimit,
+                r"Rate limit for example\.org exceeded "
+                r"\(resets at Sun Sep  9 07:16:40 2001\)"):
+            with self.rate_limit.checkLimit("http://example.org/", 30):
+                pass
         self.assertEqual(0, len(responses.calls))
         self.assertEqual(0, limit["remaining"])
 
     @responses.activate
-    def test_makeRequest_check_token(self):
+    def test_checkLimit_check_token(self):
         _add_rate_limit_response("example.org")
         responses.add("GET", "http://example.org/", body="test")
-        response = self.rate_limit.makeRequest(
-            "GET", "http://example.org/", token="abc")
+        with self.rate_limit.checkLimit(
+                "http://example.org/", 30, token="abc"):
+            pass
         self.assertThat(responses.calls[0].request, MatchesStructure(
             path_url=Equals("/rate_limit"),
             headers=ContainsDict({"Authorization": Equals("token abc")})))
-        self.assertEqual(b"test", response.content)
         limit = self.rate_limit._limits[("example.org", "abc")]
         self.assertEqual(3999, limit["remaining"])
         self.assertEqual(1000000000, limit["reset"])
 
         limit["remaining"] = 0
         responses.reset()
-        self.assertRaisesWithContent(
-            GitHubExceededRateLimit,
-            "Rate limit for example.org exceeded "
-            "(resets at Sun Sep  9 07:16:40 2001)",
-            self.rate_limit.makeRequest,
-            "GET", "http://example.org/", token="abc")
+        with ExpectedException(
+                GitHubExceededRateLimit,
+                r"Rate limit for example\.org exceeded "
+                r"\(resets at Sun Sep  9 07:16:40 2001\)"):
+            with self.rate_limit.checkLimit(
+                    "http://example.org/", 30, token="abc"):
+                pass
         self.assertEqual(0, len(responses.calls))
         self.assertEqual(0, limit["remaining"])
 
     @responses.activate
-    def test_makeRequest_check_503(self):
+    def test_checkLimit_check_503(self):
         responses.add("GET", "https://example.org/rate_limit", status=503)
-        self.assertRaises(
-            BugTrackerConnectError, self.rate_limit.makeRequest,
-            "GET", "http://example.org/")
+        with ExpectedException(BugTrackerConnectError):
+            with self.rate_limit.checkLimit("http://example.org/", 30):
+                pass
 
 
 class TestGitHub(TestCase):

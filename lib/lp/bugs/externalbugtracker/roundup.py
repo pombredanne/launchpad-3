@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Round ExternalBugTracker utility."""
@@ -13,7 +13,7 @@ from lazr.uri import URI
 
 from lp.bugs.externalbugtracker import (
     BugNotFound,
-    ExternalBugTracker,
+    ExternalBugTrackerRequests,
     InvalidBugId,
     LookupTree,
     UnknownRemoteStatusError,
@@ -42,7 +42,7 @@ def create_query_string(items):
         for (key, value) in items)
 
 
-class Roundup(ExternalBugTracker):
+class Roundup(ExternalBugTrackerRequests):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
 
     _status_fields_map = {
@@ -218,7 +218,7 @@ class Roundup(ExternalBugTracker):
         """See `ExternalBugTracker`."""
         bug_id = int(bug_id)
         query_url = self.getSingleBugExportURL(bug_id)
-        reader = csv.DictReader(self._fetchPage(query_url))
+        reader = csv.DictReader(self._getPage(query_url).iter_lines())
         return (bug_id, reader.next())
 
     def getRemoteBugBatch(self, bug_ids):
@@ -230,7 +230,7 @@ class Roundup(ExternalBugTracker):
         #      export the bug ids needed rather than hitting the remote
         #      tracker for a potentially massive number of bugs.
         query_url = self.getBatchBugExportURL()
-        remote_bugs = csv.DictReader(self._fetchPage(query_url))
+        remote_bugs = csv.DictReader(self._getPage(query_url).iter_lines())
         bugs = {}
         for remote_bug in remote_bugs:
             # We're only interested in the bug if it's one of the ones in

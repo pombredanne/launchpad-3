@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the externalbugtracker package."""
@@ -8,11 +8,20 @@ __metaclass__ = type
 from StringIO import StringIO
 import urllib2
 
+import responses
+from testtools.matchers import (
+    ContainsDict,
+    Equals,
+    MatchesListwise,
+    MatchesStructure,
+    )
+import transaction
 from zope.interface import implementer
 
 from lp.bugs.externalbugtracker.base import (
     BugTrackerConnectError,
     ExternalBugTracker,
+    ExternalBugTrackerRequests,
     LP_USER_AGENT,
     )
 from lp.bugs.externalbugtracker.debbugs import DebBugs
@@ -26,7 +35,10 @@ from lp.testing import (
     TestCase,
     )
 from lp.testing.fakemethod import FakeMethod
-from lp.testing.layers import ZopelessLayer
+from lp.testing.layers import (
+    ZopelessDatabaseLayer,
+    ZopelessLayer,
+    )
 
 
 @implementer(ISupportsBackLinking)
@@ -46,6 +58,7 @@ class CommentPushingExternalBugTracker(ExternalBugTracker):
 
 class TestCheckwatchesConfig(TestCase):
 
+    layer = ZopelessDatabaseLayer
     base_url = "http://www.example.com/"
 
     def test_sync_comments_enabled(self):
@@ -151,6 +164,66 @@ class TestCheckwatchesConfig(TestCase):
         last_args, last_kwargs = bugtracker._post.calls[-1]
         self.assertEqual((fake_form.url, ), last_args)
 
+    @responses.activate
+    def test_requests_postPage_returns_response_page(self):
+        # _postPage posts, then returns the page text it gets back from
+        # the server.
+        base_url = "http://example.com/"
+        form = self.factory.getUniqueString()
+        fake_form = "<bugzilla>%s</bugzilla>" % self.factory.getUniqueString()
+        bugtracker = ExternalBugTrackerRequests(base_url)
+        transaction.commit()
+        responses.add("POST", base_url + form, body=fake_form)
+        self.assertEqual(fake_form, bugtracker._postPage(form, {}).text)
+
+    @responses.activate
+    def test_requests_postPage_does_not_repost_on_redirect(self):
+        # By default, if the POST redirects, _postPage leaves requests to
+        # handle it in the normal, RFC-compliant way.
+        base_url = "http://example.com/"
+        form = self.factory.getUniqueString()
+        target = self.factory.getUniqueString()
+        fake_form = "<bugzilla>%s</bugzilla>" % self.factory.getUniqueString()
+        bugtracker = ExternalBugTrackerRequests(base_url)
+        transaction.commit()
+        responses.add(
+            "POST", base_url + form, status=302,
+            headers={"Location": base_url + target})
+        responses.add("GET", base_url + target, body=fake_form)
+
+        bugtracker._postPage(form, {})
+
+        requests = [call.request for call in responses.calls]
+        self.assertThat(requests, MatchesListwise([
+            MatchesStructure.byEquality(method="POST", path_url="/" + form),
+            MatchesStructure.byEquality(method="GET", path_url="/" + target),
+            ]))
+
+    @responses.activate
+    def test_requests_postPage_can_repost_on_redirect(self):
+        # Some pages (that means you, BugZilla bug-search page!) can
+        # redirect on POST, but without honouring the POST.  Standard
+        # requests behaviour is to redirect to a GET, but if the caller
+        # says it's safe, _postPage can re-do the POST at the new URL.
+        base_url = "http://example.com/"
+        form = self.factory.getUniqueString()
+        target = self.factory.getUniqueString()
+        fake_form = "<bugzilla>%s</bugzilla>" % self.factory.getUniqueString()
+        bugtracker = ExternalBugTrackerRequests(base_url)
+        transaction.commit()
+        responses.add(
+            "POST", base_url + form, status=302,
+            headers={"Location": base_url + target})
+        responses.add("POST", base_url + target, body=fake_form)
+
+        bugtracker._postPage(form, form={}, repost_on_redirect=True)
+
+        requests = [call.request for call in responses.calls]
+        self.assertThat(requests, MatchesListwise([
+            MatchesStructure.byEquality(method="POST", path_url="/" + form),
+            MatchesStructure.byEquality(method="POST", path_url="/" + target),
+            ]))
+
 
 class TestExternalBugTracker(TestCase):
     """Tests for various methods of the ExternalBugTracker."""
@@ -183,3 +256,35 @@ class TestExternalBugTracker(TestCase):
 
         with monkey_patch(urllib2, urlopen=assert_headers):
             bugtracker._post('some-url', {'post-data': 'here'})
+
+
+class TestExternalBugTrackerRequests(TestCase):
+    """Tests for various methods of the ExternalBugTrackerRequests."""
+
+    layer = ZopelessDatabaseLayer
+
+    @responses.activate
+    def test_postPage_raises_on_404(self):
+        # When posting, a 404 is converted to a BugTrackerConnectError.
+        base_url = "http://example.com/"
+        bugtracker = ExternalBugTrackerRequests(base_url)
+        transaction.commit()
+        responses.add("POST", base_url + "some-url", status=404)
+        self.assertRaises(
+            BugTrackerConnectError,
+            bugtracker._postPage, 'some-url', {'post-data': 'here'})
+
+    @responses.activate
+    def test_postPage_sends_host(self):
+        # When posting, a Host header is sent.
+        base_host = 'example.com'
+        base_url = 'http://%s/' % base_host
+        bugtracker = ExternalBugTrackerRequests(base_url)
+        transaction.commit()
+        responses.add("POST", base_url + "some-url")
+        bugtracker._postPage('some-url', {'post-data': 'here'})
+        self.assertThat(responses.calls[-1].request, MatchesStructure(
+            headers=ContainsDict({
+                "User-Agent": Equals(LP_USER_AGENT),
+                "Host": Equals(base_host),
+                })))

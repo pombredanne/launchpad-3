@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from contextlib import contextmanager
 from copy import deepcopy
 from datetime import (
     datetime,
@@ -20,9 +21,13 @@ from urllib2 import (
     BaseHandler,
     Request,
     )
-import urlparse
 import xmlrpclib
 
+import responses
+from six.moves.urllib_parse import (
+    parse_qs,
+    urlsplit,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -156,6 +161,30 @@ def set_bugwatch_error_type(bug_watch, error_type):
     naked.last_error_type = error_type
     with admin_logged_in():
         naked.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
+
+
+class BugTrackerResponsesMixin:
+    """A responses-based test mixin for bug trackers.
+
+    The simplest way to use this is as a context manager:
+
+        with bug_tracker.responses():
+            ...
+
+    Classes using this mixin should implement `addResponses`.
+    """
+
+    def addResponses(self, requests_mock, **kwargs):
+        """Add test responses."""
+
+    @contextmanager
+    def responses(self, trace_calls=False, **kwargs):
+        with responses.RequestsMock() as requests_mock:
+            self.addResponses(requests_mock, **kwargs)
+            yield requests_mock
+            if trace_calls:
+                for call in requests_mock.calls:
+                    print call.request.method, call.request.url
 
 
 class TestExternalBugTracker(ExternalBugTracker):
@@ -1522,59 +1551,61 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
         return [self.utc_time]
 
 
-class TestRoundup(Roundup):
-    """Roundup ExternalBugTracker for testing purposes.
-
-    It overrides urlopen, so that access to a real Roundup instance isn't
-    needed.
-    """
+class TestRoundup(BugTrackerResponsesMixin, Roundup):
+    """Roundup ExternalBugTracker for testing purposes."""
 
     # We remove the batch_size limit for the purposes of the tests so
     # that we can test batching and not batching correctly.
     batch_size = None
-    trace_calls = False
 
-    def urlopen(self, url, data=None):
-        if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url.get_full_url())
-
-        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-
-        if self.host == 'bugs.python.org':
-            return open(
-                file_path + '/' + 'python_example_ticket_export.csv', 'r')
+    @staticmethod
+    def _getCallback(request):
+        url = urlsplit(request.url)
+        if url.netloc == 'bugs.python.org':
+            body = read_test_file('python_example_ticket_export.csv')
         else:
-            return open(
-                file_path + '/' + 'roundup_example_ticket_export.csv', 'r')
+            body = read_test_file('roundup_example_ticket_export.csv')
+        return 200, {}, body
+
+    def addResponses(self, requests_mock):
+        """Add test responses."""
+        requests_mock.add_callback(
+            'GET', re.compile(re.escape(self.baseurl)), self._getCallback)
 
 
-class TestRequestTracker(RequestTracker):
-    """A Test-oriented `RequestTracker` implementation.
+class TestRequestTracker(BugTrackerResponsesMixin, RequestTracker):
+    """A Test-oriented `RequestTracker` implementation."""
 
-    Overrides _getPage() and _postPage() so that access to an RT
-    instance is not needed.
-    """
-    trace_calls = False
     simulate_bad_response = False
 
-    def urlopen(self, page, data=None):
-        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-        path = urlparse.urlparse(page)[2].lstrip('/')
-        if self.trace_calls:
-            print "CALLED urlopen(%r)" % path
-
-        if self.simulate_bad_response:
-            return open(file_path + '/' + 'rt-sample-bug-bad.txt')
-
-        if path == self.batch_url:
-            return open(file_path + '/' + 'rt-sample-bug-batch.txt')
+    def _getCallback(self, request):
+        url = urlsplit(request.url)
+        headers = {}
+        if url.path == '/':
+            params = parse_qs(url.query)
+            headers['Set-Cookie'] = 'rt_credentials=%s:%s' % (
+                params['user'][0], params['pass'][0])
+            body = ''
         else:
-            # We extract the ticket ID from the url and use that to find
-            # the test file we want.
-            page_re = re.compile('REST/1.0/ticket/([0-9]+)/show')
-            bug_id = page_re.match(path).groups()[0]
+            if url.path == '/REST/1.0/search/ticket/':
+                body = read_test_file('rt-sample-bug-batch.txt')
+            else:
+                # Extract the ticket ID from the URL and use that to
+                # find the test file we want.
+                bug_id = re.match(
+                    r'/REST/1\.0/ticket/([0-9]+)/show', url.path).group(1)
+                body = read_test_file('rt-sample-bug-%s.txt' % bug_id)
+        return 200, headers, body
 
-            return open(file_path + '/' + 'rt-sample-bug-%s.txt' % bug_id)
+    def addResponses(self, requests_mock, bad=False):
+        """Add test responses."""
+        if bad:
+            requests_mock.add(
+                'GET', re.compile(re.escape(self.baseurl)),
+                body=read_test_file('rt-sample-bug-bad.txt'))
+        else:
+            requests_mock.add_callback(
+                'GET', re.compile(re.escape(self.baseurl)), self._getCallback)
 
 
 class TestSourceForge(SourceForge):
