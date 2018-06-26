@@ -26,6 +26,7 @@ import xmlrpclib
 import responses
 from six.moves.urllib_parse import (
     parse_qs,
+    urljoin,
     urlsplit,
     )
 from zope.component import getUtility
@@ -1608,26 +1609,23 @@ class TestRequestTracker(BugTrackerResponsesMixin, RequestTracker):
                 'GET', re.compile(re.escape(self.baseurl)), self._getCallback)
 
 
-class TestSourceForge(SourceForge):
-    """Test-oriented SourceForge ExternalBugTracker.
+class TestSourceForge(BugTrackerResponsesMixin, SourceForge):
+    """Test-oriented SourceForge ExternalBugTracker."""
 
-    Overrides _getPage() so that access to SourceForge itself is not
-    required.
-    """
+    @staticmethod
+    def _getCallback(request):
+        url = urlsplit(request.url)
+        bug_id = parse_qs(url.query)['aid'][0]
+        body = read_test_file('sourceforge-sample-bug-%s.html' % bug_id)
+        return 200, {'Content-Type': 'text/html'}, body
 
-    trace_calls = False
-
-    def _getPage(self, page):
-        if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page)
-
-        page_re = re.compile('support/tracker.php\?aid=([0-9]+)')
-        bug_id = page_re.match(page).groups()[0]
-
-        file_path = os.path.join(
-            os.path.dirname(__file__), 'testfiles',
-            'sourceforge-sample-bug-%s.html' % bug_id)
-        return open(file_path, 'r').read()
+    def addResponses(self, requests_mock):
+        """Add test responses."""
+        requests_mock.add_callback(
+            'GET',
+            re.compile(
+                re.escape(urljoin(self.baseurl, 'support/tracker.php'))),
+            self._getCallback)
 
 
 class TestDebianBug(debbugs.Bug):
