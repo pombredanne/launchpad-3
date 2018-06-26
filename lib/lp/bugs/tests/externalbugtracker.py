@@ -1177,30 +1177,27 @@ class NoAliasTestBugzillaAPIXMLRPCTransport(TestBugzillaAPIXMLRPCTransport):
         }
 
 
-class TestMantis(Mantis):
-    """Mantis ExternalSystem for use in tests.
+class TestMantis(BugTrackerResponsesMixin, Mantis):
+    """Mantis ExternalBugTracker for use in tests."""
 
-    It overrides _getPage and _postPage, so that access to a real
-    Mantis instance isn't needed.
-    """
-
-    trace_calls = False
-
-    def _getPage(self, page):
-        if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page)
-        if page == "csv_export.php":
-            return read_test_file('mantis_example_bug_export.csv')
-        elif page.startswith('view.php?id='):
-            bug_id = page.split('id=')[-1]
-            return read_test_file('mantis--demo--bug-%s.html' % bug_id)
+    @staticmethod
+    def _getCallback(request):
+        url = urlsplit(request.url)
+        if url.path == '/csv_export.php':
+            body = read_test_file('mantis_example_bug_export.csv')
+        elif url.path == '/view.php':
+            bug_id = parse_qs(url.query)['id'][0]
+            body = read_test_file('mantis--demo--bug-%s.html' % bug_id)
         else:
-            return ''
+            body = ''
+        return 200, {}, body
 
-    def _postPage(self, page, form, repost_on_redirect=False):
-        if self.trace_calls:
-            print "CALLED _postPage(%r, ...)" % (page)
-        return ''
+    def addResponses(self, requests_mock, get=True, post=True):
+        if get:
+            requests_mock.add_callback(
+                'GET', re.compile(re.escape(self.baseurl)), self._getCallback)
+        if post:
+            requests_mock.add('POST', re.compile(re.escape(self.baseurl)))
 
 
 class TestTrac(Trac):

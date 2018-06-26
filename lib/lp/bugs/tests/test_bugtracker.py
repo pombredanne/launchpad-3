@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -13,13 +13,16 @@ from doctest import (
     NORMALIZE_WHITESPACE,
     )
 import unittest
-from urllib2 import (
-    HTTPError,
-    Request,
-    )
 
 from lazr.lifecycle.snapshot import Snapshot
 from pytz import utc
+import responses
+from six.moves.urllib_parse import urlencode
+from testtools.matchers import (
+    Equals,
+    MatchesListwise,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -29,7 +32,6 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker import (
     BugTrackerConnectError,
     Mantis,
-    MantisLoginHandler,
     )
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
@@ -40,7 +42,6 @@ from lp.bugs.model.bugtracker import (
     make_bugtracker_name,
     make_bugtracker_title,
     )
-from lp.bugs.tests.externalbugtracker import UrlLib2TransportTestHandler
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     login,
@@ -286,91 +287,79 @@ class TestMantis(TestCaseWithFactory):
         # checkwatches isolation protection code.
         transaction.commit()
 
+    @responses.activate
     def test_mantis_login_redirects(self):
         # The Mantis bug tracker needs a special HTTP redirect handler
         # in order to login in. Ensure that redirects to the page with
         # the login form are indeed changed to redirects the form submit
         # URL.
-        handler = MantisLoginHandler()
-        request = Request('http://mantis.example.com/some/path')
-        # Let's pretend that Mantis sent a redirect request to the
-        # login page.
-        new_request = handler.redirect_request(
-            request, None, 302, None, None,
-            'http://mantis.example.com/login_page.php'
-            '?return=%2Fview.php%3Fid%3D3301')
+        location = '/login_page.php?' + urlencode({'return': '/some/page'})
+        responses.add(
+            'GET', 'http://mantis.example.com/some/page',
+            status=302, headers={'Location': location})
+        responses.add(
+            'GET',
+            'http://mantis.example.com/login.php?'
+            'username=guest&password=guest&return=%2Fsome%2Fpage',
+            match_querystring=True, status=200, body='sentinel')
+        tracker = Mantis('http://mantis.example.com')
+        response = tracker.makeRequest(
+            'GET', 'http://mantis.example.com/some/page')
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(b'sentinel', response.content)
+        # The request visited the original URL followed by the URL rewritten
+        # by mantis_login_hook.
+        self.assertThat(response.history, MatchesListwise([
+            MatchesStructure(
+                status_code=Equals(302),
+                request=MatchesStructure.byEquality(
+                    url='http://mantis.example.com/some/page')),
+            ]))
         self.assertEqual(
             'http://mantis.example.com/login.php?'
-            'username=guest&password=guest&return=%2Fview.php%3Fid%3D3301',
-            new_request.get_full_url())
+            'username=guest&password=guest&return=%2Fsome%2Fpage',
+            response.request.url)
 
-    def test_mantis_login_redirect_handler_is_used(self):
-        # Ensure that the special Mantis login handler is used
-        # by the Mantis tracker
-        tracker = Mantis('http://mantis.example.com')
-        test_handler = UrlLib2TransportTestHandler()
-        test_handler.setRedirect('http://mantis.example.com/login_page.php'
-            '?return=%2Fsome%2Fpage')
-        opener = tracker.url_opener
-        opener.add_handler(test_handler)
-        opener.open('http://mantis.example.com/some/page')
-        # We should now have two entries in the test handler's list
-        # of visited URLs: The original URL we wanted to visit and the
-        # URL changed by the MantisLoginHandler.
-        self.assertEqual(
-            ['http://mantis.example.com/some/page',
-             'http://mantis.example.com/login.php?'
-             'username=guest&password=guest&return=%2Fsome%2Fpage'],
-            test_handler.accessed_urls)
-
-    def test_mantis_opener_can_handle_cookies(self):
-        # Ensure that the OpenerDirector of the Mantis bug tracker
+    @responses.activate
+    def test_mantis_makeRequest_can_handle_cookies(self):
+        # Ensure that the makeRequest method of the Mantis bug tracker
         # handles cookies.
+        responses.add(
+            'GET', 'http://mantis.example.com/', status=200,
+            headers={'Set-Cookie': 'foo=bar'})
         tracker = Mantis('http://mantis.example.com')
-        test_handler = UrlLib2TransportTestHandler()
-        opener = tracker.url_opener
-        opener.add_handler(test_handler)
-        opener.open('http://mantis.example.com', '')
-        cookies = list(tracker._cookie_handler.cookiejar)
-        self.assertEqual(1, len(cookies))
-        self.assertEqual('foo', cookies[0].name)
-        self.assertEqual('bar', cookies[0].value)
+        tracker.makeRequest('GET', 'http://mantis.example.com/')
+        self.assertThat(tracker._cookie_jar, MatchesListwise([
+            MatchesStructure.byEquality(name='foo', value='bar'),
+            ]))
 
+    @responses.activate
     def test_mantis_csv_file_http_500_error(self):
         # If a Mantis bug tracker returns a HTTP 500 error when the
         # URL for CSV data is accessed, we treat this as an
         # indication that we should screen scrape the bug data and
         # thus set csv_data to None.
+        responses.add(
+            'POST', 'http://mantis.example.com/view_all_set.php', status=200)
+        responses.add(
+            'GET', 'http://mantis.example.com/csv_export.php', status=500)
         tracker = Mantis('http://mantis.example.com')
-        test_handler = UrlLib2TransportTestHandler()
-        opener = tracker.url_opener
-        opener.add_handler(test_handler)
-        test_handler.setError(
-            HTTPError(
-                'http://mantis.example.com/csv_export.php', 500,
-                'Internal Error', {}, None),
-            'http://mantis.example.com/csv_export.php')
-        self.assertIs(None, tracker.csv_data)
+        self.assertIsNone(tracker.csv_data)
 
+    @responses.activate
     def test_mantis_csv_file_other_http_errors(self):
         # If the Mantis server returns other HTTP errors than 500,
         # they appear as BugTrackerConnectErrors.
+        responses.add(
+            'POST', 'http://mantis.example.com/view_all_set.php', status=200)
+        responses.add(
+            'GET', 'http://mantis.example.com/csv_export.php', status=503)
         tracker = Mantis('http://mantis.example.com')
-        test_handler = UrlLib2TransportTestHandler()
-        opener = tracker.url_opener
-        opener.add_handler(test_handler)
-        test_handler.setError(
-            HTTPError(
-                'http://mantis.example.com/csv_export.php', 503,
-                'Service Unavailable', {}, None),
-            'http://mantis.example.com/csv_export.php')
         self.assertRaises(BugTrackerConnectError, tracker._csv_data)
 
-        test_handler.setError(
-            HTTPError(
-                'http://mantis.example.com/csv_export.php', 404,
-                'Not Found', {}, None),
-            'http://mantis.example.com/csv_export.php')
+        responses.remove('GET', 'http://mantis.example.com/csv_export.php')
+        responses.add(
+            'GET', 'http://mantis.example.com/csv_export.php', status=404)
         self.assertRaises(BugTrackerConnectError, tracker._csv_data)
 
 
