@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,12 +10,12 @@ from datetime import datetime
 import httplib
 import itertools
 import logging
-import os
+import os.path
 from StringIO import StringIO
 import urllib
-import urllib2
 import urlparse
 
+import requests
 from twisted.internet import (
     defer,
     protocol,
@@ -36,6 +36,7 @@ from lp.registry.interfaces.distributionmirror import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.services.config import config
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
+from lp.services.timeout import urlfetch
 from lp.services.webapp import canonical_url
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
@@ -202,9 +203,9 @@ class ProberFactory(protocol.ClientFactory):
     request_path = None
 
     # Details of the URL of the host in which we'll connect, which will only
-    # be different from request_* in case we have an http_proxy environment
-    # variable --in that case the scheme, host and port will be the ones
-    # extracted from http_proxy and the path will be self.url
+    # be different from request_* in case we have a configured http_proxy --
+    # in that case the scheme, host and port will be the ones extracted from
+    # http_proxy and the path will be self.url.
     connect_scheme = None
     connect_host = None
     connect_port = None
@@ -279,7 +280,7 @@ class ProberFactory(protocol.ClientFactory):
         # XXX Guilherme Salgado 2006-09-19:
         # We don't actually know how to handle FTP responses, but we
         # expect to be behind a squid HTTP proxy with the patch at
-        # http://www.squid-cache.org/bugs/show_bug.cgi?id=1758 applied. So, if
+        # https://bugs.squid-cache.org/show_bug.cgi?id=1758 applied. So, if
         # you encounter any problems with FTP URLs you'll probably have to nag
         # the sysadmins to fix squid for you.
         if scheme not in ('http', 'ftp'):
@@ -296,9 +297,9 @@ class ProberFactory(protocol.ClientFactory):
         if self.request_host not in host_timeouts:
             host_timeouts[self.request_host] = 0
 
-        # If the http_proxy variable is set, we want to use it as the host
-        # we're going to connect to.
-        proxy = os.getenv('http_proxy')
+        # If launchpad.http_proxy is set in our configuration, we want to
+        # use it as the host we're going to connect to.
+        proxy = config.launchpad.http_proxy
         if proxy:
             scheme, host, port, dummy = _parse(proxy)
             path = url
@@ -612,29 +613,23 @@ class MirrorCDImageProberCallbacks(LoggingMixin):
         return failure
 
 
-def _build_request_for_cdimage_file_list(url):
-    headers = {'Pragma': 'no-cache', 'Cache-control': 'no-cache'}
-    return urllib2.Request(url, headers=headers)
-
-
 def _get_cdimage_file_list():
     url = config.distributionmirrorprober.cdimage_file_list_url
+    # In test environments, this may be a file: URL.  Adjust it to be in a
+    # form that requests can cope with (i.e. using an absolute path).
+    parsed_url = urlparse.urlparse(url)
+    if parsed_url.scheme == 'file' and not os.path.isabs(parsed_url.path):
+        assert parsed_url.path == parsed_url[2]
+        parsed_url = list(parsed_url)
+        parsed_url[2] = os.path.join(config.root, parsed_url[2])
+    url = urlparse.urlunparse(parsed_url)
     try:
-        return urllib2.urlopen(_build_request_for_cdimage_file_list(url))
-    except urllib2.URLError as e:
+        return urlfetch(
+            url, headers={'Pragma': 'no-cache', 'Cache-control': 'no-cache'},
+            trust_env=False, use_proxy=True, allow_file=True)
+    except requests.RequestException as e:
         raise UnableToFetchCDImageFileList(
             'Unable to fetch %s: %s' % (url, e))
-
-
-def restore_http_proxy(http_proxy):
-    """Restore the http_proxy environment variable to the given value."""
-    if http_proxy is None:
-        try:
-            del os.environ['http_proxy']
-        except KeyError:
-            pass
-    else:
-        os.environ['http_proxy'] = http_proxy
 
 
 def get_expected_cdimage_paths():
@@ -648,7 +643,7 @@ def get_expected_cdimage_paths():
     UnableToFetchCDImageFileList exception will be raised.
     """
     d = {}
-    for line in _get_cdimage_file_list().readlines():
+    for line in _get_cdimage_file_list().iter_lines():
         flavour, seriesname, path, size = line.split('\t')
         paths = d.setdefault((flavour, seriesname), [])
         paths.append(path.lstrip('/'))
