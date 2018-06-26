@@ -247,7 +247,7 @@ class Mantis(ExternalBugTracker):
             # when the csv_export.php page is accessed. Since the
             # bug data may be nevertheless available from ordinary
             # web pages, we simply ignore this error.
-            if value.error.startswith('HTTP Error 500'):
+            if str(value.error).startswith('HTTP Error 500'):
                 return None
             raise
 
