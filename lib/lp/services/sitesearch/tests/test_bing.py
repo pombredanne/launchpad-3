@@ -9,13 +9,18 @@ __metaclass__ = type
 
 import json
 import os.path
+import re
 
 from fixtures import MockPatch
+from requests import Response
 from requests.exceptions import (
     ConnectionError,
     HTTPError,
     )
+import responses
 from testtools.matchers import (
+    ContainsDict,
+    Equals,
     HasLength,
     MatchesListwise,
     MatchesStructure,
@@ -26,6 +31,7 @@ from lp.services.sitesearch import BingSearchService
 from lp.services.sitesearch.interfaces import SiteSearchResponseError
 from lp.services.timeout import TimeoutError
 from lp.testing import TestCase
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import BingLaunchpadFunctionalLayer
 
 
@@ -39,6 +45,7 @@ class TestBingSearchService(TestCase):
         self.search_service = BingSearchService()
         self.base_path = os.path.normpath(
             os.path.join(os.path.dirname(__file__), 'data'))
+        self.pushConfig('launchpad', http_proxy='none')
 
     def test_configuration(self):
         self.assertEqual(config.bing.site, self.search_service.site)
@@ -192,27 +199,25 @@ class TestBingSearchService(TestCase):
         matches = self.search_service._parse_search_response(response)
         self.assertThat(matches, HasLength(0))
 
+    @responses.activate
     def test_search_converts_HTTPError(self):
         # The method converts HTTPError to SiteSearchResponseError.
         args = ('url', 500, 'oops', {}, None)
-        self.useFixture(MockPatch(
-            'lp.services.sitesearch.urlfetch', side_effect=HTTPError(*args)))
+        responses.add('GET', re.compile(r'.*'), body=HTTPError(*args))
         self.assertRaises(
             SiteSearchResponseError, self.search_service.search, 'fnord')
 
+    @responses.activate
     def test_search_converts_ConnectionError(self):
         # The method converts ConnectionError to SiteSearchResponseError.
-        self.useFixture(MockPatch(
-            'lp.services.sitesearch.urlfetch',
-            side_effect=ConnectionError('oops')))
+        responses.add('GET', re.compile(r'.*'), body=ConnectionError('oops'))
         self.assertRaises(
             SiteSearchResponseError, self.search_service.search, 'fnord')
 
+    @responses.activate
     def test_search_converts_TimeoutError(self):
         # The method converts TimeoutError to SiteSearchResponseError.
-        self.useFixture(MockPatch(
-            'lp.services.sitesearch.urlfetch',
-            side_effect=TimeoutError('oops')))
+        responses.add('GET', re.compile(r'.*'), body=TimeoutError('oops'))
         self.assertRaises(
             SiteSearchResponseError, self.search_service.search, 'fnord')
 
@@ -233,6 +238,22 @@ class TestBingSearchService(TestCase):
         self.assertRaises(
             SiteSearchResponseError,
             self.search_service._parse_search_response, '{}')
+
+    def test_search_uses_proxy(self):
+        proxy = 'http://proxy.example:3128/'
+        self.pushConfig('launchpad', http_proxy=proxy)
+        fake_send = FakeMethod(result=Response())
+        self.useFixture(
+            MockPatch('requests.adapters.HTTPAdapter.send', fake_send))
+        # Our mock doesn't return a valid response, but we don't care; we
+        # only care about how the adapter is called.
+        self.assertRaises(
+            SiteSearchResponseError, self.search_service.search, 'fnord')
+        self.assertThat(
+            fake_send.calls[0][1]['proxies'],
+            ContainsDict({
+                scheme: Equals(proxy) for scheme in ('http', 'https')
+                }))
 
     def test_search_with_results(self):
         matches = self.search_service.search('bug')
