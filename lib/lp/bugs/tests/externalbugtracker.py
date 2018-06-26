@@ -26,8 +26,6 @@ import xmlrpclib
 import responses
 from six.moves.urllib_parse import (
     parse_qs,
-    urljoin,
-    urlparse,
     urlsplit,
     )
 from zope.component import getUtility
@@ -1575,33 +1573,39 @@ class TestRoundup(BugTrackerResponsesMixin, Roundup):
             'GET', re.compile(re.escape(self.baseurl)), self._getCallback)
 
 
-class TestRequestTracker(RequestTracker):
-    """A Test-oriented `RequestTracker` implementation.
+class TestRequestTracker(BugTrackerResponsesMixin, RequestTracker):
+    """A Test-oriented `RequestTracker` implementation."""
 
-    Overrides _getPage() and _postPage() so that access to an RT
-    instance is not needed.
-    """
-    trace_calls = False
     simulate_bad_response = False
 
-    def urlopen(self, page, data=None):
-        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-        path = urlparse(page)[2].lstrip('/')
-        if self.trace_calls:
-            print "CALLED urlopen(%r)" % path
-
-        if self.simulate_bad_response:
-            return open(file_path + '/' + 'rt-sample-bug-bad.txt')
-
-        if path == self.batch_url:
-            return open(file_path + '/' + 'rt-sample-bug-batch.txt')
+    def _getCallback(self, request):
+        url = urlsplit(request.url)
+        headers = {}
+        if url.path == '/':
+            params = parse_qs(url.query)
+            headers['Set-Cookie'] = 'rt_credentials=%s:%s' % (
+                params['user'][0], params['pass'][0])
+            body = ''
         else:
-            # We extract the ticket ID from the url and use that to find
-            # the test file we want.
-            page_re = re.compile('REST/1.0/ticket/([0-9]+)/show')
-            bug_id = page_re.match(path).groups()[0]
+            if url.path == '/REST/1.0/search/ticket/':
+                body = read_test_file('rt-sample-bug-batch.txt')
+            else:
+                # Extract the ticket ID from the URL and use that to
+                # find the test file we want.
+                bug_id = re.match(
+                    r'/REST/1\.0/ticket/([0-9]+)/show', url.path).group(1)
+                body = read_test_file('rt-sample-bug-%s.txt' % bug_id)
+        return 200, headers, body
 
-            return open(file_path + '/' + 'rt-sample-bug-%s.txt' % bug_id)
+    def addResponses(self, requests_mock, bad=False):
+        """Add test responses."""
+        if bad:
+            requests_mock.add(
+                'GET', re.compile(re.escape(self.baseurl)),
+                body=read_test_file('rt-sample-bug-bad.txt'))
+        else:
+            requests_mock.add_callback(
+                'GET', re.compile(re.escape(self.baseurl)), self._getCallback)
 
 
 class TestSourceForge(SourceForge):

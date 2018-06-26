@@ -21,23 +21,6 @@ implementation of ExternalBugTracker, RequestTracker.
     ...     RequestTracker('http://example.com/'))
     True
 
-The RequestTracker class offers an _opener property, an instance of
-urllib2.OpenerDirector which will handle cookies and so allow the
-RequestTracker instance to work correctly with RT cookies.
-
-We can demonstrate this by creating a test class which contains a stub
-method for RequestTracker._logIn().
-
-    >>> class NoLogInRequestTracker(RequestTracker):
-    ...     def _logIn(self, opener):
-    ...         """This method does nothing but say it's been called."""
-    ...         print "_logIn() has been called."
-
-    >>> request_tracker = NoLogInRequestTracker('http://example.com/')
-    >>> request_tracker._opener
-    _logIn() has been called.
-    <urllib2.OpenerDirector...>
-
 
 == Authentication Credentials ==
 
@@ -108,12 +91,31 @@ We use a test-oriented implementation of RequestTracker for the purposes
 of these tests, which allows us to not rely on a working network
 connection.
 
-    >>> from lp.bugs.tests.externalbugtracker import (
-    ...     TestRequestTracker)
+    >>> from lp.bugs.tests.externalbugtracker import TestRequestTracker
     >>> rt = TestRequestTracker('http://example.com/')
-    >>> rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
+    >>> with rt.responses(trace_calls=True):
+    ...     rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
+    GET http://example.com/?...
+    GET http://example.com/REST/1.0/search/ticket/?...
     >>> sorted(rt.bugs.keys())
     [1585, 1586, 1587, 1588, 1589]
+
+The first request logs into RT and saves the resulting cookie.
+
+    >>> def print_cookie_jar(jar):
+    ...     for name, value in sorted(jar.items()):
+    ...         print('%s=%s' % (name, value))
+
+    >>> print_cookie_jar(rt._cookie_jar)
+    rt_credentials=guest:guest
+
+Subsequent requests use this.
+
+    >>> with rt.responses(trace_calls=True) as requests_mock:
+    ...     rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
+    ...     print(requests_mock.calls[0].request.headers['Cookie'])
+    rt_credentials=guest:guest
+    GET http://example.com/REST/1.0/search/ticket/?...
 
 
 == Export Methods ==
@@ -126,9 +128,9 @@ the bugs will be fetched one-at-a-time:
     >>> rt.batch_query_threshold
     1
 
-    >>> rt.trace_calls = True
-    >>> rt.initializeRemoteBugDB([1585])
-    CALLED urlopen('REST/1.0/ticket/1585/show')
+    >>> with rt.responses(trace_calls=True):
+    ...     rt.initializeRemoteBugDB([1585])
+    GET http://example.com/REST/1.0/ticket/1585/show
 
     >>> rt.bugs.keys()
     [1585]
@@ -136,8 +138,9 @@ the bugs will be fetched one-at-a-time:
 If there are more than batch_query_threshold bugs to update then they are
 fetched as a batch:
 
-    >>> rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
-    CALLED urlopen('REST/1.0/search/ticket/')
+    >>> with rt.responses(trace_calls=True):
+    ...     rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
+    GET http://example.com/REST/1.0/search/ticket/?...
 
     >>> sorted(rt.bugs.keys())
     [1585, 1586, 1587, 1588, 1589]
@@ -146,19 +149,19 @@ If something goes wrong when we request a bug from the remote server a
 BugTrackerConnectError will be raised. We can demonstrate this by making
 our test RT instance simulate such a situation.
 
-    >>> rt.simulate_bad_response = True
-    >>> rt.initializeRemoteBugDB([1585])
+    >>> with rt.responses(bad=True):
+    ...     rt.initializeRemoteBugDB([1585])
     Traceback (most recent call last):
       ...
     BugTrackerConnectError...
 
 This can also be demonstrated for importing bugs as a batch:
 
-    >>> rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
+    >>> with rt.responses(bad=True):
+    ...     rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
     Traceback (most recent call last):
       ...
     BugTrackerConnectError...
-    >>> rt.simulate_bad_response = False
 
 == Updating Bug Watches ==
 
@@ -198,7 +201,9 @@ remote status for, the bug watch that we have created.
     >>> bug_watch_updater = CheckwatchesMaster(
     ...     txn, logger=FakeLogger())
     >>> rt = TestRequestTracker(example_bug_tracker.baseurl)
-    >>> bug_watch_updater.updateBugWatches(rt, example_bug_tracker.watches)
+    >>> with rt.responses():
+    ...     bug_watch_updater.updateBugWatches(
+    ...         rt, example_bug_tracker.watches)
     INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> print_bugwatches(example_bug_tracker.watches)
@@ -225,10 +230,11 @@ tracker with a variety of statuses.
     ...         bugtracker=example_bug_tracker,
     ...         remotebug=str(remote_bug_id))
 
-    >>> rt.trace_calls = True
-    >>> bug_watch_updater.updateBugWatches(rt, example_bug_tracker.watches)
+    >>> with rt.responses(trace_calls=True):
+    ...     bug_watch_updater.updateBugWatches(
+    ...         rt, example_bug_tracker.watches)
     INFO Updating 5 watches for 5 bugs on http://bugs.some.where
-    CALLED urlopen(u'REST/1.0/search/ticket/')
+    GET http://bugs.some.where/REST/1.0/search/ticket/?...
 
 The bug statuses have now been imported from the Example.com bug
 tracker, so the bug watches should now have valid Launchpad bug
