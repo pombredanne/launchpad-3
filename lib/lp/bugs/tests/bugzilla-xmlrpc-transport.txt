@@ -90,9 +90,9 @@ user id is always the same.
 
 The login cookies are in the transport's cookie jar.
 
-    >>> print bugzilla_transport.cookie_processor.cookiejar
-    <...CookieJar[<Cookie Bugzilla_login=...>,
-        <Cookie Bugzilla_logincookie=...>]>
+    >>> print bugzilla_transport.cookie_jar
+    <RequestsCookieJar[<Cookie Bugzilla_login=...>,
+                       <Cookie Bugzilla_logincookie=...>]>
 
 
 Launchpad.time()

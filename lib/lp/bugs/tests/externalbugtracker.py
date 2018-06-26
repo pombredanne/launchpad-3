@@ -52,7 +52,10 @@ from lp.bugs.externalbugtracker.trac import (
     LP_PLUGIN_METADATA_AND_COMMENTS,
     LP_PLUGIN_METADATA_ONLY,
     )
-from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
+from lp.bugs.externalbugtracker.xmlrpc import (
+    RequestsTransport,
+    UrlLib2Transport,
+    )
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -260,12 +263,8 @@ class TestBrokenExternalBugTracker(TestExternalBugTracker):
             raise self.get_remote_status_error("Testing")
 
 
-class TestBugzilla(Bugzilla):
-    """Bugzilla ExternalSystem for use in tests.
-
-    It overrides _getPage and _postPage, so that access to a real Bugzilla
-    instance isn't needed.
-    """
+class TestBugzilla(BugTrackerResponsesMixin, Bugzilla):
+    """Bugzilla ExternalSystem for use in tests."""
     # We set the batch_query_threshold to zero so that only
     # getRemoteBugBatch() is used to retrieve bugs, since getRemoteBug()
     # calls getRemoteBugBatch() anyway.
@@ -301,40 +300,38 @@ class TestBugzilla(Bugzilla):
         """
         return read_test_file(self.bug_item_file)
 
-    def _getPage(self, page):
-        """GET a page.
+    def _getCallback(self, request):
+        """Handle a test GET request.
 
         Only handles xml.cgi?id=1 so far.
         """
-        if self.trace_calls:
-            print "CALLED _getPage()"
-        if page == 'xml.cgi?id=1':
-            data = read_test_file(self.version_file)
+        url = urlsplit(request.url)
+        if (url.path == urlsplit(self.baseurl).path + '/xml.cgi' and
+                parse_qs(url.query).get('id') == ['1']):
+            body = read_test_file(self.version_file)
             # Add some latin1 to test bug 61129
-            return data % dict(non_ascii_latin1="\xe9")
+            return 200, {}, body % {'non_ascii_latin1': b'\xe9'}
         else:
-            raise AssertionError('Unknown page: %s' % page)
+            raise AssertionError('Unknown URL: %s' % request.url)
 
-    def _postPage(self, page, form, repost_on_redirect=False):
-        """POST to the specified page.
-
-        :form: is a dict of form variables being POSTed.
+    def _postCallback(self, request):
+        """Handle a test POST request.
 
         Only handles buglist.cgi so far.
         """
-        if self.trace_calls:
-            print "CALLED _postPage()"
-        if page == self.buglist_page:
+        url = urlsplit(request.url)
+        if url.path == urlsplit(self.baseurl).path + '/' + self.buglist_page:
             buglist_xml = read_test_file(self.buglist_file)
-            bug_ids = str(form[self.bug_id_form_element]).split(',')
+            form = parse_qs(request.body)
+            bug_ids = str(form[self.bug_id_form_element][0]).split(',')
             bug_li_items = []
             for bug_id in bug_ids:
                 bug_id = int(bug_id)
                 if bug_id not in self.bugzilla_bugs:
-                    #Unknown bugs aren't included in the resulting xml.
+                    # Unknown bugs aren't included in the resulting xml.
                     continue
-                bug_status, bug_resolution, bug_priority, bug_severity = \
-                            self.bugzilla_bugs[int(bug_id)]
+                bug_status, bug_resolution, bug_priority, bug_severity = (
+                    self.bugzilla_bugs[int(bug_id)])
                 bug_item = self._readBugItemFile() % {
                     'bug_id': bug_id,
                     'status': bug_status,
@@ -343,12 +340,22 @@ class TestBugzilla(Bugzilla):
                     'severity': bug_severity,
                     }
                 bug_li_items.append(bug_item)
-            return buglist_xml % {
+            body = buglist_xml % {
                 'bug_li_items': '\n'.join(bug_li_items),
-                'page': page,
+                'page': url.path.lstrip('/'),
                 }
+            return 200, {}, body
         else:
-            raise AssertionError('Unknown page: %s' % page)
+            raise AssertionError('Unknown URL: %s' % request.url)
+
+    def addResponses(self, requests_mock, get=True, post=True):
+        """Add test responses."""
+        if get:
+            requests_mock.add_callback(
+                'GET', re.compile(r'.*'), self._getCallback)
+        if post:
+            requests_mock.add_callback(
+                'POST', re.compile(r'.*'), self._postCallback)
 
 
 class TestWeirdBugzilla(TestBugzilla):
@@ -406,14 +413,7 @@ class TestOldBugzilla(TestBugzilla):
                 123543: ('ASSIGNED', '', 'HIGH', 'BLOCKER')}
 
 
-class FakeHTTPConnection:
-    """A fake HTTP connection."""
-
-    def putheader(self, header, value):
-        print "%s: %s" % (header, value)
-
-
-class TestBugzillaXMLRPCTransport(UrlLib2Transport):
+class TestBugzillaXMLRPCTransport(RequestsTransport):
     """A test implementation of the Bugzilla XML-RPC interface."""
 
     local_datetime = None
@@ -538,9 +538,9 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     def __init__(self, *args, **kwargs):
         """Ensure mutable class data is copied to the instance."""
-        # UrlLib2Transport is not a new style class so 'super' cannot be
+        # RequestsTransport is not a new-style class so 'super' cannot be
         # used.
-        UrlLib2Transport.__init__(self, *args, **kwargs)
+        RequestsTransport.__init__(self, *args, **kwargs)
         self.bugs = deepcopy(TestBugzillaXMLRPCTransport._bugs)
         self.bug_aliases = deepcopy(self._bug_aliases)
         self.bug_comments = deepcopy(self._bug_comments)
@@ -551,14 +551,13 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     @property
     def auth_cookie(self):
-        cookies = self.cookie_processor.cookiejar._cookies
+        if len(set(cookie.domain for cookie in self.cookie_jar)) > 1:
+            raise AssertionError(
+                "There should only be cookies for one domain.")
 
-        assert len(cookies) < 2, (
-            "There should only be cookies for one domain.")
-
-        if len(cookies) == 1:
-            [(domain, domain_cookies)] = cookies.items()
-            return domain_cookies.get('', {}).get('Bugzilla_logincookie')
+        for cookie in self.cookie_jar:
+            if cookie.name == 'Bugzilla_logincookie':
+                return cookie
         else:
             return None
 
