@@ -7,6 +7,7 @@ import shutil
 import subprocess
 
 import gpgme
+import responses
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -17,10 +18,7 @@ from lp.services.gpg.interfaces import (
     IGPGHandler,
     )
 from lp.services.log.logger import BufferLogger
-from lp.services.timeout import (
-    get_default_timeout_function,
-    set_default_timeout_function,
-    )
+from lp.services.timeout import TimeoutError
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -160,24 +158,26 @@ class TestGPGHandler(TestCase):
             GPGKeyDoesNotExistOnServer, gpghandler.retrieveKey,
             'non-existent-fp')
 
+    @responses.activate
     def test_retrieveKey_raises_GPGKeyTemporarilyNotFoundError_for_timeout(
-        self):
+            self):
         # If the keyserver responds too slowly, GPGHandler.retrieveKey()
         # raises GPGKeyTemporarilyNotFoundError.
-        self.useFixture(KeyServerTac())
-        old_timeout_function = get_default_timeout_function()
-        set_default_timeout_function(lambda: 0.01)
-        try:
-            gpghandler = getUtility(IGPGHandler)
-            self.assertRaises(
-                GPGKeyTemporarilyNotFoundError, gpghandler.retrieveKey,
-                'non-existent-fp')
-            # An OOPS report is generated for the timeout.
-            error_report = self.oopses[-1]
-            self.assertEqual('TimeoutError', error_report['type'])
-            self.assertEqual('timeout exceeded.', error_report['value'])
-        finally:
-            set_default_timeout_function(old_timeout_function)
+        # We simulate a timeout using responses rather than by setting a low
+        # timeout, as otherwise the test will fail if the fetch thread
+        # happens to complete between Thread.start and Thread.isAlive.
+        responses.add(
+            'GET',
+            self.gpg_handler.getURLForKeyInServer(
+                'non-existent-fp', action='get'),
+            body=TimeoutError('timeout exceeded.'))
+        self.assertRaises(
+            GPGKeyTemporarilyNotFoundError, self.gpg_handler.retrieveKey,
+            'non-existent-fp')
+        # An OOPS report is generated for the timeout.
+        error_report = self.oopses[-1]
+        self.assertEqual('TimeoutError', error_report['type'])
+        self.assertEqual('timeout exceeded.', error_report['value'])
 
     def test_retrieveKey_checks_fingerprint(self):
         # retrieveKey ensures that the key fetched from the keyserver has
