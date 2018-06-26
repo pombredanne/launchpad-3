@@ -52,10 +52,7 @@ from lp.bugs.externalbugtracker.trac import (
     LP_PLUGIN_METADATA_AND_COMMENTS,
     LP_PLUGIN_METADATA_ONLY,
     )
-from lp.bugs.externalbugtracker.xmlrpc import (
-    RequestsTransport,
-    UrlLib2Transport,
-    )
+from lp.bugs.externalbugtracker.xmlrpc import RequestsTransport
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -1199,44 +1196,45 @@ class TestMantis(BugTrackerResponsesMixin, Mantis):
             requests_mock.add('POST', re.compile(re.escape(self.baseurl)))
 
 
-class TestTrac(Trac):
-    """Trac ExternalBugTracker for testing purposes.
-
-    It overrides urlopen, so that access to a real Trac instance isn't needed,
-    and supportsSingleExports so that the tests don't fail due to the lack of
-    a network connection. Also, it overrides the default batch_query_threshold
-    for the sake of making test data sane.
-    """
+class TestTrac(BugTrackerResponsesMixin, Trac):
+    """Trac ExternalBugTracker for testing purposes."""
 
     # We remove the batch_size limit for the purposes of the tests so
     # that we can test batching and not batching correctly.
     batch_size = None
     batch_query_threshold = 10
     csv_export_file = None
-    supports_single_exports = True
-    trace_calls = False
 
     def getExternalBugTrackerToUse(self):
         return self
 
-    def supportsSingleExports(self, bug_ids):
-        """See `Trac`."""
-        return self.supports_single_exports
-
-    def urlopen(self, url, data=None):
-        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-        url = url.get_full_url()
-        if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url)
-
-        if self.csv_export_file is not None:
-            csv_export_file = self.csv_export_file
-        elif re.match('.*/ticket/[0-9]+\?format=csv$', url):
-            csv_export_file = 'trac_example_single_ticket_export.csv'
+    def _getCallback(self, request, supports_single_exports):
+        url = urlsplit(request.url)
+        if parse_qs(url.query).get('format') == ['csv']:
+            mimetype = 'text/csv'
+            if url.path.startswith('/ticket/'):
+                if not supports_single_exports:
+                    return 404, {}, ''
+                body = read_test_file('trac_example_single_ticket_export.csv')
+            else:
+                body = read_test_file('trac_example_ticket_export.csv')
         else:
-            csv_export_file = 'trac_example_ticket_export.csv'
+            mimetype = 'text/html'
+            body = ''
+        return 200, {'Content-Type': mimetype}, body
 
-        return open(file_path + '/' + csv_export_file, 'r')
+    def addResponses(self, requests_mock, supports_single_exports=True,
+                     broken=False):
+        url_pattern = re.compile(re.escape(self.baseurl))
+        if broken:
+            requests_mock.add(
+                'GET', url_pattern,
+                body=read_test_file('trac_example_broken_ticket_export.csv'))
+        else:
+            requests_mock.add_callback(
+                'GET', url_pattern,
+                lambda request: self._getCallback(
+                    request, supports_single_exports))
 
 
 class MockTracRemoteBug:
@@ -1297,7 +1295,7 @@ def strip_trac_comment(comment):
     return comment
 
 
-class TestTracXMLRPCTransport(UrlLib2Transport):
+class TestTracXMLRPCTransport(RequestsTransport):
     """An XML-RPC transport to be used when testing Trac."""
 
     remote_bugs = {}
@@ -1313,8 +1311,12 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
 
     @property
     def auth_cookie(self):
-        cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get('example.com', {}).get('', {}).get('trac_auth')
+        for cookie in self.cookie_jar:
+            if (cookie.domain == 'example.com' and cookie.path == '' and
+                    cookie.name == 'trac_auth'):
+                return cookie
+        else:
+            return None
 
     @property
     def has_valid_auth_cookie(self):
