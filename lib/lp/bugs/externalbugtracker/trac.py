@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Trac ExternalBugTracker implementation."""
@@ -6,16 +6,16 @@
 __metaclass__ = type
 __all__ = ['Trac', 'TracLPPlugin']
 
-from Cookie import SimpleCookie
-from cookielib import CookieJar
 import csv
 from datetime import datetime
 from email.utils import parseaddr
 import time
-import urllib2
 import xmlrpclib
 
+from mimeparse import parse_mime_type
 import pytz
+import requests
+from requests.cookies import RequestsCookieJar
 from zope.component import getUtility
 from zope.interface import implementer
 
@@ -30,7 +30,7 @@ from lp.bugs.externalbugtracker.base import (
     UnknownRemoteStatusError,
     UnparsableBugData,
     )
-from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
+from lp.bugs.externalbugtracker.xmlrpc import RequestsTransport
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -44,6 +44,10 @@ from lp.bugs.interfaces.externalbugtracker import (
 from lp.services.config import config
 from lp.services.database.isolation import ensure_no_transaction
 from lp.services.messages.interfaces.message import IMessageSet
+from lp.services.timeout import (
+    override_timeout,
+    urlfetch,
+    )
 from lp.services.webapp.url import urlappend
 
 # Symbolic constants used for the Trac LP plugin.
@@ -69,15 +73,16 @@ class Trac(ExternalBugTracker):
         # Any token will do.
         auth_url = urlappend(base_auth_url, 'check')
         try:
-            response = self.urlopen(auth_url)
-        except urllib2.HTTPError as error:
+            with override_timeout(config.checkwatches.default_socket_timeout):
+                response = urlfetch(auth_url, trust_env=False, use_proxy=True)
+        except requests.HTTPError as e:
             # If the error is HTTP 401 Unauthorized then we're
             # probably talking to the LP plugin.
-            if error.code == 401:
+            if e.response.status_code == 401:
                 return TracLPPlugin(self.baseurl)
             else:
                 return self
-        except urllib2.URLError as error:
+        except requests.RequestException:
             return self
         else:
             # If the response contains a trac_auth cookie then we're
@@ -85,9 +90,8 @@ class Trac(ExternalBugTracker):
             # the remote system will authorize the bogus auth token we
             # sent, so this check is really intended to detect broken
             # Trac instances that return HTTP 200 for a missing page.
-            for set_cookie in response.headers.getheaders('Set-Cookie'):
-                cookie = SimpleCookie(set_cookie)
-                if 'trac_auth' in cookie:
+            for cookie in response.cookies:
+                if cookie.name == 'trac_auth':
                     return TracLPPlugin(self.baseurl)
             else:
                 return self
@@ -98,31 +102,37 @@ class Trac(ExternalBugTracker):
 
         :bug_ids: A list of bug IDs that we can use for discovery purposes.
         """
-        valid_ticket = False
         html_ticket_url = '%s/%s' % (
             self.baseurl, self.ticket_url.replace('?format=csv', ''))
 
-        bug_ids = list(bug_ids)
-        while not valid_ticket and len(bug_ids) > 0:
+        for bug_id in bug_ids:
             try:
-                # We try to retrive the ticket in HTML form, since that will
-                # tell us whether or not it is actually a valid ticket
-                ticket_id = int(bug_ids.pop())
-                self._fetchPage(html_ticket_url % ticket_id)
-            except (ValueError, urllib2.HTTPError):
-                # If we get an HTTP error we can consider the ticket to be
-                # invalid. If we get a ValueError then the ticket_id couldn't
-                # be identified and it's of no use to us anyway.
+                # We try to retrieve the ticket in HTML form, since that
+                # will tell us whether or not it is actually a valid ticket.
+                ticket_id = int(bug_id)
+                self._getPage(html_ticket_url % ticket_id)
+            except BugTrackerConnectError as e:
+                if isinstance(e.error, requests.HTTPError):
+                    # We can consider the ticket to be invalid.
+                    pass
+                else:
+                    raise
+            except ValueError:
+                # The ticket_id couldn't be identified and it's of no use to
+                # us anyway.
                 pass
             else:
                 # If we didn't get an error we can try to get the ticket in
                 # CSV form. If this fails then we can consider single ticket
                 # exports to be unsupported.
                 try:
-                    csv_data = self._fetchPage(
-                        "%s/%s" % (self.baseurl, self.ticket_url % ticket_id))
-                    return csv_data.headers.subtype == 'csv'
-                except (urllib2.HTTPError, urllib2.URLError):
+                    response = self._getPage(
+                        "%s/%s" %
+                        (self.baseurl, self.ticket_url % ticket_id))
+                    subtype = parse_mime_type(
+                        response.headers.get('Content-Type', ''))[1]
+                    return subtype == 'csv'
+                except BugTrackerConnectError:
                     return False
         else:
             # If we reach this point then we likely haven't had any valid
@@ -140,7 +150,7 @@ class Trac(ExternalBugTracker):
         """
         # We read the remote bugs into a list so that we can check that
         # the data we're getting back from the remote server are valid.
-        csv_reader = csv.DictReader(self._fetchPage(query_url))
+        csv_reader = csv.DictReader(self._getPage(query_url).iter_lines())
         remote_bugs = [csv_reader.next()]
 
         # We consider the data we're getting from the remote server to
@@ -320,9 +330,9 @@ class TracLPPlugin(Trac):
         super(TracLPPlugin, self).__init__(baseurl)
 
         if cookie_jar is None:
-            cookie_jar = CookieJar()
+            cookie_jar = RequestsCookieJar()
         if xmlrpc_transport is None:
-            xmlrpc_transport = UrlLib2Transport(baseurl, cookie_jar)
+            xmlrpc_transport = RequestsTransport(baseurl, cookie_jar)
 
         self._cookie_jar = cookie_jar
         self._xmlrpc_transport = xmlrpc_transport
@@ -332,8 +342,10 @@ class TracLPPlugin(Trac):
         self._server = xmlrpclib.ServerProxy(
             xmlrpc_endpoint, transport=self._xmlrpc_transport)
 
-        self.url_opener = urllib2.build_opener(
-            urllib2.HTTPCookieProcessor(cookie_jar))
+    def makeRequest(self, method, url, **kwargs):
+        """See `ExternalBugTracker`."""
+        return super(TracLPPlugin, self).makeRequest(
+            method, url, cookies=self._cookie_jar, **kwargs)
 
     @ensure_no_transaction
     @needs_authentication
@@ -364,7 +376,7 @@ class TracLPPlugin(Trac):
         auth_url = urlappend(base_auth_url, token_text)
 
         try:
-            self._fetchPage(auth_url)
+            self._getPage(auth_url)
         except BugTrackerConnectError as e:
             raise BugTrackerAuthenticationError(self.baseurl, e.error)
 

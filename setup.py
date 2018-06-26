@@ -201,6 +201,7 @@ setup(
         'python-debian',
         'python-keystoneclient',
         'python-memcached',
+        'python-mimeparse',
         'python-openid',
         'python-subunit',
         'python-swiftclient',

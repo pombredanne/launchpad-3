@@ -1,12 +1,12 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the Mantis BugTracker."""
 
 __metaclass__ = type
 
-import urllib2
-
+import responses
+from six.moves.urllib_parse import urljoin
 from testtools.matchers import (
     Equals,
     Is,
@@ -18,11 +18,7 @@ from lp.bugs.externalbugtracker.mantis import (
     MantisBugBatchParser,
     )
 from lp.services.log.logger import BufferLogger
-from lp.testing import (
-    monkey_patch,
-    TestCase,
-    )
-from lp.testing.fakemethod import FakeMethod
+from lp.testing import TestCase
 from lp.testing.layers import ZopelessLayer
 
 
@@ -107,17 +103,16 @@ class TestMantisBugBatchParser(TestCase):
 
 
 class TestMantisBugTracker(TestCase):
-    """Tests for various methods of the Manits bug tracker."""
+    """Tests for various methods of the Mantis bug tracker."""
 
     layer = ZopelessLayer
 
+    @responses.activate
     def test_csv_data_on_post_404(self):
         # If the 'view_all_set.php' request raises a 404, then the csv_data
         # attribute is None.
         base_url = "http://example.com/"
-
-        fail_404 = urllib2.HTTPError('url', 404, 'Not Found', None, None)
-
-        with monkey_patch(Mantis, urlopen=FakeMethod(failure=fail_404)):
-            bugtracker = Mantis(base_url)
-            self.assertThat(bugtracker.csv_data, Is(None))
+        responses.add(
+            "POST", urljoin(base_url, "view_all_set.php?f=3"), status=404)
+        bugtracker = Mantis(base_url)
+        self.assertThat(bugtracker.csv_data, Is(None))

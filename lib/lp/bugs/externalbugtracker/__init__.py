@@ -14,12 +14,10 @@ __all__ = [
     'DebBugs',
     'DebBugsDatabaseNotFound',
     'ExternalBugTracker',
-    'ExternalBugTrackerRequests',
     'GitHub',
     'InvalidBugId',
     'LookupTree',
     'Mantis',
-    'MantisLoginHandler',
     'PrivateRemoteBug',
     'RequestTracker',
     'Roundup',
@@ -40,7 +38,6 @@ from lp.bugs.externalbugtracker.base import (
     BugWatchUpdateError,
     BugWatchUpdateWarning,
     ExternalBugTracker,
-    ExternalBugTrackerRequests,
     InvalidBugId,
     LookupTree,
     PrivateRemoteBug,
@@ -56,10 +53,7 @@ from lp.bugs.externalbugtracker.debbugs import (
     DebBugsDatabaseNotFound,
     )
 from lp.bugs.externalbugtracker.github import GitHub
-from lp.bugs.externalbugtracker.mantis import (
-    Mantis,
-    MantisLoginHandler,
-    )
+from lp.bugs.externalbugtracker.mantis import Mantis
 from lp.bugs.externalbugtracker.roundup import Roundup
 from lp.bugs.externalbugtracker.rt import RequestTracker
 from lp.bugs.externalbugtracker.sourceforge import SourceForge
