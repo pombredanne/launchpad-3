@@ -11,16 +11,10 @@ from datetime import (
     datetime,
     timedelta,
     )
-from httplib import HTTPMessage
 import os
 import random
 import re
-from StringIO import StringIO
 import time
-from urllib2 import (
-    BaseHandler,
-    Request,
-    )
 import xmlrpclib
 
 import responses
@@ -1696,86 +1690,6 @@ class TestDebBugs(DebBugs):
         bug = self.bugs[bug_id]
         self.debbugs_db.load_log(bug)
         return bug
-
-
-class UrlLib2TransportTestInfo:
-    """A url info object for use in the test, returning
-    a hard-coded cookie header.
-    """
-    cookies = 'foo=bar'
-
-    def getheaders(self, header):
-        """Return the hard-coded cookie header."""
-        if header.lower() in ('cookie', 'set-cookie', 'set-cookie2'):
-            return [self.cookies]
-
-
-class UrlLib2TransportTestHandler(BaseHandler):
-    """A test urllib2 handler returning a hard-coded response."""
-
-    def __init__(self):
-        self.redirect_url = None
-        self.raise_error = None
-        self.response = None
-        self.accessed_urls = []
-
-    def setRedirect(self, new_url):
-        """The next call of default_open() will redirect to `url`."""
-        self.redirect_url = new_url
-
-    def setError(self, error, url):
-        """Raise `error` when `url` is accessed."""
-        self.raise_error = error
-        self.raise_url = url
-
-    def setResponse(self, response):
-        self.response = response
-
-    def default_open(self, req):
-        """Catch all requests and return a hard-coded response.
-
-        The response body is an XMLRPC response. In addition we set the
-        info of the response to contain a cookie.
-        """
-        assert isinstance(req, Request), (
-            'Expected a urllib2.Request, got %s' % req)
-
-        self.accessed_urls.append(req.get_full_url())
-        if (self.raise_error is not None and
-              req.get_full_url() == self.raise_url):
-            error = self.raise_error
-            self.raise_error = None
-            raise error
-        elif self.redirect_url is not None:
-            headers = HTTPMessage(StringIO())
-            headers['location'] = self.redirect_url
-            response = StringIO()
-            response.info = lambda: headers
-            response.geturl = req.get_full_url
-            response.code = 302
-            response.msg = 'Moved'
-            self.redirect_url = None
-            response = self.parent.error(
-                'http', req, response, 302, 'Moved', headers)
-        elif self.response is not None:
-            response = StringIO(self.response)
-            info = UrlLib2TransportTestInfo()
-            response.info = lambda: info
-            response.code = 200
-            response.geturl = req.get_full_url
-            response.msg = ''
-            self.response = None
-        else:
-            xmlrpc_response = xmlrpclib.dumps(
-                (req.get_full_url(), ), methodresponse=True)
-            response = StringIO(xmlrpc_response)
-            info = UrlLib2TransportTestInfo()
-            response.info = lambda: info
-            response.code = 200
-            response.geturl = req.get_full_url
-            response.msg = ''
-
-        return response
 
 
 def ensure_response_parser_is_expat(transport):

@@ -13,7 +13,7 @@ from lazr.uri import URI
 
 from lp.bugs.externalbugtracker import (
     BugNotFound,
-    ExternalBugTrackerRequests,
+    ExternalBugTracker,
     InvalidBugId,
     LookupTree,
     UnknownRemoteStatusError,
@@ -42,7 +42,7 @@ def create_query_string(items):
         for (key, value) in items)
 
 
-class Roundup(ExternalBugTrackerRequests):
+class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
 
     _status_fields_map = {

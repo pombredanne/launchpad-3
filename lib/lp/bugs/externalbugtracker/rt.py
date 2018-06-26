@@ -15,7 +15,7 @@ from requests.cookies import RequestsCookieJar
 from lp.bugs.externalbugtracker import (
     BugNotFound,
     BugTrackerConnectError,
-    ExternalBugTrackerRequests,
+    ExternalBugTracker,
     InvalidBugId,
     LookupTree,
     UnknownRemoteStatusError,
@@ -29,7 +29,7 @@ from lp.services.config import config
 from lp.services.webapp.url import urlparse
 
 
-class RequestTracker(ExternalBugTrackerRequests):
+class RequestTracker(ExternalBugTracker):
     """`ExternalBugTracker` subclass for handling RT imports."""
 
     ticket_url = 'REST/1.0/ticket/%s/show'

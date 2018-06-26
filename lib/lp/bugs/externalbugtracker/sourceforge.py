@@ -11,7 +11,7 @@ import urllib
 
 from lp.bugs.externalbugtracker import (
     BugNotFound,
-    ExternalBugTrackerRequests,
+    ExternalBugTracker,
     InvalidBugId,
     LookupTree,
     PrivateRemoteBug,
@@ -27,7 +27,7 @@ from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp import urlsplit
 
 
-class SourceForge(ExternalBugTrackerRequests):
+class SourceForge(ExternalBugTracker):
     """An ExternalBugTracker for SourceForge bugs."""
 
     # We only allow ourselves to update one SourceForge bug at a time to

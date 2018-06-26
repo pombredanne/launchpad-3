@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Trac ExternalBugTracker implementation."""
@@ -24,7 +24,7 @@ from lp.bugs.externalbugtracker.base import (
     BugNotFound,
     BugTrackerAuthenticationError,
     BugTrackerConnectError,
-    ExternalBugTrackerRequests,
+    ExternalBugTracker,
     InvalidBugId,
     LookupTree,
     UnknownRemoteStatusError,
@@ -60,7 +60,7 @@ LP_PLUGIN_FULL = 3
 FAULT_TICKET_NOT_FOUND = 1001
 
 
-class Trac(ExternalBugTrackerRequests):
+class Trac(ExternalBugTracker):
     """An ExternalBugTracker instance for handling Trac bugtrackers."""
 
     ticket_url = 'ticket/%i?format=csv'
