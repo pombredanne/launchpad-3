@@ -2383,6 +2383,9 @@ class IArchiveSet(Interface):
         The result is ordered by PPA displayname.
         """
 
+    def getPPADistributionsForUser(user):
+        """Return the `Distribution`s of all PPAs for the given user."""
+
     def getPPAsPendingSigningKey():
         """Return all PPAs pending signing key generation.
 
