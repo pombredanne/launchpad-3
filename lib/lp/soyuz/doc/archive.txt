@@ -1208,6 +1208,22 @@ method returns an empty SelectResults.
     >>> jblack_ppas.count()
     0
 
+'getPPADistributionsForUser' returns the distinct distributions for all the
+PPAs that a given user participates in.
+
+    >>> for distribution in archive_set.getPPADistributionsForUser(cprov):
+    ...     print(distribution.display_name)
+    Ubuntu
+    >>> for distribution in archive_set.getPPADistributionsForUser(no_priv):
+    ...     print(distribution.display_name)
+    Ubuntu
+    >>> for distribution in archive_set.getPPADistributionsForUser(
+    ...         indirect_uploader):
+    ...     print(distribution.display_name)
+    Ubuntu
+    >>> for distribution in archive_set.getPPADistributionsForUser(jblack):
+    ...     print(distribution.display_name)
+
 The method getPrivatePPAs() will return a result set of all PPAs that are
 private.
 

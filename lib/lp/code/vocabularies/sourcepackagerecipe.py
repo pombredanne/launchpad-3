@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Source Package Recipe vocabularies used in the lp/code modules."""
@@ -37,8 +37,8 @@ class BuildableDistroSeries(SQLObjectVocabularyBase):
 
     @classmethod
     def findSeries(self, user):
-        ppas = getUtility(IArchiveSet).getPPAsForUser(user)
-        supported_distros = set([ppa.distribution for ppa in ppas])
+        supported_distros = set(
+            getUtility(IArchiveSet).getPPADistributionsForUser(user))
         # Now add in Ubuntu.
         supported_distros.add(getUtility(ILaunchpadCelebrities).ubuntu)
         all_series = getUtility(IDistroSeriesSet).search()
