@@ -21,6 +21,7 @@ from testtools.matchers import (
     MatchesStructure,
     )
 from testtools.twistedsupport import (
+    assert_fails_with,
     AsynchronousDeferredRunTest,
     AsynchronousDeferredRunTestForBrokenTwisted,
     )
@@ -102,23 +103,7 @@ class HTTPServerTestSetup(TacTestSetup):
         return os.path.join(self.root, 'distributionmirror_http_server.log')
 
 
-class AssertFailureMixin:
-
-    @defer.inlineCallbacks
-    def assertFailure(self, deferred, *expectedFailures):
-        try:
-            result = yield deferred
-        except expectedFailures:
-            pass
-        except Exception as e:
-            self.fail('Expected %r, got %s' % (expectedFailures, e))
-        else:
-            self.fail(
-                'Returned %r instead of raising %r' %
-                (result, expectedFailures))
-
-
-class TestProberProtocolAndFactory(AssertFailureMixin, TestCase):
+class TestProberProtocolAndFactory(TestCase):
 
     layer = TwistedLayer
     run_tests_with = AsynchronousDeferredRunTestForBrokenTwisted.make_factory(
@@ -233,13 +218,13 @@ class TestProberProtocolAndFactory(AssertFailureMixin, TestCase):
         prober = RedirectAwareProberFactory(
             'http://localhost:%s/redirect-infinite-loop' % self.port)
         deferred = prober.probe()
-        return self.assertFailure(deferred, InfiniteLoopDetected)
+        return assert_fails_with(deferred, InfiniteLoopDetected)
 
     def test_redirectawareprober_fail_on_unknown_scheme(self):
         prober = RedirectAwareProberFactory(
             'http://localhost:%s/redirect-unknown-url-scheme' % self.port)
         deferred = prober.probe()
-        return self.assertFailure(deferred, UnknownURLSchemeAfterRedirect)
+        return assert_fails_with(deferred, UnknownURLSchemeAfterRedirect)
 
     def test_200(self):
         d = self._createProberAndProbe(self.urls['200'])
@@ -273,15 +258,15 @@ class TestProberProtocolAndFactory(AssertFailureMixin, TestCase):
 
     def test_notfound(self):
         d = self._createProberAndProbe(self.urls['404'])
-        return self.assertFailure(d, BadResponseCode)
+        return assert_fails_with(d, BadResponseCode)
 
     def test_500(self):
         d = self._createProberAndProbe(self.urls['500'])
-        return self.assertFailure(d, BadResponseCode)
+        return assert_fails_with(d, BadResponseCode)
 
     def test_timeout(self):
         d = self._createProberAndProbe(self.urls['timeout'])
-        return self.assertFailure(d, ProberTimeout)
+        return assert_fails_with(d, ProberTimeout)
 
     def test_prober_user_agent(self):
         protocol = RedirectAwareProberProtocol()
@@ -416,8 +401,7 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         self.assertFalse(should_skip_host(self.host))
 
 
-class TestProberFactoryRequestTimeoutRatioWithTwisted(
-        AssertFailureMixin, TestCase):
+class TestProberFactoryRequestTimeoutRatioWithTwisted(TestCase):
     """Tests to ensure we stop issuing requests on a given host if the
     requests/timeouts ratio on that host is too low.
 
@@ -496,7 +480,7 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(
 
         d = self._createProberAndProbe(
             u'http://%s:%s/timeout' % (host, self.port))
-        return self.assertFailure(d, ConnectionSkipped)
+        return assert_fails_with(d, ConnectionSkipped)
 
 
 class TestMultiLock(TestCase):
