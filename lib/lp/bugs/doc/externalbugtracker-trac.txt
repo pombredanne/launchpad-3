@@ -41,8 +41,8 @@ to validate the token.
     ...     chosen_trac = trac.getExternalBugTrackerToUse()
     >>> isinstance(chosen_trac, TracLPPlugin)
     True
-    >>> chosen_trac.baseurl
-    'http://example.com'
+    >>> print(chosen_trac.baseurl)
+    http://example.com
 
 Some Trac instances in the wild return HTTP 200 when the resource is
 not found (HTTP 404 would be more appropriate). A distinguishing
@@ -60,8 +60,8 @@ Trac installations:
     ...     chosen_trac = trac.getExternalBugTrackerToUse()
     >>> isinstance(chosen_trac, TracLPPlugin)
     False
-    >>> chosen_trac.baseurl
-    'http://example.com'
+    >>> print(chosen_trac.baseurl)
+    http://example.com
 
 In the event that our deliberately bogus token is considered valid,
 the external bug tracker that groks the plugin is selected:
@@ -73,8 +73,8 @@ the external bug tracker that groks the plugin is selected:
     ...     chosen_trac = trac.getExternalBugTrackerToUse()
     >>> isinstance(chosen_trac, TracLPPlugin)
     True
-    >>> chosen_trac.baseurl
-    'http://example.com'
+    >>> print(chosen_trac.baseurl)
+    http://example.com
 
 If a 404 is returned, the normal Trac instance is returned.
 
@@ -249,7 +249,7 @@ except for checking that they are valid Trac CSV exports. in this case,
 the IDs returned are nothing like the ones we asked for:
 
     >>> bug_ids = sorted(int(bug['id']) for bug in remote_bugs)
-    >>> print bug_ids
+    >>> print(bug_ids)
     [1, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153]
 
 If _fetchBugData() receives a response that isn't a valid Trac CSV
@@ -286,7 +286,7 @@ First, we create some bug watches to test with:
 Collect the Example.com watches:
 
     >>> for bug_watch in example_bug_tracker.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    ...     print("%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus))
     1: None
 
 And have a Trac instance process them:
@@ -306,7 +306,7 @@ And have a Trac instance process them:
     INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> for bug_watch in example_bug_tracker.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    ...     print("%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus))
     1: fixed
 
 We'll add some more watches now.
@@ -320,7 +320,7 @@ We'll add some more watches now.
 
     >>> for remote_bug, bug_watch_id in bug_watches.items():
     ...     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
-    ...     print "%s: %s" % (remote_bug, bug_watch.remotestatus)
+    ...     print("%s: %s" % (remote_bug, bug_watch.remotestatus))
     1: fixed
 
     >>> remote_bugs = [
@@ -354,7 +354,7 @@ We'll add some more watches now.
     ...     bug_watch = getUtility(IBugWatchSet).get(
     ...         bug_watches[remote_bug_id])
     ...     remote_status = bug_watch.remotestatus
-    ...     print 'Remote bug %d: %s' % (remote_bug_id, remote_status)
+    ...     print('Remote bug %d: %s' % (remote_bug_id, remote_status))
     Remote bug 1: fixed
     Remote bug 143: fixed
     Remote bug 144: assigned
