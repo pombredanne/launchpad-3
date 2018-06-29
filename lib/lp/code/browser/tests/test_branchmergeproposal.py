@@ -89,6 +89,7 @@ from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.model.message import MessageSet
 from lp.services.timeout import TimeoutError
@@ -1634,8 +1635,24 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             "on 2015-01-01" % sha1, extract_text(tag))
 
     def test_client_cache_bzr(self):
-        # For Bazaar, the client cache contains the branch name and a
-        # loggerhead-based diff link.
+        # For Bazaar, the client cache contains the branch name and a link
+        # to the Loggerhead diff via the webapp.
+        bmp = self.factory.makeBranchMergeProposal()
+        view = create_initialized_view(bmp, '+index')
+        cache = IJSONRequestCache(view.request)
+        self.assertThat(cache.objects, ContainsDict({
+            'branch_name': Equals(bmp.source_branch.name),
+            'branch_diff_link': Equals(
+                'http://code.launchpad.dev/%s/+diff/' %
+                bmp.source_branch.unique_name),
+            }))
+
+    def test_client_cache_bzr_proxy_feature_disabled(self):
+        # For Bazaar, a feature flag can be set to cause the client cache to
+        # contain a direct link to the Loggerhead diff rather than via the
+        # webapp.  (This only works for public branches.)
+        self.useFixture(
+            FeatureFixture({u'code.bzr.diff.disable_proxy': u'on'}))
         bmp = self.factory.makeBranchMergeProposal()
         view = create_initialized_view(bmp, '+index')
         cache = IJSONRequestCache(view.request)
