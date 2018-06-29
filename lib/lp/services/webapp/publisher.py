@@ -29,6 +29,7 @@ __all__ = [
 from cgi import FieldStorage
 import httplib
 import re
+from wsgiref.headers import Headers
 
 from lazr.restful import (
     EntryResource,
@@ -233,8 +234,11 @@ class redirection:
 class DataDownloadView:
     """Download data without templating.
 
-    Subclasses must provide getBody, content_type and filename.
+    Subclasses must provide getBody, content_type and filename, and may
+    provide charset.
     """
+
+    charset = None
 
     def __init__(self, context, request):
         self.context = context
@@ -246,10 +250,16 @@ class DataDownloadView:
         It is not necessary to supply Content-length, because this is added by
         the caller.
         """
-        self.request.response.setHeader('Content-Type', self.content_type)
-        self.request.response.setHeader(
-            'Content-Disposition', 'attachment; filename="%s"' % (
-             self.filename))
+        headers = Headers([])
+        content_type_params = {}
+        if self.charset is not None:
+            content_type_params['charset'] = self.charset
+        headers.add_header(
+            'Content-Type', self.content_type, **content_type_params)
+        headers.add_header(
+            'Content-Disposition', 'attachment', filename=self.filename)
+        for key, value in headers.items():
+            self.request.response.setHeader(key, value)
         return self.getBody()
 
 
