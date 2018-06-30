@@ -17,7 +17,7 @@ simply mimics the `DistributionSourcePackageRelease.title`.
 
     >>> dspr_view = create_initialized_view(dspr, name="+index")
 
-    >>> print dspr.title
+    >>> print(dspr.title)
     testing-dspr 1.0 source package in ubuntutest
 
     >>> dspr_view.page_title
@@ -29,7 +29,7 @@ upload encapsulated as `ProxiedSourceLibraryFileAlias` objects. Their
 tofiles allowing them to be downloaded using `dget`.
 
     >>> for source_file in dspr_view.files:
-    ...     print source_file.filename, source_file.http_url
+    ...     print(source_file.filename, source_file.http_url)
     testing-dspr_1.0.dsc
     http://.../ubuntutest/+archive/primary/+sourcefiles/testing-dspr/1.0/testing-dspr_1.0.dsc
 
@@ -37,10 +37,10 @@ The 'sponsor' property indicates whether the upload was 'sponsored' or
 not. When the upload was signed by someone else than the source
 creator, the upload signer is the sponsor.
 
-    >>> print dspr.creator.displayname
+    >>> print(dspr.creator.displayname)
     Foo Bar
 
-    >>> print dspr_view.sponsor
+    >>> print(dspr_view.sponsor)
     None
 
     # Forcibly change the SPR.creator, so the source becomes 'sponsored'.
@@ -52,10 +52,10 @@ creator, the upload signer is the sponsor.
 
     >>> dspr_view = create_initialized_view(dspr, name="+index")
 
-    >>> print dspr.creator.displayname
+    >>> print(dspr.creator.displayname)
     Novice
 
-    >>> print dspr_view.sponsor.displayname
+    >>> print(dspr_view.sponsor.displayname)
     Foo Bar
 
 'currently_published' contains only PUBLISHED publications for this
@@ -77,7 +77,7 @@ copies.
 
     >>> dspr_view = create_initialized_view(dspr, name="+index")
     >>> for publishing in dspr_view.currently_published:
-    ...     print publishing.distroseries.name
+    ...     print(publishing.distroseries.name)
     breezy-autotest
 
     # Copy the testing publication to another series.
@@ -93,7 +93,7 @@ copies.
 
     >>> dspr_view = create_initialized_view(dspr, name="+index")
     >>> for publishing in dspr_view.currently_published:
-    ...     print publishing.distroseries.name
+    ...     print(publishing.distroseries.name)
     hoary-test
     breezy-autotest
 
@@ -104,8 +104,8 @@ copies.
     ...     for build_group in dspr_view.grouped_builds:
     ...         arch_tags = ' '.join(
     ...             build.arch_tag for build in build_group['builds'])
-    ...         print '%s: %s' % (build_group['distroseries'].name, arch_tags)
-    ...     print 'END'
+    ...         print('%s: %s' % (build_group['distroseries'].name, arch_tags))
+    ...     print('END')
 
     >>> print_grouped_builds()
     END

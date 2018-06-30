@@ -5,11 +5,11 @@ Representations for IArchive can be fetched via the API for PPAs and
 distribution archives.
 
     >>> cprov_archive = webservice.get("/~cprov/+archive/ubuntu/ppa").jsonBody()
-    >>> print cprov_archive['self_link']
+    >>> print(cprov_archive['self_link'])
     http://.../~cprov/+archive/ubuntu/ppa
 
     >>> main = webservice.get("/ubuntu/+archive/primary").jsonBody()
-    >>> print main['self_link']
+    >>> print(main['self_link'])
     http://.../ubuntu/+archive/primary
 
 We publish a subset of their attributes.
@@ -76,7 +76,7 @@ We can quickly assign a random OpenPGP key to Celso's PPA.
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
     >>> [a_key] = foo_bar.gpg_keys
-    >>> print a_key.fingerprint
+    >>> print(a_key.fingerprint)
     ABCDEF0123456789ABCDDCBA0000111112345678
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -84,7 +84,7 @@ We can quickly assign a random OpenPGP key to Celso's PPA.
     ...     a_key.fingerprint)
     >>> removeSecurityProxy(cprov.archive).signing_key_owner = (
     ...     a_key.owner)
-    >>> print cprov.archive.signing_key_fingerprint
+    >>> print(cprov.archive.signing_key_fingerprint)
     ABCDEF0123456789ABCDDCBA0000111112345678
 
     >>> logout()
@@ -92,7 +92,7 @@ We can quickly assign a random OpenPGP key to Celso's PPA.
 And then the new attribute value is exported as a string.
 
     >>> cprov_archive = webservice.get("/~cprov/+archive/ubuntu/ppa").jsonBody()
-    >>> print cprov_archive['signing_key_fingerprint']
+    >>> print(cprov_archive['signing_key_fingerprint'])
     ABCDEF0123456789ABCDDCBA0000111112345678
 
 Distributions can provide information about their archives.  Looking
@@ -100,7 +100,7 @@ at "ubuntutest":
 
     >>> distros = webservice.get("/distros").jsonBody()
     >>> for entry in distros['entries']:
-    ...    print entry['self_link']
+    ...    print(entry['self_link'])
     http://.../ubuntu
     http://.../kubuntu
     http://.../ubuntutest
@@ -112,7 +112,7 @@ at "ubuntutest":
 
 "ubuntutest" has a "main_archive" which is always present:
 
-    >>> print ubuntutest['main_archive_link']
+    >>> print(ubuntutest['main_archive_link'])
     http://.../ubuntutest/+archive/primary
 
 The archive has the following attributes:
@@ -141,7 +141,7 @@ The archive has the following attributes:
 
 A distribution can also provide a list of all its archives:
 
-    >>> print ubuntutest['archives_collection_link']
+    >>> print(ubuntutest['archives_collection_link'])
     http://.../ubuntutest/archives
     >>> archives = webservice.get(
     ...     ubuntutest['archives_collection_link']).jsonBody()
@@ -153,7 +153,7 @@ Attempting to grab a non-existent archive will result in a 404 error:
 
     >>> bogus_archive = (
     ...     "http://api.launchpad.dev/beta/ubuntutest/+archive/bogus")
-    >>> print webservice.get(bogus_archive)
+    >>> print(webservice.get(bogus_archive))
     HTTP/1.1 404 Not Found
     ...
     Object: ..., name: u'bogus'
@@ -253,12 +253,12 @@ archive.  First, define some general helper functions.
     >>> def show_permission_entries(permissions):
     ...     for entry in sorted(permissions['entries'],
     ...                         key=permission_entry_sort_key):
-    ...         print entry['permission']
-    ...         print entry['person_link']
-    ...         print entry['component_name']
-    ...         print entry['source_package_name']
-    ...         print entry['pocket']
-    ...         print entry['distroseries_link']
+    ...         print(entry['permission'])
+    ...         print(entry['person_link'])
+    ...         print(entry['component_name'])
+    ...         print(entry['source_package_name'])
+    ...         print(entry['pocket'])
+    ...         print(entry['distroseries_link'])
 
 `getAllPermissions` returns all permissions on the archive.
 
@@ -312,9 +312,9 @@ upload a particular package.
 
 Passing a bad package name results in an error:
 
-    >>> print user_webservice.named_get(
+    >>> print(user_webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getUploadersForPackage',
-    ...     source_package_name="badpackage")
+    ...     source_package_name="badpackage"))
     HTTP/1.1 404 Not Found
     ...
 
@@ -345,10 +345,10 @@ Let's also make a new Person to own the Ubuntu distro.
 
 And here's a packageset to play with later:
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     '/package-sets', 'new', {}, distroseries='/ubuntu/hoary',
     ...     name=u'umbrella', description=u'Contains all source packages',
-    ...     owner=name12['self_link'])
+    ...     owner=name12['self_link']))
     HTTP/1.1 201 Created
     ...
 
@@ -365,7 +365,7 @@ uploader or component uploader.
     ...     ubuntu['main_archive_link'], 'newPackageUploader', {},
     ...     person=name12['self_link'],
     ...     source_package_name='mozilla-firefox')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
     (<Archive at ...>, 'newPackageUploader', 'launchpad.Edit')
@@ -374,7 +374,7 @@ uploader or component uploader.
     ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
     ...     person=name12['self_link'],
     ...     packageset=packageset['self_link'])
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
     (<Archive at ...>, 'newPackagesetUploader', 'launchpad.Edit')
@@ -383,7 +383,7 @@ uploader or component uploader.
     ...     ubuntu['main_archive_link'], 'newComponentUploader', {},
     ...     person=name12['self_link'],
     ...     component_name='restricted')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
     (<Archive at ...>, 'newComponentUploader', 'launchpad.Edit')
@@ -399,13 +399,13 @@ for a person to upload a package.
     ...     ubuntu['main_archive_link'], 'newPackageUploader', {},
     ...     person=name12['self_link'],
     ...     source_package_name='mozilla-firefox')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 201 Created
     ...
 
     >>> new_permission = user_webservice.get(
     ...     response.getHeader('Location')).jsonBody()
-    >>> print new_permission['self_link']
+    >>> print(new_permission['self_link'])
     http://.../ubuntu/+archive/primary/+upload/name12?type=packagename&item=mozilla-firefox
 
     >>> show_mozilla_permissions()
@@ -414,10 +414,10 @@ for a person to upload a package.
 
 deletePackageUploader() removes that permission:
 
-    >>> print ubuntu_owner_webservice.named_post(
+    >>> print(ubuntu_owner_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'deletePackageUploader', {},
     ...     person=name12['self_link'],
-    ...     source_package_name='mozilla-firefox')
+    ...     source_package_name='mozilla-firefox'))
     HTTP/1.1 200 Ok
     ...
 
@@ -440,9 +440,9 @@ upload to a particular component:
 
 Passing a bad component name results in an error:
 
-    >>> print cjwatson_webservice.named_get(
+    >>> print(cjwatson_webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getUploadersForComponent',
-    ...     component_name="badcomponent")
+    ...     component_name="badcomponent"))
     HTTP/1.1 404 Not Found
     ...
 
@@ -460,13 +460,13 @@ component.
     ...     ubuntu['main_archive_link'], 'newComponentUploader', {},
     ...     person=name12['self_link'],
     ...     component_name='restricted')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 201 Created
     ...
 
     >>> new_permission = user_webservice.get(
     ...     response.getHeader('Location')).jsonBody()
-    >>> print new_permission['self_link']
+    >>> print(new_permission['self_link'])
     http://.../ubuntu/+archive/primary/+upload/name12?type=component&item=restricted
 
     >>> show_component_permissions()
@@ -490,10 +490,10 @@ sourcepackage.
 
 deleteComponentUploader() removes that permission:
 
-    >>> print ubuntu_owner_webservice.named_post(
+    >>> print(ubuntu_owner_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'deleteComponentUploader', {},
     ...     person=name12['self_link'],
-    ...     component_name='restricted')
+    ...     component_name='restricted'))
     HTTP/1.1 200 Ok
     ...
 
@@ -523,25 +523,25 @@ For PPAs, only the archive owners can add or remove component-uploaders.
 
     >>> no_priv = webservice.get("/~no-priv").jsonBody()
 
-    >>> print user_webservice.named_post(
+    >>> print(user_webservice.named_post(
     ...     cprov_archive['self_link'], 'newComponentUploader', {},
-    ...     person=no_priv['self_link'], component_name='main')
+    ...     person=no_priv['self_link'], component_name='main'))
     HTTP/1.1 401 Unauthorized
     ...
 
     >>> cprov_webservice = webservice_for_person(
     ...     cprov, permission=OAuthPermission.WRITE_PUBLIC)
 
-    >>> print cprov_webservice.named_post(
+    >>> print(cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'newComponentUploader', {},
-    ...     person=no_priv['self_link'], component_name='main')
+    ...     person=no_priv['self_link'], component_name='main'))
     HTTP/1.1 201 Created
     ...
 
-    >>> print cprov_webservice.named_post(
+    >>> print(cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'deleteComponentUploader', {},
     ...     person=no_priv['self_link'],
-    ...     component_name='main')
+    ...     component_name='main'))
     HTTP/1.1 200 Ok
     ...
 
@@ -551,7 +551,7 @@ the 'main' component, or an error is returned:
     >>> response = cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'newComponentUploader', {},
     ...     person=name12['self_link'], component_name='restricted')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 400 Bad Request
     ...
     Component for PPAs should be 'main'
@@ -591,13 +591,13 @@ queues in a particular component.
     ...     ubuntu['main_archive_link'], 'newQueueAdmin', {},
     ...     person=name12['self_link'],
     ...     component_name='partner')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 201 Created
     ...
 
     >>> new_permission = ubuntu_owner_webservice.get(
     ...     response.getHeader('Location')).jsonBody()
-    >>> print new_permission['self_link']
+    >>> print(new_permission['self_link'])
     http://.../ubuntu/+archive/primary/+queue-admin/name12?type=component&item=partner
 
     >>> show_components_for_admin(name12)
@@ -609,10 +609,10 @@ queues in a particular component.
 
 deleteQueueAdmin removes that permission.
 
-    >>> print ubuntu_owner_webservice.named_post(
+    >>> print(ubuntu_owner_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'deleteQueueAdmin', {},
     ...     person=name12['self_link'],
-    ...     component_name='partner')
+    ...     component_name='partner'))
     HTTP/1.1 200 Ok
     ...
 
@@ -637,9 +637,9 @@ to a particular pocket:
 
 Passing a bad pocket name results in an error:
 
-    >>> print cjwatson_webservice.named_get(
+    >>> print(cjwatson_webservice.named_get(
     ...     ubuntu_devel['main_archive_link'], 'getUploadersForPocket',
-    ...     api_version='devel', pocket='badpocket')
+    ...     api_version='devel', pocket='badpocket'))
     HTTP/1.1 400 Bad Request
     ...
     pocket: Invalid value "badpocket". Acceptable values are: ...
@@ -650,13 +650,13 @@ newPocketUploader adds a new permission for a person to upload to a pocket.
     ...     ubuntu_devel['main_archive_link'], 'newPocketUploader', {},
     ...     api_version='devel', person=name12['self_link'],
     ...     pocket='Proposed')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 201 Created
     ...
 
     >>> new_permission = user_webservice.get(
     ...     response.getHeader('Location')).jsonBody()
-    >>> print new_permission['self_link']
+    >>> print(new_permission['self_link'])
     http://.../ubuntu/+archive/primary/+upload/name12?type=pocket&item=PROPOSED
 
     >>> show_pocket_permissions('Proposed')
@@ -676,10 +676,10 @@ The person named in the permission can upload a package to this pocket.
 
 deletePocketUploader removes that permission:
 
-    >>> print ubuntu_owner_webservice.named_post(
+    >>> print(ubuntu_owner_webservice.named_post(
     ...     ubuntu_devel['main_archive_link'], 'deletePocketUploader', {},
     ...     api_version='devel', person=name12['self_link'],
-    ...     pocket='Proposed')
+    ...     pocket='Proposed'))
     HTTP/1.1 200 Ok
     ...
 
@@ -729,13 +729,13 @@ distroseries queues in a particular pocket.
     ...     ubuntu_devel['main_archive_link'], 'newPocketQueueAdmin', {},
     ...     api_version='devel', person=name12['self_link'],
     ...     pocket='Security')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 201 Created
     ...
 
     >>> new_permission = ubuntu_owner_webservice.get(
     ...     response.getHeader('Location')).jsonBody()
-    >>> print new_permission['self_link']
+    >>> print(new_permission['self_link'])
     http://.../ubuntu/+archive/primary/+queue-admin/name12?type=pocket&item=SECURITY
 
     >>> show_pockets_for_admin(name12)
@@ -752,7 +752,7 @@ It can also grant series-specific pocket queue admin permissions.
     ...         ubuntu_devel['main_archive_link'], 'newPocketQueueAdmin', {},
     ...         api_version='devel', person=ubuntu_owner_ws['self_link'],
     ...         pocket='Security', distroseries=series['self_link'])
-    ...     print response
+    ...     print(response)
     ...     new_permissions.append(ubuntu_owner_webservice.get(
     ...         response.getHeader('Location')).jsonBody())
     HTTP/1.1 201 Created
@@ -760,9 +760,9 @@ It can also grant series-specific pocket queue admin permissions.
     HTTP/1.1 201 Created
     ...
 
-    >>> print new_permissions[0]['self_link']
+    >>> print(new_permissions[0]['self_link'])
     http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-owner?type=pocket&item=SECURITY&series=hoary
-    >>> print new_permissions[1]['self_link']
+    >>> print(new_permissions[1]['self_link'])
     http://.../ubuntu/+archive/primary/+queue-admin/ubuntu-owner?type=pocket&item=SECURITY&series=grumpy
 
     >>> show_pockets_for_admin(ubuntu_owner_ws)
@@ -771,17 +771,17 @@ It can also grant series-specific pocket queue admin permissions.
 
 deletePocketQueueAdmin removes these permissions.
 
-    >>> print ubuntu_owner_webservice.named_post(
+    >>> print(ubuntu_owner_webservice.named_post(
     ...     ubuntu_devel['main_archive_link'], 'deletePocketQueueAdmin', {},
     ...     api_version='devel', person=name12['self_link'],
-    ...     pocket='Security')
+    ...     pocket='Security'))
     HTTP/1.1 200 Ok
     ...
     >>> for series in hoary, grumpy:
-    ...     print ubuntu_owner_webservice.named_post(
+    ...     print(ubuntu_owner_webservice.named_post(
     ...         ubuntu_devel['main_archive_link'], 'deletePocketQueueAdmin',
     ...         {}, api_version='devel', person=ubuntu_owner_ws['self_link'],
-    ...         pocket='Security', distroseries=series['self_link'])
+    ...         pocket='Security', distroseries=series['self_link']))
     HTTP/1.1 200 Ok
     ...
     HTTP/1.1 200 Ok
@@ -803,7 +803,7 @@ latter can thus not be found.
     >>> missing_type_url = ('/ubuntu/+archive/primary/+upload/name12'
     ...     '?item=firefox')
     >>> this_will_fail = webservice.get(missing_type_url)
-    >>> print this_will_fail
+    >>> print(this_will_fail)
     HTTP/1.1 404 Not Found
     ...
 
@@ -813,7 +813,7 @@ not found.
     >>> wrong_type_url = ('/ubuntu/+archive/primary/+upload/name12'
     ...     '?type=packageset&item=firefox&type=Integer')
     >>> this_will_fail = webservice.get(missing_type_url)
-    >>> print this_will_fail
+    >>> print(this_will_fail)
     HTTP/1.1 404 Not Found
     ...
 
@@ -822,7 +822,7 @@ The item name is missing. The archive permission is hence not found.
     >>> missing_item_url = ('/ubuntu/+archive/primary/+upload/name12'
     ...     '?type=packageset')
     >>> this_will_fail = webservice.get(missing_type_url)
-    >>> print this_will_fail
+    >>> print(this_will_fail)
     HTTP/1.1 404 Not Found
     ...
 
@@ -832,7 +832,7 @@ hence not found.
     >>> wrong_type_url = ('/ubuntu/+archive/primary/+upload/name12'
     ...     '?type=packageset&item=firefox&item=vapourware')
     >>> this_will_fail = webservice.get(missing_type_url)
-    >>> print this_will_fail
+    >>> print(this_will_fail)
     HTTP/1.1 404 Not Found
     ...
 
@@ -846,7 +846,7 @@ used and displayed via XHR.
     >>> build_counters = webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getBuildCounters').jsonBody()
     >>> for key, val in build_counters.items():
-    ...     print "%s: %s" % (key, val)
+    ...     print("%s: %s" % (key, val))
     failed: 5
     superseded: 3
     total: 18
@@ -859,7 +859,7 @@ The optional param exclude_needsbuild is also provided:
     ...     ubuntu['main_archive_link'], 'getBuildCounters',
     ...     include_needsbuild=False).jsonBody()
     >>> for key, val in build_counters.items():
-    ...     print "%s: %s" % (key, val)
+    ...     print("%s: %s" % (key, val))
     failed: 5
     superseded: 3
     total: 17
@@ -874,11 +874,11 @@ methods.
 
     >>> response = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources')
-    >>> print response.getheader('status')
+    >>> print(response.getheader('status'))
     200 Ok
     >>> response = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedBinaries')
-    >>> print response.getheader('status')
+    >>> print(response.getheader('status'))
     200 Ok
 
 If either method is called with the version parameter, the name must
@@ -887,26 +887,26 @@ request.
 
     >>> response = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources', version='1.0')
-    >>> print response.getheader('status')
+    >>> print(response.getheader('status'))
     400 Bad Request
     >>> response = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedBinaries',
     ...     version='1.0')
-    >>> print response.getheader('status')
+    >>> print(response.getheader('status'))
     400 Bad Request
 
 We don't have to specify any filters when getting published sources:
 
     >>> response = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
-    >>> print response['total_size']
+    >>> print(response['total_size'])
     3
 
 We can filter getPublishedSources() by component. All of the publishing
 histories we got previously were in 'main':
 
     >>> for entry in response['entries']:
-    ...     print entry['component_name']
+    ...     print(entry['component_name'])
     main
     main
     main
@@ -970,22 +970,22 @@ archive.  It will prevent unauthorised changes to an archive.  Here we are
 using user_webservice, which has no privileges, and trying to copy to
 the Ubuntu main archive:
 
-    >>> print user_webservice.named_post(
+    >>> print(user_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSource', {},
     ...     source_name='package3', version='1.0',
     ...     from_archive=cprov_archive['self_link'], to_pocket='release',
-    ...     to_series="hoary")
+    ...     to_series="hoary"))
     HTTP/1.1 401 Unauthorized
     ...
 
 When accessed via Colin's key that can perform writes, the API will
 respond positively.
 
-    >>> print cjwatson_webservice.named_post(
+    >>> print(cjwatson_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSource', {},
     ...     source_name='package3', version='1.0',
     ...     from_archive=cprov_archive['self_link'], to_pocket='release',
-    ...     to_series="hoary")
+    ...     to_series="hoary"))
     HTTP/1.1 200 Ok
     ...
 
@@ -993,11 +993,11 @@ Now copy "package1" version 1.0 from the main archive into cprov's
 PPA. The 'admin_write' key created for Colin isn't allowed to modify
 Celso's PPA.
 
-    >>> print cjwatson_webservice.named_post(
+    >>> print(cjwatson_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSource', {},
     ...     source_name='package1', version='1.0',
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
-    ...     to_series="hoary")
+    ...     to_series="hoary"))
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -1007,11 +1007,11 @@ operation.
     >>> cprov_webservice = webservice_for_person(
     ...     cprov, permission=OAuthPermission.WRITE_PUBLIC)
 
-    >>> print cprov_webservice.named_post(
+    >>> print(cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSource', {},
     ...     source_name='package1', version='1.0',
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
-    ...     to_series="hoary")
+    ...     to_series="hoary"))
     HTTP/1.1 200 Ok
     ...
 
@@ -1020,11 +1020,11 @@ once.  The latest versions that are found in the from_archive are
 "synchronised" to the context archive.  If a particular version already
 exists then nothing is copied.
 
-    >>> print cprov_webservice.named_post(
+    >>> print(cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSources', {},
     ...     source_names=['package1', 'package2'],
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
-    ...     to_series="warty")
+    ...     to_series="warty"))
     HTTP/1.1 200 Ok
     ...
 
@@ -1036,7 +1036,7 @@ would expect from a 'sync-like' method.
     ...     source_names=['package1', 'package2'],
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
     ...     to_series="warty")
-    >>> print already_copied
+    >>> print(already_copied)
     HTTP/1.1 200 Ok
     ...
 
@@ -1047,7 +1047,7 @@ exception therefore results in an OOPS. But within the web service,
 syncSources is invoked directly by the client, and any problems are
 the client's fault. Therefore, there's no need to record an OOPS.
 
-    >>> print already_copied.getheader('X-Lazr-Oopsid')
+    >>> print(already_copied.getheader('X-Lazr-Oopsid'))
     None
 
 'syncSources' behaves trasactionally, i.e. it will only synchronise
@@ -1065,11 +1065,11 @@ all packages or none of them if there was a problem.
 'package1' has no binaries to be copied, so when we attempt to copy
 'allowed' and 'package1' with binaries an error is returned.
 
-    >>> print cprov_webservice.named_post(
+    >>> print(cprov_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSources', {},
     ...     source_names=['allowed', 'package1'],
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
-    ...     to_series="warty", include_binaries=True)
+    ...     to_series="warty", include_binaries=True))
     HTTP/1.1 400 Bad Request
     ...
     package1 1.1 in hoary (source has no binaries to be copied)
@@ -1085,19 +1085,19 @@ source was not synchronised to Celso's PPA.
 Keys with insufficient permissions on Celso's PPA context are not
 allowed to call the method at all.
 
-    >>> print user_webservice.named_post(
+    >>> print(user_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSources', {},
     ...     source_names=['package1', 'package2'],
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
-    ...     to_series="warty")
+    ...     to_series="warty"))
     HTTP/1.1 401 Unauthorized
     ...
 
-    >>> print cjwatson_webservice.named_post(
+    >>> print(cjwatson_webservice.named_post(
     ...     cprov_archive['self_link'], 'syncSources', {},
     ...     source_names=['package1', 'package2'],
     ...     from_archive=ubuntu['main_archive_link'], to_pocket='release',
-    ...     to_series="warty")
+    ...     to_series="warty"))
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -1130,7 +1130,7 @@ for admins, commercial admins, and PPA admins.
 
 Attempting to modify this flag without the necessary permissions will fail.
 
-    >>> print modify_archive(user_webservice, mark_archive)
+    >>> print(modify_archive(user_webservice, mark_archive))
     HTTP/1.1 400 Bad Request
     ...
     http_etag: You tried to modify a read-only attribute.
@@ -1143,7 +1143,7 @@ resources. This quota is set via the authorized_size attribute which
 describes the maximum size, in MiB, allowed for the archive.
 
     >>> mark_archive = webservice.get("/~mark/+archive/ubuntu/ppa").jsonBody()
-    >>> print mark_archive['authorized_size']
+    >>> print(mark_archive['authorized_size'])
     1024
 
 Modifying the authorized_size attribute through the API is not allowed except
@@ -1152,14 +1152,14 @@ for admins, commercial admins, and PPA admins.
     >>> mark_archive['authorized_size'] = 4096
     >>> response = modify_archive(admin_webservice, mark_archive)
     >>> mark_archive = webservice.get("/~mark/+archive/ubuntu/ppa").jsonBody()
-    >>> print mark_archive['authorized_size']
+    >>> print(mark_archive['authorized_size'])
     4096
 
 Attempting to modify this flag without the necessary permissions will fail.
 
     >>> mark_archive = webservice.get("/~mark/+archive/ubuntu/ppa").jsonBody()
     >>> mark_archive['authorized_size'] = 1024
-    >>> print modify_archive(user_webservice, mark_archive)
+    >>> print(modify_archive(user_webservice, mark_archive))
     HTTP/1.1 401 Unauthorized
     ...
     (<Archive at ...>, 'authorized_size', 'launchpad.Admin')
@@ -1251,7 +1251,7 @@ bad request will result:
     >>> response = mark_webservice.named_post(
     ...     mark_archive['self_link'], 'newSubscription',
     ...     subscriber=cprov_archive['owner_link'])
-    >>> print response
+    >>> print(response)
     HTTP/1.1 400 Bad Request
     ...
     Only private archives can have subscriptions.
@@ -1265,11 +1265,11 @@ First we'll subscribe mark to cprov's archive:
     ...     cprov_private_ppa['self_link'], 'newSubscription',
     ...     subscriber=mark['self_link'])
 
-    >>> print response
+    >>> print(response)
     HTTP/1.1 201 Created
     ...
 
-    >>> print response.getHeader('Location')
+    >>> print(response.getHeader('Location'))
     http://.../~cprov/+archive/ubuntu/p3a/+subscriptions/mark
 
 We publish a subset of the IArchiveSubscriber attributes.
@@ -1292,7 +1292,7 @@ Other webservice users cannot view the subscription.
 
     >>> response = user_webservice.get(
     ...     response.getHeader('Location'))
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -1303,7 +1303,7 @@ to use this method.
     >>> response = user_webservice.named_post(
     ...     cprov_archive['self_link'], 'newSubscription',
     ...     subscriber=cprov_private_ppa['owner_link'])
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -1313,7 +1313,7 @@ is already a current subscription:
     >>> response = cprov_webservice.named_post(
     ...     cprov_private_ppa['self_link'], 'newSubscription',
     ...     subscriber=mark['self_link'])
-    >>> print response
+    >>> print(response)
     HTTP/1.1 400 Bad Request
     ...
     Mark Shuttleworth already has a current subscription
@@ -1324,7 +1324,7 @@ Launchpad will return a 404.
 
     >>> response = cprov_webservice.get(
     ...     cprov_private_ppa['self_link'] + '/+subscriptions/dave')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 404 Not Found
     ...
 
@@ -1342,7 +1342,7 @@ admins, commercial admins, and PPA admins.
     >>> pubpriv_archive = webservice.get(
     ...     "/~cprov/+archive/ubuntu/pubpriv").jsonBody()
     >>> pubpriv_archive['private'] = True
-    >>> print modify_archive(user_webservice, pubpriv_archive)
+    >>> print(modify_archive(user_webservice, pubpriv_archive))
     HTTP/1.1 401 Unauthorized
     ...
     (<Archive at ...>, 'private', 'launchpad.Admin')
@@ -1353,7 +1353,7 @@ admins, commercial admins, and PPA admins.
     >>> logout()
     >>> ppa_admin_webservice = webservice_for_person(
     ...     ppa_admin, permission=OAuthPermission.WRITE_PRIVATE)
-    >>> print modify_archive(ppa_admin_webservice, pubpriv_archive)
+    >>> print(modify_archive(ppa_admin_webservice, pubpriv_archive))
     HTTP/1.1 209 Content Returned
     ...
     >>> webservice.get(
@@ -1370,11 +1370,11 @@ Copying private sources to public archives works fine with
 We use `syncSource` to copy 'foocomm - 1.0-1' source from Celso's
 private PPA to the ubuntu primary archive.
 
-    >>> print cprov_webservice.named_post(
+    >>> print(cprov_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSource', {},
     ...     source_name='foocomm', version='1.0-1', to_pocket='release',
     ...     from_archive=cprov_private_ppa['self_link'],
-    ...     to_series="hoary")
+    ...     to_series="hoary"))
     HTTP/1.1 200 Ok
     ...
 
@@ -1388,22 +1388,22 @@ version.
     ...     PackagePublishingStatus.PUBLISHED)
     >>> logout()
 
-    >>> print cprov_webservice.named_post(
+    >>> print(cprov_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSources', {},
     ...     source_names=['foocomm'], to_pocket='release',
     ...     from_archive=cprov_private_ppa['self_link'],
-    ...     to_series="hoary")
+    ...     to_series="hoary"))
     HTTP/1.1 200 Ok
     ...
 
 Although if we try to copy an old version, by repeating the copy an
 error is returned.
 
-    >>> print cprov_webservice.named_post(
+    >>> print(cprov_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'syncSource', {},
     ...     source_name='foocomm', version='1.0-2', to_pocket='release',
     ...     from_archive=cprov_private_ppa['self_link'],
-    ...     to_series="hoary")
+    ...     to_series="hoary"))
     HTTP/1.1 400 Bad Request
     ...
     foocomm 1.0-2 in hoary
@@ -1418,7 +1418,7 @@ changes over the API.
     >>> private_archive = cprov_webservice.get(
     ...     cprov_private_ppa['self_link']).jsonBody()
     >>> private_archive['suppress_subscription_notifications'] = True
-    >>> print modify_archive(cprov_webservice, private_archive)
+    >>> print(modify_archive(cprov_webservice, private_archive))
     HTTP/1.1 209 ...
     ...
 
@@ -1472,21 +1472,21 @@ Archives will also give us a list of their custom dependencies.
 
 Crafting a URL to a non-dependency 404s:
 
-    >>> print webservice.get(
-    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/2')
+    >>> print(webservice.get(
+    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/2'))
     HTTP/1.1 404 Not Found
     ...
 
 A 404 also occurs if we ask for an archive that doesn't exist.
 
-    >>> print webservice.get(
-    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/123456')
+    >>> print(webservice.get(
+    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/123456'))
     HTTP/1.1 404 Not Found
     ...
 
 And even if we ask for a non-integral archive ID.
 
-    >>> print webservice.get(
-    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/foo')
+    >>> print(webservice.get(
+    ...     '/~cprov/+archive/ubuntu/ppa/+dependency/foo'))
     HTTP/1.1 404 Not Found
     ...

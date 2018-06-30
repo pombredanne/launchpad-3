@@ -31,7 +31,7 @@ a Zope interaction to show it:
     ...     main_archive, name12)
     >>> from operator import attrgetter
     >>> for permission in sorted(permissions, key=attrgetter("id")):
-    ...     print permission.component.name
+    ...     print(permission.component.name)
     main
     restricted
     universe
@@ -64,7 +64,7 @@ Viewing the current queue, by default the NEW queue.
     >>> def print_queue(contents):
     ...     queue_rows = find_tags_by_class(contents, "queue-row")
     ...     for row in queue_rows:
-    ...         print extract_text(row)
+    ...         print(extract_text(row))
 
     >>> print_queue(anon_browser.contents)
     Package             Version     Component Section Priority Sets Pocket  When
@@ -78,11 +78,11 @@ Viewing the current queue, by default the NEW queue.
 The package name in the results list is a clickable link to the changes
 file for that upload.
 
-    >>> print anon_browser.getLink("netapplet-1.0.0.tar.gz")
+    >>> print(anon_browser.getLink("netapplet-1.0.0.tar.gz"))
     <Link text='netapplet-1.0.0.tar.gz'
 	  url='http://.../+upload/7/+files/netapplet-1.0.0.tar.gz'>
 
-    >>> print anon_browser.getLink("alsa-utils")
+    >>> print(anon_browser.getLink("alsa-utils"))
     <Link text='alsa-utils'
 	  url='http://.../+upload/4/+files/netapplet-1.0.0.tar.gz'>
 
@@ -209,7 +209,7 @@ image:
     >>> anon_browser.getControl(name="queue_text").value = ''
     >>> anon_browser.getControl("Update").click()
 
-    >>> print find_tag_by_id(anon_browser.contents, 'queue-4-icon')
+    >>> print(find_tag_by_id(anon_browser.contents, 'queue-4-icon'))
     <span class="expander-link" id="queue-4-icon">&nbsp;</span>
 
 The 'filelist' is expanded as one or more table rows, right below the
@@ -222,7 +222,7 @@ It contains a list of files related to the queue item clicked, followed
 by its size, one file per line. Expired files have no size.
 
     >>> for row in filelist:
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     alsa-utils_1.0.9a-4ubuntu1.dsc (3 bytes)
     alsa-utils_1.0.9a-4ubuntu1.diff.gz
     diff from 1.0.9a-4 to 1.0.9a-4ubuntu1 (11 bytes)
@@ -231,7 +231,7 @@ Each unexpired filename links to its respective proxied librarian URL.
 Expired files have no link, so we just get None.
 
     >>> for row in filelist:
-    ...     print row.find('a')
+    ...     print(row.find('a'))
     <a href="http://.../+upload/4/+files/alsa-utils_1.0.9a-4ubuntu1.dsc">
       alsa-utils_1.0.9a-4ubuntu1.dsc
     </a>
@@ -245,7 +245,7 @@ candidates).  The binary items will also individually show their
 version, component, section and priority.
 
     >>> [filelist] = find_tags_by_class(anon_browser.contents, 'queue-2')
-    >>> print extract_text(filelist)
+    >>> print(extract_text(filelist))
     pmount_1.0-1_all.deb (18 bytes) NEW 0.1-1 main base important
 
 XXX cprov 20070726: we should extend the test when we are able to
@@ -364,11 +364,11 @@ distroseries' announcement list (see nascentupload-announcements.txt).
     >>> run_package_upload_notification_jobs()
     >>> [changer_notification, signer_notification,
     ...  announcement] = pop_notifications()
-    >>> print changer_notification['To']
+    >>> print(changer_notification['To'])
     Daniel Silverstone <daniel.silverstone@canonical.com>
-    >>> print signer_notification['To']
+    >>> print(signer_notification['To'])
     Foo Bar <foo.bar@canonical.com>
-    >>> print announcement['To']
+    >>> print(announcement['To'])
     autotest_changes@ubuntu.com
 
 Forcing a duplicated submission on a queue item is recognised.  Here we
@@ -509,7 +509,7 @@ values:
 
     >>> filelist = find_tags_by_class(anon_browser.contents, 'queue-2')
     >>> for row in filelist:
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     pmount_1.0-1_all.deb (18 bytes) NEW 0.1-1 restricted admin extra
 
 'netapplet' has gone straight to the 'done' queue because it's a single
@@ -557,7 +557,7 @@ Please note that in this case the rejection reason is not available
 and how that's stated in the notification email body.
 
     >>> body = rejection.get_payload()[0]
-    >>> print body.as_string() # doctest: -NORMALIZE_WHITESPACE
+    >>> print(body.as_string()) # doctest: -NORMALIZE_WHITESPACE
     Content-Type: text/plain; charset="utf-8"
     MIME-Version: 1.0
     Content-Transfer-Encoding: quoted-printable

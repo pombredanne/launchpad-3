@@ -21,7 +21,7 @@ There is a link in the body page pointing to Celso's PPA.
 
     >>> anon_browser.getLink("PPA for Celso Providelo").click()
 
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     PPA for Celso Providelo : Celso Providelo
 
 On the other hand, Sample Person hasn't activated their PPA yet, so they
@@ -36,7 +36,7 @@ can quickly activate one via the link in their PPA section.
 
     >>> sample_browser.getLink("Create a new PPA").click()
 
-    >>> print sample_browser.title
+    >>> print(sample_browser.title)
     Activate PPA : Sample Person
 
 This page presents a pointer to the current PPA-ToS (terms of service)
@@ -50,8 +50,8 @@ There is also a message, near the form actions, in which the user is
 warned about the fact that if the user has any PPAs with published
 packages then they will not be able to rename their account.
 
-    >>> print extract_text(
-    ...     first_tag_by_class(sample_browser.contents, 'actions'))
+    >>> print(extract_text(
+    ...     first_tag_by_class(sample_browser.contents, 'actions')))
     A PPA's URL cannot be changed once it has had packages
     published. You will not be able to rename Sample Person (name12)
     until all such PPAs are deleted.
@@ -60,7 +60,7 @@ packages then they will not be able to rename their account.
 'PPA name' and 'Displayname' are required fields.  For the first activated
 PPA, the name is pre-filled with a suggestion of "ppa":
 
-    >>> print sample_browser.getControl(name="field.name").value
+    >>> print(sample_browser.getControl(name="field.name").value)
     ppa
 
     >>> sample_browser.getControl("Activate").click()
@@ -91,13 +91,13 @@ In order to 'activate' a PPA the user must acknowledge the PPA-ToS.
 
 A successful activation redirects to the PPA page
 
-    >>> print sample_browser.title
+    >>> print(sample_browser.title)
     Sample PPA : Sample Person
 
 Where Sample person user can see the description previously entered.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description')))
     Edit PPA description
     Hoohay for PPA.
 
@@ -115,11 +115,11 @@ The PPA owner is able to edit PPA 'displayname' and 'description'.
 After confirming the changes Sample Person is sent to the PPA page
 where they can see the updated information.
 
-    >>> print sample_browser.title
+    >>> print(sample_browser.title)
     Sample testing PPA : Sample Person
 
-    >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description')))
     Edit PPA description
     Howdy, cowboys !
 
@@ -129,10 +129,10 @@ Empty 'description' fields are not rendered.
     >>> sample_browser.getControl(name="field.description").value = ('')
     >>> sample_browser.getControl("Save").click()
 
-    >>> print sample_browser.title
+    >>> print(sample_browser.title)
     Sample testing PPA : Sample Person
 
-    >>> print find_tag_by_id(sample_browser.contents, 'description')
+    >>> print(find_tag_by_id(sample_browser.contents, 'description'))
     None
 
 On the other hand, the PPA 'displayname' field is required. Sample
@@ -142,7 +142,7 @@ user can't have an empty displayname on their PPA.
     >>> sample_browser.getControl(name="field.displayname").value = ('')
     >>> sample_browser.getControl("Save").click()
 
-    >>> print sample_browser.title
+    >>> print(sample_browser.title)
     Change details : Sample testing PPA...
 
     >>> print_feedback_messages(sample_browser.contents)
@@ -160,7 +160,7 @@ anyone with 'launchpad.Edit' permission in the team in question:
     ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
 
-    >>> print find_tag_by_id(cprov_browser.contents, 'ppas')
+    >>> print(find_tag_by_id(cprov_browser.contents, 'ppas'))
     None
 
 Even if we try the URL directly:
@@ -181,7 +181,7 @@ Let's proceed with the required permissions:
 
     >>> sample_browser.getLink('Create a new PPA').click()
 
-    >>> print sample_browser.title
+    >>> print(sample_browser.title)
     Activate PPA : ...
 
     >>> sample_browser.getControl(
@@ -195,8 +195,8 @@ Let's proceed with the required permissions:
 The user is, again, warned about the fact that activating this PPA
 will block renaming of the context team.
 
-    >>> print extract_text(
-    ...     first_tag_by_class(sample_browser.contents, 'actions'))
+    >>> print(extract_text(
+    ...     first_tag_by_class(sample_browser.contents, 'actions')))
     A PPA's URL cannot be changed once it has had packages
     published. You will not be able to rename Landscape Developers
     (landscape-developers) until all such PPAs are deleted.
@@ -206,11 +206,11 @@ That understood, the PPA gets activated.
 
     >>> sample_browser.getControl("Activate").click()
 
-    >>> print sample_browser.title
+    >>> print(sample_browser.title)
     Devel PPA : “Landscape Developers” team
 
-    >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description')))
     Edit PPA description
     Hoohay for Team PPA.
 
@@ -226,11 +226,11 @@ exactly the same as for a user-PPA, see above:
     ...    'Yay, I can change it.')
     >>> sample_browser.getControl("Save").click()
 
-    >>> print sample_browser.title
+    >>> print(sample_browser.title)
     Devel PPA : “Landscape Developers” team
 
-    >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description')))
     Edit PPA description
     Yay, I can change it.
 
@@ -242,11 +242,11 @@ page and discard the changes.
     ...    'Discarded ...')
     >>> sample_browser.getLink("Cancel").click()
 
-    >>> print sample_browser.title
+    >>> print(sample_browser.title)
     Devel PPA : “Landscape Developers” team
 
-    >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'edit-description'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(sample_browser.contents, 'edit-description')))
     Edit PPA description
     Yay, I can change it.
 
@@ -269,10 +269,10 @@ Similarly to users, teams with active PPAs cannot be renamed either.
     >>> sample_browser.getControl(name='field.name').value = 'duderinos'
     Traceback (most recent call last):
     ...
-    LookupError: name 'field.name'
+    LookupError: name u'field.name'
 
-    >>> print extract_text(
-    ...     first_tag_by_class(sample_browser.contents, 'form'))
+    >>> print(extract_text(
+    ...     first_tag_by_class(sample_browser.contents, 'form')))
     Name: landscape-developers
     This team has an active PPA with packages published and may not be renamed.
     ...
@@ -298,11 +298,11 @@ name of other users or teams:
     ...    'Go for it, you lazy !')
     >>> admin_browser.getControl("Activate").click()
 
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     Hack PPA : James Blackwell
 
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'edit-description'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'edit-description')))
     Edit PPA description
     Go for it, you lazy !
 
@@ -317,14 +317,14 @@ administrators, as they need to be able to make PPAs private, change their
 virtualisation settings, and so on.
 
     >>> sample_browser.open("http://launchpad.dev/~jblack/+archive")
-    >>> print sample_browser.getLink("Administer archive")
+    >>> print(sample_browser.getLink("Administer archive"))
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> admin_browser.open("http://launchpad.dev/~jblack/+archive")
     >>> admin_browser.getLink("Administer archive").click()
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     Administer : Hack PPA...
 
     >>> commercial_browser = setupBrowser(
@@ -400,7 +400,7 @@ build on a virtualized builder.
 Once confirmed the administrator is sent to the PPA page where they can
 see some of the updated information.
 
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     Hack PPA : James Blackwell
 
     >>> print_feedback_messages(admin_browser.contents)
@@ -440,8 +440,8 @@ the size limit is 2 PiB.
     >>> admin_browser.getControl("Save").click()
 
     >>> admin_browser.getLink("Administer archive").click()
-    >>> print admin_browser.getControl(
-    ...     name="field.authorized_size").value
+    >>> print(admin_browser.getControl(
+    ...     name="field.authorized_size").value)
     2147483647
 
 Submitting the form with an authorized_size value that is too large
@@ -460,13 +460,13 @@ PPA overview page and discards the changes.
 
     >>> admin_browser.getLink("Cancel").click()
 
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     Hack PPA : James Blackwell
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getLink("Cancel").click()
 
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     Hack PPA : James Blackwell
 
 
@@ -504,11 +504,11 @@ Activate the PPA in the first browser:
 
     >>> browser1.getControl("Activate").click()
 
-    >>> print browser1.title
+    >>> print(browser1.title)
     Boom PPA : Foo Bar
 
-    >>> print extract_text(
-    ...     find_tag_by_id(browser1.contents, 'edit-description'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(browser1.contents, 'edit-description')))
     Edit PPA description
     PPA rocks!
 
@@ -521,7 +521,7 @@ and the rendered form contains the 'name' field.
     There is 1 error.
     You already have a PPA for Ubuntu named &#x27;boomppa&#x27;.
 
-    >>> print browser2.getControl(name="field.name").value
+    >>> print(browser2.getControl(name="field.name").value)
     boomppa
 
 
@@ -546,7 +546,7 @@ all their PPAs.
 
     >>> cprov_browser.getLink("Create a new PPA").click()
 
-    >>> print cprov_browser.title
+    >>> print(cprov_browser.title)
     Activate PPA : Celso Providelo
 
     >>> print_tag_with_id(cprov_browser.contents, 'ppas')
@@ -556,10 +556,10 @@ all their PPAs.
     >>> cprov_browser.getControl(name="field.accepted")
     Traceback (most recent call last):
     ...
-    LookupError: name 'field.accepted'
+    LookupError: name u'field.accepted'
 
-    >>> print extract_text(
-    ...     first_tag_by_class(cprov_browser.contents, 'form'))
+    >>> print(extract_text(
+    ...     first_tag_by_class(cprov_browser.contents, 'form')))
     URL:
       http://ppa.launchpad.dev/cprov/
       At least one lowercase letter or number, followed by letters, numbers,
@@ -573,7 +573,7 @@ all their PPAs.
 The 'PPA name' field is not pre-filled and if Celso does not fill it then
 an error is raised.
 
-    >>> print cprov_browser.getControl(name="field.name").value
+    >>> print(cprov_browser.getControl(name="field.name").value)
     <BLANKLINE>
 
     >>> cprov_browser.getControl(
@@ -622,7 +622,7 @@ immediately sent to it.
     >>> cprov_browser.getControl(name="field.name").value = 'edge'
     >>> cprov_browser.getControl("Activate").click()
 
-    >>> print cprov_browser.title
+    >>> print(cprov_browser.title)
     Edge PPA : Celso Providelo
 
 Back to his profile page Celso and anyone can his multiple PPAs.
@@ -667,7 +667,7 @@ required.
     PPA for Celso Providelo
     Create a new PPA
 
-    >>> print cprov_browser.getLink('Edge PPA')
+    >>> print(cprov_browser.getLink('Edge PPA'))
     <Link ...>
 
 And direct access to the PPA page is also denied.
@@ -710,9 +710,9 @@ They may also change whether the PPA is published to disk or not.
 
 Initially, the PPA is enabled and publishes.
 
-    >>> print no_priv_browser.getControl(name='field.enabled').value
+    >>> print(no_priv_browser.getControl(name='field.enabled').value)
     True
-    >>> print no_priv_browser.getControl(name='field.publish').value
+    >>> print(no_priv_browser.getControl(name='field.publish').value)
     True
 
 After disabling the PPA a warning message is displayed on its page.
@@ -720,20 +720,20 @@ After disabling the PPA a warning message is displayed on its page.
     >>> no_priv_browser.getControl(name='field.enabled').value = False
     >>> no_priv_browser.getControl(name='field.publish').value = False
     >>> no_priv_browser.getControl('Save').click()
-    >>> print extract_text(
-    ...     first_tag_by_class(no_priv_browser.contents, 'warning message'))
+    >>> print(extract_text(
+    ...     first_tag_by_class(no_priv_browser.contents, 'warning message')))
     This PPA has been disabled.
 
 Going back to the edit page, we can see the publish flag was cleared:
 
     >>> no_priv_browser.open(
     ...     "http://launchpad.dev/~no-priv/+archive/ppa/+edit")
-    >>> print no_priv_browser.getControl(name='field.publish').value
+    >>> print(no_priv_browser.getControl(name='field.publish').value)
     False
 
 Once we re-enable the PPA the "disabled" warning message will be gone.
 
-    >>> print no_priv_browser.getControl(name='field.enabled').value
+    >>> print(no_priv_browser.getControl(name='field.enabled').value)
     False
 
     >>> no_priv_browser.getControl(name='field.enabled').value = True
@@ -750,7 +750,7 @@ Users with launchpad.Edit permission see a "Delete PPA" link in the
 navigation menu.
 
     >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
-    >>> print anon_browser.getLink("Delete PPA")
+    >>> print(anon_browser.getLink("Delete PPA"))
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -760,13 +760,13 @@ navigation menu.
 
 Clicking this link takes the user to a page that allows deletion of a PPA:
 
-    >>> print no_priv_browser.title
+    >>> print(no_priv_browser.title)
     Delete “PPA for No Privileges Person” : PPA for No Privileges Person :
         No Privileges Person
 
 The page contains a stern warning that this action is final and irreversible:
 
-    >>> print extract_text(find_main_content(no_priv_browser.contents))
+    >>> print(extract_text(find_main_content(no_priv_browser.contents)))
     Delete “PPA for No Privileges Person”
     ...
     Deleting a PPA will destroy all of its packages, files and the
@@ -778,7 +778,7 @@ The page contains a stern warning that this action is final and irreversible:
 If the user changes their mind, they can click on the cancel link to go back
 a page:
 
-    >>> print no_priv_browser.getLink("Cancel").url
+    >>> print(no_priv_browser.getLink("Cancel").url)
     http://launchpad.dev/~no-priv/+archive/ubuntu/ppa
 
 Otherwise, they have a button to press to confirm the deletion.
@@ -788,7 +788,7 @@ Otherwise, they have a button to press to confirm the deletion.
 This action will redirect the user back to their profile page, which will
 contain a notification message that the deletion is in progress.
 
-    >>> print no_priv_browser.url
+    >>> print(no_priv_browser.url)
     http://launchpad.dev/~no-priv
 
     >>> print_feedback_messages(no_priv_browser.contents)
@@ -803,18 +803,18 @@ so you can see its build history, etc.:
 However, most of the action links are removed for deleted PPAs, so you can
 no longer "Delete packages", "Edit PPA dependencies", or "Change details".
 
-    >>> print no_priv_browser.getLink("Change details")
+    >>> print(no_priv_browser.getLink("Change details"))
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-    >>> print no_priv_browser.getLink("Edit PPA dependencies")
+    >>> print(no_priv_browser.getLink("Edit PPA dependencies"))
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
     >>> no_priv_browser.getLink("View package details").click()
-    >>> print no_priv_browser.getLink("Delete packages")
+    >>> print(no_priv_browser.getLink("Delete packages"))
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -835,6 +835,6 @@ reenable the PPA or turn on publishing.
     >>> "Deleted PPAs can&#x27;t be enabled." in no_priv_browser.contents
     True
     >>> no_priv_browser.getLink('Cancel').click()
-    >>> print extract_text(
-    ...     first_tag_by_class(no_priv_browser.contents, 'warning message'))
+    >>> print(extract_text(
+    ...     first_tag_by_class(no_priv_browser.contents, 'warning message')))
     This PPA has been deleted.

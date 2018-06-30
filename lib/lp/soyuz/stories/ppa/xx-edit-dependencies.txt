@@ -40,10 +40,10 @@ any sources.
     >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
 
     >>> no_priv_browser.getLink('Edit PPA dependencies').click()
-    >>> print no_priv_browser.url
+    >>> print(no_priv_browser.url)
     http://launchpad.dev/~no-priv/+archive/ubuntu/ppa/+edit-dependencies
 
-    >>> print no_priv_browser.title
+    >>> print(no_priv_browser.title)
     Edit PPA dependencies : PPA for No Privileges Person :
     No Privileges Person
 
@@ -54,16 +54,16 @@ page for Celso's PPA.
     ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> cprov_browser.getLink('Edit PPA dependencies').click()
-    >>> print cprov_browser.url
+    >>> print(cprov_browser.url)
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+edit-dependencies
-    >>> print cprov_browser.title
+    >>> print(cprov_browser.title)
     Edit PPA dependencies : PPA for Celso Providelo : Celso Providelo
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> admin_browser.getLink('Edit PPA dependencies').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+edit-dependencies
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     Edit PPA dependencies : PPA for Celso Providelo : Celso Providelo
 
 Once accessed the page provides a way to remove recorded dependencies
@@ -72,10 +72,10 @@ via the POST form.
     >>> def print_ppa_dependencies(contents):
     ...     empty_dep = find_tag_by_id(contents, 'empty-dependencies')
     ...     if empty_dep is not None:
-    ...         print extract_text(empty_dep)
+    ...         print(extract_text(empty_dep))
     ...     dependencies = find_tags_by_class(contents, 'ppa-dependencies')
     ...     for dep in dependencies:
-    ...         print extract_text(dep)
+    ...         print(extract_text(dep))
 
 When the 'Edit dependencies' page is loaded it will list all dependencies.
 
@@ -163,10 +163,10 @@ sources.list widget).
 
 The dependency entries are links to their target archives.
 
-    >>> print user_browser.getLink('PPA for Mark Shuttleworth').url
+    >>> print(user_browser.getLink('PPA for Mark Shuttleworth').url)
     http://launchpad.dev/~mark/+archive/ubuntu/ppa
 
-    >>> print user_browser.getLink('PPA for No Privileges Person').url
+    >>> print(user_browser.getLink('PPA for No Privileges Person').url)
     http://launchpad.dev/~no-priv/+archive/ubuntu/ppa
 
 If, by any chance, a dependency gets disabled, the link is turned off
@@ -192,7 +192,7 @@ aware of this condition.
     ...
     LinkNotFoundError
 
-    >>> print anon_browser.getLink('PPA for No Privileges Person').url
+    >>> print(anon_browser.getLink('PPA for No Privileges Person').url)
     http://launchpad.dev/~no-priv/+archive/ubuntu/ppa
 
 When accessed by their owners, a PPA depending on disabled archives
@@ -202,8 +202,8 @@ maintainer can react to this problem.
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> upload_hint = find_tag_by_id(
     ...     cprov_browser.contents, 'upload-hint')
-    >>> print extract_text(
-    ...     first_tag_by_class(str(upload_hint), 'message warning'))
+    >>> print(extract_text(
+    ...     first_tag_by_class(str(upload_hint), 'message warning')))
     This PPA depends on disabled archives. it may cause spurious
     build failures or binaries with unexpected contents.
 
@@ -249,13 +249,13 @@ is omitted from the PPA overview page for user without permission to
 add new dependencies.
 
     >>> user_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
-    >>> print find_tag_by_id(
-    ...     user_browser.contents, 'archive-dependencies')
+    >>> print(find_tag_by_id(
+    ...     user_browser.contents, 'archive-dependencies'))
     None
 
     >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
-    >>> print find_tag_by_id(
-    ...     user_browser.contents, 'archive-dependencies')
+    >>> print(find_tag_by_id(
+    ...     user_browser.contents, 'archive-dependencies'))
     None
 
 We should also make sure that a user is unable to add a disabled PPA as a
@@ -534,7 +534,7 @@ Primary dependencies are presented with pocket information in the PPA
 index page (see `IArchivedependency.title`).
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     PPA for Celso Providelo : Celso Providelo
 
     >>> print_tag_with_id(admin_browser.contents, 'archive-dependencies')
@@ -558,7 +558,7 @@ PPA context page and the action won't be executed.
     ...     ).selected = True
 
     >>> admin_browser.getLink("Cancel").click()
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     PPA for Celso Providelo : Celso Providelo
 
 The dependencies were not modified.

@@ -154,10 +154,10 @@ will be proxied by the webapp.
     >>> builds = webservice.named_get(
     ...     source_pub['self_link'], 'getBuilds').jsonBody()
 
-    >>> print builds['entries'][0]['log_url']
+    >>> print(builds['entries'][0]['log_url'])
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+build/26/+files/...
 
-    >>> print builds['entries'][0]['upload_log_url']
+    >>> print(builds['entries'][0]['upload_log_url'])
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+build/26/+files/...
 
 Re-trying builds
@@ -172,8 +172,8 @@ stories/soyuz/xx-build-record.txt for more information.
 
 Plain users have no permission to call retry:
 
-    >>> print user_webservice.named_post(
-    ...     a_build['self_link'], 'retry')
+    >>> print(user_webservice.named_post(
+    ...     a_build['self_link'], 'retry'))
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -190,8 +190,8 @@ Admin users can call it:
 
     >>> admin_webservice = webservice_for_person(
     ...     admin_person, permission=OAuthPermission.WRITE_PUBLIC)
-    >>> print admin_webservice.named_post(
-    ...     a_build['self_link'], 'retry')
+    >>> print(admin_webservice.named_post(
+    ...     a_build['self_link'], 'retry'))
     HTTP/1.1 200 Ok
     ...
 
@@ -199,8 +199,8 @@ As can cprov who owns the PPA for the build:
 
     >>> cprov_webservice = webservice_for_person(
     ...     cprov, permission=OAuthPermission.WRITE_PUBLIC)
-    >>> print cprov_webservice.named_post(
-    ...     a_build['self_link'], 'retry')
+    >>> print(cprov_webservice.named_post(
+    ...     a_build['self_link'], 'retry'))
     HTTP/1.1 500 Internal Server Error
     ...
     AssertionError: Build ... cannot be retried
@@ -212,7 +212,7 @@ can_be_retried property:
 
     >>> builds = webservice.named_get(
     ...     source_pub['self_link'], 'getBuilds').jsonBody()
-    >>> print builds['entries'][0]['can_be_retried']
+    >>> print(builds['entries'][0]['can_be_retried'])
     False
 
 
@@ -223,8 +223,8 @@ When a build is in NEEDSBUILD state, it may be rescored using the 'rescore'
 custom operation.  However, the caller must be a member of the buildd admins
 team.
 
-    >>> print user_webservice.named_post(
-    ...     a_build['self_link'], 'rescore', score=1000)
+    >>> print(user_webservice.named_post(
+    ...     a_build['self_link'], 'rescore', score=1000))
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -238,15 +238,15 @@ The user cprov is a buildd admin.
     True
 
     >>> logout()
-    >>> print cprov_webservice.named_post(
-    ...     a_build['self_link'], 'rescore', score=1000)
+    >>> print(cprov_webservice.named_post(
+    ...     a_build['self_link'], 'rescore', score=1000))
     HTTP/1.1 200 Ok
     ...
 
 The job has been rescored
 
     >>> updated_build = webservice.get(a_build['self_link']).jsonBody()
-    >>> print updated_build['score']
+    >>> print(updated_build['score'])
     1000
 
 If the build cannot be retried, then a 400 code is returned.  Let's
@@ -257,8 +257,8 @@ alter the buildstate to one that cannot be retried:
     >>> build.updateStatus(BuildStatus.FAILEDTOUPLOAD)
     >>> logout()
 
-    >>> print cprov_webservice.named_post(
-    ...     a_build['self_link'], 'rescore', score=1000)
+    >>> print(cprov_webservice.named_post(
+    ...     a_build['self_link'], 'rescore', score=1000))
     HTTP/1.1 400 Bad Request
     ...
     Build cannot be rescored.
