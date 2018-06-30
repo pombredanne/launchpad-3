@@ -20,16 +20,16 @@ And two for printing the results:
 
     >>> def print_entry(entry):
     ...     tds = entry('td')
-    ...     print "number:", extract_text(tds[1])
-    ...     print "href:", tds[1].a['href']
-    ...     print "title:", extract_text(tds[2])
+    ...     print("number:", extract_text(tds[1]))
+    ...     print("href:", tds[1].a['href'])
+    ...     print("title:", extract_text(tds[2]))
     ...     if len(tds) < 6:
-    ...         print "importance:", extract_text(tds[3])
-    ...         print "status:", extract_text(tds[4])
+    ...         print("importance:", extract_text(tds[3]))
+    ...         print("status:", extract_text(tds[4]))
     ...     else:
-    ...         print "project:", extract_text(tds[3])
-    ...         print "importance:", extract_text(tds[4])
-    ...         print "status:", extract_text(tds[5])
+    ...         print("project:", extract_text(tds[3]))
+    ...         print("importance:", extract_text(tds[4]))
+    ...         print("status:", extract_text(tds[5]))
 
     >>> def get_bug_numbers(entries):
     ...     bug_numbers = []
@@ -53,7 +53,7 @@ the bug itself.
     'http://feeds.launchpad.dev/jokosher/latest-bugs.html?show_column=bugtargetdisplayname'
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     3
 
     >>> print_entry(entries[1])
@@ -79,7 +79,7 @@ as the latest bugs feed for a product.
     'http://feeds.launchpad.dev/mozilla/latest-bugs.html?show_column=bugtargetdisplayname'
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     12
 
     >>> print_entry(entries[1])
@@ -103,9 +103,9 @@ Create a private team and assign a mozilla bug to that team.
     >>> login('foo.bar@canonical.com')
     >>> priv_team = factory.makeTeam(visibility=PersonVisibility.PRIVATE)
     >>> bug = getUtility(IBugSet).get(1)
-    >>> print bug.title
+    >>> print(bug.title)
     Firefox does not support SVG
-    >>> print len(bug.bugtasks)
+    >>> print(len(bug.bugtasks))
     3
     >>> from zope.security.proxy import removeSecurityProxy
     >>> bugtask = removeSecurityProxy(bug.bugtasks[1])
@@ -131,7 +131,7 @@ This feed gets the latest bugs for a person.
     'http://feeds.launchpad.dev/~name16/latest-bugs.html'
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     13
 
     >>> print_entry(entries[1])
@@ -158,7 +158,7 @@ This feed gets the latest bugs reported against any target.
     'http://feeds.launchpad.dev/bugs/latest-bugs.html?show_column=bugtargetdisplayname'
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     27
 
     >>> print_entry(entries[1])
@@ -210,7 +210,7 @@ to True.
     'Bugs from custom search'
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     26
 
     >>> print_entry(entries[1])

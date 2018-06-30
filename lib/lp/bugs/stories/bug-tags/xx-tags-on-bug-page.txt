@@ -3,7 +3,7 @@ Users can see bugs tags on the bug page.
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'bug-tags'))
+    >>> print(extract_text(find_tag_by_id(user_browser.contents, 'bug-tags')))
     Add tags  Tag help
 
 Let's specify some tags:
@@ -19,7 +19,7 @@ If we enter an invalid tag name, we'll get an error.
     >>> user_browser.getControl('Change').click()
 
     >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print tag.renderContents()
+    ...     print(tag.renderContents())
     There is 1 error.
     &#x27;!!invalid!!&#x27; isn&#x27;t a valid tag name. Tags must start
     with a letter or number and be lowercase. The characters
@@ -35,11 +35,11 @@ Let's specify two valid tags.
 
 Now the tags will be displayed on the bug page:
 
-    >>> 'Tags:' in user_browser.contents
+    >>> b'Tags:' in user_browser.contents
     True
-    >>> 'foo' in user_browser.contents
+    >>> b'foo' in user_browser.contents
     True
-    >>> 'bar' in user_browser.contents
+    >>> b'bar' in user_browser.contents
     True
 
 Simply changing the ordering of the bug tags won't cause anything to

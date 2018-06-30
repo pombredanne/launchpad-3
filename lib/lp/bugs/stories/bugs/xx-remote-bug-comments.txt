@@ -10,7 +10,7 @@ entered within Launchpad itself.
     ...     user_browser.contents, 'remoteBugComment', only_first=True)
     >>> details = remote_bug_comment.find(
     ...     attrs={'class': 'boardCommentDetails'})
-    >>> print extract_text(details)
+    >>> print(extract_text(details))
     In
     Debian Bug tracker #308994,
     josh (jbuhl-nospam)
@@ -21,7 +21,7 @@ entered within Launchpad itself.
 Remote comments are decorated with the bug watch icon, to distinguish
 them from comments posted directly by Launchpad users.
 
-    >>> print details.find('img')['src']
+    >>> print(details.find('img')['src'])
     /@@/bug-remote
 
 Since it's possible to reply to imported comments and have them
@@ -31,14 +31,14 @@ bug tracker.
 
     >>> activity = remote_bug_comment.find(
     ...     attrs={'class': 'boardCommentActivity'})
-    >>> print extract_text(activity)
+    >>> print(extract_text(activity))
     Reply on Debian Bug tracker...
 
 When javascript is not available, the link simply takes us to the
 individual comment page, where the inline form is displayed.
 
     >>> user_browser.getLink('Reply on Debian Bug tracker').click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://bugs.launchpad.dev/redfish/+bug/15/comments/1
 
 We enter a comment, and submit the form.
@@ -51,7 +51,7 @@ The new comment appears, formatted as a remote bug comment.
 
     >>> new_bug_comment = find_tags_by_class(
     ...     user_browser.contents, 'remoteBugComment')[-1]
-    >>> print extract_text(new_bug_comment)
+    >>> print(extract_text(new_bug_comment))
     In
     Debian Bug tracker #308994,
     ...
@@ -64,7 +64,7 @@ mark the comment as 'awaiting synchronization' until it makes its way
 to the remote bug tracker.
 
     >>> activity = new_bug_comment.find(attrs={'class': 'boardCommentActivity'})
-    >>> print extract_text(activity.findAll('td')[1])
+    >>> print(extract_text(activity.findAll('td')[1]))
     Awaiting synchronization
 
 When the comment is synchronized, it receives a remote comment id, and
@@ -78,7 +78,7 @@ the 'awaiting synchronization' mark goes away.
     >>> login('foo.bar@canonical.com')
     >>> bug_15 = getUtility(IBugSet).get(15)
     >>> message = bug_15.messages[-1]
-    >>> print message.text_contents
+    >>> print(message.text_contents)
     A reply comment.
     >>> bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
     ...     bug_15, message)
@@ -90,7 +90,7 @@ the 'awaiting synchronization' mark goes away.
     >>> user_browser.open('http://bugs.launchpad.dev/redfish/+bug/15')
     >>> last_bug_comment = find_tags_by_class(
     ...     user_browser.contents, 'remoteBugComment')[-1]
-    >>> print extract_text(last_bug_comment)
+    >>> print(extract_text(last_bug_comment))
     In
     Debian Bug tracker #308994,
     ...

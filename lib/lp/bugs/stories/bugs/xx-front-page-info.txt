@@ -19,7 +19,7 @@ not use Launchpad for bug tracking.
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/test-project/+bugs')
     >>> uses_malone_p = find_tag_by_id(anon_browser.contents, 'no-malone')
-    >>> print extract_text(uses_malone_p)
+    >>> print(extract_text(uses_malone_p))
     Test-project must be configured in order for Launchpad to forward bugs to
     the project's developers.
 
@@ -33,7 +33,7 @@ for a project.
     ...   'http://bugs.launchpad.dev/test-project/+bugs')
     >>> enable_tracker = find_tag_by_id(
     ...     admin_browser.contents, 'no-malone-edit')
-    >>> print extract_text(enable_tracker)
+    >>> print(extract_text(enable_tracker))
     Configure Bugs
 
 The +bugs page for a project using Launchpad for bug tracking
@@ -49,13 +49,13 @@ bugs have been filed.
     >>> anon_browser.open('http://bugs.launchpad.dev/uses-malone/+bugs')
     >>> bug_supervisor = find_tag_by_id(
     ...     anon_browser.contents, 'bug-supervisor')
-    >>> print extract_text(bug_supervisor)
+    >>> print(extract_text(bug_supervisor))
     Bug supervisor:
     None set
 
     >>> bug_list = find_tag_by_id(
     ...     anon_browser.contents, 'bugs-table-listing')
-    >>> print extract_text(bug_list)
+    >>> print(extract_text(bug_list))
     There are currently no open bugs.
 
 Projects that use an external bug tracker will list the tracker on a
@@ -69,7 +69,7 @@ Projects that use an external bug tracker will list the tracker on a
     >>> anon_browser.open(
     ...   'http://bugs.launchpad.dev/test-project/+bugs')
     >>> tracker_text = find_tag_by_id(anon_browser.contents, 'bugtracker')
-    >>> print extract_text(tracker_text)
+    >>> print(extract_text(tracker_text))
     Bugs are tracked in tracker.example.com/.
 
 Projects that are linked to an Ubuntu distro source package and that
@@ -84,7 +84,7 @@ be reported on the project's source packages.
     >>> logout()
     >>> anon_browser.open(
     ...   'http://bugs.launchpad.dev/test-project/+bugs')
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'also-in-ubuntu'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'also-in-ubuntu')))
     Ubuntu also tracks bugs for packages derived from this project:
     test-project-package in Ubuntu.

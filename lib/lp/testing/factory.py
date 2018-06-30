@@ -51,6 +51,7 @@ from bzrlib.revision import Revision as BzrRevision
 from lazr.jobrunner.jobrunner import SuspendJobException
 import pytz
 from pytz import UTC
+import six
 from twisted.conch.ssh.common import (
     MP,
     NS,
@@ -1204,7 +1205,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         else:
             make_sourcepackagename = (
                 sourcepackagename is None or
-                isinstance(sourcepackagename, str))
+                isinstance(sourcepackagename, six.text_type))
             if make_sourcepackagename:
                 sourcepackagename = self.makeSourcePackageName(
                     sourcepackagename)

@@ -20,10 +20,10 @@ If no title is entered, the user is asked to supply one.
     >>> top_portlet = first_tag_by_class(
     ...     user_browser.contents, 'top-portlet')
     >>> for message in top_portlet.findAll(attrs={'class': 'error message'}):
-    ...     print message.renderContents()
+    ...     print(message.renderContents())
     There is 1 error.
     >>> for message in top_portlet.findAll(attrs={'class': 'message'}):
-    ...     print message.renderContents()
+    ...     print(message.renderContents())
     Required input is missing.
 
 The user fills in some keywords, and clicks a button to search existing
@@ -36,7 +36,7 @@ bugs.
 The form is self-posting, so the user is still at +filebug. This makes
 it difficult to bypass the search-for-dupes bit.
 
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://bugs.launchpad.dev/firefox/+filebug
 
 After searching, the user is presented with a list of similar bugs in
@@ -58,15 +58,15 @@ will be displayed as well.
     >>> user_browser.getControl("Further information").value = "not empty"
     >>> user_browser.getControl("Summary", index=0).value = ''
     >>> user_browser.getControl("Submit Bug Report").click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://bugs.launchpad.dev/firefox/+filebug
 
-    >>> print find_main_content(user_browser.contents).renderContents()
+    >>> print(find_main_content(user_browser.contents).renderContents())
     <...
     No similar bug reports were found...
 
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
+    ...     print(message.renderContents())
     There is 1 error.
     Required input is missing.
 
@@ -76,7 +76,7 @@ With both values set, the bug is created.
     >>> user_browser.getControl("Further information").value = "test"
     >>> user_browser.getControl("Submit Bug Report").click()
 
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://bugs.launchpad.dev/firefox/+bug/...
 
 
@@ -104,7 +104,7 @@ This one matches, so we mark it as affecting us.
     >>> user_browser.getControl(
     ...     "Yes, this is the bug I'm trying to report").click()
 
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://bugs.launchpad.dev/firefox/+bug/1
 
     >>> print_feedback_messages(user_browser.contents)
@@ -151,7 +151,7 @@ shown.
 
     >>> similar_bugs_list = find_tag_by_id(
     ...     user_browser.contents, "similar-bugs")
-    >>> print similar_bugs_list
+    >>> print(similar_bugs_list)
     None
 
 But, as before, entering a description and submitting the bug takes the
@@ -163,5 +163,5 @@ user to the bug page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/...'
 
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Bug #...Frankenzombulon reanimated... : Bugs : Mozilla Firefox

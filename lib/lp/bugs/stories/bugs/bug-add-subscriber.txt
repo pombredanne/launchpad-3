@@ -75,7 +75,7 @@ David got a notification, saying that he was subscribed to the bug.
     >>> from lp.services.mail import stub
     >>> len(stub.test_emails)
     1
-    >>> print stub.test_emails[0][2]
+    >>> print(stub.test_emails[0][2])
     MIME-Version: 1.0
     ...
     To: david.allouche@canonical.com
@@ -181,8 +181,8 @@ and Landscape Developers have been subscribed, but we will not see an
 entry in the activity log for Private Team.
 
     >>> def print_row(row):
-    ...     print ' | '.join(
-    ...         extract_text(cell) for cell in row(('th', 'td')))
+    ...     print(' | '.join(
+    ...         extract_text(cell) for cell in row(('th', 'td'))))
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+bug/1/+activity')
     >>> main_content = find_main_content(user_browser.contents)

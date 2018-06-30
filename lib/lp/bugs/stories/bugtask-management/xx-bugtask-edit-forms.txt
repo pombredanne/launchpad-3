@@ -12,33 +12,33 @@ of the bug task table lead them to the bug task edit forms of the
 respective bug task.
 
     >>> admin_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'affected-software'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'affected-software')))
     Affects                     Status    Importance   Assigned to...
     Mozilla Firefox...          New       Low          Mark Shuttleworth...
     mozilla-firefox (Debian)... Confirmed Low          debbugs #304014...
     mozilla-firefox (Ubuntu)... New       Medium       Unassigned
     ...
 
-    >>> print admin_browser.getLink('New', index=0).url
+    >>> print(admin_browser.getLink('New', index=0).url)
     http://bugs.launchpad.dev/firefox/+bug/1/+editstatus
-    >>> print admin_browser.getLink('Low', index=0).url
+    >>> print(admin_browser.getLink('Low', index=0).url)
     http://bugs.launchpad.dev/firefox/+bug/1/+editstatus
 
-    >>> print admin_browser.getLink('Confirmed').url
+    >>> print(admin_browser.getLink('Confirmed').url)
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-    >>> print admin_browser.getLink('Low', index=1).url
+    >>> print(admin_browser.getLink('Low', index=1).url)
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1/+editstatus
-    >>> print admin_browser.getLink('New', index=1).url
+    >>> print(admin_browser.getLink('New', index=1).url)
     http://bugs...dev/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus
-    >>> print admin_browser.getLink('Medium').url
+    >>> print(admin_browser.getLink('Medium').url)
     http://bugs...dev/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus
 
     >>> admin_browser.getLink('New').click()
-    >>> print extract_text(admin_browser.contents)
+    >>> print(extract_text(admin_browser.contents))
     Edit status...
     ...
     Affecting: Mozilla Firefox

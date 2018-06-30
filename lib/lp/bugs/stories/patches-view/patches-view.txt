@@ -20,10 +20,10 @@ We don't see any patches when we open the patches view.
 
     >>> def show_patches_view(contents):
     ...     for tag in find_tags_by_class(contents, 'listing'):
-    ...         print extract_text(tag)
+    ...         print(extract_text(tag))
     ...     messages = find_tags_by_class(contents, 'informational')
     ...     if len(messages) > 0:
-    ...         print extract_text(messages[0])
+    ...         print(extract_text(messages[0]))
 
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/patchy-product-1/+patches')

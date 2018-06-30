@@ -43,7 +43,7 @@ No Privileges Person can see the attachment in the attachments portlet.
 
     >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
     >>> for li_tag in attachments.findAll('li', 'download-attachment'):
-    ...     print li_tag.a.renderContents()
+    ...     print(li_tag.a.renderContents())
     A description of the attachment
 
     >>> user_browser.getLink('A description of the attachment').url
@@ -56,7 +56,7 @@ Sometimes browsers submit values empty fields, leading them to being
 treated as non-empty by the receiving view. The attachment form will
 treat all empty-equivalent values equally.
 
-    >>> print http(r"""
+    >>> print(http(br"""
     ... POST /firefox/+filebug HTTP/1.1
     ... Authorization: Basic test@canonical.com:test
     ... Referer: https://launchpad.dev/
@@ -99,6 +99,6 @@ treat all empty-equivalent values equally.
     ... 
     ... Submit Bug Report
     ... -----------------------------2051078912280543729816242321--
-    ... """)
+    ... """))
     HTTP/1.1 303 See Other...
     Location: http://bugs.launchpad.dev/firefox/+bug/...

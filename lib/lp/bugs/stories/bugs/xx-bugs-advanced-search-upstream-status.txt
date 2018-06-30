@@ -26,7 +26,7 @@ doesn't have a bug watch.
     >>> upstream_status = anon_browser.getControl(
     ...     name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show bugs that need to be forwarded to an upstream bug tracker']
+    ...     b'Show bugs that need to be forwarded to an upstream bug tracker']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder Ubuntu Medium New
@@ -50,8 +50,8 @@ are not included in the report.
     ...             BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
 
     >>> for bugtask in bug_two.bugtasks:
-    ...     print "%s, %s" % (
-    ...         bugtask.target.bugtargetdisplayname, bugtask.status.title)
+    ...     print("%s, %s" % (
+    ...         bugtask.target.bugtargetdisplayname, bugtask.status.title))
     Tomcat, Invalid
     Ubuntu, New
     Ubuntu Hoary, New
@@ -64,9 +64,9 @@ are not included in the report.
     >>> upstream_status = anon_browser.getControl(
     ...     name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show bugs that need to be forwarded to an upstream bug tracker']
+    ...     b'Show bugs that need to be forwarded to an upstream bug tracker']
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> print anon_browser.contents
+    >>> print(anon_browser.contents)
     <!DOCTYPE...
     ...No results...
 
@@ -79,7 +79,7 @@ on upstream, to focus instead on things they need to work on.
     >>> upstream_status = anon_browser.getControl(
     ...     name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show bugs that are not known to affect upstream']
+    ...     b'Show bugs that are not known to affect upstream']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     10 another test bug linux-source-2.6.15 (Ubuntu) Medium New
@@ -110,7 +110,7 @@ modified and the sampledata we created above will show up.
     >>> upstream_status = anon_browser.getControl(
     ...     name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show bugs that are resolved upstream']
+    ...     b'Show bugs that are resolved upstream']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG mozilla-firefox (Ubuntu) Medium New
@@ -124,8 +124,8 @@ returns the union of the results for the individual filters.
     >>> upstream_status = anon_browser.getControl(
     ...     name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show bugs that are resolved upstream',
-    ...     'Show bugs that are not known to affect upstream'
+    ...     b'Show bugs that are resolved upstream',
+    ...     b'Show bugs that are not known to affect upstream'
     ...     ]
 
     >>> anon_browser.getControl('Search', index=0).click()
