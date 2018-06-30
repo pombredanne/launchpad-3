@@ -43,12 +43,12 @@ those notifications look like.
 
     >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> print(latest_notification.message.owner.displayname)
     Sample Person
 
     >>> latest_notification.is_comment
     True
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     this is a comment
 
 Notifications usually have references to a corresponding bug activity.  These
@@ -56,9 +56,9 @@ can get you details on precisely what changed from a more programmatic
 perspective.  You can get details on what the activity provides in
 bugactivity.txt, but for now here is a small demo.
 
-    >>> print latest_notification.activity.whatchanged
+    >>> print(latest_notification.activity.whatchanged)
     bug
-    >>> print latest_notification.activity.person.displayname
+    >>> print(latest_notification.activity.person.displayname)
     Sample Person
 
 
@@ -74,19 +74,19 @@ bugactivity.txt, but for now here is a small demo.
     >>> notify(firefox_crashes_modified)
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> print(latest_notification.message.owner.displayname)
     Sample Person
 
     >>> latest_notification.is_comment
     False
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     ** Description changed:
     ...
-    >>> print latest_notification.activity.attribute
+    >>> print(latest_notification.activity.attribute)
     description
-    >>> print latest_notification.activity.oldvalue
+    >>> print(latest_notification.activity.oldvalue)
     this is a comment
-    >>> print latest_notification.activity.newvalue
+    >>> print(latest_notification.activity.newvalue)
     a new description
 
 
@@ -113,12 +113,12 @@ bug. Let's take a look at each type.
     ...     firefox_crashes_in_debian, firefox_crashes_in_debian.owner))
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> print(latest_notification.message.owner.displayname)
     Sample Person
 
     >>> latest_notification.is_comment
     False
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     ** Also affects: mozilla-firefox (Debian)
     ...
 
@@ -139,12 +139,12 @@ bug. Let's take a look at each type.
     ...     firefox_crashes_in_sid, firefox_crashes_in_sid.owner))
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> print(latest_notification.message.owner.displayname)
     Sample Person
 
     >>> latest_notification.is_comment
     False
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     ** Also affects: mozilla-firefox (Debian Sid)
     ...
 
@@ -167,12 +167,12 @@ bug. Let's take a look at each type.
     ...     evolution_crashes_too, evolution_crashes_too.owner))
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> print(latest_notification.message.owner.displayname)
     Sample Person
 
     >>> latest_notification.is_comment
     False
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     ** Also affects: evolution
     ...
 
@@ -189,12 +189,12 @@ bug. Let's take a look at each type.
     ...     firefox_crashes_in_trunk, firefox_crashes_in_trunk.owner))
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> print(latest_notification.message.owner.displayname)
     Sample Person
 
     >>> latest_notification.is_comment
     False
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     ** Also affects: evolution/trunk
     ...
 
@@ -211,12 +211,12 @@ bug. Let's take a look at each type.
     >>> notify(ObjectCreatedEvent(comment_on_firefox_crashes_in_debian))
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> print(latest_notification.message.owner.displayname)
     Sample Person
 
     >>> latest_notification.is_comment
     True
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     just a test comment
 
 
@@ -242,12 +242,12 @@ task Fixed, and assigns themselves to it.
     >>> notify(debian_task_modified)
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> print(latest_notification.message.owner.displayname)
     Sample Person
 
     >>> latest_notification.is_comment
     False
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     ** Changed in: mozilla-firefox (Debian)
     ...
 
@@ -262,12 +262,12 @@ task Fixed, and assigns themselves to it.
     >>> notify(firefox_task_modified)
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> print(latest_notification.message.owner.displayname)
     Sample Person
 
     >>> latest_notification.is_comment
     False
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     ** Changed in: evolution/trunk
     ...
 
@@ -287,12 +287,12 @@ this document:
     >>> bugcve = cve.linkBug(bug) # note this creates the event and notifies
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.owner.displayname
+    >>> print(latest_notification.message.owner.displayname)
     Sample Person
 
     >>> latest_notification.is_comment
     False
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     ** CVE added: https://cve.mitre.org/cgi-bin/cvename.cgi?name=2004-0276
 
 

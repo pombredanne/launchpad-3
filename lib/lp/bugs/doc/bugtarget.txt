@@ -36,25 +36,25 @@ target (such as in filterable email messages).
     >>> IBugTarget.providedBy(debian_woody_firefox)
     True
 
-    >>> print firefox.bugtargetdisplayname
+    >>> print(firefox.bugtargetdisplayname)
     Mozilla Firefox
-    >>> print firefox.bugtargetname
+    >>> print(firefox.bugtargetname)
     firefox
-    >>> print firefox_1_0.bugtargetdisplayname
+    >>> print(firefox_1_0.bugtargetdisplayname)
     Mozilla Firefox 1.0
-    >>> print firefox_1_0.bugtargetname
+    >>> print(firefox_1_0.bugtargetname)
     firefox/1.0
-    >>> print debian.bugtargetdisplayname
+    >>> print(debian.bugtargetdisplayname)
     Debian
-    >>> print debian.bugtargetname
+    >>> print(debian.bugtargetname)
     debian
-    >>> print debian_firefox.bugtargetdisplayname
+    >>> print(debian_firefox.bugtargetdisplayname)
     mozilla-firefox (Debian)
-    >>> print debian_firefox.bugtargetname
+    >>> print(debian_firefox.bugtargetname)
     mozilla-firefox (Debian)
-    >>> print debian_woody.bugtargetdisplayname
+    >>> print(debian_woody.bugtargetdisplayname)
     Debian Woody
-    >>> print debian_woody_firefox.bugtargetdisplayname
+    >>> print(debian_woody_firefox.bugtargetdisplayname)
     mozilla-firefox (Debian Woody)
-    >>> print debian_woody_firefox.bugtargetname
+    >>> print(debian_woody_firefox.bugtargetname)
     mozilla-firefox (Debian Woody)

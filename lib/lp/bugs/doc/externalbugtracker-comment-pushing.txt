@@ -58,8 +58,8 @@ ISupportsCommentPushing interface.
     ...         remote_comment_id = str(self.next_comment_id)
     ...         self.remote_comments[remote_comment_id] = comment_body
     ...
-    ...         print "Comment added as remote comment %s" % (
-    ...             remote_comment_id)
+    ...         print("Comment added as remote comment %s" % (
+    ...             remote_comment_id))
     ...
     ...         self.next_comment_id += 1
     ...         return remote_comment_id
@@ -74,7 +74,7 @@ The comment attached to the bug currently does not have its
 remote_comment_id set.  This is because it originated in Launchpad and
 has not yet been pushed to the remote bugtracker.
 
-    >>> print bug_message.remote_comment_id is None
+    >>> print(bug_message.remote_comment_id is None)
     True
 
 The IBugWatch interface defines a property, unpushed_comments, which
@@ -84,7 +84,7 @@ remote server.
     >>> comments = [
     ...     comment.message.text_contents
     ...     for comment in bug_watch.unpushed_comments]
-    >>> print comments
+    >>> print(comments)
     [u'Pushing, for the purpose of.']
 
 The CheckwatchesMaster method pushBugComments() is responsible for
@@ -112,9 +112,9 @@ remote_comment_id.
     ...     for message in bug.messages[1:]:
     ...         bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
     ...             bug, message)
-    ...         print "%s: %s" % (
+    ...         print("%s: %s" % (
     ...             bug_message.remote_comment_id,
-    ...             bug_message.message.text_contents)
+    ...             bug_message.message.text_contents))
     >>> print_bug_messages(bug, bug_watch)
     1: Pushing, for the purpose of.
 
@@ -129,7 +129,7 @@ already have a remote id for it (ergo it has been pushed already).
 If we now check the bug watch's unpushed_comments property, we will
 find it to be empty.
 
-    >>> print list(bug_watch.unpushed_comments)
+    >>> print(list(bug_watch.unpushed_comments))
     []
 
 If more comments are added to the bug they will be pushed to the remote
@@ -242,7 +242,7 @@ invalid remote comment ID, an error will be raised:
 
     >>> class ErroringExternalBugTracker(CommentPushingExternalBugTracker):
     ...     def addRemoteComment(self, remote_bug, comment_body, rfc822msgid):
-    ...         print "Pretending to add a comment to bug %s" % remote_bug
+    ...         print("Pretending to add a comment to bug %s" % remote_bug)
     ...         return None
 
     >>> with lp_dbuser():
@@ -273,8 +273,8 @@ formatted to include data about the comment in Launchpad.
 
     >>> remote_comments = external_bugtracker.remote_comments
     >>> for remote_comment_id in sorted(remote_comments.keys()):
-    ...     print remote_comments[remote_comment_id]
-    ...     print "--------------------"
+    ...     print(remote_comments[remote_comment_id])
+    ...     print("--------------------")
     Sample Person added the following comment to Launchpad bug report...:
     <BLANKLINE>
     Pushing, for the purpose of.
@@ -306,7 +306,7 @@ remote server. This allows us to include salient information, such as
 the comment author, with the pushed comment.
 
     >>> formatted_message = bugwatch_updater._formatRemoteComment(message)
-    >>> print formatted_message
+    >>> print(formatted_message)
     Sample Person added the following comment to Launchpad bug report...:
     <BLANKLINE>
     Pushing, for the purpose of.
@@ -327,7 +327,7 @@ external bugtracker's comment_template attribute.
 
     >>> bugwatch_updater.external_bugtracker = external_bugtracker
     >>> formatted_message = bugwatch_updater._formatRemoteComment(message)
-    >>> print formatted_message
+    >>> print(formatted_message)
     Egg and bacon
     Egg, sausage and bacon
     Egg, bacon and bug #...

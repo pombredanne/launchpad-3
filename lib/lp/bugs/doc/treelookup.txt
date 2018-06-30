@@ -89,28 +89,28 @@ instances), `LookupTree._verify` also checks that every branch is a
   >>> invalid_tree._verify()
   Traceback (most recent call last):
   ...
-  TypeError: Not a LookupBranch: 'Greenland'
+  TypeError: Not a LookupBranch: u'Greenland'
 
 
 == Searching ==
 
 Just call `tree.find`.
 
-  >>> tree.find('Snack', 'Banana')
-  'Good'
+  >>> print(tree.find('Snack', 'Banana'))
+  Good
 
 If you specify more keys than you need to reach a leaf, you still get
 the result.
 
-  >>> tree.find('Snack', 'Banana', 'Big', 'Yellow', 'Taxi')
-  'Good'
+  >>> print(tree.find('Snack', 'Banana', 'Big', 'Yellow', 'Taxi'))
+  Good
 
 But an exception is raised if it does not reach a leaf.
 
   >>> tree.find('Snack')
   Traceback (most recent call last):
   ...
-  KeyError: 'Snack'
+  KeyError: u'Snack'
 
 
 == Development ==
@@ -118,34 +118,34 @@ But an exception is raised if it does not reach a leaf.
 `LookupTree` makes development easy, because `describe` gives a
 complete description of the tree you've created.
 
-  >>> print tree.describe()
+  >>> print(tree.describe())
   tree(
       branch(Snack => tree(
-          branch('Mars Bar', Snickers => 'Bad')
-          branch(Apple, Banana => 'Good')
+          branch(u'Mars Bar', Snickers => u'Bad')
+          branch(Apple, Banana => u'Good')
           ))
       branch(Lunch, Dinner => tree(
-          branch('Fish and chips', "Penne all'arrabbiata" => 'Nice')
-          branch('Raw liver' => 'Not so nice')
+          branch(u'Fish and chips', u"Penne all'arrabbiata" => u'Nice')
+          branch(u'Raw liver' => u'Not so nice')
           ))
-      branch(* => 'Make up your mind!')
+      branch(* => u'Make up your mind!')
       )
 
 We can also see that the result of constructing a new lookup using an
 existing one is the same as if we had constructed it independently.
 
-  >>> print breakfast_tree.describe()
+  >>> print(breakfast_tree.describe())
   tree(
-      branch(Breakfast => 'Corn flakes')
+      branch(Breakfast => u'Corn flakes')
       branch(Snack => tree(
-          branch('Mars Bar', Snickers => 'Bad')
-          branch(Apple, Banana => 'Good')
+          branch(u'Mars Bar', Snickers => u'Bad')
+          branch(Apple, Banana => u'Good')
           ))
       branch(Lunch, Dinner => tree(
-          branch('Fish and chips', "Penne all'arrabbiata" => 'Nice')
-          branch('Raw liver' => 'Not so nice')
+          branch(u'Fish and chips', u"Penne all'arrabbiata" => u'Nice')
+          branch(u'Raw liver' => u'Not so nice')
           ))
-      branch(* => 'Make up your mind!')
+      branch(* => u'Make up your mind!')
       )
 
 Simple keys are shown without quotes, to aid readability, and default
@@ -171,12 +171,12 @@ branches with keys are candidates for being discarded.
   ...     ('Lunch', 'Dinner', 'Soup'),
   ...     ('Eat more fruit and veg',),
   ...     )
-  >>> print pruned_tree.describe()
+  >>> print(pruned_tree.describe())
   tree(
-      branch(Snack => 'Crisps')
-      branch(Lunch => 'Bread')
-      branch(Dinner => 'Soup')
-      branch(* => 'Eat more fruit and veg')
+      branch(Snack => u'Crisps')
+      branch(Lunch => u'Bread')
+      branch(Dinner => u'Soup')
+      branch(* => u'Eat more fruit and veg')
       )
 
 
@@ -195,10 +195,11 @@ leaves.
 
   >>> for elems in tree.flatten():
   ...     path, result = elems[:-1], elems[-1]
-  ...     print ' => '.join(
-  ...         [repr(node.keys) for node in path] + [repr(result)])
-  ('Snack',) => ('Mars Bar', 'Snickers') => 'Bad'
-  ('Snack',) => ('Apple', 'Banana') => 'Good'
-  ('Lunch', 'Dinner') => ('Fish and chips', "Penne all'arrabbiata") => 'Nice'
-  ('Lunch', 'Dinner') => ('Raw liver',) => 'Not so nice'
-  () => 'Make up your mind!'
+  ...     print(' => '.join(
+  ...         [repr(node.keys) for node in path] + [repr(result)]))
+  (u'Snack',) => (u'Mars Bar', u'Snickers') => u'Bad'
+  (u'Snack',) => (u'Apple', u'Banana') => u'Good'
+  (u'Lunch', u'Dinner') =>
+      (u'Fish and chips', u"Penne all'arrabbiata") => u'Nice'
+  (u'Lunch', u'Dinner') => (u'Raw liver',) => u'Not so nice'
+  () => u'Make up your mind!'

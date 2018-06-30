@@ -84,9 +84,9 @@ query private bug counts.
     ...     fmt += ' %3s'
     ...     titles += ('#',)
     ...     header = fmt % titles
-    ...     print "-" * len(header)
-    ...     print header
-    ...     print "-" * len(header)
+    ...     print("-" * len(header))
+    ...     print(header)
+    ...     print("-" * len(header))
     ...     for bugsummary in ordered_results:
     ...         if not include_privacy:
     ...             assert bugsummary.viewed_by is None
@@ -107,12 +107,12 @@ query private bug counts.
     ...                 name(bugsummary.viewed_by),
     ...                 ap_desc(bugsummary.access_policy),
     ...                 )
-    ...         print fmt % (data + (bugsummary.count,))
-    ...     print " " * (len(header) - 4),
-    ...     print "==="
+    ...         print(fmt % (data + (bugsummary.count,)))
+    ...     print(" " * (len(header) - 4), end=" ")
+    ...     print("===")
     ...     sum = bugsummary_resultset.sum(BugSummary.count)
-    ...     print " " * (len(header) - 4),
-    ...     print "%3s" % sum
+    ...     print(" " * (len(header) - 4), end=" ")
+    ...     print("%3s" % sum)
 
     >>> def print_find(*bs_query_args, **bs_query_kw):
     ...     include_privacy = bs_query_kw.pop('include_privacy', False)
@@ -269,9 +269,9 @@ Number of bugs targeted to prod_a, grouped by milestone:
     ...     ).group_by(Milestone).order_by(Milestone.name)
     >>> for milestone, count in results:
     ...     if milestone:
-    ...         print milestone.name, count
+    ...         print(milestone.name, count)
     ...     else:
-    ...         print None, count
+    ...         print(None, count)
     ms-a 1
     None 4
 

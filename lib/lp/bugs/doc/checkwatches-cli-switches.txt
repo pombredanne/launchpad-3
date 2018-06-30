@@ -121,7 +121,7 @@ tracker option fully.
     ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
-    >>> print out
+    >>> print(out)
     Usage: checkwatches.py [options]
     <BLANKLINE>
     Options:

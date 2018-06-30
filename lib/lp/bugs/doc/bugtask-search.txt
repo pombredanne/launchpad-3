@@ -46,7 +46,7 @@ But if we put that word in the bug #4 description, it will be found.
 
     >>> found_bugtasks = firefox.searchTasks(text_search)
     >>> for bugtask in found_bugtasks:
-    ...     print "#%s" % bugtask.bug.id
+    ...     print("#%s" % bugtask.bug.id)
     #4
 
 === BugTaskSearchParams' parameters searchtext and fast_searchtext ===
@@ -62,7 +62,7 @@ see below.
     ...     user=None, searchtext=u'happens pretty often')
     >>> found_bugtasks = firefox.searchTasks(good_search)
     >>> for bugtask in found_bugtasks:
-    ...     print "#%s" % bugtask.bug.id
+    ...     print("#%s" % bugtask.bug.id)
     #4
 
 The unstemmed word "happens" does not yield any results when used
@@ -71,7 +71,7 @@ as fast_textsearch.
     >>> bad_search = BugTaskSearchParams(
     ...     user=None, fast_searchtext=u'happens')
     >>> found_bugtasks = firefox.searchTasks(bad_search)
-    >>> print found_bugtasks.count()
+    >>> print(found_bugtasks.count())
     0
 
 If the stem of "happens" is used, we get results.
@@ -80,7 +80,7 @@ If the stem of "happens" is used, we get results.
     ...     user=None, fast_searchtext=u'happen')
     >>> found_bugtasks = firefox.searchTasks(good_search)
     >>> for bugtask in found_bugtasks:
-    ...     print "#%s" % bugtask.bug.id
+    ...     print("#%s" % bugtask.bug.id)
     #4
     #6
 
@@ -90,7 +90,7 @@ Stemmed words may be combined into a valid tsquery expression.
     ...     user=None, fast_searchtext=u'happen&pretti&often')
     >>> found_bugtasks = firefox.searchTasks(good_search)
     >>> for bugtask in found_bugtasks:
-    ...     print "#%s" % bugtask.bug.id
+    ...     print("#%s" % bugtask.bug.id)
     #4
 
 Passing invalid tsquery expressions as fast_searchtext raises an exception.
@@ -157,7 +157,7 @@ reported by them will be returned.
     ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_product_id='0x0455', hardware_owner_is_bug_reporter=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
-    ...     print bugtask.bug.title
+    ...     print(bugtask.bug.title)
     Firefox does not support SVG
     Blackhole Trash folder
 
@@ -170,7 +170,7 @@ related parameters.
     ...     user=None, hardware_bus=HWBus.PCI, hardware_vendor_id='0x10de',
     ...     hardware_owner_is_bug_reporter=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
-    ...     print bugtask.bug.title
+    ...     print(bugtask.bug.title)
     Firefox does not support SVG
     Thunderbird crashes
     another test bug
@@ -184,7 +184,7 @@ of a bug reporter.
     ...     user=None, hardware_driver_name='ehci_hcd',
     ...     hardware_owner_is_bug_reporter=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
-    ...     print bugtask.bug.id, bugtask.bug.owner.displayname
+    ...     print(bugtask.bug.id, bugtask.bug.owner.displayname)
     1 Sample Person
     2 Sample Person
 
@@ -195,7 +195,7 @@ We can additionally specify a packge name.
     ...     hardware_driver_package_name='linux-image-2.6.24-19-generic',
     ...     hardware_owner_is_bug_reporter=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
-    ...     print bugtask.bug.id, bugtask.bug.owner.displayname
+    ...     print(bugtask.bug.id, bugtask.bug.owner.displayname)
     1 Sample Person
     2 Sample Person
 
@@ -214,7 +214,7 @@ use the given device together with the given driver.
     ...     hardware_product_id='0x0455', hardware_driver_name='ehci_hcd',
     ...     hardware_owner_is_bug_reporter=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
-    ...     print bugtask.bug.id, bugtask.bug.owner.displayname
+    ...     print(bugtask.bug.id, bugtask.bug.owner.displayname)
     1 Sample Person
     2 Sample Person
 
@@ -239,7 +239,7 @@ We can also search for device owners which are subscribed to a bug.
     ...     hardware_product_id='0x0455',
     ...     hardware_owner_is_subscribed_to_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
-    ...     print bugtask.bug.id, bugtask.bug.isSubscribed(sample_person)
+    ...     print(bugtask.bug.id, bugtask.bug.isSubscribed(sample_person))
     1 True
     9 True
 
@@ -252,7 +252,7 @@ And we can search for device owners who are affected by a bug.
     ...     hardware_product_id='0x0455',
     ...     hardware_owner_is_affected_by_bug=True)
     >>> for bugtask in ubuntu.searchTasks(search_params):
-    ...     print bugtask.bug.id, bugtask.bug.isUserAffected(sample_person)
+    ...     print(bugtask.bug.id, bugtask.bug.isUserAffected(sample_person))
     10 True
 
 Finally, we can search for who bugs which are directly linked to
@@ -323,7 +323,7 @@ Here is the list of bugs for Ubuntu.
     ...     orderby='-number_of_duplicates', user=None)
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
-    ...     print bugTaskInfo(bugtask)
+    ...     print(bugTaskInfo(bugtask))
     mozilla-firefox (Ubuntu) Firefox does not support SVG
     thunderbird (Ubuntu) Thunderbird crashes
     linux-source-2.6.15 (Ubuntu) another test bug
@@ -350,7 +350,7 @@ a duplicate.
 
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
-    ...     print bugTaskInfo(bugtask)
+    ...     print(bugTaskInfo(bugtask))
     thunderbird (Ubuntu) Thunderbird crashes
     mozilla-firefox (Ubuntu) Firefox does not support SVG
     linux-source-2.6.15 (Ubuntu) another test bug
@@ -369,7 +369,7 @@ Here is the list of bugs for Ubuntu, sorted by their number of comments.
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
     ...     bug = bugtask.bug
-    ...     print '%s [%s comments]' % (bug.title, bug.message_count)
+    ...     print('%s [%s comments]' % (bug.title, bug.message_count))
     Blackhole Trash folder [3 comments]
     Firefox does not support SVG [2 comments]
     another test bug [2 comments]
@@ -392,7 +392,7 @@ Another way of sorting searches is by bug heat.
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
     ...     bug = bugtask.bug
-    ...     print '%s [heat: %s]' % (bug.title, bug.heat)
+    ...     print('%s [heat: %s]' % (bug.title, bug.heat))
     Bug to be fixed in trunk [heat: 16]
     another test bug [heat: 10]
     Thunderbird crashes [heat: 9]
@@ -413,7 +413,7 @@ a "second level" sort order to ensure reliable sorting).
     ...     orderby='latest_patch_uploaded', user=None)
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
-    ...     print bugTaskInfo(bugtask)
+    ...     print(bugTaskInfo(bugtask))
     cdrkit (Ubuntu) Bug to be fixed in trunk
     Ubuntu Blackhole Trash folder
     linux-source-2.6.15 (Ubuntu) another test bug
@@ -432,7 +432,7 @@ If we add a patch attachment to bug 2 and bug 10, they are listed first.
     ...     orderby='latest_patch_uploaded', user=None)
     >>> ubuntu_tasks = ubuntu.searchTasks(params)
     >>> for bugtask in ubuntu_tasks:
-    ...     print bugTaskInfo(bugtask)
+    ...     print(bugTaskInfo(bugtask))
     Ubuntu Blackhole Trash folder
     linux-source-2.6.15 (Ubuntu) another test bug
     cdrkit (Ubuntu) Bug to be fixed in trunk

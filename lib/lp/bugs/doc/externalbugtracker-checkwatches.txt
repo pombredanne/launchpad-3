@@ -45,8 +45,8 @@ get_external_bugtracker supports five external bug tracker types:
     ...         external_bugtracker = get_external_bugtracker(bugtracker)
     ...     finally:
     ...         log.setLevel(log.level - 100)
-    ...     print "%s --> %s" % (bugtracker_type.title,
-    ...         external_bugtracker)
+    ...     print("%s --> %s" % (bugtracker_type.title,
+    ...         external_bugtracker))
     Bugzilla --> <lp.bugs...bugzilla.Bugzilla ...>
     Debbugs --> <lp.bugs...debbugs.DebBugs ...>
     Mantis --> <lp.bugs...mantis.Mantis object at ...>

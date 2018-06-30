@@ -21,7 +21,7 @@ BugWatchActivity instances.
 
 When a BugWatch is first created there has been no activity on it.
 
-    >>> print bug_watch.activity.count()
+    >>> print(bug_watch.activity.count())
     0
 
     >>> bug_watch.addActivity()
@@ -31,7 +31,7 @@ When a BugWatch is first created there has been no activity on it.
 We can access the BugWatchActivity record by looking at the BugWatch's
 activity property.
 
-    >>> print bug_watch.activity.count()
+    >>> print(bug_watch.activity.count())
     1
 
     >>> activity = bug_watch.activity.first()
@@ -46,15 +46,15 @@ is written to the database.
 
 The BugWatchActivity's result will be BugWatchActivityStatus.SYNC_SUCCEEDED.
 
-    >>> print activity.result.title
+    >>> print(activity.result.title)
     Synchronisation succeeded
 
 The other fields on the BugWatchActivity record, which aren't required,
 will all be None.
 
-    >>> print activity.message
+    >>> print(activity.message)
     None
-    >>> print activity.oops_id
+    >>> print(activity.oops_id)
     None
 
 
@@ -77,7 +77,7 @@ CheckwatchesMaster.updateBugWatches().
 An extra activity item will have been added to the BugWatch's activity
 property.
 
-    >>> print bug_watch.activity.count()
+    >>> print(bug_watch.activity.count())
     2
 
 The most recent activity entry will have a result of
@@ -85,17 +85,17 @@ BugWatchActivityStatus.SYNC_SUCCEEDED since it was
 successful.
 
     >>> most_recent_activity = bug_watch.activity.first()
-    >>> print most_recent_activity.result.title
+    >>> print(most_recent_activity.result.title)
     Synchronisation succeeded
 
 Its message will also be empty
 
-    >>> print most_recent_activity.message
+    >>> print(most_recent_activity.message)
     None
 
 As will its oops_id
 
-    >>> print most_recent_activity.oops_id
+    >>> print(most_recent_activity.oops_id)
     None
 
 If the remote bug tracker breaks during an update the error will be
@@ -111,19 +111,19 @@ recorded in the activity entry for that update.
 
 Another entry will have been added to the watch's activity property.
 
-    >>> print bug_watch.activity.count()
+    >>> print(bug_watch.activity.count())
     3
 
 And this time its result field will record that the remote bug was
 not found.
 
     >>> most_recent_activity = bug_watch.activity.first()
-    >>> print most_recent_activity.result.title
+    >>> print(most_recent_activity.result.title)
     Unparsable Bug
 
 The OOPS ID for the error will also have been recorded.
 
-    >>> print most_recent_activity.oops_id
+    >>> print(most_recent_activity.oops_id)
     OOPS...
 
 The CheckwatchesMaster also adds BugWatchActivity entries when errors occur
@@ -133,10 +133,10 @@ that don't have an entry in the BugWatchActivityStatus DB Enum.
     >>> updater.updateBugWatches(broken_bugtracker, [bug_watch])
     >>> most_recent_activity = bug_watch.activity.first()
 
-    >>> print most_recent_activity.result.title
+    >>> print(most_recent_activity.result.title)
     Unknown
 
 The OOPS ID of the error is recorded so that we can debug it.
 
-    >>> print most_recent_activity.oops_id
+    >>> print(most_recent_activity.oops_id)
     OOPS...

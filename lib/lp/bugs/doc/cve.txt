@@ -70,7 +70,7 @@ linked to a bug:
     >>> from lp.bugs.model.bug import Bug
     >>> b = Bug.get(1)
     >>> for c in b.cves:
-    ...     print c.displayname
+    ...     print(c.displayname)
     CVE-1999-8979
 
 Let's add the new CVE:
