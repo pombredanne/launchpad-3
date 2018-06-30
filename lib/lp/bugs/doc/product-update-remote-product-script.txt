@@ -13,7 +13,7 @@ The script that uses RemoteProductUpdater is update-remote-product.py.
     >>> process.returncode
     0
 
-    >>> print err
+    >>> print(err)
     INFO    Creating lockfile: /var/lock/launchpad-updateremoteproduct.lock
     INFO    0 projects using BUGZILLA needing updating.
     ...

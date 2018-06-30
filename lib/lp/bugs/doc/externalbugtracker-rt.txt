@@ -257,13 +257,13 @@ a "remote product" is in fact the name of an RT ticket Queue. RT has no
 concept of products, only queues, so though there'e a terminology
 mismatch the meaning is essentially the same.
 
-    >>> print rt.getRemoteProduct(1585)
+    >>> print(rt.getRemoteProduct(1585))
     OpenSSL-Bugs
 
 If you try to get the remote product of a bug that doesn't exist you'll
 get a BugNotFound error.
 
-    >>> print rt.getRemoteProduct('this-doesnt-exist')
+    >>> print(rt.getRemoteProduct('this-doesnt-exist'))
     Traceback (most recent call last):
       ...
     BugNotFound: this-doesnt-exist
@@ -272,5 +272,5 @@ If for some reason the RT instance doesn't return a Queue name for a
 bug, getRemoteProduct() will return None.
 
     >>> del rt.bugs[1589]['queue']
-    >>> print rt.getRemoteProduct(1589)
+    >>> print(rt.getRemoteProduct(1589))
     None

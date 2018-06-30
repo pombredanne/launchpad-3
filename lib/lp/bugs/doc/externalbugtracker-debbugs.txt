@@ -131,7 +131,7 @@ option, is disabled here and will be tested later.
     >>> from lp.bugs.interfaces.bugwatch import IBugWatchSet
     >>> for bug_watch_id in bug_watch_ids:
     ...     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    ...     print("%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus))
     280883: done grave woody security
     304014: open important
     327452: done critical patch security
@@ -153,8 +153,9 @@ And the linked bugtasks got updated:
     >>> for bug_watch in bug_watches:
     ...     bugtasks += list(bug_watch.bugtasks)
     >>> for bugtask in sorted(bugtasks, key=operator.attrgetter('id')):
-    ...     print bugtask.bug.id, bugtask.bugtargetname, bugtask.status.title,
-    ...     print bugtask.importance.title
+    ...     print(bugtask.bug.id, bugtask.bugtargetname, bugtask.status.title,
+    ...           end=' ')
+    ...     print(bugtask.importance.title)
     1 mozilla-firefox (Debian) New Unknown
     3 mozilla-firefox (Debian Sarge) New Unknown
     7 evolution (Debian) Fix Released Unknown
@@ -185,13 +186,13 @@ well. The most simple mapping is from 'done', in debbugs it means that
 the bug has been fixed and a new package with the fix has been
 uploaded, so it maps to 'Fix Released.
 
-    >>> print external_debbugs.convertRemoteStatus('done normal').title
+    >>> print(external_debbugs.convertRemoteStatus('done normal').title)
     Fix Released
 
 If the status is simply 'open', we map it to 'New', since
 there's no way of knowing if the bug is confirmed or not.
 
-    >>> print external_debbugs.convertRemoteStatus('open normal').title
+    >>> print(external_debbugs.convertRemoteStatus('open normal').title)
     New
 
 If the 'wontfix' tag is present we map it to "Won't Fix". The 'wontfix'
@@ -203,34 +204,34 @@ fix-released when the debbugs status changes to 'done', so a nonsensical
 combination of 'fixed' & 'wontfix' tags will only affect the malone status
 temporarily.
 
-    >>> print external_debbugs.convertRemoteStatus(
+    >>> print(external_debbugs.convertRemoteStatus(
     ...         'open normal pending fixed fixed-in-experimental'
-    ...         ' wontfix help confirmed upstream fixed-upstream').title
+    ...         ' wontfix help confirmed upstream fixed-upstream').title)
     Won't Fix
 
 If the 'moreinfo' tag is present, we map the status to 'Needs Info'.
 
-    >>> print external_debbugs.convertRemoteStatus(
-    ...     'open normal moreinfo').title
+    >>> print(external_debbugs.convertRemoteStatus(
+    ...     'open normal moreinfo').title)
     Incomplete
 
 Of course, if the 'moreinfo' tag is present and the status is 'done',
 we still map to 'Fix Released'.
 
-    >>> print external_debbugs.convertRemoteStatus(
-    ...     'done normal moreinfo').title
+    >>> print(external_debbugs.convertRemoteStatus(
+    ...     'done normal moreinfo').title)
     Fix Released
 
 If the 'help' tag is present, it means that the maintainer is
 requesting help with the bug, so it's most likely a confirmed bug.
 
-    >>> print external_debbugs.convertRemoteStatus('open normal help').title
+    >>> print(external_debbugs.convertRemoteStatus('open normal help').title)
     Confirmed
 
 The 'pending' tag means that a fix is about to be uploaded, so it maps
 to 'Fix Committed'.
 
-    >>> print (
+    >>> print(
     ...     external_debbugs.convertRemoteStatus('open normal pending').title)
     Fix Committed
 
@@ -238,46 +239,46 @@ The 'fixed' tag means that the bug has been either fixed or work around
 somehow, but there's still an issue to be solved. We map it to 'Fix
 Committed', so that people can see that a fix is available.
 
-    >>> print external_debbugs.convertRemoteStatus('open normal fixed').title
+    >>> print(external_debbugs.convertRemoteStatus('open normal fixed').title)
     Fix Committed
 
 If the bug is forwarded upstream, it should mean that it's a confirmed
 bug.
 
-    >>> print external_debbugs.convertRemoteStatus(
-    ...     'open normal upstream').title
+    >>> print(external_debbugs.convertRemoteStatus(
+    ...     'open normal upstream').title)
     Confirmed
 
 And of course, if the maintainer marked the bug as 'confirmed'.
 
-    >>> print external_debbugs.convertRemoteStatus(
-    ...     'open normal confirmed').title
+    >>> print(external_debbugs.convertRemoteStatus(
+    ...     'open normal confirmed').title)
     Confirmed
 
 
 If it has been fixed upstream, it's definitely a confirmed bug.
 
-    >>> print external_debbugs.convertRemoteStatus(
-    ...     'open normal fixed-upstream').title
+    >>> print(external_debbugs.convertRemoteStatus(
+    ...     'open normal fixed-upstream').title)
     Confirmed
 
 If it has been fixed in experimental, we mark it 'Fix Committed' until
 the fix has reached the unstable distribution.
 
-    >>> print external_debbugs.convertRemoteStatus(
-    ...     'open normal fixed-in-experimental').title
+    >>> print(external_debbugs.convertRemoteStatus(
+    ...     'open normal fixed-in-experimental').title)
     Fix Committed
 
 All other tags we map to 'New'.
 
-    >>> print external_debbugs.convertRemoteStatus(
-    ...     'open normal unreproducible lfs woody').title
+    >>> print(external_debbugs.convertRemoteStatus(
+    ...     'open normal unreproducible lfs woody').title)
     New
 
 If we pass in a malformed status string an UnknownRemoteStatusError will
 be raised.
 
-    >>> print external_debbugs.convertRemoteStatus('open')
+    >>> print(external_debbugs.convertRemoteStatus('open'))
     Traceback (most recent call last):
       ...
     UnknownRemoteStatusError: open
@@ -299,23 +300,23 @@ report.
     >>> report = email.message_from_file(
     ...     open(os.path.join(
     ...         test_db_location, 'db-h', '35', '322535.report')))
-    >>> print report['From']
+    >>> print(report['From'])
     Moritz Muehlenhoff <jmm@inutil.org>
 
     >>> name, email = external_debbugs.getBugReporter('322535')
-    >>> print name
+    >>> print(name)
     Moritz Muehlenhoff
-    >>> print email
+    >>> print(email)
     jmm@inutil.org
 
 The getBugSummaryAndDescription method reads the bug report from the
 debbugs db, and returns the debbugs subject as the summary, and the
 description as the description.
 
-    >>> print report['Subject']
+    >>> print(report['Subject'])
     evolution: Multiple format string vulnerabilities in Evolution
 
-    >>> print report.get_payload(decode=True)
+    >>> print(report.get_payload(decode=True))
     Package: evolution
     Severity: grave
     Tags: security
@@ -328,10 +329,10 @@ description as the description.
 
     >>> summary, description = external_debbugs.getBugSummaryAndDescription(
     ...     '322535')
-    >>> print summary
+    >>> print(summary)
     evolution: Multiple format string vulnerabilities in Evolution
 
-    >>> print description
+    >>> print(description)
     Package: evolution
     Severity: grave
     Tags: security
@@ -345,7 +346,7 @@ description as the description.
 Which package to file the bug against is determined by the
 getBugTargetName() method.
 
-    >>> print external_debbugs.getBugTargetName('322535')
+    >>> print(external_debbugs.getBugTargetName('322535'))
     evolution
 
 
@@ -390,7 +391,7 @@ getCommentIds() will return a list of the comment IDs for a given remote
 bug. DebBugs comment IDs are RFC822 message IDs.
 
     >>> comment_ids = external_debbugs.getCommentIds(bug_watch.remotebug)
-    >>> print comment_ids
+    >>> print(comment_ids)
     ['<20040309081430.98BF411EE67@tux>']
 
 However, it will only return IDs for comments which can actually be
@@ -400,7 +401,7 @@ imported. Comments which have no useable date will not be imported.
     ...     'debbugs-comment-with-no-date.txt')
 
     >>> comment_ids = external_debbugs.getCommentIds(bug_watch.remotebug)
-    >>> print comment_ids
+    >>> print(comment_ids)
     []
 
 getCommentIds() will only return a given comment ID once, even if that
@@ -418,14 +419,14 @@ copies of the same comment.
     >>> debian_bug = external_debbugs._findBug(bug_watch.remotebug)
     >>> for comment in debian_bug.comments:
     ...     comment_email = email.message_from_string(comment)
-    ...     print comment_email['message-id']
+    ...     print(comment_email['message-id'])
     <20040309081430.98BF411EE67@tux>
     <20040309081430.98BF411EE67@tux>
 
 However, getCommentIds() will only return the comment ID once.
 
     >>> comment_ids = external_debbugs.getCommentIds(bug_watch.remotebug)
-    >>> print comment_ids
+    >>> print(comment_ids)
     ['<20040309081430.98BF411EE67@tux>']
 
 The debbugs implementation of fetchComments() doesn't actually do
@@ -441,7 +442,7 @@ given comment ID.
     >>> comment_id = comment_ids[0]
     >>> poster_name, poster_email = external_debbugs.getPosterForComment(
     ...     bug_watch.remotebug, comment_id)
-    >>> print "%s <%s>" % (poster_name, poster_email)
+    >>> print("%s <%s>" % (poster_name, poster_email))
     Teun Vink <teun@tux.office.luna.net>
 
 getMessageForComment() will return an imported comment as a Launchpad
@@ -459,10 +460,10 @@ owner, so we'll turn Teun Vink into a Person.
     >>> message = external_debbugs.getMessageForComment(
     ...     bug_watch.remotebug, comment_id, poster)
 
-    >>> print message.owner.displayname
+    >>> print(message.owner.displayname)
     Teun Vink
 
-    >>> print message.text_contents
+    >>> print(message.text_contents)
     Things happen.
 
 Where the DebBugs comment specifies a date in its Received header,
@@ -476,14 +477,14 @@ therefore more likely to be accurate.
     ...     'debbugs-comment-with-received-date.txt')
 
     >>> comment_ids = external_debbugs.getCommentIds(bug_watch.remotebug)
-    >>> print comment_ids
+    >>> print(comment_ids)
     ['<yetanothermessageid@launchpad>']
 
     >>> external_debbugs.fetchComments(bug_watch, comment_ids)
     >>> message = external_debbugs.getMessageForComment(
     ...     bug_watch.remotebug, comment_ids[0], poster)
 
-    >>> print message.datecreated
+    >>> print(message.datecreated)
     2008-05-30 21:18:12+00:00
 
 If we parse the comment manually we'll see that the message's
@@ -494,10 +495,10 @@ datecreated comes not from the Date header but from the Received header.
     >>> parsed_message = email.message_from_string(
     ...     read_test_file('debbugs-comment-with-received-date.txt'))
 
-    >>> print parsed_message['date']
+    >>> print(parsed_message['date'])
     Fri, 14 Dec 2007 18:54:30 +0000
 
-    >>> print parsed_message['received']
+    >>> print(parsed_message['received'])
     (at 220301) by example.com; 30 May 2008 21:18:12 +0000
 
 However, if none of the Received headers don't match the hostname that
@@ -513,16 +514,16 @@ default to using the Date header again.
     >>> message = external_debbugs.getMessageForComment(
     ...     bug_watch.remotebug, comment_ids[0], poster)
 
-    >>> print message.datecreated
+    >>> print(message.datecreated)
     2007-12-14 18:54:30+00:00
 
     >>> parsed_message = email.message_from_string(
     ...     read_test_file('debbugs-comment-with-received-date.txt'))
 
-    >>> print parsed_message['date']
+    >>> print(parsed_message['date'])
     Fri, 14 Dec 2007 18:54:30 +0000
 
-    >>> print parsed_message['received']
+    >>> print(parsed_message['received'])
     (at 220301) by example.com; 30 May 2008 21:18:12 +0000
 
 DebBugs has a method, _getDateForComment(), which returns the correct
@@ -535,7 +536,7 @@ the instance to _getDateForComment()
 If the message has no Date or useful Received headers,
 _getDateForComment() will return None.
 
-    >>> print external_debbugs._getDateForComment(test_message)
+    >>> print(external_debbugs._getDateForComment(test_message))
     None
 
 If the message has only a Date header, that will be returned as the
@@ -591,19 +592,19 @@ case will be the rfc822msgid that gets passed as a parameter.
 
     >>> transaction.commit()
 
-    >>> external_debbugs.addRemoteComment(
+    >>> print(external_debbugs.addRemoteComment(
     ...     '1234', 'A little fermented curd will do the trick!',
-    ...     '<123456@launchpad.net>')
-    '<123456@launchpad.net>'
+    ...     '<123456@launchpad.net>'))
+    <123456@launchpad.net>
 
 We can look for the mail that would have been sent.
 
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> [msg] = pop_notifications()
-    >>> print msg['X-Envelope-To']
+    >>> print(msg['X-Envelope-To'])
     1234@example.com
 
-    >>> print str(msg)
+    >>> print(str(msg))
     From ...
     Content-Type...
     Message-Id: <123456@launchpad.net>
@@ -648,7 +649,7 @@ tracker.
     >>> (out, err) = process.communicate()
     >>> process.returncode
     0
-    >>> print err
+    >>> print(err)
     INFO    Updating 1 watches for 1 bugs on http://bugs.debian.org
     INFO    Imported 4 comments for remote bug 237001...
     INFO    Imported debbugs #237001 as Launchpad bug #...
@@ -670,7 +671,7 @@ whether they affects Ubuntu.
 
     >>> [imported_bug] = debbugs.getBugsWatching('237001')
     >>> for bugtask in imported_bug.bugtasks:
-    ...     print "%s: %s" % (bugtask.bugtargetname, bugtask.status.name)
+    ...     print("%s: %s" % (bugtask.bugtargetname, bugtask.status.name))
     evolution (Ubuntu): NEW
     evolution (Debian): NEW
 
@@ -704,13 +705,13 @@ in Launchpad.
     >>> external_debbugs = DebBugs(
     ...     'http://example.com/', db_location=test_db_location)
 
-    >>> print external_debbugs.getRemoteProduct('237001')
+    >>> print(external_debbugs.getRemoteProduct('237001'))
     evolution
 
 Trying to call getRemoteProduct() on a bug that doesn't exist will raise
 a BugNotFound error.
 
-    >>> print external_debbugs.getRemoteProduct('42')
+    >>> print(external_debbugs.getRemoteProduct('42'))
     Traceback (most recent call last):
       ...
     BugNotFound: 42

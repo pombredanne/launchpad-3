@@ -120,7 +120,7 @@ method which can be used to find error messages.
     >>> page_data = open(
     ...     'lib/lp/bugs/tests/testfiles/'
     ...     'sourceforge-sample-bug-99.html')
-    >>> print sourceforge._extractErrorMessage(page_data)
+    >>> print(sourceforge._extractErrorMessage(page_data))
     Artifact: This Artifact Has Been Made Private. Only Group Members
     Can View Private ArtifactTypes.
 
@@ -266,13 +266,13 @@ us to pinpoint the specific SourceForge tracker to which the bug
 belongs. The remote product is returned by getRemoteProduct() as an
 ampersand-separated string.
 
-    >>> print sourceforge.getRemoteProduct('1722250')
+    >>> print(sourceforge.getRemoteProduct('1722250'))
     155120&794532
 
 If you try to get the remote product of a bug that doesn't exist you'll
 get a BugNotFound error.
 
-    >>> print sourceforge.getRemoteProduct(999999999)
+    >>> print(sourceforge.getRemoteProduct(999999999))
     Traceback (most recent call last):
       ...
     BugNotFound: 999999999
@@ -284,5 +284,5 @@ if the bug is private), getRemoteProduct() will return None.
 
     >>> with sourceforge.responses():
     ...     sourceforge.initializeRemoteBugDB([99])
-    >>> print sourceforge.getRemoteProduct(99)
+    >>> print(sourceforge.getRemoteProduct(99))
     None

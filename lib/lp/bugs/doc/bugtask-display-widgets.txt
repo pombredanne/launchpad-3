@@ -22,7 +22,7 @@ person icon in front of the name.
 
     >>> assignee_field = IBugTask['assignee'].bind(firefox_bugtask)
     >>> assignee_widget = AssigneeDisplayWidget(assignee_field, None, None)
-    >>> print assignee_widget()
+    >>> print(assignee_widget())
     <a href="http://.../~mark"><img
         style="padding-bottom: 2px" alt="" src="/@@/person" />
       Mark Shuttleworth</a>
@@ -33,7 +33,7 @@ we can use setRenderedValue()
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
     >>> assignee_widget.setRenderedValue(foo_bar)
-    >>> print assignee_widget()
+    >>> print(assignee_widget())
     <a href="http://.../~name16"><img
         style="padding-bottom: 2px" alt="" src="/@@/person" />
       Foo Bar</a>
@@ -43,7 +43,7 @@ If the assignee is None, 'not assigned' will be displayed:
     >>> firefox_ubuntu_bugtask = bug_one.bugtasks[1]
     >>> assignee_field = IBugTask['assignee'].bind(firefox_ubuntu_bugtask)
     >>> assignee_widget = AssigneeDisplayWidget(assignee_field, None, None)
-    >>> print assignee_widget()
+    >>> print(assignee_widget())
     <i>not assigned</i>
 
 If it's a remote bug task, where the information is pulled from a bug
@@ -56,7 +56,7 @@ assignee yet:
     False
     >>> assignee_field = IBugTask['assignee'].bind(thunderbird_bugtask)
     >>> assignee_widget = AssigneeDisplayWidget(assignee_field, None, None)
-    >>> print assignee_widget()
+    >>> print(assignee_widget())
     <i>unknown</i>
 
 DBItemDisplayWidget
@@ -71,7 +71,7 @@ in a span with the appropriate css class:
     'New'
     >>> status_field = IBugTask['status'].bind(firefox_bugtask)
     >>> status_widget = DBItemDisplayWidget(status_field, None, None)
-    >>> print status_widget()
+    >>> print(status_widget())
     <span class="statusNEW">New</span>
 
 If the value is None, a dash is displayed:
@@ -81,12 +81,12 @@ If the value is None, a dash is displayed:
     True
     >>> assignee_field = IBugTask['assignee'].bind(test_task)
     >>> assignee_widget = DBItemDisplayWidget(assignee_field, None, None)
-    >>> print assignee_widget()
+    >>> print(assignee_widget())
     <span>&mdash;</span>
 
 We can set a specific value to be displayed using setRenderedValue():
 
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> status_widget.setRenderedValue(BugTaskStatus.CONFIRMED)
-    >>> print status_widget()
+    >>> print(status_widget())
     <span class="statusCONFIRMED">Confirmed</span>

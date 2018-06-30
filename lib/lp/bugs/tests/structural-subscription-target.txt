@@ -17,7 +17,7 @@ We can add and remove these subscriptions.
 
     >>> def print_subscriptions_list(subscriptions):
     ...     for subscription in subscriptions:
-    ...         print subscription.subscriber.name
+    ...         print(subscription.subscriber.name)
 
     >>> subscription = target.addBugSubscription(foobar, foobar)
     >>> print_subscriptions_list(target.getSubscriptions())
@@ -32,7 +32,7 @@ IStructuralSubscriptionTarget.getSubscription.
 
     >>> target.getSubscription(ubuntu_team)
     <...StructuralSubscription ...>
-    >>> print target.getSubscription(no_priv)
+    >>> print(target.getSubscription(no_priv))
     None
 
 To search for all subscriptions on a structure we use getSubscriptions.

@@ -26,8 +26,8 @@ Mozilla's Bugzilla is an Issuezilla instance here:
     ...     issuezilla._probe_version()
     (2, 11)
     >>> for bug_watch in mozilla_bugzilla.watches:
-    ...     print "%s: %s %s" % (bug_watch.remotebug,
-    ...         bug_watch.remotestatus, bug_watch.remote_importance)
+    ...     print("%s: %s %s" % (bug_watch.remotebug,
+    ...         bug_watch.remotestatus, bug_watch.remote_importance))
     2000:
     123543:
     42: FUBAR BAZBAZ
@@ -42,8 +42,8 @@ Mozilla's Bugzilla is an Issuezilla instance here:
     (local bugs: 1, 2).
 
     >>> for bug_watch in mozilla_bugzilla.watches:
-    ...     print "%s: %s %s" % (bug_watch.remotebug,
-    ...         bug_watch.remotestatus, bug_watch.remote_importance)
+    ...     print("%s: %s %s" % (bug_watch.remotebug,
+    ...         bug_watch.remotestatus, bug_watch.remote_importance))
     2000: RESOLVED FIXED LOW
     123543: ASSIGNED HIGH
     42: FUBAR BAZBAZ
@@ -80,10 +80,10 @@ We support them just fine:
     >>> with old_bugzilla.responses():
     ...     old_bugzilla.initializeRemoteBugDB(remote_bugs)
     >>> for remote_bug in remote_bugs:
-    ...     print "%s: %s %s" % (
+    ...     print("%s: %s %s" % (
     ...         remote_bug,
     ...         old_bugzilla.getRemoteStatus(remote_bug),
-    ...         old_bugzilla.getRemoteImportance(remote_bug))
+    ...         old_bugzilla.getRemoteImportance(remote_bug)))
     42: RESOLVED FIXED LOW BLOCKER
     123543: ASSIGNED HIGH BLOCKER
 
@@ -104,8 +104,8 @@ Some Bugzillas have some weird properties that we need to cater for:
   a) The bug status tag is <bz:status> and not <bz:bug_status>
 
     >>> bug_item_file = weird_bugzilla._readBugItemFile()
-    >>> "<bz:status>" in bug_item_file
-    True
+    >>> print(bug_item_file)
+    <li>...<bz:status>...
 
   b) The content is non-ascii:
 
@@ -120,10 +120,10 @@ Yet everything still works as expected:
     >>> with weird_bugzilla.responses():
     ...     weird_bugzilla.initializeRemoteBugDB(remote_bugs)
     >>> for remote_bug in remote_bugs:
-    ...     print "%s: %s %s" % (
+    ...     print("%s: %s %s" % (
     ...         remote_bug,
     ...         weird_bugzilla.getRemoteStatus(remote_bug),
-    ...         weird_bugzilla.getRemoteImportance(remote_bug))
+    ...         weird_bugzilla.getRemoteImportance(remote_bug)))
     2000: ASSIGNED HIGH BLOCKER
     123543: RESOLVED FIXED HIGH BLOCKER
 
