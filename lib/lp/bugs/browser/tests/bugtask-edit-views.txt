@@ -59,7 +59,7 @@ A notification was added informing the user that the binary package was
 changed to the corresponding source package.
 
     >>> for notification in edit_view.request.response.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     &#x27;linux-2.6.12&#x27; is a binary package. This bug has been
     assigned to its source package &#x27;linux-source-2.6.15&#x27;
     instead.
@@ -83,7 +83,7 @@ exist in Launchpad. we'll get an error message.
     ...     (ubuntu_thunderbird_task, request), name='+editstatus')
     >>> edit_view.initialize()
     >>> for error in edit_view.errors:
-    ...     print error
+    ...     print(error)
     (u'ubuntu_thunderbird.target', u'Target',
      LaunchpadValidationError(u'There is no package named
      &#x27;no-such-package&#x27; published in Ubuntu.'))
@@ -137,7 +137,7 @@ If no product name is given, an error message is displayed.
     ...     (product_task, request), name='+editstatus')
     >>> edit_view.initialize()
     >>> for error in edit_view.errors:
-    ...     print error
+    ...     print(error)
     ('product', u'Project', RequiredMissing('product'))
 
 

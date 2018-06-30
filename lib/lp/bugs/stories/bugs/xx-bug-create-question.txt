@@ -60,7 +60,7 @@ informational message stating that a question was created from the bug.
 The bug status is Invalid for 'linux-source-2.6.15 (Ubuntu)'--It cannot
 be edited.
 
-    >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
+    >>> print(extract_text(content(['table'], {'class' : 'listing'})[0]))
     Affects                        Status   Importance  Assigned to  Milestone
     linux-source-2.6.15 (Ubuntu) ... Invalid  Medium      Unassigned ...
 
@@ -82,15 +82,15 @@ bugtask directly.
 
 They see their comment was appended to the bug report's messages.
 
-    >>> print extract_text(
-    ...     find_tags_by_class(str(content), 'boardCommentBody')[-1])
+    >>> print(extract_text(
+    ...     find_tags_by_class(str(content), 'boardCommentBody')[-1]))
     This bug is a question.
 
 No Privileges Person looks at the page heading and sees that Foo Bar is
 the bug owner. They see the link to the question in the 'Related
 questions' portlet, and uses it to go to the question page.
 
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://bugs.launchpad.dev/ubuntu/.../+bug/10
 
     >>> portlet = find_portlet(user_browser.contents, 'Related questions')
@@ -104,11 +104,11 @@ questions' portlet, and uses it to go to the question page.
 No Privileges Person case see that the question was created from a bug.
 They use the link to Related bug to return to the bug.
 
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Question #... : Questions : linux-source-2.6.15 package : Ubuntu
 
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'original-bug'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'original-bug')))
     This question was originally filed as bug #10.
 
     >>> user_browser.getLink('#10: another test bug').click()
@@ -129,7 +129,7 @@ question.
     'Bug #9 ...'
 
     >>> user_browser.getLink('Convert to a question').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Convert this bug to a question...
 
     >>> find_main_content(user_browser.contents).p
@@ -199,7 +199,7 @@ could not be created.
     'Bug #12 ...'
 
     >>> message = find_tag_by_id(user_browser.contents, 'bug-is-question')
-    >>> print extract_text(message)
+    >>> print(extract_text(message))
     This bug report was converted into a question:...question #...
 
 
@@ -214,7 +214,7 @@ reactivate a bug report.
     'Bug #12 ... : Bugs : Jokosher'
 
     >>> user_browser.getLink('Convert back to a bug').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Bug #12 - Convert this...
 
 The 'Convert back to a bug' page explains what will happen if No
@@ -242,17 +242,17 @@ the Open status.
     Copy, Cut and Delete operations should work...
 
     >>> portlet = find_portlet(user_browser.contents, 'Related questions')
-    >>> print portlet
+    >>> print(portlet)
     None
 
     >>> user_browser.getLink(
     ...     'Copy, Cut and Delete operations should work on '
     ...     'selections').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Question #... : Questions : Jokosher
 
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'question-status'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'question-status')))
     Status: Open
 
 No Privileges Person uses their browser's back button to view the bug
@@ -260,7 +260,7 @@ again. The bug status is sill Invalid for Jokosher, but they can edit it.
 
     >>> user_browser.goBack(count=1)
     >>> content = find_main_content(user_browser.contents)
-    >>> print extract_text(content(['table'], {'class' : 'listing'})[0])
+    >>> print(extract_text(content(['table'], {'class' : 'listing'})[0]))
     Affects                       Status   Importance  Assigned to  Milestone
     ... Jokosher ...              Invalid  Critical    Unassigned ...
     Affecting: Jokosher
@@ -268,8 +268,8 @@ again. The bug status is sill Invalid for Jokosher, but they can edit it.
 
 They read their comment that was appended to the bug report's messages.
 
-    >>> print extract_text(
-    ...     find_tags_by_class(str(content), 'boardComment')[-1])
+    >>> print(extract_text(
+    ...     find_tags_by_class(str(content), 'boardComment')[-1]))
     No Privileges Person (no-priv)
     wrote
     ...
@@ -284,7 +284,7 @@ remove.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/jokosher/+bug/12/+remove-question')
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Bug #12 - Convert this...
 
     >>> find_main_content(user_browser.contents).p

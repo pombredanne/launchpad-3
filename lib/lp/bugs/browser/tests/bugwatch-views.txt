@@ -57,7 +57,7 @@ to determine whether the recent activity portlet should be displayed.
 
     >>> new_watch_edit_view = create_initialized_view(
     ...     new_watch, '+edit')
-    >>> print new_watch_edit_view.watch_has_activity
+    >>> print(new_watch_edit_view.watch_has_activity)
     False
 
 Adding a successful activity entry for the watch will cause it to show
@@ -72,7 +72,7 @@ changed.
 
     >>> new_watch_edit_view = create_initialized_view(
     ...     new_watch, '+edit')
-    >>> print new_watch_edit_view.watch_has_activity
+    >>> print(new_watch_edit_view.watch_has_activity)
     True
 
 Each entry in the recent_watch_activity list is a dict containing data

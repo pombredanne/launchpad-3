@@ -2,14 +2,14 @@ This page checks that we can see a list of bugs on the distroseries,
 specifically Hoary.
 
     >>> browser.open('http://localhost/ubuntu/hoary/+bugs')
-    >>> print browser.title
+    >>> print(browser.title)
     Hoary (5.04) : Bugs : Ubuntu 
 
 This page checks that we can see a list of bugs on the distributions, in
 this case Ubuntu.
 
     >>> browser.open('http://localhost/ubuntu/+bugs')
-    >>> print browser.title
+    >>> print(browser.title)
     Bugs : Ubuntu...
 
 Comments are intended to be contributions to a bug report that further
@@ -33,7 +33,7 @@ Bar. First, let's clear out the notification table:
   >>> user_browser.url
   'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2'
 
-  >>> print user_browser.contents
+  >>> print(user_browser.contents)
   <...
   ...This is a test comment...
 

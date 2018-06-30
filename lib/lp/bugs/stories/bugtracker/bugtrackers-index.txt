@@ -5,7 +5,7 @@ The bug trackers index page has the same navigation as the main Bugs
 page, with the addition of a breadcrumb itself.
 
     >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Bug trackers registered in Launchpad
 
 The page presents a table with all bugtrackers currently registered:
@@ -14,14 +14,14 @@ The page presents a table with all bugtrackers currently registered:
     ...     table = find_tag_by_id(browser.contents, 'trackers')
     ...     for row in table.tbody.findAll('tr'):
     ...         title, location, linked, type, watches = row.findAll('td')
-    ...         print '------------------------'
-    ...         print '\n'.join([
+    ...         print('------------------------')
+    ...         print('\n'.join([
     ...             extract_text(title),
     ...             extract_text(location),
     ...             '  --> %s' % (location.a and location.a.get('href')),
     ...             ' '.join(extract_text(linked).split()),
     ...             extract_text(type),
-    ...             extract_text(watches)])
+    ...             extract_text(watches)]))
 
     >>> print_tracker_table(user_browser)
     ------------------------
@@ -76,7 +76,7 @@ The watch counts match the number of bugs listed, of course:
     >>> user_browser.getLink("Debian Bug tracker").click()
     >>> nav = find_tags_by_class(user_browser.contents,
     ...     'batch-navigation-index')
-    >>> print extract_text(nav[0])
+    >>> print(extract_text(nav[0]))
     1 &rarr; 5 of 5 results
 
 The listing also displays projects and projects linked to bug trackers.

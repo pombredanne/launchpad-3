@@ -26,7 +26,7 @@ Launchpad currently.
     ...  for bugtask in BugTask.selectBy(_status=BugTaskStatus.FIXRELEASED)]
     [8]
     >>> for bug in bugs_view.most_recently_fixed_bugs:
-    ...     print "%s: %s" % (bug.id, bug.title)
+    ...     print("%s: %s" % (bug.id, bug.title))
     8: Printing doesn't work
 
 Let's reopen it and close it again, to ensure that the date closed isn't
@@ -53,7 +53,7 @@ doesn't matter which bugtask that gets fixed.
     >>> fix_bug(4)
 
     >>> for bug in bugs_view.most_recently_fixed_bugs:
-    ...     print "%s: %s" % (bug.id, bug.title)
+    ...     print("%s: %s" % (bug.id, bug.title))
     4: Reflow problems with complex page layouts
     2: Blackhole Trash folder
     1: Firefox does not support SVG
@@ -66,7 +66,7 @@ simply appear on the top of the list.
     >>> fix_bug(1, bugtask_index=1)
 
     >>> for bug in bugs_view.most_recently_fixed_bugs:
-    ...     print "%s: %s" % (bug.id, bug.title)
+    ...     print("%s: %s" % (bug.id, bug.title))
     1: Firefox does not support SVG
     4: Reflow problems with complex page layouts
     2: Blackhole Trash folder
@@ -84,7 +84,7 @@ they're not subscribed to it.
     >>> bugs_view = MaloneView(MaloneApplication(), LaunchpadTestRequest())
     >>> bugs_view.initialize()
     >>> for bug in bugs_view.most_recently_fixed_bugs:
-    ...     print "%s: %s" % (bug.id, bug.title)
+    ...     print("%s: %s" % (bug.id, bug.title))
     1: Firefox does not support SVG
     2: Blackhole Trash folder
     8: Printing doesn't work
@@ -102,7 +102,7 @@ If Person David gets subscribed to bug #4, he can see it in the list.
     >>> bugs_view = MaloneView(MaloneApplication(), LaunchpadTestRequest())
     >>> bugs_view.initialize()
     >>> for bug in bugs_view.most_recently_fixed_bugs:
-    ...     print "%s: %s" % (bug.id, bug.title)
+    ...     print("%s: %s" % (bug.id, bug.title))
     1: Firefox does not support SVG
     4: Reflow problems with complex page layouts
     2: Blackhole Trash folder

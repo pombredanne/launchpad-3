@@ -11,7 +11,7 @@ of bug #11 is:
 
     >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
     >>> comment_1 = find_tags_by_class(browser.contents, 'boardComment')[0]
-    >>> print extract_text(comment_1)
+    >>> print(extract_text(comment_1))
     Valentina Commissari (tsukimi)
     wrote
     on 2007-03-15:
@@ -42,7 +42,7 @@ displayed as the bug report).
 
     >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
     >>> comment_0 = find_tags_by_class(browser.contents, 'boardComment')[0]
-    >>> print extract_text(comment_0)
+    >>> print(extract_text(comment_0))
     Daniel Silverstone (kinnison)
     wrote
     on 2007-03-15:
@@ -51,9 +51,9 @@ displayed as the bug report).
     (8 bytes,
     text/plain)
     >>> link = browser.getLink('sample data')
-    >>> print link.url
+    >>> print(link.url)
     http://bugs.launchpad.dev/jokosher/+bug/11/+attachment/.../+files/test.txt
-    >>> print comment_0.find('a', text='Edit').parent
+    >>> print(comment_0.find('a', text='Edit').parent)
     <a class="sprite edit action-icon"
        href="/jokosher/+bug/11/+attachment/...">Edit</a>
 
@@ -70,7 +70,7 @@ Patch attachments are shown before non-patch attachments
     ...     description='a patch')
     >>> logout()
     >>> browser.open("http://bugs.launchpad.dev/redfish/+bug/11")
-    >>> print extract_text(browser.contents)
+    >>> print(extract_text(browser.contents))
     Bug #11 ...
     ...Patches...
     ...a patch...

@@ -12,6 +12,6 @@ is present on the page.
     ...     'http://bugs.launchpad.dev/ubuntu/+source/alsa-utils/')
     >>> portlet = find_portlet(anon_browser.contents,
     ...     '"alsa-utils" versions published in Ubuntu')
-    >>> print portlet
+    >>> print(portlet)
     <div class="portlet" id="portlet-publishing-details">
     ...

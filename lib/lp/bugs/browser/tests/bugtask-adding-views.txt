@@ -39,7 +39,7 @@ We haven't posted the form, so we'll see one button.
 Since we gave the view an upstream product as its context, it can't
 guess which product we want to add, so it will ask us to specify it.
 
-    >>> print add_task_view.widgets['product']._getFormInput()
+    >>> print(add_task_view.widgets['product']._getFormInput())
     None
     >>> add_task_view.step_name
     'choose_product'
@@ -140,7 +140,7 @@ project..
     >>> add_task_view.field_names
     ['product', 'add_packaging', '__visited_steps__']
 
-    >>> print add_task_view.widgets['product']._getFormInput()
+    >>> print(add_task_view.widgets['product']._getFormInput())
     None
 
 Sometimes the distribution won't have any series, though. In that
@@ -159,7 +159,7 @@ add one.
     ...     method='GET')
     >>> add_task_view.step_name
     'choose_product'
-    >>> print add_task_view.widgets['product']._getFormInput()
+    >>> print(add_task_view.widgets['product']._getFormInput())
     None
 
     >>> len(add_task_view.request.response.notifications)
@@ -175,7 +175,7 @@ event listener and register it:
     >>> from lazr.lifecycle.interfaces import IObjectCreatedEvent
 
     >>> def on_created_event(object, event):
-    ...     print "ObjectCreatedEvent: %r" % object
+    ...     print("ObjectCreatedEvent: %r" % object)
 
     >>> on_created_listener = TestEventListener(
     ...     Interface, IObjectCreatedEvent, on_created_event)
@@ -199,7 +199,7 @@ include its (and all previous) step_name in field.__visited_steps__.
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
     'choose_product'
-    >>> print add_task_view.widgets['product']._getFormInput()
+    >>> print(add_task_view.widgets['product']._getFormInput())
     no-such-product
 
     >>> form['field.product'] = u'firefox'
@@ -207,7 +207,7 @@ include its (and all previous) step_name in field.__visited_steps__.
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
     'choose_product'
-    >>> print add_task_view.widgets['product']._getFormInput()
+    >>> print(add_task_view.widgets['product']._getFormInput())
     firefox
 
 If we specify a valid product, no errors will occur, and a bugtask will
@@ -219,7 +219,7 @@ be created:
     ObjectCreatedEvent: <BugTask ...>
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Evolution
     Mozilla Firefox
 
@@ -243,7 +243,7 @@ as smoothly as above.
 
     >>> add_task_view.step_name
     'specify_remote_bug_url'
-    >>> print add_task_view.widgets['product']._getFormInput()
+    >>> print(add_task_view.widgets['product']._getFormInput())
     alsa-utils
 
 As you can see, we're still in the second step, because the user has
@@ -263,13 +263,13 @@ watch.
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     ObjectCreatedEvent: <BugTask ...>
-    >>> print add_task_view.notifications
+    >>> print(add_task_view.notifications)
     []
     >>> add_task_view.next_url is not None
     True
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     alsa-utils
     Evolution
     Mozilla Firefox
@@ -295,14 +295,14 @@ URL. If we don't enter a valid URL, we get an error message.
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
     'specify_remote_bug_url'
-    >>> print add_task_view.getFieldError('bug_url')
+    >>> print(add_task_view.getFieldError('bug_url'))
     Launchpad does not recognize the bug tracker at this URL.
 
 Note that this caused the transaction to be aborted, thus the
 alsa-utils bugtask added earlier is now gone:
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Evolution
     Mozilla Firefox
 
@@ -327,13 +327,13 @@ linked to the new bug watch.
     ObjectCreatedEvent: <BugTask ...>
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     APTonCD
     Evolution
     Mozilla Firefox
 
     >>> for bugwatch in bug_four.watches:
-    ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
+    ...     print("%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug))
     bugzilla.somewhere.org/bugs/: 84
 
 If we specify a URL of an already registered bug tracker, both the task
@@ -349,18 +349,18 @@ and the bug watch will be added without any confirmation needed:
     ObjectCreatedEvent: <BugWatch at ...>
     ObjectCreatedEvent: <BugTask ...>
 
-    >>> print add_task_view.notifications
+    >>> print(add_task_view.notifications)
     []
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     alsa-utils
     APTonCD
     Evolution
     Mozilla Firefox
 
     >>> for bugwatch in bug_four.watches:
-    ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
+    ...     print("%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug))
     GnomeGBug GTracker: 84
     bugzilla.somewhere.org/bugs/: 84
 
@@ -396,12 +396,12 @@ another bug links to the same bug.
     'http://.../+bug/5'
 
     >>> for notification in add_task_view.request.response.notifications:
-    ...     print notification.message
+    ...     print(notification.message)
     <a href="...">Bug #4</a> also links to the added bug watch
     (gnome-bugzilla #84).
 
     >>> for bugwatch in bug_five.watches:
-    ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
+    ...     print("%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug))
     GnomeGBug GTracker: 84
 
 There's a property for easily retrieving the target for use on the
@@ -444,7 +444,7 @@ package will be converted to the corresponding source package.
     []
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     alsa-utils
     ...
     mozilla-firefox (Ubuntu)
@@ -473,7 +473,7 @@ present these already-registered products as options to the user.
 We have no products using http://bugs.foo.org as its bug tracker, so we have
 nothing to present to the user.
 
-    >>> print add_task_view.existing_products
+    >>> print(add_task_view.existing_products)
     None
 
 Since the user is just creating the product in Launchpad to link to an
@@ -483,9 +483,9 @@ Registry Admins team while keeping the user as the registrant.
 
     >>> from lp.registry.interfaces.product import IProductSet
     >>> foo_product = getUtility(IProductSet).getByName('foo-product')
-    >>> print foo_product.owner.displayname
+    >>> print(foo_product.owner.displayname)
     Registry Administrators
-    >>> print foo_product.registrant.displayname
+    >>> print(foo_product.registrant.displayname)
     Sample Person
 
 The licence is set to DONT_KNOW for now.
@@ -599,11 +599,11 @@ We'll link a product to an upstream bug tracker to demonstrate this.
 
     >>> def print_links(links_dict):
     ...     if links_dict is None:
-    ...         print None
+    ...         print(None)
     ...         return
     ...
     ...     for key in sorted(links_dict):
-    ...         print "%s: %s" % (key, links_dict[key])
+    ...         print("%s: %s" % (key, links_dict[key]))
 
 upstream_bugtracker_links is a dict of `bug_filing_url` and `bug_search_url`.
 The bug filing link includes the summary and description of the bug; the

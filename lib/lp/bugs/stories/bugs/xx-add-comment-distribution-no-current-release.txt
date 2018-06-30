@@ -16,5 +16,5 @@ it's still possible to add comments to the bug.
 
     >>> for comment_div in find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody'):
-    ...     print comment_div.div.renderContents()
+    ...     print(comment_div.div.renderContents())
     <p>A new comment.</p>

@@ -79,17 +79,17 @@ Distribution or a DistributionSourcePackage.
     ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
     ...     target=firefox['self_link'])
-    >>> print response
+    >>> print(response)
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
     ...
     >>> new_bug_id = int(response.getHeader("Location").rsplit('/', 1)[-1])
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
-    ...     target=webservice.getAbsoluteUrl('/ubuntu'))
+    ...     target=webservice.getAbsoluteUrl('/ubuntu')))
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
@@ -99,7 +99,7 @@ Distribution or a DistributionSourcePackage.
     ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
     ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/evolution'))
-    >>> print response
+    >>> print(response)
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/...
@@ -120,25 +120,25 @@ bugs.
     >>> bug = getUtility(IBugSet).get(new_bug['id'])
 
     >>> for activity in bug.activity:
-    ...     print '%s, %s, %s' % (
+    ...     print('%s, %s, %s' % (
     ...         activity.whatchanged, activity.message,
-    ...         activity.person.name)
+    ...         activity.person.name))
     bug, added bug, salgado
 
     >>> for notification in BugNotification.selectBy(bug=bug, orderBy='id'):
-    ...     print '%s, %s, %s' % (
+    ...     print('%s, %s, %s' % (
     ...         notification.message.owner.name, notification.is_comment,
-    ...         notification.message.text_contents)
+    ...         notification.message.text_contents))
     salgado, True, Test bug
 
     >>> logout()
 
 A ProductSeries can't be the target of a new bug.
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     '/bugs', 'createBug',
     ...     title='Test bug', description='Test bug',
-    ...     target=webservice.getAbsoluteUrl('/firefox/1.0'))
+    ...     target=webservice.getAbsoluteUrl('/firefox/1.0')))
     HTTP/1.1 400 Bad Request
     ...
     Can't create a bug on a series. Create it with a non-series
@@ -147,9 +147,9 @@ A ProductSeries can't be the target of a new bug.
 That operation will fail if the client doesn't specify the product or
 distribution in which the bug exists.
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     '/bugs', 'createBug',
-    ...     title='Test bug', description='Test bug')
+    ...     title='Test bug', description='Test bug'))
     HTTP/1.1 400 Bad Request
     ...
     target: Required input is missing.
@@ -160,37 +160,39 @@ To mark a bug as private, we patch the `private` attribute of the bug.
     >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
     >>> bug_twelve['private']
     False
-    >>> print webservice.patch(
-    ...     bug_twelve['self_link'], 'application/json', dumps(dict(private=True)))
+    >>> print(webservice.patch(
+    ...     bug_twelve['self_link'], 'application/json',
+    ...     dumps(dict(private=True))))
     HTTP/1.1 209 Content Returned...
     >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
     >>> bug_twelve['private']
     True
-    >>> print webservice.patch(
-    ...     bug_twelve['self_link'], 'application/json', dumps(dict(private=False)))
+    >>> print(webservice.patch(
+    ...     bug_twelve['self_link'], 'application/json',
+    ...     dumps(dict(private=False))))
     HTTP/1.1 209 Content Returned...
 
 Similarly, to mark a bug as a duplicate, we patch the `duplicate_of_link`
 attribute of the bug.
 
-    >>> print bug_twelve['duplicate_of_link']
+    >>> print(bug_twelve['duplicate_of_link'])
     None
-    >>> print webservice.patch(
+    >>> print(webservice.patch(
     ...       bug_twelve['self_link'], 'application/json',
-    ...       dumps(dict(duplicate_of_link=bug_one['self_link'])))
+    ...       dumps(dict(duplicate_of_link=bug_one['self_link']))))
     HTTP/1.1 209 Content Returned...
     >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
-    >>> print bug_twelve['duplicate_of_link']
+    >>> print(bug_twelve['duplicate_of_link'])
     http://api.launchpad.dev/beta/bugs/1
 
 Now set it back to none:
 
-    >>> print webservice.patch(
+    >>> print(webservice.patch(
     ...       bug_twelve['self_link'], 'application/json',
-    ...       dumps(dict(duplicate_of_link=None)))
+    ...       dumps(dict(duplicate_of_link=None))))
     HTTP/1.1 209 Content Returned...
     >>> bug_twelve = webservice.get("/bugs/12").jsonBody()
-    >>> print bug_twelve['duplicate_of_link']
+    >>> print(bug_twelve['duplicate_of_link'])
     None
 
 Marking a bug as duplicate follows the same validation rules as available in
@@ -198,24 +200,24 @@ the web UI. It is impossible, for example, to create circular relationships.
 Due to bug #1088358 the error is escaped as if it was HTML.
 
     >>> dupe_url = webservice.getAbsoluteUrl('/bugs/%d' % new_bug_id)
-    >>> print webservice.patch(
+    >>> print(webservice.patch(
     ...       dupe_url, 'application/json',
     ...       dumps(dict(
-    ...           duplicate_of_link=webservice.getAbsoluteUrl('/bugs/5'))))
+    ...           duplicate_of_link=webservice.getAbsoluteUrl('/bugs/5')))))
     HTTP/1.1 209 Content Returned...
 
-    >>> print webservice.patch(
+    >>> print(webservice.patch(
     ...       webservice.getAbsoluteUrl('/bugs/5'), 'application/json',
-    ...       dumps(dict(duplicate_of_link=dupe_url)))
+    ...       dumps(dict(duplicate_of_link=dupe_url))))
     HTTP/1.1 400 Bad Request
     ...
     Bug ... is already a duplicate of bug 5. You
     can only mark a bug report as duplicate of one that
     isn&#x27;t a duplicate itself...
 
-    >>> print webservice.patch(
+    >>> print(webservice.patch(
     ...       dupe_url, 'application/json',
-    ...       dumps(dict(duplicate_of_link=None)))
+    ...       dumps(dict(duplicate_of_link=None))))
     HTTP/1.1 209 Content Returned...
 
 
@@ -258,15 +260,15 @@ relation to some bug.
 Bug messages can be accessed anonymously.
 
     >>> messages = anon_webservice.get("/bugs/5/messages").jsonBody()['entries']
-    >>> print messages[0]['self_link']
+    >>> print(messages[0]['self_link'])
     http://.../firefox/+bug/5/comments/0
 
 We can add a new message to a bug by calling the newMessage method.
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     "/bugs/5", 'newMessage',
     ...     subject='A new message',
-    ...     content='This is a new message added through the webservice API.')
+    ...     content='This is a new message added through the webservice API.'))
     HTTP/1.1 201 Created...
     Content-Length: 0
     ...
@@ -284,9 +286,9 @@ We can add a new message to a bug by calling the newMessage method.
 
 We don't have to submit a subject when we add a new message.
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     "/bugs/5", 'newMessage',
-    ...     content='This is a new message with no subject.')
+    ...     content='This is a new message with no subject.'))
     HTTP/1.1 201 Created...
     Content-Length: 0
     ...
@@ -353,10 +355,10 @@ It's possible to change the task's assignee.
 
     >>> patch = {u'assignee_link': webservice.getAbsoluteUrl('/~cprov')}
     >>> bugtask_path = bug_one_bugtasks[0]['self_link']
-    >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
+    >>> print(webservice.patch(bugtask_path, 'application/json', dumps(patch)))
     HTTP/1.1 209 Content Returned...
 
-    >>> print webservice.get(bugtask_path).jsonBody()['assignee_link']
+    >>> print(webservice.get(bugtask_path).jsonBody()['assignee_link'])
     http://.../~cprov
 
 
@@ -367,7 +369,7 @@ The task's importance can be modified directly.
     u'Low'
 
     >>> patch = {u'importance': u'High'}
-    >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
+    >>> print(webservice.patch(bugtask_path, 'application/json', dumps(patch)))
     HTTP/1.1 209 Content Returned...
 
     >>> body = webservice.get(bugtask_path).jsonBody()
@@ -377,8 +379,8 @@ The task's importance can be modified directly.
 Only bug supervisors or people who can otherwise edit the bugtask's
 pillar are authorised to edit the importance.
 
-    >>> print user_webservice.named_post(
-    ...     bugtask_path, 'transitionToImportance', importance='Low')
+    >>> print(user_webservice.named_post(
+    ...     bugtask_path, 'transitionToImportance', importance='Low'))
     HTTP/1.1 401 Unauthorized...
 
     >>> body = webservice.get(bugtask_path).jsonBody()
@@ -387,46 +389,46 @@ pillar are authorised to edit the importance.
 
 The task's status can also be modified directly.
 
-    >>> print webservice.get(bugtask_path).jsonBody()['status']
+    >>> print(webservice.get(bugtask_path).jsonBody()['status'])
     Confirmed
 
     >>> patch = {u'status': u'Fix Committed'}
-    >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
+    >>> print(webservice.patch(bugtask_path, 'application/json', dumps(patch)))
     HTTP/1.1 209 Content Returned...
 
-    >>> print webservice.get(bugtask_path).jsonBody()['status']
+    >>> print(webservice.get(bugtask_path).jsonBody()['status'])
     Fix Committed
 
 If an error occurs during a request that sets both 'status' and
 'importance', neither one will be set.
 
     >>> task = webservice.get(bugtask_path).jsonBody()
-    >>> print task['status']
+    >>> print(task['status'])
     Fix Committed
-    >>> print task['importance']
+    >>> print(task['importance'])
     High
 
     >>> patch = {u'importance': 'High', u'status': u'No Such Status'}
-    >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
+    >>> print(webservice.patch(bugtask_path, 'application/json', dumps(patch)))
     HTTP/1.1 400 Bad Request...
 
     >>> task = webservice.get(bugtask_path).jsonBody()
-    >>> print task['status']
+    >>> print(task['status'])
     Fix Committed
-    >>> print task['importance']
+    >>> print(task['importance'])
     High
 
 The milestone can only be set by appropriately privileged users.
 
-    >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
+    >>> print(webservice.get(bugtask_path).jsonBody()['milestone_link'])
     None
 
     >>> patch = {u'milestone_link': webservice.getAbsoluteUrl(
     ...                                 '/debian/+milestone/3.1')}
-    >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
+    >>> print(webservice.patch(bugtask_path, 'application/json', dumps(patch)))
     HTTP/1.1 209 Content Returned...
 
-    >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
+    >>> print(webservice.get(bugtask_path).jsonBody()['milestone_link'])
     http://.../debian/+milestone/3.1
 
 We need to ensure the milestone we try and set is different to the current
@@ -435,11 +437,11 @@ unchanged value.
 
     >>> patch = {u'milestone_link': webservice.getAbsoluteUrl(
     ...                                 '/debian/+milestone/3.1-rc1')}
-    >>> print user_webservice.patch(
-    ...     bugtask_path, 'application/json', dumps(patch))
+    >>> print(user_webservice.patch(
+    ...     bugtask_path, 'application/json', dumps(patch)))
     HTTP/1.1 401 Unauthorized...
 
-    >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
+    >>> print(webservice.get(bugtask_path).jsonBody()['milestone_link'])
     http://.../debian/+milestone/3.1
 
 We can change the task's target. Here we change the task's target from
@@ -452,9 +454,9 @@ have tasks, so we first add a publication.
     >>> ignored = factory.makeSourcePackagePublishingHistory(
     ...     distroseries=debian.currentseries, sourcepackagename='evolution')
     >>> logout()
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     task['self_link'], 'transitionToTarget',
-    ...     target=webservice.getAbsoluteUrl('/debian/+source/evolution'))
+    ...     target=webservice.getAbsoluteUrl('/debian/+source/evolution')))
     HTTP/1.1 301 Moved Permanently
     ...
     Location: http://api.launchpad.dev/beta/debian/+source/evolution/+bug/1
@@ -462,11 +464,11 @@ have tasks, so we first add a publication.
 
 We can also PATCH the target attribute to accomplish the same thing.
 
-    >>> print webservice.patch(
+    >>> print(webservice.patch(
     ...     task['self_link'].replace('mozilla-firefox', 'evolution'),
     ...     'application/json',
     ...     dumps({'target_link': webservice.getAbsoluteUrl(
-    ...         '/debian/+source/alsa-utils')}))
+    ...         '/debian/+source/alsa-utils')})))
     HTTP/1.1 301 Moved Permanently
     ...
     Location: http://api.launchpad.dev/beta/debian/+source/alsa-utils/+bug/1
@@ -478,16 +480,16 @@ now an alsa-utils task.
     >>> task = webservice.get(
     ...     task['self_link'].replace(
     ...         'mozilla-firefox', 'alsa-utils')).jsonBody()
-    >>> print task['target_link']
+    >>> print(task['target_link'])
     http://api.../debian/+source/alsa-utils
 
 We can change an upstream task to target a different project.
 
     >>> product_bugtask = webservice.get(
     ...     webservice.getAbsoluteUrl('/jokosher/+bug/14')).jsonBody()
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     product_bugtask['self_link'], 'transitionToTarget',
-    ...     target=webservice.getAbsoluteUrl('/bzr'))
+    ...     target=webservice.getAbsoluteUrl('/bzr')))
     HTTP/1.1 301 Moved Permanently
     ...
     Location: http://api.launchpad.dev/beta/bzr/+bug/14
@@ -500,19 +502,19 @@ target, we reset it in order to avoid data inconsistencies.
     ...     webservice.getAbsoluteUrl('/firefox/+bug/1')).jsonBody()
     >>> patch = {u'milestone_link':
     ...     webservice.getAbsoluteUrl('/firefox/+milestone/1.0')}
-    >>> print webservice.patch(
-    ...     firefox_bugtask['self_link'], 'application/json', dumps(patch))
+    >>> print(webservice.patch(
+    ...     firefox_bugtask['self_link'], 'application/json', dumps(patch)))
     HTTP/1.1 209 Content Returned
     ...
     <BLANKLINE>
     >>> firefox_bugtask = webservice.get(
     ...     webservice.getAbsoluteUrl('/firefox/+bug/1')).jsonBody()
-    >>> print firefox_bugtask['milestone_link']
+    >>> print(firefox_bugtask['milestone_link'])
     http://api.../firefox/+milestone/1.0
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     firefox_bugtask['self_link'],
     ...     'transitionToTarget',
-    ...     target=webservice.getAbsoluteUrl('/jokosher'))
+    ...     target=webservice.getAbsoluteUrl('/jokosher')))
     HTTP/1.1 301 Moved Permanently
     ...
     Location: http://api.launchpad.dev/beta/jokosher/+bug/1
@@ -521,13 +523,13 @@ target, we reset it in order to avoid data inconsistencies.
     >>> jokosher_bugtask = webservice.get(
     ...     firefox_bugtask['self_link'].replace(
     ...         'firefox', 'jokosher')).jsonBody()
-    >>> print jokosher_bugtask['milestone_link']
+    >>> print(jokosher_bugtask['milestone_link'])
     None
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     jokosher_bugtask['self_link'],
     ...     'transitionToTarget',
-    ...     target=webservice.getAbsoluteUrl('/firefox'))
+    ...     target=webservice.getAbsoluteUrl('/firefox')))
     HTTP/1.1 301 Moved Permanently
     ...
     Location: http://api.launchpad.dev/beta/firefox/+bug/1
@@ -545,9 +547,9 @@ distribution.
     >>> logout()
 
     >>> distro_bugtask = webservice.get(distro_bugtask_path)
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     distro_bugtask_path, 'transitionToTarget',
-    ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
+    ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils')))
     HTTP/1.1 301 Moved Permanently
     ...
     Location: http://api.launchpad.dev/beta/ubuntu/+source/alsa-utils/+bug/...
@@ -557,9 +559,9 @@ It's possible to get a list of similar bugs for a bug task by calling
 its findSimilarBugs() method. As it happens, there aren't any bugs
 similar to bug 1 for Firefox.
 
-    >>> print anon_webservice.named_get(
+    >>> print(anon_webservice.named_get(
     ...     firefox_bugtask['self_link'],
-    ...     'findSimilarBugs')
+    ...     'findSimilarBugs'))
     HTTP/1.1 200 Ok...
     {"total_size": 0, "start": 0, "entries": []}
 
@@ -576,9 +578,9 @@ will return something more useful.
     ...     webservice.getAbsoluteUrl('/firefox/+bug/%s' % new_bug['id'])
     ...     ).jsonBody()
 
-    >>> print anon_webservice.named_get(
+    >>> print(anon_webservice.named_get(
     ...     new_bug_task['self_link'],
-    ...     'findSimilarBugs')
+    ...     'findSimilarBugs'))
     HTTP/1.1 200 Ok...
     {"total_size": 4, "start": 0, "entries":...
     "id": 1... "title": "Firefox does not support SVG"...
@@ -633,9 +635,9 @@ Initially there are no nominations.
 
 But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
 
-    >>> print john_webservice.named_post(
+    >>> print(john_webservice.named_post(
     ...     '/bugs/%d' % bug.id, 'addNomination',
-    ...     target=john_webservice.getAbsoluteUrl('/fooix/0.1'))
+    ...     target=john_webservice.getAbsoluteUrl('/fooix/0.1')))
     HTTP/1.1 201 Created
     ...
     Location: http://.../bugs/.../nominations/...
@@ -665,13 +667,13 @@ John cannot approve or decline the nomination.
 
     >>> nom_url = nominations['entries'][0]['self_link']
 
-    >>> print john_webservice.named_get(nom_url, 'canApprove').jsonBody()
+    >>> print(john_webservice.named_get(nom_url, 'canApprove').jsonBody())
     False
 
-    >>> print john_webservice.named_post(nom_url, 'approve')
+    >>> print(john_webservice.named_post(nom_url, 'approve'))
     HTTP/1.1 401 Unauthorized...
 
-    >>> print john_webservice.named_post(nom_url, 'decline')
+    >>> print(john_webservice.named_post(nom_url, 'decline'))
     HTTP/1.1 401 Unauthorized...
 
     >>> login('foo.bar@canonical.com')
@@ -683,10 +685,10 @@ Eric, however, can and does decline the nomination.
 
     >>> eric_webservice = webservice_for_person(
     ...     eric, permission=OAuthPermission.WRITE_PRIVATE)
-    >>> print eric_webservice.named_post(nom_url, 'decline')
+    >>> print(eric_webservice.named_post(nom_url, 'decline'))
     HTTP/1.1 200 Ok...
 
-    >>> print eric_webservice.named_get(nom_url, 'canApprove').jsonBody()
+    >>> print(eric_webservice.named_get(nom_url, 'canApprove').jsonBody())
     True
 
     >>> login('foo.bar@canonical.com')
@@ -717,7 +719,7 @@ John is disappointed to see that the nomination was declined.
 
 Eric changes his mind, and approves the nomination.
 
-    >>> print eric_webservice.named_post(nom_url, 'approve')
+    >>> print(eric_webservice.named_post(nom_url, 'approve'))
     HTTP/1.1 200 Ok...
 
 This marks the nomination as Approved, and creates a new task.
@@ -748,7 +750,7 @@ This marks the nomination as Approved, and creates a new task.
 
 Eric cannot change his mind and decline the approved task.
 
-    >>> print eric_webservice.named_post(nom_url, 'decline')
+    >>> print(eric_webservice.named_post(nom_url, 'decline'))
     HTTP/1.1 400 Bad Request
     ...
     Cannot decline an approved nomination.
@@ -760,7 +762,7 @@ Eric cannot change his mind and decline the approved task.
 
 While he can approve it again, it's a no-op.
 
-    >>> print eric_webservice.named_post(nom_url, 'approve')
+    >>> print(eric_webservice.named_post(nom_url, 'approve'))
     HTTP/1.1 200 Ok...
 
     >>> login('foo.bar@canonical.com')
@@ -770,14 +772,14 @@ While he can approve it again, it's a no-op.
 
 A bug cannot be nominated for a non-series.
 
-    >>> print john_webservice.named_get(
+    >>> print(john_webservice.named_get(
     ...     '/bugs/%d' % bug.id, 'canBeNominatedFor',
-    ...     target=john_webservice.getAbsoluteUrl('/fooix')).jsonBody()
+    ...     target=john_webservice.getAbsoluteUrl('/fooix')).jsonBody())
     False
 
-    >>> print john_webservice.named_post(
+    >>> print(john_webservice.named_post(
     ...     '/bugs/%d' % bug.id, 'addNomination',
-    ...     target=john_webservice.getAbsoluteUrl('/fooix'))
+    ...     target=john_webservice.getAbsoluteUrl('/fooix')))
     HTTP/1.1 400 Bad Request
     ...
     This bug cannot be nominated for Fooix.
@@ -785,14 +787,14 @@ A bug cannot be nominated for a non-series.
 The bug also can't be nominated for Debuntu 5.0, as it has no
 Debuntu tasks.
 
-    >>> print john_webservice.named_get(
+    >>> print(john_webservice.named_get(
     ...     '/bugs/%d' % bug.id, 'canBeNominatedFor',
-    ...     target=john_webservice.getAbsoluteUrl('/debuntu/5.0')).jsonBody()
+    ...     target=john_webservice.getAbsoluteUrl('/debuntu/5.0')).jsonBody())
     False
 
-    >>> print john_webservice.named_post(
+    >>> print(john_webservice.named_post(
     ...     '/bugs/%d' % bug.id, 'addNomination',
-    ...     target=john_webservice.getAbsoluteUrl('/debuntu/5.0'))
+    ...     target=john_webservice.getAbsoluteUrl('/debuntu/5.0')))
     HTTP/1.1 400 Bad Request
     ...
     This bug cannot be nominated for Debuntu 5.0.
@@ -809,7 +811,7 @@ We can get the collection of subscriptions to a bug.
     ...     subscriptions['entries'], key=itemgetter('self_link'))
     >>> for entry in subscription_entries:
     ...     pprint_entry(entry)
-    ...     print
+    ...     print()
     bug_link: u'http://.../bugs/1'
     date_created: u'2006-10-16T18:31:43.156104+00:00'
     person_link: u'http://.../~name12'
@@ -840,7 +842,7 @@ Each subscription can be accessed individually.
 Subscriptions can also be accessed anonymously.
 
     >>> subscriptions = anon_webservice.get(bug_one_subscriptions_url).jsonBody()
-    >>> print subscriptions['entries'][0]['self_link']
+    >>> print(subscriptions['entries'][0]['self_link'])
     http://.../bugs/1/+subscription/stevea
 
 We can also create new subscriptions.
@@ -856,8 +858,8 @@ We can also create new subscriptions.
 An individual can only unsubscribe themselves.  If the person argument is
 not provided, the web service uses the calling user.
 
-    >>> print webservice.named_post(
-    ...     bug_one['self_link'], 'unsubscribe')
+    >>> print(webservice.named_post(
+    ...     bug_one['self_link'], 'unsubscribe'))
     HTTP/1.1 200 Ok...
 
 Using the devel api, an individual can subscribe themself at a given
@@ -891,9 +893,9 @@ They can also update the subscription's bug_notification_level directly.
 If one person tries to unsubscribe another individual, the web
 service will return an unauthorized error.
 
-    >>> print user_webservice.named_post(
+    >>> print(user_webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe',
-    ...     person=webservice.getAbsoluteUrl('/~mark'))
+    ...     person=webservice.getAbsoluteUrl('/~mark')))
     HTTP/1.1 401 Unauthorized...
 
 An individual can, however, unsubscribe a team to which they belong.
@@ -914,23 +916,23 @@ Then, the user can unsubsribe the group from the bug.
     >>> member_webservice = webservice_for_person(
     ...     ubuntu_team_member, permission=OAuthPermission.WRITE_PRIVATE)
 
-    >>> print member_webservice.named_post(
+    >>> print(member_webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe',
-    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team')))
     HTTP/1.1 200 Ok...
 
 If someone who is not a member tries to unsubscribe the group,
 the web service will raise an unauthorized error.  To demonstrate
 this, the group must first be re-subscribed.
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     bug_one['self_link'], 'subscribe',
-    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team')))
     HTTP/1.1 200 Ok...
 
-    >>> print user_webservice.named_post(
+    >>> print(user_webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe',
-    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team')))
     HTTP/1.1 401 Unauthorized...
 
 To determine if a user can unsubscribe a person or team,
@@ -940,14 +942,14 @@ the person of the subscription.
 
 This example uses a subscription of SteveA.
 
-    >>> print subscription['person_link']
+    >>> print(subscription['person_link'])
     http://.../~stevea
 
 Salgado is the webservice user who performed the original subscription and so
 can unsubscribe SteveA.
 
-    >>> print webservice.named_get(
-    ...     subscription['self_link'], 'canBeUnsubscribedByUser').jsonBody()
+    >>> print(webservice.named_get(
+    ...     subscription['self_link'], 'canBeUnsubscribedByUser').jsonBody())
     True
 
 
@@ -967,9 +969,9 @@ To demonstrate unsubscribing from duplicates, first subscribe the
 web service user himself (Salgado) so he has permission to unsubscribe
 himself.
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
-    ...     person=webservice.getAbsoluteUrl('/~salgado'))
+    ...     person=webservice.getAbsoluteUrl('/~salgado')))
     HTTP/1.1 200 Ok...
 
 bug_six now has one subscriber, Salgado.
@@ -977,50 +979,50 @@ bug_six now has one subscriber, Salgado.
     >>> bug_six_subscriptions = webservice.get(
     ...     bug_six['subscriptions_collection_link']).jsonBody()
     >>> for entry in bug_six_subscriptions['entries']:
-    ...     print entry['person_link']
+    ...     print(entry['person_link'])
     http://.../~salgado
 
 Unsubscribe from bug_five, the primary bug, to unsubscribe from both
 it and its duplicate, bug_six.
 
-    >>> print webservice.named_post(
-    ...     bug_five['self_link'], 'unsubscribeFromDupes')
+    >>> print(webservice.named_post(
+    ...     bug_five['self_link'], 'unsubscribeFromDupes'))
     HTTP/1.1 200 Ok...
 
 Now bug_six has no subscibers.
 
     >>> bug_six_subscriptions = webservice.get(
     ...     bug_six['subscriptions_collection_link']).jsonBody()
-    >>> print bug_six_subscriptions['total_size']
+    >>> print(bug_six_subscriptions['total_size'])
     0
 
 Unsubscribing from duplicates is also supported for teams.
 To demonstrate, first subscribe Ubuntu Team to bug_six, the duplicate.
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     bug_six['self_link'], 'subscribe',
-    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team')))
     HTTP/1.1 200 Ok...
     >>> bug_six_subscriptions = webservice.get(
     ...     bug_six['subscriptions_collection_link']).jsonBody()
     >>> for entry in bug_six_subscriptions['entries']:
-    ...     print entry['person_link']
+    ...     print(entry['person_link'])
     http://.../~ubuntu-team
 
 Now, a team member can unsubscribe from bug_five to be unsubscribed
 from both it and the duplicate (bug_six).  Use the previously created
 member_webservice, which is for an Ubuntu Team member.
 
-    >>> print member_webservice.named_post(
+    >>> print(member_webservice.named_post(
     ...     bug_five['self_link'], 'unsubscribeFromDupes',
-    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team'))
+    ...     person=webservice.getAbsoluteUrl('/~ubuntu-team')))
     HTTP/1.1 200 Ok...
 
 Now again, bug_six has no subscibers.
 
     >>> bug_six_subscriptions = webservice.get(
     ...     bug_six['subscriptions_collection_link']).jsonBody()
-    >>> print bug_six_subscriptions['total_size']
+    >>> print(bug_six_subscriptions['total_size'])
     0
 
 
@@ -1087,7 +1089,7 @@ But we can't change other things, like the URL.
     >>> patch = {u'url': u'http://www.example.com/'}
     >>> response = webservice.patch(
     ...     bug_watch_2000['self_link'], 'application/json', dumps(patch))
-    >>> print response
+    >>> print(response)
     HTTP/1.1 400 Bad Request...
     Content-Length: 47
     ...
@@ -1102,7 +1104,7 @@ associated with a bug.
     ...     bug_tracker=webservice.getAbsoluteUrl(
     ...                      '/bugs/bugtrackers/mozilla.org'),
     ...     remote_bug='9876')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 201 Created...
     Content-Length: 0
     ...
@@ -1166,7 +1168,7 @@ We can change various aspects of bug trackers.
     ...     }
     >>> response = webservice.patch(
     ...     bug_tracker['self_link'], 'application/json', dumps(patch))
-    >>> print response
+    >>> print(response)
     HTTP/1.1 301 Moved Permanently...
     Content-Length: 0
     ...
@@ -1179,7 +1181,7 @@ the bug tracker can be found has changed.
 Now notice that bug trackers (and bugs too) that are not found generate
 a 404 error, but do not generate an OOPS.
 
-    >>> print webservice.get(bug_tracker['self_link'])
+    >>> print(webservice.get(bug_tracker['self_link']))
     HTTP/1.1 404 Not Found...
     Content-Length: ...
     ...
@@ -1209,9 +1211,9 @@ renamed bug tracker.
 
 Non-admins can't disable a bugtracker through the API.
 
-    >>> print public_webservice.patch(
+    >>> print(public_webservice.patch(
     ...     bug_tracker_path, 'application/json',
-    ...     dumps(dict(active=False)))
+    ...     dumps(dict(active=False))))
     HTTP/1.1 401 Unauthorized
     ...
     (<BugTracker at ...>, 'active', 'launchpad.Admin')
@@ -1244,7 +1246,7 @@ An attachment can be added to the bug:
     ...     bug_one['self_link'], 'addAttachment',
     ...     data="12345", filename="numbers.txt", content_type='foo/bar',
     ...     comment="The numbers you asked for.")
-    >>> print response
+    >>> print(response)
     HTTP/1.1 201 Created...
     Content-Length: 0
     ...
@@ -1287,7 +1289,7 @@ Fetching the data actually yields a redirect to the Librarian, which
 we must follow to download the data.
 
     >>> data_response = webservice.get(attachment['data_link'])
-    >>> print data_response
+    >>> print(data_response)
     HTTP/1.1 303 See Other...
     Content-Length: 0
     Content-Type: text/plain
@@ -1343,7 +1345,7 @@ Once an attachment is uploaded, it is not possible to change it.
 
     >>> response = webservice.put(
     ...     attachment['data_link'], 'text/text', 'abcdefg')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 405 Method Not Allowed
     ...
 
@@ -1361,7 +1363,7 @@ But we can remove the attachment altogether.
 
     >>> response = webservice.named_post(
     ...     attachment['self_link'], 'removeFromBug')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 200 Ok
     ...
 
@@ -1569,7 +1571,7 @@ We can search for bugs reported by owners of the PCI device (0x10de,
     ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
     ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
     >>> for bugtask in bugtasks:
-    ...     print bugtask['self_link']
+    ...     print(bugtask['self_link'])
     http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
     http://api.launchpad.dev/beta/ubuntu/+bug/2
 
@@ -1581,7 +1583,7 @@ We can further limit the search to devices controlled by a given driver.
     ...     hardware_owner_is_bug_reporter=True,
     ...     hardware_driver_name='ahci').jsonBody()['entries']
     >>> for bugtask in bugtasks:
-    ...     print bugtask['self_link']
+    ...     print(bugtask['self_link'])
     http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
     http://api.launchpad.dev/beta/ubuntu/+bug/2
 
@@ -1590,7 +1592,7 @@ We can further limit the search to devices controlled by a given driver.
     ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
     ...     hardware_driver_name='nonsense',
     ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
-    >>> print len(bugtasks)
+    >>> print(len(bugtasks))
     0
 
 We can search for bugs related to any hardware device controlled by a
@@ -1600,7 +1602,7 @@ given driver.
     ...     '/ubuntu', 'searchTasks', hardware_driver_name='ahci',
     ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
     >>> for bugtask in bugtasks:
-    ...     print bugtask['self_link']
+    ...     print(bugtask['self_link'])
     http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
     http://api.launchpad.dev/beta/ubuntu/+bug/2
 
@@ -1612,7 +1614,7 @@ package.
     ...     hardware_driver_package_name='linux-image-2.6.24-19-generic',
     ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
     >>> for bugtask in bugtasks:
-    ...     print bugtask['self_link']
+    ...     print(bugtask['self_link'])
     http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
     http://api.launchpad.dev/beta/ubuntu/+bug/2
 
@@ -1620,7 +1622,7 @@ package.
     ...     '/ubuntu', 'searchTasks', hardware_driver_name='ahci',
     ...     hardware_driver_package_name='nonsense',
     ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
-    >>> print len(bugtasks)
+    >>> print(len(bugtasks))
     0
 
 Instead of searching for bugs reported by the owner of a given device,
@@ -1630,7 +1632,7 @@ we can look for bugs where a device owner is affected by a bug...
     ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
     ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
     ...     hardware_owner_is_affected_by_bug=True).jsonBody()['entries']
-    >>> print len(bugtasks)
+    >>> print(len(bugtasks))
     0
 
     >>> login(ANONYMOUS)
@@ -1648,7 +1650,7 @@ we can look for bugs where a device owner is affected by a bug...
     ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
     ...     hardware_owner_is_affected_by_bug=True).jsonBody()['entries']
     >>> for bugtask in bugtasks:
-    ...     print bugtask['self_link']
+    ...     print(bugtask['self_link'])
     http://api.launchpad.dev/beta/ubuntu/+bug/2
 
 ...or for bugs to which owners of a given device are subscribed...
@@ -1658,7 +1660,7 @@ we can look for bugs where a device owner is affected by a bug...
     ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
     ...     hardware_owner_is_subscribed_to_bug=True).jsonBody()['entries']
     >>> for bugtask in bugtasks:
-    ...     print bugtask['self_link']
+    ...     print(bugtask['self_link'])
     http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
     http://api.launchpad.dev/beta/ubuntu/+source/thunderbird/+bug/9
 
@@ -1669,15 +1671,15 @@ a given device.
     ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
     ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
     ...     hardware_is_linked_to_bug=True).jsonBody()['entries']
-    >>> print len(bugtasks)
+    >>> print(len(bugtasks))
     0
 
     >>> bug_ten = webservice.get('/bugs/10').jsonBody()
     >>> sample_submission = webservice.get(
     ...     '/+hwdb/+submission/sample-submission').jsonBody()
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     bug_ten['self_link'], 'linkHWSubmission',
-    ...     submission=sample_submission['self_link'])
+    ...     submission=sample_submission['self_link']))
     HTTP/1.1 200 Ok
     ...
 
@@ -1686,7 +1688,7 @@ a given device.
     ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
     ...     hardware_is_linked_to_bug=True).jsonBody()['entries']
     >>> for bugtask in bugtasks:
-    ...     print bugtask['self_link']
+    ...     print(bugtask['self_link'])
     http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10
 
 
@@ -1752,12 +1754,12 @@ query, because this bug will not be related to the person anymore. In this
 case a `400 Bad Request`-Error will be returned.
 
     >>> name12 = webservice.get("/~name12").jsonBody()
-    >>> print webservice.named_get(
+    >>> print(webservice.named_get(
     ...     '/~name16', 'searchTasks', assignee=name12['self_link'],
     ...     owner=name12['self_link'], bug_subscriber=name12['self_link'],
     ...     bug_commenter=name12['self_link'],
     ...     structural_subscriber=name12['self_link']
-    ...     )
+    ...     ))
     HTTP/1.1 400 Bad Request...
 
 
@@ -1786,8 +1788,8 @@ Affected users
 
 It is possible to mark a bug as affecting the user using the web service.
 
-    >>> print webservice.named_post(
-    ...     bug_one['self_link'], 'isUserAffected').jsonBody()
+    >>> print(webservice.named_post(
+    ...     bug_one['self_link'], 'isUserAffected').jsonBody())
     None
     >>> webservice.named_post(
     ...     bug_one['self_link'], 'markUserAffected',
@@ -1885,14 +1887,14 @@ For every CVE we can also look at the bugs linked to it.
     >>> bug_links = webservice.get(
     ...     cve_entry['bugs_collection_link']).jsonBody()
     >>> for bug in bug_links['entries']:
-    ...     print bug['self_link']
+    ...     print(bug['self_link'])
     http://.../bugs/1
 
 Unlink CVEs from that bug.
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     bug_one['self_link'], 'unlinkCVE',
-    ...     cve='http://api.launchpad.dev/beta/bugs/cve/1999-8979')
+    ...     cve='http://api.launchpad.dev/beta/bugs/cve/1999-8979'))
     HTTP/1.1 200 Ok...
     >>> pprint_collection(webservice.get(bug_one_cves_url).jsonBody())
     resource_type_link: u'http://.../#cve-page-resource'
@@ -1902,9 +1904,9 @@ Unlink CVEs from that bug.
 
 And link new CVEs to the bug.
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     bug_one['self_link'], 'linkCVE',
-    ...     cve='http://api.launchpad.dev/beta/bugs/cve/2005-2733')
+    ...     cve='http://api.launchpad.dev/beta/bugs/cve/2005-2733'))
     HTTP/1.1 200 Ok...
     >>> pprint_collection(webservice.get(bug_one_cves_url).jsonBody())
     resource_type_link: u'http://.../#cve-page-resource'
@@ -1925,9 +1927,9 @@ Add a new task to the bug.
     ...
 
     >>> redfish = webservice.get('/redfish').jsonBody()
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     bug_one['self_link'], 'addTask',
-    ...     target=redfish['self_link'])
+    ...     target=redfish['self_link']))
     HTTP/1.1 201 Created...
 
     >>> bugtasks_url = bug_one['bug_tasks_collection_link']
@@ -1946,9 +1948,9 @@ bug.linkHWSubmission().
 
     >>> sample_submission = webservice.get(
     ...     '/+hwdb/+submission/sample-submission').jsonBody()
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     bug_one['self_link'], 'linkHWSubmission',
-    ...     submission=sample_submission['self_link'])
+    ...     submission=sample_submission['self_link']))
     HTTP/1.1 200 Ok
     ...
 
@@ -1957,7 +1959,7 @@ Existing links are returned by bug.getHWSubmissions().
     >>> linked_submissions = webservice.named_get(
     ...     bug_one['self_link'], 'getHWSubmissions').jsonBody()
     >>> for submission in linked_submissions['entries']:
-    ...     print submission['submission_key']
+    ...     print(submission['submission_key'])
     sample-submission
 
 Private submissions are returned only for their owners and for admins.
@@ -1970,9 +1972,9 @@ Private submissions are returned only for their owners and for admins.
 
     >>> private_submission = webservice.get(
     ...     '/+hwdb/+submission/private-submission').jsonBody()
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     bug_one['self_link'], 'linkHWSubmission',
-    ...     submission=private_submission['self_link'])
+    ...     submission=private_submission['self_link']))
     HTTP/1.1 200 Ok
     ...
 
@@ -1982,7 +1984,7 @@ is an admin, so this client returns the private submission.
     >>> linked_submissions = webservice.named_get(
     ...     bug_one['self_link'], 'getHWSubmissions').jsonBody()
     >>> for submission in linked_submissions['entries']:
-    ...     print submission['submission_key']
+    ...     print(submission['submission_key'])
     private-submission
     sample-submission
 
@@ -1994,7 +1996,7 @@ is an admin, so this client returns the private submission.
     >>> linked_submissions = no_priv_webservice.named_get(
     ...     bug_one['self_link'], 'getHWSubmissions').jsonBody()
     >>> for submission in linked_submissions['entries']:
-    ...     print submission['submission_key']
+    ...     print(submission['submission_key'])
     private-submission
     sample-submission
 
@@ -2008,22 +2010,22 @@ Other people do not see links to private submissions.
     >>> linked_submissions = sample_person_webservice.named_get(
     ...     bug_one['self_link'], 'getHWSubmissions').jsonBody()
     >>> for submission in linked_submissions['entries']:
-    ...     print submission['submission_key']
+    ...     print(submission['submission_key'])
     sample-submission
 
 We can delete links between a HWDB submission and a bug by calling
 bug.unlinkHWSubmission().
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     bug_one['self_link'], 'unlinkHWSubmission',
-    ...     submission=sample_submission['self_link'])
+    ...     submission=sample_submission['self_link']))
     HTTP/1.1 200 Ok
     ...
 
     >>> linked_submissions = webservice.named_get(
     ...     bug_one['self_link'], 'getHWSubmissions').jsonBody()
     >>> for submission in linked_submissions['entries']:
-    ...     print submission['submission_key']
+    ...     print(submission['submission_key'])
     private-submission
 
 Bug branches
@@ -2055,7 +2057,7 @@ For every branch we can also look at the bugs linked to it.
     >>> branch_entry = bug_four_branches['entries'][0]
     >>> bug_link = webservice.get(
     ...     branch_entry['bug_link']).jsonBody()
-    >>> print bug_link['self_link']
+    >>> print(bug_link['self_link'])
     http://.../bugs/4
 
 Bug expiration
@@ -2069,22 +2071,22 @@ a different period for bug expiration.
 Check to ensure that isExpirable() works without days_old.
 
     >>> bug_four = webservice.get("/bugs/4").jsonBody()
-    >>> print webservice.named_get(bug_four['self_link'],
-    ...     'isExpirable').jsonBody()
+    >>> print(webservice.named_get(bug_four['self_link'],
+    ...     'isExpirable').jsonBody())
     False
 
 Pass isExpirable() an integer for days_old.
 
     >>> bug_four = webservice.get("/bugs/4").jsonBody()
-    >>> print webservice.named_get(bug_four['self_link'], 'isExpirable',
-    ...     days_old='14').jsonBody()
+    >>> print(webservice.named_get(bug_four['self_link'], 'isExpirable',
+    ...     days_old='14').jsonBody())
     False
 
 Pass isExpirable() a string for days_old.
 
     >>> bug_four = webservice.get("/bugs/4").jsonBody()
-    >>> print webservice.named_get(bug_four['self_link'], 'isExpirable',
-    ...     days_old='sixty')
+    >>> print(webservice.named_get(bug_four['self_link'], 'isExpirable',
+    ...     days_old='sixty'))
     HTTP/1.1 400 Bad Request
     ...
     days_old: got 'unicode', expected int: u'sixty'
