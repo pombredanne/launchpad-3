@@ -18,8 +18,8 @@ duplicates.
     ...         status = ' '.join(text_lines[2:])
     ...         # All this trouble is worth it when you see ndiff output
     ...         # from a failing test, and it *makes sense* :)
-    ...         print '(icon class=%s)\n  %s\n  %s' % (
-    ...             label_class, summary, status)
+    ...         print('(icon class=%s)\n  %s\n  %s' % (
+    ...             label_class, summary, status))
 
 
 Products
@@ -87,7 +87,7 @@ being reported, the user's original summary is displayed above
 the list of potentially similar bugs.
 
     >>> query = find_tag_by_id(user_browser.contents, 'filebug-query-heading')
-    >>> print extract_text(query)
+    >>> print(extract_text(query))
     Is "reflow" one of these bugs?
 
 

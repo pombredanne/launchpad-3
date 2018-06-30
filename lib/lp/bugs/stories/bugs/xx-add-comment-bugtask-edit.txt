@@ -20,5 +20,5 @@ The user was returned to the bug page, and the comment was added.
 
     >>> main_content = find_main_content(user_browser.contents)
     >>> last_comment = main_content('div', 'boardCommentBody')[-1]
-    >>> print last_comment.div.renderContents()
+    >>> print(last_comment.div.renderContents())
     <p>A comment with no change to the bug task.</p>

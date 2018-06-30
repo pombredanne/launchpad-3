@@ -10,7 +10,7 @@ anyway, because they are an admin.
 
     >>> browser.getControl("Private", index=1).selected = True
     >>> browser.getControl("Change").click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2
 
 When we go back to the secrecy form, the previously set value is pre-selected.
@@ -40,17 +40,17 @@ The Ubuntu maintainer, Ubuntu Team, will be subscribed.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> bug_id = browser.url.split("/")[-1]
-    >>> print browser.url.replace(bug_id, "BUG-ID")
+    >>> print(browser.url.replace(bug_id, "BUG-ID"))
     http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/BUG-ID
 
-    >>> print browser.contents
+    >>> print(browser.contents)
     <!DOCTYPE...
     ...Security-related bugs are by default private...
 
 Foo Bar sees the private bug they filed.
 
     >>> browser.open("http://launchpad.dev/ubuntu/+bugs")
-    >>> print browser.contents.replace(bug_id, "BUG-ID")
+    >>> print(browser.contents.replace(bug_id, "BUG-ID"))
     <!DOCTYPE...
     ...
     ...Ubuntu...

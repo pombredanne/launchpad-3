@@ -18,7 +18,7 @@ There's currently a bug watch linked to the task.
 
 This means that we only display the status, it's not possible to edit it:
 
-    >>> print browser.contents
+    >>> print(browser.contents)
     <!DOCTYPE...
 
     <label for="debian_mozilla-firefox.status">Status</label>
@@ -29,19 +29,19 @@ This means that we only display the status, it's not possible to edit it:
     >>> status_control = browser.getControl(name='debian_mozilla-firefox.status')
     Traceback (most recent call last):
     ...
-    LookupError: name 'debian_mozilla-firefox.status'
+    LookupError: name u'debian_mozilla-firefox.status'
 
 Of course we can't edit the importance or assignee either.
 
     >>> browser.getControl(name='debian_mozilla-firefox.importance')
     Traceback (most recent call last):
     ...
-    LookupError: name 'debian_mozilla-firefox.importance'
+    LookupError: name u'debian_mozilla-firefox.importance'
 
     >>> browser.getControl(name='debian_mozilla-firefox.assignee')
     Traceback (most recent call last):
     ...
-    LookupError: name 'debian_mozilla-firefox.assignee'
+    LookupError: name u'debian_mozilla-firefox.assignee'
 
 If we remove the bug watch, we'll be able to edit the status, which has
 been reset to New.
@@ -117,7 +117,7 @@ created, instead the old one will be used.
 
     >>> bugwatch_portlet = find_portlet(browser.contents, 'Remote bug watches')
     >>> for li_tag in bugwatch_portlet.findAll('li'):
-    ...     print li_tag.findAll('a')[0].string
+    ...     print(li_tag.findAll('a')[0].string)
     mozilla.org #123543
     mozilla.org #2000
     mozilla.org #42

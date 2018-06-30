@@ -9,12 +9,12 @@ will use the advanced filebug form to skip searching for dupes.
     >>> user_browser.getControl('Summary', index=0).value = 'Bug Summary'
     >>> user_browser.getControl('Continue').click()
 
-    >>> print user_browser.getControl(name="packagename_option").value
+    >>> print(user_browser.getControl(name="packagename_option").value)
     ['none']
 
 ("I don't know" remains selected.)
 
-    >>> print user_browser.getControl(name="packagename_option").value
+    >>> print(user_browser.getControl(name="packagename_option").value)
     ['none']
 
 If you enter a package name that doesn't exist in the distribution,
@@ -27,7 +27,7 @@ you're returned to the page, with the "choose" radio button selected.
     >>> user_browser.url
     'http://launchpad.dev/ubuntu/+filebug'
 
-    >>> print user_browser.getControl(name="packagename_option").value
+    >>> print(user_browser.getControl(name="packagename_option").value)
     ['choose']
 
 On the package +filebug page, the package name is populated by default.
@@ -37,8 +37,8 @@ On the package +filebug page, the package name is populated by default.
     >>> user_browser.getControl('Summary', index=0).value = 'Bug Summary'
     >>> user_browser.getControl('Continue').click()
 
-    >>> print user_browser.getControl(name="packagename_option").value
+    >>> print(user_browser.getControl(name="packagename_option").value)
     ['choose']
 
-    >>> print user_browser.getControl(name="field.packagename").value
+    >>> print(user_browser.getControl(name="field.packagename").value)
     mozilla-firefox

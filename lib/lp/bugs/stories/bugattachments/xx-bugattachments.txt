@@ -36,21 +36,21 @@ We can check that the attachment is there
 
   >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
   >>> for li_tag in attachments.findAll('li', 'download-attachment'):
-  ...   print li_tag.a.renderContents()
+  ...   print(li_tag.a.renderContents())
   Some information
 
   >>> link = user_browser.getLink('Some information')
   >>> link.url
   'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/.../+files/foo.txt'
 
-  >>> 'Added some information' in user_browser.contents
+  >>> b'Added some information' in user_browser.contents
   True
 
 And that we stripped the leading and trailing whitespace correctly
 
-  >>> '   Some information   ' in user_browser.contents
+  >>> b'   Some information   ' in user_browser.contents
   False
-  >>> 'Some information' in user_browser.contents
+  >>> b'Some information' in user_browser.contents
   True
 
 If no description is given it gets set to the attachment filename. It's
@@ -69,7 +69,7 @@ also not necessary to enter a comment in order to add an attachment.
 
   >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
   >>> for li_tag in attachments.findAll('li', 'download-attachment'):
-  ...   print li_tag.a.renderContents()
+  ...   print(li_tag.a.renderContents())
   Some information
   bar.txt
 
@@ -118,8 +118,8 @@ the flag "this attachment is a patch"...
 ...where we see a message that we should double-check if this file
 is indeed not a patch.
 
-  >>> print extract_text(find_tags_by_class(
-  ...     user_browser.contents, 'documentDescription')[0])
+  >>> print(extract_text(find_tags_by_class(
+  ...     user_browser.contents, 'documentDescription')[0]))
   This file looks like a patch.
   What is a patch?
 
@@ -146,7 +146,7 @@ listed as an ordinary attachment.
   'http://bugs.launchpad.dev/firefox/+bug/1'
   >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
   >>> for li_tag in attachments.findAll('li', 'download-attachment'):
-  ...   print li_tag.a.renderContents()
+  ...   print(li_tag.a.renderContents())
   Some information
   bar.txt
   More data
@@ -174,8 +174,8 @@ is indeed a patch.
 ...where we see a message asking us if we really ant to declare this file
 as a patch.
 
-  >>> print extract_text(find_tags_by_class(
-  ...     user_browser.contents, 'documentDescription')[0])
+  >>> print(extract_text(find_tags_by_class(
+  ...     user_browser.contents, 'documentDescription')[0]))
   This file does not look like a patch.
   What is a patch?
 
@@ -203,7 +203,7 @@ Now we are redirected to the main bug page...
 
   >>> patches = find_portlet(user_browser.contents, 'Patches')
   >>> for li_tag in patches.findAll('li', 'download-attachment'):
-  ...   print li_tag.a.renderContents()
+  ...   print(li_tag.a.renderContents())
   A fix for this bug.
   A better icon for foo
 
@@ -264,7 +264,7 @@ We can also edit the attachment details, let's navigate to that page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/...'
 
-    >>> 'Edit attachment' in user_browser.contents
+    >>> b'Edit attachment' in user_browser.contents
     True
 
 There's also an option to cancel, which takes you back to the bug
@@ -285,7 +285,7 @@ whitespace to test that's correctly stripped)...
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
 
-    >>> 'Another title' in user_browser.contents
+    >>> b'Another title' in user_browser.contents
     True
 
 We can edit the attachment to be a patch.
@@ -303,8 +303,8 @@ the attachment should indeed be labeled as a patch
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/.../+confirm-is-patch'
 
-    >>> print extract_text(find_tags_by_class(
-    ...     user_browser.contents, 'documentDescription')[0])
+    >>> print(extract_text(find_tags_by_class(
+    ...     user_browser.contents, 'documentDescription')[0]))
     This file does not look like a patch.
     What is a patch?
 
@@ -331,7 +331,7 @@ Now we are redirected to the main bug page...
 
     >>> patches = find_portlet(user_browser.contents, 'Patches')
     >>> for li_tag in patches.findAll('li', 'download-attachment'):
-    ...   print li_tag.a.renderContents()
+    ...   print(li_tag.a.renderContents())
     Another title
     A fix for this bug.
     A better icon for foo
@@ -343,7 +343,7 @@ Now we are redirected to the main bug page...
 
     >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
     >>> for li_tag in attachments.findAll('li', 'download-attachment'):
-    ...   print li_tag.a.renderContents()
+    ...   print(li_tag.a.renderContents())
     bar.txt
     More data
 
@@ -406,7 +406,7 @@ And now we'll search for patches for firefox bugs.
     ...     "Show only bugs with patches available").selected = True
     >>> user_browser.getControl("Search", index=1).click()
 
-    >>> print user_browser.contents
+    >>> print(user_browser.contents)
     <!DOCTYPE...
     ...1...
     ...of

@@ -6,10 +6,10 @@ see the bug number being edited.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/jokosher/+bug/11/+edit')
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Edit details for bug #11 ...
     >>> main = find_main_content(user_browser.contents)
-    >>> print extract_text(main.h1)
+    >>> print(extract_text(main.h1))
     Edit details for bug #11
 
 And now we show that any logged-in user can edit public bugs.
@@ -26,9 +26,9 @@ And now we show that any logged-in user can edit public bugs.
     >>> browser.url
     'http://.../debian/+source/mozilla-firefox/+bug/3'
     >>> content = find_main_content(browser.contents)
-    >>> print extract_text(content.h1)
+    >>> print(extract_text(content.h1))
     New Summary Edit
-    >>> print extract_text(find_tag_by_id(content, 'maincontentsub'))
+    >>> print(extract_text(find_tag_by_id(content, 'maincontentsub')))
     Edit Bug Description New description. ...
 
 
@@ -72,9 +72,9 @@ Now we are back at the bug page, and the tag has been added.
 
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
-    >>> 'layout-test' in user_browser.contents
+    >>> b'layout-test' in user_browser.contents
     True
-    >>> 'new-tag' in user_browser.contents
+    >>> b'new-tag' in user_browser.contents
     False
 
 Now, let's add 'new-tag' again, and confirm it this time.

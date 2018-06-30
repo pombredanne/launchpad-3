@@ -15,7 +15,7 @@ an event listener to demonstrate this.
     >>> from lazr.lifecycle.event import IObjectCreatedEvent
     >>> from lp.bugs.interfaces.bug import IBug
     >>> def on_created_event(object, event):
-    ...     print "ObjectCreatedEvent: %r" % object
+    ...     print("ObjectCreatedEvent: %r" % object)
     >>> on_created_listener = TestEventListener(
     ...     IBug, IObjectCreatedEvent, on_created_event)
 
@@ -71,13 +71,13 @@ comment, of the bug report.
 The user specified a binary package name, so that's been added to the
 bug description and the first comment:
 
-    >>> print latest_ubuntu_bugtask.bug.description
+    >>> print(latest_ubuntu_bugtask.bug.description)
     a bug in a bin pkg
 
 the source package from which the binary was built has been set on
 the bugtask.
 
-    >>> print latest_ubuntu_bugtask.sourcepackagename.name
+    >>> print(latest_ubuntu_bugtask.sourcepackagename.name)
     linux-source-2.6.15
 
 2. Filing a bug on a product.
@@ -157,7 +157,7 @@ grab a new view to actually see them:
 
     >>> ubuntu_bugview = getMultiAdapter(
     ...     (latest_ubuntu_bugtask, request), name="+index")
-    >>> print len(ubuntu_bugview.comments)
+    >>> print(len(ubuntu_bugview.comments))
     3
     >>> [ (c.index, c.owner.name, c.text_contents)
     ...  for c in ubuntu_bugview.comments ]
@@ -172,12 +172,12 @@ Description and Comment Display
 When a user posts a new bug, the first comment and the description are
 identical. Take as an example the first bug posted above:
 
-    >>> print latest_ubuntu_bugtask.bug.description
+    >>> print(latest_ubuntu_bugtask.bug.description)
     a bug in a bin pkg
 
 Its description has the same contents as the bug's first comment:
 
-    >>> print latest_ubuntu_bugtask.bug.messages[0].text_contents
+    >>> print(latest_ubuntu_bugtask.bug.messages[0].text_contents)
     a bug in a bin pkg
 
 The view class offers a method to check exactly that:
@@ -203,7 +203,7 @@ property activity_and_comments.
 Because we omit the first comment, and because the third comment is
 indentical to the second, we really only display one comment:
 
-    >>> print len(comments)
+    >>> print(len(comments))
     1
     >>> [(c.index, c.owner.name, c.text_contents) for c in comments]
     [(1, u'name16', u'I can reproduce this bug.')]
@@ -233,9 +233,9 @@ duplicate link remains in the current context.
 
     >>> bug_five_in_firefox = bugtaskset.get(14)
 
-    >>> print bug_five_in_firefox.bug.id
+    >>> print(bug_five_in_firefox.bug.id)
     5
-    >>> print bug_five_in_firefox.product.name
+    >>> print(bug_five_in_firefox.product.name)
     firefox
 
 
@@ -247,7 +247,7 @@ duplicate link remains in the current context.
     >>> getUtility(IOpenLaunchBag).add(bug_five_in_firefox)
 
     >>> for dupe in bug_page_view.duplicates():
-    ...     print dupe['url']
+    ...     print(dupe['url'])
     http://.../firefox/+bug/6
 
 Bug 2 is not reported in Firefox. Let's mark bug 2 as a dupe of bug 5,
@@ -261,7 +261,7 @@ and see how the returned link changes.
     ...     (bug_five_in_firefox.bug, request), name="+portlet-duplicates")
 
     >>> for dupe in bug_page_view.duplicates():
-    ...     print dupe['url']
+    ...     print(dupe['url'])
     http://.../bugs/2
     ...
 
@@ -476,10 +476,10 @@ task anyway.
     >>> def print_tasks_and_nominations(task_and_nomination_views):
     ...     for task_or_nomination_view in task_and_nomination_views:
     ...         task_or_nomination = task_or_nomination_view.context
-    ...         print "%s, %s, %s" % (
+    ...         print("%s, %s, %s" % (
     ...             get_object_type(task_or_nomination),
     ...             task_or_nomination.status.title,
-    ...             task_or_nomination.target.bugtargetdisplayname)
+    ...             task_or_nomination.target.bugtargetdisplayname))
 
     >>> task_and_nomination_views = (
     ...     bugtasks_and_nominations_view.getBugTaskAndNominationViews())
@@ -604,7 +604,7 @@ initialize the test harness.
     >>> from lp.bugs.browser.bug import BugEditView
     >>> class BugEditViewTest(BugEditView):
     ...     def index(self):
-    ...         print 'EDIT BUG'
+    ...         print('EDIT BUG')
 
     >>> firefox_task = bug_one.bugtasks[0]
     >>> firefox_task.bugtargetdisplayname
@@ -737,23 +737,23 @@ order, the comments and activity that have taken place on a bug.
     ...     for activity in activities:
     ...         target_name = activity['target']
     ...         if target_name is None:
-    ...             print "Changed:"
+    ...             print("Changed:")
     ...         else:
-    ...             print "Changed in %s:" % target_name
+    ...             print("Changed in %s:" % target_name)
     ...         activity_items = activity['activity']
     ...         for activity_item in activity_items:
-    ...             print "* %s: %s => %s" % (
+    ...             print("* %s: %s => %s" % (
     ...                 activity_item.change_summary,
     ...                 activity_item.oldvalue,
-    ...                 activity_item.newvalue)
+    ...                 activity_item.newvalue))
 
     >>> def print_comment(comment):
-    ...     print comment.text_for_display
+    ...     print(comment.text_for_display)
     ...     print_activities(comment.activity)
 
     >>> def print_activity_and_comments(activity_and_comments):
     ...     for activity_or_comment in activity_and_comments:
-    ...         print "-- {person.name} --".format(**activity_or_comment)
+    ...         print("-- {person.name} --".format(**activity_or_comment))
     ...         if 'activity' in activity_or_comment:
     ...             print_activities(activity_or_comment["activity"])
     ...         if 'comment' in activity_or_comment:
@@ -826,7 +826,7 @@ The view offers a list of bugs similar to the one whose title we just
 searched for.
 
     >>> for bug in view.similar_bugs:
-    ...     print bug.title
+    ...     print(bug.title)
     New title
     Reflow problems with complex page layouts
     Firefox install instructions should be complete
@@ -841,5 +841,5 @@ If we refine the search critera, we'll get different results.
     ...     (firefox, request), name="+filebug-show-similar")
     >>> view.initialize()
     >>> for bug in view.similar_bugs:
-    ...     print bug.title
+    ...     print(bug.title)
     Reflow problems with complex page layouts

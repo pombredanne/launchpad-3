@@ -491,7 +491,7 @@ class TestGetAllStructuralSubscriptionsForTarget(TestCaseWithFactory):
 
 
 def distributionSourcePackageSetUp(test):
-    setUp(test)
+    setUp(test, future=True)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['target'] = ubuntu.getSourcePackage('evolution')
     test.globs['other_target'] = ubuntu.getSourcePackage('pmount')
@@ -499,13 +499,13 @@ def distributionSourcePackageSetUp(test):
 
 
 def productSetUp(test):
-    setUp(test)
+    setUp(test, future=True)
     test.globs['target'] = getUtility(IProductSet).getByName('firefox')
     test.globs['filebug'] = bugtarget_filebug
 
 
 def distributionSetUp(test):
-    setUp(test)
+    setUp(test, future=True)
     test.globs['target'] = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['filebug'] = bugtarget_filebug
 
@@ -517,7 +517,7 @@ def milestone_filebug(milestone, summary, status=None):
 
 
 def milestoneSetUp(test):
-    setUp(test)
+    setUp(test, future=True)
     firefox = getUtility(IProductSet).getByName('firefox')
     test.globs['target'] = firefox.getMilestone('1.0')
     test.globs['filebug'] = milestone_filebug
@@ -535,7 +535,7 @@ def distroseries_sourcepackage_filebug(distroseries, summary, status=None):
 
 
 def distroSeriesSourcePackageSetUp(test):
-    setUp(test)
+    setUp(test, future=True)
     test.globs['target'] = (
         getUtility(IDistributionSet).getByName('ubuntu').getSeries('hoary'))
     test.globs['filebug'] = distroseries_sourcepackage_filebug

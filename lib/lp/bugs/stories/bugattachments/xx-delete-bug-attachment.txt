@@ -18,7 +18,7 @@ The attachment is now visible on the bug page.
     >>> attachment_portlet = find_portlet(
     ...     user_browser.contents, 'Bug attachments')
     >>> for li in attachment_portlet.findAll('li', 'download-attachment'):
-    ...     print li.a.renderContents()
+    ...     print(li.a.renderContents())
     Great deal
 
 There will also be a comment with a link to the attachment in its body.
@@ -37,7 +37,7 @@ attachment.
 
     >>> import re
     >>> user_browser.getLink(url=re.compile(r'[+]attachment/\d+$')).click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Bug #2...
     >>> user_browser.getControl('Delete Attachment') is not None
     True
@@ -50,12 +50,12 @@ arent' any other attachments, the portlet won't show up at all.
     >>> user_browser.url
     'http://.../+bug/2'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
+    ...     print(message.renderContents())
     Attachment
     "<a href="http://bugs.launchpad.dev/...+files/foo.txt">Great deal</a>"
     has been deleted.
 
-    >>> print find_portlet(user_browser.contents, 'Bug attachments')
+    >>> print(find_portlet(user_browser.contents, 'Bug attachments'))
     None
 
 Since the attachment has been deleted, the comment referencing it will no
