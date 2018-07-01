@@ -224,6 +224,7 @@ setup(
         'testtools',
         'timeline',
         'transaction',
+        'treq',
         'Twisted[conch,tls]',
         'txfixtures',
         'txlongpoll',
