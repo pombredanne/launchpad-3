@@ -17,19 +17,20 @@
   >>> ppa_owner_webservice = webservice_for_person(
   ...     owner, permission=OAuthPermission.WRITE_PRIVATE)
 
-  >>> print ppa_owner_webservice.named_post(
+  >>> print(ppa_owner_webservice.named_post(
   ...     ppa_owner['self_link'], 'createPPA', {}, distribution='/ubuntu',
-  ...     name='yay', displayname='My shiny new PPA', description='Shinyness!')
+  ...     name='yay', displayname='My shiny new PPA',
+  ...     description='Shinyness!'))
   HTTP/1.1 201 Created
   Status: 201
   ...
   Location: http://api.launchpad.dev/.../+archive/ubuntu/yay
   ...
 
-  >>> print ppa_owner_webservice.named_post(
+  >>> print(ppa_owner_webservice.named_post(
   ...     ppa_owner['self_link'], 'createPPA', {}, name='ubuntu',
   ...     displayname='My shiny new PPA', description='Shinyness!',
-  ...     )
+  ...     ))
   HTTP/1.1 400 Bad Request
   Status: 400 Bad Request
   ...
@@ -45,11 +46,11 @@ Our PPA owner now has a single PPA.
 
 They aren't a commercial admin, so they cannot create private PPAs.
 
-  >>> print ppa_owner_webservice.named_post(
+  >>> print(ppa_owner_webservice.named_post(
   ...     ppa_owner['self_link'], 'createPPA', {}, name='whatever',
   ...     displayname='My secret new PPA', description='Secretness!',
   ...     private=True,
-  ...     )
+  ...     ))
   HTTP/1.1 400 Bad Request
   Status: 400
   ...
@@ -71,11 +72,11 @@ However, we can grant them commercial admin access:
 
 Once they have commercial access, they can create private PPAs:
 
-  >>> print ppa_owner_webservice.named_post(
+  >>> print(ppa_owner_webservice.named_post(
   ...     ppa_owner['self_link'], 'createPPA', {}, name='secret',
   ...     displayname='My secret new PPA', description='Secretness!',
   ...     private=True,
-  ...     )
+  ...     ))
   HTTP/1.1 201 Created
   Status: 201
   ...
@@ -98,9 +99,9 @@ And the PPA is, of course, private:
 
 It's possible to create PPAs for all sorts of distributions.
 
-  >>> print ppa_owner_webservice.named_post(
+  >>> print(ppa_owner_webservice.named_post(
   ...     ppa_owner['self_link'], 'createPPA', {}, distribution='/ubuntutest',
-  ...     name='ppa')
+  ...     name='ppa'))
   HTTP/1.1 201 Created
   Status: 201
   ...
@@ -109,9 +110,9 @@ It's possible to create PPAs for all sorts of distributions.
 
 But not for distributions that don't have PPAs enabled.
 
-  >>> print ppa_owner_webservice.named_post(
+  >>> print(ppa_owner_webservice.named_post(
   ...     ppa_owner['self_link'], 'createPPA', {}, distribution='/redhat',
-  ...     name='ppa')
+  ...     name='ppa'))
   HTTP/1.1 400 Bad Request
   Status: 400
   ...
@@ -124,8 +125,8 @@ createPPA's distribution and name arguments were added years after the
 method, so they remain optional and default to Ubuntu and "ppa"
 respectively.
 
-  >>> print ppa_owner_webservice.named_post(
-  ...     ppa_owner['self_link'], 'createPPA', {})
+  >>> print(ppa_owner_webservice.named_post(
+  ...     ppa_owner['self_link'], 'createPPA', {}))
   HTTP/1.1 201 Created
   Status: 201
   ...

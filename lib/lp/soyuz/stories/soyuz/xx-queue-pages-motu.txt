@@ -34,7 +34,7 @@ component:
     >>> def print_queue(contents):
     ...     queue_rows = find_tags_by_class(contents, "queue-row")
     ...     for row in queue_rows:
-    ...         print extract_text(row)
+    ...         print(extract_text(row))
 
     >>> motu_browser.open(
     ...     "http://launchpad.dev/ubuntu/breezy-autotest/")

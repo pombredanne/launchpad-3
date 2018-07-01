@@ -130,7 +130,7 @@ Create a function to check the expected links.
     ...         try:
     ...             found_url = browser.getLink(link).url
     ...         except LinkNotFoundError:
-    ...             print '%s: NOT FOUND' % libraryfile.filename
+    ...             print('%s: NOT FOUND' % libraryfile.filename)
     ...             continue
     ...         found_url = found_url.replace('%7E', '~')
     ...         if source_name is not None:
@@ -141,10 +141,10 @@ Create a function to check the expected links.
     ...             expected_url = '/'.join(
     ...                 (base_url, '+files', libraryfile.filename))
     ...         if found_url == expected_url:
-    ...             print '%s: OK' % libraryfile.filename
+    ...             print('%s: OK' % libraryfile.filename)
     ...         else:
-    ...             print '%s: NOT OK (%s != %s)' % (
-    ...                 libraryfile.filename, found_url, expected_url)
+    ...             print('%s: NOT OK (%s != %s)' % (
+    ...                 libraryfile.filename, found_url, expected_url))
 
 No Privileges user can access the files related with their PPA and its
 builds.
@@ -154,7 +154,7 @@ builds.
     >>> no_priv_browser.open(
     ...     "http://launchpad.dev/~no-priv/+archive/ubuntu/p3a/+packages")
 
-    >>> print no_priv_browser.title
+    >>> print(no_priv_browser.title)
     Packages in “PPA named p3a for No Privileges Person”...
 
 Source changesfiles are served on the PPA '+files' traversal.
@@ -207,7 +207,7 @@ Buildlog, upload_log and binary changesfile are served via the Build
 '+files' traversal when the Build page is presented.
 
     >>> no_priv_browser.getLink('i386').click()
-    >>> print no_priv_browser.title
+    >>> print(no_priv_browser.title)
     i386 build of test-pkg 1.0 : PPA named p3a for No Privileges Person :
     No Privileges Person
 
@@ -250,10 +250,10 @@ Sample Person can't access the file.
 
 The 'No Privileges' user, the PPA owner, can download the DSC file.
 
-    >>> print http(r"""
+    >>> print(http(br"""
     ... GET %s HTTP/1.1
     ... Authorization: Basic no-priv@canonical.com:test
-    ... """ % (dsc_file_lp_url.replace('http://launchpad.dev', '')))
+    ... """ % (dsc_file_lp_url.replace('http://launchpad.dev', ''))))
     HTTP/1.1 303 See Other
     ...
     Location: https://...restricted.../test-pkg_1.0.dsc?token=...
@@ -270,10 +270,10 @@ Binary files are served via '+files' rather than '+sourcefiles'.
     Traceback (most recent call last):
     ...
     Unauthorized
-    >>> print http(r"""
+    >>> print(http(br"""
     ... GET %s HTTP/1.1
     ... Authorization: Basic no-priv@canonical.com:test
-    ... """ % (deb_file_lp_url.replace('http://launchpad.dev', '')))
+    ... """ % (deb_file_lp_url.replace('http://launchpad.dev', ''))))
     HTTP/1.1 303 See Other
     ...
     Location: https://...restricted.../test-bin_1.0_all.deb?token=...
@@ -309,12 +309,12 @@ binaries across to no-priv's public ppa.
     >>> transaction.commit()
     >>> logout()
 
-    >>> print file_librarian_url
+    >>> print(file_librarian_url)
     http://.../test-pkg_1.0.dsc
 
-    >>> print http(r"""
+    >>> print(http(br"""
     ... GET %s HTTP/1.1
-    ... """ % file_lp_url.replace('http://launchpad.dev', ''))
+    ... """ % file_lp_url.replace('http://launchpad.dev', '')))
     HTTP/1.1 303 See Other
     ...
     Location: http://.../test-pkg_1.0.dsc
@@ -338,10 +338,10 @@ redirect to the files for the default named PPA.
     >>> file_lp_url_without_ppa_name = (
     ...     'http://launchpad.dev/~no-priv/+archive/+files/test-pkg_1.0.dsc')
 
-    >>> print http(r"""
+    >>> print(http(br"""
     ... GET %s HTTP/1.1
     ... """ % file_lp_url_without_ppa_name.replace(
-    ...     'http://launchpad.dev', ''))
+    ...     'http://launchpad.dev', '')))
     HTTP/1.1 301 Moved Permanently
     ...
     Location: http://localhost/~no-priv/+archive/ubuntu/ppa/+files/test-pkg_1.0.dsc
@@ -351,10 +351,10 @@ The same redirection happens for +archive/+build/blah urls:
 
     >>> buildlog_lp_url_without_ppa_name = (
     ...     'http://launchpad.dev/~no-priv/+archive/+build/1/+files/foo')
-    >>> print http(r"""
+    >>> print(http(br"""
     ... GET %s HTTP/1.1
     ... """ % buildlog_lp_url_without_ppa_name.replace(
-    ...     'http://launchpad.dev', ''))
+    ...     'http://launchpad.dev', '')))
     HTTP/1.1 301 Moved Permanently
     ...
     Location: http://.../~no-priv/+archive/ubuntu/ppa/+build/1/+files/...
@@ -381,7 +381,7 @@ immediately deleted in case of reported ToS violation.
 The librarian URL for a deleted file is None, by convention. See
 `ILibraryFileAlias` for more information on this.
 
-    >>> print dsc_file.http_url
+    >>> print(dsc_file.http_url)
     None
 
     >>> logout()
@@ -405,16 +405,16 @@ remains in the PPA page, but it's not a link anymore.
 If by any chance, mostly bookmarked URLs, it gets accessed via the
 LP proxy URL a proper NotFound error is raised.
 
-    >>> print file_lp_url
+    >>> print(file_lp_url)
     http://launchpad.dev/~no-priv/+archive/ubuntu/ppa/+sourcefiles/test-pkg/1.0/test-pkg_1.0.dsc
 
-    >>> not_found_file = http(r"""
+    >>> not_found_file = http(br"""
     ... GET %s HTTP/1.1
     ... """ % file_lp_url.replace('http://launchpad.dev', ''))
 
 It results in a 404 response.
 
-    >>> print not_found_file
+    >>> print(not_found_file)
     HTTP/1.1 404 Not Found
     ...
 
@@ -422,7 +422,7 @@ Launchpad staff can see the correct filename and the context archive in which
 the error occurred based on the traceback included in the page.
 
     >>> main_content = find_main_content(str(not_found_file))
-    >>> print extract_text(main_content)
+    >>> print(extract_text(main_content))
     Lost something?
     ...
     NotFound:

@@ -39,7 +39,7 @@ Each pocket should only contain packages marked as PUBLISHED.
   >>> for pub in pmount_view.published_by_pocket():
   ...     pkg_versions = [
   ...         (p['spr'].version, p['component_name']) for p in pub['packages']]
-  ...     print pub['pocketdetails'].title, sorted(pkg_versions)
+  ...     print(pub['pocketdetails'].title, sorted(pkg_versions))
   Release [(u'0.1-2', u'main')]
   Security []
   Updates []
@@ -62,7 +62,7 @@ architecture independent and we don't know at this point, that's why we
 have only on binary.
 
   >>> for bin_name, archs in firefox_view.binaries().items():
-  ...    print bin_name, archs
+  ...    print(bin_name, archs)
   mozilla-firefox [u'hppa', u'i386']
   mozilla-firefox-data [u'hppa', u'i386']
 
@@ -103,7 +103,7 @@ sourcepackagename before passing to regexp.
 
   >>> libc = ubuntu.getSourcePackage('libstdc++').getVersion('b8p')
   >>> libc_view = queryMultiAdapter((libc, request), name="+changelog")
-  >>> print libc_view.changelog_entry
+  >>> print(libc_view.changelog_entry)
   libstdc++ (9.9-1) hoary; urgency=high
   <BLANKLINE>
    * Placeholder

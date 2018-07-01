@@ -19,7 +19,7 @@ of a person:
     ...     subscriptions = find_tags_by_class(contents,
     ...                                        'archive-subscription-row')
     ...     for subscription in subscriptions:
-    ...         print extract_text(subscription)
+    ...         print(extract_text(subscription))
 
 == Story: An archive owner can add a subscription for a private archive ==
 
@@ -72,7 +72,7 @@ Create a helper function to print subscriptions:
     ...     subscriptions = find_tags_by_class(contents,
     ...                                        'archive_subscriber_row')
     ...     for subscription in subscriptions:
-    ...         print extract_text(subscription)
+    ...         print(extract_text(subscription))
 
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                Expires     Comment
@@ -144,7 +144,7 @@ then the browser is redirected back to the subscriptions page, the updated
 subscription for the launchpad team is displayed as well as a notification
 about the update.
 
-    >>> print cprov_browser.url
+    >>> print(cprov_browser.url)
     http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+subscriptions
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment
@@ -174,7 +174,7 @@ then the browser is redirected back to the subscriptions page, the canceled
 subscription is no longer displayed and a notification about the
 cancellation is displayed.
 
-    >>> print cprov_browser.url
+    >>> print(cprov_browser.url)
     http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+subscriptions
     >>> print_archive_subscriptions(cprov_browser.contents)
     Name                    Expires       Comment

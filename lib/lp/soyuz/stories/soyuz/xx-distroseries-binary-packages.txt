@@ -5,11 +5,11 @@ summary and description:
 
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/warty/+package/mozilla-firefox')
-    >>> print browser.title
+    >>> print(browser.title)
     mozilla-firefox : Warty (4.10) : Ubuntu
 
     >>> main_content = find_main_content(browser.contents)
-    >>> print extract_text(main_content)
+    >>> print(extract_text(main_content))
     Binary package “mozilla-firefox” in ubuntu warty
     Warty (4.10) mozilla-firefox
     Mozilla Firefox Web Browser
@@ -24,11 +24,11 @@ summary and description:
 And each publishing history item is a link to the relevant binary
 release:
 
-    >>> print browser.getLink('mozilla-firefox 0.9 in hppa (Release)').url
+    >>> print(browser.getLink('mozilla-firefox 0.9 in hppa (Release)').url)
     http://launchpad.dev/ubuntu/warty/hppa/mozilla-firefox/0.9
-    >>> print browser.getLink('mozilla-firefox 0.9 in i386 (Release)').url
+    >>> print(browser.getLink('mozilla-firefox 0.9 in i386 (Release)').url)
     http://launchpad.dev/ubuntu/warty/i386/mozilla-firefox/0.9
-    >>> print browser.getLink('mozilla-firefox 1.0 in i386 (Release)').url
+    >>> print(browser.getLink('mozilla-firefox 1.0 in i386 (Release)').url)
     http://launchpad.dev/ubuntu/warty/i386/mozilla-firefox/1.0
 
 The page also displays a link to the distro series source package
@@ -43,11 +43,11 @@ no link to any source package:
 
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+package/mozilla-firefox')
-    >>> print browser.title
+    >>> print(browser.title)
     mozilla-firefox : Hoary (5.04) : Ubuntu
 
     >>> main_content = find_main_content(browser.contents)
-    >>> print extract_text(main_content)
+    >>> print(extract_text(main_content))
     Binary package “mozilla-firefox” in ubuntu hoary
     Hoary (5.04) mozilla-firefox
     No summary available for mozilla-firefox in ubuntu hoary.
