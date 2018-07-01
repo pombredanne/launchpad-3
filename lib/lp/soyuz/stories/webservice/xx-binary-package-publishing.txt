@@ -12,7 +12,7 @@ archives, getPublishedBinaries().
     >>> def print_publications(pubs):
     ...     for display_name in sorted(
     ...         entry['display_name'] for entry in pubs['entries']):
-    ...         print display_name
+    ...         print(display_name)
 
     >>> print_publications(pubs)
     mozilla-firefox 1.0 in warty hppa
@@ -120,7 +120,7 @@ access to the PPA publications.
     >>> cprov_private_ppa = webservice.get("/~cprov/+archive/ubuntu/p3a").jsonBody()
     >>> cprov_bins_response = webservice.named_get(
     ...     cprov_private_ppa['self_link'], 'getPublishedBinaries')
-    >>> print cprov_bins_response
+    >>> print(cprov_bins_response)
     HTTP/1.1 200 Ok
     ...
 
@@ -128,7 +128,7 @@ Any other user attempt would result in a 401 error.
 
     >>> response = user_webservice.named_get(
     ...     cprov_private_ppa['self_link'], 'getPublishedBinaries')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -138,7 +138,7 @@ also fail in their quest.
     >>> pubs = cprov_bins_response.jsonBody()
     >>> private_publication_url = pubs['entries'][0]['self_link']
     >>> response = user_webservice.get(private_publication_url)
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -213,33 +213,33 @@ We can also filter by date.
 
 But other URLs result in a 404.
 
-    >>> print webservice.get(
-    ...     '/~cprov/+archive/ubuntu/ppa/+binaryhits/moz')
+    >>> print(webservice.get(
+    ...     '/~cprov/+archive/ubuntu/ppa/+binaryhits/moz'))
     HTTP/1.1 404 Not Found
     ...
 
-    >>> print webservice.get(
-    ...     '/~cprov/+archive/ubuntu/ppa/+binaryhits/phoenix/1.0/hppa/2010-02-23/unknown')
+    >>> print(webservice.get(
+    ...     '/~cprov/+archive/ubuntu/ppa/+binaryhits/phoenix/1.0/hppa/2010-02-23/unknown'))
     HTTP/1.1 404 Not Found
     ...
 
-    >>> print webservice.get(
-    ...     '/~cprov/+archive/ubuntu/ppa/+binaryhits/mozilla-firefox/1.1/hppa/2010-02-23/unknown')
+    >>> print(webservice.get(
+    ...     '/~cprov/+archive/ubuntu/ppa/+binaryhits/mozilla-firefox/1.1/hppa/2010-02-23/unknown'))
     HTTP/1.1 404 Not Found
     ...
 
-    >>> print webservice.get(
-    ...     '/~cprov/+archive/ubuntu/ppa/+binaryhits/mozilla-firefox/1.0/foo/2010-02-23/unknown')
+    >>> print(webservice.get(
+    ...     '/~cprov/+archive/ubuntu/ppa/+binaryhits/mozilla-firefox/1.0/foo/2010-02-23/unknown'))
     HTTP/1.1 404 Not Found
     ...
 
-    >>> print webservice.get(
-    ...     '/~cprov/+archive/ubuntu/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-25/unknown')
+    >>> print(webservice.get(
+    ...     '/~cprov/+archive/ubuntu/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-25/unknown'))
     HTTP/1.1 404 Not Found
     ...
 
-    >>> print webservice.get(
-    ...     '/~cprov/+archive/ubuntu/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-23/XX')
+    >>> print(webservice.get(
+    ...     '/~cprov/+archive/ubuntu/ppa/+binaryhits/mozilla-firefox/1.0/hppa/2010-02-23/XX'))
     HTTP/1.1 404 Not Found
     ...
 
@@ -270,9 +270,9 @@ Overrides
     >>> pubs = webservice.named_get(
     ...     cprov_archive_devel["self_link"], "getPublishedBinaries",
     ...     api_version="devel", binary_name="testoverrides").jsonBody()
-    >>> print pubs["entries"][0]["section_name"]
+    >>> print(pubs["entries"][0]["section_name"])
     base
-    >>> print pubs["entries"][0]["priority_name"]
+    >>> print(pubs["entries"][0]["priority_name"])
     STANDARD
     >>> package = pubs["entries"][0]["self_link"]
 
@@ -281,7 +281,7 @@ Anonymous users can't change overrides.
     >>> response = webservice.named_post(
     ...     package, "changeOverride", api_version="devel",
     ...     new_section="admin", new_priority="optional")
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -290,7 +290,7 @@ The owner of a PPA can change overrides.
     >>> response = cprov_webservice.named_post(
     ...     package, "changeOverride", api_version="devel",
     ...     new_section="admin", new_priority="optional")
-    >>> print response
+    >>> print(response)
     HTTP/1.1 200 Ok
     ...
 
@@ -299,7 +299,7 @@ The override change takes effect:
     >>> pubs = webservice.named_get(
     ...     cprov_archive["self_link"], "getPublishedBinaries",
     ...     binary_name="testoverrides").jsonBody()
-    >>> print pubs["entries"][0]["section_name"]
+    >>> print(pubs["entries"][0]["section_name"])
     admin
-    >>> print pubs["entries"][0]["priority_name"]
+    >>> print(pubs["entries"][0]["priority_name"])
     OPTIONAL

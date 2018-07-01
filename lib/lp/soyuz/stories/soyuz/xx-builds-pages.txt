@@ -19,7 +19,7 @@ according to the selected buildstate, by default All.
     ...     by state and "mismatch" if the page, erroneously,  provide only
     ...     part of the required arguments to enable filter by name.
     ...     """
-    ...     assert '<input type="submit" value="Filter" />' in contents
+    ...     assert b'<input type="submit" value="Filter" />' in contents
     ...
     ...     field_state = find_tag_by_id(contents, 'build_state') is not None
     ...     field_name = find_tag_by_id(contents, 'build_text') is not None
@@ -41,30 +41,30 @@ For Distribution, it's possible to filter build results by state and name:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Builds").click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Builds : Ubuntu
 
-    >>> print check_builds_options(anon_browser.contents)
+    >>> print(check_builds_options(anon_browser.contents))
     State and Name present
 
 For DistroSeries, an architecture filter is also presented:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary")
     >>> anon_browser.getLink("Show builds").click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Builds : Hoary (5.04) : Ubuntu
 
-    >>> print check_builds_options(anon_browser.contents)
+    >>> print(check_builds_options(anon_browser.contents))
     State, Arch and Name present
 
 For DistroArchSeries, same as Distribution:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary/i386")
     >>> anon_browser.getLink("Show builds").click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Builds : i386 : Hoary (5.04) : Ubuntu
 
-    >>> print check_builds_options(anon_browser.contents)
+    >>> print(check_builds_options(anon_browser.contents))
     State and Name present
 
 For Builder, same as Distribution:
@@ -72,10 +72,10 @@ For Builder, same as Distribution:
     >>> anon_browser.mech_browser.set_handle_equiv(False)
     >>> anon_browser.open("http://launchpad.dev/builders/bob")
     >>> anon_browser.getLink("View full history").click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Build history : Bob The Builder : Build Farm
 
-    >>> print check_builds_options(anon_browser.contents)
+    >>> print(check_builds_options(anon_browser.contents))
     State and Name present
 
 For Archive (PPA), same as Distribution:
@@ -83,10 +83,10 @@ For Archive (PPA), same as Distribution:
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/+packages")
     >>> anon_browser.getLink("View all builds").click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Builds : PPA for Celso Providelo : Celso Providelo
 
-    >>> print check_builds_options(anon_browser.contents)
+    >>> print(check_builds_options(anon_browser.contents))
     State and Name present
 
 For SourcePackage, it's only possible to filter by state.
@@ -94,17 +94,17 @@ For SourcePackage, it's only possible to filter by state.
     >>> anon_browser.open(
     ...   "http://launchpad.dev/ubuntu/hoary/+source/pmount")
     >>> anon_browser.getLink("Show builds").click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Builds : Hoary (5.04) : pmount package : Ubuntu
 
-    >>> print check_builds_options(anon_browser.contents)
+    >>> print(check_builds_options(anon_browser.contents))
     State present, Name not present
 
 The source package default state is "all states":
 
     >>> soup = find_main_content(anon_browser.contents)
     >>> [results] = soup.findAll(attrs={'selected': 'selected'})
-    >>> print extract_text(results)
+    >>> print(extract_text(results))
     All states
 
 The anonymous user checks the contents of the distro builds list page.
@@ -133,10 +133,10 @@ initialized' one (fix bug #52704).
     ...     rule = 30 * '-'
     ...     build_rows = find_tags_by_class(contents, 'build-row')
     ...     for row in build_rows:
-    ...         print rule
-    ...         print row.td.img['title']
-    ...         print extract_text(row)
-    ...     print rule
+    ...         print(rule)
+    ...         print(row.td.img['title'])
+    ...         print(extract_text(row))
+    ...     print(rule)
 
     >>> print_build_rows(anon_browser.contents)
     ------------------------------
@@ -270,7 +270,7 @@ to the form:
     >>> anon_browser.getControl(name="build_state").value = ['foo']
     Traceback (most recent call last):
     ...
-    ItemNotFoundError: insufficient items with name 'foo'
+    ItemNotFoundError: insufficient items with name u'foo'
 
 However even if anonymous user builds an URL with a incorrect value,
 code is prepared to raise the correct exception:
@@ -389,8 +389,8 @@ first view if there are no GET arguments.
 
     >>> anon_browser.open("http://launchpad.dev/debian/+builds")
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'no-default-result'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'no-default-result')))
     No 'Currently building' build records.
 
     >>> find_tag_by_id(anon_browser.contents, 'empty-result') is None
@@ -408,8 +408,8 @@ was done before.
     ...     anon_browser.contents, 'no-default-result') is None
     True
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'empty-result'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'empty-result')))
     No matching builds.
 
 If there *are* builds present, the anonymous user does not see any
@@ -436,8 +436,8 @@ repeat the same set of accesses done for Distribution Builds page.
 When anonymous user first load only 'No packages currently building'
 message is presented.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'no-default-result'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'no-default-result')))
     No build records.
 
     >>> find_tag_by_id(anon_browser.contents, 'empty-result') is None
@@ -452,8 +452,8 @@ matching builds'.
     >>> find_tag_by_id(anon_browser.contents, 'no-default-result') is None
     True
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'empty-result'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'empty-result')))
     No matching builds.
 
 The described mechanism works similarly for:
@@ -473,8 +473,8 @@ page as any other packages from the primary archive.
     ...    "http://launchpad.dev/ubuntu//+builds?build_text="
     ...    "commercialpackage&build_state=built")
 
-    >>> print extract_text(
-    ...    find_tags_by_class(anon_browser.contents, 'listing')[0])
+    >>> print(extract_text(
+    ...    find_tags_by_class(anon_browser.contents, 'listing')[0]))
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
     ...
 
@@ -484,8 +484,8 @@ And also on the distro series builds page:
     ...    "http://launchpad.dev/ubuntu/breezy-autotest/+builds"
     ...    "?build_text=commercialpackage&build_state=built")
 
-    >>> print extract_text(
-    ... find_tags_by_class(anon_browser.contents, 'listing')[0])
+    >>> print(extract_text(
+    ... find_tags_by_class(anon_browser.contents, 'listing')[0]))
     i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
     ...
 
@@ -520,7 +520,7 @@ Such feature is visible when anonymous user access the
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/testing/1.0")
-    >>> print extract_text(find_portlet(anon_browser.contents, 'Builds'))
+    >>> print(extract_text(find_portlet(anon_browser.contents, 'Builds')))
     Builds
     Warty: hppa i386
 
@@ -537,6 +537,6 @@ Such feature is visible when anonymous user access the
     >>> logout()
 
     >>> anon_browser.reload()
-    >>> print extract_text(find_portlet(anon_browser.contents, 'Builds'))
+    >>> print(extract_text(find_portlet(anon_browser.contents, 'Builds')))
     Builds
     Warty: hppa i386 (Unapproved)

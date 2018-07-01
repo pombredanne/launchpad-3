@@ -62,7 +62,7 @@ building.
 
     >>> anon_browser.mech_browser.set_handle_equiv(False)
     >>> anon_browser.open("http://launchpad.dev/+builds/frog")
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print(extract_text(find_main_content(anon_browser.contents)))
     The frog builder...
     Current status
     Building private job
@@ -72,7 +72,7 @@ Launchpad Administrators are allowed to see the build:
 
     >>> admin_browser.mech_browser.set_handle_equiv(False)
     >>> admin_browser.open("http://launchpad.dev/+builds/frog")
-    >>> print extract_text(find_main_content(admin_browser.contents))
+    >>> print(extract_text(find_main_content(admin_browser.contents)))
     The frog builder...
     Current status
     Building
@@ -84,7 +84,7 @@ Buildd Administrators are not allowed to see the build in the portlet:
     >>> name12_browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> name12_browser.mech_browser.set_handle_equiv(False)
     >>> name12_browser.open("http://launchpad.dev/+builds/frog")
-    >>> print extract_text(find_main_content(name12_browser.contents))
+    >>> print(extract_text(find_main_content(name12_browser.contents)))
     The frog builder...
     Current status
     Building private job
@@ -96,7 +96,7 @@ cprov is also allowed to see his own build:
     ...     auth="Basic celso.providelo@canonical.com:test")
     >>> cprov_browser.mech_browser.set_handle_equiv(False)
     >>> cprov_browser.open("http://launchpad.dev/+builds/frog")
-    >>> print extract_text(find_main_content(cprov_browser.contents))
+    >>> print(extract_text(find_main_content(cprov_browser.contents)))
     The frog builder...
     Current status
     Building
@@ -119,7 +119,7 @@ But it is fine for authorised users:
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+build/%s" %
     ...     private_build_id)
-    >>> print cprov_browser.url
+    >>> print(cprov_browser.url)
     http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+build/...
 
 
@@ -139,7 +139,7 @@ what it shows a non-privileged user:
     >>> anon_browser.open("http://launchpad.dev/+builds/bob/+history")
     >>> [builds_list] = find_tags_by_class(
     ...     anon_browser.contents, 'builds_list')
-    >>> print extract_text(builds_list)
+    >>> print(extract_text(builds_list))
     Package:
     ...
     hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
@@ -162,7 +162,7 @@ history as an unauthorised user shows an empty history.
     >>> anon_browser.open("http://launchpad.dev/+builds/frog/+history")
     >>> [builds_list] = find_tags_by_class(
     ...     anon_browser.contents, 'builds_list')
-    >>> print extract_text(builds_list)
+    >>> print(extract_text(builds_list))
     Package:
     ...
     No build records.
@@ -173,7 +173,7 @@ Both admin and the owner of the build, cprov, can see the build in
     >>> admin_browser.open("http://launchpad.dev/+builds/frog/+history")
     >>> [builds_list] = find_tags_by_class(
     ...     admin_browser.contents, 'builds_list')
-    >>> print extract_text(builds_list)
+    >>> print(extract_text(builds_list))
     Package:
     ...
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
@@ -182,7 +182,7 @@ Both admin and the owner of the build, cprov, can see the build in
     >>> cprov_browser.open("http://launchpad.dev/+builds/frog/+history")
     >>> [builds_list] = find_tags_by_class(
     ...     cprov_browser.contents, 'builds_list')
-    >>> print extract_text(builds_list)
+    >>> print(extract_text(builds_list))
     Package:
     ...
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
@@ -198,7 +198,7 @@ a builder then it is hidden as in the examples above.
 An admin user can see builds even if they are private:
 
     >>> admin_browser.open("http://launchpad.dev/+builds")
-    >>> print extract_text(find_main_content(admin_browser.contents))
+    >>> print(extract_text(find_main_content(admin_browser.contents)))
     The Launchpad build farm
     ...
     frog  Building i386 build of privacy-test ... [~cprov/ubuntu/p3a]
@@ -209,7 +209,7 @@ An admin user can see builds even if they are private:
 Launchpad Buildd admins cannot see private builds.
 
     >>> name12_browser.open("http://launchpad.dev/+builds")
-    >>> print extract_text(find_main_content(name12_browser.contents))
+    >>> print(extract_text(find_main_content(name12_browser.contents)))
     The Launchpad build farm
     ...
     frog  Building private job
@@ -220,7 +220,7 @@ Launchpad Buildd admins cannot see private builds.
 cprov can see his own private build:
 
     >>> cprov_browser.open("http://launchpad.dev/+builds")
-    >>> print extract_text(find_main_content(cprov_browser.contents))
+    >>> print(extract_text(find_main_content(cprov_browser.contents)))
     The Launchpad build farm
     ...
     frog  Building i386 build of privacy-test ... [~cprov/ubuntu/p3a]
@@ -231,7 +231,7 @@ cprov can see his own private build:
 Anonymous users cannot see the private build:
 
     >>> anon_browser.open("http://launchpad.dev/+builds")
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print(extract_text(find_main_content(anon_browser.contents)))
     The Launchpad build farm
     2 available build machines, ...
     ...
@@ -255,9 +255,9 @@ users:
     ...         "http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+build/%s" %
     ...         private_build_id)
     ... except Unauthorized:
-    ...     print "Got expected exception"
+    ...     print("Got expected exception")
     ... else:
-    ...     print "Did not get expected exception"
+    ...     print("Did not get expected exception")
     Got expected exception
 
     >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
@@ -266,9 +266,9 @@ users:
     ...         "http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+build/%s" %
     ...         private_build_id)
     ... except Unauthorized:
-    ...     print "Got expected exception"
+    ...     print("Got expected exception")
     ... else:
-    ...     print "Did not get expected exception"
+    ...     print("Did not get expected exception")
     Got expected exception
 
 Let's make the iceweasel package available in breezy-autotest.
@@ -294,7 +294,7 @@ First log in as an admin to be able to manipulate the source publishing.
 Now the anonymous user can see the build:
 
     >>> anon_browser.open("http://launchpad.dev/+builds")
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print(extract_text(find_main_content(anon_browser.contents)))
     The Launchpad build farm
     ...
     frog  Building i386 build of privacy-test 666 ... [~cprov/ubuntu/p3a]
@@ -306,7 +306,7 @@ Any other logged-in user will also see the build:
 
     >>> browser.mech_browser.set_handle_equiv(False)
     >>> browser.open("http://launchpad.dev/+builds")
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> print(extract_text(find_main_content(browser.contents)))
     The Launchpad build farm
     ...
     frog  Building i386 build of privacy-test 666 ... [~cprov/ubuntu/p3a]
@@ -319,13 +319,13 @@ Accessing the build page will now also work:
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+build/%s" %
     ...     private_build_id)
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     i386 build of privacy-test 666 : PPA named p3a for Celso Providelo : Celso Providelo
 
     >>> browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+build/%s" %
     ...     private_build_id)
-    >>> print browser.title
+    >>> print(browser.title)
     i386 build of privacy-test 666 : PPA named p3a for Celso Providelo : Celso Providelo
 
 Similarly, when accessing the distribution source package release page,
@@ -334,9 +334,9 @@ the main content will display a link to the newly unembargoed build:
     >>> browser.open(
     ...     "http://launchpad.dev/ubuntutest/+source/privacy-test/666")
     >>> portlet = find_portlet(browser.contents, 'Builds')
-    >>> print extract_text(portlet)
+    >>> print(extract_text(portlet))
     Builds
     Breezy Badger Autotest: i386
 
-    >>> print browser.getLink('i386').url
+    >>> print(browser.getLink('i386').url)
     http://launchpad.dev/~cprov/+archive/ubuntu/p3a/+build/...

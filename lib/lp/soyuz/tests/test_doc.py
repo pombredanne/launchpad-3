@@ -21,7 +21,10 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.testing.pages import PageTestSuite
+from lp.testing.pages import (
+    PageTestSuite,
+    setUpGlobs,
+    )
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -165,13 +168,15 @@ def test_suite():
     suite = unittest.TestSuite()
 
     stories_dir = os.path.join(os.path.pardir, 'stories')
-    suite.addTest(PageTestSuite(stories_dir))
+    suite.addTest(PageTestSuite(
+        stories_dir, setUp=lambda test: setUpGlobs(test, future=True)))
     stories_path = os.path.join(here, stories_dir)
     for story_entry in scandir.scandir(stories_path):
         if not story_entry.is_dir():
             continue
         story_path = os.path.join(stories_dir, story_entry.name)
-        suite.addTest(PageTestSuite(story_path))
+        suite.addTest(PageTestSuite(
+            story_path, setUp=lambda test: setUpGlobs(test, future=True)))
 
     # Add special needs tests
     for key in sorted(special):

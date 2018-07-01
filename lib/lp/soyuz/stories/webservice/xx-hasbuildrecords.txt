@@ -22,7 +22,7 @@ different contexts.
     >>> def print_builds(builds):
     ...     for entry in sorted(builds['entries'],
     ...                         key=lambda entry:entry.get('title')):
-    ...         print entry['title']
+    ...         print(entry['title'])
 
 
 Filtering builds

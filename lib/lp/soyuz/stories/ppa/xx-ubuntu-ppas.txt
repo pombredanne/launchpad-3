@@ -23,9 +23,9 @@ the context PPAs (registered, active, number of sources and binaries
 published) and a list of context series and corresponding architectures
 supported for PPA.
 
-    >>> print extract_text(
+    >>> print(extract_text(
     ...    find_tag_by_id(anon_browser.contents,
-    ...                   'supports_virtualized_architectures'))
+    ...                   'supports_virtualized_architectures')))
     PPA supported series
     Hoary (5.04) - development i386 (official)
     Warty (4.10) - current i386 (official)
@@ -33,8 +33,8 @@ supported for PPA.
 Up to 5 latest source publications are also presented in the 'Latest
 sources' section.
 
-    >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads'))
+    >>> print(extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads')))
     Latest uploads
     cdrkit 1.0 in breezy-autotest  in PPA for Celso Providelo ... ago
     iceweasel 1.0 in breezy-autotest in PPA for Mark Shuttleworth ... ago
@@ -44,8 +44,8 @@ sources' section.
 The 5 most active PPAs are listed in the 'Most active' section. Since
 we only have 3 PPAs in sampledata they are all presented.
 
-    >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
+    >>> print(extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active')))
     Most active
     PPAs with the highest number of uploads in the last 7 days.
 
@@ -78,26 +78,26 @@ coherent data for a distribution with no PPAs.
 
     >>> anon_browser.open("http://launchpad.dev/debian")
     >>> anon_browser.getLink("Personal Package Archives").click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Personal Package Archives : Debian
 
 PPA supported architectures reflects what we have in sampledata.
 
-    >>> print extract_text(
+    >>> print(extract_text(
     ...    find_tag_by_id(anon_browser.contents,
-    ...                   'supports_virtualized_architectures'))
+    ...                   'supports_virtualized_architectures')))
     PPA supported series
     Sarge (3.1) - frozen
     Woody (3.0) - current i386 (official)
 
 'Latest uploads' section is not presented.
 
-    >>> print find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads')
+    >>> print(find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads'))
     None
 
 'Most active' section is not presented.
 
-    >>> print find_tag_by_id(anon_browser.contents, 'ppa_most_active')
+    >>> print(find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     None
 
 The 'search' form is also suppresed.
@@ -105,7 +105,7 @@ The 'search' form is also suppresed.
     >>> anon_browser.getControl('Search', index=0).click()
     Traceback (most recent call last):
     ...
-    LookupError: label 'Search'
+    LookupError: label u'Search'
 
 
 == Searching PPAs ==
@@ -121,7 +121,7 @@ PENDING or PUBLISHED source record) PPAs.
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for ppa_row in find_tags_by_class(
     ...     anon_browser.contents, 'ppa_batch_row'):
-    ...     print extract_text(ppa_row)
+    ...     print(extract_text(ppa_row))
     PPA for Celso Providelo
     packages to help my friends.
     3
@@ -133,14 +133,14 @@ PENDING or PUBLISHED source record) PPAs.
 
 When a search is requested the information sections are not rendered.
 
-    >>> print find_tag_by_id(anon_browser.contents, 'ppa_most_active')
+    >>> print(find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
     None
 
-    >>> print find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads')
+    >>> print(find_tag_by_id(anon_browser.contents, 'ppa_latest_uploads'))
     None
 
-    >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'supports_virtualized_architectures')
+    >>> print(find_tag_by_id(
+    ...     anon_browser.contents, 'supports_virtualized_architectures'))
     None
 
 The information section will be only rendered if the page is reloaded
@@ -171,7 +171,7 @@ to allow inactive PPA results.
 
     >>> for ppa_row in find_tags_by_class(anon_browser.contents,
     ...                                   'ppa_batch_row'):
-    ...    print extract_text(ppa_row)
+    ...    print(extract_text(ppa_row))
     PPA for Celso Providelo
     packages to help my friends.
     3
@@ -228,7 +228,7 @@ specified.
     ...     "http://launchpad.dev/ubuntu/+ppas"
     ...     "?name_filter=packages&name_filter=friends")
     >>> [row] = find_tags_by_class(anon_browser.contents, 'ppa_batch_row')
-    >>> print extract_text(row)
+    >>> print(extract_text(row))
     PPA for Celso Providelo...
 
 
@@ -253,7 +253,7 @@ And now on to the page itself. In the table rows, the PPA
 'displayname' is a link to its corresponding page:
 
     >>> anon_browser.getLink("PPA for Celso Providelo").click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     PPA for Celso Providelo : Celso Providelo
 
 The first portlet in the PPA index page tell users how to install the
@@ -262,7 +262,7 @@ context PPA in their systems.
     >>> install_portlet = find_portlet(
     ...     anon_browser.contents, 'Adding this PPA to your system')
 
-    >>> print extract_text(install_portlet)
+    >>> print(extract_text(install_portlet))
     Adding this PPA to your system
     You can update your system with unsupported packages from this
     untrusted PPA by adding ppa:cprov/ppa to your system's Software Sources.
@@ -278,12 +278,12 @@ There is a link within this section pointing users to the 'help'
 wiki, which contains more documentation about the PPA installation
 procedure.
 
-    >>> print anon_browser.getLink('Read about installing').url
+    >>> print(anon_browser.getLink('Read about installing').url)
     http://launchpad.dev/+help-soyuz/ppa-sources-list.html
 
 The PPA owner reference is a link to its profile page.
 
-    >>> print anon_browser.getLink('Celso Providelo').url
+    >>> print(anon_browser.getLink('Celso Providelo').url)
     http://launchpad.dev/~cprov
 
 The installation details are presented right below the 'Technical
@@ -295,7 +295,7 @@ and copy-and-paste the repository URL to their systems.
     >>> tech_details = first_tag_by_class(
     ...     str(install_portlet), 'widget-body')
 
-    >>> print extract_text(tech_details)
+    >>> print(extract_text(tech_details))
     This PPA can be added to your system manually by copying
     the lines below and adding them to your system's software
     sources.
@@ -332,7 +332,7 @@ The source packages list is presented publicly.
     ...     package_table = find_tag_by_id(
     ...         anon_browser.contents, 'packages_list')
     ...     for ppa_row in package_table.findChildren('tr'):
-    ...         print extract_text(ppa_row)
+    ...         print(extract_text(ppa_row))
 
     >>> print_archive_package_rows(anon_browser.contents)
     Package             Version         Uploaded by
@@ -367,7 +367,7 @@ to the newer version.
 
 The link itself will point to the newer version in the distribution.
 
-    >>> print anon_browser.getLink('Newer version').url
+    >>> print(anon_browser.getLink('Newer version').url)
     http://launchpad.dev/ubuntu/+source/iceweasel/1.1
 
 A Latest updates portlet is included on the index page indicating the
@@ -375,7 +375,7 @@ latest published sources with their states.
 
     >>> latest_updates = find_portlet(
     ...     anon_browser.contents, "Latest updates")
-    >>> print extract_text(latest_updates)
+    >>> print(extract_text(latest_updates))
     Latest updates
     cdrkit ... ago
     Failed to build: i386
@@ -388,7 +388,7 @@ A statistics portlet is included on the index page.
 
     >>> stats = find_portlet(
     ...     anon_browser.contents, "PPA statistics")
-    >>> print extract_text(stats)
+    >>> print(extract_text(stats))
     PPA statistics
     Activity
     1 update added during the past month.
@@ -410,7 +410,7 @@ is also included in the statistics portlet.
     >>> anon_browser.reload()
     >>> stats = find_portlet(
     ...     anon_browser.contents, "PPA statistics")
-    >>> print extract_text(stats)
+    >>> print(extract_text(stats))
     PPA statistics
     Activity
     1 update added during the past month.
@@ -419,7 +419,7 @@ is also included in the statistics portlet.
 Current build activity is linked to the builds page with the relevant
 filter.
 
-    >>> print anon_browser.getLink('1 package building').url
+    >>> print(anon_browser.getLink('1 package building').url)
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+builds?build_state=building
 
 
@@ -458,7 +458,7 @@ An empty PPA doesn't list any packages and it also doesn't present the
 link to a repository that doesn't exist yet.
 
     >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print(extract_text(find_main_content(anon_browser.contents)))
     PPA for No Privileges Person
     PPA description
     I am not allowed to say, I have no privs.
@@ -470,14 +470,14 @@ link to a repository that doesn't exist yet.
 
 It also contains a link to the 'PPA help page'.
 
-    >>> print anon_browser.getLink('PPA help page').url
+    >>> print(anon_browser.getLink('PPA help page').url)
     https://help.launchpad.net/Packaging/PPA
 
 The "sources list" widget isn't presented for empty PPAs either.
 
     >>> sources_list = find_tag_by_id(
     ...     anon_browser.contents, 'sources-list-entries')
-    >>> print sources_list
+    >>> print(sources_list)
     None
 
 Users will only be able to see it for PPAs that have, at least, one
@@ -490,7 +490,7 @@ published source.
     >>> anon_browser.reload()
     >>> sources_list = find_tag_by_id(
     ...     anon_browser.contents, 'sources-list-entries')
-    >>> print extract_text(sources_list)
+    >>> print(extract_text(sources_list))
     deb http://ppa.launchpad.dev/no-priv/ppa/ubuntu
         warty main
     deb-src http://ppa.launchpad.dev/no-priv/ppa/ubuntu
@@ -498,8 +498,8 @@ published source.
 
 Also the repository URL, within the sources.list snippet, is an actual link.
 
-    >>> print anon_browser.getLink(
-    ...     "http://ppa.launchpad.dev/no-priv/ppa/ubuntu").url
+    >>> print(anon_browser.getLink(
+    ...     "http://ppa.launchpad.dev/no-priv/ppa/ubuntu").url)
     http://ppa.launchpad.dev/no-priv/ppa/ubuntu
 
 
@@ -521,20 +521,20 @@ section in the PPA details table.
 
 It also has a link pointing to its corresponding help page.
 
-    >>> print no_priv_browser.getLink('Read about uploading').url
+    >>> print(no_priv_browser.getLink('Read about uploading').url)
     https://help.launchpad.net/Packaging/PPA/Uploading
 
 Anonymous access or users with no upload permission cannot see the
 upload hint section.
 
     >>> anon_browser.open("http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
-    >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'upload-hint')
+    >>> print(find_tag_by_id(
+    ...     anon_browser.contents, 'upload-hint'))
     None
 
     >>> admin_browser.open("http://launchpad.dev/~no-priv/+archive/ubuntu/ppa")
-    >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'upload-hint')
+    >>> print(find_tag_by_id(
+    ...     anon_browser.contents, 'upload-hint'))
     None
 
 
@@ -544,8 +544,8 @@ PPA signing keys are automatically generated and set sometime after
 the PPA creation. While the signing key isn't available nothing is
 presented to the users.
 
-    >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'signing-key')
+    >>> print(find_tag_by_id(
+    ...     anon_browser.contents, 'signing-key'))
     None
 
 We will set a signing key for 'No Privileges' PPA as if it got
@@ -572,27 +572,27 @@ help wiki are presented in the PPA index page.
     >>> signing_key_section = find_tag_by_id(
     ...     anon_browser.contents, 'signing-key')
 
-    >>> print extract_text(signing_key_section)
+    >>> print(extract_text(signing_key_section))
     Signing key: 1024D/ABCDEF0123456789ABCDDCBA0000111112345678 (What is this?)
     Fingerprint: ABCDEF0123456789ABCDDCBA0000111112345678
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.
 
-    >>> print anon_browser.getLink(
-    ...     '1024D/ABCDEF0123456789ABCDDCBA0000111112345678').url
+    >>> print(anon_browser.getLink(
+    ...     '1024D/ABCDEF0123456789ABCDDCBA0000111112345678').url)
     https://keyserver.ubuntu.com/pks/lookup?fingerprint=on&op=index&search=0xABCDEF0123456789ABCDDCBA0000111112345678
 
 Using software from a PPA can be hard for novices. We offer two
 links to the same help pop-up that describes how to add a PPA and
 its key to Ubuntu.
 
-    >>> print anon_browser.getLink('Read about installing').url
+    >>> print(anon_browser.getLink('Read about installing').url)
     http://launchpad.dev/+help-soyuz/ppa-sources-list.html
 
 And further down, next to the key id, we link to that same pop-up help:
 
-    >>> print anon_browser.getLink('What is this?').url
+    >>> print(anon_browser.getLink('What is this?').url)
     http://launchpad.dev/+help-soyuz/ppa-sources-list.html
 
 
@@ -602,13 +602,13 @@ Just quickly check if the singular form of this section is handled
 properly.
 
     >>> anon_browser.open("http://launchpad.dev/~mark/+archive/ubuntu/ppa")
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     PPA for Mark Shuttleworth : Mark Shuttleworth
 
 Mark has sources only published in one archive, so he has no
 series-widget-div control to update them:
 
-    >>> print find_tag_by_id(anon_browser.contents, 'series-widget-div')
+    >>> print(find_tag_by_id(anon_browser.contents, 'series-widget-div'))
     None
 
 And the sources.list entries point to the right distribution release:
@@ -616,7 +616,7 @@ And the sources.list entries point to the right distribution release:
     >>> results = find_tag_by_id(
     ...     anon_browser.contents, 'sources-list-entries')
     >>> text = extract_text(results)
-    >>> print text
+    >>> print(text)
     deb http://ppa.launchpad.dev/mark/ppa/ubuntu breezy-autotest main
     deb-src http://ppa.launchpad.dev/mark/ppa/ubuntu breezy-autotest main
 
@@ -644,8 +644,8 @@ they will be able to see 4 PPAs where we've added publications listed in
 the 'Most active' section.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/+ppas")
-    >>> print extract_text(
-    ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active'))
+    >>> print(extract_text(
+    ...    find_tag_by_id(anon_browser.contents, 'ppa_most_active')))
     Most active
     PPAs with the highest number of uploads in the last 7 days.
     PPA for Celso Providelo       4 uploads
@@ -656,7 +656,7 @@ The user can also in any PPA title listed in that section to visit the
 PPA itself.
 
     >>> anon_browser.getLink('PPA for Celso Providelo').click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     PPA for Celso Providelo : Celso Providelo
 
 
