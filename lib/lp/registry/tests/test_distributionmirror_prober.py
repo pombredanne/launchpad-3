@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """distributionmirror-prober tests."""
@@ -13,13 +13,23 @@ import os
 from StringIO import StringIO
 
 from lazr.uri import URI
+import responses
 from sqlobject import SQLObjectNotFound
+from testtools.matchers import (
+    ContainsDict,
+    Equals,
+    MatchesStructure,
+    )
+from testtools.twistedsupport import (
+    assert_fails_with,
+    AsynchronousDeferredRunTest,
+    AsynchronousDeferredRunTestForBrokenTwisted,
+    )
 from twisted.internet import (
     defer,
     reactor,
     )
 from twisted.python.failure import Failure
-from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import server
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -29,7 +39,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.scripts import distributionmirror_prober
 from lp.registry.scripts.distributionmirror_prober import (
-    _build_request_for_cdimage_file_list,
+    _get_cdimage_file_list,
     ArchiveMirrorProberCallbacks,
     BadResponseCode,
     ConnectionSkipped,
@@ -50,7 +60,6 @@ from lp.registry.scripts.distributionmirror_prober import (
     RedirectAwareProberProtocol,
     RedirectToDifferentFile,
     RequestManager,
-    restore_http_proxy,
     should_skip_host,
     UnknownURLSchemeAfterRedirect,
     )
@@ -59,6 +68,7 @@ from lp.registry.tests.distributionmirror_http_server import (
     )
 from lp.services.config import config
 from lp.services.daemons.tachandler import TacTestSetup
+from lp.services.timeout import default_timeout
 from lp.testing import (
     clean_up_reactor,
     TestCase,
@@ -93,39 +103,54 @@ class HTTPServerTestSetup(TacTestSetup):
         return os.path.join(self.root, 'distributionmirror_http_server.log')
 
 
-class TestProberProtocolAndFactory(TrialTestCase):
+class TestProberProtocolAndFactory(TestCase):
 
     layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTestForBrokenTwisted.make_factory(
+        timeout=30)
 
     def setUp(self):
-        self.orig_proxy = os.getenv('http_proxy')
+        super(TestProberProtocolAndFactory, self).setUp()
         root = DistributionMirrorTestHTTPServer()
         site = server.Site(root)
         site.displayTracebacks = False
         self.listening_port = reactor.listenTCP(0, site)
+        self.addCleanup(self.listening_port.stopListening)
         self.port = self.listening_port.getHost().port
         self.urls = {'timeout': u'http://localhost:%s/timeout' % self.port,
                      '200': u'http://localhost:%s/valid-mirror' % self.port,
                      '500': u'http://localhost:%s/error' % self.port,
                      '404': u'http://localhost:%s/invalid-mirror' % self.port}
-
-    def tearDown(self):
-        restore_http_proxy(self.orig_proxy)
-        return self.listening_port.stopListening()
+        self.pushConfig('launchpad', http_proxy=None)
 
     def _createProberAndProbe(self, url):
         prober = ProberFactory(url)
         return prober.probe()
 
-    def test_environment_http_proxy_is_handled_correctly(self):
-        os.environ['http_proxy'] = 'http://squid.internal:3128'
+    def test_config_no_http_proxy(self):
         prober = ProberFactory(self.urls['200'])
-        self.assertEqual(prober.request_host, 'localhost')
-        self.assertEqual(prober.request_port, self.port)
-        self.assertEqual(prober.request_path, '/valid-mirror')
-        self.assertEqual(prober.connect_host, 'squid.internal')
-        self.assertEqual(prober.connect_port, 3128)
-        self.assertEqual(prober.connect_path, self.urls['200'])
+        self.assertThat(prober, MatchesStructure.byEquality(
+            request_scheme='http',
+            request_host='localhost',
+            request_port=self.port,
+            request_path='/valid-mirror',
+            connect_scheme='http',
+            connect_host='localhost',
+            connect_port=self.port,
+            connect_path='/valid-mirror'))
+
+    def test_config_http_proxy(self):
+        self.pushConfig('launchpad', http_proxy='http://squid.internal:3128')
+        prober = ProberFactory(self.urls['200'])
+        self.assertThat(prober, MatchesStructure.byEquality(
+            request_scheme='http',
+            request_host='localhost',
+            request_port=self.port,
+            request_path='/valid-mirror',
+            connect_scheme='http',
+            connect_host='squid.internal',
+            connect_port=3128,
+            connect_path=self.urls['200']))
 
     def test_connect_cancels_existing_timeout_call(self):
         prober = ProberFactory(self.urls['200'])
@@ -161,14 +186,10 @@ class TestProberProtocolAndFactory(TrialTestCase):
         return deferred.addCallback(restore_connect, orig_connect)
 
     def test_connect_to_proxy_when_http_proxy_exists(self):
-        os.environ['http_proxy'] = 'http://squid.internal:3128'
+        self.pushConfig('launchpad', http_proxy='http://squid.internal:3128')
         self._test_connect_to_host(self.urls['200'], 'squid.internal')
 
     def test_connect_to_host_when_http_proxy_does_not_exist(self):
-        try:
-            del os.environ['http_proxy']
-        except KeyError:
-            pass
         self._test_connect_to_host(self.urls['200'], 'localhost')
 
     def test_probe_sets_up_timeout_call(self):
@@ -197,13 +218,13 @@ class TestProberProtocolAndFactory(TrialTestCase):
         prober = RedirectAwareProberFactory(
             'http://localhost:%s/redirect-infinite-loop' % self.port)
         deferred = prober.probe()
-        return self.assertFailure(deferred, InfiniteLoopDetected)
+        return assert_fails_with(deferred, InfiniteLoopDetected)
 
     def test_redirectawareprober_fail_on_unknown_scheme(self):
         prober = RedirectAwareProberFactory(
             'http://localhost:%s/redirect-unknown-url-scheme' % self.port)
         deferred = prober.probe()
-        return self.assertFailure(deferred, UnknownURLSchemeAfterRedirect)
+        return assert_fails_with(deferred, UnknownURLSchemeAfterRedirect)
 
     def test_200(self):
         d = self._createProberAndProbe(self.urls['200'])
@@ -237,15 +258,15 @@ class TestProberProtocolAndFactory(TrialTestCase):
 
     def test_notfound(self):
         d = self._createProberAndProbe(self.urls['404'])
-        return self.assertFailure(d, BadResponseCode)
+        return assert_fails_with(d, BadResponseCode)
 
     def test_500(self):
         d = self._createProberAndProbe(self.urls['500'])
-        return self.assertFailure(d, BadResponseCode)
+        return assert_fails_with(d, BadResponseCode)
 
     def test_timeout(self):
         d = self._createProberAndProbe(self.urls['timeout'])
-        return self.assertFailure(d, ProberTimeout)
+        return assert_fails_with(d, ProberTimeout)
 
     def test_prober_user_agent(self):
         protocol = RedirectAwareProberProtocol()
@@ -380,7 +401,7 @@ class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
         self.assertFalse(should_skip_host(self.host))
 
 
-class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
+class TestProberFactoryRequestTimeoutRatioWithTwisted(TestCase):
     """Tests to ensure we stop issuing requests on a given host if the
     requests/timeouts ratio on that host is too low.
 
@@ -392,25 +413,29 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
     """
 
     layer = TwistedLayer
+    run_tests_with = AsynchronousDeferredRunTest.make_factory(timeout=30)
 
     def setUp(self):
-        self.orig_host_requests = dict(
-            distributionmirror_prober.host_requests)
-        self.orig_host_timeouts = dict(
-            distributionmirror_prober.host_timeouts)
+        super(TestProberFactoryRequestTimeoutRatioWithTwisted, self).setUp()
+        orig_host_requests = dict(distributionmirror_prober.host_requests)
+        orig_host_timeouts = dict(distributionmirror_prober.host_timeouts)
         distributionmirror_prober.host_requests = {}
         distributionmirror_prober.host_timeouts = {}
+
+        def restore_prober_globals():
+            # Restore the globals that our tests fiddle with.
+            distributionmirror_prober.host_requests = orig_host_requests
+            distributionmirror_prober.host_timeouts = orig_host_timeouts
+
+        self.addCleanup(restore_prober_globals)
+
         root = DistributionMirrorTestHTTPServer()
         site = server.Site(root)
         site.displayTracebacks = False
         self.listening_port = reactor.listenTCP(0, site)
+        self.addCleanup(self.listening_port.stopListening)
         self.port = self.listening_port.getHost().port
-
-    def tearDown(self):
-        # Restore the globals that our tests fiddle with.
-        distributionmirror_prober.host_requests = self.orig_host_requests
-        distributionmirror_prober.host_timeouts = self.orig_host_timeouts
-        return self.listening_port.stopListening()
+        self.pushConfig('launchpad', http_proxy=None)
 
     def _createProberAndProbe(self, url):
         prober = ProberFactory(url)
@@ -455,7 +480,7 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TrialTestCase):
 
         d = self._createProberAndProbe(
             u'http://%s:%s/timeout' % (host, self.port))
-        return self.assertFailure(d, ConnectionSkipped)
+        return assert_fails_with(d, ConnectionSkipped)
 
 
 class TestMultiLock(TestCase):
@@ -842,7 +867,8 @@ class TestProbeFunctionSemaphores(TestCase):
         self.assertNotEqual(0, len(mirror.cdimage_series))
         # Note that calling this function won't actually probe any mirrors; we
         # need to call reactor.run() to actually start the probing.
-        probe_cdimage_mirror(mirror, StringIO(), [], logging)
+        with default_timeout(15.0):
+            probe_cdimage_mirror(mirror, StringIO(), [], logging)
         self.assertEqual(0, len(mirror.cdimage_series))
 
     def test_archive_mirror_probe_function(self):
@@ -856,8 +882,9 @@ class TestProbeFunctionSemaphores(TestCase):
         mirror1 = DistributionMirror.byName('releases-mirror')
         mirror2 = DistributionMirror.byName('releases-mirror2')
         mirror3 = DistributionMirror.byName('canonical-releases')
-        self._test_one_semaphore_for_each_host(
-            mirror1, mirror2, mirror3, probe_cdimage_mirror)
+        with default_timeout(15.0):
+            self._test_one_semaphore_for_each_host(
+                mirror1, mirror2, mirror3, probe_cdimage_mirror)
 
     def _test_one_semaphore_for_each_host(
             self, mirror1, mirror2, mirror3, probe_function):
@@ -905,20 +932,24 @@ class TestProbeFunctionSemaphores(TestCase):
         # When using an http_proxy, even though we'll actually connect to the
         # proxy, we'll use the mirror's host as the key to find the semaphore
         # that should be used
-        orig_proxy = os.getenv('http_proxy')
-        os.environ['http_proxy'] = 'http://squid.internal:3128/'
+        self.pushConfig('launchpad', http_proxy='http://squid.internal:3128/')
         probe_function(mirror3, StringIO(), [], logging)
         self.assertEqual(len(request_manager.host_locks), 2)
-        restore_http_proxy(orig_proxy)
 
 
 class TestCDImageFileListFetching(TestCase):
 
+    @responses.activate
     def test_no_cache(self):
         url = 'http://releases.ubuntu.com/.manifest'
-        request = _build_request_for_cdimage_file_list(url)
-        self.assertEqual(request.headers['Pragma'], 'no-cache')
-        self.assertEqual(request.headers['Cache-control'], 'no-cache')
+        self.pushConfig('distributionmirrorprober', cdimage_file_list_url=url)
+        responses.add('GET', url)
+        with default_timeout(1.0):
+            _get_cdimage_file_list()
+        self.assertThat(responses.calls[0].request.headers, ContainsDict({
+            'Pragma': Equals('no-cache'),
+            'Cache-control': Equals('no-cache'),
+            }))
 
 
 class TestLoggingMixin(TestCase):

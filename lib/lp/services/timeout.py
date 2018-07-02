@@ -324,8 +324,8 @@ class URLFetcher:
         self.session = None
 
     @with_timeout(cleanup='cleanup')
-    def fetch(self, url, trust_env=None, use_proxy=False, allow_file=False,
-              output_file=None, **request_kwargs):
+    def fetch(self, url, trust_env=None, use_proxy=False, allow_ftp=False,
+              allow_file=False, output_file=None, **request_kwargs):
         """Fetch the URL using a custom HTTP handler supporting timeout.
 
         :param url: The URL to fetch.
@@ -333,6 +333,7 @@ class URLFetcher:
             to determine whether it fetches proxy configuration from the
             environment.
         :param use_proxy: If True, use Launchpad's configured proxy.
+        :param allow_ftp: If True, allow ftp:// URLs.
         :param allow_file: If True, allow file:// URLs.  (Be careful to only
             pass this if the URL is trusted.)
         :param output_file: If not None, download the response content to
@@ -346,6 +347,9 @@ class URLFetcher:
         # Mount our custom adapters.
         self.session.mount("https://", CleanableHTTPAdapter())
         self.session.mount("http://", CleanableHTTPAdapter())
+        # We can do FTP, but currently only via an HTTP proxy.
+        if allow_ftp and use_proxy:
+            self.session.mount("ftp://", CleanableHTTPAdapter())
         if allow_file:
             self.session.mount("file://", FileAdapter())
 
@@ -354,6 +358,8 @@ class URLFetcher:
             request_kwargs.setdefault("proxies", {})
             request_kwargs["proxies"]["http"] = config.launchpad.http_proxy
             request_kwargs["proxies"]["https"] = config.launchpad.http_proxy
+            if allow_ftp:
+                request_kwargs["proxies"]["ftp"] = config.launchpad.http_proxy
         if output_file is not None:
             request_kwargs["stream"] = True
         response = self.session.request(url=url, **request_kwargs)
