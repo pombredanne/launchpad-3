@@ -158,7 +158,8 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             url, headers={'Authorization': auth_header},
             json={'username': proxy_username},
             reactor=self._slave.reactor,
-            pool=self._slave.pool).addCallback(check_status)
+            pool=self._slave.pool)
+        response = yield check_status(response)
         token = yield treq.json_content(response)
         defer.returnValue(token)
 
