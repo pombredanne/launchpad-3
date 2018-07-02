@@ -33,14 +33,14 @@ The guidelines are not displayed on the initial basic bug-reporting
 page, because that page does not include a bug description field.
 
     >>> def print_guidelines(name, browser):
-    ...     print '*'
-    ...     print name
-    ...     print '  <%s>' % user_browser.url
-    ...     print extract_text(find_tag_by_id(
-    ...         user_browser.contents, 'bug-reporting-guidelines'))
+    ...     print('*')
+    ...     print(name)
+    ...     print('  <%s>' % user_browser.url)
+    ...     print(extract_text(find_tag_by_id(
+    ...         user_browser.contents, 'bug-reporting-guidelines')))
     >>> def print_acknowledgement_message(browser):
-    ...     print extract_text(find_tags_by_class(
-    ...         user_browser.contents, 'informational message')[0])
+    ...     print(extract_text(find_tags_by_class(
+    ...         user_browser.contents, 'informational message')[0]))
 
     >>> def print_visible_guidelines(context_path, guidelines):
     ...     result = guidelines.findParents(id='filebug-form-container')
@@ -50,7 +50,7 @@ page, because that page does not include a bug description field.
     ...         style_attrs = [item.strip()
     ...             for item in filebug_form_container['style'].split(";")]
     ...     if (result and not 'display: none' in style_attrs):
-    ...         print 'Found %s guidelines: %s' % (context_path, guidelines)
+    ...         print('Found %s guidelines: %s' % (context_path, guidelines))
 
     >>> for context_name, context_path, view in contexts:
     ...     filebug_url = (
@@ -111,8 +111,8 @@ description.
 
 URLs are linkified.
 
-    >>> print find_tags_by_class(
-    ...     user_browser.contents, 'informational message')[0]
+    >>> print(find_tags_by_class(
+    ...     user_browser.contents, 'informational message')[0])
     <div ...><p class="last">Thank you for filing a bug for
     <a...https://launchpad.dev/ubuntu/+source/alsa-utils.../a></p></div>
 
@@ -126,8 +126,8 @@ which the guidelines are taken from the respective distribution.
     ...     'http://launchpad.dev/ubuntu/warty/+filebug')
     >>> user_browser.getControl('Summary', index=0).value = "It doesn't work"
     >>> user_browser.getControl('Continue').click()
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'bug-reporting-guidelines'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines')))
     Ubuntu bug reporting guidelines:
     The version of Ubuntu you&#x27;re using.
     See http://example.com for more details.
@@ -137,8 +137,8 @@ of the link being set to "_new" so that the links always open in a new
 page. This prevents the user being taken away from the bug filing
 process by clicking on the links.
 
-    >>> print find_tag_by_id(
-    ...     user_browser.contents, 'bug-reporting-guidelines')
+    >>> print(find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines'))
     <td...
     See <a ... target="_new">...</a> for more details...
 
@@ -164,8 +164,8 @@ shown.
     ...     'http://launchpad.dev/ubuntu/+filebug')
     >>> user_browser.getControl('Summary', index=0).value = "It doesn't work"
     >>> user_browser.getControl('Continue').click()
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'bug-reporting-guidelines'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines')))
     Ubuntu bug reporting guidelines:
     The version of Ubuntu you&#x27;re using.
     See http://example.com for more details.
@@ -177,8 +177,8 @@ guidelines appear.
     ...     name='packagename_option').value = ['choose']
     >>> user_browser.getControl(
     ...     name='field.packagename').value = "alsa-utils"
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'bug-reporting-guidelines'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bug-reporting-guidelines')))
     Ubuntu bug reporting guidelines:
     The version of Ubuntu you&#x27;re using.
     See http://example.com for more details.
@@ -203,18 +203,18 @@ bug reporting guidelines can be changed, but admins do.
     >>> edit_url_re = re.compile('/[+]edit$')
     >>> for context_name, context_path, view in contexts:
     ...     overview_url = 'http://launchpad.dev/%s' % (context_path,)
-    ...     print '* ' + context_name
-    ...     print '  - User:',
+    ...     print('* ' + context_name)
+    ...     print('  - User:', end=' ')
     ...     user_browser.open(overview_url)
     ...     try:
     ...         user_browser.getLink(url=edit_url_re)
     ...     except (SystemExit, KeyboardInterrupt):
     ...         raise
     ...     except:
-    ...         print sys.exc_info()[0].__name__
-    ...     print '  - Admin:',
+    ...         print(sys.exc_info()[0].__name__)
+    ...     print('  - Admin:', end=' ')
     ...     admin_browser.open(overview_url)
-    ...     print bool(admin_browser.getLink(url=edit_url_re))
+    ...     print(bool(admin_browser.getLink(url=edit_url_re)))
     * Ubuntu
       - User: LinkNotFoundError
       - Admin: True
@@ -233,13 +233,13 @@ guidelines.
 
     >>> for context_name, context_path, view in contexts:
     ...     edit_url = 'http://launchpad.dev/%s/%s' % (context_path, view)
-    ...     print '* ' + context_name
+    ...     print('* ' + context_name)
     ...     try:
     ...         user_browser.open(edit_url)
     ...     except (SystemExit, KeyboardInterrupt):
     ...         raise
     ...     except:
-    ...         print sys.exc_info()[0].__name__
+    ...         print(sys.exc_info()[0].__name__)
     * Ubuntu
       Unauthorized
     * Mozilla

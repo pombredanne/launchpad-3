@@ -10,7 +10,7 @@ The Bugs front page shows some statistics:
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> statistics = find_portlet(
     ...     anon_browser.contents, 'Statistics')
-    >>> print extract_text(statistics)
+    >>> print(extract_text(statistics))
     Statistics
     15 bugs reported across 7 projects
     including 12 links to 8 bug trackers

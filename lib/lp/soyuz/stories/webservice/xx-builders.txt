@@ -12,7 +12,7 @@ contains all the registered builders in the Launchpad build farm.
 Iterating over the collection is possible:
 
     >>> for builder in builders:
-    ...     print builder
+    ...     print(builder)
     http://api.launchpad.dev/devel/builders/bob
     http://api.launchpad.dev/devel/builders/frog
 
@@ -24,7 +24,7 @@ operation on "builders":
 Each builder has a number of properties exposed:
 
     >>> for attribute in bob.lp_attributes:
-    ...     print attribute
+    ...     print(attribute)
     self_link
     ...
     active
@@ -54,7 +54,7 @@ operation is used.
 Our "bob" builder was retrieved using the no-priv user, and no-priv does not
 have permission to save changes:
 
-    >>> print bob.active
+    >>> print(bob.active)
     True
     >>> bob.active = False
     >>> bob.lp_save()

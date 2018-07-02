@@ -8,7 +8,7 @@ task.
     ...    'http://launchpad.dev/firefox/+bug/1/+choose-affected-product')
     >>> user_browser.getControl('Project').value = 'gnome-terminal'
     >>> user_browser.getControl('Continue').click()
-    >>> print user_browser.contents.decode('ascii', 'ignore')
+    >>> print(user_browser.contents.decode('ascii', 'ignore'))
     <...GNOME Terminal uses
     <a href="http://bugzilla.gnome.org/bugs">GnomeGBug GTracker</a>
     to track its bugs...
@@ -30,7 +30,7 @@ its bugs and prompt for a URL or an email address.
     ...    'http://launchpad.dev/firefox/+bug/1/+choose-affected-product')
     >>> user_browser.getControl('Project').value = 'thunderbird'
     >>> user_browser.getControl('Continue').click()
-    >>> print user_browser.contents.decode('ascii', 'ignore')
+    >>> print(user_browser.contents.decode('ascii', 'ignore'))
     <...Mozilla Thunderbird doesn't use Launchpad to track its bugs...
 
     >>> print_upstream_linking_form(user_browser)

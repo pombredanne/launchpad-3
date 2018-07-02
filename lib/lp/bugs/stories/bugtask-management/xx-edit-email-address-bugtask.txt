@@ -31,7 +31,7 @@
 
     >>> def print_widget_visibility(user, url):
     ...     status, importance = widget_visibility(user, url)
-    ...     print 'Status: %s\nImportance: %s' % (status, importance)
+    ...     print('Status: %s\nImportance: %s' % (status, importance))
 
 
 == "Normal" (not Email Address) bugtasks ==

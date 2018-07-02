@@ -16,7 +16,7 @@ project without a remote_product set.
     >>> products = getUtility(
     ...     IProductSet).getSFLinkedProductsWithNoneRemoteProduct()
 
-    >>> print products.count()
+    >>> print(products.count())
     0
 
 If we add a Product and link it to a SourceForge project,
@@ -34,7 +34,7 @@ getSFLinkedProductsWithNoneRemoteProduct() will return it.
     ...     IProductSet).getSFLinkedProductsWithNoneRemoteProduct()
 
     >>> for product in products:
-    ...     print product.name, product.sourceforgeproject
+    ...     print(product.name, product.sourceforgeproject)
     my-first-product fronobulator
 
 Define some request mocks so that we don't try to access SourceForge.
@@ -101,7 +101,7 @@ atid therein as an ampersand-separated string.
     Got page /projects/fronobulator
     Got page /tracker/?group_id=5570
 
-    >>> print remote_product
+    >>> print(remote_product)
     5570&105570
 
 If an error is raised when trying to fetch the project pages from the
@@ -131,7 +131,7 @@ The product that was linked to SourceForge without a remote_product now has
 its remote_product set.
 
     >>> product_1 = getUtility(IProductSet).getByName('my-first-product')
-    >>> print product_1.remote_product
+    >>> print(product_1.remote_product)
     5570&105570
 
 There are no other SourceForge-linked products that have no remote product.
@@ -139,7 +139,7 @@ There are no other SourceForge-linked products that have no remote product.
     >>> products = getUtility(
     ...     IProductSet).getSFLinkedProductsWithNoneRemoteProduct()
 
-    >>> print products.count()
+    >>> print(products.count())
     0
 
 
@@ -161,7 +161,7 @@ remote_product fields.
     >>> process.returncode
     0
 
-    >>> print err
+    >>> print(err)
     DEBUG   ...
     INFO    No Products to update.
     INFO    Time for this run: ... seconds.

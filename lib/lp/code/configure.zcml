@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -537,6 +537,13 @@
   <class class="lp.code.model.branchrevision.BranchRevision">
     <allow interface="lp.code.interfaces.branchrevision.IBranchRevision"/>
   </class>
+
+  <!-- Branch hosting -->
+  <securedutility
+      class="lp.code.model.branchhosting.BranchHostingClient"
+      provides="lp.code.interfaces.branchhosting.IBranchHostingClient">
+    <allow interface="lp.code.interfaces.branchhosting.IBranchHostingClient" />
+  </securedutility>
 
   <!-- CodeReviewComment -->
 

@@ -5,7 +5,7 @@ It is possible to set the bug importance using the bugtask edit form.
 
     >>> admin_browser.open('http://bugs.launchpad.dev/bugs/10')
     >>> importance_control = admin_browser.getControl('Importance')
-    >>> print '\n'.join(importance_control.displayOptions)
+    >>> print('\n'.join(importance_control.displayOptions))
     Undecided
     Critical
     High
@@ -63,7 +63,7 @@ For a product bug supervisor.
 For a product owner.
 
     >>> login(ANONYMOUS)
-    >>> print firefox.owner.name
+    >>> print(firefox.owner.name)
     name12
 
     >>> login("foo.bar@canonical.com")

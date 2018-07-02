@@ -7,7 +7,7 @@ from the main bug page.
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/firefox')
     >>> admin_browser.getLink('Edit official tags').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://bugs.launchpad.dev/firefox/+manage-official-tags
 
 Tags are entered into a textarea as a list of white-spaces separated
@@ -15,11 +15,11 @@ words.
 
     >>> admin_browser.getControl('Official Bug Tags').value = 'foo bar'
     >>> admin_browser.getControl('Save').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://bugs.launchpad.dev/firefox
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/+manage-official-tags')
-    >>> print admin_browser.getControl('Official Bug Tags').value
+    >>> print(admin_browser.getControl('Official Bug Tags').value)
     bar foo
 
 The link as well as the edit form is only available for products and
@@ -27,7 +27,7 @@ distributions but not for other bug targets.
 
     >>> admin_browser.open(
     ...     'http://bugs.launchpad.dev/firefox/1.0')
-    >>> print admin_browser.getLink('Edit official tags')
+    >>> print(admin_browser.getLink('Edit official tags'))
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -42,7 +42,7 @@ The link as well as the edit form is only available for project
 administrators but not for ordinary users.
 
     >>> browser.open('http://bugs.launchpad.dev/firefox')
-    >>> print browser.getLink('Edit official tags')
+    >>> print(browser.getLink('Edit official tags'))
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -68,18 +68,18 @@ The link is also available for the bug supervisor.
     >>> bug_super_browser.open(
     ...     'http://bugs.launchpad.dev/youbuntu')
     >>> bug_super_browser.getLink('Edit official tags').click()
-    >>> print bug_super_browser.url
+    >>> print(bug_super_browser.url)
     http://bugs.launchpad.dev/youbuntu/+manage-official-tags
 
 The bug supervisor can also set the tags for the product.
 
     >>> bug_super_browser.getControl('Official Bug Tags').value = 'foo bar'
     >>> bug_super_browser.getControl('Save').click()
-    >>> print bug_super_browser.url
+    >>> print(bug_super_browser.url)
     http://bugs.launchpad.dev/youbuntu
     >>> bug_super_browser.open(
     ...     'http://bugs.launchpad.dev/youbuntu/+manage-official-tags')
-    >>> print bug_super_browser.getControl('Official Bug Tags').value
+    >>> print(bug_super_browser.getControl('Official Bug Tags').value)
     bar foo
 
 Official Tags on Bug Pages
@@ -133,6 +133,6 @@ comprises of the official tags of all targets for which the bug has a task.
 
     >>> browser.open(bug_url)
     >>> js = find_tag_by_id(browser.contents, 'available-official-tags-js')
-    >>> print js
+    >>> print(js)
     <script...>var available_official_tags =
     ["eenie", "meenie", "miney", "moe"];</script>

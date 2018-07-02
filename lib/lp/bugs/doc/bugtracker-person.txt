@@ -27,13 +27,13 @@ We'll rename the bugtracker to make the tests more readable.
     >>> bugtracker_person = bugtracker.linkPersonToSelf(
     ...         'some-name-i-made-up', sample_person)
 
-    >>> print bugtracker_person.name
+    >>> print(bugtracker_person.name)
     some-name-i-made-up
 
-    >>> print bugtracker_person.person.name
+    >>> print(bugtracker_person.person.name)
     name12
 
-    >>> print bugtracker_person.bugtracker.name
+    >>> print(bugtracker_person.bugtracker.name)
     bugzilla-checkwatches
 
 A name can only be registered with a bugtracker once. Trying to link a
@@ -53,10 +53,10 @@ be retrieved by calling BugTracker.getLinkedPersonByName().
     >>> bugtracker_person = bugtracker.getLinkedPersonByName(
     ...     'some-name-i-made-up')
 
-    >>> print bugtracker_person.name
+    >>> print(bugtracker_person.name)
     some-name-i-made-up
 
-    >>> print bugtracker_person.person.name
+    >>> print(bugtracker_person.person.name)
     name12
 
 
@@ -73,7 +73,7 @@ return a new Person record.
     >>> from lp.registry.interfaces.person import (
     ...     PersonCreationRationale)
 
-    >>> print getUtility(IPersonSet).getByEmail('new.person@example.com')
+    >>> print(getUtility(IPersonSet).getByEmail('new.person@example.com'))
     None
 
     >>> new_person = bugtracker.ensurePersonForSelf(
@@ -81,7 +81,7 @@ return a new Person record.
     ...     rationale=PersonCreationRationale.BUGIMPORT,
     ...     creation_comment='whilst testing ensurePersonForSelf().')
 
-    >>> print new_person.displayname
+    >>> print(new_person.displayname)
     New Person
 
 There won't be a BugTrackerPerson record linking 'New Person' to the
@@ -90,7 +90,7 @@ that we can always retrieve them reliably when we encounter them in a
 remote bugtracker.
 
     >>> bugtracker_person = bugtracker.getLinkedPersonByName('New Person')
-    >>> print bugtracker_person
+    >>> print(bugtracker_person)
     None
 
 Calling ensurePersonForSelf() with the same details will return the
@@ -102,10 +102,10 @@ same person.
     ...     rationale=PersonCreationRationale.BUGIMPORT,
     ...     creation_comment='whilst testing ensurePersonForSelf().')
 
-    >>> print other_person.name
+    >>> print(other_person.name)
     new-person
 
-    >>> print new_person.name
+    >>> print(new_person.name)
     new-person
 
 ensurePersonForSelf() can also handle remote users whose email
@@ -116,7 +116,7 @@ addresses aren't provided.
     ...     email=None, rationale=PersonCreationRationale.BUGIMPORT,
     ...     creation_comment='whilst testing ensurePersonForSelf().')
 
-    >>> print noemail_person.name
+    >>> print(noemail_person.name)
     no-email-person-bugzilla-checkwatches
 
 A BugTrackerPerson record will have been created to map
@@ -139,15 +139,15 @@ We'll create a person, 'noemail,' on our example bugtracker.
     ...     email=None, rationale=PersonCreationRationale.BUGIMPORT,
     ...     creation_comment='whilst testing.')
 
-    >>> print new_person.name
+    >>> print(new_person.name)
     noemail-bugzilla-checkwatches
 
     >>> bugtracker_person = bugtracker.getLinkedPersonByName('noemail')
 
-    >>> print bugtracker_person.bugtracker.name
+    >>> print(bugtracker_person.bugtracker.name)
     bugzilla-checkwatches
 
-    >>> print bugtracker_person.person.name
+    >>> print(bugtracker_person.person.name)
     noemail-bugzilla-checkwatches
 
     >>> transaction.commit()
@@ -178,9 +178,9 @@ imported previously.
     ...     'noemail', None, PersonCreationRationale.BUGIMPORT,
     ...     'while testing, again')
 
-    >>> print original_bugtracker_person.person.name
+    >>> print(original_bugtracker_person.person.name)
     noemail-bugzilla-checkwatches
 
-    >>> print new_person.name
+    >>> print(new_person.name)
     noemail-bugzilla-checkwatches-1
 

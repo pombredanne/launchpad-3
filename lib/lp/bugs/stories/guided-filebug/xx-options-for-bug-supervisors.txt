@@ -13,22 +13,22 @@ Users who are not bug supervisors do not see any of these options:
     >>> user_browser.getControl('Status')
     Traceback (most recent call last):
     ...
-    LookupError: label 'Status'
+    LookupError: label u'Status'
 
     >>> user_browser.getControl('Importance')
     Traceback (most recent call last):
     ...
-    LookupError: label 'Importance'
+    LookupError: label u'Importance'
 
     >>> user_browser.getControl('Milestone')
     Traceback (most recent call last):
     ...
-    LookupError: label 'Milestone'
+    LookupError: label u'Milestone'
 
     >>> user_browser.getControl('Assign to')
     Traceback (most recent call last):
     ...
-    LookupError: label 'Assign to'
+    LookupError: label u'Assign to'
 
 Users who are bug supervisors can see these options:
 

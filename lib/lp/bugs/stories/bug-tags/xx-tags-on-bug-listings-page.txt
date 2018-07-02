@@ -4,11 +4,11 @@ using Javascript after page load.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs')
     >>> anon_browser.getLink(id='tags-content-link').click()
-    >>> print anon_browser.url
+    >>> print(anon_browser.url)
     http://launchpad.dev/ubuntu/+bugtarget-portlet-tags-content
     >>> tags_portlet = find_tags_by_class(anon_browser.contents, 'data-list')[0]
     >>> for a_tag in tags_portlet('a'):
-    ...     print a_tag.renderContents()
+    ...     print(a_tag.renderContents())
     crash
     pebcak
     dataloss
@@ -48,5 +48,5 @@ not available when no tags are relevant:
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/tomcat/+bugtarget-portlet-tags-content')
-    >>> print extract_text(anon_browser.contents)
+    >>> print(extract_text(anon_browser.contents))
     Tags

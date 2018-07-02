@@ -223,8 +223,8 @@ its last_error_type field will be set to "Unsupported bug tracker"
 since that's the error that was raised during the update.
 
     >>> for watch in savannah.watches:
-    ...     print "%s, %s" % (
-    ...         watch.lastchecked is not None, watch.last_error_type.title)
+    ...     print("%s, %s" % (
+    ...         watch.lastchecked is not None, watch.last_error_type.title))
     True, Unsupported Bugtracker
 
 If a bug tracker doesn't have any watches to update, forceUpdateAll()
@@ -331,22 +331,22 @@ We'll create a non-functioning ExternalBugtracker to demonstrate this.
     ...         return BugTaskImportance.UNKNOWN
     ...
     ...     def getCommentIds(self, bug_watch):
-    ...         print "getCommentIds() called"
+    ...         print("getCommentIds() called")
     ...         return []
     ...
     ...     def fetchComments(self, bug_watch, comment_ids):
     ...         return []
     ...
     ...     def addRemoteComment(self, bug_watch, comment):
-    ...         print "addRemoteComment() called."
+    ...         print("addRemoteComment() called.")
     ...         return 0
     ...
     ...     def getLaunchpadBugId(self, bug_id):
-    ...         print "getLaunchpadBugId() called"
+    ...         print("getLaunchpadBugId() called")
     ...         return None
     ...
     ...     def setLaunchpadBugId(self, bug_id, lp_bug_id, lp_bug_url):
-    ...         print "setLaunchpadBugId() called"
+    ...         print("setLaunchpadBugId() called")
 
 We'll generate a bug watch with which to test this. The bug watch must
 be associated with at least one bug task to enable syncing.

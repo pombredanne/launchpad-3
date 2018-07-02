@@ -25,7 +25,7 @@ from zope.interface import Interface
 from lp.bugs.externalbugtracker import (
     BugTrackerConnectError,
     BugWatchUpdateError,
-    ExternalBugTrackerRequests,
+    ExternalBugTracker,
     UnknownRemoteStatusError,
     UnparsableBugTrackerVersion,
     )
@@ -120,7 +120,7 @@ class BadGitHubURL(UnparsableBugTrackerVersion):
     """The GitHub Issues URL is malformed."""
 
 
-class GitHub(ExternalBugTrackerRequests):
+class GitHub(ExternalBugTracker):
     """An `ExternalBugTracker` for dealing with GitHub issues."""
 
     # Avoid eating through our rate limit unnecessarily.

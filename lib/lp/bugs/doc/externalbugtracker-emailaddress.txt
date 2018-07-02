@@ -114,9 +114,9 @@ return an empty list.
 Similarly, Bug.getBugWatch() will always return None for email address
 bug trackers.
 
-    >>> print example_bug.getBugWatch(email_tracker, '')
+    >>> print(example_bug.getBugWatch(email_tracker, ''))
     None
 
-    >>> print example_bug.getBugWatch(email_tracker, message_id)
+    >>> print(example_bug.getBugWatch(email_tracker, message_id))
     None
 

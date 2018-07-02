@@ -29,7 +29,7 @@ Approving a nomination displays a feedback message.
 
     >>> feedback_msg = find_tags_by_class(
     ...     admin_browser.contents, "informational message")[0]
-    >>> print feedback_msg.renderContents()
+    >>> print(feedback_msg.renderContents())
     Approved nomination for Mozilla Firefox 1.0
 
 After a productseries task has been created, it's editable.
@@ -58,7 +58,7 @@ Declining a nomination displays a feedback message.
 
     >>> feedback_msg = find_tags_by_class(
     ...     admin_browser.contents, "informational message")[0]
-    >>> print feedback_msg.renderContents()
+    >>> print(feedback_msg.renderContents())
     Declined nomination for Ubuntu Hoary
 
 Nominate a bug to a distribution release
@@ -102,7 +102,7 @@ errors, and we'll give an example of one shortly.
     >>> nominater_browser.getControl("Aqua").selected = True
     >>> nominater_browser.getControl("Nominate").click()
     >>> for tag in find_tags_by_class(nominater_browser.contents, 'message'):
-    ...     print tag
+    ...     print(tag)
     <div...Added nominations for: Poseidon Aqua...
 
 Now, if the nominater, having the form open in another browser window,
@@ -114,7 +114,7 @@ raised.
 
     >>> for tag in find_tags_by_class(nominater_other_browser.contents,
     ...     'message'):
-    ...     print tag.renderContents()
+    ...     print(tag.renderContents())
     There is 1 error.
     This bug has already been nominated for these series: Aqua
 
@@ -129,7 +129,7 @@ approved and targeted to the release.
     >>> admin_browser.getControl("Target").click()
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print tag
+    ...     print(tag)
     <div...Targeted bug to: Poseidon Hydro...
 
 Nominating a bug for a product series
@@ -168,7 +168,7 @@ errors, and we'll give an example of one shortly.
     >>> nominater_browser.getControl("Nominate").click()
 
     >>> for tag in find_tags_by_class(nominater_browser.contents, 'message'):
-    ...     print tag
+    ...     print(tag)
     <div...Added nominations for: Widget beta...
 
 Now, if the nominater, having the form open in another browser window,
@@ -178,7 +178,7 @@ accidentally nominates the bug for Beta a second time, an error is raised.
 
     >>> for tag in find_tags_by_class(nominater_other_browser.contents,
     ...     'message'):
-    ...     print tag.renderContents()
+    ...     print(tag.renderContents())
     There is 1 error.
     This bug has already been nominated for these series: Beta
 
@@ -192,7 +192,7 @@ approved and targeted to the release.
     >>> admin_browser.getControl("Target").click()
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print tag
+    ...     print(tag)
     <div...Targeted bug to: Widget trunk...
 
 When a bug is targeted to the current development release, the general
@@ -220,8 +220,8 @@ for Ubuntu:
     >>> admin_browser.getControl('Bug Supervisor').value = 'no-priv'
     >>> admin_browser.getControl('Change').click()
 
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'bug-supervisor'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'bug-supervisor')))
     Bug supervisor:
     No Privileges Person
 
@@ -307,8 +307,8 @@ for Firefox:
     >>> admin_browser.getControl('Bug Supervisor').value = 'no-priv'
     >>> admin_browser.getControl('Change').click()
 
-    >>> print extract_text(find_tag_by_id(admin_browser.contents,
-    ...     'bug-supervisor'))
+    >>> print(extract_text(find_tag_by_id(admin_browser.contents,
+    ...     'bug-supervisor')))
     Bug supervisor:
     No Privileges Person
 

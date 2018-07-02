@@ -116,15 +116,15 @@ setPrefix.
     >>> widget.name
     'field.assignee'
     >>> widget.setPrefix('foo')
-    >>> widget.name
-    'foo.assignee'
+    >>> print(widget.name)
+    foo.assignee
 
 The chooser widget got its name updated as well.
 
-    >>> widget.assignee_chooser_widget.name
-    'foo.assignee'
-    >>> widget.assignee_chooser_widget.onKeyPress
-    "selectWidget('foo.assignee.assign_to', event)"
+    >>> print(widget.assignee_chooser_widget.name)
+    foo.assignee
+    >>> print(widget.assignee_chooser_widget.onKeyPress)
+    selectWidget('foo.assignee.assign_to', event)
 
 If this option is selected, but no value is entered in
 "field.assignee", validation will fail:

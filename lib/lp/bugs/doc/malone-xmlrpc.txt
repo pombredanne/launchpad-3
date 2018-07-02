@@ -54,7 +54,7 @@ the XML-RPC interface.
     >>> from lp.bugs.interfaces.bug import IBug
 
     >>> def on_created_event(obj, event):
-    ...     print "ObjectCreatedEvent: %r" % obj
+    ...     print("ObjectCreatedEvent: %r" % obj)
 
     >>> on_created_listener = TestEventListener(
     ...     IBug, IObjectCreatedEvent, on_created_event)
@@ -71,7 +71,7 @@ return value.)
     ...     product='firefox', summary='the summary', comment='the comment')
     >>> bug_url = filebug_api.filebug(params)
     ObjectCreatedEvent: <Bug ...>
-    >>> print bug_url
+    >>> print(bug_url)
     http://bugs.launchpad.dev/bugs/...
 
     >>> from zope.component import getUtility
@@ -80,16 +80,16 @@ return value.)
     >>> bugset = getUtility(IBugSet)
     >>> bug = bugset.get(get_bug_id_from_url(bug_url))
 
-    >>> print bug.title
+    >>> print(bug.title)
     the summary
-    >>> print bug.description
+    >>> print(bug.description)
     the comment
-    >>> print bug.owner.name
+    >>> print(bug.owner.name)
     name12
 
     >>> firefox_bug = bug.bugtasks[0]
 
-    >>> print firefox_bug.product.name
+    >>> print(firefox_bug.product.name)
     firefox
 
 Reporting a distro bug.
@@ -98,21 +98,21 @@ Reporting a distro bug.
     ...     distro='ubuntu', summary='another bug', comment='another comment')
     >>> bug_url = filebug_api.filebug(params)
     ObjectCreatedEvent: <Bug ...>
-    >>> print bug_url
+    >>> print(bug_url)
     http://bugs.launchpad.dev/bugs/...
 
     >>> bug = bugset.get(get_bug_id_from_url(bug_url))
 
-    >>> print bug.title
+    >>> print(bug.title)
     another bug
-    >>> print bug.description
+    >>> print(bug.description)
     another comment
-    >>> print bug.owner.name
+    >>> print(bug.owner.name)
     name12
 
     >>> ubuntu_bug = bug.bugtasks[0]
 
-    >>> print ubuntu_bug.distribution.name
+    >>> print(ubuntu_bug.distribution.name)
     ubuntu
     >>> ubuntu_bug.sourcepackagename is None
     True
@@ -125,15 +125,15 @@ Reporting a package bug.
     ...     subscribers=["no-priv@canonical.com"])
     >>> bug_url = filebug_api.filebug(params)
     ObjectCreatedEvent: <Bug ...>
-    >>> print bug_url
+    >>> print(bug_url)
     http://bugs.launchpad.dev/bugs/...
 
     >>> login('test@canonical.com')
     >>> bug = bugset.get(get_bug_id_from_url(bug_url))
 
-    >>> print bug.title
+    >>> print(bug.title)
     email is cool
-    >>> print bug.description
+    >>> print(bug.description)
     email is nice
     >>> bug.security_related
     True
@@ -146,9 +146,9 @@ Reporting a package bug.
 
     >>> evolution_bug = bug.bugtasks[0]
 
-    >>> print evolution_bug.distribution.name
+    >>> print(evolution_bug.distribution.name)
     ubuntu
-    >>> print evolution_bug.sourcepackagename.name
+    >>> print(evolution_bug.sourcepackagename.name)
     evolution
 
 
@@ -271,7 +271,7 @@ the ID of the new LoginToken.
 
 The LoginToken generated will be of the LoginTokenType BUGTRACKER.
 
-    >>> print token.tokentype.title
+    >>> print(token.tokentype.title)
     Launchpad is authenticating itself with a remote bug tracker.
 
 These requests are all handled by the private xml-rpc server.
@@ -285,5 +285,5 @@ These requests are all handled by the private xml-rpc server.
     >>> token
     <LoginToken at ...>
 
-    >>> print token.tokentype.title
+    >>> print(token.tokentype.title)
     Launchpad is authenticating itself with a remote bug tracker.

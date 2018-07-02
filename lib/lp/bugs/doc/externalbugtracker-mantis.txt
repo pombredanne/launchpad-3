@@ -73,7 +73,7 @@ calls to verify here:
 Collect the Example.com watches:
 
     >>> for bug_watch in example_bug_tracker.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    ...     print("%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus))
     1550: None
 
 And have our special Mantis instance process them:
@@ -92,7 +92,7 @@ And have our special Mantis instance process them:
     INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> for bug_watch in example_bug_tracker.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    ...     print("%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus))
     1550: assigned: open
 
 Let's add a few more watches:
@@ -155,9 +155,9 @@ updateBugWatches() issues only one request to update all watches:
     ...     expected_remote_statuses)):
     ...     remote_status = remote_statuses[remote_bug_id]
     ...     expected_remote_status = expected_remote_statuses[remote_bug_id]
-    ...     print 'Remote bug %d' % (remote_bug_id,)
-    ...     print ' * Expected << %s >>' % (expected_remote_status,)
-    ...     print ' *      Got << %s >>' % (remote_status,)
+    ...     print('Remote bug %d' % (remote_bug_id,))
+    ...     print(' * Expected << %s >>' % (expected_remote_status,))
+    ...     print(' *      Got << %s >>' % (remote_status,))
     Remote bug 1550
      * Expected << assigned: open >>
      *      Got << assigned: open >>

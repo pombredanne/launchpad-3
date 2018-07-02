@@ -62,7 +62,7 @@ or removeOfficialBugTag(), respectively.
     ...     OfficialBugTag, OfficialBugTag.distribution==ubuntu)
     >>> result_set = result_set.order_by(OfficialBugTag.tag)
     >>> for tag in result_set:
-    ...     print tag.tag
+    ...     print(tag.tag)
     bar
     foo
 
@@ -70,7 +70,7 @@ or removeOfficialBugTag(), respectively.
     >>> result_set = store.find(
     ...     OfficialBugTag, OfficialBugTag.distribution==ubuntu)
     >>> for tag in result_set:
-    ...     print tag.tag
+    ...     print(tag.tag)
     bar
 
     >>> login('test@canonical.com')
@@ -78,13 +78,13 @@ or removeOfficialBugTag(), respectively.
     >>> result_set = store.find(
     ...     OfficialBugTag, OfficialBugTag.product==firefox)
     >>> for tag in result_set:
-    ...     print tag.tag
+    ...     print(tag.tag)
     foo
 
     >>> firefox.removeOfficialBugTag(u'foo')
     >>> result_set = store.find(
     ...     OfficialBugTag, OfficialBugTag.product==firefox)
-    >>> print result_set.count()
+    >>> print(result_set.count())
     0
 
     >>> transaction.commit()
@@ -98,7 +98,7 @@ change the data.
     ...     OfficialBugTag, OfficialBugTag.distribution==ubuntu)
     >>> result_set = result_set.order_by(OfficialBugTag.tag)
     >>> for tag in result_set:
-    ...     print tag.tag
+    ...     print(tag.tag)
     bar
 
 Similary, deleting an not-existent tag does not lead to an error, but
@@ -108,7 +108,7 @@ does not change the data either.
     >>> result_set = store.find(
     ...     OfficialBugTag, OfficialBugTag.distribution==ubuntu)
     >>> for tag in result_set:
-    ...     print tag.tag
+    ...     print(tag.tag)
     bar
 
 Ordinary users cannot add and remove official bug tags.

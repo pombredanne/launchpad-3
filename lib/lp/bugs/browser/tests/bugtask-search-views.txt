@@ -67,7 +67,7 @@ It also allows filtering on milestones.
     >>> milestones = (
     ...     distro_advanced_search_listingview.getMilestoneWidgetValues())
     >>> for value in milestones:
-    ...     print value['title']
+    ...     print(value['title'])
     Debian 3.1 (2056-05-16)
     Debian 3.1-rc1 (2056-02-16)
 
@@ -81,7 +81,7 @@ The same milestone will be available for a debian package.
     >>> milestones = (
     ...     package_advanced_search_listingview.getMilestoneWidgetValues())
     >>> for value in milestones:
-    ...     print value['title']
+    ...     print(value['title'])
     Debian 3.1 (2056-05-16)
     Debian 3.1-rc1 (2056-02-16)
 
@@ -302,7 +302,7 @@ The simple search form returns only open bugtasks.
 
     >>> open_bugtasks = list(mozilla_search_listingview.search().batch)
     >>> for bugtask in open_bugtasks:
-    ...     print bugtask.bug.id, bugtask.product.name, bugtask.status.name
+    ...     print(bugtask.bug.id, bugtask.product.name, bugtask.status.name)
     15 thunderbird NEW
     5 firefox NEW
     4 firefox NEW
@@ -328,7 +328,7 @@ And the advanced form allows us to query for specific bug statuses.
     >>> mozilla_search_listingview = create_view(mozilla, '+bugs', form_values)
     >>> invalid_bugtasks = list(mozilla_search_listingview.search().batch)
     >>> for bugtask in invalid_bugtasks:
-    ...     print bugtask.bug.id, bugtask.product.name, bugtask.status.name
+    ...     print(bugtask.bug.id, bugtask.product.name, bugtask.status.name)
     15 thunderbird INVALID
 
     >>> open_bugtasks[0].transitionToStatus(
@@ -348,7 +348,7 @@ Check what milestones are displayed on the advanced search form:
     >>> advanced_search_view = create_view(
     ...     mozilla, '+bugs', form_values)
     >>> for value in advanced_search_view.getMilestoneWidgetValues():
-    ...     print value['title']
+    ...     print(value['title'])
     Mozilla Firefox 1.0 (2056-10-16)
 
 
@@ -379,7 +379,8 @@ Submit the search:
     >>> mozilla_search_listingview = create_view(mozilla, '+bugs', form_values)
     >>> userdata_bugtasks = list(mozilla_search_listingview.search().batch)
     >>> for bugtask in userdata_bugtasks:
-    ...     print bugtask.bug.id, bugtask.product.name, bugtask.bug.information_type.name
+    ...     print(bugtask.bug.id, bugtask.product.name,
+    ...           bugtask.bug.information_type.name)
     15 thunderbird USERDATA
 
     >>> open_bugtasks[0].bug.transitionToInformationType(
@@ -406,49 +407,49 @@ Calling get_buglisting_search_filter_url() without any parameters will
 return a plain search URL which, when visited, will display all open
 bugs.
 
-    >>> print get_buglisting_search_filter_url()
+    >>> print(get_buglisting_search_filter_url())
     +bugs?search=Search
 
 Passing an assignee will add an assignee field to the query string. Not
 that get_buglisting_search_filter_url() doesn't check any of the data
 that's passed to it; that's for the target search to do.
 
-    >>> print get_buglisting_search_filter_url(assignee='gmb')
+    >>> print(get_buglisting_search_filter_url(assignee='gmb'))
     +bugs?search=Search&field.assignee=gmb
 
 Passing an importance will add an importance field to the query string.
 
-    >>> print get_buglisting_search_filter_url(importance='UNDECIDED')
+    >>> print(get_buglisting_search_filter_url(importance='UNDECIDED'))
     +bugs?search=Search&field.importance=UNDECIDED
 
 Importance can be a single item or a list of items:
 
-    >>> print get_buglisting_search_filter_url(importance=['LOW', 'HIGH'])
+    >>> print(get_buglisting_search_filter_url(importance=['LOW', 'HIGH']))
     +bugs?search=Search&field.importance=LOW&field.importance=HIGH
 
 Passing a status will add a status field to the query string:
 
-    >>> print get_buglisting_search_filter_url(status='TRIAGED')
+    >>> print(get_buglisting_search_filter_url(status='TRIAGED'))
     +bugs?search=Search&field.status=TRIAGED
 
 Status, like importance, can be a list:
 
-    >>> print get_buglisting_search_filter_url(status=['NEW', 'INCOMPLETE'])
+    >>> print(get_buglisting_search_filter_url(status=['NEW', 'INCOMPLETE']))
     +bugs?search=Search&field.status=NEW&field.status=INCOMPLETE
 
 Passing a status_upstream parameter will add a status_upstream field to
 the query string.
 
-    >>> print get_buglisting_search_filter_url(
-    ...     status_upstream='open_upstream')
+    >>> print(get_buglisting_search_filter_url(
+    ...     status_upstream='open_upstream'))
     +bugs?search=Search&field.status_upstream=open_upstream
 
 The fields will always be rendered in the order assignee, importance,
 status, status_upstream, regardless of what order they're passed to
 get_buglisting_search_filter_url().
 
-    >>> print get_buglisting_search_filter_url(
+    >>> print(get_buglisting_search_filter_url(
     ...     status_upstream='open_upstream', status='NEW',
-    ...     importance='WISHLIST', assignee='mark')
+    ...     importance='WISHLIST', assignee='mark'))
     +bugs?search=Search&field.assignee=mark&field.importance=WISHLIST&field.status=NEW&field.status_upstream=open_upstream
 

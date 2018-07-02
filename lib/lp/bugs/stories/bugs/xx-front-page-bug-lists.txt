@@ -46,11 +46,11 @@ across Launchpad. The text for each bug contains links to the bug itself,
 to the bug target and to the bug reporter's page.
 
     >>> def print_bugs_links(bug_row):
-    ...     print "%s: %s" % (
+    ...     print("%s: %s" % (
     ...         bug_row.span.a.renderContents().strip(),
-    ...         bug_row.a.renderContents())
-    ...     print bug_row.a['href']
-    ...     print bug_row.span.a['href']
+    ...         bug_row.a.renderContents()))
+    ...     print(bug_row.a['href'])
+    ...     print(bug_row.span.a['href'])
     >>> for li in reported_bugs('li'):
     ...     print_bugs_links(li)
     Bigfixer: Bug #...: Summary for new bug ...

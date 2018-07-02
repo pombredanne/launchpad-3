@@ -32,7 +32,7 @@ from lp.bugs.externalbugtracker.base import (
     BugNotFound,
     BugTrackerAuthenticationError,
     BugTrackerConnectError,
-    ExternalBugTrackerRequests,
+    ExternalBugTracker,
     InvalidBugId,
     LookupTree,
     UnknownRemoteImportanceError,
@@ -61,7 +61,7 @@ from lp.services.webapp.url import (
     )
 
 
-class Bugzilla(ExternalBugTrackerRequests):
+class Bugzilla(ExternalBugTracker):
     """An ExternalBugTracker for dealing with remote Bugzilla systems."""
 
     batch_query_threshold = 0  # Always use the batch method.

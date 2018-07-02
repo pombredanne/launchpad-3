@@ -45,7 +45,7 @@ valid subscription for it.
     >>> response = agent_webservice.named_post(
     ...   joe['self_link'], 'getArchiveSubscriptionURL', {},
     ...   archive=cp3a['self_link'])
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
     This person does not have a valid subscription for the target archive
@@ -55,7 +55,7 @@ them first.
 
     >>> response = agent_webservice.named_post(cp3a['self_link'],
     ...   'newSubscription', subscriber=joe['self_link'])
-    >>> print response
+    >>> print(response)
     HTTP/1.1 201 Created
     ...
     Location: http://api.launchpad.dev/beta/.../+subscriptions/joe
@@ -68,7 +68,7 @@ which is create on demand if necessary:
     >>> response = agent_webservice.named_post(
     ...   joe['self_link'], 'getArchiveSubscriptionURL', {},
     ...   archive=cp3a['self_link'])
-    >>> print response
+    >>> print(response)
     HTTP/1.1 200 Ok
     ...
     "http://joe:...@private-ppa.launchpad.dev/.../commercial/ubuntu"
@@ -78,7 +78,7 @@ The agent can also query all sources.list entries for the test user
 
     >>> response = agent_webservice.named_get(
     ...   joe['self_link'], 'getArchiveSubscriptionURLs')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 200 Ok
     ...
     ["http://joe:...@private-ppa.launchpad.dev/.../commercial/ubuntu"]
@@ -88,7 +88,7 @@ Joe can query his own entry:
     >>> response = joe_webservice.named_post(
     ...   joe['self_link'], 'getArchiveSubscriptionURL', {},
     ...   archive=cp3a['self_link'])
-    >>> print response
+    >>> print(response)
     HTTP/1.1 200 Ok
     ...
     "http://joe:...@private-ppa.launchpad.dev/.../commercial/ubuntu"
@@ -98,7 +98,7 @@ But Joe can not query the entry of cprov:
     >>> response = joe_webservice.named_post(
     ...   cprov['self_link'], 'getArchiveSubscriptionURL', {},
     ...   archive=cp3a['self_link'])
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
     Only the context user can call this method
@@ -186,7 +186,7 @@ on it:
     >>> subscription_link = subscriptions['entries'][0]['self_link']
     >>> response = commercial_webservice.named_post(
     ...     subscription_link, 'cancel', api_version='devel')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 200 Ok
     ...
 

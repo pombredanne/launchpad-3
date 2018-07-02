@@ -103,7 +103,7 @@ Mark a bug task as fixed when it is assigned awards the karma to the assignee:
     Karma added: action=bugfixed, product=ufo
 
     >>> for karma in assignee.latestKarma():
-    ...     print karma.action.name
+    ...     print(karma.action.name)
     bugfixed
 
 Reject a bug task:
@@ -142,7 +142,7 @@ Change a bug task's importance:
     ...     old_bugtask = Snapshot(bugtask, providing=IBugTask)
     ...     bugtask.transitionToImportance(
     ...         importance, getUtility(ILaunchBag).user)
-    ...     print importance.name
+    ...     print(importance.name)
     ...     notify(ObjectModifiedEvent(bugtask, old_bugtask, ['importance']))
     UNKNOWN
     Karma added: action=bugtaskimportancechanged, distribution=debian

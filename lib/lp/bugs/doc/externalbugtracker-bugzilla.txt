@@ -30,29 +30,29 @@ UnparsableBugTrackerVersion is raised:
     Traceback (most recent call last):
       ...
     UnparsableBugTrackerVersion:
-    Failed to parse version 'A.B' for http://...
+    Failed to parse version u'A.B' for http://...
 
 The version parsing is carried out by the Bugzilla._parseVersion()
 method, which takes a version string and returns a tuple of
 (major_version, minor_version).
 
     >>> external_bugzilla = Bugzilla('http://example.com')
-    >>> print external_bugzilla._parseVersion('3.2')
+    >>> print(external_bugzilla._parseVersion('3.2'))
     (3, 2)
 
 It can handle version strings with an -$foo suffix.
 
-    >>> print external_bugzilla._parseVersion('3.2-foobar')
+    >>> print(external_bugzilla._parseVersion('3.2-foobar'))
     (3, 2)
 
 And will also handle versions which contain the string 'rc'.
 
-    >>> print external_bugzilla._parseVersion('3.2rc')
+    >>> print(external_bugzilla._parseVersion('3.2rc'))
     (3, 2)
 
 + characters in the version string will be removed.
 
-    >>> print external_bugzilla._parseVersion('3.2+1')
+    >>> print(external_bugzilla._parseVersion('3.2+1'))
     (3, 2, 1)
 
 Since we don't want to depend on a working network connection, we use a
@@ -456,9 +456,9 @@ update:
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> bug_watch_updater = CheckwatchesMaster(txn, logger=FakeLogger())
     >>> for bug_watch in gnome_bugzilla.watches:
-    ...     print "%s: %s %s" % (bug_watch.remotebug,
+    ...     print("%s: %s %s" % (bug_watch.remotebug,
     ...           bug_watch.remotestatus,
-    ...           bug_watch.remote_importance)
+    ...           bug_watch.remote_importance))
     304070: None None
     3224:  None
     >>> with external_bugzilla.responses():
@@ -469,9 +469,9 @@ update:
     http://bugzilla.gnome.org/bugs (local bugs: 15).
 
     >>> for bug_watch in gnome_bugzilla.watches:
-    ...     print "%s: %s %s" % (bug_watch.remotebug,
+    ...     print("%s: %s %s" % (bug_watch.remotebug,
     ...           bug_watch.remotestatus,
-    ...           bug_watch.remote_importance)
+    ...           bug_watch.remote_importance))
     304070: None None
     3224: RESOLVED FIXED MINOR URGENT
 
@@ -606,7 +606,7 @@ from a bug task.
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
-    >>> print thunderbird_task.status.title
+    >>> print(thunderbird_task.status.title)
     Unknown
     >>> thunderbird_task.bugwatch.remotestatus is None
     True
@@ -639,13 +639,13 @@ synced:
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
-    >>> print thunderbird_task.status.title
+    >>> print(thunderbird_task.status.title)
     In Progress
-    >>> print thunderbird_task.importance.title
+    >>> print(thunderbird_task.importance.title)
     Wishlist
-    >>> print thunderbird_task.bugwatch.remotestatus
+    >>> print(thunderbird_task.bugwatch.remotestatus)
     ASSIGNED
-    >>> print thunderbird_task.bugwatch.remote_importance
+    >>> print(thunderbird_task.bugwatch.remote_importance)
     MEDIUM ENHANCEMENT
 
 If we change the bugtask status, it will be updated again even though
@@ -663,13 +663,13 @@ status mapping.
 
     >>> bug_nine = getUtility(IBugSet).get(9)
     >>> thunderbird_task = bug_nine.bugtasks[0]
-    >>> print thunderbird_task.status.title
+    >>> print(thunderbird_task.status.title)
     In Progress
-    >>> print thunderbird_task.importance.title
+    >>> print(thunderbird_task.importance.title)
     Wishlist
-    >>> print thunderbird_task.bugwatch.remotestatus
+    >>> print(thunderbird_task.bugwatch.remotestatus)
     ASSIGNED
-    >>> print thunderbird_task.bugwatch.remote_importance
+    >>> print(thunderbird_task.bugwatch.remote_importance)
     MEDIUM ENHANCEMENT
 
 If there are two bug watches, linked to different bugs, pointing to the
@@ -692,14 +692,14 @@ same remote bug, both will of course be updated.
     INFO Updating 2 watches for 1 bugs on https://bugzilla.mozilla.org
 
     >>> bug_watch1 = getUtility(IBugWatchSet).get(bug_watch1_id)
-    >>> print bug_watch1.remotestatus
+    >>> print(bug_watch1.remotestatus)
     RESOLVED FIXED
-    >>> print bug_watch1.remote_importance
+    >>> print(bug_watch1.remote_importance)
     LOW BLOCKER
     >>> bug_watch2 = getUtility(IBugWatchSet).get(bug_watch2_id)
-    >>> print bug_watch2.remotestatus
+    >>> print(bug_watch2.remotestatus)
     RESOLVED FIXED
-    >>> print bug_watch2.remote_importance
+    >>> print(bug_watch2.remote_importance)
     LOW BLOCKER
 
 If updateBugWatches() can't parse the XML file returned from the remote
@@ -757,7 +757,7 @@ cases getRemoteProduct() returns None.
     >>> external_bugzilla.bug_item_file = 'gnome_bug_li_item_noproduct.xml'
     >>> with external_bugzilla.responses():
     ...     external_bugzilla.initializeRemoteBugDB(['84'])
-    >>> print external_bugzilla.getRemoteProduct('84')
+    >>> print(external_bugzilla.getRemoteProduct('84'))
     None
 
 Requesting the product for a bug that doesn't exist raises BugNotFound.

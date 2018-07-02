@@ -42,13 +42,13 @@ Celso's PPA.
     >>> cprov_browser.open(
     ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> cprov_browser.getLink('Delete packages').click()
-    >>> print cprov_browser.title
+    >>> print(cprov_browser.title)
     Delete packages from PPA for Celso Providelo...
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> admin_browser.getLink('Delete packages').click()
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     Delete packages from PPA for Celso Providelo...
 
 Once accessed the page provides a way to search for published package
@@ -168,7 +168,7 @@ An nonexistent source:
     ...    name='field.selected_sources').value = ['100']
     Traceback (most recent call last):
     ...
-    ItemNotFoundError: insufficient items with name '100'
+    ItemNotFoundError: insufficient items with name u'100'
 
 An invalid value.
 
@@ -176,7 +176,7 @@ An invalid value.
     ...    name='field.selected_sources').value = ['blah']
     Traceback (most recent call last):
     ...
-    ItemNotFoundError: insufficient items with name 'blah'
+    ItemNotFoundError: insufficient items with name u'blah'
 
 The deleted record is now presented accordingly in the +index page. We
 will use another browser to inspect the results of our deletions.
@@ -246,8 +246,8 @@ available for deletion.
     >>> admin_browser.open(
     ...     'http://launchpad.dev/~cprov/+archive/ppa/+delete-packages')
     >>> main_content = find_main_content(admin_browser.contents)
-    >>> print extract_text(
-    ...   find_tags_by_class(str(main_content), 'top-portlet')[0])
+    >>> print(extract_text(
+    ...   find_tags_by_class(str(main_content), 'top-portlet')[0]))
     This PPA does not contain any source packages published.
 
 All the packages were deleted via the admin_browser, now we will
@@ -259,7 +259,7 @@ previous state to check if the bug 185922 is really fixed.
     >>> re_post_browser.getControl("Deletion comment").value = "DO IT AGAIN !"
     >>> re_post_browser.getControl("Request Deletion").click()
 
-    >>> print extract_text(find_main_content(re_post_browser.contents))
+    >>> print(extract_text(find_main_content(re_post_browser.contents)))
     Delete packages from PPA for Celso Providelo
     ...
     This PPA does not contain any source packages published.
@@ -293,10 +293,10 @@ message is presented.
 
     >>> admin_browser.open(
     ...    'http://launchpad.dev/~no-priv/+archive/ppa/+delete-packages')
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     Delete packages from PPA for No Privileges Person...
 
-    >>> print extract_text(find_main_content(admin_browser.contents))
+    >>> print(extract_text(find_main_content(admin_browser.contents)))
     Delete packages from PPA for No Privileges Person
     ...
     This PPA does not contain any source packages published.
@@ -374,7 +374,7 @@ section indicates to the user that it is still published.
     >>> expander_url = user_browser.getLink(
     ...     id='pub%s-expander' % foo_pub_src.id).url
     >>> anon_browser.open(expander_url)
-    >>> print extract_text(anon_browser.contents)
+    >>> print(extract_text(anon_browser.contents))
     Publishing details
     Changelog
     Builds
@@ -389,7 +389,7 @@ Even if the source added is recorded as SUPERSEDED, it is still
 available for deletion because it contains a PUBLISHED binary.
 
     >>> user_browser.getLink('Delete packages').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Delete packages from PPA for No Privileges Person...
 
     >>> print_ppa_packages(user_browser.contents)
@@ -400,7 +400,7 @@ available for deletion because it contains a PUBLISHED binary.
     >>> expander_url = user_browser.getLink(
     ...     id='pub%s-expander' % foo_pub_src.id).url
     >>> anon_browser.open(expander_url)
-    >>> print extract_text(anon_browser.contents)
+    >>> print(extract_text(anon_browser.contents))
     Publishing details
     Changelog
     Builds
@@ -414,7 +414,7 @@ available for deletion because it contains a PUBLISHED binary.
 The list of 'deletable' sources can be filtered by status. The default
 filter is 'Any Status', but the user can choose another.
 
-    >>> print user_browser.getControl(name='field.status_filter').value
+    >>> print(user_browser.getControl(name='field.status_filter').value)
     ['']
 
 When the user selects 'Published' filter and update the results, no
@@ -475,7 +475,7 @@ opposed to being truncated after the first 20 characters.
     >>> expander_url = user_browser.getLink(
     ...     id='pub%s-expander' % foo_pub_src.id).url
     >>> anon_browser.open(expander_url)
-    >>> print extract_text(anon_browser.contents)
+    >>> print(extract_text(anon_browser.contents))
     Publishing details
     Deleted ... ago by No Privileges Person
     Deletion of a number of base pairs that is not evenly divisible by three
@@ -516,7 +516,7 @@ area.
     >>> expander_url = user_browser.getLink(
     ...     id='pub%s-expander' % foo_pub_src.id).url
     >>> anon_browser.open(expander_url)
-    >>> print extract_text(anon_browser.contents)
+    >>> print(extract_text(anon_browser.contents))
     Publishing details
     Removed from disk ... ago.
     Deleted ... ago by No Privileges Person
@@ -533,7 +533,7 @@ as it would refer to non-existent links.
 
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/foobar/1.0")
     >>> user_browser.getLink('See full publishing history').click()
-    >>> print extract_text(find_main_content(user_browser.contents))
+    >>> print(extract_text(find_main_content(user_browser.contents)))
     Publishing history of foobar 1.0 source package in Ubuntu
     ...
     1.0

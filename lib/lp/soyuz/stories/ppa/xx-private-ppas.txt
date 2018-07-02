@@ -11,7 +11,7 @@ We'll use this function later to print what PPAs are in the +ppas listing.
     >>> def list_ppas_in_browser_page(browser):
     ...     ppas = [extract_text(ppa_row) for ppa_row in find_tags_by_class(
     ...         browser.contents, 'ppa_batch_row')]
-    ...     print "\n".join(ppas)
+    ...     print("\n".join(ppas))
 
 
 == Set Up a Private PPA ==
@@ -121,7 +121,7 @@ one because he is not a member of that team, nor an admin.
 
     >>> cprov_browser.getLink("PPA named p3a for Celso Providelo").click()
 
-    >>> print cprov_browser.title
+    >>> print(cprov_browser.title)
     PPA named p3a for Celso Providelo : Celso Providelo
 
 When a non-privileged user browses to a profile page for a person or
@@ -129,7 +129,7 @@ team that has a private PPA for which they are not authorised to see, the
 link to the PPA page is not present.
 
     >>> browser.open("http://launchpad.dev/~landscape-developers")
-    >>> print find_tag_by_id(browser.contents, 'ppas')
+    >>> print(find_tag_by_id(browser.contents, 'ppas'))
     None
 
     >>> browser.getLink("PPA for Landscape Developers").click()

@@ -15,13 +15,13 @@ feature in 'DistroArchSeries Actions'.
     >>> anon_browser.getLink('4.10').click()
     >>> anon_browser.getLink('i386').click()
 
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     i386 : Warty (4.10) : Ubuntu
 
 We present only minimal information in this page, its main feature is
 to allow binary package searching.
 
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print(extract_text(find_main_content(anon_browser.contents)))
     Ubuntu Warty for i386
     ...
     Search binary packages
@@ -51,8 +51,8 @@ result is displayed as the binary package name followed by the binary
 package summary.
 
 More details are available by clicking on the binary package name.
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'search-results'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'search-results')))
     1 &rarr; 3 of 3 results
     First &bull; Previous &bull; Next &bull; Last
     mozilla-firefox: Mozilla Firefox Web Browser
@@ -66,8 +66,8 @@ that was done, and explain that no matches were found.
 
     >>> anon_browser.getControl(name="text").value = "biscoito"
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'search-results'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'search-results')))
     No packages matching 'biscoito' are published in Ubuntu Warty i386.
 
 
@@ -76,16 +76,16 @@ that was done, and explain that no matches were found.
 All users can browse to the builds page from the DistroArchSeries
 page. The builds page is described in 23-builds-page.txt.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'global-actions'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'global-actions')))
     Show builds
 
 Only administrators can edit ('administer', in fact) the
 distroarchseries details.
 
     >>> admin_browser.open("http://launchpad.dev/ubuntu/warty/i386/")
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'global-actions'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'global-actions')))
     Administer
     Show builds
 
@@ -109,7 +109,7 @@ Accessing the DistroArchSeries administration interface.
 The page presents a cancellation link that returns the user back to the
 DistroArchSeries page if clicked:
 
-    >>> print admin_browser.getLink("Cancel").url
+    >>> print(admin_browser.getLink("Cancel").url)
     http://launchpad.dev/ubuntu/warty/i386
 
 Removing the official support for this DistroArchSeries.
@@ -120,7 +120,7 @@ Clicking the "Change" button makes the change and takes the user back to the
 DistroArchSeries page.
 
     >>> admin_browser.getControl("Change").click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://launchpad.dev/ubuntu/warty/i386
 
 There's also a notification message announcing the success of the change:
@@ -143,7 +143,7 @@ planned and done carefully.
 
     >>> for warning in find_tags_by_class(
     ...     admin_browser.contents, 'exception'):
-    ...     print extract_text(warning)
+    ...     print(extract_text(warning))
     Changing the architecture tag will use large amounts of archive
     disk space, and may affect many people. Please be very careful.
 
@@ -153,8 +153,8 @@ current distroseries architecture list.
 
     >>> def check_arch_list(distroseries='warty'):
     ...     anon_browser.open("http://launchpad.dev/ubuntu/%s" % distroseries)
-    ...     print extract_text(find_tag_by_id(
-    ...         anon_browser.contents, 'portlet-architectures-list'))
+    ...     print(extract_text(find_tag_by_id(
+    ...         anon_browser.contents, 'portlet-architectures-list')))
 
     >>> check_arch_list()
     hppa (unofficial)
@@ -175,7 +175,7 @@ architectures in this DistroSeries.
 
     >>> admin_browser.open("http://launchpad.dev/ubuntu/hoary")
     >>> admin_browser.getLink("Add architecture").click()
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     Add a port of The Hoary Hedgehog...
 
 Ubuntu hoary already has i386 & hppa distroarchseries and should not
@@ -225,7 +225,7 @@ An administrator can open new distinct architecture, for instance,
 When the new architecture has been created, it is displayed to the
 administrator.
 
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     amd64 : Hoary (5.04) : Ubuntu
 
 And other users can see the just-created architecture listed in the
