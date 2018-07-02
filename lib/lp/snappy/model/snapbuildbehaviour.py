@@ -12,11 +12,10 @@ __all__ = [
     ]
 
 import base64
-import json
 import time
 
+import treq
 from twisted.internet import defer
-from twisted.web.client import getPage
 from zope.component import adapter
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
@@ -30,6 +29,7 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
+from lp.services.twistedsupport.treq import check_status
 from lp.snappy.interfaces.snap import SnapBuildArchiveOwnerMismatch
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.adapters.archivedependencies import (
@@ -152,18 +152,15 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             build_id=self.build.build_cookie,
             timestamp=timestamp)
         auth_string = '{}:{}'.format(admin_username, secret).strip()
-        auth_header = 'Basic ' + base64.b64encode(auth_string)
-        data = json.dumps({'username': proxy_username})
+        auth_header = b'Basic ' + base64.b64encode(auth_string)
 
-        result = yield getPage(
-            url,
-            method='POST',
-            postdata=data,
-            headers={
-                'Authorization': auth_header,
-                'Content-Type': 'application/json'}
-            )
-        token = json.loads(result)
+        response = yield treq.post(
+            url, headers={'Authorization': auth_header},
+            json={'username': proxy_username},
+            reactor=self._slave.reactor,
+            pool=self._slave.pool)
+        response = yield check_status(response)
+        token = yield treq.json_content(response)
         defer.returnValue(token)
 
     def verifySuccessfulBuild(self):

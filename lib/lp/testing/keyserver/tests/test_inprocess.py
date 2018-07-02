@@ -1,4 +1,4 @@
-# Copyright 2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2017-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """In-process keyserver fixture tests."""
@@ -10,10 +10,12 @@ __metaclass__ = type
 from testtools.twistedsupport import (
     AsynchronousDeferredRunTestForBrokenTwisted,
     )
+import treq
 from twisted.internet import defer
-from twisted.web.client import getPage
 
 from lp.services.config import config
+from lp.services.twistedsupport.testing import TReqFixture
+from lp.services.twistedsupport.treq import check_status
 from lp.testing import TestCase
 from lp.testing.keyserver import InProcessKeyServerFixture
 from lp.testing.keyserver.web import GREETING
@@ -38,7 +40,10 @@ class TestInProcessKeyServerFixture(TestCase):
     @defer.inlineCallbacks
     def test_starts_properly(self):
         # The fixture starts properly and we can load the page.
+        from twisted.internet import reactor
         fixture = self.useFixture(InProcessKeyServerFixture())
         yield fixture.start()
-        content = yield getPage(fixture.url)
+        client = self.useFixture(TReqFixture(reactor)).client
+        response = yield client.get(fixture.url).addCallback(check_status)
+        content = yield treq.content(response)
         self.assertEqual(GREETING, content)
