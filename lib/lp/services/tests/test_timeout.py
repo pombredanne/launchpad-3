@@ -430,6 +430,30 @@ class TestTimeout(TestCase):
             headers=ContainsDict({'Content-Length': Equals(8)}),
             content=Equals('Success.')))
 
+    def test_urlfetch_writes_to_output_file(self):
+        """If given an output_file, urlfetch writes to it."""
+        sock, http_server_url = self.make_test_socket()
+        sock.listen(1)
+
+        def success_result():
+            (client_sock, client_addr) = sock.accept()
+            client_sock.sendall(dedent("""\
+                HTTP/1.0 200 Ok
+                Content-Type: text/plain
+                Content-Length: 8
+
+                Success."""))
+            client_sock.close()
+
+        t = threading.Thread(target=success_result)
+        t.start()
+        output_path = self.useFixture(TempDir()).join('out')
+        with open(output_path, 'wb+') as f:
+            urlfetch(http_server_url, output_file=f)
+            f.seek(0)
+            self.assertEqual(b'Success.', f.read())
+        t.join()
+
     def test_xmlrpc_transport(self):
         """ Another use case for timeouts is communicating with external
         systems using XMLRPC.  In order to allow timeouts using XMLRPC we

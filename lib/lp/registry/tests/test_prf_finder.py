@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
@@ -8,6 +8,7 @@ from StringIO import StringIO
 import tempfile
 import unittest
 
+import responses
 import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
@@ -219,22 +220,29 @@ class HandleReleaseTestCase(unittest.TestCase):
     def create_tarball(self, file_name):
         """create a release tarball for testing"""
         file_path = os.path.join(self.release_root, file_name)
-        try:
-            fp = open(file_path, 'w')
+        with open(file_path, 'w') as fp:
             fp.write('foo')
-        finally:
-            fp.close()
         return file_path, file_name
+
+    def add_tarball_response(self, file_path):
+        def callback(request):
+            with open(file_path, 'rb') as f:
+                file_size = os.fstat(f.fileno()).st_size
+                return 200, {'Content-Length': str(file_size)}, f.read()
+
+        url = 'http://example.com/' + file_path.lstrip('/')
+        responses.add_callback('GET', url, callback)
+        return url
 
     def setUp(self):
         switch_dbuser(config.productreleasefinder.dbuser)
         self.release_root = tempfile.mkdtemp()
-        self.release_url = 'file://' + self.release_root
 
     def tearDown(self):
         shutil.rmtree(self.release_root, ignore_errors=True)
         reset_logging()
 
+    @responses.activate
     def test_handleRelease(self):
         ztm = self.layer.txn
         logging.basicConfig(level=logging.CRITICAL)
@@ -243,7 +251,8 @@ class HandleReleaseTestCase(unittest.TestCase):
         file_path, file_name = self.create_tarball(
             'evolution-42.0.orig.tar.gz')
         file_names = set()
-        prf.handleRelease('evolution', 'trunk', file_path, file_names)
+        url = self.add_tarball_response(file_path)
+        prf.handleRelease('evolution', 'trunk', url, file_names)
         self.assertTrue(file_name in file_names)
         self.assertFalse(alt_file_name in file_names)
 
@@ -271,6 +280,7 @@ class HandleReleaseTestCase(unittest.TestCase):
             bound = field.bind(fileinfo)
             bound.validate(bound.get(fileinfo))
 
+    @responses.activate
     def test_handleReleaseWithExistingRelease(self):
         # Test that handleRelease() can add a file release to an
         # existing ProductRelease.
@@ -289,7 +299,8 @@ class HandleReleaseTestCase(unittest.TestCase):
         prf = ProductReleaseFinder(ztm, logging.getLogger())
         file_path, file_name = self.create_tarball('evolution-2.1.6.tar.gz')
         file_names = prf.getReleaseFileNames('evolution')
-        prf.handleRelease('evolution', 'trunk', file_path, file_names)
+        url = self.add_tarball_response(file_path)
+        prf.handleRelease('evolution', 'trunk', url, file_names)
 
         # verify that we now have files attached to the release:
         evo = getUtility(IProductSet).getByName('evolution')
@@ -297,6 +308,7 @@ class HandleReleaseTestCase(unittest.TestCase):
         release = trunk.getRelease('2.1.6')
         self.assertEqual(release.files.count(), 1)
 
+    @responses.activate
     def test_handleReleaseTwice(self):
         # Test that handleRelease() handles the case where a tarball
         # has already been attached to the ProductRelease.  We do this
@@ -306,13 +318,15 @@ class HandleReleaseTestCase(unittest.TestCase):
         prf = ProductReleaseFinder(ztm, logging.getLogger())
         file_path, file_name = self.create_tarball('evolution-42.0.tar.gz')
         file_names = prf.getReleaseFileNames('evolution')
-        prf.handleRelease('evolution', 'trunk', file_path, file_names)
-        prf.handleRelease('evolution', 'trunk', file_path, file_names)
+        url = self.add_tarball_response(file_path)
+        prf.handleRelease('evolution', 'trunk', url, file_names)
+        prf.handleRelease('evolution', 'trunk', url, file_names)
         evo = getUtility(IProductSet).getByName('evolution')
         trunk = evo.getSeries('trunk')
         release = trunk.getRelease('42.0')
         self.assertEqual(release.files.count(), 1)
 
+    @responses.activate
     def test_handleReleaseTwice_multiple_series(self):
         # Series can have overlaping release file globs, but versions
         # are unique to a project. A file is uploaded to a release only
@@ -322,14 +336,17 @@ class HandleReleaseTestCase(unittest.TestCase):
         prf = ProductReleaseFinder(ztm, logging.getLogger())
         file_path, file_name = self.create_tarball('evolution-1.2.3.tar.gz')
         file_names = prf.getReleaseFileNames('evolution')
-        prf.handleRelease('evolution', 'trunk', file_path, file_names)
+        url = self.add_tarball_response(file_path)
+        prf.handleRelease('evolution', 'trunk', url, file_names)
         file_path, file_name = self.create_tarball('evolution-1.2.3.tar.gz')
-        prf.handleRelease('evolution', '1.0', file_path, file_names)
+        url = self.add_tarball_response(file_path)
+        prf.handleRelease('evolution', '1.0', url, file_names)
         product = getUtility(IProductSet).getByName('evolution')
         release = product.getMilestone('1.2.3').product_release
         self.assertEqual(release.files.count(), 1)
 
-    def test_handleRelease_alternate_verstion(self):
+    @responses.activate
+    def test_handleRelease_alternate_version(self):
         """Verify that tar.gz and tar.bz2 versions are both uploaded."""
         ztm = self.layer.txn
         logging.basicConfig(level=logging.CRITICAL)
@@ -338,8 +355,10 @@ class HandleReleaseTestCase(unittest.TestCase):
         alt_file_path, alt_file_name = self.create_tarball(
             'evolution-45.0.tar.bz2')
         file_names = prf.getReleaseFileNames('evolution')
-        prf.handleRelease('evolution', 'trunk', file_path, file_names)
-        prf.handleRelease('evolution', 'trunk', alt_file_path, file_names)
+        url = self.add_tarball_response(file_path)
+        prf.handleRelease('evolution', 'trunk', url, file_names)
+        alt_url = self.add_tarball_response(alt_file_path)
+        prf.handleRelease('evolution', 'trunk', alt_url, file_names)
         evo = getUtility(IProductSet).getByName('evolution')
         trunk = evo.getSeries('trunk')
         release = trunk.getRelease('45.0')
@@ -365,11 +384,37 @@ class HandleReleaseTestCase(unittest.TestCase):
         fp.write('foo')
         fp.close()
 
-        url = self.release_url + '/evolution420.tar.gz'
+        url = 'file://' + self.release_root + '/evolution420.tar.gz'
         file_names = prf.getReleaseFileNames('evolution')
         prf.handleRelease('evolution', 'trunk', url, file_names)
         self.assertEqual(
             "Unable to parse version from %s\n" % url, output.getvalue())
+
+    @responses.activate
+    def test_handleRelease_short_response(self):
+        # handleRelease raises an exception on short responses.
+        ztm = self.layer.txn
+        logging.basicConfig(level=logging.CRITICAL)
+        prf = ProductReleaseFinder(ztm, logging.getLogger())
+        file_path, file_name = self.create_tarball(
+            'evolution-42.0.orig.tar.gz')
+        file_size = os.stat(file_path).st_size
+        file_names = set()
+
+        def callback(request):
+            with open(file_path, 'rb') as f:
+                file_size = os.fstat(f.fileno()).st_size
+                return 200, {'Content-Length': str(file_size + 1)}, f.read()
+
+        url = 'http://example.com/' + file_path.lstrip('/')
+        responses.add_callback('GET', url, callback)
+        with self.assertRaises(IOError) as ctx:
+            prf.handleRelease('evolution', 'trunk', url, file_names)
+        self.assertEqual(
+            'Incomplete read: got %d, expected %d' % (
+                file_size, file_size + 1),
+            str(ctx.exception))
+        self.assertNotIn(file_name, file_names)
 
 
 class ExtractVersionTestCase(unittest.TestCase):
