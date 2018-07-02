@@ -286,7 +286,7 @@ lazr.lifecycle==1.1
 lazr.restful==0.20.1
 lazr.restfulclient==0.13.2
 lazr.smtptest==1.3
-lazr.sshserver==0.1.7
+lazr.sshserver==0.1.8
 lazr.testing==0.1.1
 lazr.uri==1.0.3
 libnacl==1.3.6
