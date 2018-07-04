@@ -765,6 +765,15 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         :param launchbag: `ILaunchBag`.
         """
 
+    def getBlob(filename, revision_id=None):
+        """Get a blob by file name from this branch.
+
+        :param filename: Relative path of a file in the branch.
+        :param revision_id: An optional revision ID.  Defaults to the last
+            scanned revision ID of the branch.
+        :return: The blob content as a byte string.
+        """
+
     def getDiff(new, old):
         """Get the diff between two revisions in this branch.
 

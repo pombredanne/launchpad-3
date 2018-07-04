@@ -9,7 +9,9 @@ __all__ = [
     'BadSnapSearchContext',
     'BadSnapSource',
     'CannotAuthorizeStoreUploads',
+    'CannotFetchSnapcraftYaml',
     'CannotModifySnapProcessor',
+    'CannotParseSnapcraftYaml',
     'CannotRequestAutoBuilds',
     'DuplicateSnapName',
     'ISnap',
@@ -235,6 +237,14 @@ class CannotRequestAutoBuilds(Exception):
         super(CannotRequestAutoBuilds, self).__init__(
             "This snap package cannot have automatic builds created for it "
             "because %s is not set." % field)
+
+
+class CannotFetchSnapcraftYaml(Exception):
+    """Launchpad cannot fetch this snap package's snapcraft.yaml."""
+
+
+class CannotParseSnapcraftYaml(Exception):
+    """Launchpad cannot parse this snap package's snapcraft.yaml."""
 
 
 class ISnapView(Interface):
@@ -786,6 +796,22 @@ class ISnapSet(Interface):
 
     def preloadDataForSnaps(snaps, user):
         """Load the data related to a list of snap packages."""
+
+    def getSnapcraftYaml(context, logger=None):
+        """Fetch a package's snapcraft.yaml from code hosting, if possible.
+
+        :param context: Either an `ISnap` or the source branch for a snap
+            package.
+        :param logger: An optional logger.
+
+        :return: The package's parsed snapcraft.yaml.
+        :raises NotFoundError: if this package has no snapcraft.yaml.
+        :raises CannotFetchSnapcraftYaml: if it was not possible to fetch
+            snapcraft.yaml from the code hosting backend for some other
+            reason.
+        :raises CannotParseSnapcraftYaml: if the fetched snapcraft.yaml
+            cannot be parsed.
+        """
 
     def makeAutoBuilds(logger=None):
         """Create and return automatic builds for stale snap packages.
