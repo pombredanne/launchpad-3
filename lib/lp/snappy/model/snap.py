@@ -32,6 +32,7 @@ from storm.locals import (
     Storm,
     Unicode,
     )
+import yaml
 from zope.component import (
     getAdapter,
     getUtility,
@@ -42,7 +43,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
-from lp.app.errors import IncompatibleArguments
+from lp.app.errors import (
+    IncompatibleArguments,
+    NotFoundError,
+    )
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -50,6 +54,12 @@ from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.processor import Processor
+from lp.code.errors import (
+    BranchFileNotFound,
+    BranchHostingFault,
+    GitRepositoryBlobNotFound,
+    GitRepositoryScanFault,
+    )
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import (
     IAllBranches,
@@ -110,7 +120,9 @@ from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     BadSnapSource,
     CannotAuthorizeStoreUploads,
+    CannotFetchSnapcraftYaml,
     CannotModifySnapProcessor,
+    CannotParseSnapcraftYaml,
     CannotRequestAutoBuilds,
     DuplicateSnapName,
     ISnap,
@@ -922,6 +934,52 @@ class SnapSet:
 
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             person_ids, need_validity=True))
+
+    def getSnapcraftYaml(self, context, logger=None):
+        """See `ISnapSet`."""
+        if ISnap.providedBy(context):
+            context = context.source
+        try:
+            paths = (
+                "snap/snapcraft.yaml",
+                "snapcraft.yaml",
+                ".snapcraft.yaml",
+                )
+            for path in paths:
+                try:
+                    if IBranch.providedBy(context):
+                        blob = context.getBlob(path)
+                    else:
+                        blob = context.repository.getBlob(path, context.name)
+                    break
+                except (BranchFileNotFound, GitRepositoryBlobNotFound):
+                    pass
+            else:
+                msg = "Cannot find snapcraft.yaml in %s"
+                if logger is not None:
+                    logger.exception(msg, context.unique_name)
+                raise NotFoundError(msg % context.unique_name)
+        except (BranchHostingFault, GitRepositoryScanFault) as e:
+            msg = "Failed to get snap manifest from %s"
+            if logger is not None:
+                logger.exception(msg, context.unique_name)
+            raise CannotFetchSnapcraftYaml(
+                "%s: %s" % (msg % context.unique_name, e))
+
+        try:
+            snapcraft_data = yaml.safe_load(blob)
+        except Exception as e:
+            # Don't bother logging parsing errors from user-supplied YAML.
+            raise CannotParseSnapcraftYaml(
+                "Cannot parse snapcraft.yaml from %s: %s" %
+                (context.unique_name, e))
+
+        if not isinstance(snapcraft_data, dict):
+            raise CannotParseSnapcraftYaml(
+                "The top level of snapcraft.yaml from %s is not a mapping" %
+                context.unique_name)
+
+        return snapcraft_data
 
     @staticmethod
     def _findStaleSnaps():
