@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IGitNamespace` implementations."""
@@ -278,6 +278,53 @@ class TestPersonalGitNamespace(TestCaseWithFactory, NamespaceMixin):
         namespace = PersonalGitNamespace(person)
         self.assertEqual(person, namespace.target)
 
+    def test_supports_merge_proposals(self):
+        # Personal namespaces do not support merge proposals.
+        self.assertFalse(self.getNamespace().supports_merge_proposals)
+
+    def test_areRepositoriesMergeable_same_repository(self):
+        # A personal repository is not even mergeable into itself.
+        owner = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=owner, target=owner)
+        self.assertFalse(
+            repository.namespace.areRepositoriesMergeable(
+                repository, repository))
+
+    def test_areRepositoriesMergeable_same_namespace(self):
+        # A personal repository is not mergeable into another personal
+        # repository, even if they are in the same namespace.
+        owner = self.factory.makePerson()
+        this = self.factory.makeGitRepository(owner=owner, target=owner)
+        other = self.factory.makeGitRepository(owner=owner, target=owner)
+        self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
+
+    def test_areRepositoriesMergeable_different_namespace(self):
+        # A personal repository is not mergeable into another personal
+        # repository with a different namespace.
+        this_owner = self.factory.makePerson()
+        this = self.factory.makeGitRepository(
+            owner=this_owner, target=this_owner)
+        other_owner = self.factory.makePerson()
+        other = self.factory.makeGitRepository(
+            owner=other_owner, target=other_owner)
+        self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
+
+    def test_areRepositoriesMergeable_project(self):
+        # Project repositories are not mergeable into personal repositories.
+        owner = self.factory.makePerson()
+        this = self.factory.makeGitRepository(owner=owner, target=owner)
+        project = self.factory.makeProduct()
+        other = self.factory.makeGitRepository(owner=owner, target=project)
+        self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
+
+    def test_areRepositoriesMergeable_package(self):
+        # Package repositories are not mergeable into personal repositories.
+        owner = self.factory.makePerson()
+        this = self.factory.makeGitRepository(owner=owner, target=owner)
+        dsp = self.factory.makeDistributionSourcePackage()
+        other = self.factory.makeGitRepository(owner=owner, target=dsp)
+        self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
+
 
 class TestProjectGitNamespace(TestCaseWithFactory, NamespaceMixin):
     """Tests for `ProjectGitNamespace`."""
@@ -311,6 +358,50 @@ class TestProjectGitNamespace(TestCaseWithFactory, NamespaceMixin):
         project = self.factory.makeProduct()
         namespace = ProjectGitNamespace(person, project)
         self.assertEqual(project, namespace.target)
+
+    def test_supports_merge_proposals(self):
+        # Project namespaces support merge proposals.
+        self.assertTrue(self.getNamespace().supports_merge_proposals)
+
+    def test_areRepositoriesMergeable_same_repository(self):
+        # A project repository is mergeable into itself.
+        project = self.factory.makeProduct()
+        repository = self.factory.makeGitRepository(target=project)
+        self.assertTrue(
+            repository.namespace.areRepositoriesMergeable(
+                repository, repository))
+
+    def test_areRepositoriesMergeable_same_namespace(self):
+        # Repositories of the same project are mergeable.
+        project = self.factory.makeProduct()
+        this = self.factory.makeGitRepository(target=project)
+        other = self.factory.makeGitRepository(target=project)
+        self.assertTrue(this.namespace.areRepositoriesMergeable(this, other))
+
+    def test_areRepositoriesMergeable_different_namespace(self):
+        # Repositories of a different project are not mergeable.
+        this_project = self.factory.makeProduct()
+        this = self.factory.makeGitRepository(target=this_project)
+        other_project = self.factory.makeProduct()
+        other = self.factory.makeGitRepository(target=other_project)
+        self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
+
+    def test_areRepositoriesMergeable_personal(self):
+        # Personal repositories are not mergeable into project repositories.
+        owner = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        this = self.factory.makeGitRepository(owner=owner, target=project)
+        other = self.factory.makeGitRepository(owner=owner, target=owner)
+        self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
+
+    def test_areRepositoriesMergeable_package(self):
+        # Package repositories are not mergeable into project repositories.
+        owner = self.factory.makePerson()
+        project = self.factory.makeProduct()
+        this = self.factory.makeGitRepository(owner=owner, target=project)
+        dsp = self.factory.makeDistributionSourcePackage()
+        other = self.factory.makeGitRepository(owner=owner, target=dsp)
+        self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
 
 
 class TestProjectGitNamespacePrivacyWithInformationType(TestCaseWithFactory):
@@ -520,6 +611,50 @@ class TestPackageGitNamespace(TestCaseWithFactory, NamespaceMixin):
         dsp = self.factory.makeDistributionSourcePackage()
         namespace = PackageGitNamespace(person, dsp)
         self.assertEqual(dsp, namespace.target)
+
+    def test_supports_merge_proposals(self):
+        # Package namespaces support merge proposals.
+        self.assertTrue(self.getNamespace().supports_merge_proposals)
+
+    def test_areRepositoriesMergeable_same_repository(self):
+        # A package repository is mergeable into itself.
+        dsp = self.factory.makeDistributionSourcePackage()
+        repository = self.factory.makeGitRepository(target=dsp)
+        self.assertTrue(
+            repository.namespace.areRepositoriesMergeable(
+                repository, repository))
+
+    def test_areRepositoriesMergeable_same_namespace(self):
+        # Repositories of the same package are mergeable.
+        dsp = self.factory.makeDistributionSourcePackage()
+        this = self.factory.makeGitRepository(target=dsp)
+        other = self.factory.makeGitRepository(target=dsp)
+        self.assertTrue(this.namespace.areRepositoriesMergeable(this, other))
+
+    def test_areRepositoriesMergeable_different_namespace(self):
+        # Repositories of a different package are not mergeable.
+        this_dsp = self.factory.makeDistributionSourcePackage()
+        this = self.factory.makeGitRepository(target=this_dsp)
+        other_dsp = self.factory.makeDistributionSourcePackage()
+        other = self.factory.makeGitRepository(target=other_dsp)
+        self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
+
+    def test_areRepositoriesMergeable_personal(self):
+        # Personal repositories are not mergeable into package repositories.
+        owner = self.factory.makePerson()
+        dsp = self.factory.makeProduct()
+        this = self.factory.makeGitRepository(owner=owner, target=dsp)
+        other = self.factory.makeGitRepository(owner=owner, target=owner)
+        self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
+
+    def test_areRepositoriesMergeable_project(self):
+        # Project repositories are not mergeable into package repositories.
+        owner = self.factory.makePerson()
+        dsp = self.factory.makeDistributionSourcePackage()
+        this = self.factory.makeGitRepository(owner=owner, target=dsp)
+        project = self.factory.makeProduct()
+        other = self.factory.makeGitRepository(owner=owner, target=project)
+        self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
 
 
 class BaseCanCreateRepositoriesMixin:
