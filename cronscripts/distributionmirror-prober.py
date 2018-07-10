@@ -1,13 +1,11 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Script to probe distribution mirrors and check how up-to-date they are."""
 
 import _pythonpath
-
-import os
 
 from lp.registry.interfaces.distributionmirror import MirrorContent
 from lp.registry.scripts.distributionmirror_prober import DistroMirrorProber
@@ -16,6 +14,7 @@ from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
+from lp.services.timeout import set_default_timeout_function
 
 
 class DistroMirrorProberScript(LaunchpadCronScript):
@@ -49,12 +48,8 @@ class DistroMirrorProberScript(LaunchpadCronScript):
                 'Wrong value for argument --content-type: %s'
                 % self.options.content_type)
 
-        if config.distributionmirrorprober.use_proxy:
-            os.environ['http_proxy'] = config.launchpad.http_proxy
-            self.logger.debug("Using %s as proxy." % os.environ['http_proxy'])
-        else:
-            self.logger.debug("Not using any proxy.")
-
+        set_default_timeout_function(
+            lambda: config.distributionmirrorprober.timeout)
         DistroMirrorProber(self.txn, self.logger).probe(
             content_type, self.options.no_remote_hosts, self.options.force,
             self.options.max_mirrors, not self.options.no_owner_notification)

@@ -306,14 +306,33 @@ def remove_all_sample_data_branches():
 class BranchHostingFixture(fixtures.Fixture):
     """A fixture that temporarily registers a fake Bazaar hosting client."""
 
-    def __init__(self, diff=None, inventory=None, blob=None):
+    def __init__(self, diff=None, inventory=None, file_list=None, blob=None,
+                 disable_memcache=True):
         self.create = FakeMethod()
         self.getDiff = FakeMethod(result=diff or {})
-        self.getInventory = FakeMethod(result=inventory or {})
+        if inventory is None:
+            if file_list is not None:
+                # Simple common case.
+                inventory = {
+                    "filelist": [
+                        {"filename": filename, "file_id": file_id}
+                        for filename, file_id in file_list.items()],
+                    }
+            else:
+                inventory = {"filelist": []}
+        self.getInventory = FakeMethod(result=inventory)
         self.getBlob = FakeMethod(result=blob)
+        self.disable_memcache = disable_memcache
 
     def _setUp(self):
         self.useFixture(ZopeUtilityFixture(self, IBranchHostingClient))
+        if self.disable_memcache:
+            # Most tests that involve Branch.getBlob don't want to cache the
+            # result: doing so requires more time-consuming test setup and
+            # makes it awkward to repeat the same call with different
+            # responses.  For convenience, we make it easy to disable that
+            # here.
+            self.memcache_fixture = self.useFixture(MemcacheFixture())
 
 
 class GitHostingFixture(fixtures.Fixture):
