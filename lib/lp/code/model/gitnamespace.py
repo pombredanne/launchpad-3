@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IGitNamespace`."""
@@ -303,7 +303,7 @@ class PersonalGitNamespace(_BaseGitNamespace):
         else:
             return InformationType.PUBLIC
 
-    def areRepositoriesMergeable(self, other_namespace):
+    def areRepositoriesMergeable(self, this, other):
         """See `IGitNamespacePolicy`."""
         return False
 
@@ -383,12 +383,16 @@ class ProjectGitNamespace(_BaseGitNamespace):
             return None
         return default_type
 
-    def areRepositoriesMergeable(self, other_namespace):
+    def areRepositoriesMergeable(self, this, other):
         """See `IGitNamespacePolicy`."""
         # Repositories are mergeable into a project repository if the
         # project is the same.
         # XXX cjwatson 2015-04-18: Allow merging from a package repository
         # if any (active?) series is linked to this project.
+        if this.namespace != self:
+            raise AssertionError(
+                "Namespace of %s is not %s." % (this.unique_name, self.name))
+        other_namespace = other.namespace
         if zope_isinstance(other_namespace, ProjectGitNamespace):
             return self.target == other_namespace.target
         else:
@@ -457,12 +461,16 @@ class PackageGitNamespace(_BaseGitNamespace):
         """See `IGitNamespace`."""
         return InformationType.PUBLIC
 
-    def areRepositoriesMergeable(self, other_namespace):
+    def areRepositoriesMergeable(self, this, other):
         """See `IGitNamespacePolicy`."""
         # Repositories are mergeable into a package repository if the
         # package is the same.
         # XXX cjwatson 2015-04-18: Allow merging from a project repository
         # if any (active?) series links this package to that project.
+        if this.namespace != self:
+            raise AssertionError(
+                "Namespace of %s is not %s." % (this.unique_name, self.name))
+        other_namespace = other.namespace
         if zope_isinstance(other_namespace, PackageGitNamespace):
             return self.target == other_namespace.target
         else:
