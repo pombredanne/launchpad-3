@@ -431,10 +431,7 @@ class SnapAddView(
                     CannotParseSnapcraftYaml):
                 pass
             else:
-                try:
-                    store_name = snapcraft_data.get('name')
-                except AttributeError:
-                    pass
+                store_name = snapcraft_data.get('name')
 
         store_series = getUtility(ISnappySeriesSet).getAll().first()
         if store_series.preferred_distro_series is not None:
