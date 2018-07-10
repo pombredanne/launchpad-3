@@ -325,6 +325,23 @@ class TestPersonalGitNamespace(TestCaseWithFactory, NamespaceMixin):
         other = self.factory.makeGitRepository(owner=owner, target=dsp)
         self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
 
+    def test_collection(self):
+        # A personal namespace's collection is of personal repositories with
+        # the same owner.
+        owner = self.factory.makePerson()
+        repositories = [
+            self.factory.makeGitRepository(owner=owner, target=owner)
+            for _ in range(3)]
+        other_owner = self.factory.makePerson()
+        self.factory.makeGitRepository(owner=other_owner, target=other_owner)
+        self.factory.makeGitRepository(
+            owner=owner, target=self.factory.makeProduct())
+        self.factory.makeGitRepository(
+            owner=owner, target=self.factory.makeDistributionSourcePackage())
+        self.assertContentEqual(
+            repositories,
+            repositories[0].namespace.collection.getRepositories())
+
 
 class TestProjectGitNamespace(TestCaseWithFactory, NamespaceMixin):
     """Tests for `ProjectGitNamespace`."""
@@ -402,6 +419,21 @@ class TestProjectGitNamespace(TestCaseWithFactory, NamespaceMixin):
         dsp = self.factory.makeDistributionSourcePackage()
         other = self.factory.makeGitRepository(owner=owner, target=dsp)
         self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
+
+    def test_collection(self):
+        # A project namespace's collection is of repositories for the same
+        # project.
+        project = self.factory.makeProduct()
+        repositories = [
+            self.factory.makeGitRepository(target=project) for _ in range(3)]
+        self.factory.makeGitRepository(target=self.factory.makeProduct())
+        self.factory.makeGitRepository(
+            owner=repositories[0].owner, target=repositories[0].owner)
+        self.factory.makeGitRepository(
+            target=self.factory.makeDistributionSourcePackage())
+        self.assertContentEqual(
+            repositories,
+            repositories[0].namespace.collection.getRepositories())
 
 
 class TestProjectGitNamespacePrivacyWithInformationType(TestCaseWithFactory):
@@ -655,6 +687,21 @@ class TestPackageGitNamespace(TestCaseWithFactory, NamespaceMixin):
         project = self.factory.makeProduct()
         other = self.factory.makeGitRepository(owner=owner, target=project)
         self.assertFalse(this.namespace.areRepositoriesMergeable(this, other))
+
+    def test_collection(self):
+        # A package namespace's collection is of repositories for the same
+        # package.
+        dsp = self.factory.makeDistributionSourcePackage()
+        repositories = [
+            self.factory.makeGitRepository(target=dsp) for _ in range(3)]
+        self.factory.makeGitRepository(
+            target=self.factory.makeDistributionSourcePackage())
+        self.factory.makeGitRepository(target=self.factory.makeProduct())
+        self.factory.makeGitRepository(
+            owner=repositories[0].owner, target=repositories[0].owner)
+        self.assertContentEqual(
+            repositories,
+            repositories[0].namespace.collection.getRepositories())
 
 
 class BaseCanCreateRepositoriesMixin:

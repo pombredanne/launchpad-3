@@ -313,8 +313,7 @@ class PersonalGitNamespace(_BaseGitNamespace):
     @property
     def collection(self):
         """See `IGitNamespacePolicy`."""
-        return getUtility(IAllGitRepositories).ownedBy(
-            self.person).isPersonal()
+        return getUtility(IAllGitRepositories).ownedBy(self.owner).isPersonal()
 
     def assignKarma(self, person, action_name, date_created=None):
         """See `IGitNamespacePolicy`."""
