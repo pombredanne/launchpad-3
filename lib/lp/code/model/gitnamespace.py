@@ -250,7 +250,7 @@ class PersonalGitNamespace(_BaseGitNamespace):
 
     has_defaults = False
     allow_push_to_set_default = False
-    supports_merge_proposals = False
+    supports_merge_proposals = True
     supports_code_imports = False
     allow_recipe_name_from_target = False
 
@@ -305,7 +305,10 @@ class PersonalGitNamespace(_BaseGitNamespace):
 
     def areRepositoriesMergeable(self, this, other):
         """See `IGitNamespacePolicy`."""
-        return False
+        if this.namespace != self:
+            raise AssertionError(
+                "Namespace of %s is not %s." % (this.unique_name, self.name))
+        return this == other
 
     @property
     def collection(self):

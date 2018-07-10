@@ -279,14 +279,14 @@ class TestPersonalGitNamespace(TestCaseWithFactory, NamespaceMixin):
         self.assertEqual(person, namespace.target)
 
     def test_supports_merge_proposals(self):
-        # Personal namespaces do not support merge proposals.
-        self.assertFalse(self.getNamespace().supports_merge_proposals)
+        # Personal namespaces support merge proposals.
+        self.assertTrue(self.getNamespace().supports_merge_proposals)
 
     def test_areRepositoriesMergeable_same_repository(self):
-        # A personal repository is not even mergeable into itself.
+        # A personal repository is mergeable into itself.
         owner = self.factory.makePerson()
         repository = self.factory.makeGitRepository(owner=owner, target=owner)
-        self.assertFalse(
+        self.assertTrue(
             repository.namespace.areRepositoriesMergeable(
                 repository, repository))
 
