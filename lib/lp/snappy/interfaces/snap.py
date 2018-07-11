@@ -316,6 +316,21 @@ class ISnapView(Interface):
         :return: `ISnapBuild`.
         """
 
+    def requestBuildsFromJob(requester, archive, pocket, channels=None,
+                             logger=None):
+        """Synchronous part of `Snap.requestBuilds`.
+
+        Request that the snap package be built for relevant architectures.
+
+        :param requester: The person requesting the builds.
+        :param archive: The IArchive to associate the builds with.
+        :param pocket: The pocket that should be targeted.
+        :param channels: A dictionary mapping snap names to channels to use
+            for these builds.
+        :param logger: An optional logger.
+        :return: A sequence of `ISnapBuild` instances.
+        """
+
     @operation_parameters(
         snap_build_ids=List(
             title=_("A list of snap build ids."),
