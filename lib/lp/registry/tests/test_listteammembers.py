@@ -94,7 +94,7 @@ class ListTeamMembersTestCase(TestCaseWithFactory):
         expected = dict(
             name=u'biggles',
             sshkey=u'ssh-rsa 123badKeysMightContainBadCharacters comment')
-        result = listteammembers.make_sshkey_params(member, 'ssh-rsa', sshkey)
+        result = listteammembers.make_sshkey_params(member, sshkey)
         self.assertEqual(expected, result)
 
     def test_listteammembers_unknown_team(self):
