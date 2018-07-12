@@ -756,7 +756,9 @@ class GitRefRemote(GitRefMixin):
                     "https://raw.githubusercontent.com/%s/%s/%s" % (
                         repo_path,
                         # GitHub supports either branch or tag names here,
-                        # but both must be shortened.
+                        # but both must be shortened.  (If both a branch and
+                        # a tag exist with the same name, it appears to pick
+                        # the branch.)
                         quote(re.sub(r"^refs/(?:heads|tags)/", "", self.path)),
                         quote(filename)),
                     use_proxy=True)
