@@ -5,6 +5,12 @@
 
 __metaclass__ = type
 
+import sys
+
+from testtools.matchers import (
+    LessThan,
+    Not,
+    )
 from twisted.python.failure import Failure
 
 from lp.services.twistedsupport import extract_result
@@ -49,30 +55,31 @@ class TestTrapFault(TestCase):
         except:
             return Failure()
 
-    def assertRaisesExactException(self, exception, function, *args, **kwargs):
+    def assertRaisesFailure(self, failure, function, *args, **kwargs):
         try:
             function(*args, **kwargs)
+        except Failure as raised_failure:
+            self.assertThat(sys.version_info, LessThan((3, 0)))
+            self.assertEqual(failure, raised_failure)
         except Exception as raised_exception:
-            self.assertEqual(raised_exception, exception)
+            self.assertThat(sys.version_info, Not(LessThan((3, 0))))
+            self.assertEqual(failure.value, raised_exception)
 
     def test_raises_non_faults(self):
-        # trap_fault re-raises the underlying exception from any failures it
-        # gets that aren't faults.
+        # trap_fault re-raises any failures it gets that aren't faults.
         failure = self.makeFailure(RuntimeError, 'example failure')
-        self.assertRaisesExactException(
-            failure.value, trap_fault, failure, TestFaultOne)
+        self.assertRaisesFailure(failure, trap_fault, failure, TestFaultOne)
 
     def test_raises_faults_with_wrong_code(self):
-        # trap_fault re-raises the underlying exception from any failures it
-        # gets that are faults but have the wrong fault code.
+        # trap_fault re-raises any failures it gets that are faults but have
+        # the wrong fault code.
         failure = self.makeFailure(TestFaultOne)
-        self.assertRaisesExactException(
-            failure.value, trap_fault, failure, TestFaultTwo)
+        self.assertRaisesFailure(failure, trap_fault, failure, TestFaultTwo)
 
     def test_raises_faults_if_no_codes_given(self):
         # If trap_fault is not given any fault codes, it re-raises the fault.
         failure = self.makeFailure(TestFaultOne)
-        self.assertRaisesExactException(failure.value, trap_fault, failure)
+        self.assertRaisesFailure(failure, trap_fault, failure)
 
     def test_returns_fault_if_code_matches(self):
         # trap_fault returns the Fault inside the Failure if the fault code
