@@ -95,3 +95,11 @@ class ISnapRequestBuildsJobSource(IJobSource):
         :param channels: A dictionary mapping snap names to channels to use
             for these builds.
         """
+
+    def getBySnapAndID(snap, job_id):
+        """Get a job by snap and job ID.
+
+        :return: The `SnapRequestBuildsJob` with the specified snap and ID.
+        :raises: `NotFoundError` if there is no job with the specified snap
+            and ID, or its `job_type` is not `SnapJobType.REQUEST_BUILDS`.
+        """

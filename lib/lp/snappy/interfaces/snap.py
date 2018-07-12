@@ -15,6 +15,7 @@ __all__ = [
     'CannotRequestAutoBuilds',
     'DuplicateSnapName',
     'ISnap',
+    'ISnapBuildRequest',
     'ISnapEdit',
     'ISnapSet',
     'ISnapView',
@@ -27,6 +28,7 @@ __all__ = [
     'SnapBuildAlreadyPending',
     'SnapBuildArchiveOwnerMismatch',
     'SnapBuildDisallowedArchitecture',
+    'SnapBuildRequestStatus',
     'SnapNotOwner',
     'SnapPrivacyMismatch',
     'SnapPrivateFeatureDisabled',
@@ -34,6 +36,10 @@ __all__ = [
 
 import httplib
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -247,6 +253,57 @@ class CannotParseSnapcraftYaml(Exception):
     """Launchpad cannot parse this snap package's snapcraft.yaml."""
 
 
+class SnapBuildRequestStatus(EnumeratedType):
+    """The status of a request to build a snap package."""
+
+    PENDING = Item("""
+        Pending
+
+        This snap build request is pending.
+        """)
+
+    FAILED = Item("""
+        Failed
+
+        This snap build request failed.
+        """)
+
+    COMPLETED = Item("""
+        Completed
+
+        This snap build request completed successfully.
+        """)
+
+
+class ISnapBuildRequest(Interface):
+    """A request to build a snap package."""
+
+    # XXX cjwatson 2018-06-14 bug=760849: "beta" is a lie to get WADL
+    # generation working.  Individual attributes must set their version to
+    # "devel".
+    export_as_webservice_entry(as_of="beta")
+
+    id = Int(title=_("ID"), required=True, readonly=True)
+
+    snap = exported(Reference(
+        # Really ISnap, patched in lp.snappy.interfaces.webservice.
+        Interface,
+        title=_("Snap package"), required=True, readonly=True))
+
+    status = exported(Choice(
+        title=_("Status"), vocabulary=SnapBuildRequestStatus,
+        required=True, readonly=True))
+
+    error_message = exported(TextLine(
+        title=_("Error message"), required=True, readonly=True))
+
+    builds = exported(CollectionField(
+        title=_("Builds produced by this request"),
+        # Really ISnapBuild, patched in lp.snappy.interfaces.webservice.
+        value_type=Reference(schema=Interface),
+        required=True, readonly=True))
+
+
 class ISnapView(Interface):
     """`ISnap` attributes that require launchpad.View permission."""
 
@@ -316,6 +373,34 @@ class ISnapView(Interface):
         :return: `ISnapBuild`.
         """
 
+    @call_with(requester=REQUEST_USER)
+    @operation_parameters(
+        archive=Reference(schema=IArchive),
+        pocket=Choice(vocabulary=PackagePublishingPocket),
+        channels=Dict(
+            title=_("Source snap channels to use for this build."),
+            description=_(
+                "A dictionary mapping snap names to channels to use for this "
+                "build.  Currently only 'core' and 'snapcraft' keys are "
+                "supported."),
+            key_type=TextLine(), required=False))
+    @export_factory_operation(ISnapBuildRequest, [])
+    @operation_for_version("devel")
+    def requestBuilds(requester, archive, pocket, channels=None):
+        """Request that the snap package be built for relevant architectures.
+
+        This is an asynchronous operation, and returns a job ID which can be
+        passed to `snap.getRequestedBuilds`; once the operation has
+        finished, that method will return the resulting builds.
+
+        :param requester: The person requesting the builds.
+        :param archive: The IArchive to associate the builds with.
+        :param pocket: The pocket that should be targeted.
+        :param channels: A dictionary mapping snap names to channels to use
+            for these builds.
+        :return: An `ISnapBuildRequest`.
+        """
+
     def requestBuildsFromJob(requester, archive, pocket, channels=None,
                              logger=None):
         """Synchronous part of `Snap.requestBuilds`.
@@ -329,6 +414,13 @@ class ISnapView(Interface):
             for these builds.
         :param logger: An optional logger.
         :return: A sequence of `ISnapBuild` instances.
+        """
+
+    def getBuildRequest(job_id):
+        """Get an asynchronous build request by ID.
+
+        :param job_id: The ID of the build request.
+        :return: `ISnapBuildRequest`.
         """
 
     @operation_parameters(
