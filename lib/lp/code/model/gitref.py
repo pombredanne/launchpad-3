@@ -61,6 +61,7 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.githosting import IGitHostingClient
+from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitref import (
     IGitRef,
     IGitRefRemoteSet,
@@ -771,6 +772,12 @@ class GitRefRemote(GitRefMixin):
         # dispatch a build job or a code import or something like that to do
         # so.  For now, we just special-case some providers where we know
         # how to fetch a blob on its own.
+        repository = getUtility(IGitLookup).getByUrl(self.repository_url)
+        if repository is not None:
+            # This is one of our own repositories.  Doing this by URL seems
+            # gratuitously complex, but apparently we already have some
+            # examples of this on production.
+            return repository.getBlob(filename, rev=self.path)
         url = urlsplit(self.repository_url)
         if (url.hostname == "github.com" and
                 len(url.path.strip("/").split("/")) == 2):
