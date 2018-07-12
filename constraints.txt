@@ -360,7 +360,7 @@ testresources==0.2.7
 testscenarios==0.4
 timeline==0.0.3
 treq==18.6.0
-Twisted[conch,tls]==17.9.0
+Twisted[conch,tls]==18.4.0
 txAMQP==0.6.2
 txfixtures==0.4.2
 txlongpoll==0.2.12
