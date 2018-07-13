@@ -33,7 +33,7 @@ branch.
     ...                 checked = '( )'
     ...         except KeyError:
     ...             checked = '( )'
-    ...         print checked, button['value']
+    ...         print(checked, button['value'])
 
     >>> print_radio_buttons(browser)
     (*) ~eric/fooix/trunk

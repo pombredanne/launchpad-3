@@ -86,8 +86,8 @@ The Spanish translations now show up as suggestions.  For example, where
 "cards" might translate to Catalan as "targetas," the Spanish equivalent is
 "tarjetas."
 
-    >>> print extract_text(find_main_content(
-    ...     browser.contents)).encode('ASCII', 'backslashreplace')
+    >>> print(extract_text(find_main_content(
+    ...     browser.contents)).encode('ASCII', 'backslashreplace'))
     Translating into Catalan...
     ...
     English: cards
@@ -123,7 +123,7 @@ first.
 
 It even presents a link to where the user can set the preferred languages.
 
-    >>> print browser.getLink("add it to your preferred languages").url
+    >>> print(browser.getLink("add it to your preferred languages").url)
     http...~carlos/+editlanguages
 
 This distinction between alternative languages from the user's preferred set
@@ -134,8 +134,8 @@ languages are defined.  Suggestions just work for anonymous users.
     >>> anon_browser.getControl('Spanish (es)').selected = True
     >>> anon_browser.getControl('Change').click()
 
-    >>> print extract_text(find_main_content(
-    ...     anon_browser.contents)).encode('ASCII', 'backslashreplace')
+    >>> print(extract_text(find_main_content(
+    ...     anon_browser.contents)).encode('ASCII', 'backslashreplace'))
     Browsing Catalan translation
     ...
     English: cards
@@ -164,16 +164,17 @@ Carlos sets the filter to display only the untranslated strings.
     >>> browser.getControl('Catalan (ca)').selected = True
     >>> browser.getControl('untranslated').selected = True
     >>> browser.getControl('Change').click()
-    >>> print extract_url_parameter(browser.url, 'field.alternative_language')
+    >>> print(extract_url_parameter(
+    ...     browser.url, 'field.alternative_language'))
     field.alternative_language=ca
-    >>> print extract_url_parameter(browser.url, 'show')
+    >>> print(extract_url_parameter(browser.url, 'show'))
     show=untranslated
 
 Carlos can see that he is viewing the first page of results in the
 navigation bar between the translation controls and the messages.
 
     >>> navigation = find_tags_by_class(browser.contents, 'results')[0].td
-    >>> print extract_text(navigation).decode('utf-8')
+    >>> print(extract_text(navigation).decode('utf-8'))
     1 ... 10  of 15 results ...
 
 Carlos uses the 'Save & Continue' button to see the next page of
@@ -181,7 +182,7 @@ messages.
 
     >>> browser.getControl('Save & Continue').click()
     >>> navigation = find_tags_by_class(browser.contents, 'results')[0].td
-    >>> print extract_text(navigation)
+    >>> print(extract_text(navigation))
     11 ... 15  of 15 results ...
 
 
@@ -273,4 +274,3 @@ control is unset.
     >>> browser.getControl(
     ...     name='field.alternative_language').displayValue
     ['(nothing selected)']
-

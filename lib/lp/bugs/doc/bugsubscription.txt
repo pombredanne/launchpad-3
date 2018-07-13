@@ -57,11 +57,11 @@ subscriptions work.
     >>> linux_source = ubuntu.getSourcePackage("linux-source-2.6.15")
     >>> list(linux_source.bug_subscriptions)
     []
-    >>> print linux_source.distribution.bug_supervisor
+    >>> print(linux_source.distribution.bug_supervisor)
     None
 
     >>> foobar = getUtility(ILaunchBag).user
-    >>> print foobar.name
+    >>> print(foobar.name)
     name16
 
     >>> params = CreateBugParams(
@@ -76,7 +76,7 @@ IBug.getDirectSubscribers().
     ...     subscriber_names = sorted(subscriber.displayname
     ...                               for subscriber in subscribers)
     ...     for name in subscriber_names:
-    ...         print name
+    ...         print(name)
 
     >>> print_displayname(linux_source_bug.getDirectSubscribers())
     Foo Bar
@@ -243,7 +243,7 @@ filter is interpreted to mean that the subscriber wants all notifications.
 In the case of bug notification levels, that is equivalent to
 BugNotificationLevel.COMMENTS.
 
-    >>> print subscription_no_priv.bug_filters.count()
+    >>> print(subscription_no_priv.bug_filters.count())
     1
 
 With this subscription level, No Privileges Person is returned for all
@@ -459,7 +459,7 @@ IBug.subscribe and IBug.unsubscribe:
 By default, the bug_notification_level of the new subscription will be
 COMMENTS, so the user will receive all notifications about the bug.
 
-    >>> print subscription.bug_notification_level.name
+    >>> print(subscription.bug_notification_level.name)
     COMMENTS
 
 It's possible to subscribe to a bug at a different BugNotificationLevel
@@ -471,7 +471,7 @@ by passing a `level` parameter to subscribe().
     ...     metadata_subscriber, metadata_subscriber,
     ...     level=BugNotificationLevel.METADATA)
 
-    >>> print metadata_subscription.bug_notification_level.name
+    >>> print(metadata_subscription.bug_notification_level.name)
     METADATA
 
 To unsubscribe from all dupes for a bug, call
@@ -640,7 +640,7 @@ supervisor will be subscribed:
     >>> ubuntu_task = getUtility(IBugTaskSet).createTask(
     ...     new_bug, mark, ubuntu)
 
-    >>> print '\n'.join(getSubscribers(new_bug))
+    >>> print('\n'.join(getSubscribers(new_bug)))
     foo.bar@canonical.com
 
 But still, only Foo Bar is explicitly subscribed.
@@ -669,14 +669,14 @@ Foo Bar is the only explicit subscriber:
 But the product owner, Sample Person, is implicitly added to the
 recipient list:
 
-    >>> print '\n'.join(getSubscribers(new_bug))
+    >>> print('\n'.join(getSubscribers(new_bug)))
     foo.bar@canonical.com
     >>> params = CreateBugParams(
     ...     title="a test bug", comment="a test description",
     ...     owner=foobar, information_type=InformationType.PRIVATESECURITY)
     >>> new_bug = firefox.createBug(params)
 
-    >>> print '\n'.join(getSubscribers(new_bug))
+    >>> print('\n'.join(getSubscribers(new_bug)))
     foo.bar@canonical.com
 
 Now let's create a bug on a specific package, which has no package bug
@@ -761,7 +761,7 @@ subscriptions themselves, rather than the subscribers.
     ...         subscription.display_subscribed_by)
     ...     for subscription in ff_bug.getDirectSubscriptions()]
     >>> for subscription in sorted(subscriptions):
-    ...     print subscription
+    ...     print(subscription)
     Mark Shuttleworth: Self-subscribed
     Robert Collins: Subscribed by Mark Shuttleworth (mark)
     >>> params = CreateBugParams(
@@ -773,8 +773,8 @@ subscriptions themselves, rather than the subscribers.
     >>> dupe_ff_bug.subscribe(foobar, lifeless)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for subscription in ff_bug.getSubscriptionsFromDuplicates():
-    ...     print '%s: %s' % (
+    ...     print('%s: %s' % (
     ...         subscription.person.displayname,
-    ...         subscription.display_duplicate_subscribed_by)
+    ...         subscription.display_duplicate_subscribed_by))
     Scott James Remnant: Self-subscribed to bug ...
     Foo Bar: Subscribed to bug ... by Robert Collins (lifeless)

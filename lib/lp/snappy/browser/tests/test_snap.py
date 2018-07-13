@@ -20,14 +20,10 @@ from urlparse import (
     )
 
 from fixtures import FakeLogger
-from httmock import (
-    all_requests,
-    HTTMock,
-    )
 from mechanize import LinkNotFoundError
-import mock
 from pymacaroons import Macaroon
 import pytz
+import responses
 import soupmatchers
 from testtools.matchers import (
     MatchesSetwise,
@@ -43,10 +39,13 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.code.errors import (
-    GitRepositoryBlobNotFound,
+    BranchHostingFault,
     GitRepositoryScanFault,
     )
-from lp.code.tests.helpers import GitHostingFixture
+from lp.code.tests.helpers import (
+    BranchHostingFixture,
+    GitHostingFixture,
+    )
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -131,6 +130,7 @@ class TestSnapViewsFeatureFlag(TestCaseWithFactory):
     def test_private_feature_flag_disabled(self):
         # Without a private_snap feature flag, we will not create Snaps for
         # private contexts.
+        self.useFixture(BranchHostingFixture())
         self.snap_store_client = FakeMethod()
         self.snap_store_client.listChannels = FakeMethod(result=[])
         self.useFixture(
@@ -200,6 +200,7 @@ class TestSnapAddView(BaseTestSnapView):
     def test_initial_store_distro_series(self):
         # The initial store_distro_series uses the preferred distribution
         # series for the latest snappy series.
+        self.useFixture(BranchHostingFixture(blob=b""))
         lts = self.factory.makeUbuntuDistroSeries(
             version="16.04", status=SeriesStatus.CURRENT)
         current = self.factory.makeUbuntuDistroSeries(
@@ -224,6 +225,7 @@ class TestSnapAddView(BaseTestSnapView):
             no_login=True)
 
     def test_create_new_snap_bzr(self):
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         source_display = branch.display_name
         browser = self.getViewBrowser(
@@ -261,7 +263,7 @@ class TestSnapAddView(BaseTestSnapView):
             MatchesTagText(content, "store_upload"))
 
     def test_create_new_snap_git(self):
-        self.useFixture(GitHostingFixture(blob=""))
+        self.useFixture(GitHostingFixture(blob=b""))
         [git_ref] = self.factory.makeGitRefs()
         source_display = git_ref.display_name
         browser = self.getViewBrowser(
@@ -300,6 +302,7 @@ class TestSnapAddView(BaseTestSnapView):
 
     def test_create_new_snap_users_teams_as_owner_options(self):
         # Teams that the user is in are options for the snap package owner.
+        self.useFixture(BranchHostingFixture(blob=b""))
         self.factory.makeTeam(
             name="test-team", displayname="Test Team", members=[self.person])
         branch = self.factory.makeAnyBranch()
@@ -312,6 +315,7 @@ class TestSnapAddView(BaseTestSnapView):
 
     def test_create_new_snap_public(self):
         # Public owner implies public snap.
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
 
         browser = self.getViewBrowser(
@@ -344,6 +348,7 @@ class TestSnapAddView(BaseTestSnapView):
 
     def test_create_new_snap_private(self):
         # Private teams will automatically create private snaps.
+        self.useFixture(BranchHostingFixture(blob=b""))
         login_person(self.person)
         self.factory.makeTeam(
             name='super-private', owner=self.person,
@@ -365,6 +370,7 @@ class TestSnapAddView(BaseTestSnapView):
 
     def test_create_new_snap_build_source_tarball(self):
         # We can create a new snap and ask for it to build a source tarball.
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
@@ -380,6 +386,7 @@ class TestSnapAddView(BaseTestSnapView):
     def test_create_new_snap_auto_build(self):
         # Creating a new snap and asking for it to be automatically built
         # sets all the appropriate fields.
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         archive = self.factory.makeArchive()
         browser = self.getViewBrowser(
@@ -413,10 +420,12 @@ class TestSnapAddView(BaseTestSnapView):
             "core\nstable\nsnapcraft\nedge\n",
             MatchesTagText(content, "auto_build_channels"))
 
+    @responses.activate
     def test_create_new_snap_store_upload(self):
         # Creating a new snap and asking for it to be automatically uploaded
         # to the store sets all the appropriate fields and redirects to SSO
         # for authorization.
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         view_url = canonical_url(branch, view_name="+new-snap")
         browser = self.getNonRedirectingBrowser(url=view_url, user=self.person)
@@ -432,19 +441,12 @@ class TestSnapAddView(BaseTestSnapView):
             urlsplit(config.launchpad.openid_provider_root).netloc, "",
             "dummy")
         root_macaroon_raw = root_macaroon.serialize()
-
-        @all_requests
-        def handler(url, request):
-            self.request = request
-            return {
-                "status_code": 200,
-                "content": {"macaroon": root_macaroon_raw},
-                }
-
         self.pushConfig("snappy", store_url="http://sca.example/")
-        with HTTMock(handler):
-            redirection = self.assertRaises(
-                HTTPError, browser.getControl("Create snap package").click)
+        responses.add(
+            "POST", "http://sca.example/dev/api/acl/",
+            json={"macaroon": root_macaroon_raw})
+        redirection = self.assertRaises(
+            HTTPError, browser.getControl("Create snap package").click)
         login_person(self.person)
         snap = getUtility(ISnapSet).getByName(self.person, "snap-name")
         self.assertThat(snap, MatchesStructure.byEquality(
@@ -453,7 +455,8 @@ class TestSnapAddView(BaseTestSnapView):
             store_series=self.snappyseries, store_name="store-name",
             store_secrets={"root": root_macaroon_raw},
             store_channels=["track/edge"]))
-        self.assertThat(self.request, MatchesStructure.byEquality(
+        [call] = responses.calls
+        self.assertThat(call.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         expected_body = {
             "packages": [{
@@ -462,7 +465,7 @@ class TestSnapAddView(BaseTestSnapView):
                 }],
             "permissions": ["package_upload"],
             }
-        self.assertEqual(expected_body, json.loads(self.request.body))
+        self.assertEqual(expected_body, json.loads(call.request.body))
         self.assertEqual(303, redirection.code)
         parsed_location = urlsplit(redirection.hdrs["Location"])
         self.assertEqual(
@@ -478,6 +481,7 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertEqual(expected_args, parse_qs(parsed_location[3]))
 
     def test_create_new_snap_display_processors(self):
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         self.setUpDistroSeries()
         browser = self.getViewBrowser(
@@ -491,6 +495,7 @@ class TestSnapAddView(BaseTestSnapView):
 
     def test_create_new_snap_display_restricted_processors(self):
         # A restricted processor is shown disabled in the UI.
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         distroseries = self.setUpDistroSeries()
         proc_armhf = self.factory.makeProcessor(
@@ -505,6 +510,7 @@ class TestSnapAddView(BaseTestSnapView):
             processors, ["386", "amd64", "hppa"], ["armhf"])
 
     def test_create_new_snap_processors(self):
+        self.useFixture(BranchHostingFixture(blob=b""))
         branch = self.factory.makeAnyBranch()
         self.setUpDistroSeries()
         browser = self.getViewBrowser(
@@ -518,74 +524,57 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertContentEqual(
             ["386", "amd64"], [proc.name for proc in snap.processors])
 
-    def test_initial_name_extraction_git_snap_snapcraft_yaml(self):
-        def getBlob(filename, *args, **kwargs):
-            if filename == "snap/snapcraft.yaml":
-                return "name: test-snap"
-            else:
-                raise GitRepositoryBlobNotFound("dummy", filename)
+    def test_initial_name_extraction_bzr_success(self):
+        self.useFixture(BranchHostingFixture(
+            file_list={"snapcraft.yaml": "file-id"}, blob=b"name: test-snap"))
+        branch = self.factory.makeBranch()
+        view = create_initialized_view(branch, "+new-snap")
+        initial_values = view.initial_values
+        self.assertIn('store_name', initial_values)
+        self.assertEqual('test-snap', initial_values['store_name'])
 
+    def test_initial_name_extraction_bzr_error(self):
+        self.useFixture(BranchHostingFixture()).getInventory = FakeMethod(
+            failure=BranchHostingFault)
+        branch = self.factory.makeBranch()
+        view = create_initialized_view(branch, "+new-snap")
+        initial_values = view.initial_values
+        self.assertIn('store_name', initial_values)
+        self.assertIsNone(initial_values['store_name'])
+
+    def test_initial_name_extraction_bzr_no_name(self):
+        self.useFixture(BranchHostingFixture(
+            file_list={"snapcraft.yaml": "file-id"}, blob=b"some: nonsense"))
+        branch = self.factory.makeBranch()
+        view = create_initialized_view(branch, "+new-snap")
+        initial_values = view.initial_values
+        self.assertIn('store_name', initial_values)
+        self.assertIsNone(initial_values['store_name'])
+
+    def test_initial_name_extraction_git_success(self):
+        self.useFixture(GitHostingFixture(blob=b"name: test-snap"))
         [git_ref] = self.factory.makeGitRefs()
-        git_ref.repository.getBlob = getBlob
         view = create_initialized_view(git_ref, "+new-snap")
         initial_values = view.initial_values
         self.assertIn('store_name', initial_values)
         self.assertEqual('test-snap', initial_values['store_name'])
 
-    def test_initial_name_extraction_git_plain_snapcraft_yaml(self):
-        def getBlob(filename, *args, **kwargs):
-            if filename == "snapcraft.yaml":
-                return "name: test-snap"
-            else:
-                raise GitRepositoryBlobNotFound("dummy", filename)
-
+    def test_initial_name_extraction_git_error(self):
+        self.useFixture(GitHostingFixture()).getBlob = FakeMethod(
+            failure=GitRepositoryScanFault)
         [git_ref] = self.factory.makeGitRefs()
-        git_ref.repository.getBlob = getBlob
-        view = create_initialized_view(git_ref, "+new-snap")
-        initial_values = view.initial_values
-        self.assertIn('store_name', initial_values)
-        self.assertEqual('test-snap', initial_values['store_name'])
-
-    def test_initial_name_extraction_git_dot_snapcraft_yaml(self):
-        def getBlob(filename, *args, **kwargs):
-            if filename == ".snapcraft.yaml":
-                return "name: test-snap"
-            else:
-                raise GitRepositoryBlobNotFound("dummy", filename)
-
-        [git_ref] = self.factory.makeGitRefs()
-        git_ref.repository.getBlob = getBlob
-        view = create_initialized_view(git_ref, "+new-snap")
-        initial_values = view.initial_values
-        self.assertIn('store_name', initial_values)
-        self.assertEqual('test-snap', initial_values['store_name'])
-
-    def test_initial_name_extraction_git_repo_error(self):
-        [git_ref] = self.factory.makeGitRefs()
-        git_ref.repository.getBlob = FakeMethod(failure=GitRepositoryScanFault)
         view = create_initialized_view(git_ref, "+new-snap")
         initial_values = view.initial_values
         self.assertIn('store_name', initial_values)
         self.assertIsNone(initial_values['store_name'])
 
-    def test_initial_name_extraction_git_invalid_data(self):
-        for invalid_result in (None, 123, '', '[][]', '#name:test', ']'):
-            [git_ref] = self.factory.makeGitRefs()
-            git_ref.repository.getBlob = FakeMethod(result=invalid_result)
-            view = create_initialized_view(git_ref, "+new-snap")
-            initial_values = view.initial_values
-            self.assertIn('store_name', initial_values)
-            self.assertIsNone(initial_values['store_name'])
-
-    def test_initial_name_extraction_git_safe_yaml(self):
+    def test_initial_name_extraction_git_no_name(self):
+        self.useFixture(GitHostingFixture(blob=b"some: nonsense"))
         [git_ref] = self.factory.makeGitRefs()
-        git_ref.repository.getBlob = FakeMethod(result='Malicious YAML!')
         view = create_initialized_view(git_ref, "+new-snap")
-        with mock.patch('yaml.load') as unsafe_load:
-            with mock.patch('yaml.safe_load') as safe_load:
-                view.initial_values
-        self.assertEqual(0, unsafe_load.call_count)
-        self.assertEqual(1, safe_load.call_count)
+        initial_values = view.initial_values
+        self.assertIn('store_name', initial_values)
+        self.assertIsNone(initial_values['store_name'])
 
 
 class TestSnapAdminView(BaseTestSnapView):
@@ -985,6 +974,7 @@ class TestSnapEditView(BaseTestSnapView):
         self.assertNeedStoreReauth(
             True, {"store_upload": False}, {"store_upload": True})
 
+    @responses.activate
     def test_edit_store_upload(self):
         # Changing store upload settings on a snap sets all the appropriate
         # fields and redirects to SSO for reauthorization.
@@ -1005,30 +995,24 @@ class TestSnapEditView(BaseTestSnapView):
             urlsplit(config.launchpad.openid_provider_root).netloc, "",
             "dummy")
         root_macaroon_raw = root_macaroon.serialize()
-
-        @all_requests
-        def handler(url, request):
-            self.request = request
-            return {
-                "status_code": 200,
-                "content": {"macaroon": root_macaroon_raw},
-                }
-
         self.pushConfig("snappy", store_url="http://sca.example/")
-        with HTTMock(handler):
-            redirection = self.assertRaises(
-                HTTPError, browser.getControl("Update snap package").click)
+        responses.add(
+            "POST", "http://sca.example/dev/api/acl/",
+            json={"macaroon": root_macaroon_raw})
+        redirection = self.assertRaises(
+            HTTPError, browser.getControl("Update snap package").click)
         login_person(self.person)
         self.assertThat(snap, MatchesStructure.byEquality(
             store_name="two", store_secrets={"root": root_macaroon_raw},
             store_channels=["stable", "edge"]))
-        self.assertThat(self.request, MatchesStructure.byEquality(
+        [call] = responses.calls
+        self.assertThat(call.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         expected_body = {
             "packages": [{"name": "two", "series": self.snappyseries.name}],
             "permissions": ["package_upload"],
             }
-        self.assertEqual(expected_body, json.loads(self.request.body))
+        self.assertEqual(expected_body, json.loads(call.request.body))
         self.assertEqual(303, redirection.code)
         parsed_location = urlsplit(redirection.hdrs["Location"])
         self.assertEqual(
@@ -1063,6 +1047,7 @@ class TestSnapAuthorizeView(BaseTestSnapView):
             Unauthorized, self.getUserBrowser,
             canonical_url(self.snap) + "/+authorize", user=other_person)
 
+    @responses.activate
     def test_begin_authorization(self):
         # With no special form actions, we return a form inviting the user
         # to begin authorization.  This allows (re-)authorizing uploads of
@@ -1074,22 +1059,16 @@ class TestSnapAuthorizeView(BaseTestSnapView):
             urlsplit(config.launchpad.openid_provider_root).netloc, '',
             'dummy')
         root_macaroon_raw = root_macaroon.serialize()
-
-        @all_requests
-        def handler(url, request):
-            self.request = request
-            return {
-                "status_code": 200,
-                "content": {"macaroon": root_macaroon_raw},
-                }
-
         self.pushConfig("snappy", store_url="http://sca.example/")
-        with HTTMock(handler):
-            browser = self.getNonRedirectingBrowser(
-                url=snap_url + "/+authorize", user=self.snap.owner)
-            redirection = self.assertRaises(
-                HTTPError, browser.getControl("Begin authorization").click)
-        self.assertThat(self.request, MatchesStructure.byEquality(
+        responses.add(
+            "POST", "http://sca.example/dev/api/acl/",
+            json={"macaroon": root_macaroon_raw})
+        browser = self.getNonRedirectingBrowser(
+            url=snap_url + "/+authorize", user=self.snap.owner)
+        redirection = self.assertRaises(
+            HTTPError, browser.getControl("Begin authorization").click)
+        [call] = responses.calls
+        self.assertThat(call.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         with person_logged_in(owner):
             expected_body = {
@@ -1099,7 +1078,7 @@ class TestSnapAuthorizeView(BaseTestSnapView):
                     }],
                 "permissions": ["package_upload"],
                 }
-            self.assertEqual(expected_body, json.loads(self.request.body))
+            self.assertEqual(expected_body, json.loads(call.request.body))
             self.assertEqual(
                 {"root": root_macaroon_raw}, self.snap.store_secrets)
         self.assertEqual(303, redirection.code)
@@ -1426,9 +1405,10 @@ class TestSnapView(BaseTestSnapView):
 
     def test_store_channels_display(self):
         snap = self.factory.makeSnap(
-            store_channels=["track/stable", "track/edge"])
+            store_channels=["track/stable/fix-123", "track/edge/fix-123"])
         view = create_initialized_view(snap, "+index")
-        self.assertEqual("track/stable, track/edge", view.store_channels)
+        self.assertEqual(
+            "track/stable/fix-123, track/edge/fix-123", view.store_channels)
 
 
 class TestSnapRequestBuildsView(BaseTestSnapView):

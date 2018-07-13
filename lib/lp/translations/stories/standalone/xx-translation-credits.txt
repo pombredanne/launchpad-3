@@ -25,8 +25,8 @@ This has no translation yet:
 
 And there is no input field allowing changing this message.
 
-   >>> print find_tag_by_id(browser.contents,
-   ...                      'msgset_199_sr_translation_0_new')
+   >>> print(find_tag_by_id(browser.contents,
+   ...                      'msgset_199_sr_translation_0_new'))
    None
 
 KDE-style translation credits are split into two messages, with emails
@@ -39,11 +39,11 @@ in one, and names in other.
 
 These are locked as well:
 
-    >>> print find_tag_by_id(browser.contents,
-    ...                      'msgset_200_sr_translation_0_new')
+    >>> print(find_tag_by_id(browser.contents,
+    ...                      'msgset_200_sr_translation_0_new'))
     None
-    >>> print find_tag_by_id(browser.contents,
-    ...                      'msgset_201_sr_translation_0_new')
+    >>> print(find_tag_by_id(browser.contents,
+    ...                      'msgset_201_sr_translation_0_new'))
     None
 
 We can translate a non-translator credits message, which will update
@@ -55,7 +55,7 @@ displayed credits once we submit the translation.
     >>> inputfield = browser.getControl(name='msgset_198_sr_translation_0_new')
     >>> inputfield.value = 'Test translation'
     >>> browser.getControl('Save & Continue').click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://translations.launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/sr/+translate
 
 Translation has been updated.

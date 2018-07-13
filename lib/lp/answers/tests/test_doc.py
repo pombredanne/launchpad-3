@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -22,6 +22,7 @@ from lp.testing import (
     login,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.pages import setUpGlobs
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -34,7 +35,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 def productSetUp(test):
     """Test environment for product."""
-    setUp(test)
+    setUp(test, future=True)
     thunderbird = getUtility(IProductSet).getByName('thunderbird')
     test.globs['target'] = thunderbird
     test.globs['collection'] = thunderbird
@@ -45,7 +46,7 @@ def productSetUp(test):
 
 def distributionSetUp(test):
     """Test environment for distribution."""
-    setUp(test)
+    setUp(test, future=True)
     kubuntu = getUtility(IDistributionSet).getByName('kubuntu')
     test.globs['target'] = kubuntu
     test.globs['collection'] = kubuntu
@@ -56,7 +57,7 @@ def distributionSetUp(test):
 
 def projectSetUp(test):
     """Test environment for project."""
-    setUp(test)
+    setUp(test, future=True)
     gnome_project = getUtility(IProjectGroupSet).getByName('gnome')
     products_queue = list(gnome_project.products)
 
@@ -73,7 +74,7 @@ def projectSetUp(test):
 
 
 def distributionsourcepackageSetUp(test):
-    setUp(test)
+    setUp(test, future=True)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['target'] = ubuntu.getSourcePackage('evolution')
 
@@ -116,11 +117,13 @@ special = {
          ]),
     'emailinterface.txt': LayeredDocFileSuite(
         'emailinterface.txt',
-        setUp=setUp, tearDown=tearDown,
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
         layer=ProcessMailLayer,
         stdout_logging=False)
     }
 
 
 def test_suite():
-    return build_test_suite(here, special)
+    return build_test_suite(
+        here, special, setUp=lambda test: setUp(test, future=True),
+        pageTestsSetUp=lambda test: setUpGlobs(test, future=True))

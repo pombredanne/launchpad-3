@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions dealing with mails coming into Launchpad."""
@@ -48,6 +48,7 @@ from lp.services.mail.mailbox import IMailBox
 from lp.services.mail.notification import send_process_error_notification
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
+from lp.services.webapp import canonical_url
 from lp.services.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
@@ -56,7 +57,10 @@ from lp.services.webapp.interaction import (
     get_current_principal,
     setupInteraction,
     )
-from lp.services.webapp.interfaces import IPlacelessAuthUtility
+from lp.services.webapp.interfaces import (
+    ILaunchBag,
+    IPlacelessAuthUtility,
+    )
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
 # followed by a '\n', and all '\n' that are not preceded by a '\r'.
@@ -268,11 +272,20 @@ def authenticateEmail(mail, signature_timestamp_checker=None):
     if dkim_trusted_address:
         log.debug('accepting dkim strongly authenticated mail')
         setupInteraction(principal, dkim_trusted_address)
-        return principal
     else:
         log.debug("attempt gpg authentication for %r" % person)
-        return _gpgAuthenticateEmail(mail, principal, person,
-            signature_timestamp_checker)
+        principal = _gpgAuthenticateEmail(
+            mail, principal, person, signature_timestamp_checker)
+
+    if (IWeaklyAuthenticatedPrincipal.providedBy(principal) and
+            person.require_strong_email_authentication):
+        import_url = canonical_url(
+            getUtility(ILaunchBag).user, view_name='+editpgpkeys')
+        error_message = get_error_message(
+            'person-requires-signature.txt', import_url=import_url)
+        raise IncomingEmailError(error_message)
+
+    return principal
 
 
 def _gpgAuthenticateEmail(mail, principal, person,

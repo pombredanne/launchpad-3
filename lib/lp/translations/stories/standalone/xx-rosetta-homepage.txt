@@ -18,7 +18,7 @@ The front page
 --------------
 
     >>> browser.open('http://translations.launchpad.dev/')
-    >>> print browser.title
+    >>> print(browser.title)
     Launchpad Translations
 
 The page includes a list of translatable distribution series
@@ -26,7 +26,7 @@ in the left column.
 
     >>> left_column = find_tags_by_class(
     ...     browser.contents, 'three column left')[0]
-    >>> print extract_text(left_column)
+    >>> print(extract_text(left_column))
     Translatable operating systems
     Ubuntu Hoary (5.04)
 
@@ -36,12 +36,12 @@ translated projects.
     >>> middle_column = find_tags_by_class(
     ...     browser.contents, 'three column middle')[0]
     >>> heading = middle_column.findAll('h2')[0]
-    >>> print extract_text(heading)
+    >>> print(extract_text(heading))
     Translatable projects
     >>> for project in middle_column.findAll('span'):
-    ...     print extract_text(project)
+    ...     print(extract_text(project))
     Evolution
-    >>> print extract_text(middle_column.findAll('div')[0])
+    >>> print(extract_text(middle_column.findAll('div')[0]))
     &raquo; List all translatable projects...
 
 The translation front page list of the user's translatable languages.
@@ -49,7 +49,7 @@ in the right column.
 
     >>> right_column = find_tags_by_class(
     ...     browser.contents, 'three column right')[0]
-    >>> print extract_text(right_column)
+    >>> print(extract_text(right_column))
     Your preferred languages
     Afrikaans
     Sotho, Southern

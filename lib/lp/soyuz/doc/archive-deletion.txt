@@ -17,10 +17,10 @@ of the archive itself is set to DELETED.
 
 The archive is currently active:
 
-    >>> print archive.enabled
+    >>> print(archive.enabled)
     True
 
-    >>> print archive.status.name
+    >>> print(archive.status.name)
     ACTIVE
 
 We can create some packages in it using the test publisher:
@@ -54,10 +54,10 @@ However we can delete it using the owner of the archive:
 Now the archive is disabled and the status is DELETING to tell the
 publisher to remove the publications and the repository:
 
-    >>> print archive.enabled
+    >>> print(archive.enabled)
     False
 
-    >>> print archive.status.name
+    >>> print(archive.status.name)
     DELETING
 
 Once deleted the archive can't be reenabled.
@@ -67,5 +67,5 @@ Once deleted the archive can't be reenabled.
     ...
     AssertionError: Deleted archives can't be enabled.
 
-    >>> print archive.enabled
+    >>> print(archive.enabled)
     False

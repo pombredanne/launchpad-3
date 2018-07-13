@@ -8,6 +8,7 @@ __all__ = [
     'GitHostingClient',
     ]
 
+import base64
 import json
 import sys
 from urllib import quote
@@ -223,7 +224,7 @@ class GitHostingClient:
                 raise GitRepositoryScanFault(
                     "Failed to get file from Git repository: %s" % unicode(e))
         try:
-            blob = response["data"].decode("base64")
+            blob = base64.b64decode(response["data"].encode("UTF-8"))
             if len(blob) != response["size"]:
                 raise GitRepositoryScanFault(
                     "Unexpected size (%s vs %s)" % (

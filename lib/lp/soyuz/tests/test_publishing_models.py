@@ -14,6 +14,7 @@ from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.services.database.constants import UTC_NOW
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.publisher import canonical_url
+from lp.soyuz.adapters.proxiedsourcefiles import ProxiedSourceLibraryFileAlias
 from lp.soyuz.enums import (
     BinaryPackageFileType,
     BinaryPackageFormat,
@@ -159,8 +160,7 @@ class TestSourcePackagePublishingHistory(TestCaseWithFactory):
 
     def getURLsForSPPH(self, spph, include_meta=False):
         spr = spph.sourcepackagerelease
-        archive = spph.archive
-        urls = [ProxiedLibraryFileAlias(f.libraryfile, archive).http_url
+        urls = [ProxiedSourceLibraryFileAlias(f.libraryfile, spph).http_url
             for f in spr.files]
 
         if include_meta:

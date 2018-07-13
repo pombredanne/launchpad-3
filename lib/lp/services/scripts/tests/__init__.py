@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,6 +9,8 @@ __all__ = [
 
 import os
 import subprocess
+
+import scandir
 
 import lp
 from lp.services.config import config
@@ -32,7 +34,7 @@ def find_lp_scripts():
     scripts = []
     for script_location in SCRIPT_LOCATIONS:
         location = os.path.join(LP_TREE, script_location)
-        for path, dirs, filenames in os.walk(location):
+        for path, dirs, filenames in scandir.walk(location):
             for filename in filenames:
                 script_path = os.path.join(path, filename)
                 if (filename.startswith('_') or
@@ -42,7 +44,7 @@ def find_lp_scripts():
     return sorted(scripts)
 
 
-def run_script(script_relpath, args, expect_returncode=0):
+def run_script(script_relpath, args, expect_returncode=0, extra_env=None):
     """Run a script for testing purposes.
 
     :param script_relpath: The relative path to the script, from the tree
@@ -50,11 +52,16 @@ def run_script(script_relpath, args, expect_returncode=0):
     :param args: Arguments to provide to the script.
     :param expect_returncode: The return code expected.  If a different value
         is returned, and exception will be raised.
+    :param extra_env: A dictionary of extra environment variables to provide
+        to the script, or None.
     """
     script = os.path.join(config.root, script_relpath)
     args = [script] + args
+    env = dict(os.environ)
+    if extra_env is not None:
+        env.update(extra_env)
     process = subprocess.Popen(
-        args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
     stdout, stderr = process.communicate()
     if process.returncode != expect_returncode:
         raise AssertionError('Failed:\n%s\n%s' % (stdout, stderr))

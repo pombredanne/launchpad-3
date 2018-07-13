@@ -30,7 +30,7 @@ for the user to use as the affected upstream.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/tomcat/+bug/2/+affects-new-product')
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Register project affected by...
     >>> user_browser.getControl('Bug URL').value = (
     ...     'http://bugs.foo.org/bugs/show_bug.cgi?id=421')
@@ -39,7 +39,7 @@ for the user to use as the affected upstream.
     >>> user_browser.getControl('Project summary').value = 'The Bar Project'
     >>> user_browser.getControl('Continue').click()
 
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Register project affected by...
 
     >>> print_feedback_messages(user_browser.contents)
@@ -73,7 +73,7 @@ this bug.
 
     >>> user_browser.goBack()
     >>> user_browser.getControl('Use Existing Project').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Register project affected by...
     >>> print_feedback_messages(user_browser.contents)
     There is 1 error.
@@ -106,7 +106,7 @@ user and ask them to check if it's correct.
     >>> user_browser.getControl('Project ID').value = 'bazfoo'
     >>> user_browser.getControl('Project summary').value = 'The Foo Project'
     >>> user_browser.getControl('Continue').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Register project affected by...
     >>> print_feedback_messages(user_browser.contents)
     There is 1 error.

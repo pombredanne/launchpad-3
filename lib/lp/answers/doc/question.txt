@@ -64,9 +64,9 @@ A product or distribution may be officially supported by the community using
 the Answer Tracker.  This status is set by the answers_usage attribute on
 the IProduct and IDistribution.
 
-    >>> print ubuntu.answers_usage.name
+    >>> print(ubuntu.answers_usage.name)
     LAUNCHPAD
-    >>> print firefox.answers_usage.name
+    >>> print(firefox.answers_usage.name)
     LAUNCHPAD
 
 
@@ -96,13 +96,13 @@ subscribers.
     ...     people = [subscription.person
     ...               for subscription in question.subscriptions]
     ...     for person in sorted(people, key=attrgetter('name')):
-    ...         print person.displayname
+    ...         print(person.displayname)
     >>> print_subscribers(firefox_question)
     Sample Person
 
 The question status is 'Open'.
 
-    >>> print firefox_question.status.title
+    >>> print(firefox_question.status.title)
     Open
 
 The question has a creation time.
@@ -115,7 +115,7 @@ The question has a creation time.
 
 The target onto which the question was created is also available.
 
-    >>> print firefox_question.target.displayname
+    >>> print(firefox_question.target.displayname)
     Mozilla Firefox
 
 It is also possible to adapt a question to its IQuestionTarget.
@@ -128,40 +128,40 @@ The question can be assigned to a new IQuestionTarget.
 
     >>> thunderbird = getUtility(IProductSet)['thunderbird']
     >>> firefox_question.target = thunderbird
-    >>> print firefox_question.target.displayname
+    >>> print(firefox_question.target.displayname)
     Mozilla Thunderbird
 
 When a question is reassigned, its product, distribution and
 sourcepackagename attributes are reconciled with the IQuestionTarget.
 
     >>> firefox_question.target = ubuntu
-    >>> print firefox_question.target.displayname
+    >>> print(firefox_question.target.displayname)
     Ubuntu
-    >>> print firefox_question.distribution.name
+    >>> print(firefox_question.distribution.name)
     ubuntu
-    >>> print firefox_question.sourcepackagename
+    >>> print(firefox_question.sourcepackagename)
     None
-    >>> print firefox_question.product
+    >>> print(firefox_question.product)
     None
 
     >>> firefox_question.target = evolution_in_ubuntu
-    >>> print firefox_question.target.displayname
+    >>> print(firefox_question.target.displayname)
     evolution in Ubuntu
-    >>> print firefox_question.distribution.name
+    >>> print(firefox_question.distribution.name)
     ubuntu
-    >>> print firefox_question.sourcepackagename.name
+    >>> print(firefox_question.sourcepackagename.name)
     evolution
-    >>> print firefox_question.product
+    >>> print(firefox_question.product)
     None
 
     >>> firefox_question.target = firefox
-    >>> print firefox_question.target.displayname
+    >>> print(firefox_question.target.displayname)
     Mozilla Firefox
-    >>> print firefox_question.distribution
+    >>> print(firefox_question.distribution)
     None
-    >>> print firefox_question.sourcepackagename
+    >>> print(firefox_question.sourcepackagename)
     None
-    >>> print firefox_question.product.name
+    >>> print(firefox_question.product.name)
     firefox
 
 
@@ -186,7 +186,7 @@ This method iterates like the NotificationRecipientSet returned by the
 direct_recipients method.
 
     >>> for person in firefox_question.getDirectSubscribers():
-    ...     print person.displayname
+    ...     print(person.displayname)
     No Privileges Person
     Sample Person
 
@@ -214,7 +214,7 @@ subscribers along with the rationale for contacting them.
     ...     for person in subscribers:
     ...         reason, header = subscribers.getReason(person)
     ...         text = removeSecurityProxy(reason).getReason()
-    ...         print header, person.displayname, text
+    ...         print(header, person.displayname, text)
     >>> print_reason(subscribers)
     Asker Sample Person
     You received this question notification because you asked the question.
@@ -270,12 +270,12 @@ are part of the indirect subscribers list.
     >>> del get_property_cache(firefox_question).indirect_recipients
     >>> indirect_subscribers = package_question.indirect_recipients
     >>> for person in indirect_subscribers:
-    ...     print person.displayname
+    ...     print(person.displayname)
     No Privileges Person
     Ubuntu Team
 
     >>> reason, header = indirect_subscribers.getReason(ubuntu_team)
-    >>> print header, removeSecurityProxy(reason).getReason()
+    >>> print(header, removeSecurityProxy(reason).getReason())
     Answer Contact (ubuntu) @ubuntu-team
     You received this question notification because your team Ubuntu Team is
     an answer contact for Ubuntu.
@@ -287,14 +287,14 @@ The question's assignee is also part of the indirect subscription list:
     >>> del get_property_cache(package_question).indirect_recipients
     >>> indirect_subscribers = package_question.indirect_recipients
     >>> for person in indirect_subscribers:
-    ...     print person.displayname
+    ...     print(person.displayname)
     Foo Bar
     No Privileges Person
     Ubuntu Team
 
     >>> reason, header = indirect_subscribers.getReason(
     ...     package_question.assignee)
-    >>> print header, removeSecurityProxy(reason).getReason()
+    >>> print(header, removeSecurityProxy(reason).getReason())
     Assignee
     You received this question notification because you are assigned to this
     question.
@@ -305,7 +305,7 @@ It too contains the question assignee.
 
     >>> indirect_subscribers = package_question.getIndirectSubscribers()
     >>> for person in indirect_subscribers:
-    ...     print person.displayname
+    ...     print(person.displayname)
     Foo Bar
     No Privileges Person
     Ubuntu Team
@@ -319,7 +319,7 @@ method.
     >>> verifyObject(INotificationRecipientSet, subscribers)
     True
     >>> for person in subscribers:
-    ...     print person.displayname
+    ...     print(person.displayname)
     No Privileges Person
     Sample Person
 

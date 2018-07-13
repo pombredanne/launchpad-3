@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for Soyuz publishing records."""
@@ -15,8 +15,10 @@ __all__ = [
 from operator import attrgetter
 
 from lazr.delegates import delegate_to
+from zope.component import getUtility
 from zope.interface import implementer
 
+from lp.archiveuploader.utils import re_isadeb
 from lp.services.librarian.browser import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
@@ -30,11 +32,13 @@ from lp.services.webapp.publisher import (
     canonical_url,
     LaunchpadView,
     )
+from lp.soyuz.adapters.proxiedsourcefiles import ProxiedSourceLibraryFileAlias
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.packagediff import IPackageDiff
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
+    IPublishingSet,
     ISourcePackagePublishingHistory,
     )
 
@@ -270,8 +274,7 @@ class SourcePublishingRecordView(BasePublishingRecordView):
     def published_source_and_binary_files(self):
         """Return list of dictionaries representing published files."""
         files = sorted(
-            (ProxiedLibraryFileAlias(lfa, self.context.archive)
-             for lfa in self.context.getSourceAndBinaryLibraryFiles()),
+            self.context.getSourceAndBinaryLibraryFiles(),
             key=attrgetter('filename'))
         result = []
         urls = set()
@@ -285,14 +288,16 @@ class SourcePublishingRecordView(BasePublishingRecordView):
             urls.add(url)
 
             custom_dict = {}
-            custom_dict["url"] = url
             custom_dict["filename"] = library_file.filename
             custom_dict["filesize"] = library_file.content.filesize
-            if (library_file.filename.endswith('.deb') or
-                library_file.filename.endswith('.udeb')):
+            if re_isadeb.match(library_file.filename):
                 custom_dict['class'] = 'binary'
+                custom_dict["url"] = ProxiedLibraryFileAlias(
+                    library_file, self.context.archive).http_url
             else:
                 custom_dict['class'] = 'source'
+                custom_dict["url"] = ProxiedSourceLibraryFileAlias(
+                    library_file, self.context).http_url
 
             result.append(custom_dict)
 
@@ -314,19 +319,9 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         the binarypackagename is unique (i.e. it ignores the same package
         published in more than one place/architecture.)
         """
-        results = []
-        packagenames = set()
-        for pub in self.context.getPublishedBinaries():
-            package = pub.binarypackagerelease
-            packagename = package.binarypackagename.name
-            if packagename not in packagenames:
-                entry = {
-                    "binarypackagename": packagename,
-                    "summary": package.summary,
-                    }
-                results.append(entry)
-                packagenames.add(packagename)
-        return results
+        publishing_set = getUtility(IPublishingSet)
+        return publishing_set.getBuiltPackagesSummaryForSourcePublication(
+            self.context)
 
     @cachedproperty
     def builds(self):

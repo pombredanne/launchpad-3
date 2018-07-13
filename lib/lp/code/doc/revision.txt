@@ -113,7 +113,7 @@ sequence attribute is None.
     ...     BranchRevision, BranchRevision.branch == branch)
     >>> for branch_revision in sorted(ancestry,
     ...         key=lambda r:(r.sequence, r.revision.id), reverse=True):
-    ...     print branch_revision.sequence, branch_revision.revision.id
+    ...     print(branch_revision.sequence, branch_revision.revision.id)
     6 9
     5 8
     4 11
@@ -136,7 +136,7 @@ The first return value is a set of revision_id strings for the full ancestry
 of the branch.
 
     >>> for revision_id in sorted(ancestry):
-    ...     print revision_id
+    ...     print(revision_id)
     foo@localhost-20051031165758-48acedf2b6a2e898
     foo@localhost-20051031170008-098959758bf79803
     foo@localhost-20051031170239-5fce7d6bd3f01efc
@@ -150,7 +150,7 @@ The second return value is a sequence of revision_id strings for the revision
 history of the branch.
 
     >>> for revision_id in history:
-    ...     print revision_id
+    ...     print(revision_id)
     test@canonical.com-20051031165248-6f1bb97973c2b4f4
     test@canonical.com-20051031165338-5f2f3d6b10bb3bf0
     foo@localhost-20051031165758-48acedf2b6a2e898
@@ -185,7 +185,7 @@ The last commit on this branch has the revision number 6.
     >>> revno_6.branch == branch
     True
     >>> rev_id = revno_6.revision.revision_id
-    >>> print rev_id
+    >>> print(rev_id)
     foo@localhost-20051031170357-1301ad6d387feb23
 
 We remove the last revision from the branch. This is similar to what
@@ -205,7 +205,7 @@ may be referenced by some other branch):
     >>> from lp.code.interfaces.revision import IRevisionSet
     >>> revision = getUtility(IRevisionSet).getByRevisionId(
     ...     'foo@localhost-20051031170357-1301ad6d387feb23')
-    >>> print revision.revision_id
+    >>> print(revision.revision_id)
     foo@localhost-20051031170357-1301ad6d387feb23
 
 
@@ -222,17 +222,17 @@ as needed.
     ...     revision_author='ddaa@localhost',
     ...     parent_ids=['rev-1', 'rev-2'],
     ...     properties={u'key': u'value'})
-    >>> print revision.revision_id
+    >>> print(revision.revision_id)
     rev-3
-    >>> print revision.log_body
+    >>> print(revision.log_body)
     commit message
-    >>> print revision.revision_date
+    >>> print(revision.revision_date)
     2005-03-08 12:00:00+00:00
-    >>> print revision.revision_author.name
+    >>> print(revision.revision_author.name)
     ddaa@localhost
     >>> for parent_id in revision.parent_ids:
-    ...     print parent_id
+    ...     print(parent_id)
     rev-1
     rev-2
-    >>> print revision.getProperties()
+    >>> print(revision.getProperties())
     {u'key': u'value'}

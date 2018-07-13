@@ -20,9 +20,9 @@ page, together with the last failure message we got when mirroring.
     >>> def print_browser_tag(browser, tag_id):
     ...     tag = find_tag_by_id(browser.contents, tag_id)
     ...     if tag is None:
-    ...         print tag
+    ...         print(tag)
     ...     else:
-    ...         print extract_text(tag)
+    ...         print(extract_text(tag))
 
 The initial error message doesn't give a count or last failure.
 
@@ -196,7 +196,7 @@ then there is no error shown.
 
     >>> browser = setupBrowser()
     >>> browser.open(branch_location)
-    >>> print find_tag_by_id(browser.contents, 'mirror-failure')
+    >>> print(find_tag_by_id(browser.contents, 'mirror-failure'))
     None
-    >>> print find_tag_by_id(browser.contents, 'mirror-of-ssh')
+    >>> print(find_tag_by_id(browser.contents, 'mirror-of-ssh'))
     None

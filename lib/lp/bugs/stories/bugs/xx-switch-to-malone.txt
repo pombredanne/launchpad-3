@@ -16,7 +16,7 @@ possible for its bugs to have an Unknown importance.
     ...     '/+source/evolution/+bug/7/+editstatus')
     >>> main = find_main_content(user_browser.contents)
     >>> read_only_icon = main.find('span', {'class': 'sprite read-only'})
-    >>> print extract_text(read_only_icon.parent)
+    >>> print(extract_text(read_only_icon.parent))
     Unknown
 
 If the project switches to use Launchpad as its bug tracker, the
@@ -34,5 +34,5 @@ importance will still have an Unknown value.
     ...     '/debian/+source/evolution/+bug/7/+editstatus')
     >>> main = find_main_content(user_browser.contents)
     >>> read_only_icon = main.find('span', {'class': 'sprite read-only'})
-    >>> print extract_text(read_only_icon.parent)
+    >>> print(extract_text(read_only_icon.parent))
     Unknown

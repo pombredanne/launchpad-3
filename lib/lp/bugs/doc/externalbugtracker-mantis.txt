@@ -68,12 +68,12 @@ Tracker:
 We use a specially hacked Mantis instance that doesn't do network
 calls to verify here:
 
-    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker.baseurl)
+    >>> mantis = TestMantis(example_bug_tracker.baseurl)
 
 Collect the Example.com watches:
 
     >>> for bug_watch in example_bug_tracker.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    ...     print("%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus))
     1550: None
 
 And have our special Mantis instance process them:
@@ -86,12 +86,13 @@ And have our special Mantis instance process them:
     >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = CheckwatchesMaster(
     ...     txn, logger=FakeLogger())
-    >>> bug_watch_updater.updateBugWatches(
-    ...     example_ext_bug_tracker, example_bug_tracker.watches)
+    >>> with mantis.responses(post=False):
+    ...     bug_watch_updater.updateBugWatches(
+    ...         mantis, example_bug_tracker.watches)
     INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> for bug_watch in example_bug_tracker.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    ...     print("%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus))
     1550: assigned: open
 
 Let's add a few more watches:
@@ -133,19 +134,18 @@ updateBugWatches() issues only one request to update all watches:
     >>> from operator import attrgetter
     >>> getid = attrgetter('id')
 
-    >>> example_ext_bug_tracker.trace_calls = True
-    >>> bug_watch_updater.updateBugWatches(
-    ...     example_ext_bug_tracker,
-    ...     sorted(example_bug_tracker.watches, key=getid))
+    >>> with mantis.responses(trace_calls=True, post=False):
+    ...     bug_watch_updater.updateBugWatches(
+    ...         mantis, sorted(example_bug_tracker.watches, key=getid))
     INFO Updating 7 watches for 6 bugs on http://bugs.some.where
-    CALLED _getPage(u'view.php?id=1550')
-    CALLED _getPage(u'view.php?id=1679')
-    CALLED _getPage(u'view.php?id=1730')
-    CALLED _getPage(u'view.php?id=1738')
-    CALLED _getPage(u'view.php?id=1748')
-    CALLED _getPage(u'view.php?id=1798')
     INFO Didn't find bug u'1798' on http://bugs.some.where
     (local bugs: 10).
+    GET http://bugs.some.where/view.php?id=1550
+    GET http://bugs.some.where/view.php?id=1679
+    GET http://bugs.some.where/view.php?id=1730
+    GET http://bugs.some.where/view.php?id=1738
+    GET http://bugs.some.where/view.php?id=1748
+    GET http://bugs.some.where/view.php?id=1798
 
     >>> remote_statuses = dict(
     ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
@@ -155,9 +155,9 @@ updateBugWatches() issues only one request to update all watches:
     ...     expected_remote_statuses)):
     ...     remote_status = remote_statuses[remote_bug_id]
     ...     expected_remote_status = expected_remote_statuses[remote_bug_id]
-    ...     print 'Remote bug %d' % (remote_bug_id,)
-    ...     print ' * Expected << %s >>' % (expected_remote_status,)
-    ...     print ' *      Got << %s >>' % (remote_status,)
+    ...     print('Remote bug %d' % (remote_bug_id,))
+    ...     print(' * Expected << %s >>' % (expected_remote_status,))
+    ...     print(' *      Got << %s >>' % (remote_status,))
     Remote bug 1550
      * Expected << assigned: open >>
      *      Got << assigned: open >>
@@ -177,8 +177,6 @@ updateBugWatches() issues only one request to update all watches:
      * Expected << None >>
      *      Got << None >>
 
-    >>> example_ext_bug_tracker.trace_calls = False
-
 updateBugWatches() updates the lastchecked attribute on the watches, so
 now no bug watches are in need of updating:
 
@@ -197,8 +195,8 @@ updated:
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> bug_watch.lastchecked = bug_watch.lastchanged
     >>> old_last_changed = bug_watch.lastchanged
-    >>> bug_watch_updater.updateBugWatches(
-    ...     example_ext_bug_tracker, [bug_watch])
+    >>> with mantis.responses(post=False):
+    ...     bug_watch_updater.updateBugWatches(mantis, [bug_watch])
     INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> bug_watch.lastchanged == old_last_changed

@@ -11,7 +11,6 @@ import re
 from zope.component import getUtility
 
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.interfaces.ssh import SSH_KEY_TYPE_TO_TEXT
 
 
 OUTPUT_TEMPLATES = {
@@ -30,11 +29,8 @@ class NoSuchTeamError(Exception):
 bad_ssh_pattern = re.compile('[\r\n\f]')
 
 
-def make_sshkey_params(member, type_name, key):
-    sshkey = "%s %s %s" % (
-        type_name,
-        bad_ssh_pattern.sub('', key.keytext),
-        bad_ssh_pattern.sub('', key.comment).strip())
+def make_sshkey_params(member, key):
+    sshkey = bad_ssh_pattern.sub('', key.getFullKeyText()).strip()
     return dict(name=member.name, sshkey=sshkey)
 
 
@@ -62,8 +58,7 @@ def process_team(teamname, display_option='simple'):
         sshkey = '--none--'
         if display_option == 'sshkeys':
             for key in member.sshkeys:
-                type_name = SSH_KEY_TYPE_TO_TEXT[key.keytype]
-                params = make_sshkey_params(member, type_name, key)
+                params = make_sshkey_params(member, key)
                 output.append(template % params)
         # Ubuntite
         ubuntite = "no"

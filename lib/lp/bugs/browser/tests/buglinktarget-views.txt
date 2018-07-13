@@ -28,10 +28,10 @@ The +linkbug and +unlinkbug views operates on IBugLinkTarget.
 The +linkbug view is used to link bugs to IBugLinkTarget.
 
     >>> view = create_view(cve, name='+linkbug')
-    >>> print view.label
+    >>> print(view.label)
     Link a bug report
 
-    >>> print view.cancel_url
+    >>> print(view.cancel_url)
     http://bugs.launchpad.dev/bugs/cve/2005-2730
 
 It has a simple widget to enter the bug number or nickname of the bug to link
@@ -50,7 +50,7 @@ One notification should have been added to the response.
 
 Bug #1 was added to the object:
 
-    >>> print [bug.id for bug in cve.bugs]
+    >>> print([bug.id for bug in cve.bugs])
     [1]
 
 A ObjectModifiedEvent was sent:
@@ -82,10 +82,10 @@ The +unlinkbug view is used to unlink a selection of bugs from an
 IBugLinkTarget. 
 
     >>> view = create_view(cve, name='+unlinkbug')
-    >>> print view.label
+    >>> print(view.label)
     Remove links to bug reports
 
-    >>> print view.cancel_url
+    >>> print(view.cancel_url)
     http://bugs.launchpad.dev/bugs/cve/2005-2730
 
 After removing the bugs, it sends a SQLObjectModified event.
@@ -103,7 +103,7 @@ One notification by removed bugs should have been added to the response.
 
 The two bugs were removed and only bug #3 should still be present:
 
-    >>> print [bug.id for bug in cve.bugs]
+    >>> print([bug.id for bug in cve.bugs])
     [3]
 
 A ObjectModifiedEvent was sent:
@@ -117,7 +117,7 @@ A ObjectModifiedEvent was sent:
     True
     >>> event.edited_fields
     ['bugs']
-    >>> print [bug.id for bug in event.object_before_modification.bugs]
+    >>> print([bug.id for bug in event.object_before_modification.bugs])
     [1, 2, 3]
 
 
@@ -143,7 +143,7 @@ We will give bug #2 a very bad title, then link the cve to the bug.
 The notification contains the escaped bug title.
 
     >>> for notification in request.response.notifications:
-    ...     print notification.message.encode('utf8')
+    ...     print(notification.message.encode('utf8'))
     Added link to bug #2:
     ...&lt;script&gt;window.alert(&quot;Hello!&quot;)&lt;/script&gt;....
 

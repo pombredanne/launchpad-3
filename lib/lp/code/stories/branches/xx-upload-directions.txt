@@ -49,7 +49,7 @@ the branch, and suggest logging in for directions.
     >>> anon_browser.open(branch_page)
     >>> content = anon_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
-    >>> print instructions.renderContents()
+    >>> print(instructions.renderContents())
     Only
     <a href="http://launchpad.dev/~name12">Sample Person</a>
     can upload to this branch. If you are Sample Person please
@@ -61,7 +61,7 @@ definitive that it is not possible to upload to this branch.
     >>> ddaa_browser.open(branch_page)
     >>> content = ddaa_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
-    >>> print instructions.renderContents()
+    >>> print(instructions.renderContents())
     <div...
     You cannot upload to this branch. Only
     <a href="http://launchpad.dev/~name12">Sample Person</a>
@@ -74,7 +74,7 @@ URL for the branch.
     >>> name12_browser.open(branch_page)
     >>> content = name12_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
-    >>> print extract_text(instructions)
+    >>> print(extract_text(instructions))
     Update this branch:
     bzr push --use-existing-dir lp://dev/~name12/gnome-terminal/pushed
 
@@ -95,7 +95,7 @@ The branch page now displays directions and a link to register an SSH key.
     >>> name12_browser.open(branch_page)
     >>> content = name12_browser.contents
     >>> instructions = find_tag_by_id(content, 'ssh-key-directions')
-    >>> print instructions.renderContents()
+    >>> print(instructions.renderContents())
     To authenticate with the Launchpad branch upload service, you need to
     <a href="http://launchpad.dev/~name12/+editsshkeys">
     register an SSH key</a>.
@@ -110,7 +110,7 @@ The branch page should no longer display the SSH key directions.
 
     >>> name12_browser.open(branch_page)
     >>> content = name12_browser.contents
-    >>> print find_tag_by_id(content, 'ssh-key-directions')
+    >>> print(find_tag_by_id(content, 'ssh-key-directions'))
     None
 
 If the user is not logged in, or does have the permission to upload to the
@@ -120,12 +120,12 @@ appear.
 
     >>> anon_browser.open(branch_page)
     >>> content = anon_browser.contents
-    >>> print find_tag_by_id(content, 'ssh-key-directions')
+    >>> print(find_tag_by_id(content, 'ssh-key-directions'))
     None
 
     >>> ddaa_browser.open(branch_page)
     >>> content = ddaa_browser.contents
-    >>> print find_tag_by_id(content, 'ssh-key-directions')
+    >>> print(find_tag_by_id(content, 'ssh-key-directions'))
     None
 
 
@@ -154,7 +154,7 @@ owner is a team.
     >>> anon_browser.open(branch_page)
     >>> content = anon_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
-    >>> print instructions.renderContents()
+    >>> print(instructions.renderContents())
     Members of <a
     href="http://launchpad.dev/~landscape-developers">Landscape
     Developers</a> can upload to this branch. <a href="+login">Log in</a> for
@@ -166,7 +166,7 @@ a link to the team.
     >>> ddaa_browser.open(branch_page)
     >>> content = ddaa_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
-    >>> print instructions.renderContents()
+    >>> print(instructions.renderContents())
     <div...
     You cannot upload to this branch. Members of <a
     href="http://launchpad.dev/~landscape-developers">Landscape
@@ -181,7 +181,7 @@ owning team's name.
     >>> name12_browser.open(branch_page)
     >>> content = name12_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
-    >>> print extract_text(instructions)
+    >>> print(extract_text(instructions))
     Update this branch:
     bzr push --use-existing-dir
     lp://dev/~landscape-developers/gnome-terminal/pushed
@@ -196,5 +196,5 @@ Upload directions should not be displayed for import branches.
     >>> anon_browser.open(import_branch_page)
     >>> content = anon_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
-    >>> print instructions
+    >>> print(instructions)
     None

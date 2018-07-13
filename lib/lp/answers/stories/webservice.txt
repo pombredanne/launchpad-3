@@ -142,10 +142,10 @@ called with searchQuestions.
     ...     sort='oldest first',
     ...     api_version='devel').jsonBody()
     >>> for question in questions['entries']:
-    ...     print question['title']
+    ...     print(question['title'])
     Q 1 great
 
-    >>> print questions['total_size']
+    >>> print(questions['total_size'])
     1
 
 Anyone can retrieve a collection of questions from an `IQuestionTarget` that
@@ -158,7 +158,7 @@ findSimilarQuestions uses natural language techniques to match the question.
     ...     phrase='q great',
     ...     api_version='devel').jsonBody()
     >>> for question in questions['entries']:
-    ...     print question['title']
+    ...     print(question['title'])
     Q 1 great
     Q 2 greater
 
@@ -168,7 +168,7 @@ getQuestion with the question Id.
     >>> question_1 = anon_webservice.named_get(
     ...     project['self_link'], 'getQuestion', question_id=_question_1.id,
     ...     api_version='devel').jsonBody()
-    >>> print question_1['title']
+    >>> print(question_1['title'])
     Q 1 great
 
 
@@ -185,7 +185,7 @@ called with searchQuestions.
     ...     sort='oldest first',
     ...     api_version='devel').jsonBody()
     >>> for question in questions['entries']:
-    ...     print question['title']
+    ...     print(question['title'])
     Q 1 great
 
 

@@ -39,8 +39,8 @@ choice if it was mistaken.
     ...     name="firefox.assignee", index=0)
     >>> assign_to_control.value = "cprov"
     >>> admin_browser.getControl("Save Changes", index=0).click()
-    >>> print extract_text(
-    ...     first_tag_by_class(admin_browser.contents, 'warning message'))
+    >>> print(extract_text(
+    ...     first_tag_by_class(admin_browser.contents, 'warning message')))
     Celso Providelo
     did not previously have any assigned bugs in
     Mozilla Firefox.
@@ -58,8 +58,8 @@ the user will be warned too.
     ...     name="jokosher.assignee", index=0)
     >>> assign_to_control.value = "cprov"
     >>> admin_browser.getControl("Save Changes", index=0).click()
-    >>> print extract_text(
-    ...     first_tag_by_class(admin_browser.contents, 'warning message'))
+    >>> print(extract_text(
+    ...     first_tag_by_class(admin_browser.contents, 'warning message')))
     Celso Providelo
     did not previously have any assigned bugs in Jokosher.
     If this bug was assigned by mistake, you may change the assignment.
@@ -82,10 +82,10 @@ When assigning a bug to oneself, though, the warning message is suppreseed.
     ...     name="jokosher.assignee.option", index=0)
     >>> assignee_control.value = ["jokosher.assignee.assign_to_me"]
     >>> user_browser.getControl("Save Changes", index=0).click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://bugs.launchpad.dev/jokosher/+bug/11
-    >>> print first_tag_by_class(
-    ...     user_browser.contents, 'warning message')
+    >>> print(first_tag_by_class(
+    ...     user_browser.contents, 'warning message'))
     None
 
 
@@ -120,11 +120,11 @@ any team and hence does no see the option to asign somebody else.
     Traceback (most recent call last):
     ...
     ItemNotFoundError: insufficient items with name
-    'jokosher.assignee.assign_to'
+    u'jokosher.assignee.assign_to'
     >>> user_browser.getControl(name="jokosher.assignee", index=0)
     Traceback (most recent call last):
     ...
-    LookupError: name 'jokosher.assignee'
+    LookupError: name u'jokosher.assignee'
 
 Once no_priv is a member of a team, the option is shown.
 

@@ -12,19 +12,20 @@ distribution.
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.addHeader('Accept-Language', 'en, es')
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'portlet-answer-contacts-ubuntu'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(
+    ...         browser.contents, 'portlet-answer-contacts-ubuntu')))
     Answer contacts for Ubuntu
 
 Anybody can become an answer contact. To register as an answer contact,
 the user clicks on the 'Set answer Contact' link:
 
     >>> browser.getLink('Set answer contact').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Answer contact for...
 
     >>> description = find_main_content(browser.contents).p
-    >>> print extract_text(description)
+    >>> print(extract_text(description))
     An answer contact...will receive changes related to all questions
     (written in one of your preferred languages)...
 
@@ -54,7 +55,7 @@ notice to review the changes. Sample Person's browser sends the accept-
 languages header with English and Spanish.
 
     >>> browser.getLink('Your preferred languages').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Language preferences...
 
     >>> browser.getControl('English', index=0).selected
@@ -82,7 +83,7 @@ from the answer contact list.
 A confirmation message is displayed:
 
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
-    ...     print tag.renderContents()
+    ...     print(tag.renderContents())
     Landscape Developers has been removed as an answer contact for Ubuntu.
 
 
@@ -93,10 +94,10 @@ The 'Set answer contact' action is also available on products:
 
     >>> browser.open('http://answers.launchpad.dev/firefox')
     >>> browser.getLink('Set answer contact').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Answer contact for...
 
-    >>> print browser.url
+    >>> print(browser.url)
     http://answers.launchpad.dev/firefox/+answer-contact
 
 
@@ -115,14 +116,14 @@ contacts for Ubuntu, but only for Spanish questions to keep the email
 traffic to a manageable volume.
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu/')
-    >>> print browser.title
+    >>> print(browser.title)
     Questions : Ubuntu
 
     >>> browser.getLink('Set answer contact').click()
     >>> browser.getControl("Landscape Developers").selected = True
     >>> browser.getControl('Continue').click()
     >>> for message in find_tags_by_class(browser.contents, 'message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     Landscape Developers has been added as an answer contact for Ubuntu.
 
 Sample Person navigates to the team page to set it's preferred
@@ -133,7 +134,7 @@ languages. They must add Spanish to the team's preferred languages.
     'Landscape Developers in Launchpad'
 
     >>> browser.getLink('Set preferred languages').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Language preferences...
 
 Sample Person may be surprised to see English is already selected. Per

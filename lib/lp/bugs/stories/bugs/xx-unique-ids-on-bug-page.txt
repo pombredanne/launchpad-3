@@ -12,7 +12,7 @@ For example, bug one has more than one Package field.
     >>> user_browser.getControl('Package')
     Traceback (most recent call last):
     ...
-    AmbiguityError: label 'Package'
+    AmbiguityError: label u'Package'
 
 Still, the ids of the fields are unique.
 

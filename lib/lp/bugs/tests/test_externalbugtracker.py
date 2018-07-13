@@ -20,17 +20,20 @@ from lp.testing.systemdocs import (
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(LayeredDocFileSuite(
-        'bugzilla-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
+        'bugzilla-xmlrpc-transport.txt',
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
         layer=LaunchpadFunctionalLayer))
     suite.addTest(LayeredDocFileSuite(
-        'bugzilla-api-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
+        'bugzilla-api-xmlrpc-transport.txt',
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
         layer=LaunchpadFunctionalLayer))
     suite.addTest(LayeredDocFileSuite(
-        'trac-xmlrpc-transport.txt', setUp=setUp, tearDown=tearDown,
+        'trac-xmlrpc-transport.txt',
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
         layer=LaunchpadFunctionalLayer))
     suite.addTest(LayeredDocFileSuite(
         'externalbugtracker-xmlrpc-transport.txt',
-        setUp=setUp, tearDown=tearDown,
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
         layer=LaunchpadFunctionalLayer))
 
     return suite

@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -1028,7 +1028,8 @@
                 interface="lp.registry.interfaces.person.IPersonLimitedView"/>
             <require
                 permission="launchpad.View"
-                interface="lp.registry.interfaces.person.IPersonViewRestricted"/>
+                interface="lp.registry.interfaces.person.IPersonViewRestricted
+                           lp.registry.interfaces.person.IPersonModerate"/>
             <require
                 permission="launchpad.View"
                 interface="lp.registry.interfaces.person.ITeamPublic"/>
@@ -1047,6 +1048,7 @@
             <require
                 permission="launchpad.Moderate"
                 interface="lp.registry.interfaces.person.IPersonModerateRestricted"
+                set_schema="lp.registry.interfaces.person.IPersonModerate"
                 set_attributes="name"/>
             <require
                 permission="launchpad.Special"

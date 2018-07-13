@@ -11,7 +11,7 @@ an email post to examine the markup rules. This message contains a
 quoted passage, and a signature with an email address in it.
 
     >>> user_browser.open('http://answers.launchpad.dev/ubuntu/+question/11')
-    >>> print user_browser.title.decode('utf-8')
+    >>> print(user_browser.title.decode('utf-8'))
     Question #11 : ...
 
     >>> user_browser.getControl('Message').value = (
@@ -36,11 +36,11 @@ quoted passage, and a signature with an email address in it.
 Email addresses are visible to authenticated users. Sample Person is
 authenticated already, so they will see 'human@somewhere.org'.
 
-    >>> print user_browser.title.decode('utf-8')
+    >>> print(user_browser.title.decode('utf-8'))
     Question #11 :  ...
     >>> text = find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody')[-1]
-    >>> print extract_text(text.findAll('p')[-1])
+    >>> print(extract_text(text.findAll('p')[-1]))
     --
     ______________________
     human@somewhere.org
@@ -51,12 +51,12 @@ of 'person@domain.dom'. The anonymous user is unauthenticated, so they will
 see the obfuscated email address (<email address hidden>).
 
     >>> anon_browser.open('http://answers.launchpad.dev/ubuntu/+question/11')
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Question #11 : ...
 
     >>> text = find_tags_by_class(
     ...     anon_browser.contents, 'boardCommentBody')[-1]
-    >>> print extract_text(text.findAll('p')[-1])
+    >>> print(extract_text(text.findAll('p')[-1]))
     --
     ______________________
     &lt;email address hidden&gt;
@@ -74,7 +74,7 @@ Signatures are identified by paragraphs with a starting line like '--'.
 The entire content of the paragraph is wrapped by a tag of 'foldable'
 class.
 
-    >>> print text.findAll('p')[-1]
+    >>> print(text.findAll('p')[-1])
     <p><span class="foldable">--...
     &lt;email address hidden&gt;<br />
     Witty signatures rock!
@@ -87,12 +87,10 @@ preceded by a citation line. Only the quoted lines are wrapped with a
 tag of 'foldable' class, citation lines are always displayed. Again
 we can continue with the anonymous user to see the markup.
 
-    >>> print text.findAll('p')[-2]
+    >>> print(text.findAll('p')[-2])
     <p>Somebody said sometime ago:<br />
     <span class="foldable-quoted">
     &gt; 1. Remove the letters  c, j, q, x, w<br />
     &gt;    from the English Language.<br />
     &gt; 2. Remove the penny from US currency.
     </span></p>
-
-

@@ -1,10 +1,16 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Twisted XML-RPC support."""
 
 __metaclass__ = type
 
+import sys
+
+from testtools.matchers import (
+    LessThan,
+    Not,
+    )
 from twisted.python.failure import Failure
 
 from lp.services.twistedsupport import extract_result
@@ -53,7 +59,11 @@ class TestTrapFault(TestCase):
         try:
             function(*args, **kwargs)
         except Failure as raised_failure:
+            self.assertThat(sys.version_info, LessThan((3, 0)))
             self.assertEqual(failure, raised_failure)
+        except Exception as raised_exception:
+            self.assertThat(sys.version_info, Not(LessThan((3, 0))))
+            self.assertEqual(failure.value, raised_exception)
 
     def test_raises_non_faults(self):
         # trap_fault re-raises any failures it gets that aren't faults.
@@ -67,8 +77,7 @@ class TestTrapFault(TestCase):
         self.assertRaisesFailure(failure, trap_fault, failure, TestFaultTwo)
 
     def test_raises_faults_if_no_codes_given(self):
-        # If trap_fault is not given any fault codes, it re-raises the fault
-        # failure.
+        # If trap_fault is not given any fault codes, it re-raises the fault.
         failure = self.makeFailure(TestFaultOne)
         self.assertRaisesFailure(failure, trap_fault, failure)
 

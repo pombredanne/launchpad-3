@@ -18,7 +18,7 @@ Thunderbird isn't linked to an upstream tracker, so the text is more
 general.
 
     >>> text = find_tag_by_id(user_browser.contents, 'upstream-text')
-    >>> print extract_text(text)
+    >>> print(extract_text(text))
     Mozilla Thunderbird
     doesn't use Launchpad to track its bugs. If you know this bug
     has been reported in another bug tracker, you can link to it;
@@ -42,7 +42,7 @@ to reflect this.
     >>> user_browser.getControl('Continue').click()
 
     >>> text = find_tag_by_id(user_browser.contents, 'upstream-text')
-    >>> print extract_text(text)
+    >>> print(extract_text(text))
     Mozilla Thunderbird
     uses The Mozilla.org Bug Tracker to
     track its bugs. If you know this bug has been reported there,
@@ -60,7 +60,7 @@ will be displayed.
     >>> user_browser.getControl('Continue').click()
 
     >>> text = find_tag_by_id(user_browser.contents, 'upstream-text')
-    >>> print extract_text(text)
+    >>> print(extract_text(text))
     GNOME Terminal uses GnomeGBug GTracker to track its bugs.
     If you know this bug has been reported there, you can link to it;
     Launchpad will keep track of its status for you.
@@ -80,7 +80,7 @@ link back to bug 13, the place where it was originally filed.
     >>> scheme, netloc, path, params, query, fragment = urlparse(url)
     >>> [long_desc] = parse_qs(query)['long_desc']
 
-    >>> print long_desc
+    >>> print(long_desc)
     Originally reported at:
       http://bugs.launchpad.dev/bugs/13
     <BLANKLINE>
@@ -104,7 +104,7 @@ filing link, such as Debbugs, only a search link will be displayed.
     >>> user_browser.getControl('Continue').click()
 
     >>> text = find_tag_by_id(user_browser.contents, 'upstream-text')
-    >>> print extract_text(text)
+    >>> print(extract_text(text))
     GNOME Terminal uses Debian Bug tracker to track its bugs.
     If you know this bug has been reported there, you can link to it;
     Launchpad will keep track of its status for you.
@@ -127,5 +127,5 @@ tracker, can be set from the +configure-bugtracker page, too.
 
     >>> admin_browser.open(
     ...     'http://launchpad.dev/thunderbird/+configure-bugtracker')
-    >>> print admin_browser.getControl(name='field.remote_product').value
+    >>> print(admin_browser.getControl(name='field.remote_product').value)
     Thunderbird

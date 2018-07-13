@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Run the standalone wadllib tests."""
@@ -10,6 +10,7 @@ __all__ = ['test_suite']
 import os
 import unittest
 
+import scandir
 import wadllib
 
 from lp.testing.systemdocs import LayeredDocFileSuite
@@ -23,7 +24,7 @@ def test_suite():
 
     # Find all the doctests in wadllib.
     packages = []
-    for dirpath, dirnames, filenames in os.walk(topdir):
+    for dirpath, dirnames, filenames in scandir.walk(topdir):
         if 'docs' in dirnames:
             docsdir = os.path.join(dirpath, 'docs')[len(topdir) + 1:]
             packages.append(docsdir)

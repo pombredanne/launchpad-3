@@ -12,30 +12,30 @@ contract_rosetta_escapes
 
 Normal strings get passed through unmodified.
 
-    >>> contract_rosetta_escapes('foo')
-    'foo'
-    >>> contract_rosetta_escapes('foo\\nbar')
-    'foo\\nbar'
+    >>> print(contract_rosetta_escapes('foo'))
+    foo
+    >>> print(contract_rosetta_escapes('foo\\nbar'))
+    foo\nbar
 
 The string '[tab]' gets converted to a tab character.
 
     >>> contract_rosetta_escapes('foo[tab]bar')
-    'foo\tbar'
+    u'foo\tbar'
 
 The string '\[tab]' gets converted to a literal '[tab]'.
 
-    >>> contract_rosetta_escapes('foo\\[tab]bar')
-    'foo[tab]bar'
+    >>> print(contract_rosetta_escapes('foo\\[tab]bar'))
+    foo[tab]bar
 
 The string '\\[tab]' gets converted to a literal '\[tab]'.
 
-    >>> contract_rosetta_escapes('foo\\\\[tab]bar')
-    'foo\\[tab]bar'
+    >>> print(contract_rosetta_escapes('foo\\\\[tab]bar'))
+    foo\[tab]bar
 
 And so on...
 
-    >>> contract_rosetta_escapes('foo\\\\\\[tab]bar')
-    'foo\\\\[tab]bar'
+    >>> print(contract_rosetta_escapes('foo\\\\\\[tab]bar'))
+    foo\\[tab]bar
 
 Similarly, string '[nbsp]' gets converted to no-break space character.
 
@@ -44,8 +44,8 @@ Similarly, string '[nbsp]' gets converted to no-break space character.
 
 The string '\[nbsp]' gets converted to a literal '[nbsp]'.
 
-    >>> contract_rosetta_escapes('foo\\[nbsp]bar')
-    'foo[nbsp]bar'
+    >>> print(contract_rosetta_escapes('foo\\[nbsp]bar'))
+    foo[nbsp]bar
 
 Similarly, string '[nnbsp]' gets converted to narrow no-break space
 character.
@@ -55,8 +55,8 @@ character.
 
 The string '\[nnbsp]' gets converted to a literal '[nnbsp]'.
 
-    >>> contract_rosetta_escapes('foo\\[nnbsp]bar')
-    'foo[nnbsp]bar'
+    >>> print(contract_rosetta_escapes('foo\\[nnbsp]bar'))
+    foo[nnbsp]bar
 
 
 expand_rosetta_escapes
@@ -129,11 +129,12 @@ parse_cformat_string
     >>> parse_cformat_string('')
     []
     >>> parse_cformat_string('foo')
-    [('string', 'foo')]
+    [('string', u'foo')]
     >>> parse_cformat_string('blah %d blah')
-    [('string', 'blah '), ('interpolation', '%d'), ('string', ' blah')]
+    [('string', u'blah '), ('interpolation', u'%d'), ('string', u' blah')]
     >>> parse_cformat_string('%sfoo%%bar%s')
-    [('interpolation', '%s'), ('string', 'foo%%bar'), ('interpolation', '%s')]
+    [('interpolation', u'%s'), ('string', u'foo%%bar'),
+     ('interpolation', u'%s')]
     >>> parse_cformat_string('%')
     Traceback (most recent call last):
     ...

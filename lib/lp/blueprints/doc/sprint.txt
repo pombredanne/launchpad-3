@@ -30,31 +30,31 @@ We have coming_sprints, giving us up to 5 relevant events that are up-
 and-coming (sorted by the starting date):
 
     >>> for sprint in firefox.coming_sprints:
-    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ...     print(sprint.name, sprint.time_starts.strftime('%Y-%m-%d'))
     futurista 2025-08-16
 
     >>> for sprint in ubuntu.coming_sprints:
-    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ...     print(sprint.name, sprint.time_starts.strftime('%Y-%m-%d'))
     futurista 2025-08-16
 
     >>> for sprint in mozilla.coming_sprints:
-    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ...     print(sprint.name, sprint.time_starts.strftime('%Y-%m-%d'))
     futurista 2025-08-16
 
 And we have sprints, giving us all sprints relevant to that pillar
 (sorted descending by the starting date):
 
     >>> for sprint in firefox.sprints:
-    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ...     print(sprint.name, sprint.time_starts.strftime('%Y-%m-%d'))
     futurista 2025-08-16
     ubz 2005-10-07
 
     >>> for sprint in ubuntu.sprints:
-    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ...     print(sprint.name, sprint.time_starts.strftime('%Y-%m-%d'))
     futurista 2025-08-16
 
     >>> for sprint in mozilla.sprints:
-    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ...     print(sprint.name, sprint.time_starts.strftime('%Y-%m-%d'))
     futurista 2025-08-16
     ubz 2005-10-07
 
@@ -62,14 +62,14 @@ We also have past_sprints, giving all sprints relevant to that pillar
 that are not coming sprints.
 
     >>> for sprint in firefox.past_sprints:
-    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ...     print(sprint.name, sprint.time_starts.strftime('%Y-%m-%d'))
     ubz 2005-10-07
 
     >>> for sprint in ubuntu.past_sprints:
-    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ...     print(sprint.name, sprint.time_starts.strftime('%Y-%m-%d'))
 
     >>> for sprint in mozilla.past_sprints:
-    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ...     print(sprint.name, sprint.time_starts.strftime('%Y-%m-%d'))
     ubz 2005-10-07
 
 Now, these sprint APIs show only sprints with specifications that are
@@ -98,10 +98,10 @@ Flush the updates to the database so we'll see them.
 See, there are no ubuntu sprints.
 
     >>> for sprint in ubuntu.sprints:
-    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ...     print(sprint.name, sprint.time_starts.strftime('%Y-%m-%d'))
 
     >>> for sprint in ubuntu.coming_sprints:
-    ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
+    ...     print(sprint.name, sprint.time_starts.strftime('%Y-%m-%d'))
 
 
 Specification Listings
@@ -133,7 +133,7 @@ And there are three incomplete specs:
 
     >>> filter = [SpecificationFilter.INCOMPLETE]
     >>> for spec in ubz.specifications(None, filter=filter):
-    ...    print spec.name, spec.is_complete
+    ...    print(spec.name, spec.is_complete)
     svg-support False
     extension-manager-upgrades False
     e4x False
@@ -142,7 +142,7 @@ If we ask for all specs, we get them in the order of priority.
 
     >>> filter = [SpecificationFilter.ALL]
     >>> for spec in ubz.specifications(None, filter=filter):
-    ...    print spec.priority.title, spec.name
+    ...    print(spec.priority.title, spec.name)
     High svg-support
     Medium extension-manager-upgrades
     Not e4x
@@ -150,7 +150,7 @@ If we ask for all specs, we get them in the order of priority.
 And if we ask just for specs, we get them all
 
     >>> for spec in ubz.specifications(None):
-    ...     print spec.name, spec.is_complete
+    ...     print(spec.name, spec.is_complete)
     svg-support False
     extension-manager-upgrades False
     e4x False
@@ -230,31 +230,31 @@ The sprint attend() method adds a user's attendance to a sprint.
 The attend() method can update a user's attendance if there is already a
 ISprintAttendance for the user.
 
-    >>> print sprint_attendance.attendee.name
+    >>> print(sprint_attendance.attendee.name)
     mustard
 
-    >>> print sprint_attendance.time_starts
+    >>> print(sprint_attendance.time_starts)
     2005-10-07 09:00:00+00:00
 
-    >>> print sprint_attendance.time_ends
+    >>> print(sprint_attendance.time_ends)
     2005-10-17 19:05:00+00:00
 
-    >>> print sprint_attendance.is_physical
+    >>> print(sprint_attendance.is_physical)
     True
 
     >>> time_starts = datetime.datetime(2005, 10, 8, 9, 0, 0, 0, UTC)
     >>> time_ends = datetime.datetime(2005, 10, 16, 19, 5, 0, 0, UTC)
     >>> new_attendance = ubz.attend(person, time_starts, time_ends, False)
-    >>> print new_attendance.attendee.name
+    >>> print(new_attendance.attendee.name)
     mustard
 
-    >>> print new_attendance.time_starts
+    >>> print(new_attendance.time_starts)
     2005-10-08 09:00:00+00:00
 
-    >>> print new_attendance.time_ends
+    >>> print(new_attendance.time_ends)
     2005-10-16 19:05:00+00:00
 
-    >>> print new_attendance.is_physical
+    >>> print(new_attendance.is_physical)
     False
 
 The sprint attendances property returns a list of SprintAttendance
@@ -264,7 +264,7 @@ objects.
     [<...SprintAttendance ...>]
 
     >>> for attendance in ubz.attendances:
-    ...     print attendance.attendee.name
+    ...     print(attendance.attendee.name)
     mustard
 
 

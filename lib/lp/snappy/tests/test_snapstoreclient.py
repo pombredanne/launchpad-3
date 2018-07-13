@@ -1,4 +1,4 @@
-# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for communication with the snap store."""
@@ -13,11 +13,6 @@ import hashlib
 import io
 import json
 
-from httmock import (
-    all_requests,
-    HTTMock,
-    urlmatch,
-    )
 from lazr.restful.utils import get_current_browser_request
 from pymacaroons import (
     Macaroon,
@@ -25,6 +20,7 @@ from pymacaroons import (
     )
 from requests import Request
 from requests.utils import parse_dict_header
+import responses
 from testtools.matchers import (
     Contains,
     ContainsDict,
@@ -231,6 +227,7 @@ class TestSnapStoreClient(TestCaseWithFactory):
             {"name": "stable", "display_name": "Stable"},
             {"name": "edge", "display_name": "Edge"},
             ]
+        self.channels_memcache_key = "search.example:channels".encode("UTF-8")
 
     def _make_store_secrets(self):
         self.root_key = hashlib.sha256(
@@ -249,51 +246,45 @@ class TestSnapStoreClient(TestCaseWithFactory):
             "discharge": unbound_discharge_macaroon.serialize(),
             }
 
-    @urlmatch(path=r".*/unscanned-upload/$")
-    def _unscanned_upload_handler(self, url, request):
-        self.unscanned_upload_requests.append(request)
-        return {
-            "status_code": 200,
-            "content": {"successful": True, "upload_id": 1},
-            }
+    def _addUnscannedUploadResponse(self):
+        responses.add(
+            "POST", "http://updown.example/unscanned-upload/",
+            json={"successful": True, "upload_id": 1})
 
-    @urlmatch(path=r".*/snap-push/$")
-    def _snap_push_handler(self, url, request):
-        self.snap_push_request = request
-        return {
-            "status_code": 202,
-            "content": {
+    def _addSnapPushResponse(self):
+        responses.add(
+            "POST", "http://sca.example/dev/api/snap-push/", status=202,
+            json={
                 "success": True,
                 "status_details_url": (
                     "http://sca.example/dev/api/snaps/1/builds/1/status"),
-                }}
+                })
 
-    @urlmatch(path=r".*/api/v2/tokens/refresh$")
-    def _macaroon_refresh_handler(self, url, request):
-        self.refresh_request = request
-        new_macaroon = Macaroon(
-            location="sso.example", key=self.discharge_key,
-            identifier=self.discharge_caveat_id)
-        new_macaroon.add_first_party_caveat("sso|expires|tomorrow")
-        return {
-            "status_code": 200,
-            "content": {"discharge_macaroon": new_macaroon.serialize()},
-            }
+    def _addMacaroonRefreshResponse(self):
+        def callback(request):
+            new_macaroon = Macaroon(
+                location="sso.example", key=self.discharge_key,
+                identifier=self.discharge_caveat_id)
+            new_macaroon.add_first_party_caveat("sso|expires|tomorrow")
+            return (
+                200, {},
+                json.dumps({"discharge_macaroon": new_macaroon.serialize()}))
 
-    @urlmatch(path=r".*/api/v1/channels$")
-    def _channels_handler(self, url, request):
-        self.channels_request = request
-        return {
-            "status_code": 200,
-            "content": {"_embedded": {"clickindex:channel": self.channels}},
-            }
+        responses.add_callback(
+            "POST", "http://sso.example/api/v2/tokens/refresh",
+            callback=callback, content_type="application/json")
 
-    @urlmatch(path=r".*/snap-release/$")
-    def _snap_release_handler(self, url, request):
-        self.snap_release_request = request
-        return {
-            "status_code": 200,
-            "content": {
+    def _addChannelsResponse(self):
+        responses.add(
+            "GET", "http://search.example/api/v1/channels",
+            json={"_embedded": {"clickindex:channel": self.channels}})
+        self.addCleanup(
+            getUtility(IMemcacheClient).delete, self.channels_memcache_key)
+
+    def _addSnapReleaseResponse(self):
+        responses.add(
+            "POST", "http://sca.example/dev/api/snap-release/",
+            json={
                 "success": True,
                 "channel_map": [
                     {"channel": "stable", "info": "specific",
@@ -302,19 +293,17 @@ class TestSnapStoreClient(TestCaseWithFactory):
                      "version": "1.0", "revision": 1},
                     ],
                 "opened_channels": ["stable", "edge"],
-                }}
+                })
 
+    @responses.activate
     def test_requestPackageUploadPermission(self):
-        @all_requests
-        def handler(url, request):
-            self.request = request
-            return {"status_code": 200, "content": {"macaroon": "dummy"}}
-
         snappy_series = self.factory.makeSnappySeries(name="rolling")
-        with HTTMock(handler):
-            macaroon = self.client.requestPackageUploadPermission(
-                snappy_series, "test-snap")
-        self.assertThat(self.request, RequestMatches(
+        responses.add(
+            "POST", "http://sca.example/dev/api/acl/",
+            json={"macaroon": "dummy"})
+        macaroon = self.client.requestPackageUploadPermission(
+            snappy_series, "test-snap")
+        self.assertThat(responses.calls[-1].request, RequestMatches(
             url=Equals("http://sca.example/dev/api/acl/"),
             method=Equals("POST"),
             json_data={
@@ -329,45 +318,35 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.assertEqual("request-snap-upload-macaroon-stop", stop.category)
         self.assertEqual("rolling/test-snap", stop.detail)
 
+    @responses.activate
     def test_requestPackageUploadPermission_missing_macaroon(self):
-        @all_requests
-        def handler(url, request):
-            return {"status_code": 200, "content": {}}
-
         snappy_series = self.factory.makeSnappySeries()
-        with HTTMock(handler):
-            self.assertRaisesWithContent(
-                BadRequestPackageUploadResponse, b"{}",
-                self.client.requestPackageUploadPermission,
-                snappy_series, "test-snap")
+        responses.add("POST", "http://sca.example/dev/api/acl/", json={})
+        self.assertRaisesWithContent(
+            BadRequestPackageUploadResponse, b"{}",
+            self.client.requestPackageUploadPermission,
+            snappy_series, "test-snap")
 
+    @responses.activate
     def test_requestPackageUploadPermission_error(self):
-        @all_requests
-        def handler(url, request):
-            return {
-                "status_code": 503,
-                "content": {"error_list": [{"message": "Failed"}]},
-                }
-
         snappy_series = self.factory.makeSnappySeries()
-        with HTTMock(handler):
-            self.assertRaisesWithContent(
-                BadRequestPackageUploadResponse, "Failed",
-                self.client.requestPackageUploadPermission,
-                snappy_series, "test-snap")
+        responses.add(
+            "POST", "http://sca.example/dev/api/acl/",
+            status=503, json={"error_list": [{"message": "Failed"}]})
+        self.assertRaisesWithContent(
+            BadRequestPackageUploadResponse, "Failed",
+            self.client.requestPackageUploadPermission,
+            snappy_series, "test-snap")
 
+    @responses.activate
     def test_requestPackageUploadPermission_404(self):
-        @all_requests
-        def handler(url, request):
-            return {"status_code": 404, "reason": b"Not found"}
-
         snappy_series = self.factory.makeSnappySeries()
-        with HTTMock(handler):
-            self.assertRaisesWithContent(
-                BadRequestPackageUploadResponse,
-                b"404 Client Error: Not found",
-                self.client.requestPackageUploadPermission,
-                snappy_series, "test-snap")
+        responses.add("POST", "http://sca.example/dev/api/acl/", status=404)
+        self.assertRaisesWithContent(
+            BadRequestPackageUploadResponse,
+            b"404 Client Error: Not Found",
+            self.client.requestPackageUploadPermission,
+            snappy_series, "test-snap")
 
     def makeUploadableSnapBuild(self, store_secrets=None):
         if store_secrets is None:
@@ -386,16 +365,18 @@ class TestSnapStoreClient(TestCaseWithFactory):
             snapbuild=snapbuild, libraryfile=manifest_lfa)
         return snapbuild
 
+    @responses.activate
     def test_upload(self):
         snapbuild = self.makeUploadableSnapBuild()
         transaction.commit()
+        self._addUnscannedUploadResponse()
+        self._addSnapPushResponse()
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
-            with HTTMock(self._unscanned_upload_handler,
-                         self._snap_push_handler):
-                self.assertEqual(
-                    "http://sca.example/dev/api/snaps/1/builds/1/status",
-                    self.client.upload(snapbuild))
-        self.assertThat(self.unscanned_upload_requests, MatchesListwise([
+            self.assertEqual(
+                "http://sca.example/dev/api/snaps/1/builds/1/status",
+                self.client.upload(snapbuild))
+        requests = [call.request for call in responses.calls]
+        self.assertThat(requests, MatchesListwise([
             RequestMatches(
                 url=Equals("http://updown.example/unscanned-upload/"),
                 method=Equals("POST"),
@@ -404,29 +385,33 @@ class TestSnapStoreClient(TestCaseWithFactory):
                         name="binary", filename="test-snap.snap",
                         value="dummy snap content",
                         type="application/octet-stream",
-                        )})]))
-        self.assertThat(self.snap_push_request, RequestMatches(
-            url=Equals("http://sca.example/dev/api/snap-push/"),
-            method=Equals("POST"),
-            headers=ContainsDict({"Content-Type": Equals("application/json")}),
-            auth=("Macaroon", MacaroonsVerify(self.root_key)),
-            json_data={
-                "name": "test-snap", "updown_id": 1, "series": "rolling",
-                }))
+                        )}),
+            RequestMatches(
+                url=Equals("http://sca.example/dev/api/snap-push/"),
+                method=Equals("POST"),
+                headers=ContainsDict(
+                    {"Content-Type": Equals("application/json")}),
+                auth=("Macaroon", MacaroonsVerify(self.root_key)),
+                json_data={
+                    "name": "test-snap", "updown_id": 1, "series": "rolling",
+                    }),
+            ]))
 
+    @responses.activate
     def test_upload_no_discharge(self):
         root_key = hashlib.sha256(self.factory.getUniqueString()).hexdigest()
         root_macaroon = Macaroon(key=root_key)
         snapbuild = self.makeUploadableSnapBuild(
             store_secrets={"root": root_macaroon.serialize()})
         transaction.commit()
+        self._addUnscannedUploadResponse()
+        self._addSnapPushResponse()
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
-            with HTTMock(self._unscanned_upload_handler,
-                         self._snap_push_handler):
-                self.assertEqual(
-                    "http://sca.example/dev/api/snaps/1/builds/1/status",
-                    self.client.upload(snapbuild))
-        self.assertThat(self.unscanned_upload_requests, MatchesListwise([
+            self.assertEqual(
+                "http://sca.example/dev/api/snaps/1/builds/1/status",
+                self.client.upload(snapbuild))
+        requests = [call.request for call in responses.calls]
+        self.assertThat(requests, MatchesListwise([
             RequestMatches(
                 url=Equals("http://updown.example/unscanned-upload/"),
                 method=Equals("POST"),
@@ -435,118 +420,106 @@ class TestSnapStoreClient(TestCaseWithFactory):
                         name="binary", filename="test-snap.snap",
                         value="dummy snap content",
                         type="application/octet-stream",
-                        )})]))
-        self.assertThat(self.snap_push_request, RequestMatches(
-            url=Equals("http://sca.example/dev/api/snap-push/"),
-            method=Equals("POST"),
-            headers=ContainsDict({"Content-Type": Equals("application/json")}),
-            auth=("Macaroon", MacaroonsVerify(root_key)),
-            json_data={
-                "name": "test-snap", "updown_id": 1, "series": "rolling",
-                }))
+                        )}),
+            RequestMatches(
+                url=Equals("http://sca.example/dev/api/snap-push/"),
+                method=Equals("POST"),
+                headers=ContainsDict(
+                    {"Content-Type": Equals("application/json")}),
+                auth=("Macaroon", MacaroonsVerify(root_key)),
+                json_data={
+                    "name": "test-snap", "updown_id": 1, "series": "rolling",
+                    }),
+            ]))
 
+    @responses.activate
     def test_upload_unauthorized(self):
-        @urlmatch(path=r".*/snap-push/$")
-        def snap_push_handler(url, request):
-            self.snap_push_request = request
-            return {
-                "status_code": 401,
-                "headers": {"WWW-Authenticate": 'Macaroon realm="Devportal"'},
-                }
-
         store_secrets = self._make_store_secrets()
         snapbuild = self.makeUploadableSnapBuild(store_secrets=store_secrets)
         transaction.commit()
+        self._addUnscannedUploadResponse()
+        snap_push_error = {
+            "code": "macaroon-permission-required",
+            "message": "Permission is required: package_push",
+            }
+        responses.add(
+            "POST", "http://sca.example/dev/api/snap-push/", status=401,
+            headers={"WWW-Authenticate": 'Macaroon realm="Devportal"'},
+            json={"error_list": [snap_push_error]})
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
-            with HTTMock(self._unscanned_upload_handler, snap_push_handler,
-                         self._macaroon_refresh_handler):
-                self.assertRaises(
-                    UnauthorizedUploadResponse, self.client.upload, snapbuild)
+            self.assertRaisesWithContent(
+                UnauthorizedUploadResponse,
+                "Permission is required: package_push",
+                self.client.upload, snapbuild)
 
+    @responses.activate
     def test_upload_needs_discharge_macaroon_refresh(self):
-        @urlmatch(path=r".*/snap-push/$")
-        def snap_push_handler(url, request):
-            snap_push_handler.call_count += 1
-            if snap_push_handler.call_count == 1:
-                self.first_snap_push_request = request
-                return {
-                    "status_code": 401,
-                    "headers": {
-                        "WWW-Authenticate": "Macaroon needs_refresh=1"}}
-            else:
-                return self._snap_push_handler(url, request)
-        snap_push_handler.call_count = 0
-
         store_secrets = self._make_store_secrets()
         snapbuild = self.makeUploadableSnapBuild(store_secrets=store_secrets)
         transaction.commit()
+        self._addUnscannedUploadResponse()
+        responses.add(
+            "POST", "http://sca.example/dev/api/snap-push/", status=401,
+            headers={"WWW-Authenticate": "Macaroon needs_refresh=1"})
+        self._addMacaroonRefreshResponse()
+        self._addSnapPushResponse()
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
-            with HTTMock(self._unscanned_upload_handler, snap_push_handler,
-                         self._macaroon_refresh_handler):
-                self.assertEqual(
-                    "http://sca.example/dev/api/snaps/1/builds/1/status",
-                    self.client.upload(snapbuild))
-        self.assertEqual(2, snap_push_handler.call_count)
+            self.assertEqual(
+                "http://sca.example/dev/api/snaps/1/builds/1/status",
+                self.client.upload(snapbuild))
+        requests = [call.request for call in responses.calls]
+        self.assertThat(requests, MatchesListwise([
+            MatchesStructure.byEquality(path_url="/unscanned-upload/"),
+            MatchesStructure.byEquality(path_url="/dev/api/snap-push/"),
+            MatchesStructure.byEquality(path_url="/api/v2/tokens/refresh"),
+            MatchesStructure.byEquality(path_url="/dev/api/snap-push/"),
+            ]))
         self.assertNotEqual(
             store_secrets["discharge"],
             snapbuild.snap.store_secrets["discharge"])
 
+    @responses.activate
     def test_upload_unsigned_agreement(self):
-        @urlmatch(path=r".*/snap-push/$")
-        def snap_push_handler(url, request):
-            self.snap_push_request = request
-            return {
-                "status_code": 403,
-                "content": {
-                    "error_list": [
-                        {"message": "Developer has not signed agreement."},
-                        ],
-                    },
-                }
-
         store_secrets = self._make_store_secrets()
         snapbuild = self.makeUploadableSnapBuild(store_secrets=store_secrets)
         transaction.commit()
+        self._addUnscannedUploadResponse()
+        snap_push_error = {"message": "Developer has not signed agreement."}
+        responses.add(
+            "POST", "http://sca.example/dev/api/snap-push/", status=403,
+            json={"error_list": [snap_push_error]})
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
-            with HTTMock(self._unscanned_upload_handler, snap_push_handler,
-                         self._macaroon_refresh_handler):
-                err = self.assertRaises(
-                    UploadFailedResponse, self.client.upload, snapbuild)
-                self.assertEqual(
-                    "Developer has not signed agreement.", str(err))
-                self.assertFalse(err.can_retry)
+            err = self.assertRaises(
+                UploadFailedResponse, self.client.upload, snapbuild)
+            self.assertEqual("Developer has not signed agreement.", str(err))
+            self.assertFalse(err.can_retry)
 
+    @responses.activate
     def test_upload_file_error(self):
-        @urlmatch(path=r".*/unscanned-upload/$")
-        def unscanned_upload_handler(url, request):
-            return {
-                "status_code": 502,
-                "reason": "Proxy Error",
-                "content": b"The proxy exploded.\n",
-                }
-
         store_secrets = self._make_store_secrets()
         snapbuild = self.makeUploadableSnapBuild(store_secrets=store_secrets)
         transaction.commit()
+        responses.add(
+            "POST", "http://updown.example/unscanned-upload/", status=502,
+            body="The proxy exploded.\n")
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
-            with HTTMock(unscanned_upload_handler):
-                err = self.assertRaises(
-                    UploadFailedResponse, self.client.upload, snapbuild)
-                self.assertEqual("502 Server Error: Proxy Error", str(err))
-                self.assertEqual(b"The proxy exploded.\n", err.detail)
-                self.assertTrue(err.can_retry)
+            err = self.assertRaises(
+                UploadFailedResponse, self.client.upload, snapbuild)
+            self.assertEqual("502 Server Error: Bad Gateway", str(err))
+            self.assertEqual(b"The proxy exploded.\n", err.detail)
+            self.assertTrue(err.can_retry)
 
+    @responses.activate
     def test_refresh_discharge_macaroon(self):
         store_secrets = self._make_store_secrets()
         snap = self.factory.makeSnap(
             store_upload=True,
             store_series=self.factory.makeSnappySeries(name="rolling"),
             store_name="test-snap", store_secrets=store_secrets)
-
+        self._addMacaroonRefreshResponse()
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
-            with HTTMock(self._macaroon_refresh_handler):
-                self.client.refreshDischargeMacaroon(snap)
-        self.assertThat(self.refresh_request, RequestMatches(
+            self.client.refreshDischargeMacaroon(snap)
+        self.assertThat(responses.calls[-1].request, RequestMatches(
             url=Equals("http://sso.example/api/v2/tokens/refresh"),
             method=Equals("POST"),
             headers=ContainsDict({"Content-Type": Equals("application/json")}),
@@ -554,127 +527,100 @@ class TestSnapStoreClient(TestCaseWithFactory):
         self.assertNotEqual(
             store_secrets["discharge"], snap.store_secrets["discharge"])
 
+    @responses.activate
     def test_checkStatus_pending(self):
-        @all_requests
-        def handler(url, request):
-            return {
-                "status_code": 200,
-                "content": {
-                    "code": "being_processed", "processed": False,
-                    "can_release": False,
-                    }}
-
         status_url = "http://sca.example/dev/api/snaps/1/builds/1/status"
-        with HTTMock(handler):
-            self.assertRaises(
-                UploadNotScannedYetResponse, self.client.checkStatus,
-                status_url)
+        responses.add(
+            "GET", status_url,
+            json={
+                "code": "being_processed", "processed": False,
+                "can_release": False,
+                })
+        self.assertRaises(
+            UploadNotScannedYetResponse, self.client.checkStatus, status_url)
 
+    @responses.activate
     def test_checkStatus_error(self):
-        @all_requests
-        def handler(url, request):
-            return {
-                "status_code": 200,
-                "content": {
-                    "code": "processing_error", "processed": True,
-                    "can_release": False,
-                    "errors": [
-                        {"code": None,
-                         "message": "You cannot use that reserved namespace.",
-                         "link": "http://example.com"
-                         }],
-                    }}
-
         status_url = "http://sca.example/dev/api/snaps/1/builds/1/status"
-        with HTTMock(handler):
-            self.assertRaisesWithContent(
-                ScanFailedResponse,
-                b"You cannot use that reserved namespace.",
-                self.client.checkStatus, status_url)
+        responses.add(
+            "GET", status_url,
+            json={
+                "code": "processing_error", "processed": True,
+                "can_release": False,
+                "errors": [
+                    {"code": None,
+                     "message": "You cannot use that reserved namespace.",
+                     "link": "http://example.com"
+                     }],
+                })
+        self.assertRaisesWithContent(
+            ScanFailedResponse, b"You cannot use that reserved namespace.",
+            self.client.checkStatus, status_url)
 
+    @responses.activate
     def test_checkStatus_review_error(self):
-        @all_requests
-        def handler(url, request):
-            return {
-                "status_code": 200,
-                "content": {
-                    "code": "processing_error", "processed": True,
-                    "can_release": False,
-                    "errors": [{"code": None, "message": "Review failed."}],
-                    "url": "http://sca.example/dev/click-apps/1/rev/1/",
-                    }}
-
         status_url = "http://sca.example/dev/api/snaps/1/builds/1/status"
-        with HTTMock(handler):
-            self.assertRaisesWithContent(
-                ScanFailedResponse, b"Review failed.",
-                self.client.checkStatus, status_url)
+        responses.add(
+            "GET", status_url,
+            json={
+                "code": "processing_error", "processed": True,
+                "can_release": False,
+                "errors": [{"code": None, "message": "Review failed."}],
+                "url": "http://sca.example/dev/click-apps/1/rev/1/",
+                })
+        self.assertRaisesWithContent(
+            ScanFailedResponse, b"Review failed.",
+            self.client.checkStatus, status_url)
 
+    @responses.activate
     def test_checkStatus_complete(self):
-        @all_requests
-        def handler(url, request):
-            return {
-                "status_code": 200,
-                "content": {
-                    "code": "ready_to_release", "processed": True,
-                    "can_release": True,
-                    "url": "http://sca.example/dev/click-apps/1/rev/1/",
-                    "revision": 1,
-                    }}
-
         status_url = "http://sca.example/dev/api/snaps/1/builds/1/status"
-        with HTTMock(handler):
-            self.assertEqual(
-                ("http://sca.example/dev/click-apps/1/rev/1/", 1),
-                self.client.checkStatus(status_url))
+        responses.add(
+            "GET", status_url,
+            json={
+                "code": "ready_to_release", "processed": True,
+                "can_release": True,
+                "url": "http://sca.example/dev/click-apps/1/rev/1/",
+                "revision": 1,
+                })
+        self.assertEqual(
+            ("http://sca.example/dev/click-apps/1/rev/1/", 1),
+            self.client.checkStatus(status_url))
 
+    @responses.activate
     def test_checkStatus_404(self):
-        @all_requests
-        def handler(url, request):
-            return {"status_code": 404, "reason": b"Not found"}
-
         status_url = "http://sca.example/dev/api/snaps/1/builds/1/status"
-        with HTTMock(handler):
-            self.assertRaisesWithContent(
-                BadScanStatusResponse, b"404 Client Error: Not found",
-                self.client.checkStatus, status_url)
+        responses.add("GET", status_url, status=404)
+        self.assertRaisesWithContent(
+            BadScanStatusResponse, b"404 Client Error: Not Found",
+            self.client.checkStatus, status_url)
 
+    @responses.activate
     def test_listChannels(self):
-        memcache_key = "search.example:channels".encode("UTF-8")
-        try:
-            with HTTMock(self._channels_handler):
-                self.assertEqual(self.channels, self.client.listChannels())
-            self.assertThat(self.channels_request, RequestMatches(
-                url=Equals("http://search.example/api/v1/channels"),
-                method=Equals("GET"),
-                headers=ContainsDict(
-                    {"Accept": Equals("application/hal+json")})))
-            self.assertEqual(
-                self.channels,
-                json.loads(getUtility(IMemcacheClient).get(memcache_key)))
-            self.channels_request = None
-            with HTTMock(self._channels_handler):
-                self.assertEqual(self.channels, self.client.listChannels())
-            self.assertIsNone(self.channels_request)
-        finally:
-            getUtility(IMemcacheClient).delete(memcache_key)
+        self._addChannelsResponse()
+        self.assertEqual(self.channels, self.client.listChannels())
+        self.assertThat(responses.calls[-1].request, RequestMatches(
+            url=Equals("http://search.example/api/v1/channels"),
+            method=Equals("GET"),
+            headers=ContainsDict({"Accept": Equals("application/hal+json")})))
+        self.assertEqual(
+            self.channels,
+            json.loads(getUtility(IMemcacheClient).get(
+                self.channels_memcache_key)))
+        responses.reset()
+        self.assertEqual(self.channels, self.client.listChannels())
+        self.assertContentEqual([], responses.calls)
 
+    @responses.activate
     def test_listChannels_404(self):
-        @all_requests
-        def handler(url, request):
-            return {"status_code": 404, "reason": b"Not found"}
+        responses.add(
+            "GET", "http://search.example/api/v1/channels", status=404)
+        self.assertRaisesWithContent(
+            BadSearchResponse, b"404 Client Error: Not Found",
+            self.client.listChannels)
 
-        with HTTMock(handler):
-            self.assertRaisesWithContent(
-                BadSearchResponse, b"404 Client Error: Not found",
-                self.client.listChannels)
-
+    @responses.activate
     def test_listChannels_disable_search(self):
-        @all_requests
-        def handler(url, request):
-            self.request = request
-            return {"status_code": 404, "reason": b"Not found"}
-
         self.useFixture(
             FeatureFixture({u"snap.disable_channel_search": u"on"}))
         expected_channels = [
@@ -683,25 +629,23 @@ class TestSnapStoreClient(TestCaseWithFactory):
             {"name": "beta", "display_name": "Beta"},
             {"name": "stable", "display_name": "Stable"},
             ]
-        self.request = None
-        with HTTMock(handler):
-            self.assertEqual(expected_channels, self.client.listChannels())
-        self.assertIsNone(self.request)
-        memcache_key = "search.example:channels".encode("UTF-8")
-        self.assertIsNone(getUtility(IMemcacheClient).get(memcache_key))
+        self.assertEqual(expected_channels, self.client.listChannels())
+        self.assertContentEqual([], responses.calls)
+        self.assertIsNone(
+            getUtility(IMemcacheClient).get(self.channels_memcache_key))
 
+    @responses.activate
     def test_release(self):
-        with HTTMock(self._channels_handler):
-            snap = self.factory.makeSnap(
-                store_upload=True,
-                store_series=self.factory.makeSnappySeries(name="rolling"),
-                store_name="test-snap",
-                store_secrets=self._make_store_secrets(),
-                store_channels=["stable", "edge"])
+        snap = self.factory.makeSnap(
+            store_upload=True,
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap",
+            store_secrets=self._make_store_secrets(),
+            store_channels=["stable", "edge"])
         snapbuild = self.factory.makeSnapBuild(snap=snap)
-        with HTTMock(self._snap_release_handler):
-            self.client.release(snapbuild, 1)
-        self.assertThat(self.snap_release_request, RequestMatches(
+        self._addSnapReleaseResponse()
+        self.client.release(snapbuild, 1)
+        self.assertThat(responses.calls[-1].request, RequestMatches(
             url=Equals("http://sca.example/dev/api/snap-release/"),
             method=Equals("POST"),
             headers=ContainsDict({"Content-Type": Equals("application/json")}),
@@ -711,20 +655,20 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 "channels": ["stable", "edge"], "series": "rolling",
                 }))
 
+    @responses.activate
     def test_release_no_discharge(self):
         root_key = hashlib.sha256(self.factory.getUniqueString()).hexdigest()
         root_macaroon = Macaroon(key=root_key)
-        with HTTMock(self._channels_handler):
-            snap = self.factory.makeSnap(
-                store_upload=True,
-                store_series=self.factory.makeSnappySeries(name="rolling"),
-                store_name="test-snap",
-                store_secrets={"root": root_macaroon.serialize()},
-                store_channels=["stable", "edge"])
+        snap = self.factory.makeSnap(
+            store_upload=True,
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap",
+            store_secrets={"root": root_macaroon.serialize()},
+            store_channels=["stable", "edge"])
         snapbuild = self.factory.makeSnapBuild(snap=snap)
-        with HTTMock(self._snap_release_handler):
-            self.client.release(snapbuild, 1)
-        self.assertThat(self.snap_release_request, RequestMatches(
+        self._addSnapReleaseResponse()
+        self.client.release(snapbuild, 1)
+        self.assertThat(responses.calls[-1].request, RequestMatches(
             url=Equals("http://sca.example/dev/api/snap-release/"),
             method=Equals("POST"),
             headers=ContainsDict({"Content-Type": Equals("application/json")}),
@@ -734,41 +678,55 @@ class TestSnapStoreClient(TestCaseWithFactory):
                 "channels": ["stable", "edge"], "series": "rolling",
                 }))
 
+    @responses.activate
+    def test_release_needs_discharge_macaroon_refresh(self):
+        store_secrets = self._make_store_secrets()
+        snap = self.factory.makeSnap(
+            store_upload=True,
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap", store_secrets=store_secrets,
+            store_channels=["stable", "edge"])
+        snapbuild = self.factory.makeSnapBuild(snap=snap)
+        responses.add(
+            "POST", "http://sca.example/dev/api/snap-release/", status=401,
+            headers={"WWW-Authenticate": "Macaroon needs_refresh=1"})
+        self._addMacaroonRefreshResponse()
+        self._addSnapReleaseResponse()
+        self.client.release(snapbuild, 1)
+        requests = [call.request for call in responses.calls]
+        self.assertThat(requests, MatchesListwise([
+            MatchesStructure.byEquality(path_url="/dev/api/snap-release/"),
+            MatchesStructure.byEquality(path_url="/api/v2/tokens/refresh"),
+            MatchesStructure.byEquality(path_url="/dev/api/snap-release/"),
+            ]))
+        self.assertNotEqual(
+            store_secrets["discharge"], snap.store_secrets["discharge"])
+
+    @responses.activate
     def test_release_error(self):
-        @urlmatch(path=r".*/snap-release/$")
-        def handler(url, request):
-            return {
-                "status_code": 503,
-                "content": {"error_list": [{"message": "Failed to publish"}]},
-                }
-
-        with HTTMock(self._channels_handler):
-            snap = self.factory.makeSnap(
-                store_upload=True,
-                store_series=self.factory.makeSnappySeries(name="rolling"),
-                store_name="test-snap",
-                store_secrets=self._make_store_secrets(),
-                store_channels=["stable", "edge"])
+        snap = self.factory.makeSnap(
+            store_upload=True,
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap", store_secrets=self._make_store_secrets(),
+            store_channels=["stable", "edge"])
         snapbuild = self.factory.makeSnapBuild(snap=snap)
-        with HTTMock(handler):
-            self.assertRaisesWithContent(
-                ReleaseFailedResponse, "Failed to publish",
-                self.client.release, snapbuild, 1)
+        responses.add(
+            "POST", "http://sca.example/dev/api/snap-release/", status=503,
+            json={"error_list": [{"message": "Failed to publish"}]})
+        self.assertRaisesWithContent(
+            ReleaseFailedResponse, "Failed to publish",
+            self.client.release, snapbuild, 1)
 
+    @responses.activate
     def test_release_404(self):
-        @urlmatch(path=r".*/snap-release/$")
-        def handler(url, request):
-            return {"status_code": 404, "reason": b"Not found"}
-
-        with HTTMock(self._channels_handler):
-            snap = self.factory.makeSnap(
-                store_upload=True,
-                store_series=self.factory.makeSnappySeries(name="rolling"),
-                store_name="test-snap",
-                store_secrets=self._make_store_secrets(),
-                store_channels=["stable", "edge"])
+        snap = self.factory.makeSnap(
+            store_upload=True,
+            store_series=self.factory.makeSnappySeries(name="rolling"),
+            store_name="test-snap", store_secrets=self._make_store_secrets(),
+            store_channels=["stable", "edge"])
         snapbuild = self.factory.makeSnapBuild(snap=snap)
-        with HTTMock(handler):
-            self.assertRaisesWithContent(
-                ReleaseFailedResponse, b"404 Client Error: Not found",
-                self.client.release, snapbuild, 1)
+        responses.add(
+            "POST", "http://sca.example/dev/api/snap-release/", status=404)
+        self.assertRaisesWithContent(
+            ReleaseFailedResponse, b"404 Client Error: Not Found",
+            self.client.release, snapbuild, 1)

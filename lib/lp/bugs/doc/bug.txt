@@ -17,13 +17,13 @@ Bugs are created and retrieved via IBugSet.
 To retrieve a specific Bug, use IBugSet.get:
 
     >>> firefox_crashes = bugset.get(6)
-    >>> print firefox_crashes.title
+    >>> print(firefox_crashes.title)
     Firefox crashes when Save As dialog for a nonexistent window is closed
 
 Or you can use IBugSet.getByNameOrID to get it by its nickname:
 
     >>> blackhole_bug = bugset.getByNameOrID('blackhole')
-    >>> print blackhole_bug.title
+    >>> print(blackhole_bug.title)
     Blackhole Trash folder
 
 If the bug can't be found, a zope.exceptions.NotFoundError will be
@@ -37,7 +37,7 @@ raised:
     >>> bugset.getByNameOrID('+bugs')
     Traceback (most recent call last):
       ...
-    NotFoundError: 'Unable to locate bug with nickname +bugs.'
+    NotFoundError: u'Unable to locate bug with nickname +bugs.'
 
 It is also possible to retrieve a number of bugs by specifying the bug numbers
 of interest.
@@ -46,28 +46,28 @@ The method ignores bug numbers not found in the database. That's why the
 result set below has only one element.
 
     >>> result_set = bugset.getByNumbers([6, 1234])
-    >>> print result_set.count()
+    >>> print(result_set.count())
     1
 
     >>> [the_bug_found] = result_set
-    >>> print the_bug_found.title
+    >>> print(the_bug_found.title)
     Firefox crashes when Save As dialog for a nonexistent window is closed
 
     >>> result_set = bugset.getByNumbers([6, 1])
-    >>> print result_set.count()
+    >>> print(result_set.count())
     2
 
-    >>> print [(bug.id, bug.title[:40]) for bug in result_set]
+    >>> print([(bug.id, bug.title[:40]) for bug in result_set])
     [(1, u'Firefox does not support SVG'),
      (6, u'Firefox crashes when Save As dialog for ')]
 
 If no bug numbers are specified an empty result set is returned.
 
     >>> result_set = bugset.getByNumbers(None)
-    >>> print result_set.count()
+    >>> print(result_set.count())
     0
     >>> result_set = bugset.getByNumbers([])
-    >>> print result_set.count()
+    >>> print(result_set.count())
     0
 
 Bug creation events
@@ -80,9 +80,9 @@ we will register a handler to observe the event.
     >>> from lazr.lifecycle.event import IObjectCreatedEvent
 
     >>> def show_bug_creation_event(bug, event):
-    ...     print "New bug created: %s" % (bug.title,)
-    ...     print "          Owner: %s" % (bug.owner.name,)
-    ...     print "       Filed by: %s" % (event.user.name,)
+    ...     print("New bug created: %s" % (bug.title,))
+    ...     print("          Owner: %s" % (bug.owner.name,))
+    ...     print("       Filed by: %s" % (event.user.name,))
 
     >>> globalSiteManager.registerHandler(
     ...     show_bug_creation_event, (IBug, IObjectCreatedEvent))
@@ -150,7 +150,7 @@ include a URL to the bug inside the email.
 
     >>> from lp.services.webapp import canonical_url
     >>> login(ANONYMOUS)
-    >>> print canonical_url(firefox_crashes)
+    >>> print(canonical_url(firefox_crashes))
     http://.../bugs/6
 
 
@@ -189,7 +189,7 @@ We have to be logged in, so let's do that:
 
 There are currently no people subscribed to this bug:
 
-    >>> print firefox_crashes.subscriptions.count()
+    >>> print(firefox_crashes.subscriptions.count())
     0
 
 The rule with private bugs is that only direct subscribers can view the
@@ -391,21 +391,21 @@ passing both a comment /and/ a msg would have raised an AssertionError:
 So, let's continue:
 
     >>> for subscription in public_bug.subscriptions:
-    ...     print subscription.person.name
+    ...     print(subscription.person.name)
     name16
 
 The first comment made (this is submitted in the bug report) is set to
 the description of the bug:
 
-    >>> print public_bug.description
+    >>> print(public_bug.description)
     blah blah blah
 
 The bug description can also be accessed through the task:
 
-    >>> print public_bug.bugtasks[0].bug.description
+    >>> print(public_bug.bugtasks[0].bug.description)
     blah blah blah
     >>> public_bug.description = 'a new description'
-    >>> print public_bug.bugtasks[0].bug.description
+    >>> print(public_bug.bugtasks[0].bug.description)
     a new description
 
 When a private bug is filed:
@@ -534,12 +534,12 @@ Modifying a bugtask will update IBug.date_last_updated.
 
     >>> firefox_task = firefox_bug.bugtasks[0]
 
-    >>> print firefox_task.bugtargetdisplayname
+    >>> print(firefox_task.bugtargetdisplayname)
     Mozilla Firefox
 
-    >>> print firefox_task.importance.title
+    >>> print(firefox_task.importance.title)
     Undecided
-    >>> print firefox_task.status.title
+    >>> print(firefox_task.status.title)
     New
 
     >>> bugtask_before_modification = Snapshot(
@@ -567,7 +567,7 @@ Adding a new task.
 
     >>> thunderbird = productset.getByName("thunderbird")
 
-    >>> print thunderbird.name
+    >>> print(thunderbird.name)
     thunderbird
 
     >>> thunderbird_task = getUtility(IBugTaskSet).createTask(
@@ -603,7 +603,7 @@ You can also add bugs for a specific distro.
     ...     owner=foobar, target=ubuntu)
     >>> notify(ObjectCreatedEvent(ubuntu_task))
 
-    >>> print ubuntu_task.distribution.title
+    >>> print(ubuntu_task.distribution.title)
     Ubuntu
 
 And for a specific distribution series.
@@ -613,7 +613,7 @@ And for a specific distribution series.
     ...     owner=foobar, target=warty)
     >>> notify(ObjectCreatedEvent(warty_task))
 
-    >>> print warty_task.distroseries.title
+    >>> print(warty_task.distroseries.title)
     The Warty Warthog Release
 
 Also for a specific distribution source package.
@@ -624,7 +624,7 @@ Also for a specific distribution source package.
     ...     owner=foobar, target=linux_source)
     >>> notify(ObjectCreatedEvent(linux_task))
 
-    >>> print linux_task.bugtargetname
+    >>> print(linux_task.bugtargetname)
     linux-source-2.6.15 (Tubuntu)
 
 And for a distro series source package.
@@ -638,20 +638,20 @@ And for a distro series source package.
     ...     owner=foobar, target=warty_fox_package)
     >>> notify(ObjectCreatedEvent(warty_fox_task))
 
-    >>> print warty_fox_task.bugtargetname
+    >>> print(warty_fox_task.bugtargetname)
     mozilla-firefox (Ubuntu Warty)
 
-    >>> print warty_fox_task.distroseries.name
+    >>> print(warty_fox_task.distroseries.name)
     warty
 
-    >>> print warty_fox_task.sourcepackagename.name
+    >>> print(warty_fox_task.sourcepackagename.name)
     mozilla-firefox
 
 The first task is available as default_bugtask. Launchpad often views
 bugs in the context of a bugtask, and the default choice is the first
 or oldest bugtask.
 
-    >>> print firefox_bug.default_bugtask.bugtargetdisplayname
+    >>> print(firefox_bug.default_bugtask.bugtargetdisplayname)
     Mozilla Firefox
 
 Changing bug visibility.
@@ -696,7 +696,7 @@ Marking as duplicate.
 
     >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
 
-    >>> print firefox_bug.duplicateof
+    >>> print(firefox_bug.duplicateof)
     None
     >>> firefox_bug.markAsDuplicate(factory.makeBug())
 
@@ -812,7 +812,7 @@ Editing the external bug watch.
     >>> bugwatch_before_modification = Snapshot(
     ...     bugwatch, providing=IBugWatch)
 
-    >>> print bugwatch.remotebug
+    >>> print(bugwatch.remotebug)
     1234
 
     >>> bugwatch.remotebug = '5678'
@@ -839,7 +839,7 @@ Adding a comment imported from an external bugtracker.
     ...     )
 
     >>> imported_message = bugwatch.getImportedBugMessages()[0]
-    >>> print imported_message.message.text_contents
+    >>> print(imported_message.message.text_contents)
     blah blah blah blah remotely
 
 Subscribing and unsubscribing does *not* trigger an update of
@@ -889,7 +889,7 @@ Now, let's iterate over the bug tasks, some complete and others
 incomplete, and show the status of each of the tasts:
 
     >>> for task in b8.bugtasks:
-    ...     print task.bugtargetdisplayname, task.is_complete
+    ...     print(task.bugtargetdisplayname, task.is_complete)
     Mozilla Firefox False
     mozilla-firefox (Debian) True
 
@@ -904,7 +904,7 @@ status, importance, assignee, and so on.
 You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
 
     >>> bug_two = bugset.get(2)
-    >>> for task in bug_two.bugtasks: print task.target.displayname
+    >>> for task in bug_two.bugtasks: print(task.target.displayname)
     Tomcat
     Ubuntu
     Hoary
@@ -914,7 +914,7 @@ You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
 You can also get a list of the "LP pillars" affected by a particular bug.
 
     >>> for pillar in bug_two.affected_pillars:
-    ...     print pillar.displayname
+    ...     print(pillar.displayname)
     Tomcat
     Ubuntu
     Debian
@@ -1087,9 +1087,9 @@ implementation of the canonical url resolution for messages when they are
 exported using the webservice API.
 
     >>> for indexed_message in bug_two.indexed_messages:
-    ...     print '%s\t%s\t%s' % (
+    ...     print('%s\t%s\t%s' % (
     ...         indexed_message.index, indexed_message.subject,
-    ...         indexed_message.inside.title)
+    ...         indexed_message.inside.title))
     0 PEBCAK
     Bug #2 in Tomcat: "Blackhole Trash folder"
     1 Fantastic idea, I'd really like to see this
@@ -1114,13 +1114,13 @@ Initially, only the bug reporter is marked as affected. Other users,
 including the anonymous user, are neither marked as affected nor as
 unaffected.
 
-    >>> print test_bug.isUserAffected(test_bug.owner)
+    >>> print(test_bug.isUserAffected(test_bug.owner))
     True
 
-    >>> print test_bug.isUserAffected(affected_user)
+    >>> print(test_bug.isUserAffected(affected_user))
     None
 
-    >>> print test_bug.isUserAffected(None)
+    >>> print(test_bug.isUserAffected(None))
     None
 
 When we mark a bug as affecting a new user, the affected_users_count
@@ -1141,7 +1141,7 @@ same user more than once does not increment users_affect_count.
 
 We can mark a user as unaffected by a bug.
 
-    >>> print test_bug.isUserAffected(unaffected_user)
+    >>> print(test_bug.isUserAffected(unaffected_user))
     None
     >>> test_bug.markUserAffected(unaffected_user, affected=False)
     >>> test_bug.isUserAffected(unaffected_user)
@@ -1168,19 +1168,19 @@ And we can change whether a user is marked as affected or unaffected.
 
 We can also get the collection of users affected by a bug.
 
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in test_bug.users_affected))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in test_bug.users_affected)))
     bruce-dickinson
     paul-dianno
 
     >>> unaffecting_bug = factory.makeBug()
-    >>> print list(unaffecting_bug.users_affected)
+    >>> print(list(unaffecting_bug.users_affected))
     [<Person at ...>]
 
 Similarly, we can get the collection of users unaffected by a bug.
 
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in test_bug.users_unaffected))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in test_bug.users_unaffected)))
     blaze-bayley
 
 If a user is marked as being affected by a bug (either by explicitly
@@ -1196,8 +1196,8 @@ the master bug increases too.
 
 And the list of users the master bug affects includes that user.
 
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in test_bug.users_affected_with_dupes))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in test_bug.users_affected_with_dupes)))
     bruce-dickinson
     paul-dianno
     sheila-shakespeare
@@ -1213,8 +1213,8 @@ just because they are also affected by the duplicate.
 And the list of users that the master bug affects still includes the
 user, of course.
 
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in test_bug.users_affected_with_dupes))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in test_bug.users_affected_with_dupes)))
     bruce-dickinson
     paul-dianno
     sheila-shakespeare
@@ -1240,18 +1240,18 @@ user_affected_count still only increments by 1 for that user.
 
 Both duplicates claim to affect just that user:
 
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in dupe_one.users_affected))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in dupe_one.users_affected)))
     sheila-shakespeare
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in dupe_two.users_affected))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in dupe_two.users_affected)))
     sheila-shakespeare
 
 And the list of users that the master bug affects includes the user
 exactly once, of course.
 
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in test_bug.users_affected_with_dupes))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in test_bug.users_affected_with_dupes)))
     bruce-dickinson
     napoleon-bonaparte
     paul-dianno
@@ -1277,26 +1277,26 @@ The master bug's affected count, with or without dups, is reduced by one:
 The dup user no longer appears as affected by the master bug nor
 either of the dups:
 
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in test_bug.users_affected_with_dupes))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in test_bug.users_affected_with_dupes)))
     bruce-dickinson
     napoleon-bonaparte
     paul-dianno
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in dupe_one.users_affected))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in dupe_one.users_affected)))
     <BLANKLINE>
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in dupe_two.users_affected))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in dupe_two.users_affected)))
     <BLANKLINE>
 
 Since the user who filed the first two dups had an entry explicitly
 saying they were affected, they now claim that they are unaffected.
 
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in dupe_one.users_unaffected))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in dupe_one.users_unaffected)))
     sheila-shakespeare
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in dupe_two.users_unaffected))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in dupe_two.users_unaffected)))
     sheila-shakespeare
 
 But they didn't file the third dup, so there was never any explicit
@@ -1304,16 +1304,16 @@ record saying they were affected by it.  Thus they also do not appear
 as explicitly unaffected, even after marking the master bug as not
 affecting them.
 
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in dupe_three.users_unaffected))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in dupe_three.users_unaffected)))
     <BLANKLINE>
 
 However, if a dup was not marked either way for that user, then do
 nothing to the dup when the master is marked as not affecting the
 user.
 
-    >>> print '\n'.join(
-    ...     sorted(user.name for user in dupe_three.users_affected))
+    >>> print('\n'.join(
+    ...     sorted(user.name for user in dupe_three.users_affected)))
     napoleon-bonaparte
 
 
@@ -1338,7 +1338,7 @@ and a user and returns the set of Bugs for those BugTasks.
     ...     bug_tasks, user=sample_person)
     >>> bugs = sorted(bugs, key=attrgetter('title'))
     >>> for bug in bugs:
-    ...     print bug.title
+    ...     print(bug.title)
     New bug 0
     New bug 1
     New bug 2
@@ -1356,12 +1356,12 @@ If two BugTasks share a Bug, the Bug will only be returned once.
     >>> len(matching_bugs)
     1
 
-    >>> print matching_bugs[0].title
+    >>> print(matching_bugs[0].title)
     New bug 0
 
     >>> for task in sorted(matching_bugs[0].bugtasks,
     ...     key=attrgetter('bugtargetname')):
-    ...     print task.bugtargetname
+    ...     print(task.bugtargetname)
     firefox
     thunderbird
 
@@ -1377,7 +1377,7 @@ private and the user wouldn't be able to see it, it won't be returned.
     ...     bug_tasks, user=no_priv)
 
     >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
-    ...     print bug.title
+    ...     print(bug.title)
     New bug 0
     New bug 1
     New bug 3
@@ -1394,7 +1394,7 @@ returned rather than the duplicate.
     ...     bug_tasks, user=no_priv)
 
     >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
-    ...     print bug.title
+    ...     print(bug.title)
     New bug 0
     New bug 1
     New bug 4
@@ -1409,7 +1409,7 @@ duplicates will be returned by getDistinctBugsForBugTasks().
     ...     bug_tasks, user=no_priv)
 
     >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
-    ...     print bug.title
+    ...     print(bug.title)
     New bug 0
     New bug 1
 
@@ -1419,7 +1419,7 @@ altered by setting its limit parameter, which defaults to 10.
     >>> matching_bugs = getUtility(IBugSet).getDistinctBugsForBugTasks(
     ...     bug_tasks, user=no_priv, limit=1)
     >>> for bug in sorted(matching_bugs, key=attrgetter('title')):
-    ...     print bug.title
+    ...     print(bug.title)
     New bug 0
 
 
@@ -1438,7 +1438,7 @@ fix the bug.
 Bug.getHWSubmissions() returns the HWDB submissions linked to a bug.
 
     >>> for submission in test_bug.getHWSubmissions():
-    ...     print submission.submission_key
+    ...     print(submission.submission_key)
     sample-submission
 
 Private submissions are only included if the current user is an admin
@@ -1449,12 +1449,12 @@ or the owner of a private submission.
     ...     submission_key='private-submission')
     >>> test_bug.linkHWSubmission(private_submission)
     >>> for submission in test_bug.getHWSubmissions(user=sample_person):
-    ...     print submission.submission_key
+    ...     print(submission.submission_key)
     private-submission
     sample-submission
 
     >>> for submission in test_bug.getHWSubmissions(user=foobar):
-    ...     print submission.submission_key
+    ...     print(submission.submission_key)
     private-submission
     sample-submission
 
@@ -1462,17 +1462,17 @@ Other persons do not see Sample Person's private submission.
 
     >>> no_priv = personset.getByEmail('no-priv@canonical.com')
     >>> for submission in test_bug.getHWSubmissions(user=no_priv):
-    ...     print submission.submission_key
+    ...     print(submission.submission_key)
     sample-submission
 
     >>> for submission in test_bug.getHWSubmissions():
-    ...     print submission.submission_key
+    ...     print(submission.submission_key)
     sample-submission
 
 We can also delete links between a HWDB submission and a bug.
 
     >>> test_bug.unlinkHWSubmission(submission)
-    >>> print test_bug.getHWSubmissions().count()
+    >>> print(test_bug.getHWSubmissions().count())
     0
 
 
@@ -1567,9 +1567,9 @@ is set to the time when the latest patch was uploaded.
 If a bug has no attachments, both properties are None.
 
     >>> bug = factory.makeBug()
-    >>> print bug.latest_patch
+    >>> print(bug.latest_patch)
     None
-    >>> print bug.latest_patch_uploaded
+    >>> print(bug.latest_patch_uploaded)
     None
 
 If we add an attachment that is not a patch, the value of
@@ -1582,7 +1582,7 @@ does not change anything right now, let's be sure.)
     >>> attachment_1 = factory.makeBugAttachment(bug)
 
     >>> transaction.commit()
-    >>> print bug.latest_patch_uploaded
+    >>> print(bug.latest_patch_uploaded)
     None
 
 If we declare the existing attachment to be a patch,
@@ -1594,9 +1594,9 @@ Bug.latest_patch.
     >>> attachment_1.type = BugAttachmentType.PATCH
     >>> transaction.commit()
     >>> date_message_1_created = bug.attachments[0].message.datecreated
-    >>> print bug.latest_patch == attachment_1
+    >>> print(bug.latest_patch == attachment_1)
     True
-    >>> print bug.latest_patch_uploaded == date_message_1_created
+    >>> print(bug.latest_patch_uploaded == date_message_1_created)
     True
 
 If we add another attachment, this time declared to be a patch
@@ -1607,9 +1607,9 @@ of message.datecreated for this new attachment.
     >>> attachment_2 = factory.makeBugAttachment(bug, is_patch=True)
     >>> transaction.commit()
     >>> date_message_2_created = bug.attachments[1].message.datecreated
-    >>> print bug.latest_patch == attachment_2
+    >>> print(bug.latest_patch == attachment_2)
     True
-    >>> print bug.latest_patch_uploaded == date_message_2_created
+    >>> print(bug.latest_patch_uploaded == date_message_2_created)
     True
 
 If we say that attachment_1 is not a patch, the values of
@@ -1617,9 +1617,9 @@ bug.latest_patch and bug.latest_patch_uploaded does not change.
 
     >>> attachment_1.type = BugAttachmentType.UNSPECIFIED
     >>> transaction.commit()
-    >>> print bug.latest_patch == attachment_2
+    >>> print(bug.latest_patch == attachment_2)
     True
-    >>> print bug.latest_patch_uploaded == date_message_2_created
+    >>> print(bug.latest_patch_uploaded == date_message_2_created)
     True
 
 If we declare attachment_1 again to be a patch and if we delete
@@ -1629,9 +1629,9 @@ bug.bug.latest_patch_uploaded is its creation time.
     >>> attachment_1.type = BugAttachmentType.PATCH
     >>> attachment_2.removeFromBug(user=bug.owner)
     >>> transaction.commit()
-    >>> print bug.latest_patch == attachment_1
+    >>> print(bug.latest_patch == attachment_1)
     True
-    >>> print bug.latest_patch_uploaded == date_message_1_created
+    >>> print(bug.latest_patch_uploaded == date_message_1_created)
     True
 
 If we delete attachment_1 too, bug.latest_patch and
@@ -1639,7 +1639,7 @@ bug.latest_patch_uploaded are again None.
 
     >>> attachment_1.removeFromBug(user=bug.owner)
     >>> transaction.commit()
-    >>> print bug.latest_patch
+    >>> print(bug.latest_patch)
     None
-    >>> print bug.latest_patch_uploaded
+    >>> print(bug.latest_patch_uploaded)
     None

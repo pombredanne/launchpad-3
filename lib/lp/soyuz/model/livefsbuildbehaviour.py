@@ -1,4 +1,4 @@
-# Copyright 2014-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `LiveFSBuild`.
@@ -24,7 +24,6 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
     BuildFarmJobBehaviourBase,
     )
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.webapp import canonical_url
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
     )
@@ -37,6 +36,8 @@ from lp.soyuz.interfaces.livefsbuild import ILiveFSBuild
 @implementer(IBuildFarmJobBehaviour)
 class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `LiveFSBuild` jobs to slaves."""
+
+    builder_type = "livefs"
 
     def getLogFileName(self):
         das = self.build.distro_arch_series
@@ -76,32 +77,27 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
                 "Missing chroot for %s" % build.distro_arch_series.displayname)
 
     @defer.inlineCallbacks
-    def _extraBuildArgs(self, logger=None):
+    def extraBuildArgs(self, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
         build = self.build
+        base_args = yield super(LiveFSBuildBehaviour, self).extraBuildArgs(
+            logger=logger)
         # Non-trivial metadata values may have been security-wrapped, which
         # is pointless here and just gets in the way of xmlrpclib
         # serialisation.
         args = dict(removeSecurityProxy(build.livefs.metadata))
         if build.metadata_override is not None:
             args.update(removeSecurityProxy(build.metadata_override))
-        args["series"] = build.distro_series.name
+        # Everything else overrides anything in the metadata.
+        args.update(base_args)
         args["pocket"] = build.pocket.name.lower()
-        args["arch_tag"] = build.distro_arch_series.architecturetag
         args["datestamp"] = build.version
         args["archives"], args["trusted_keys"] = (
             yield get_sources_list_for_building(
                 build, build.distro_arch_series, None, logger=logger))
-        args["archive_private"] = build.archive.private
-        args["build_url"] = canonical_url(build)
         defer.returnValue(args)
-
-    @defer.inlineCallbacks
-    def composeBuildRequest(self, logger):
-        args = yield self._extraBuildArgs(logger=logger)
-        defer.returnValue(("livefs", self.build.distro_arch_series, {}, args))
 
     def verifySuccessfulBuild(self):
         """See `IBuildFarmJobBehaviour`."""

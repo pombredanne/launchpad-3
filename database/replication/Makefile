@@ -59,7 +59,7 @@ stagingsetup:
 	# XXX wgrant 2017-11-16: Exclude tsearch2 bits that are
 	# erreonously being dumped now.
 	pg_restore --list ${STAGING_DUMP} | grep -v 'TRIGGER public _sl_' \
-	    | grep -v 'OPERATOR FAMILY ts2' > ${DUMPLIST}
+	    > ${DUMPLIST}
 
 	# Deny new connections to the main DBs and kill any leftovers.
 	${STAGING_PGBOUNCER} -c 'DISABLE launchpad_staging'

@@ -15,7 +15,7 @@ lists his current preferences.
     ...     tag = find_tag_by_id(page, 'preferred-languages')
     ...     return extract_text(tag)
 
-    >>> print find_languages_section(browser.contents)
+    >>> print(find_languages_section(browser.contents))
     Your preferred languages
     Catalan
     Spanish
@@ -25,7 +25,7 @@ The 'Change your preferred languages' link takes him to his
 +editlanguages page.
 
     >>> browser.getLink(id="change-languages").click()
-    >>> print extract_text(find_main_content(browser.contents).find('h1'))
+    >>> print(extract_text(find_main_content(browser.contents).find('h1')))
     Your language preferences
 
 So far, he has Spanish selected as one of his preferred languages, but
@@ -54,12 +54,12 @@ his two translatable languages. The page also displays two messages
 confirming his changes.
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):
-    ...     print message.renderContents()
+    ...     print(message.renderContents())
     Added Welsh to your preferred languages.<br
     />Removed Spanish from your preferred languages.
 
     >>> browser.open('http://translations.launchpad.dev/')
-    >>> print find_languages_section(browser.contents)
+    >>> print(find_languages_section(browser.contents))
     Your preferred languages
     Catalan
     Welsh
@@ -72,7 +72,7 @@ languages page from there.
     >>> # Fake request from a Liechtenstein IP address by setting
     >>> # X-Forwarded-For in the http header, like a proxy would.
     >>> browser.addHeader('X-Forwarded-For', '80.66.224.0')
-    >>> browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
+    >>> browser.addHeader('Accept-Language', b'pt_br, Espa\xf1ol')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/~name12/+editlanguages')
 
@@ -82,7 +82,7 @@ misconfigured (the language name is not spelled in proper UTF-8) but the
 pt_br language code is recognized properly.
 
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-browser-languages')
-    >>> print extract_text(portlet)
+    >>> print(extract_text(portlet))
     Your browser languages:
     Portuguese (Brazil)
 
@@ -91,7 +91,7 @@ range assigned to Liechtenstein.
 
     >>> country_portlet = find_tag_by_id(browser.contents,
     ...                                  'portlet-country-languages')
-    >>> print extract_text(country_portlet.dt)
+    >>> print(extract_text(country_portlet.dt))
     Languages in Liechtenstein
 
 The system has no information about languages spoken in Liechtenstein,
@@ -103,9 +103,9 @@ information.
     ...     list_items = find_tags_by_class(str(spoken_in), 'language')
     ...     return [li.contents for li in list_items]
 
-    >>> print find_spoken_languages(country_portlet)
+    >>> print(find_spoken_languages(country_portlet))
     []
-    >>> print country_portlet.find('a')['href']
+    >>> print(country_portlet.find('a')['href'])
     http://answers.launchpad.dev/launchpad
 
 Back home in Brazil, Joao gets the equivalent for Brazil, where the
@@ -117,7 +117,7 @@ equivalent information is known.
     ...     'http://translations.launchpad.dev/~name12/+editlanguages')
     >>> country_portlet = find_tag_by_id(browser.contents,
     ...                                  'portlet-country-languages')
-    >>> print find_spoken_languages(country_portlet)
+    >>> print(find_spoken_languages(country_portlet))
     [[u'Portuguese (Brazil)']]
 
 We also have a page under the launchpad root, called +editmylanguages,
@@ -154,13 +154,13 @@ preferred languages.
     'Landscape Developers in Launchpad'
 
     >>> browser.getLink('Set preferred languages').click()
-    >>> print extract_text(find_main_content(browser.contents).find('h1'))
+    >>> print(extract_text(find_main_content(browser.contents).find('h1')))
     Landscape Developers's language preferences
 
     >>> browser.getControl('Spanish').selected = True
     >>> browser.getControl('Save').click()
     >>> for message in find_tags_by_class(browser.contents, 'message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     Added Spanish to Landscape Developers&#x27;s preferred languages.
 
 
@@ -175,14 +175,14 @@ Person's page to do it themselves.
     >>> admin_browser.title
     'No Privileges Person in Launchpad'
     >>> admin_browser.getLink('Set preferred languages').click()
-    >>> print extract_text(
-    ...     find_main_content(admin_browser.contents).find('h1'))
+    >>> print(extract_text(
+    ...     find_main_content(admin_browser.contents).find('h1')))
     No Privileges Person's language preferences
 
     >>> admin_browser.getControl('Esperanto').selected = True
     >>> admin_browser.getControl('Save').click()
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     Added Esperanto to No Privileges Person&#x27;s preferred languages.
 
 
@@ -212,20 +212,20 @@ Noi, a new user, visits her home page.
 
 The home page reminds her to set her preferred languages.
 
-    >>> print find_nag(noi_browser)
+    >>> print(find_nag(noi_browser))
     You have not selected your preferred languages.
     Please <a ...>set them now</a>.
 
 The message does not appear for other users looking at Noi's home page.
 
     >>> user_browser.open(noi_home)
-    >>> print find_nag(user_browser)
+    >>> print(find_nag(user_browser))
     None
 
 The nag message links to the languages editing page.
 
     >>> noi_browser.getLink(id='set-languages').click()
-    >>> print noi_browser.title
+    >>> print(noi_browser.title)
     Language preferences...
 
 Once Noi has set one or more preferred languages, the nag message goes
@@ -237,5 +237,5 @@ away.
     >>> logout()
 
     >>> noi_browser.open(noi_home)
-    >>> print find_nag(noi_browser)
+    >>> print(find_nag(noi_browser))
     None

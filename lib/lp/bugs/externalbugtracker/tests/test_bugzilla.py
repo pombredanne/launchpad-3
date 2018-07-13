@@ -1,14 +1,14 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the Bugzilla BugTracker."""
 
 __metaclass__ = type
 
-from StringIO import StringIO
 from xml.parsers.expat import ExpatError
 import xmlrpclib
 
+import responses
 import transaction
 
 from lp.bugs.externalbugtracker.base import UnparsableBugData
@@ -17,7 +17,6 @@ from lp.testing import (
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.fakemethod import FakeMethod
 from lp.testing.layers import ZopelessLayer
 
 
@@ -28,28 +27,26 @@ class TestBugzillaGetRemoteBugBatch(TestCaseWithFactory):
 
     base_url = "http://example.com/"
 
-    def _makeInstrumentedBugzilla(self, page=None, content=None):
-        """Create a `Bugzilla` with a fake urlopen."""
-        if page is None:
-            page = self.factory.getUniqueString()
-        bugzilla = Bugzilla(self.base_url)
-        if content is None:
-            content = "<bugzilla>%s</bugzilla>" % (
-                self.factory.getUniqueString())
-        fake_page = StringIO(content)
-        fake_page.url = self.base_url + page
-        bugzilla.urlopen = FakeMethod(result=fake_page)
-        return bugzilla
-
+    @responses.activate
     def test_post_to_search_form_does_not_crash(self):
-        page = self.factory.getUniqueString()
-        bugzilla = self._makeInstrumentedBugzilla(page)
+        responses.add(
+            "POST", self.base_url + "xml.cgi",
+            body="<bugzilla>%s</bugzilla>" % self.factory.getUniqueString())
+        bugzilla = Bugzilla(self.base_url)
         bugzilla.getRemoteBugBatch([])
 
+    @responses.activate
     def test_repost_on_redirect_does_not_crash(self):
-        bugzilla = self._makeInstrumentedBugzilla()
+        responses.add(
+            "POST", self.base_url + "xml.cgi", status=302,
+            headers={"Location": self.base_url + "buglist.cgi"})
+        responses.add(
+            "POST", self.base_url + "buglist.cgi",
+            body="<bugzilla>%s</bugzilla>" % self.factory.getUniqueString())
+        bugzilla = Bugzilla(self.base_url)
         bugzilla.getRemoteBugBatch([])
 
+    @responses.activate
     def test_reports_invalid_search_result(self):
         # Sometimes bug searches may go wrong, yielding an HTML page
         # instead.  getRemoteBugBatch rejects and reports search results
@@ -61,7 +58,8 @@ class TestBugzillaGetRemoteBugBatch(TestCaseWithFactory):
                 </body>
             </html>
             """
-        bugzilla = self._makeInstrumentedBugzilla(content=result_text)
+        responses.add("POST", self.base_url + "xml.cgi", body=result_text)
+        bugzilla = Bugzilla(self.base_url)
         self.assertRaises(UnparsableBugData, bugzilla.getRemoteBugBatch, [])
 
 

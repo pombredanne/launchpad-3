@@ -12,7 +12,7 @@ give karma for it.
     >>> code_karma_actions = code_category.karmaactions
     >>> for summary in sorted(
     ...     [action.summary for action in code_karma_actions]):
-    ...     print summary
+    ...     print(summary)
     A new revision by the user is available through Launchpad.
     Reviewer commented on a code review.
     User approved a branch for merging.

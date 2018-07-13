@@ -74,8 +74,8 @@ asked which of a list of bugs have been modified since a given date.
     >>> class QueryableRemoteSystem:
     ...     sync_comments = False
     ...     def getModifiedRemoteBugs(self, remote_bug_ids, timestamp):
-    ...         print "getModifiedRemoteBugs(%r, %r)" % (
-    ...             remote_bug_ids, timestamp)
+    ...         print("getModifiedRemoteBugs(%r, %r)" % (
+    ...             remote_bug_ids, timestamp))
     ...         # Return every *other* bug ID for demo purposes.
     ...         return remote_bug_ids[::2]
 

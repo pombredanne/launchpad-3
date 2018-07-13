@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Errors used in the lp/code modules."""
@@ -13,7 +13,9 @@ __all__ = [
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchCreatorNotOwner',
     'BranchExists',
+    'BranchFileNotFound',
     'BranchHasPendingWrites',
+    'BranchHostingFault',
     'BranchTargetError',
     'BranchTypeError',
     'BuildAlreadyPending',
@@ -34,6 +36,7 @@ __all__ = [
     'DiffNotFound',
     'GitDefaultConflict',
     'GitRepositoryBlobNotFound',
+    'GitRepositoryBlobUnsupportedRemote',
     'GitRepositoryCreationException',
     'GitRepositoryCreationFault',
     'GitRepositoryCreationForbidden',
@@ -348,6 +351,34 @@ class UnknownBranchTypeError(Exception):
     """Raised when the user specifies an unrecognized branch type."""
 
 
+class BranchHostingFault(Exception):
+    """Raised when there is a fault fetching information about a branch."""
+
+
+class BranchFileNotFound(BranchHostingFault):
+    """Raised when a file does not exist in a branch."""
+
+    def __init__(self, branch_id, filename=None, file_id=None, rev=None):
+        super(BranchFileNotFound, self).__init__()
+        if (filename is None) == (file_id is None):
+            raise AssertionError(
+                "Exactly one of filename and file_id must be given.")
+        self.branch_id = branch_id
+        self.filename = filename
+        self.file_id = file_id
+        self.rev = rev
+
+    def __str__(self):
+        message = "Branch ID %s has no file " % self.branch_id
+        if self.filename is not None:
+            message += self.filename
+        else:
+            message += "with ID %s" % self.file_id
+        if self.rev is not None:
+            message += " at revision %s" % self.rev
+        return message
+
+
 class GitRepositoryCreationException(Exception):
     """Base class for Git repository creation exceptions."""
 
@@ -421,6 +452,18 @@ class GitRepositoryBlobNotFound(GitRepositoryScanFault):
         if self.rev is not None:
             message += " at revision %s" % self.rev
         return message
+
+
+class GitRepositoryBlobUnsupportedRemote(Exception):
+    """Raised when trying to fetch a blob from an unsupported remote host."""
+
+    def __init__(self, repository_url):
+        super(GitRepositoryBlobUnsupportedRemote, self).__init__()
+        self.repository_url = repository_url
+
+    def __str__(self):
+        return "Cannot fetch blob from external Git repository at %s" % (
+            self.repository_url)
 
 
 class GitRepositoryDeletionFault(Exception):

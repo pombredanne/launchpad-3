@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code for 'processing' 'uploads'. Also see nascentupload.py.
@@ -51,6 +51,7 @@ import os
 import shutil
 import sys
 
+import scandir
 from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
@@ -210,8 +211,7 @@ class UploadProcessor:
             alphabetically sorted.
         """
         return sorted(
-            dir_name for dir_name in os.listdir(fsroot)
-            if os.path.isdir(os.path.join(fsroot, dir_name)))
+            entry.name for entry in scandir.scandir(fsroot) if entry.is_dir())
 
 
 class UploadHandler:
@@ -258,7 +258,7 @@ class UploadHandler:
         """
         changes_files = []
 
-        for dirpath, dirnames, filenames in os.walk(self.upload_path):
+        for dirpath, dirnames, filenames in scandir.walk(self.upload_path):
             relative_path = dirpath[len(self.upload_path) + 1:]
             for filename in filenames:
                 if filename.endswith(".changes"):
@@ -741,7 +741,7 @@ def _getDistributionAndSuite(parts, exc_type):
         % '/'.join(parts))
 
     # Uploads with undefined distribution defaults to 'ubuntu'.
-    if len(parts) == 0 or parts[0] is '':
+    if len(parts) == 0 or parts[0] == '':
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         return (ubuntu, None)
 

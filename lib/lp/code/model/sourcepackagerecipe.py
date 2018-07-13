@@ -395,11 +395,13 @@ class SourcePackageRecipe(Storm):
         """Return the median duration of builds of this recipe."""
         store = IStore(self)
         result = store.find(
-            SourcePackageRecipeBuild,
+            (SourcePackageRecipeBuild.date_started,
+             SourcePackageRecipeBuild.date_finished),
             SourcePackageRecipeBuild.recipe == self.id,
+            SourcePackageRecipeBuild.status == BuildStatus.FULLYBUILT,
             SourcePackageRecipeBuild.date_finished != None)
-        durations = [
-            build.date_finished - build.date_started for build in result]
+        result.order_by(Desc(SourcePackageRecipeBuild.date_finished))
+        durations = [row[1] - row[0] for row in result[:9]]
         if len(durations) == 0:
             return None
         durations.sort(reverse=True)

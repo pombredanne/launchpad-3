@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -192,7 +192,10 @@ from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
     )
-from lp.snappy.interfaces.snap import ISnap
+from lp.snappy.interfaces.snap import (
+    ISnap,
+    ISnapBuildRequest,
+    )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.snappy.interfaces.snappyseries import (
     ISnappySeries,
@@ -3220,6 +3223,15 @@ class AdminSnap(AuthorizationBase):
         return (
             user.in_ppa_self_admins
             and EditSnap(self.obj).checkAuthenticated(user))
+
+
+class ViewSnapBuildRequest(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ISnapBuildRequest
+
+    def __init__(self, obj):
+        super(ViewSnapBuildRequest, self).__init__(
+            obj, obj.snap, 'launchpad.View')
 
 
 class ViewSnapBuild(DelegatedAuthorization):

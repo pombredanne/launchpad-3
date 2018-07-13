@@ -50,8 +50,8 @@ status and resolution, to make the test more readable.
     >>> for status, resolution in python_bugs_example_statuses:
     ...     status_string = convert_python_status(status, resolution)
     ...     status_converted = python_bugs.convertRemoteStatus(status_string)
-    ...     print '(%s, %s) --> %s --> %s' % (
-    ...         status, resolution, status_string, status_converted)
+    ...     print('(%s, %s) --> %s --> %s' % (
+    ...         status, resolution, status_string, status_converted))
     (open, None) --> 1:None --> New
     (open, accepted) --> 1:1 --> Confirmed
     (open, duplicate) --> 1:2 --> Confirmed

@@ -1,0 +1,10 @@
+Launchpad only accepts signed email from your address.
+
+If you want to use the Launchpad email interface, you will need to go here
+to import your OpenPGP key and then use it to sign your messages:
+
+  %(import_url)s
+
+If you did not knowingly send email to Launchpad, then spammers may be
+forging messages as if they were sent from your address, perhaps due to
+a compromised address book, and you can safely ignore this message.

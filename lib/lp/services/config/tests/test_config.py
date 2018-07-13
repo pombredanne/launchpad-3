@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We know we are not using root and handlers.
@@ -16,9 +16,10 @@ import os
 import unittest
 
 from fixtures import TempDir
+import importlib_resources
 from lazr.config import ConfigSchema
 from lazr.config.interfaces import ConfigErrors
-import pkg_resources
+import scandir
 import testtools
 import ZConfig
 
@@ -29,8 +30,8 @@ from lp.services.config.fixture import ConfigUseFixture
 EXCLUDED_CONFIGS = ['lpnet-template']
 
 # Calculate some landmark paths.
-schema_file = pkg_resources.resource_filename('zope.app.server', 'schema.xml')
-schema = ZConfig.loadSchema(schema_file)
+with importlib_resources.path('zope.app.server', 'schema.xml') as schema_file:
+    schema = ZConfig.loadSchema(str(schema_file))
 
 here = os.path.dirname(lp.services.config.__file__)
 lazr_schema_file = os.path.join(here, 'schema-lazr.conf')
@@ -150,7 +151,7 @@ def test_suite():
     load_testcase = unittest.defaultTestLoader.loadTestsFromTestCase
     # Add a test for every launchpad[.lazr].conf file in our tree.
     for config_dir in lp.services.config.CONFIG_ROOT_DIRS:
-        for dirpath, dirnames, filenames in os.walk(config_dir):
+        for dirpath, dirnames, filenames in scandir.walk(config_dir):
             if os.path.basename(dirpath) in EXCLUDED_CONFIGS:
                 del dirnames[:]  # Don't look in subdirectories.
                 continue

@@ -12,7 +12,7 @@ the current version, the published component and the published section.
 These latter two come specifically from the publishing records, so take
 into account any overrides applied since the package was uploaded.
 
-    >>> print extract_text(browser.contents)
+    >>> print(extract_text(browser.contents))
     "alsa-utils" versions published in Ubuntu
     Warty (1.0.9a-4): main/base
     Hoary (1.0.9a-4ubuntu1): main/base
@@ -20,9 +20,9 @@ into account any overrides applied since the package was uploaded.
 
 Series and versions are linkified.
 
-    >>> print browser.getLink('Hoary').url
+    >>> print(browser.getLink('Hoary').url)
     http://bugs.launchpad.dev/ubuntu/hoary/+source/alsa-utils
-    >>> print browser.getLink('1.0.9a-4').url
+    >>> print(browser.getLink('1.0.9a-4').url)
     http://launchpad.dev/ubuntu/+source/alsa-utils/1.0.9a-4
 
 When a source package has never been published, the portlet will say so.
@@ -31,7 +31,7 @@ When a source package has never been published, the portlet will say so.
     ...     "http://launchpad.dev/ubuntu/+source/a52dec/"
     ...     "+portlet-publishing-details")
 
-    >>> print extract_text(browser.contents)
+    >>> print(extract_text(browser.contents))
     "a52dec" versions published in Ubuntu
     This source is not published in Ubuntu
 
@@ -43,6 +43,6 @@ only Warty is active.
     ...     "http://launchpad.dev/ubuntu/+source/cdrkit/"
     ...     "+portlet-publishing-details")
 
-    >>> print extract_text(browser.contents)
+    >>> print(extract_text(browser.contents))
     "cdrkit" versions published in Ubuntu
     Warty (1.0): main/editors

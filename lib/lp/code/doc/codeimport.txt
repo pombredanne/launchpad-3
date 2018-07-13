@@ -59,7 +59,7 @@ Similarly, target_rcs_type takes values from 'TargetRevisionControlSystems'.
     ...     TargetRevisionControlSystems,
     ...     )
     >>> for item in RevisionControlSystems:
-    ...     print item.title
+    ...     print(item.title)
     Concurrent Versions System
     Subversion via CSCVS
     Subversion via bzr-svn
@@ -67,7 +67,7 @@ Similarly, target_rcs_type takes values from 'TargetRevisionControlSystems'.
     Mercurial
     Bazaar
     >>> for item in TargetRevisionControlSystems:
-    ...     print item.title
+    ...     print(item.title)
     Bazaar
     Git
 
@@ -105,13 +105,13 @@ three members of the vcs-imports team.
     3
     >>> import email
     >>> message = email.message_from_string(stub.test_emails[0][2])
-    >>> print message['subject']
+    >>> print(message['subject'])
     New code import: ~import-person/widget/trunk-cvs
-    >>> print message['X-Launchpad-Message-Rationale']
+    >>> print(message['X-Launchpad-Message-Rationale'])
     Operator @vcs-imports
-    >>> print message['X-Launchpad-Message-For']
+    >>> print(message['X-Launchpad-Message-For'])
     vcs-imports
-    >>> print message.get_payload(decode=True)
+    >>> print(message.get_payload(decode=True))
     A new CVS code import has been requested by Code Import Person:
         http://code.launchpad.dev/~import-person/widget/trunk-cvs
     from
@@ -230,7 +230,7 @@ any changes were made, or None if not.
 
     >>> code_import = factory.makeProductCodeImport(
     ...     svn_branch_url='http://svn.example.com/project')
-    >>> print code_import.review_status.title
+    >>> print(code_import.review_status.title)
     Reviewed
 
 When an import operator updates the code import emails are sent out to
@@ -336,9 +336,9 @@ set in the Launchpad configuration system.
 
 By default, code imports are created with an unspecified update interval.
 
-    >>> print cvs_import.update_interval
+    >>> print(cvs_import.update_interval)
     None
-    >>> print svn_import.update_interval
+    >>> print(svn_import.update_interval)
     None
 
 When the update interval interval is unspecified, the effective update
@@ -442,16 +442,16 @@ We've registered the ICodeImportSet utility on the 'code' part of the
 site:
 
     >>> from lp.services.webapp import canonical_url
-    >>> print canonical_url(code_import_set)
+    >>> print(canonical_url(code_import_set))
     http://code.launchpad.dev/+code-imports
 
 The code imports themselves have a canonical URL that is subordinate of
 the branches, though they cannot currently be viewed that way in the webapp,
 only over the API.
 
-    >>> print canonical_url(svn_import.branch)
+    >>> print(canonical_url(svn_import.branch))
     http://code.launchpad.dev/~import-person/widget/trunk-svn
-    >>> print canonical_url(svn_import)
+    >>> print(canonical_url(svn_import))
     http://code.launchpad.dev/~import-person/widget/trunk-svn/+code-import
 
 
@@ -507,8 +507,8 @@ CVS details are displayed in a similar way.
     >>> login('david.allouche@canonical.com')
     >>> data = {'cvs_root': ':pserver:anoncvs@cvs.example.com:/var/cvsroot'}
     >>> modify_event = cvs_import.updateFromData(data, nopriv)
-    >>> print make_email_body_for_code_import_update(
-    ...     cvs_import, modify_event, None)
+    >>> print(make_email_body_for_code_import_update(
+    ...     cvs_import, modify_event, None))
     ~import-person/widget/trunk-cvs is now being imported from:
         hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
     instead of:
@@ -518,8 +518,8 @@ For Git.
 
     >>> data = {'url': 'git://git.example.com/goodbye.git'}
     >>> modify_event = git_import.updateFromData(data, nopriv)
-    >>> print make_email_body_for_code_import_update(
-    ...     git_import, modify_event, None)
+    >>> print(make_email_body_for_code_import_update(
+    ...     git_import, modify_event, None))
     ~import-person/widget/trunk-git is now being imported from:
         git://git.example.com/goodbye.git
     instead of:
@@ -529,8 +529,8 @@ Imports via bzr-svn are also similar.
 
     >>> data = {'url': 'http://svn.example.com/for-bzr-svn/trunk'}
     >>> modify_event = svn_import.updateFromData(data, nopriv)
-    >>> print make_email_body_for_code_import_update(
-    ...     svn_import, modify_event, None)
+    >>> print(make_email_body_for_code_import_update(
+    ...     svn_import, modify_event, None))
     ~import-person/widget/trunk-svn is now being imported from:
         http://svn.example.com/for-bzr-svn/trunk
     instead of:
@@ -541,20 +541,26 @@ which is also described in the email that is sent.
 
     >>> data = {'whiteboard': 'stuff'}
     >>> modify_event = cvs_import.updateFromData(data, nopriv)
-    >>> print make_email_body_for_code_import_update(
-    ...     cvs_import, modify_event, 'stuff')
+    >>> print(make_email_body_for_code_import_update(
+    ...     cvs_import, modify_event, 'stuff'))
     The branch whiteboard was changed to:
     <BLANKLINE>
     stuff
-    >>> print cvs_import.branch.whiteboard
+    <BLANKLINE>
+    This code import is from:
+        hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
+    >>> print(cvs_import.branch.whiteboard)
     stuff
 
 Setting the whiteboard to None is how it is deleted.
 
     >>> data = {'whiteboard': None}
     >>> modify_event = cvs_import.updateFromData(data, nopriv)
-    >>> print make_email_body_for_code_import_update(
-    ...     cvs_import, modify_event, '')
+    >>> print(make_email_body_for_code_import_update(
+    ...     cvs_import, modify_event, ''))
     The branch whiteboard was deleted.
-    >>> print cvs_import.branch.whiteboard
+    <BLANKLINE>
+    This code import is from:
+        hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
+    >>> print(cvs_import.branch.whiteboard)
     None

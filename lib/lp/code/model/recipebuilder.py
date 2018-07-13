@@ -1,4 +1,4 @@
-# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code to build recipes on the buildfarm."""
@@ -24,7 +24,7 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
     )
 from lp.services.config import config
-from lp.services.webapp import canonical_url
+from lp.services.propertycache import cachedproperty
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component,
     get_sources_list_for_building,
@@ -36,22 +36,37 @@ from lp.soyuz.adapters.archivedependencies import (
 class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
     """How to build a recipe on the build farm."""
 
+    builder_type = "sourcepackagerecipe"
+
     # The list of build status values for which email notifications are
     # allowed to be sent. It is up to each callback as to whether it will
     # consider sending a notification but it won't do so if the status is not
     # in this list.
     ALLOWED_STATUS_NOTIFICATIONS = ['PACKAGEFAIL', 'DEPFAIL', 'CHROOTFAIL']
 
+    @cachedproperty
+    def distro_arch_series(self):
+        if self.build is not None and self._builder is not None:
+            return self.build.distroseries.getDistroArchSeriesByProcessor(
+                self._builder.processor)
+        else:
+            return None
+
     @defer.inlineCallbacks
-    def _extraBuildArgs(self, distroarchseries, logger=None):
+    def extraBuildArgs(self, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
+        if self.distro_arch_series is None:
+            raise CannotBuild(
+                "Unable to find distroarchseries for %s in %s" %
+                (self._builder.processor.name,
+                 self.build.distroseries.displayname))
+
         # Build extra arguments.
-        args = {}
-        args['series'] = self.build.distroseries.name
+        args = yield super(RecipeBuildBehaviour, self).extraBuildArgs(
+            logger=logger)
         args['suite'] = self.build.distroseries.getSuite(self.build.pocket)
-        args['arch_tag'] = distroarchseries.architecturetag
         requester = self.build.requester
         if requester.preferredemail is None:
             # Use a constant, known, name and email.
@@ -71,11 +86,9 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
             None).name
         args['archives'], args['trusted_keys'] = (
             yield get_sources_list_for_building(
-                self.build, distroarchseries, None,
+                self.build, self.distro_arch_series, None,
                 tools_source=config.builddmaster.bzr_builder_sources_list,
                 logger=logger))
-        args['archive_private'] = self.build.archive.private
-        args['build_url'] = canonical_url(self.build)
         # XXX cjwatson 2017-07-26: This duplicates "series", which is common
         # to all build types; this name for it is deprecated and should be
         # removed once launchpad-buildd no longer requires it.
@@ -83,18 +96,6 @@ class RecipeBuildBehaviour(BuildFarmJobBehaviourBase):
         if self.build.recipe.base_git_repository is not None:
             args['git'] = True
         defer.returnValue(args)
-
-    @defer.inlineCallbacks
-    def composeBuildRequest(self, logger):
-        das = self.build.distroseries.getDistroArchSeriesByProcessor(
-            self._builder.processor)
-        if das is None:
-            raise CannotBuild(
-                "Unable to find distroarchseries for %s in %s" %
-                (self._builder.processor.name,
-                 self.build.distroseries.displayname))
-        args = yield self._extraBuildArgs(das, logger=logger)
-        defer.returnValue(("sourcepackagerecipe", das, {}, args))
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.

@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -76,6 +76,7 @@ from lp.services.webapp.errorlog import (
     ScriptRequest,
     )
 from lp.services.worlddata.model.country import Country
+from lp.soyuz.adapters.proxiedsourcefiles import ProxiedSourceLibraryFileAlias
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingPriority,
@@ -140,6 +141,12 @@ def get_component(archive, distroseries, component):
 def proxied_urls(files, parent):
     """Run the files passed through `ProxiedLibraryFileAlias`."""
     return [ProxiedLibraryFileAlias(file, parent).http_url for file in files]
+
+
+def proxied_source_urls(files, parent):
+    """Return the files passed through `ProxiedSourceLibraryFileAlias`."""
+    return [
+        ProxiedSourceLibraryFileAlias(file, parent).http_url for file in files]
 
 
 class ArchivePublisherBase:
@@ -548,8 +555,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             SourcePackageReleaseFile.sourcepackagerelease ==
                 SourcePackageRelease.id,
             SourcePackageRelease.id == self.sourcepackagereleaseID)
-        source_urls = proxied_urls(
-            [source for source, _ in sources], self.archive)
+        source_urls = proxied_source_urls(
+            [source for source, _ in sources], self)
         if include_meta:
             meta = [
                 (content.filesize, content.sha256) for _, content in sources]
@@ -1440,6 +1447,22 @@ class PublishingSet:
             Desc(BinaryPackagePublishingHistory.id))
 
         return result_set
+
+    def getBuiltPackagesSummaryForSourcePublication(self, source_publication):
+        """See `IPublishingSet`."""
+        result_set = IStore(BinaryPackageName).find(
+            (BinaryPackageName.name, BinaryPackageRelease.summary,
+             DistroArchSeries.architecturetag,
+             BinaryPackagePublishingHistory.id),
+            self._getSourceBinaryJoinForSources([source_publication.id]))
+        result_set.config(distinct=(BinaryPackageName.name,))
+        result_set.order_by(
+            BinaryPackageName.name,
+            DistroArchSeries.architecturetag,
+            Desc(BinaryPackagePublishingHistory.id))
+        return [
+            {"binarypackagename": name, "summary": summary}
+            for name, summary, _, _ in result_set]
 
     def getActiveArchSpecificPublications(self, sourcepackagerelease, archive,
                                           distroseries, pocket):

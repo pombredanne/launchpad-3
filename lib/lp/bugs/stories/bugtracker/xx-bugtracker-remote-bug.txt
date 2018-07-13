@@ -24,7 +24,7 @@ then a list of the relevant Launchpad bugs:
   * Answers - http://answers.launchpad.dev/
   Main heading: Remote Bug #42 in The Mozilla.org Bug Tracker
 
-  >>> print extract_text(find_tag_by_id(browser.contents, 'watchedbugs'))
+  >>> print(extract_text(find_tag_by_id(browser.contents, 'watchedbugs')))
   Bug #1: Firefox does not support SVG
   Bug #2: Blackhole Trash folder
 
@@ -32,7 +32,7 @@ If there is only a single bug watching the remote bug, then we skip
 the list page and redirect the user directly to that bug's page:
 
   >>> browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/2000')
-  >>> print browser.url
+  >>> print(browser.url)
   http://bugs.launchpad.dev/firefox/+bug/1
 
 If there are no bug watches for a particular remote bug, then a Not
@@ -77,14 +77,14 @@ List Launchpad bugs watching Mozilla bug 42:
   * Answers - http://answers.launchpad.dev/
   Main heading: Remote Bug #42 in The Mozilla.org Bug Tracker
 
-  >>> print extract_text(find_tag_by_id(anon_browser.contents, 'watchedbugs'))
+  >>> print(extract_text(find_tag_by_id(anon_browser.contents, 'watchedbugs')))
   Bug #1: (Private)
   Bug #2: Blackhole Trash folder
 
 The bug title is still provided if the user can view the private bug:
 
   >>> browser.open('http://launchpad.dev/bugs/bugtrackers/mozilla.org/42')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'watchedbugs'))
+  >>> print(extract_text(find_tag_by_id(browser.contents, 'watchedbugs')))
   Bug #1: Firefox does not support SVG
   Bug #2: Blackhole Trash folder
 

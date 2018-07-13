@@ -21,7 +21,7 @@ It's view provided latest_faqs to get the FAQs to display.
     >>> view = create_initialized_view(
     ...     firefox, '+portlet-listfaqs', principal=firefox.owner)
     >>> for faq in view.latest_faqs:
-    ...     print faq.title
+    ...     print(faq.title)
     A FAQ
     What's the keyboard shortcut for [random feature]?
     How do I install plugins (Shockwave, QuickTime, etc.)?
@@ -29,31 +29,31 @@ It's view provided latest_faqs to get the FAQs to display.
     How do I install Extensions?
 
     >>> content = find_tag_by_id(view.render(), 'portlet-latest-faqs')
-    >>> print content.h2
+    >>> print(content.h2)
     <h2>...FAQs for Mozilla Firefox </h2>
 
-    >>> print extract_text(content.ul)
+    >>> print(extract_text(content.ul))
     A FAQ
     What's the keyboard shortcut for [random feature]?...
 
 Each FAQ is linked.
 
-    >>> print content.find('a', {'class': 'sprite faq'})
+    >>> print(content.find('a', {'class': 'sprite faq'}))
     <a class="..." href="http://answers.../firefox/+faq/...">A FAQ</a>
 
 The portlet has a form to search FAQs. The view provides the action URL so
 that the form works from any page.
 
-    >>> print view.portlet_action
+    >>> print(view.portlet_action)
     http://answers.launchpad.dev/firefox/+faqs
 
-    >>> print content.form['action']
+    >>> print(content.form['action'])
     http://answers.launchpad.dev/firefox/+faqs
 
 The portlet provides a link to create a FAQ when the user that has append
 permission, such as the project owner.
 
-    >>> print content.find('a', {'class': 'menu-link-create_faq sprite add'})
+    >>> print(content.find('a', {'class': 'menu-link-create_faq sprite add'}))
     <a class="..." href=".../firefox/+createfaq">Create a new FAQ</a>
 
 Other users do not see the link.
@@ -63,5 +63,5 @@ Other users do not see the link.
     >>> view = create_initialized_view(
     ...     firefox, '+portlet-listfaqs', principal=user)
     >>> content = find_tag_by_id(view.render(), 'portlet-latest-faqs')
-    >>> print content.find('a', {'class': 'menu-link-create_faq sprite add'})
+    >>> print(content.find('a', {'class': 'menu-link-create_faq sprite add'}))
     None

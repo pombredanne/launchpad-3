@@ -53,29 +53,29 @@ IDistributionSourcePackages for that distribution.
 A target's parent can be retrieved using the
 `parent_subscription_target` property.
 
-    >>> print evolution_package.parent_subscription_target.displayname
+    >>> print(evolution_package.parent_subscription_target.displayname)
     Ubuntu
-    >>> print ubuntu.parent_subscription_target
+    >>> print(ubuntu.parent_subscription_target)
     None
-    >>> print firefox.parent_subscription_target.displayname
+    >>> print(firefox.parent_subscription_target.displayname)
     The Mozilla Project
 
     >>> ff_milestone = firefox.getMilestone('1.0')
     >>> ff_milestone.parent_subscription_target == firefox
     True
-    >>> print ff_milestone.parent_subscription_target.displayname
+    >>> print(ff_milestone.parent_subscription_target.displayname)
     Mozilla Firefox
 
     >>> ff_trunk = firefox.getSeries('trunk')
     >>> ff_trunk.parent_subscription_target == firefox
     True
-    >>> print ff_trunk.parent_subscription_target.displayname
+    >>> print(ff_trunk.parent_subscription_target.displayname)
     Mozilla Firefox
 
     >>> warty = ubuntu.getSeries('warty')
     >>> warty.parent_subscription_target == ubuntu
     True
-    >>> print warty.parent_subscription_target.displayname
+    >>> print(warty.parent_subscription_target.displayname)
     Ubuntu
 
 When notifying subscribers of bug activity, both subscribers to the
@@ -88,9 +88,9 @@ Target type display
 Structural subscription targets have a `target_type_display` attribute, which
 can be used to refer to them in display.
 
-    >>> print firefox.target_type_display
+    >>> print(firefox.target_type_display)
     project
-    >>> print evolution_package.target_type_display
+    >>> print(evolution_package.target_type_display)
     package
-    >>> print ff_milestone.target_type_display
+    >>> print(ff_milestone.target_type_display)
     milestone

@@ -12,18 +12,18 @@ from datetime import (
     timedelta,
     )
 import json
+from textwrap import dedent
 from urlparse import urlsplit
 
-from httmock import (
-    all_requests,
-    HTTMock,
-    )
+from fixtures import MockPatch
 from lazr.lifecycle.event import ObjectModifiedEvent
 from pymacaroons import Macaroon
 import pytz
+import responses
 from storm.exceptions import LostObjectError
 from storm.locals import Store
 from testtools.matchers import (
+    AfterPreprocessing,
     ContainsDict,
     Equals,
     Is,
@@ -46,6 +46,16 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
+from lp.code.errors import (
+    BranchFileNotFound,
+    BranchHostingFault,
+    GitRepositoryBlobNotFound,
+    GitRepositoryScanFault,
+    )
+from lp.code.tests.helpers import (
+    BranchHostingFixture,
+    GitHostingFixture,
+    )
 from lp.registry.enums import PersonVisibility
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -60,12 +70,17 @@ from lp.services.features.testing import (
     FeatureFixture,
     MemoryFeatureFixture,
     )
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.runner import JobRunner
 from lp.services.log.logger import BufferLogger
 from lp.services.propertycache import clear_property_cache
+from lp.services.timeout import default_timeout
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
+    CannotFetchSnapcraftYaml,
     CannotModifySnapProcessor,
+    CannotParseSnapcraftYaml,
     ISnap,
     ISnapSet,
     ISnapView,
@@ -73,6 +88,7 @@ from lp.snappy.interfaces.snap import (
     SNAP_TESTING_FLAGS,
     SnapBuildAlreadyPending,
     SnapBuildDisallowedArchitecture,
+    SnapBuildRequestStatus,
     SnapPrivacyMismatch,
     SnapPrivateFeatureDisabled,
     )
@@ -81,6 +97,7 @@ from lp.snappy.interfaces.snapbuild import (
     ISnapBuildSet,
     )
 from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
+from lp.snappy.interfaces.snapjob import ISnapRequestBuildsJobSource
 from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snap import SnapSet
 from lp.snappy.model.snapbuild import SnapFile
@@ -350,6 +367,104 @@ class TestSnap(TestCaseWithFactory):
         snap.requestBuild(
             snap.owner, snap.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.UPDATES)
+
+    def test_requestBuilds(self):
+        # requestBuilds schedules a job and returns a corresponding
+        # SnapBuildRequest.
+        snap = self.factory.makeSnap()
+        with person_logged_in(snap.owner.teamowner):
+            request = snap.requestBuilds(
+                snap.owner.teamowner, snap.distro_series.main_archive,
+                PackagePublishingPocket.UPDATES,
+                channels={"snapcraft": "edge"})
+        self.assertThat(request, MatchesStructure(
+            snap=Equals(snap),
+            status=Equals(SnapBuildRequestStatus.PENDING),
+            error_message=Is(None),
+            builds=AfterPreprocessing(set, MatchesSetwise())))
+        [job] = getUtility(ISnapRequestBuildsJobSource).iterReady()
+        self.assertThat(job, MatchesStructure(
+            job_id=Equals(request.id),
+            job=MatchesStructure.byEquality(status=JobStatus.WAITING),
+            snap=Equals(snap),
+            requester=Equals(snap.owner.teamowner),
+            archive=Equals(snap.distro_series.main_archive),
+            pocket=Equals(PackagePublishingPocket.UPDATES),
+            channels=Equals({"snapcraft": "edge"})))
+
+    def makeRequestBuildsJob(self, arch_tags, git_ref=None):
+        distro = self.factory.makeDistribution()
+        distroseries = self.factory.makeDistroSeries(distribution=distro)
+        processors = [
+            self.factory.makeProcessor(
+                name=arch_tag, supports_virtualized=True)
+            for arch_tag in arch_tags]
+        for processor in processors:
+            das = self.factory.makeDistroArchSeries(
+                distroseries=distroseries, architecturetag=processor.name,
+                processor=processor)
+            das.addOrUpdateChroot(self.factory.makeLibraryFileAlias(
+                filename="fake_chroot.tar.gz", db_only=True))
+        if git_ref is None:
+            [git_ref] = self.factory.makeGitRefs()
+        snap = self.factory.makeSnap(
+            git_ref=git_ref, distroseries=distroseries, processors=processors)
+        return getUtility(ISnapRequestBuildsJobSource).create(
+            snap, snap.owner.teamowner, distro.main_archive,
+            PackagePublishingPocket.RELEASE, {"snapcraft": "edge"})
+
+    def assertRequestedBuildsMatch(self, builds, job, arch_tags):
+        self.assertThat(builds, MatchesSetwise(
+            *(MatchesStructure(
+                requester=Equals(job.requester),
+                snap=Equals(job.snap),
+                archive=Equals(job.archive),
+                distro_arch_series=Equals(job.snap.distro_series[arch_tag]),
+                pocket=Equals(job.pocket),
+                channels=Equals(job.channels))
+              for arch_tag in arch_tags)))
+
+    def test_requestBuildsFromJob_restricts_explicit_list(self):
+        # requestBuildsFromJob limits builds targeted at an explicit list of
+        # architectures to those allowed for the snap.
+        self.useFixture(GitHostingFixture(blob=dedent("""\
+            architectures:
+              - build-on: sparc
+              - build-on: i386
+              - build-on: avr
+            """)))
+        job = self.makeRequestBuildsJob(["sparc"])
+        with person_logged_in(job.requester):
+            builds = job.snap.requestBuildsFromJob(
+                job.requester, job.archive, job.pocket,
+                removeSecurityProxy(job.channels))
+        self.assertRequestedBuildsMatch(builds, job, ["sparc"])
+
+    def test_requestBuildsFromJob_no_explicit_architectures(self):
+        # If the snap doesn't specify any architectures,
+        # requestBuildsFromJob requests builds for all configured
+        # architectures.
+        self.useFixture(GitHostingFixture(blob="name: foo\n"))
+        job = self.makeRequestBuildsJob(["mips64el", "riscv64"])
+        with person_logged_in(job.requester):
+            builds = job.snap.requestBuildsFromJob(
+                job.requester, job.archive, job.pocket,
+                removeSecurityProxy(job.channels))
+        self.assertRequestedBuildsMatch(builds, job, ["mips64el", "riscv64"])
+
+    def test_requestBuilds_unsupported_remote(self):
+        # If the snap is based on an external Git repository from which we
+        # don't support fetching blobs, requestBuildsFromJob falls back to
+        # requesting builds for all configured architectures.
+        git_ref = self.factory.makeGitRefRemote(
+            repository_url="https://example.com/foo.git")
+        job = self.makeRequestBuildsJob(
+            ["mips64el", "riscv64"], git_ref=git_ref)
+        with person_logged_in(job.requester):
+            builds = job.snap.requestBuildsFromJob(
+                job.requester, job.archive, job.pocket,
+                removeSecurityProxy(job.channels))
+        self.assertRequestedBuildsMatch(builds, job, ["mips64el", "riscv64"])
 
     def test_requestAutoBuilds(self):
         # requestAutoBuilds creates new builds for all configured
@@ -977,6 +1092,160 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertContentEqual(
             [snaps[0], snaps[2], snaps[4], snaps[6]],
             getUtility(ISnapSet).findByURLPrefixes(prefixes, owner=owners[0]))
+
+    def test_getSnapcraftYaml_bzr_snap_snapcraft_yaml(self):
+        def getInventory(unique_name, dirname, *args, **kwargs):
+            if dirname == "snap":
+                return {"filelist": [{
+                    "filename": "snapcraft.yaml", "file_id": "some-file-id",
+                    }]}
+            else:
+                raise BranchFileNotFound("dummy", dirname)
+
+        self.useFixture(BranchHostingFixture(
+            blob=b"name: test-snap")).getInventory = getInventory
+        branch = self.factory.makeBranch()
+        self.assertEqual(
+            {"name": "test-snap"},
+            getUtility(ISnapSet).getSnapcraftYaml(branch))
+
+    def test_getSnapcraftYaml_bzr_plain_snapcraft_yaml(self):
+        def getInventory(unique_name, dirname, *args, **kwargs):
+            if dirname == "":
+                return {"filelist": [{
+                    "filename": "snapcraft.yaml", "file_id": "some-file-id",
+                    }]}
+            else:
+                raise BranchFileNotFound("dummy", dirname)
+
+        self.useFixture(BranchHostingFixture(
+            blob=b"name: test-snap")).getInventory = getInventory
+        branch = self.factory.makeBranch()
+        self.assertEqual(
+            {"name": "test-snap"},
+            getUtility(ISnapSet).getSnapcraftYaml(branch))
+
+    def test_getSnapcraftYaml_bzr_dot_snapcraft_yaml(self):
+        def getInventory(unique_name, dirname, *args, **kwargs):
+            if dirname == "":
+                return {"filelist": [{
+                    "filename": ".snapcraft.yaml", "file_id": "some-file-id",
+                    }]}
+            else:
+                raise BranchFileNotFound("dummy", dirname)
+
+        self.useFixture(BranchHostingFixture(
+            blob=b"name: test-snap")).getInventory = getInventory
+        branch = self.factory.makeBranch()
+        self.assertEqual(
+            {"name": "test-snap"},
+            getUtility(ISnapSet).getSnapcraftYaml(branch))
+
+    def test_getSnapcraftYaml_bzr_error(self):
+        self.useFixture(BranchHostingFixture()).getInventory = FakeMethod(
+            failure=BranchHostingFault)
+        branch = self.factory.makeBranch()
+        self.assertRaises(
+            CannotFetchSnapcraftYaml,
+            getUtility(ISnapSet).getSnapcraftYaml, branch)
+
+    def test_getSnapcraftYaml_git_snap_snapcraft_yaml(self):
+        def getBlob(path, filename, *args, **kwargs):
+            if filename == "snap/snapcraft.yaml":
+                return b"name: test-snap"
+            else:
+                raise GitRepositoryBlobNotFound("dummy", filename)
+
+        self.useFixture(GitHostingFixture()).getBlob = getBlob
+        [git_ref] = self.factory.makeGitRefs()
+        self.assertEqual(
+            {"name": "test-snap"},
+            getUtility(ISnapSet).getSnapcraftYaml(git_ref))
+
+    def test_getSnapcraftYaml_git_plain_snapcraft_yaml(self):
+        def getBlob(path, filename, *args, **kwargs):
+            if filename == "snapcraft.yaml":
+                return b"name: test-snap"
+            else:
+                raise GitRepositoryBlobNotFound("dummy", filename)
+
+        self.useFixture(GitHostingFixture()).getBlob = getBlob
+        [git_ref] = self.factory.makeGitRefs()
+        self.assertEqual(
+            {"name": "test-snap"},
+            getUtility(ISnapSet).getSnapcraftYaml(git_ref))
+
+    def test_getSnapcraftYaml_git_dot_snapcraft_yaml(self):
+        def getBlob(path, filename, *args, **kwargs):
+            if filename == ".snapcraft.yaml":
+                return b"name: test-snap"
+            else:
+                raise GitRepositoryBlobNotFound("dummy", filename)
+
+        self.useFixture(GitHostingFixture()).getBlob = getBlob
+        [git_ref] = self.factory.makeGitRefs()
+        self.assertEqual(
+            {"name": "test-snap"},
+            getUtility(ISnapSet).getSnapcraftYaml(git_ref))
+
+    def test_getSnapcraftYaml_git_error(self):
+        self.useFixture(GitHostingFixture()).getBlob = FakeMethod(
+            failure=GitRepositoryScanFault)
+        [git_ref] = self.factory.makeGitRefs()
+        self.assertRaises(
+            CannotFetchSnapcraftYaml,
+            getUtility(ISnapSet).getSnapcraftYaml, git_ref)
+
+    def test_getSnapcraftYaml_snap_bzr(self):
+        self.useFixture(BranchHostingFixture(
+            file_list={"snapcraft.yaml": "some-file-id"},
+            blob=b"name: test-snap"))
+        branch = self.factory.makeBranch()
+        snap = self.factory.makeSnap(branch=branch)
+        self.assertEqual(
+            {"name": "test-snap"}, getUtility(ISnapSet).getSnapcraftYaml(snap))
+
+    def test_getSnapcraftYaml_snap_git(self):
+        self.useFixture(GitHostingFixture(blob=b"name: test-snap"))
+        [git_ref] = self.factory.makeGitRefs()
+        snap = self.factory.makeSnap(git_ref=git_ref)
+        self.assertEqual(
+            {"name": "test-snap"}, getUtility(ISnapSet).getSnapcraftYaml(snap))
+
+    @responses.activate
+    def test_getSnapcraftYaml_snap_git_external_github(self):
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/HEAD/"
+            "snap/snapcraft.yaml",
+            body=b"name: test-snap")
+        git_ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name", path="HEAD")
+        snap = self.factory.makeSnap(git_ref=git_ref)
+        with default_timeout(1.0):
+            self.assertEqual(
+                {"name": "test-snap"},
+                getUtility(ISnapSet).getSnapcraftYaml(snap))
+
+    def test_getSnapcraftYaml_invalid_data(self):
+        hosting_fixture = self.useFixture(GitHostingFixture())
+        for invalid_result in (None, 123, b"", b"[][]", b"#name:test", b"]"):
+            [git_ref] = self.factory.makeGitRefs()
+            hosting_fixture.getBlob = FakeMethod(result=invalid_result)
+            self.assertRaises(
+                CannotParseSnapcraftYaml,
+                getUtility(ISnapSet).getSnapcraftYaml, git_ref)
+
+    def test_getSnapcraftYaml_safe_yaml(self):
+        self.useFixture(GitHostingFixture(blob=b"Malicious YAML!"))
+        [git_ref] = self.factory.makeGitRefs()
+        unsafe_load = self.useFixture(MockPatch("yaml.load"))
+        safe_load = self.useFixture(MockPatch("yaml.safe_load"))
+        self.assertRaises(
+            CannotParseSnapcraftYaml,
+            getUtility(ISnapSet).getSnapcraftYaml, git_ref)
+        self.assertEqual(0, unsafe_load.mock.call_count)
+        self.assertEqual(1, safe_load.mock.call_count)
 
     def test__findStaleSnaps(self):
         # Stale; not built automatically.
@@ -1919,21 +2188,16 @@ class TestSnapWebservice(TestCaseWithFactory):
             urlsplit(config.launchpad.openid_provider_root).netloc, '',
             'dummy')
         root_macaroon_raw = root_macaroon.serialize()
-
-        @all_requests
-        def handler(url, request):
-            self.request = request
-            return {
-                "status_code": 200,
-                "content": {"macaroon": root_macaroon_raw},
-                }
-
         self.pushConfig("snappy", store_url="http://sca.example/")
         logout()
-        with HTTMock(handler):
+        with responses.RequestsMock() as requests_mock:
+            requests_mock.add(
+                "POST", "http://sca.example/dev/api/acl/",
+                json={"macaroon": root_macaroon_raw})
             response = self.webservice.named_post(
                 snap_url, "beginAuthorization", **kwargs)
-        self.assertThat(self.request, MatchesStructure.byEquality(
+            [call] = requests_mock.calls
+        self.assertThat(call.request, MatchesStructure.byEquality(
             url="http://sca.example/dev/api/acl/", method="POST"))
         with person_logged_in(self.person):
             expected_body = {
@@ -1943,7 +2207,7 @@ class TestSnapWebservice(TestCaseWithFactory):
                     }],
                 "permissions": ["package_upload"],
                 }
-            self.assertEqual(expected_body, json.loads(self.request.body))
+            self.assertEqual(expected_body, json.loads(call.request.body))
             self.assertEqual({"root": root_macaroon_raw}, snap.store_secrets)
         return response, root_macaroon.third_party_caveats()[0]
 
@@ -2202,6 +2466,128 @@ class TestSnapWebservice(TestCaseWithFactory):
             "Snap package builds against private archives are only allowed "
             "if the snap package owner and the archive owner are equal.",
             response.body)
+
+    def test_requestBuilds(self):
+        # Requests for builds for all relevant architectures can be
+        # performed over the webservice, and the returned entry indicates
+        # the status of the asynchronous job.
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        processors = [
+            self.factory.makeProcessor(supports_virtualized=True)
+            for _ in range(3)]
+        for processor in processors:
+            self.makeBuildableDistroArchSeries(
+                distroseries=distroseries, architecturetag=processor.name,
+                processor=processor, owner=self.person)
+        archive_url = api_url(distroseries.main_archive)
+        [git_ref] = self.factory.makeGitRefs()
+        snap = self.makeSnap(
+            git_ref=git_ref, distroseries=distroseries, processors=processors)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuilds", archive=archive_url,
+            pocket="Updates", channels={"snapcraft": "edge"})
+        self.assertEqual(201, response.status)
+        build_request_url = response.getHeader("Location")
+        build_request = self.webservice.get(build_request_url).jsonBody()
+        self.assertThat(build_request, ContainsDict({
+            "snap_link": Equals(snap["self_link"]),
+            "status": Equals("Pending"),
+            "error_message": Is(None),
+            "builds_collection_link": Equals(build_request_url + "/builds"),
+            }))
+        self.assertEqual([], self.getCollectionLinks(build_request, "builds"))
+        with person_logged_in(self.person):
+            snapcraft_yaml = "architectures:\n"
+            for processor in processors:
+                snapcraft_yaml += "  - build-on: %s\n" % processor.name
+            self.useFixture(GitHostingFixture(blob=snapcraft_yaml))
+            [job] = getUtility(ISnapRequestBuildsJobSource).iterReady()
+            with dbuser(config.ISnapRequestBuildsJobSource.dbuser):
+                JobRunner([job]).runAll()
+        build_request = self.webservice.get(
+            build_request["self_link"]).jsonBody()
+        self.assertThat(build_request, ContainsDict({
+            "snap_link": Equals(snap["self_link"]),
+            "status": Equals("Completed"),
+            "error_message": Is(None),
+            "builds_collection_link": Equals(build_request_url + "/builds"),
+            }))
+        builds = self.webservice.get(
+            build_request["builds_collection_link"]).jsonBody()["entries"]
+        with person_logged_in(self.person):
+            self.assertThat(builds, MatchesSetwise(*(
+                ContainsDict({
+                    "snap_link": Equals(snap["self_link"]),
+                    "archive_link": Equals(
+                        self.getURL(distroseries.main_archive)),
+                    "arch_tag": Equals(processor.name),
+                    "pocket": Equals("Updates"),
+                    "channels": Equals({"snapcraft": "edge"}),
+                    })
+                for processor in processors)))
+
+    def test_requestBuilds_failure(self):
+        # If the asynchronous build request job fails, this is reflected in
+        # the build request entry.
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        self.makeBuildableDistroArchSeries(
+            distroseries=distroseries, architecturetag=processor.name,
+            processor=processor, owner=self.person)
+        archive_url = api_url(distroseries.main_archive)
+        [git_ref] = self.factory.makeGitRefs()
+        snap = self.makeSnap(
+            git_ref=git_ref, distroseries=distroseries,
+            processors=[processor])
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuilds", archive=archive_url,
+            pocket="Updates")
+        self.assertEqual(201, response.status)
+        build_request_url = response.getHeader("Location")
+        build_request = self.webservice.get(build_request_url).jsonBody()
+        self.assertThat(build_request, ContainsDict({
+            "snap_link": Equals(snap["self_link"]),
+            "status": Equals("Pending"),
+            "error_message": Is(None),
+            "builds_collection_link": Equals(build_request_url + "/builds"),
+            }))
+        self.assertEqual([], self.getCollectionLinks(build_request, "builds"))
+        with person_logged_in(self.person):
+            self.useFixture(GitHostingFixture()).getBlob.failure = Exception(
+                "Something went wrong")
+            [job] = getUtility(ISnapRequestBuildsJobSource).iterReady()
+            with dbuser(config.ISnapRequestBuildsJobSource.dbuser):
+                JobRunner([job]).runAll()
+        build_request = self.webservice.get(
+            build_request["self_link"]).jsonBody()
+        self.assertThat(build_request, ContainsDict({
+            "snap_link": Equals(snap["self_link"]),
+            "status": Equals("Failed"),
+            "error_message": Equals("Something went wrong"),
+            "builds_collection_link": Equals(build_request_url + "/builds"),
+            }))
+        self.assertEqual([], self.getCollectionLinks(build_request, "builds"))
+
+    def test_requestBuilds_not_owner(self):
+        # If the requester is not the owner or a member of the owner team,
+        # build requests are rejected.
+        other_team = self.factory.makeTeam(displayname="Other Team")
+        distroseries = self.factory.makeDistroSeries(registrant=self.person)
+        archive_url = api_url(distroseries.main_archive)
+        other_webservice = webservice_for_person(
+            other_team.teamowner, permission=OAuthPermission.WRITE_PUBLIC)
+        other_webservice.default_api_version = "devel"
+        login(ANONYMOUS)
+        snap = self.makeSnap(
+            owner=other_team, distroseries=distroseries,
+            webservice=other_webservice)
+        response = self.webservice.named_post(
+            snap["self_link"], "requestBuilds", archive=archive_url,
+            pocket="Updates")
+        self.assertEqual(401, response.status)
+        self.assertEqual(
+            "Test Person cannot create snap package builds owned by Other "
+            "Team.", response.body)
 
     def test_requestAutoBuilds(self):
         # requestAutoBuilds can be performed over the webservice.

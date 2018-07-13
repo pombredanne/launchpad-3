@@ -9,7 +9,6 @@ __all__ = [
     'find_on_path',
     'get_pid_from_file',
     'kill_by_pidfile',
-    'get_pid_from_file',
     'open_for_writing',
     'override_environ',
     'process_exists',

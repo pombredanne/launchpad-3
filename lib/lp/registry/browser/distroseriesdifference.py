@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for DistroSeriesDifferences."""
@@ -254,6 +254,8 @@ class DistroSeriesDifferenceDisplayComment(MessageComment):
     index = None
 
     download_url = None
+
+    visible = True
 
     def __init__(self, comment):
         """Setup the attributes required by `IComment`."""

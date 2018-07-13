@@ -25,7 +25,7 @@ page. It isn't visible to ordinary users, however.
     >>> user_browser.getControl('Reschedule all watches')
     Traceback (most recent call last):
       ...
-    LookupError: label 'Reschedule all watches'
+    LookupError: label u'Reschedule all watches'
 
 However, the reschedule button will appear to administrators.
 
@@ -60,12 +60,12 @@ Clicking the button will reschedule the watches for the bug tracker for
 checking at some future date.
 
     >>> reschedule_button.click()
-    >>> print lp_dev_browser.url
+    >>> print(lp_dev_browser.url)
     http://bugs.launchpad.dev/bugs/bugtrackers/our-bugtracker
 
     >>> for message in find_tags_by_class(
     ...     lp_dev_browser.contents, 'informational message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     All bug watches on Our BugTracker have been rescheduled.
 
 If we look at the bug watch on our bugtracker we can see that it has
@@ -75,7 +75,7 @@ been scheduled for checking at some point in the future.
     >>> from pytz import utc
 
     >>> login(ADMIN_EMAIL)
-    >>> print bug_watch.next_check >= datetime.now(utc)
+    >>> print(bug_watch.next_check >= datetime.now(utc))
     True
 
 Should the bug watch be deleted the reschedule button will no longer
@@ -89,4 +89,4 @@ appear on the bugtracker page.
     ...     'Reschedule all watches')
     Traceback (most recent call last):
       ...
-    LookupError: label 'Reschedule all watches'
+    LookupError: label u'Reschedule all watches'

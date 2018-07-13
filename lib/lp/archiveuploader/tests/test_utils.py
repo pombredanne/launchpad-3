@@ -1,9 +1,9 @@
 #!/usr/bin/python
 #
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-# arch-tag: 90e6eb79-83a2-47e8-9f8b-3c687079c923
+from __future__ import absolute_import, print_function, unicode_literals
 
 import os
 import re
@@ -171,12 +171,12 @@ class TestUtilities(TestCase):
             rfc822_encode_address,
             )
         cases = (
-            ("No\xc3\xa8l K\xc3\xb6the <noel@debian.org>",
+            (b"No\xc3\xa8l K\xc3\xb6the <noel@debian.org>",
              u"No\xe8l K\xf6the <noel@debian.org>",
              u"No\xe8l K\xf6the",
              u"noel@debian.org"),
 
-            ("No\xe8l K\xf6the <noel@debian.org>",
+            (b"No\xe8l K\xf6the <noel@debian.org>",
              u"No\xe8l K\xf6the <noel@debian.org>",
              u"No\xe8l K\xf6the",
              u"noel@debian.org"),
@@ -240,9 +240,10 @@ class TestUtilities(TestCase):
             "James Troup",
             "James Troup <james>",
             "James Troup <james@nocrew.org",
-            "No\xc3\xa8l K\xc3\xb6the")
+            b"No\xc3\xa8l K\xc3\xb6the")
         for case in cases:
-            with ExpectedException(ParseMaintError, '^%s: ' % re.escape(case)):
+            with ExpectedException(
+                    ParseMaintError, b'^%s: ' % re.escape(case)):
                 parse_maintainer_bytes(case, 'Maintainer')
 
 

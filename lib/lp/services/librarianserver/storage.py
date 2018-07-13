@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -45,8 +45,8 @@ def fsync_path(path, dir=False):
         os.close(fd)
 
 
-def makedirs_fsync(name, mode=0777):
-    """makedirs_fsync(path [, mode=0777])
+def makedirs_fsync(name, mode=0o777):
+    """makedirs_fsync(path [, mode=0o777])
 
     os.makedirs, but fsyncing on the way up to ensure durability.
     """
@@ -168,27 +168,21 @@ class TxSwiftStream(swift.SwiftStream):
         if size == 0:
             defer.returnValue('')
 
-        return_chunks = []
-        return_size = 0
-
-        while return_size < size:
+        if not self._chunk:
+            self._chunk = yield deferToThread(self._next_chunk)
             if not self._chunk:
-                self._chunk = yield deferToThread(self._next_chunk)
-                if not self._chunk:
-                    # If we have drained the data successfully,
-                    # the connection can be reused saving on auth
-                    # handshakes.
-                    swift.connection_pool.put(self._swift_connection)
-                    self._swift_connection = None
-                    self._chunks = None
-                    break
-            split = size - return_size
-            return_chunks.append(self._chunk[:split])
-            self._chunk = self._chunk[split:]
-            return_size += len(return_chunks[-1])
+                # If we have drained the data successfully,
+                # the connection can be reused saving on auth
+                # handshakes.
+                swift.connection_pool.put(self._swift_connection)
+                self._swift_connection = None
+                self._chunks = None
+                defer.returnValue('')
+        return_chunk = self._chunk[:size]
+        self._chunk = self._chunk[size:]
 
-        self._offset += return_size
-        defer.returnValue(''.join(return_chunks))
+        self._offset += len(return_chunk)
+        defer.returnValue(return_chunk)
 
 
 class LibraryFileUpload(object):

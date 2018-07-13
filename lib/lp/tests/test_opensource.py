@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Run the standalone tests in an opensource package.
@@ -21,6 +21,7 @@ import os
 import unittest
 
 import launchpadlib
+import scandir
 import wadllib
 
 from lp.testing.layers import AppServerLayer
@@ -32,7 +33,7 @@ def add_testable_opensource_package(suite, package):
     topdir = os.path.dirname(package.__file__)
 
     packages = []
-    for dirpath, dirnames, filenames in os.walk(topdir):
+    for dirpath, dirnames, filenames in scandir.walk(topdir):
         if 'docs' in dirnames:
             docsdir = os.path.join(dirpath, 'docs')[len(topdir) + 1:]
             packages.append(docsdir)

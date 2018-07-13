@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `WebhookJob`s."""
@@ -9,14 +9,12 @@ from datetime import (
     datetime,
     timedelta,
     )
+import re
 
-from httmock import (
-    HTTMock,
-    urlmatch,
-    )
 from pytz import utc
 import requests
 import requests.exceptions
+import responses
 from storm.store import Store
 from testtools import TestCase
 from testtools.matchers import (
@@ -139,25 +137,18 @@ class TestWebhookJobDerived(TestCaseWithFactory):
 class TestWebhookClient(TestCase):
     """Tests for `WebhookClient`."""
 
-    def sendToWebhook(self, response_status=200, raises=None, headers=None):
-        reqs = []
-
-        @urlmatch(netloc='example.com')
-        def endpoint_mock(url, request):
-            if raises:
-                raise raises
-            reqs.append(request)
-            return {
-                'status_code': response_status, 'content': 'Content',
-                'headers': headers}
-
-        with HTTMock(endpoint_mock):
+    def sendToWebhook(self, body='Content', **kwargs):
+        with responses.RequestsMock() as requests_mock:
+            requests_mock.add(
+                'POST', re.compile('^http://example\.com/'), body=body,
+                **kwargs)
             result = WebhookClient().deliver(
                 'http://example.com/ep', 'http://squid.example.com:3128',
                 'TestWebhookClient', 30, 'sekrit', '1234', 'test',
                 {'foo': 'bar'})
+            calls = list(requests_mock.calls)
 
-        return reqs, result
+        return calls, result
 
     @property
     def request_matcher(self):
@@ -177,27 +168,27 @@ class TestWebhookClient(TestCase):
             })
 
     def test_sends_request(self):
-        [request], result = self.sendToWebhook()
+        [call], result = self.sendToWebhook()
         self.assertThat(
             result,
             MatchesDict({
                 'request': self.request_matcher,
                 'response': MatchesDict({
                     'status_code': Equals(200),
-                    'headers': Equals({}),
+                    'headers': Equals({'content-type': 'text/plain'}),
                     'body': Equals('Content'),
                     }),
                 }))
 
     def test_accepts_404(self):
-        [request], result = self.sendToWebhook(response_status=404)
+        [call], result = self.sendToWebhook(status=404)
         self.assertThat(
             result,
             MatchesDict({
                 'request': self.request_matcher,
                 'response': MatchesDict({
                     'status_code': Equals(404),
-                    'headers': Equals({}),
+                    'headers': Equals({'content-type': 'text/plain'}),
                     'body': Equals('Content'),
                     }),
                 }))
@@ -205,35 +196,34 @@ class TestWebhookClient(TestCase):
     def test_connection_error(self):
         # Attempts that fail to connect have a connection_error rather
         # than a response.
-        reqs, result = self.sendToWebhook(
-            raises=requests.ConnectionError('Connection refused'))
+        [call], result = self.sendToWebhook(
+            body=requests.ConnectionError('Connection refused'))
         self.assertThat(
             result,
             MatchesDict({
                 'request': self.request_matcher,
                 'connection_error': Equals('Connection refused'),
                 }))
-        self.assertEqual([], reqs)
+        self.assertIsInstance(call.response, requests.ConnectionError)
 
     def test_timeout_error(self):
         # Attempts that don't return within the timeout have a
         # connection_error rather than a response.
-        reqs, result = self.sendToWebhook(
-            raises=requests.exceptions.ReadTimeout())
+        [call], result = self.sendToWebhook(
+            body=requests.exceptions.ReadTimeout())
         self.assertThat(
             result,
             MatchesDict({
                 'request': self.request_matcher,
                 'connection_error': Equals('Request timeout'),
                 }))
-        self.assertEqual([], reqs)
+        self.assertIsInstance(call.response, requests.exceptions.ReadTimeout)
 
     def test_proxy_error_known(self):
         # Squid error headers are interpreted to populate
         # connection_error.
-        [request], result = self.sendToWebhook(
-            response_status=403,
-            headers={"X-Squid-Error": "ERR_ACCESS_DENIED 0"})
+        [call], result = self.sendToWebhook(
+            status=403, headers={"X-Squid-Error": "ERR_ACCESS_DENIED 0"})
         self.assertThat(
             result,
             MatchesDict({
@@ -244,9 +234,8 @@ class TestWebhookClient(TestCase):
     def test_proxy_error_unknown(self):
         # Squid errors that don't have a human-readable mapping are
         # included verbatim.
-        [request], result = self.sendToWebhook(
-            response_status=403,
-            headers={"X-Squid-Error": "ERR_BORKED 1234"})
+        [call], result = self.sendToWebhook(
+            status=403, headers={"X-Squid-Error": "ERR_BORKED 1234"})
         self.assertThat(
             result,
             MatchesDict({

@@ -12,9 +12,9 @@ FileBugDataParser is used to parse the MIME message with the information
 to be added to the bug report. The information is passed as a file
 object to the constructor.
 
-    >>> from StringIO import StringIO
+    >>> from io import BytesIO
     >>> from lp.bugs.utilities.filebugdataparser import FileBugDataParser
-    >>> parser = FileBugDataParser(StringIO('123456789'))
+    >>> parser = FileBugDataParser(BytesIO(b'123456789'))
 
 To make parsing easier and more efficient, it has a buffer where it
 stores the next few bytes of the file. To begin with, it's empty.
@@ -31,7 +31,7 @@ BUFFER_SIZE variable.
 There is helper method, _consumeBytes(), which will read from the file
 until a certain delimiter string is encountered.
 
-    >>> parser._consumeBytes('4')
+    >>> parser._consumeBytes(b'4')
     '1234'
 
 In order to find the delimiter string, it had to read '123456' into
@@ -43,7 +43,7 @@ string is kept in the buffer.
 
 The delimiter string isn't limited to one character.
 
-    >>> parser._consumeBytes('67')
+    >>> parser._consumeBytes(b'67')
     '567'
 
     >>> parser._buffer
@@ -52,16 +52,16 @@ The delimiter string isn't limited to one character.
 If the delimiter isn't found in the file, the rest of the file is
 returned.
 
-    >>> parser._consumeBytes('0')
+    >>> parser._consumeBytes(b'0')
     '89'
     >>> parser._buffer
     ''
 
 Subsequent reads will result in the empty string.
 
-    >>> parser._consumeBytes('0')
+    >>> parser._consumeBytes(b'0')
     ''
-    >>> parser._consumeBytes('0')
+    >>> parser._consumeBytes(b'0')
     ''
 
 
@@ -69,7 +69,7 @@ Subsequent reads will result in the empty string.
 
 readLine() is a helper method to read a single line of the file.
 
-    >>> parser = FileBugDataParser(StringIO('123\n456\n789'))
+    >>> parser = FileBugDataParser(BytesIO(b'123\n456\n789'))
     >>> parser.readLine()
     '123\n'
     >>> parser.readLine()
@@ -92,7 +92,7 @@ loop, or something like that.
 readHeaders() reads the headers of a MIME message. It reads all the
 headers, untils it sees a blank line.
 
-    >>> msg = """Header: value
+    >>> msg = b"""Header: value
     ... Space-Folded-Header: this header
     ...  is folded with a space.
     ... Tab-Folded-Header: this header
@@ -101,7 +101,7 @@ headers, untils it sees a blank line.
     ...
     ... Not-A-Header: not-a-value
     ... """
-    >>> parser = FileBugDataParser(StringIO(msg))
+    >>> parser = FileBugDataParser(BytesIO(msg))
     >>> headers = parser.readHeaders()
     >>> headers['Header']
     'value'
@@ -171,7 +171,7 @@ this point, so invalid values get ignored.
 
     >>> data = FileBugData()
     >>> parser._setDataFromHeaders(data, {'Private': 'not-valid'})
-    >>> print data.private
+    >>> print(data.private)
     None
 
 
@@ -224,11 +224,11 @@ extra_description attribute.
 
     >>> used_parsers = []
     >>> def parse_message(message):
-    ...     parser = FileBugDataParser(StringIO(message))
+    ...     parser = FileBugDataParser(BytesIO(message))
     ...     used_parsers.append(parser)
     ...     return parser.parse()
 
-    >>> debug_data = """MIME-Version: 1.0
+    >>> debug_data = b"""MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
     ...
     ... --boundary
@@ -248,13 +248,13 @@ extra_description attribute.
 
 The text can also be base64 decoded.
 
-    >>> encoded_text = """VGhpcyBzaG91bGQgYmUgYWRkZWQgdG8g
+    >>> encoded_text = b"""VGhpcyBzaG91bGQgYmUgYWRkZWQgdG8g
     ... dGhlIGRlc2NyaXB0aW9uLgoKQW5vdGhl
     ... ciBsaW5lLg=="""
     >>> encoded_text.decode('base64')
     'This should be added to the description.\n\nAnother line.'
 
-    >>> debug_data = """MIME-Version: 1.0
+    >>> debug_data = b"""MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
     ...
     ... --boundary
@@ -277,7 +277,7 @@ If there are more than one inline part, those will be added as comments
 to the bug. The comments are simple ext strings, accessible through the
 comments attribute.
 
-    >>> debug_data = """MIME-Version: 1.0
+    >>> debug_data = b"""MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
     ...
     ... --boundary
@@ -317,7 +317,7 @@ All the parts that have a 'Content-disposition: attachment' header
 will get added as attachments to the bug. The attachment description can
 be specified using a Content-description header, but it's not required.
 
-    >>> debug_data = """MIME-Version: 1.0
+    >>> debug_data = b"""MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
     ...
     ... --boundary
@@ -381,8 +381,8 @@ The contents of the attachments are stored in a file.
 
 Binary files are base64 encoded. They are decoded automatically.
 
-    >>> binary_data = '\n'.join(['\x00'*5, '\x01'*5])
-    >>> debug_data = """MIME-Version: 1.0
+    >>> binary_data = b'\n'.join([b'\x00'*5, b'\x01'*5])
+    >>> debug_data = b"""MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
     ...
     ... --boundary
@@ -411,7 +411,7 @@ assert that nothing bad will happen if we can't parse the message. We
 don't care about giving the user a good error message, since the format
 is well-known.
 
-    >>> debug_data = """MIME-Version: 1.0
+    >>> debug_data = b"""MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
     ...
     ... --boundary

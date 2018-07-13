@@ -147,6 +147,7 @@ Page Footers
     Read the guide https://help.launchpad.net/
     Canonical&nbsp;Ltd. http://canonical.com/
     Terms of use http://launchpad.dev/legal
+    Data privacy https://www.ubuntu.com/legal/dataprivacy
     Contact Launchpad Support /feedback
     Blog http://blog.launchpad.net/
     Careers http://www.canonical.com/about-canonical/careers

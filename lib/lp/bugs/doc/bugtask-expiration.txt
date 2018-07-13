@@ -392,7 +392,7 @@ indicates the anonymous user.
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
     ...     0, user=None, target=ubuntu)
     >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)
-    >>> print sorted(bug.title for bug in visible_bugs)
+    >>> print(sorted(bug.title for bug in visible_bugs))
     [u'expirable_distro', u'recent']
 
 If one of the bugs is set to private, anonymous users can no longer see
@@ -408,7 +408,7 @@ it as being marked for expiration.
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
     ...     0, user=None, target=ubuntu)
     >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)
-    >>> print sorted(bug.title for bug in visible_bugs)
+    >>> print(sorted(bug.title for bug in visible_bugs))
     [u'recent']
 
 No Privileges Person can't see the bug either...
@@ -418,7 +418,7 @@ No Privileges Person can't see the bug either...
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
     ...     0, user=no_priv, target=ubuntu)
     >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)
-    >>> print sorted(bug.title for bug in visible_bugs)
+    >>> print(sorted(bug.title for bug in visible_bugs))
     [u'recent']
 
 ... unless they're subscribed to the bug.
@@ -429,7 +429,7 @@ No Privileges Person can't see the bug either...
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
     ...     0, user=no_priv, target=ubuntu)
     >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)
-    >>> print sorted(bug.title for bug in visible_bugs)
+    >>> print(sorted(bug.title for bug in visible_bugs))
     [u'expirable_distro', u'recent']
 
 The Janitor needs to be able to access all bugs, even private ones, in
@@ -444,7 +444,7 @@ even the private bugs are returned.
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
     ...     0, user=janitor, target=ubuntu)
     >>> visible_bugs = set(bugtask.bug for bugtask in expirable_bugtasks)
-    >>> print sorted(bug.title for bug in visible_bugs)
+    >>> print(sorted(bug.title for bug in visible_bugs))
     [u'expirable_distro', u'recent']
 
     >>> private_bug.setPrivate(False, sample_person)
@@ -497,7 +497,7 @@ config.malone.expiration_dbuser.
     ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
     ...     stderr=subprocess.PIPE)
     >>> (out, err) = process.communicate()
-    >>> print err
+    >>> print(err)
     INFO    Creating lockfile: /var/lock/launchpad-expire-bugtasks.lock
     INFO    Expiring unattended, INCOMPLETE bugtasks older than
             60 days for projects that use Launchpad Bugs.
@@ -505,7 +505,7 @@ config.malone.expiration_dbuser.
     INFO    Expired 2 bugtasks.
     INFO    Finished expiration run.
     <BLANKLINE>
-    >>> print out
+    >>> print(out)
     <BLANKLINE>
     >>> process.returncode
     0
@@ -546,18 +546,18 @@ master and slave bugtasks were expired.
     3
 
     >>> message = hoary_bugtask.bug.messages[-1]
-    >>> print message.owner.name
+    >>> print(message.owner.name)
     janitor
 
-    >>> print message.text_contents
+    >>> print(message.text_contents)
     [Expired for Ubuntu Hoary because there has been no activity for 60 days.]
 
 The bug's activity log was updated too with the status change.
 
     >>> activity = hoary_bugtask.bug.activity[-1]
-    >>> print "%s  %s  %s  %s" % (
+    >>> print("%s  %s  %s  %s" % (
     ...     activity.person.displayname, activity.whatchanged,
-    ...     activity.oldvalue, activity.newvalue)
+    ...     activity.oldvalue, activity.newvalue))
     Launchpad Janitor  Ubuntu Hoary: status  Incomplete  Expired
 
 

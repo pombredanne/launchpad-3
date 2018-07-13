@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import absolute_import
@@ -93,6 +93,7 @@ from lazr.restful.testing.webservice import FakeRequest
 import lp_sitecustomize
 import oops_datedir_repo.serializer_rfc822
 import pytz
+import scandir
 import simplejson
 from storm.store import Store
 import subunit
@@ -703,9 +704,10 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         """Include the logChunks from fixture in the test details."""
         # Evaluate the log when called, not later, to permit the librarian to
         # be shutdown before the detail is rendered.
-        chunks = fixture.getLogChunks()
-        content = Content(UTF8_TEXT, lambda: chunks)
-        self.addDetail('librarian-log', content)
+        if 'librarian-log' not in self.getDetails():
+            chunks = fixture.getLogChunks()
+            content = Content(UTF8_TEXT, lambda: chunks)
+            self.addDetail('librarian-log', content)
 
     def setUp(self):
         super(TestCase, self).setUp()
@@ -891,7 +893,8 @@ class TestCaseWithFactory(TestCase):
                 db_branch = self.factory.makeAnyBranch(**kwargs)
             else:
                 db_branch = self.factory.makeProductBranch(product, **kwargs)
-        branch_url = 'lp-internal:///' + db_branch.unique_name
+        branch_url = (
+            'lp-internal:///' + removeSecurityProxy(db_branch).unique_name)
         if not self.direct_database_server:
             transaction.commit()
         bzr_branch = self.createBranchAtURL(branch_url, format=format)
@@ -1172,7 +1175,7 @@ def build_yui_unittest_suite(app_testing_path, yui_test_class):
 
 
 def _harvest_yui_test_files(file_path):
-    for dirpath, dirnames, filenames in os.walk(file_path):
+    for dirpath, dirnames, filenames in scandir.walk(file_path):
         for filename in filenames:
             if fnmatchcase(filename, "test_*.html"):
                 yield os.path.join(dirpath, filename)

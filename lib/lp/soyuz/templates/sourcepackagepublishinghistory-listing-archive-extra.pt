@@ -38,9 +38,11 @@
     </li>
   </ul>
 
-  <tal:built-packages condition="view/built_packages" omit-tag="">
+  <tal:built-packages
+      define="built_packages view/built_packages"
+      condition="built_packages" omit-tag="">
     <h3>Built packages</h3>
-    <ul tal:repeat="package view/built_packages"
+    <ul tal:repeat="package built_packages"
         style="margin-top: 0; margin-bottom: 0">
       <li>
         <b><tal:name replace="package/binarypackagename"/></b>

@@ -30,9 +30,9 @@ the bug to series for which they are drivers.
     >>> ignored = login_person(nominator)
     >>> request = LaunchpadTestRequest()
     >>> bug_one_in_ubuntu_firefox = getUtility(IBugTaskSet).get(17)
-    >>> print bug_one_in_ubuntu_firefox.bug.id
+    >>> print(bug_one_in_ubuntu_firefox.bug.id)
     1
-    >>> print bug_one_in_ubuntu_firefox.target.bugtargetdisplayname
+    >>> print(bug_one_in_ubuntu_firefox.target.bugtargetdisplayname)
     mozilla-firefox (Ubuntu)
 
     >>> nomination_view = getMultiAdapter(
@@ -80,15 +80,15 @@ Here's an example of nominating a bug for a distroseries.
     >>> len(request.response.notifications)
     1
 
-    >>> print request.response.notifications[0].message
+    >>> print(request.response.notifications[0].message)
     Added nominations for: Ubuntu Warty
 
 Here's an example of nominating a bug for a productseries.
 
     >>> bug_one_in_firefox = getUtility(IBugTaskSet).get(2)
-    >>> print bug_one_in_firefox.bug.id
+    >>> print(bug_one_in_firefox.bug.id)
     1
-    >>> print bug_one_in_firefox.target.bugtargetdisplayname
+    >>> print(bug_one_in_firefox.target.bugtargetdisplayname)
     Mozilla Firefox
 
     >>> firefox = bug_one_in_firefox.target
@@ -121,7 +121,7 @@ Here's an example of nominating a bug for a productseries.
     >>> len(request.response.notifications)
     1
 
-    >>> print request.response.notifications[0].message
+    >>> print(request.response.notifications[0].message)
     Added nominations for: Mozilla Firefox trunk
 
 
@@ -158,7 +158,7 @@ If the nomination is declined, the only possible status change is
 approval.
 
     >>> hoary_nomination.decline(launchbag.user)
-    >>> print hoary_nomination.status.title
+    >>> print(hoary_nomination.status.title)
     Declined
 
     >>> hoary_nomination_edit_form.shouldShowApproveButton(None)
@@ -179,14 +179,14 @@ For example, bug one is currently nominated for Hoary and Warty.
 
     >>> ubuntu_nominations = bug_one.getNominations(ubuntu)
     >>> for nomination in ubuntu_nominations:
-    ...     print nomination.target.bugtargetdisplayname
+    ...     print(nomination.target.bugtargetdisplayname)
     Ubuntu Hoary
     Ubuntu Warty
 
 Bug #1 currently has three tasks.
 
     >>> for bugtask in bug_one.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Debian)
@@ -201,7 +201,7 @@ launchpad.Driver permission on the nomination.
     >>> login("celso.providelo@canonical.com")
 
     >>> cprov = launchbag.user
-    >>> print cprov.name
+    >>> print(cprov.name)
     cprov
 
     >>> cprov.inTeam(ubuntu_team)
@@ -220,9 +220,9 @@ launchpad.Driver permission on the nomination.
 
     >>> def print_nominations(nominations):
     ...     for nomination in nominations:
-    ...         print "%s, %s" % (
+    ...         print("%s, %s" % (
     ...             nomination.target.bugtargetdisplayname,
-    ...             nomination.status.title)
+    ...             nomination.status.title))
     >>> print_nominations(bug_one.getNominations(ubuntu))
     Ubuntu Hoary, Declined
     Ubuntu Warty, Nominated
@@ -240,7 +240,7 @@ bugtask has been added.
     Ubuntu Warty, Nominated
 
     >>> for bugtask in bug_one.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Ubuntu Grumpy)
@@ -248,5 +248,5 @@ bugtask has been added.
 
 The notification message also changes slightly.
 
-    >>> print request.response.notifications[0].message
+    >>> print(request.response.notifications[0].message)
     Targeted bug to: Ubuntu Grumpy

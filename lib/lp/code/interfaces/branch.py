@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch interfaces."""
@@ -763,6 +763,24 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         package, add lots of information about that.
 
         :param launchbag: `ILaunchBag`.
+        """
+
+    def getBlob(filename, revision_id=None):
+        """Get a blob by file name from this branch.
+
+        :param filename: Relative path of a file in the branch.
+        :param revision_id: An optional revision ID.  Defaults to the last
+            scanned revision ID of the branch.
+        :return: The blob content as a byte string.
+        """
+
+    def getDiff(new, old):
+        """Get the diff between two revisions in this branch.
+
+        :param new: The new revno or revision ID.
+        :param old: The old revno or revision ID.  Defaults to the parent
+            revision of `new`.
+        :return: The diff as a byte string.
         """
 
     @export_read_operation()

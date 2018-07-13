@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to code imports."""
@@ -102,41 +102,45 @@ def make_email_body_for_code_import_update(
         else:
             raise AssertionError('Unexpected review status for code import.')
 
-    details_change_prefix = '\n'.join(textwrap.wrap(
-        "%s is now being imported from:" % code_import.target.unique_name))
     if code_import.rcs_type == RevisionControlSystems.CVS:
+        old_details = new_details = "%s from %s" % (
+            code_import.cvs_module, code_import.cvs_root)
         if (CodeImportEventDataType.OLD_CVS_ROOT in event_data or
-            CodeImportEventDataType.OLD_CVS_MODULE in event_data):
-            new_details = '    %s from %s' % (
-                code_import.cvs_module, code_import.cvs_root)
+                CodeImportEventDataType.OLD_CVS_MODULE in event_data):
             old_root = event_data.get(
                 CodeImportEventDataType.OLD_CVS_ROOT,
                 code_import.cvs_root)
             old_module = event_data.get(
                 CodeImportEventDataType.OLD_CVS_MODULE,
                 code_import.cvs_module)
-            old_details = '    %s from %s' % (old_module, old_root)
-            body.append(
-                details_change_prefix + '\n' + new_details +
-                "\ninstead of:\n" + old_details)
+            old_details = "%s from %s" % (old_module, old_root)
     elif code_import.rcs_type in (RevisionControlSystems.BZR_SVN,
                                   RevisionControlSystems.GIT,
                                   RevisionControlSystems.BZR):
+        old_details = new_details = code_import.url
         if CodeImportEventDataType.OLD_URL in event_data:
-            old_url = event_data[CodeImportEventDataType.OLD_URL]
-            body.append(
-                details_change_prefix + '\n    ' + code_import.url +
-                "\ninstead of:\n    " + old_url)
+            old_details = event_data[CodeImportEventDataType.OLD_URL]
     else:
         raise AssertionError(
             'Unexpected rcs_type %r for code import.' % code_import.rcs_type)
 
+    if new_details != old_details:
+        body.append(
+            textwrap.fill(
+                "%s is now being imported from:" %
+                code_import.target.unique_name) +
+            "\n    " + new_details +
+            "\ninstead of:\n    " + old_details)
+
     if new_whiteboard is not None:
         if new_whiteboard != '':
             body.append("The branch whiteboard was changed to:")
-            body.append("\n".join(textwrap.wrap(new_whiteboard)))
+            body.append(textwrap.fill(new_whiteboard))
         else:
             body.append("The branch whiteboard was deleted.")
+
+    if new_details == old_details:
+        body.append("This code import is from:\n    " + new_details)
 
     return '\n\n'.join(body)
 
@@ -151,7 +155,10 @@ def code_import_updated(code_import, event, new_whiteboard, person):
     herder_rationale = 'Operator @%s' % vcs_imports.name
     recipients.add(vcs_imports, None, herder_rationale)
 
-    headers = {'X-Launchpad-Branch': target.unique_name}
+    headers = {
+        'X-Launchpad-Notification-Type': 'code-import-updated',
+        'X-Launchpad-Branch': target.unique_name,
+        }
 
     subject = 'Code import %s status: %s' % (
         code_import.target.unique_name, code_import.review_status.title)

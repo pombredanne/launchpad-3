@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -9,13 +9,19 @@ import logging
 import os
 import unittest
 
+import scandir
+
 from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.testing.pages import PageTestSuite
+from lp.testing.pages import (
+    PageTestSuite,
+    setUpGlobs,
+    )
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
+    setGlobs,
     setUp,
     tearDown,
     )
@@ -27,23 +33,28 @@ here = os.path.dirname(os.path.realpath(__file__))
 special = {
     'poexport-queue.txt': LayeredDocFileSuite(
         '../doc/poexport-queue.txt',
-        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
         ),
     'translationimportqueue.txt': LayeredDocFileSuite(
         '../doc/translationimportqueue.txt',
-        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
         ),
     'rosetta-karma.txt': LayeredDocFileSuite(
         '../doc/rosetta-karma.txt',
-        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
         ),
     'translationmessage-destroy.txt': LayeredDocFileSuite(
         '../doc/translationmessage-destroy.txt',
-        layer=LaunchpadZopelessLayer
+        setUp=lambda test: setGlobs(test, future=True),
+        layer=LaunchpadZopelessLayer,
         ),
     'translationsoverview.txt': LayeredDocFileSuite(
         '../doc/translationsoverview.txt',
-        layer=LaunchpadZopelessLayer
+        setUp=lambda test: setGlobs(test, future=True),
+        layer=LaunchpadZopelessLayer,
         ),
     }
 
@@ -52,14 +63,15 @@ def test_suite():
     suite = unittest.TestSuite()
 
     stories_dir = os.path.join(os.path.pardir, 'stories')
-    suite.addTest(PageTestSuite(stories_dir))
+    suite.addTest(PageTestSuite(
+        stories_dir, setUp=lambda test: setUpGlobs(test, future=True)))
     stories_path = os.path.join(here, stories_dir)
-    for story_dir in os.listdir(stories_path):
-        full_story_dir = os.path.join(stories_path, story_dir)
-        if not os.path.isdir(full_story_dir):
+    for story_entry in scandir.scandir(stories_path):
+        if not story_entry.is_dir():
             continue
-        story_path = os.path.join(stories_dir, story_dir)
-        suite.addTest(PageTestSuite(story_path))
+        story_path = os.path.join(stories_dir, story_entry.name)
+        suite.addTest(PageTestSuite(
+            story_path, setUp=lambda test: setUpGlobs(test, future=True)))
 
     testsdir = os.path.abspath(
         os.path.normpath(os.path.join(here, os.path.pardir, 'doc')))
@@ -78,7 +90,8 @@ def test_suite():
     for filename in filenames:
         path = os.path.join('../doc/', filename)
         one_test = LayeredDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown,
+            path,
+            setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)

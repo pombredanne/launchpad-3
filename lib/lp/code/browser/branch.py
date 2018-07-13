@@ -46,6 +46,7 @@ from zope.interface import (
     providedBy,
     )
 from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import (
     Bool,
     Choice,
@@ -136,6 +137,7 @@ from lp.services.webapp.authorization import (
 from lp.services.webapp.breadcrumb import NameBreadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.publisher import DataDownloadView
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.hassnaps import (
     HasSnapsMenuMixin,
@@ -202,6 +204,22 @@ class BranchNavigation(WebhookTargetNavigationMixin, Navigation):
             # Not a number.
             return None
         return self.context.getMergeProposalByID(id)
+
+    @stepto("+diff")
+    def traverse_diff(self):
+        segments = list(self.request.getTraversalStack())
+        if len(segments) == 1:
+            new = segments.pop()
+            old = None
+            self.request.stepstogo.consume()
+        elif len(segments) == 2:
+            new = segments.pop()
+            old = segments.pop()
+            self.request.stepstogo.consume()
+            self.request.stepstogo.consume()
+        else:
+            return None
+        return BranchDiffView(self.context, self.request, new, old=old)
 
     @stepto("+code-import")
     def traverse_code_import(self):
@@ -1280,3 +1298,33 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                     'target_branch',
                     "This branch is not mergeable into %s." %
                     target_branch.bzr_identity)
+
+
+@implementer(IBrowserPublisher)
+class BranchDiffView(DataDownloadView):
+
+    content_type = "text/x-patch"
+
+    def __init__(self, context, request, new, old=None):
+        super(BranchDiffView, self).__init__(context, request)
+        self.new = new
+        self.old = old
+
+    def __call__(self):
+        if getFeatureFlag(u"code.bzr.diff.disable_proxy"):
+            self.request.response.setStatus(401)
+            return "Proxying of branch diffs is disabled.\n"
+        return super(BranchDiffView, self).__call__()
+
+    @property
+    def filename(self):
+        if self.old is None:
+            return "%s_%s.diff" % (self.context.name, self.new)
+        else:
+            return "%s_%s_%s.diff" % (self.context.name, self.old, self.new)
+
+    def getBody(self):
+        return self.context.getDiff(self.new, old=self.old)
+
+    def browserDefault(self, request):
+        return self, ()

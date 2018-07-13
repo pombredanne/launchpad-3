@@ -44,16 +44,16 @@ differ for historical reason for the same type of credit. The property
 is_translation_credit indicates if the POTMsgSet is translation credits. The
 property translation_credit_type contains the type of translation credits.
 
-    >>> print potmsgset.is_translation_credit
+    >>> print(potmsgset.is_translation_credit)
     False
-    >>> print potmsgset.translation_credits_type.title
+    >>> print(potmsgset.translation_credits_type.title)
     Not a translation credits message
 
     >>> credits = factory.makePOTMsgSet(
     ...     potemplate, singular=u'translator-credits')
-    >>> print credits.is_translation_credit
+    >>> print(credits.is_translation_credit)
     True
-    >>> print credits.translation_credits_type.title
+    >>> print(credits.translation_credits_type.title)
     Gnome credits message
 
 
@@ -83,7 +83,7 @@ We get a POTMsgSet and verify it's a singular form:
     >>> current = potmsgset.getCurrentTranslation(
     ...     evolution_potemplate, pt_BR_dummypofile.language,
     ...     evolution_potemplate.translation_side)
-    >>> print current
+    >>> print(current)
     None
     >>> pt_BR_dummy_current = potmsgset.getCurrentTranslationMessageOrDummy(
     ...     pt_BR_dummypofile)
@@ -94,7 +94,7 @@ We get a POTMsgSet and verify it's a singular form:
 
 A TranslationMessage knows what language it is in.
 
-    >>> print pt_BR_dummy_current.language.code
+    >>> print(pt_BR_dummy_current.language.code)
     pt_BR
 
 Using another dummy pofile we'll get a POTMsgset that's not a singular
@@ -104,13 +104,13 @@ form:
     >>> apa_dummypofile = evolution_potemplate.getDummyPOFile(language_apa)
     >>> plural_potmsgset = apa_dummypofile.potemplate.getPOTMsgSetByMsgIDText(
     ...     u'%d contact', u'%d contacts')
-    >>> print apa_dummypofile.language.code
+    >>> print(apa_dummypofile.language.code)
     apa
 
 We don't know anything about pluralforms for this language, so we fall
 back to the most common case:
 
-    >>> print apa_dummypofile.language.pluralforms
+    >>> print(apa_dummypofile.language.pluralforms)
     None
     >>> apa_dummy_current = (
     ...     plural_potmsgset.getCurrentTranslationMessageOrDummy(
@@ -128,7 +128,7 @@ We can guess the pluralforms for this language through ILanguage.pluralforms:
     ...     plural_potmsgset.getCurrentTranslationMessageOrDummy(
     ...     	ru_dummypofile))
 
-    >>> print ru_dummypofile.language.pluralforms
+    >>> print(ru_dummypofile.language.pluralforms)
     3
     >>> ru_dummy_current.plural_forms
     3
@@ -179,9 +179,9 @@ As an example, let's look at the Zapotec translation for PowerMonger.
 The number of plural forms in the Zapotec language is not configured,
 so for now, the system guesses that it has two.
 
-    >>> print zap.pluralforms
+    >>> print(zap.pluralforms)
     None
-    >>> print pm_translation.plural_forms
+    >>> print(pm_translation.plural_forms)
     2
 
     >>> pm_template = pm_translation.potemplate
@@ -294,7 +294,7 @@ We will use this helper function to print all suggestions found:
     ...             suggestion.translations[0],
     ...             ' & '.join(usage)))
     ...     for line in sorted(lines):
-    ...         print line
+    ...         print(line)
 
 
 POTMsgSet.getExternallyUsedTranslationMessages
@@ -303,7 +303,7 @@ POTMsgSet.getExternallyUsedTranslationMessages
  On one side, we have a translation template for the evolution product.
 
     >>> evo_product_template = evolution_potemplate
-    >>> print evo_product_template.title
+    >>> print(evo_product_template.title)
     Template "evolution-2.2" in Evolution trunk
 
 On the other, we have a translation template for the evolution package in
@@ -316,7 +316,7 @@ Ubuntu Hoary distribution.
     >>> evo_distro_template = templateset.getSubset(
     ...     sourcepackagename=evo_hoary_package.sourcepackagename,
     ...     distroseries=ubuntu_hoary).getPOTemplateByName('evolution-2.2')
-    >>> print evo_distro_template.title
+    >>> print(evo_distro_template.title)
     Template "evolution-2.2" in Ubuntu Hoary package "evolution"
 
 Both, product and distribution use Launchpad Translations.
@@ -446,12 +446,12 @@ Let's take a message 'test man page' that is translated into Spanish.
     >>> potmsgset_translated = evo_man_template.getPOTMsgSetByMsgIDText(
     ...     'test man page')
     >>> pofile = evo_man_template.getPOFileByLang('es')
-    >>> print pofile.title
+    >>> print(pofile.title)
     Spanish (es) translation of man in Ubuntu Hoary package "evolution"
     >>> current = potmsgset_translated.getCurrentTranslation(
     ...     evo_man_template, pofile.language,
     ...     evo_man_template.translation_side)
-    >>> print current.translations
+    >>> print(current.translations)
     [u'just a translation']
 
 It doesn't return other submissions done in the given IPOMsgSet because
@@ -479,7 +479,7 @@ dummy anymore.
     ...     'test man page')
     >>> language_es = getUtility(ILanguageSet).getLanguageByCode('es')
     >>> pofile = pmount_man_template.getDummyPOFile(language_es)
-    >>> print pofile.title
+    >>> print(pofile.title)
     Spanish (es) translation of man in Ubuntu Hoary package "pmount"
 
 Given that it doesn't exist in our database, is impossible to have a
@@ -488,11 +488,11 @@ submission already for it.
     >>> current = potmsgset_untranslated.getCurrentTranslation(
     ...     pmount_man_template, pofile.language,
     ...     pmount_man_template.translation_side)
-    >>> print current
+    >>> print(current)
     None
     >>> imported = potmsgset_untranslated.getOtherTranslation(
     ...     pofile.language, pmount_man_template.translation_side)
-    >>> print imported
+    >>> print(imported)
     None
 
 This other dummy IPOMsgSet though, will get all submissions done in
@@ -674,8 +674,8 @@ The flags property produces these as a neat list of flags.
 
     >>> def print_flags(potmsgset):
     ...     for flag in sorted(potmsgset.flags):
-    ...         print '"%s"' % flag
-    ...     print '.'
+    ...         print('"%s"' % flag)
+    ...     print('.')
 
     >>> print_flags(flagged_potmsgset)
     "c-format"
@@ -686,4 +686,3 @@ If the message has no flags, that list is empty.
 
     >>> print_flags(POTMsgSet())
     .
-

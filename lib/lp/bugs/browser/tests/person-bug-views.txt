@@ -99,9 +99,9 @@ Let's first close a bug setting its status to 'Invalid'.
 
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> bug_task = reported_bugtasks[1]
-    >>> print bug_task.distribution.name
+    >>> print(bug_task.distribution.name)
     ubuntu
-    >>> print bug_task.sourcepackagename.name
+    >>> print(bug_task.sourcepackagename.name)
     thunderbird
     >>> bug_task.bug.id
     9
@@ -192,13 +192,13 @@ render the overview report.
     >>> ubuntu_firefox_bugcounts['package_search_url']
     u'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox?field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed&search=Search'
 
-    >>> print ubuntu_firefox_bugcounts['open_bugs_count']
+    >>> print(ubuntu_firefox_bugcounts['open_bugs_count'])
     1
-    >>> print ubuntu_firefox_bugcounts['critical_bugs_count']
+    >>> print(ubuntu_firefox_bugcounts['critical_bugs_count'])
     0
-    >>> print ubuntu_firefox_bugcounts['unassigned_bugs_count']
+    >>> print(ubuntu_firefox_bugcounts['unassigned_bugs_count'])
     1
-    >>> print ubuntu_firefox_bugcounts['inprogress_bugs_count']
+    >>> print(ubuntu_firefox_bugcounts['inprogress_bugs_count'])
     0
 
     >>> ubuntu_firefox_bugcounts['open_bugs_url']
@@ -214,13 +214,13 @@ The total number of bugs, broken down in the same ways as the package
 bug counts, is also available.
 
     >>> total_counts = packagebugs_search_view.total_bug_counts
-    >>> print total_counts['open_bugs_count']
+    >>> print(total_counts['open_bugs_count'])
     1
-    >>> print total_counts['critical_bugs_count']
+    >>> print(total_counts['critical_bugs_count'])
     0
-    >>> print total_counts['unassigned_bugs_count']
+    >>> print(total_counts['unassigned_bugs_count'])
     1
-    >>> print total_counts['inprogress_bugs_count']
+    >>> print(total_counts['inprogress_bugs_count'])
     0
 
 Adding another bug will update the totals returned by
@@ -251,25 +251,25 @@ cached properties.
 We can see that the firefox bug counts have been altered:
 
     >>> firefox_bug_counts = packagebugs_search_view.package_bug_counts[0]
-    >>> print firefox_bug_counts['open_bugs_count']
+    >>> print(firefox_bug_counts['open_bugs_count'])
     2
-    >>> print firefox_bug_counts['critical_bugs_count']
+    >>> print(firefox_bug_counts['critical_bugs_count'])
     1
-    >>> print firefox_bug_counts['unassigned_bugs_count']
+    >>> print(firefox_bug_counts['unassigned_bugs_count'])
     2
-    >>> print firefox_bug_counts['inprogress_bugs_count']
+    >>> print(firefox_bug_counts['inprogress_bugs_count'])
     0
 
 And the total bug counts reflect this:
 
     >>> total_counts = packagebugs_search_view.total_bug_counts
-    >>> print total_counts['open_bugs_count']
+    >>> print(total_counts['open_bugs_count'])
     2
-    >>> print total_counts['critical_bugs_count']
+    >>> print(total_counts['critical_bugs_count'])
     1
-    >>> print total_counts['unassigned_bugs_count']
+    >>> print(total_counts['unassigned_bugs_count'])
     2
-    >>> print total_counts['inprogress_bugs_count']
+    >>> print(total_counts['inprogress_bugs_count'])
     0
 
 Adding a new bug to a package other than Ubuntu Firefox will naturally
@@ -292,37 +292,37 @@ pmount:
 So the total counts will have changed:
 
     >>> total_counts = packagebugs_search_view.total_bug_counts
-    >>> print total_counts['open_bugs_count']
+    >>> print(total_counts['open_bugs_count'])
     3
-    >>> print total_counts['critical_bugs_count']
+    >>> print(total_counts['critical_bugs_count'])
     1
-    >>> print total_counts['unassigned_bugs_count']
+    >>> print(total_counts['unassigned_bugs_count'])
     3
-    >>> print total_counts['inprogress_bugs_count']
+    >>> print(total_counts['inprogress_bugs_count'])
     1
 
 Whilst the firefox ones remain static:
 
     >>> firefox_bug_counts = packagebugs_search_view.package_bug_counts[0]
-    >>> print firefox_bug_counts['open_bugs_count']
+    >>> print(firefox_bug_counts['open_bugs_count'])
     2
-    >>> print firefox_bug_counts['critical_bugs_count']
+    >>> print(firefox_bug_counts['critical_bugs_count'])
     1
-    >>> print firefox_bug_counts['unassigned_bugs_count']
+    >>> print(firefox_bug_counts['unassigned_bugs_count'])
     2
-    >>> print firefox_bug_counts['inprogress_bugs_count']
+    >>> print(firefox_bug_counts['inprogress_bugs_count'])
     0
 
 And the pmount counts make up the difference between the two:
 
     >>> pmount_bug_counts = packagebugs_search_view.package_bug_counts[1]
-    >>> print pmount_bug_counts['open_bugs_count']
+    >>> print(pmount_bug_counts['open_bugs_count'])
     1
-    >>> print pmount_bug_counts['critical_bugs_count']
+    >>> print(pmount_bug_counts['critical_bugs_count'])
     0
-    >>> print pmount_bug_counts['unassigned_bugs_count']
+    >>> print(pmount_bug_counts['unassigned_bugs_count'])
     1
-    >>> print pmount_bug_counts['inprogress_bugs_count']
+    >>> print(pmount_bug_counts['inprogress_bugs_count'])
     1
 
     >>> transaction.abort()
@@ -378,9 +378,9 @@ Related bugs
 A new user will have no related bugs, and therefore no related
 milestones.
 
-    >>> print pretty(list(related_bugs_view.searchUnbatched()))
+    >>> print(pretty(list(related_bugs_view.searchUnbatched())))
     []
-    >>> print pretty(related_bugs_view.getMilestoneWidgetValues())
+    >>> print(pretty(related_bugs_view.getMilestoneWidgetValues()))
     []
 
 Even if the user registers a product with a milestone, the list of
@@ -389,7 +389,7 @@ relevant milestones remains empty.
     >>> product = factory.makeProduct(owner=user, displayname='Coughing Bob')
     >>> milestone09 = factory.makeMilestone(product=product, name="0.9")
 
-    >>> print pretty(related_bugs_view.getMilestoneWidgetValues())
+    >>> print(pretty(related_bugs_view.getMilestoneWidgetValues()))
     []
 
 Even if the user files a bug against a product with a milestone, the
@@ -398,9 +398,9 @@ list of relevant milestones remains empty.
     >>> bug = factory.makeBug(target=product, owner=user)
     >>> transaction.commit()
 
-    >>> print pretty(list(related_bugs_view.searchUnbatched()))
+    >>> print(pretty(list(related_bugs_view.searchUnbatched())))
     [<BugTask ...>]
-    >>> print pretty(related_bugs_view.getMilestoneWidgetValues())
+    >>> print(pretty(related_bugs_view.getMilestoneWidgetValues()))
     []
 
 Only when a milestone is set for a related bug task does the advanced
@@ -409,7 +409,7 @@ search page allow selection of a milestone.
     >>> bug.bugtasks[0].milestone = milestone09
     >>> transaction.commit()
 
-    >>> print pretty(related_bugs_view.getMilestoneWidgetValues())
+    >>> print(pretty(related_bugs_view.getMilestoneWidgetValues()))
     [{'checked': False,
       'title': u'Coughing Bob 0.9',
       'value': ...}]
@@ -426,7 +426,7 @@ Similar behaviour is found when searching for reported bugs.
 The earlier bug was reported by our user, so the assigned milestone
 will already appear.
 
-    >>> print pretty(reported_bugs_view.getMilestoneWidgetValues())
+    >>> print(pretty(reported_bugs_view.getMilestoneWidgetValues()))
     [{'checked': False,
       'title': u'Coughing Bob 0.9',
       'value': ...}]
@@ -438,7 +438,7 @@ milestone appear amongst the possible options.
     >>> bug = factory.makeBug(target=product, owner=user)
     >>> bug.bugtasks[0].milestone = milestone10
 
-    >>> print pretty(reported_bugs_view.getMilestoneWidgetValues())
+    >>> print(pretty(reported_bugs_view.getMilestoneWidgetValues()))
     [{'checked': False,
       'title': u'Coughing Bob 1.0',
       'value': ...},
@@ -456,14 +456,14 @@ Assigned bugs
 No bugs have been assigned to our user, so no relevant milestones are
 found.
 
-    >>> print pretty(assigned_bugs_view.getMilestoneWidgetValues())
+    >>> print(pretty(assigned_bugs_view.getMilestoneWidgetValues()))
     []
 
 Once a bug has been assigned, the milestone appears.
 
     >>> bug.bugtasks[0].transitionToAssignee(user)
 
-    >>> print pretty(assigned_bugs_view.getMilestoneWidgetValues())
+    >>> print(pretty(assigned_bugs_view.getMilestoneWidgetValues()))
     [{'checked': False,
       'title': u'Coughing Bob 1.0',
       'value': ...}]
@@ -478,7 +478,7 @@ Commented bugs
 Our user has not commented on any bugs, so no relevant milestones are
 found.
 
-    >>> print pretty(commented_bugs_view.getMilestoneWidgetValues())
+    >>> print(pretty(commented_bugs_view.getMilestoneWidgetValues()))
     []
 
 Once the user has commented, the related milestone does appear.
@@ -486,7 +486,7 @@ Once the user has commented, the related milestone does appear.
     >>> bug.newMessage(user)
     <Message at ...>
 
-    >>> print pretty(commented_bugs_view.getMilestoneWidgetValues())
+    >>> print(pretty(commented_bugs_view.getMilestoneWidgetValues()))
     [{'checked': False,
       'title': u'Coughing Bob 1.0',
       'value': ...}]
@@ -502,7 +502,7 @@ Subscribed bugs
 Our new_user is not subscribed to any bugs, so no relevant milestones
 are found.
 
-    >>> print pretty(subscribed_bugs_view.getMilestoneWidgetValues())
+    >>> print(pretty(subscribed_bugs_view.getMilestoneWidgetValues()))
     []
 
 Once new_user has subscribed, the related milestones appear.
@@ -510,7 +510,7 @@ Once new_user has subscribed, the related milestones appear.
     >>> bug.subscribe(new_user, new_user)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
 
-    >>> print pretty(subscribed_bugs_view.getMilestoneWidgetValues())
+    >>> print(pretty(subscribed_bugs_view.getMilestoneWidgetValues()))
     [{'checked': False,
       'title': u'Coughing Bob 1.0',
       'value': ...}]

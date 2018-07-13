@@ -1,10 +1,10 @@
 The bug task edit page now features a new and improved assignee
 widget, which makes it easier to "take" a task.
 
-  >>> print http(r"""
+  >>> print(http(br"""
   ... GET /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """))
   HTTP/1.1 200 Ok
   ...
   ...Assigned to...
@@ -14,7 +14,7 @@ widget, which makes it easier to "take" a task.
 So, taking the task is now as simple as selecting the "me" radio
 button:
 
-  >>> print http(r"""
+  >>> print(http(br"""
   ... POST /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Referer: https://launchpad.dev/
@@ -69,17 +69,17 @@ button:
   ... 
   ... Save Changes
   ... -----------------------------19759086281403130373932339922--
-  ... """)
+  ... """))
   HTTP/1.1 303 See Other
   ...
 
 In this example, we were logged in as Foo Bar, so the task is now
 automagically assigned to Foo Bar.
 
-  >>> print http(r"""
+  >>> print(http(br"""
   ... GET /ubuntu/+source/mozilla-firefox/+bug/1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """))
   HTTP/1.1 200 Ok
   ...
   ...mozilla-firefox (Ubuntu)...Foo Bar...
@@ -87,7 +87,7 @@ automagically assigned to Foo Bar.
 
 But, you can also assign the task to another person, of course:
 
-  >>> print http(r"""
+  >>> print(http(br"""
   ... POST /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Referer: https://launchpad.dev/
@@ -143,16 +143,16 @@ But, you can also assign the task to another person, of course:
   ... 
   ... Save Changes
   ... -----------------------------19759086281403130373932339922--
-  ... """)
+  ... """))
   HTTP/1.1 303 See Other
   ...
 
 In this case, we assigned the task to Sample Person:
 
-  >>> print http(r"""
+  >>> print(http(br"""
   ... GET /ubuntu/+source/mozilla-firefox/+bug/1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """))
   HTTP/1.1 200 Ok
   ...
   ...mozilla-firefox (Ubuntu)...Sample Person...
@@ -161,7 +161,7 @@ In this case, we assigned the task to Sample Person:
 Lastly, the widget also allows you to simply assign the task to nobody
 (to, "give up" the task, you might say)
 
-  >>> print http(r"""
+  >>> print(http(br"""
   ... POST /ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Referer: https://launchpad.dev/
@@ -217,16 +217,16 @@ Lastly, the widget also allows you to simply assign the task to nobody
   ... 
   ... Save Changes
   ... -----------------------------19759086281403130373932339922--
-  ... """)
+  ... """))
   HTTP/1.1 303 See Other
   ...
 
 And now the bug task is unassigned:
 
-  >>> print http(r"""
+  >>> print(http(br"""
   ... GET /ubuntu/+source/mozilla-firefox/+bug/1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """))
   HTTP/1.1 200 Ok
   ...
   ...mozilla-firefox (Ubuntu)...

@@ -55,19 +55,19 @@ for that error message.
     >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/12')
     >>> for tag in find_tags_by_class(user_browser.contents,
     ...     'error message'):
-    ...     print extract_text(tag.renderContents())
+    ...     print(extract_text(tag.renderContents()))
     The Mozilla.org Bug Tracker bug #900 appears not to exist. Check
     that the bug number is correct. (what does this mean?)
 
     >>> help_link = user_browser.getLink('(what does this mean?)')
-    >>> print help_link.url
+    >>> print(help_link.url)
     http://bugs.launchpad.dev/.../+error-help#BUG_NOT_FOUND
 
 It's also shown in the tooltip of the warning icon next to the bug watch
 in the bugtask table.
 
     >>> icon = find_tag_by_id(user_browser.contents, 'bugwatch-error-sprite')
-    >>> print icon.get('title')
+    >>> print(icon.get('title'))
     The Mozilla.org Bug Tracker bug #900 appears not to exist. Check
     that the bug number is correct.
 
@@ -86,7 +86,7 @@ We can observe this for each of the BugWatchActivityStatus failure values:
     ...     user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/12')
     ...     for tag in find_tags_by_class(user_browser.contents,
     ...         'error message'):
-    ...         print extract_text(tag.renderContents())
+    ...         print(extract_text(tag.renderContents()))
     Launchpad couldn't import bug #900 from The Mozilla.org Bug
     Tracker...
     The Mozilla.org Bug Tracker bug #900 appears not to exist. Check

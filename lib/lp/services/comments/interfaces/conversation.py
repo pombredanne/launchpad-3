@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interfaces to do with conversations on Launchpad entities."""
@@ -72,6 +72,11 @@ class IComment(Interface):
     display_attachments = Bool(
         description=_("Should attachments be displayed for this comment."),
         readonly=True)
+
+    visible = Bool(title=_("Whether this comment is visible."))
+
+    show_spam_controls = Bool(
+        title=_("Whether to show spam controls for this comment."))
 
 
 class IConversation(Interface):

@@ -1,38 +1,33 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 import _pythonpath
 
 from optparse import OptionParser
 import os
+import signal
 import sys
+
+from lp.services.pidfile import get_pid
 
 
 parser = OptionParser(description="Stop loggerhead.")
 parser.parse_args()
 
-home = os.path.realpath(os.path.dirname(__file__))
-pidfile = os.path.join(home, 'loggerhead.pid')
-
-try:
-    f = open(pidfile, 'r')
-except IOError as e:
-    print 'No pid file found.'
-    sys.exit(1)
-
-pid = int(f.readline())
+pid = get_pid("codebrowse")
 
 try:
     os.kill(pid, 0)
 except OSError as e:
-    print 'Stale pid file; server is not running.'
+    print('Stale pid file; server is not running.')
     sys.exit(1)
 
-print
-print 'Shutting down previous server @ pid %d.' % (pid,)
-print
+print()
+print('Shutting down previous server @ pid %d.' % (pid,))
+print()
 
-import signal
 os.kill(pid, signal.SIGTERM)

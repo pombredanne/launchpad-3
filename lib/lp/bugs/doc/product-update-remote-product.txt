@@ -42,7 +42,7 @@ ExternalBugTracker that doesn't require network access.
     >>> class FakeExternalBugTracker:
     ...
     ...     def initializeRemoteBugDB(self, bug_ids):
-    ...         print "Initializing DB for bugs: %s." % bug_ids
+    ...         print("Initializing DB for bugs: %s." % bug_ids)
     ...
     ...     def getRemoteProduct(self, remote_bug):
     ...         return 'product-for-bug-%s' % remote_bug
@@ -115,9 +115,9 @@ If there are no bug watches, nothing will be done.
     >>> list(bugzilla_product.getLinkedBugWatches())
     []
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
-    >>> print bugzilla_product.remote_product
+    >>> print(bugzilla_product.remote_product)
     None
-    >>> print rt_product.remote_product
+    >>> print(rt_product.remote_product)
     None
 
 
@@ -147,10 +147,10 @@ given one are ignored.
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
     Initializing DB for bugs: [u'84'].
 
-    >>> print rt_product.remote_product
+    >>> print(rt_product.remote_product)
     product-for-bug-84
 
-    >>> print bugzilla_product.remote_product
+    >>> print(bugzilla_product.remote_product)
     None
 
 
@@ -173,7 +173,7 @@ If a product already has remote_product set, it will not be updated.
     >>> updater = NoNetworkRemoteProductUpdater(
     ...     FakeTransaction(), BufferLogger())
     >>> updater.updateByBugTrackerType(BugTrackerType.RT)
-    >>> print rt_product.remote_product
+    >>> print(rt_product.remote_product)
     already-set
 
 

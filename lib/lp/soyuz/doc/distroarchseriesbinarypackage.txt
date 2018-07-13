@@ -16,7 +16,7 @@ Distro Arch Series Binary Package
 
 `DistroArchSeriesBinaryPackage`s have a title property:
 
-    >>> print pmount_hoary_i386.title
+    >>> print(pmount_hoary_i386.title)
     pmount binary package in Ubuntu Hoary i386
 
 First, we create a new version of pmount, and a version of mozilla-
@@ -160,7 +160,7 @@ distro_source_package attribute should return None.
     ...        getUtility(IDistributionSet)['debian']['woody']['i386'])
     >>> pmount_woody_i386 = DistroArchSeriesBinaryPackage(
     ...        deb_wdy_i386, pmount_name)
-    >>> print pmount_woody_i386.distro_source_package
+    >>> print(pmount_woody_i386.distro_source_package)
     None
 
 Check the publishing record of packages returned by 'currentrelease' and

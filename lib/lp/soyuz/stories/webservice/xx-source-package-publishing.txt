@@ -38,7 +38,7 @@ We need to insert some dependent fake data before continuing.
     >>> def print_publications(pubs):
     ...     for display_name in sorted(
     ...         entry['display_name'] for entry in pubs['entries']):
-    ...         print display_name
+    ...         print(display_name)
 
     >>> print_publications(pubs)
     cdrkit 1.0 in breezy-autotest
@@ -172,7 +172,7 @@ Query the source again:
     ...     distro_series=breezy['self_link'],
     ...     source_name="testwebservice").jsonBody()
 
-    >>> print pubs['entries'][0]['package_signer_link']
+    >>> print(pubs['entries'][0]['package_signer_link'])
     None
 
 Package deletion
@@ -184,7 +184,7 @@ A user can request a package to be deleted:
     ...     cprov_archive['self_link'], 'getPublishedSources',
     ...     source_name="testwebservice", version="666",
     ...     exact_match=True).jsonBody()
-    >>> print pubs['total_size']
+    >>> print(pubs['total_size'])
     1
     >>> package = pubs['entries'][0]['self_link']
 
@@ -193,7 +193,7 @@ Anonymous users can't remove packages.
     >>> response = webservice.named_post(
     ...     package, 'requestDeletion',
     ...     removal_comment="No longer needed")
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -202,7 +202,7 @@ The owner of a PPA can delete packages.
     >>> response = cprov_webservice.named_post(
     ...     package, 'requestDeletion',
     ...     removal_comment="No longer needed")
-    >>> print response
+    >>> print(response)
     HTTP/1.1 200 Ok
     ...
 
@@ -212,7 +212,7 @@ After removal, the package is marked as such:
     ...     cprov_archive['self_link'], 'getPublishedSources',
     ...     source_name="testwebservice", version="666",
     ...     exact_match=True).jsonBody()
-    >>> print pubs['entries'][0]['removal_comment']
+    >>> print(pubs['entries'][0]['removal_comment'])
     No longer needed
 
 The package's binaries are also marked for deletion:
@@ -221,9 +221,9 @@ The package's binaries are also marked for deletion:
     >>> for bin in cprov_ppa.getAllPublishedBinaries(
     ...     name=u"testwebservice-bin"):
     ...     if bin.status != PackagePublishingStatus.DELETED:
-    ...         print "%s is not deleted when it should be" % bin.displayname
+    ...         print("%s is not deleted when it should be" % bin.displayname)
     ...     else:
-    ...         print "%s deleted OK." % bin.displayname
+    ...         print("%s deleted OK." % bin.displayname)
     testwebservice-bin 666 in breezy-autotest i386 deleted OK.
     testwebservice-bin 666 in breezy-autotest hppa deleted OK.
 
@@ -253,7 +253,7 @@ access to the PPA publications.
     ...     "/~cprov/+archive/ubuntu/p3a").jsonBody()
     >>> cprov_srcs_response_private = webservice.named_get(
     ...     cprov_private_ppa['self_link'], 'getPublishedSources')
-    >>> print cprov_srcs_response_private
+    >>> print(cprov_srcs_response_private)
     HTTP/1.1 200 Ok
     ...
 
@@ -261,7 +261,7 @@ Any other user attempt would result in a 401 error.
 
     >>> response = user_webservice.named_get(
     ...     cprov_private_ppa['self_link'], 'getPublishedSources')
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -271,7 +271,7 @@ also fail in their quest.
     >>> pubs = cprov_srcs_response_private.jsonBody()
     >>> private_publication_url = pubs['entries'][0]['self_link']
     >>> response = user_webservice.get(private_publication_url)
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -292,7 +292,7 @@ binaries have been copied and published in the same context archive.
     >>> builds = webservice.named_get(
     ...     source_pub['self_link'], 'getBuilds').jsonBody()
     >>> for entry in sorted(builds['entries']):
-    ...     print entry['title']
+    ...     print(entry['title'])
     i386 build of pmount 0.1-1 in ubuntu warty RELEASE
 
 
@@ -310,7 +310,7 @@ of that publication.
     >>> builds = webservice.named_get(
     ...     source_pub['self_link'], 'getPublishedBinaries').jsonBody()
     >>> for entry in sorted(builds['entries']):
-    ...     print entry['display_name']
+    ...     print(entry['display_name'])
     pmount 0.1-1 in warty hppa
     pmount 0.1-1 in warty i386
 
@@ -351,8 +351,8 @@ Create a helper function to print the results:
     >>> def print_build_summaries(summaries):
     ...     for id, summary in summaries.items():
     ...         arch_tags = [build['arch_tag'] for build in summary['builds']]
-    ...         print "Source ID %s: %s (%s)" % (id, summary['status'],
-    ...                                          arch_tags)
+    ...         print("Source ID %s: %s (%s)" % (id, summary['status'],
+    ...                                          arch_tags))
 
 The results contain an entry for each source ID, with the summary status
 and a list of all the relevant builds for the summary:
@@ -374,12 +374,12 @@ for this package:
     ...     entry['self_link'] for entry in pubs['entries']):
     ...     source_urls = webservice.named_get(
     ...         pub_link, 'sourceFileUrls').jsonBody()
-    ...     print source_urls
-    [u'http://.../~cprov/+archive/ubuntu/ppa/+files/foobar-1.0.dsc']
-    [u'http://.../~cprov/+archive/ubuntu/ppa/+files/firefox_0.9.2.orig.tar.gz',
-     u'http://.../~cprov/+archive/ubuntu/ppa/+files/iceweasel-1.0.dsc']
+    ...     print(source_urls)
+    [u'http://.../~cprov/+archive/ubuntu/ppa/+sourcefiles/cdrkit/1.0/foobar-1.0.dsc']
+    [u'http://.../~cprov/+archive/ubuntu/ppa/+sourcefiles/iceweasel/1.0/firefox_0.9.2.orig.tar.gz',
+     u'http://.../~cprov/+archive/ubuntu/ppa/+sourcefiles/iceweasel/1.0/iceweasel-1.0.dsc']
     []
-    [u'http://.../~cprov/+archive/ubuntu/ppa/+files/testwebservice_666.dsc']
+    [u'http://.../~cprov/+archive/ubuntu/ppa/+sourcefiles/testwebservice/666/testwebservice_666.dsc']
 
 binaryFileUrls() is similar:
 
@@ -387,7 +387,7 @@ binaryFileUrls() is similar:
     ...     entry['self_link'] for entry in pubs['entries']):
     ...     binary_urls = webservice.named_get(
     ...         pub_link, 'binaryFileUrls').jsonBody()
-    ...     print binary_urls
+    ...     print(binary_urls)
     []
     [u'http://.../~cprov/+archive/ubuntu/ppa/+files/mozilla-firefox_0.9_i386.deb']
     []
@@ -403,8 +403,8 @@ the librarian.
     ...     spph = factory.makeSourcePackagePublishingHistory(
     ...         sourcepackagerelease=spr)
     ...     spph_url = canonical_url(spph, path_only_if_possible=True)
-    >>> print webservice.named_get(
-    ...     spph_url, 'changelogUrl', api_version='devel').jsonBody()
+    >>> print(webservice.named_get(
+    ...     spph_url, 'changelogUrl', api_version='devel').jsonBody())
     http://launchpad.dev/.../+sourcepub/.../+files/changelog
 
 The debdiff to a particular version can also be retrieved using the
@@ -444,7 +444,7 @@ And then obtain the URL to the diff:
 
 The URL is a standard proxied URL in case the file is private:
 
-    >>> print diff_url
+    >>> print(diff_url)
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+files/...
 
 It will match the fake content we added earlier:
@@ -472,7 +472,7 @@ Overrides
     >>> pubs = webservice.named_get(
     ...     cprov_archive_devel["self_link"], "getPublishedSources",
     ...     api_version="devel", source_name="testoverrides").jsonBody()
-    >>> print pubs["entries"][0]["section_name"]
+    >>> print(pubs["entries"][0]["section_name"])
     base
     >>> package = pubs["entries"][0]["self_link"]
 
@@ -481,7 +481,7 @@ Anonymous users can't change overrides.
     >>> response = webservice.named_post(
     ...     package, "changeOverride", api_version="devel",
     ...     new_section="admin")
-    >>> print response
+    >>> print(response)
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -490,7 +490,7 @@ The owner of a PPA can change overrides.
     >>> response = cprov_webservice.named_post(
     ...     package, "changeOverride", api_version="devel",
     ...     new_section="admin")
-    >>> print response
+    >>> print(response)
     HTTP/1.1 200 Ok
     ...
 
@@ -499,5 +499,5 @@ The override change takes effect:
     >>> pubs = webservice.named_get(
     ...     cprov_archive["self_link"], "getPublishedSources",
     ...     source_name="testoverrides").jsonBody()
-    >>> print pubs["entries"][0]["section_name"]
+    >>> print(pubs["entries"][0]["section_name"])
     admin

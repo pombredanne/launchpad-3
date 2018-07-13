@@ -13,5 +13,5 @@ support filing bugs on a product series directly.
     >>> report_bug.click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+filebug'
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Report a bug : Bugs : Mozilla Firefox

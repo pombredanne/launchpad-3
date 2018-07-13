@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git references."""
@@ -14,7 +14,9 @@ from datetime import (
 import hashlib
 import json
 
+from bzrlib import urlutils
 import pytz
+import responses
 from testtools.matchers import (
     ContainsDict,
     EndsWith,
@@ -29,8 +31,14 @@ from zope.component import getUtility
 from lp.app.enums import InformationType
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
-from lp.code.errors import InvalidBranchMergeProposal
+from lp.code.errors import (
+    GitRepositoryBlobNotFound,
+    GitRepositoryBlobUnsupportedRemote,
+    GitRepositoryScanFault,
+    InvalidBranchMergeProposal,
+    )
 from lp.code.tests.helpers import GitHostingFixture
+from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.webapp.interfaces import OAuthPermission
@@ -271,6 +279,106 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             ]))
 
 
+class TestGitRefGetBlob(TestCaseWithFactory):
+    """Tests for retrieving blobs from a Git reference."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_local(self):
+        [ref] = self.factory.makeGitRefs()
+        hosting_fixture = self.useFixture(GitHostingFixture(blob=b"foo"))
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+        self.assertEqual(
+            [((ref.repository.getInternalPath(), "dir/file"),
+              {"rev": ref.path})],
+            hosting_fixture.getBlob.calls)
+
+    def test_local_by_url(self):
+        # It's possible (though not encouraged) to retrieve files from
+        # self-hosted repositories by URL.
+        [ref] = self.factory.makeGitRefs()
+        hosting_fixture = self.useFixture(GitHostingFixture(blob=b"foo"))
+        https_ref = self.factory.makeGitRefRemote(
+            repository_url=ref.repository.git_https_url, path=ref.path)
+        anon_ref = self.factory.makeGitRefRemote(
+            repository_url=urlutils.join(
+                config.codehosting.git_anon_root,
+                ref.repository.shortened_path),
+            path=ref.path)
+        self.assertEqual(b"foo", https_ref.getBlob("dir/file"))
+        self.assertEqual(b"foo", anon_ref.getBlob("dir/file"))
+        internal_path = ref.repository.getInternalPath()
+        expected_calls = [
+            ((internal_path, "dir/file"), {"rev": ref.path}),
+            ((internal_path, "dir/file"), {"rev": ref.path}),
+            ]
+        self.assertEqual(expected_calls, hosting_fixture.getBlob.calls)
+
+    @responses.activate
+    def test_remote_github_branch(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name",
+            path="refs/heads/path")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/path/dir/file",
+            body=b"foo")
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+
+    @responses.activate
+    def test_remote_github_tag(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name",
+            path="refs/tags/1.0")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/1.0/dir/file",
+            body=b"foo")
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+
+    @responses.activate
+    def test_remote_github_HEAD(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name", path="HEAD")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/HEAD/dir/file",
+            body=b"foo")
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+
+    @responses.activate
+    def test_remote_github_404(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name", path="HEAD")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/HEAD/dir/file",
+            status=404)
+        self.assertRaises(GitRepositoryBlobNotFound, ref.getBlob, "dir/file")
+
+    @responses.activate
+    def test_remote_github_error(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name", path="HEAD")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/HEAD/dir/file",
+            status=500)
+        self.assertRaises(GitRepositoryScanFault, ref.getBlob, "dir/file")
+
+    def test_remote_github_bad_repository_path(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name/extra")
+        self.assertRaises(
+            GitRepositoryBlobUnsupportedRemote, ref.getBlob, "dir/file")
+
+    def test_remote_unknown_host(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://example.com/foo")
+        self.assertRaises(
+            GitRepositoryBlobUnsupportedRemote, ref.getBlob, "dir/file")
+
+
 class TestGitRefCreateMergeProposal(TestCaseWithFactory):
     """Exercise all the code paths for creating a merge proposal."""
 
@@ -301,13 +409,24 @@ class TestGitRefCreateMergeProposal(TestCaseWithFactory):
         else:
             self.assertEqual(review_type, vote.review_type)
 
-    def test_personal_source(self):
-        """Personal repositories cannot be used as a source for MPs."""
+    def test_personal_source_project_target(self):
+        """Personal repositories cannot be used as a source for MPs to
+        project repositories.
+        """
         self.source.repository.setTarget(
             target=self.source.owner, user=self.source.owner)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target)
+
+    def test_personal_source_personal_target(self):
+        """A branch in a personal repository can be used as a source for MPs
+        to another branch in the same personal repository.
+        """
+        self.target.repository.setTarget(
+            target=self.target.owner, user=self.target.owner)
+        [source] = self.factory.makeGitRefs(repository=self.target.repository)
+        source.addLandingTarget(self.user, self.target)
 
     def test_target_repository_same_target(self):
         """The target repository's target must match that of the source."""

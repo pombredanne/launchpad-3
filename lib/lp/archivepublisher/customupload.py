@@ -20,6 +20,7 @@ import shutil
 import tarfile
 import tempfile
 
+import scandir
 from zope.interface import implementer
 
 from lp.archivepublisher.debversion import (
@@ -287,7 +288,7 @@ class CustomUpload:
         """Install the files from the custom upload to the archive."""
         assert self.tmpdir is not None, "Must extract tarfile first"
         extracted = False
-        for dirpath, dirnames, filenames in os.walk(self.tmpdir):
+        for dirpath, dirnames, filenames in scandir.walk(self.tmpdir):
 
             # Create symbolic links to directories.
             for dirname in dirnames:
@@ -356,17 +357,17 @@ class CustomUpload:
         # now present in the target. Deliberately skip 'broken' versions
         # because they can't be sorted anyway.
         versions = []
-        for inst in os.listdir(self.targetdir):
+        for entry in scandir.scandir(self.targetdir):
             # Skip the symlink.
-            if inst == 'current':
+            if entry.name == 'current':
                 continue
             # Skip broken versions.
             try:
-                make_version(inst)
+                make_version(entry.name)
             except VersionError:
                 continue
             # Append the valid versions to the list.
-            versions.append(inst)
+            versions.append(entry.name)
         versions.sort(key=make_version, reverse=True)
 
         # Make sure the 'current' symlink points to the most recent version

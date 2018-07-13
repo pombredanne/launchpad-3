@@ -102,7 +102,6 @@ from lp.services.comments.interfaces.conversation import (
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
 from lp.services.librarian.interfaces.client import LibrarianServerError
-from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -124,6 +123,7 @@ from lp.services.webapp import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.menu import NavigationMenu
 
 
@@ -437,8 +437,13 @@ class BranchMergeProposalNavigation(Navigation):
         except ValueError:
             return None
         try:
-            return self.context.getComment(id)
+            comment = self.context.getComment(id)
         except WrongBranchMergeProposal:
+            return None
+        user = getUtility(ILaunchBag).user
+        if comment.visible or comment.userCanSetCommentVisibility(user):
+            return comment
+        else:
             return None
 
     @stepthrough("+preview-diff")
@@ -592,6 +597,8 @@ class CodeReviewNewRevisions:
         self.comment_date = None
         self.display_attachments = False
         self.index = None
+        self.visible = True
+        self.show_spam_controls = False
 
     def download(self, request):
         pass
@@ -610,19 +617,16 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         super(BranchMergeProposalView, self).initialize()
         cache = IJSONRequestCache(self.request)
         cache.objects['branch_name'] = self.context.merge_source.name
-        if IBranch.providedBy(self.context.merge_source):
-            cache.objects.update({
-                'branch_diff_link':
-                    'https://%s/+loggerhead/%s/diff/' % (
-                        config.launchpad.code_domain,
-                        self.context.source_branch.unique_name),
-                })
+        if (IBranch.providedBy(self.context.merge_source) and
+                getFeatureFlag("code.bzr.diff.disable_proxy")):
+            # This fallback works for public branches, but not private ones.
+            cache.objects['branch_diff_link'] = (
+                'https://%s/+loggerhead/%s/diff/' % (
+                    config.launchpad.code_domain,
+                    self.context.source_branch.unique_name))
         else:
-            cache.objects.update({
-                'branch_diff_link':
-                    canonical_url(self.context.source_git_repository) +
-                    '/+diff/',
-                })
+            cache.objects['branch_diff_link'] = (
+                canonical_url(self.context.parent) + '/+diff/')
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
             cache.objects['merge_proposal_event_key'] = subscribe(
                 self.context).event_key
@@ -662,6 +666,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         source = merge_proposal.merge_source
         if IBranch.providedBy(source):
             source = DecoratedBranch(source)
+        user = getUtility(ILaunchBag).user
+        strip_invisible = not merge_proposal.userCanSetCommentVisibility(user)
         comments = []
         if (getFeatureFlag('code.incremental_diffs.enabled') and
                 merge_proposal.source_branch is not None):
@@ -689,6 +695,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 for comment in merge_proposal.all_comments)
             merge_proposal = merge_proposal.supersedes
         comments = sorted(comments, key=operator.attrgetter('date'))
+        if strip_invisible:
+            comments = [c for c in comments if c.visible or c.author == user]
         self._populate_previewdiffs(comments)
         return CodeReviewConversation(comments)
 
@@ -704,27 +712,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         for comment in comments:
             get_property_cache(
                 comment).previewdiff_id = relations.get(comment.id)
-
-    @property
-    def comments(self):
-        """Return comments associated with this proposal, plus styling info.
-
-        Comments are in threaded order, and the style indicates indenting
-        for use with threads.
-        """
-        message_to_comment = {}
-        messages = []
-        for comment in self.context.all_comments:
-            message_to_comment[comment.message] = comment
-            messages.append(comment.message)
-        message_set = getUtility(IMessageSet)
-        threads = message_set.threadMessages(messages)
-        result = []
-        for depth, message in message_set.flattenThreads(threads):
-            comment = message_to_comment[message]
-            style = 'margin-left: %dem;' % (2 * depth)
-            result.append(dict(style=style, comment=comment))
-        return result
 
     @property
     def label(self):

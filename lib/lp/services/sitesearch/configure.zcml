@@ -16,13 +16,6 @@
   </class>
 
   <securedutility
-    name="google"
-    class="lp.services.sitesearch.GoogleSearchService"
-    provides="lp.services.sitesearch.interfaces.ISearchService">
-    <allow interface="lp.services.sitesearch.interfaces.ISearchService" />
-  </securedutility>
-
-  <securedutility
     name="bing"
     class="lp.services.sitesearch.BingSearchService"
     provides="lp.services.sitesearch.interfaces.ISearchService">

@@ -32,7 +32,7 @@ If an invalid tag name is entered, an error message will be displayed.
     >>> anon_browser.getControl('Search', index=0).click()
 
     >>> for tag in find_tags_by_class(anon_browser.contents, 'message'):
-    ...     print tag.renderContents()
+    ...     print(tag.renderContents())
     &#x27;!!invalid!!&#x27; isn&#x27;t a valid tag name. Tags must start
     with a letter or number and be lowercase. The characters
     &quot;+&quot;, &quot;-&quot; and &quot;.&quot; are also allowed
@@ -58,7 +58,7 @@ is parse-able:
 
 Indeed, the markup is valid and correctly escaped:
 
-    >>> print find_tag_by_id(anon_browser.contents, 'field.tag').prettify()
+    >>> print(find_tag_by_id(anon_browser.contents, 'field.tag').prettify())
     <input class="textType" id="field.tag"
            name="field.tag" size="20" type="text"
            value='&lt;script&gt;alert("cheezburger");&lt;/script&gt;' />
@@ -66,7 +66,7 @@ Indeed, the markup is valid and correctly escaped:
 The error message is also valid and correctly escaped:
 
     >>> for tag in find_tags_by_class(anon_browser.contents, 'message'):
-    ...     print tag.prettify()
+    ...     print(tag.prettify())
     <div class="message">
     &#x27;&lt;script&gt;alert(&quot;cheezburger&quot;);&lt;/script&gt;&#x27; isn&#x27;t ...
     </div>

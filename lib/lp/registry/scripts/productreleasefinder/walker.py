@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """HTTP and FTP walker.
@@ -13,10 +13,8 @@ __all__ = [
     ]
 
 import ftplib
-import os
 import socket
 from urllib import unquote_plus
-import urllib2
 from urlparse import (
     urljoin,
     urlsplit,
@@ -30,9 +28,16 @@ from lazr.uri import (
     InvalidURIError,
     URI,
     )
+import requests
+import scandir
 
 from lp.registry.scripts.productreleasefinder import log
 from lp.services.beautifulsoup import BeautifulSoup
+from lp.services.config import config
+from lp.services.timeout import (
+    TimeoutError,
+    urlfetch,
+    )
 from lp.services.webapp.url import urlappend
 
 
@@ -46,24 +51,11 @@ class HTTPWalkerError(WalkerError):
     pass
 
 
-class Request(urllib2.Request):
-    """A urllib2 Request object that can override the request method."""
-
-    method = None
-
-    def get_method(self):
-        """See `urllib2.Request`."""
-        if self.method is not None:
-            return self.method
-        else:
-            return urllib2.Request.get_method(self)
-
-
 class WalkerBase:
     """Base class for URL walkers.
 
     This class is a base class for those wishing to implement protocol
-    specific walkers.  Walkers behave much like the os.walk() function,
+    specific walkers.  Walkers behave much like the scandir.walk() function,
     but taking a URL and working remotely.
 
     A typical usage would be:
@@ -116,7 +108,7 @@ class WalkerBase:
         """Walk through the URL.
 
         Yields (dirpath, dirnames, filenames) for each path under the base;
-        dirnames can be modified as with os.walk.
+        dirnames can be modified as with scandir.walk.
         """
         try:
             self.open()
@@ -277,21 +269,6 @@ class HTTPWalker(WalkerBase):
     # Whether to ignore or parse fragments in the URL
     FRAGMENTS = True
 
-    # All the urls handlers used to support the schemas. Redirects are not
-    # supported.
-    handlers = (
-        urllib2.ProxyHandler,
-        urllib2.UnknownHandler,
-        urllib2.HTTPHandler,
-        urllib2.HTTPDefaultErrorHandler,
-        urllib2.HTTPSHandler,
-        urllib2.HTTPDefaultErrorHandler,
-        urllib2.FTPHandler,
-        urllib2.FileHandler,
-        urllib2.HTTPErrorProcessor)
-
-    _opener = None
-
     def open(self):
         """Open the HTTP connection."""
         self.log.info('Walking %s://%s', self.scheme, self.host)
@@ -303,19 +280,12 @@ class HTTPWalker(WalkerBase):
     def request(self, method, path):
         """Make an HTTP request.
 
-        Returns the HTTPResponse object.
+        Returns the Response object.
         """
-        # We build a custom opener, because we don't want redirects to be
-        # followed.
-        if self._opener is None:
-            self._opener = urllib2.OpenerDirector()
-            for handler in self.handlers:
-                self._opener.add_handler(handler())
-
         self.log.debug("Requesting %s with method %s", path, method)
-        request = Request(urljoin(self.base, path))
-        request.method = method
-        return self._opener.open(request)
+        return urlfetch(
+            urljoin(self.base, path), method=method, allow_redirects=False,
+            trust_env=False, use_proxy=True, allow_ftp=True)
 
     def isDirectory(self, path):
         """Return whether the path is a directory.
@@ -334,19 +304,15 @@ class HTTPWalker(WalkerBase):
 
         self.log.debug("Checking if %s is a directory" % path)
         try:
-            self.request("HEAD", path)
-            return False
-        except urllib2.HTTPError as exc:
-            if exc.code != 301:
-                return False
-        except (IOError, socket.error) as exc:
-            # Raise HTTPWalkerError for other IO or socket errors.
+            response = self.request("HEAD", path)
+        except (TimeoutError, requests.RequestException) as exc:
             raise HTTPWalkerError(str(exc))
 
-        # We have a 301 redirect error from here on.
-        url = exc.hdrs.getheader("location")
-        (scheme, netloc, redirect_path, query, fragment) \
-                 = urlsplit(url, self.scheme, self.FRAGMENTS)
+        if not response.is_redirect or "location" not in response.headers:
+            return False
+        url = response.headers["location"]
+        scheme, netloc, redirect_path, _, _ = urlsplit(
+            url, self.scheme, self.FRAGMENTS)
 
         if len(scheme) and scheme != self.scheme:
             return False
@@ -367,11 +333,8 @@ class HTTPWalker(WalkerBase):
         self.log.info("Listing %s" % dirname)
         try:
             response = self.request("GET", dirname)
-            try:
-                soup = BeautifulSoup(response.read())
-            finally:
-                response.close()
-        except (IOError, socket.error) as exc:
+            soup = BeautifulSoup(response.content)
+        except (TimeoutError, requests.RequestException) as exc:
             raise HTTPWalkerError(str(exc))
 
         base = URI(self.base).resolve(dirname)
@@ -412,16 +375,16 @@ def walk(url, log_parent=None):
     """Return a walker for the URL given."""
     (scheme, netloc, path, query, fragment) = urlsplit(url, "file")
     if scheme in ["ftp"]:
-        # If ftp_proxy is set, use the HTTPWalker class since we are
-        # talking to an HTTP proxy.
-        if 'ftp_proxy' in os.environ:
+        # If an HTTP proxy is configured, use the HTTPWalker class so that
+        # FTP requests are made via the proxy.
+        if config.launchpad.http_proxy:
             return HTTPWalker(url, log_parent)
         else:
             return FTPWalker(url, log_parent)
     elif scheme in ["http", "https"]:
         return HTTPWalker(url, log_parent)
     elif scheme in ["file"]:
-        return os.walk(path)
+        return scandir.walk(path)
     else:
         raise WalkerError("Unknown scheme: %s" % scheme)
 

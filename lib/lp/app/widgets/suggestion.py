@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IBranch."""
@@ -34,7 +34,9 @@ from zope.schema.vocabulary import (
 
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.code.interfaces.gitcollection import IGitCollection
+from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.registry.interfaces.person import IPerson
 from lp.services.webapp import canonical_url
 from lp.services.webapp.escaping import (
     html_escape,
@@ -295,31 +297,42 @@ class TargetGitRepositoryWidget(SuggestionWidget):
     """
 
     @staticmethod
-    def _generateSuggestionVocab(repository, full_vocabulary):
+    def _generateSuggestionVocab(context, full_vocabulary):
         """Generate the vocabulary for the radio buttons.
 
         The generated vocabulary contains the default repository for the
         target if there is one, and also any other repositories that the
         user has specified recently as a target for a proposed merge.
         """
-        default_target = getUtility(IGitRepositorySet).getDefaultRepository(
-            repository.target)
-        logged_in_user = getUtility(ILaunchBag).user
-        since = datetime.now(utc) - timedelta(days=90)
-        collection = IGitCollection(repository.target).targetedBy(
-            logged_in_user, since)
-        collection = collection.visibleByUser(logged_in_user)
-        # May actually need some eager loading, but the API isn't fine grained
-        # yet.
-        repositories = collection.getRepositories(eager_load=False).config(
-            distinct=True)
-        target_repositories = list(repositories.config(limit=5))
-        # If there is a default repository, make sure it is always shown,
-        # and as the first item.
-        if default_target is not None:
-            if default_target in target_repositories:
-                target_repositories.remove(default_target)
-            target_repositories.insert(0, default_target)
+        if IGitRef.providedBy(context):
+            repository = context.repository
+        else:
+            repository = context
+
+        if IPerson.providedBy(repository.target):
+            # If the source is a personal repository, then the only valid
+            # target is that same repository.
+            target_repositories = [repository]
+        else:
+            repository_set = getUtility(IGitRepositorySet)
+            default_target = repository_set.getDefaultRepository(
+                repository.target)
+            logged_in_user = getUtility(ILaunchBag).user
+            since = datetime.now(utc) - timedelta(days=90)
+            collection = IGitCollection(repository.target).targetedBy(
+                logged_in_user, since)
+            collection = collection.visibleByUser(logged_in_user)
+            # May actually need some eager loading, but the API isn't fine
+            # grained yet.
+            repositories = collection.getRepositories(eager_load=False).config(
+                distinct=True)
+            target_repositories = list(repositories.config(limit=5))
+            # If there is a default repository, make sure it is always
+            # shown, and as the first item.
+            if default_target is not None:
+                if default_target in target_repositories:
+                    target_repositories.remove(default_target)
+                target_repositories.insert(0, default_target)
 
         terms = []
         for repository in target_repositories:
@@ -335,10 +348,12 @@ class TargetGitRepositoryWidget(SuggestionWidget):
         # instead to have a separate link to the repository details.
         text = u'%s (<a href="%s">repository details</a>)'
         # If the repository is the default for the target, say so.
-        default_target = getUtility(IGitRepositorySet).getDefaultRepository(
-            repository.target)
-        if repository == default_target:
-            text += u"&ndash; <em>default repository</em>"
+        if not IPerson.providedBy(repository.target):
+            repository_set = getUtility(IGitRepositorySet)
+            default_target = repository_set.getDefaultRepository(
+                repository.target)
+            if repository == default_target:
+                text += u"&ndash; <em>default repository</em>"
         label = (
             u'<label for="%s" style="font-weight: normal">' + text +
             u'</label>')

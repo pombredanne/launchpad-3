@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -50,6 +50,7 @@ from lp.services.webapp import (
     LaunchpadView,
     Link,
     )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
@@ -85,10 +86,11 @@ class CodeReviewDisplayComment(MessageComment):
 
     @property
     def extra_css_class(self):
+        css_classes = (
+            super(CodeReviewDisplayComment, self).extra_css_class.split())
         if self.from_superseded:
-            return 'from-superseded'
-        else:
-            return ''
+            css_classes.append('from-superseded')
+        return ' '.join(css_classes)
 
     @cachedproperty
     def previewdiff_id(self):
@@ -120,6 +122,11 @@ class CodeReviewDisplayComment(MessageComment):
     @property
     def download_url(self):
         return canonical_url(self.comment, view_name='+download')
+
+    @cachedproperty
+    def show_spam_controls(self):
+        user = getUtility(ILaunchBag).user
+        return self.comment.userCanSetCommentVisibility(user)
 
 
 def get_message(display_comment):

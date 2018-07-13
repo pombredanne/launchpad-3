@@ -2425,6 +2425,89 @@ class TestGetFileByName(TestCaseWithFactory):
             self.archive.getFileByName(pu.changesfile.filename))
 
 
+class TestGetSourceFileByName(TestCaseWithFactory):
+    """Tests for Archive.getSourceFileByName."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestGetSourceFileByName, self).setUp()
+        self.archive = self.factory.makeArchive()
+
+    def test_source_file_is_found(self):
+        # A file from a published source package can be retrieved.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        dsc = self.factory.makeLibraryFileAlias(filename='foo_1.0.dsc')
+        self.assertRaises(
+            NotFoundError, self.archive.getSourceFileByName,
+            pub.source_package_name, pub.source_package_version, dsc.filename)
+        pub.sourcepackagerelease.addFile(dsc)
+        self.assertEqual(
+            dsc, self.archive.getSourceFileByName(
+                pub.source_package_name, pub.source_package_version,
+                dsc.filename))
+
+    def test_nonexistent_source_file_is_not_found(self):
+        # Something that looks like a source file but isn't is not
+        # found.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        self.assertRaises(
+            NotFoundError, self.archive.getSourceFileByName,
+            pub.source_package_name, pub.source_package_version,
+            'foo_1.0.dsc')
+
+    def test_nonexistent_source_package_version_is_not_found(self):
+        # The source package version must match exactly.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        pub2 = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive, sourcepackagename=pub.source_package_name)
+        dsc = self.factory.makeLibraryFileAlias(filename='foo_1.0.dsc')
+        pub2.sourcepackagerelease.addFile(dsc)
+        self.assertRaises(
+            NotFoundError, self.archive.getSourceFileByName,
+            pub.source_package_name, pub.source_package_version,
+            'foo_1.0.dsc')
+
+    def test_nonexistent_source_package_name_is_not_found(self):
+        # The source package name must match exactly.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        pub2 = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive)
+        dsc = self.factory.makeLibraryFileAlias(filename='foo_1.0.dsc')
+        pub2.sourcepackagerelease.addFile(dsc)
+        self.assertRaises(
+            NotFoundError, self.archive.getSourceFileByName,
+            pub.source_package_name, pub.source_package_version,
+            'foo_1.0.dsc')
+
+    def test_epoch_stripping_collision(self):
+        # Even if the archive contains two source packages with identical
+        # names and versions apart from epochs which have the same filenames
+        # with different contents (the worst case), getSourceFileByName
+        # returns the correct files.
+        pub = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive, version='1.0-1')
+        dsc = self.factory.makeLibraryFileAlias(filename='foo_1.0.dsc')
+        pub.sourcepackagerelease.addFile(dsc)
+        pub2 = self.factory.makeSourcePackagePublishingHistory(
+            archive=self.archive, sourcepackagename=pub.source_package_name,
+            version='1:1.0-1')
+        dsc2 = self.factory.makeLibraryFileAlias(filename='foo_1.0.dsc')
+        pub2.sourcepackagerelease.addFile(dsc2)
+        self.assertEqual(
+            dsc, self.archive.getSourceFileByName(
+                pub.source_package_name, pub.source_package_version,
+                dsc.filename))
+        self.assertEqual(
+            dsc2, self.archive.getSourceFileByName(
+                pub2.source_package_name, pub2.source_package_version,
+                dsc2.filename))
+
+
 class TestGetPublishedSources(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
