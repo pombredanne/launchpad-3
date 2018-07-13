@@ -531,7 +531,7 @@ class SnapAddView(
             auto_build=data['auto_build'],
             auto_build_archive=data['auto_build_archive'],
             auto_build_pocket=data['auto_build_pocket'],
-            auto_build_channels=data.get('auto_build_channels'),
+            auto_build_channels=data['auto_build_channels'],
             processors=data['processors'], private=private,
             build_source_tarball=data['build_source_tarball'],
             store_upload=data['store_upload'],
