@@ -91,8 +91,7 @@ class GitHubRateLimit:
         url = "https://%s/rate_limit" % host
         try:
             with override_timeout(timeout):
-                response = urlfetch(
-                    url, headers=headers, trust_env=False, use_proxy=True)
+                response = urlfetch(url, headers=headers, use_proxy=True)
                 return response.json()["resources"]["core"]
         except requests.RequestException as e:
             raise BugTrackerConnectError(url, e)
