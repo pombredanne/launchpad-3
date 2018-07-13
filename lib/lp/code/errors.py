@@ -36,6 +36,7 @@ __all__ = [
     'DiffNotFound',
     'GitDefaultConflict',
     'GitRepositoryBlobNotFound',
+    'GitRepositoryBlobUnsupportedRemote',
     'GitRepositoryCreationException',
     'GitRepositoryCreationFault',
     'GitRepositoryCreationForbidden',
@@ -451,6 +452,18 @@ class GitRepositoryBlobNotFound(GitRepositoryScanFault):
         if self.rev is not None:
             message += " at revision %s" % self.rev
         return message
+
+
+class GitRepositoryBlobUnsupportedRemote(Exception):
+    """Raised when trying to fetch a blob from an unsupported remote host."""
+
+    def __init__(self, repository_url):
+        super(GitRepositoryBlobUnsupportedRemote, self).__init__()
+        self.repository_url = repository_url
+
+    def __str__(self):
+        return "Cannot fetch blob from external Git repository at %s" % (
+            self.repository_url)
 
 
 class GitRepositoryDeletionFault(Exception):

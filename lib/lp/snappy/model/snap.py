@@ -60,6 +60,7 @@ from lp.code.errors import (
     BranchFileNotFound,
     BranchHostingFault,
     GitRepositoryBlobNotFound,
+    GitRepositoryBlobUnsupportedRemote,
     GitRepositoryScanFault,
     )
 from lp.code.interfaces.branch import IBranch
@@ -553,8 +554,17 @@ class Snap(Storm, WebhookTargetMixin):
     def requestBuildsFromJob(self, requester, archive, pocket, channels=None,
                              logger=None):
         """See `ISnap`."""
-        snapcraft_data = removeSecurityProxy(
-            getUtility(ISnapSet).getSnapcraftYaml(self))
+        try:
+            snapcraft_data = removeSecurityProxy(
+                getUtility(ISnapSet).getSnapcraftYaml(self))
+        except CannotFetchSnapcraftYaml as e:
+            if not e.unsupported_remote:
+                raise
+            # The only reason we can't fetch the file is because we don't
+            # support fetching from this repository's host.  In this case
+            # the best thing is to fall back to building for all supported
+            # architectures.
+            snapcraft_data = {}
         # Sort by Processor.id for determinism.  This is chosen to be the
         # same order as in BinaryPackageBuildSet.createForSource, to
         # minimise confusion.
@@ -1037,10 +1047,7 @@ class SnapSet:
                 )
             for path in paths:
                 try:
-                    if IBranch.providedBy(context):
-                        blob = context.getBlob(path)
-                    else:
-                        blob = context.repository.getBlob(path, context.name)
+                    blob = context.getBlob(path)
                     break
                 except (BranchFileNotFound, GitRepositoryBlobNotFound):
                     pass
@@ -1049,6 +1056,8 @@ class SnapSet:
                 if logger is not None:
                     logger.exception(msg, context.unique_name)
                 raise NotFoundError(msg % context.unique_name)
+        except GitRepositoryBlobUnsupportedRemote as e:
+            raise CannotFetchSnapcraftYaml(str(e), unsupported_remote=True)
         except (BranchHostingFault, GitRepositoryScanFault) as e:
             msg = "Failed to get snap manifest from %s"
             if logger is not None:

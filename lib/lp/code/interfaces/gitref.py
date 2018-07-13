@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git reference ("ref") interfaces."""
@@ -381,6 +381,13 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         """Return a specific number of the latest commits in this ref."""
 
     has_commits = Attribute("Whether this reference has any commits.")
+
+    def getBlob(filename):
+        """Get a blob by file name from this reference.
+
+        :param filename: Relative path of a file in the repository.
+        :return: A binary string with the blob content.
+        """
 
 
 class IGitRefBatchNavigator(ITableBatchNavigator):

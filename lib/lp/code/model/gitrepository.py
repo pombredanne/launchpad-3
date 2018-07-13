@@ -1082,7 +1082,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     def getBlob(self, filename, rev=None):
         """See `IGitRepository`."""
         hosting_client = getUtility(IGitHostingClient)
-        return hosting_client.getBlob(self.getInternalPath(), filename, rev)
+        return hosting_client.getBlob(
+            self.getInternalPath(), filename, rev=rev)
 
     def getDiff(self, old, new):
         """See `IGitRepository`."""
