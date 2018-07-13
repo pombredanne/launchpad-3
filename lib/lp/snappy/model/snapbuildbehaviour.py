@@ -108,7 +108,8 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 tools_source=config.snappy.tools_source,
                 tools_fingerprint=config.snappy.tools_fingerprint,
                 logger=logger))
-        if build.channels is not None:
+        if (build.channels is not None and
+                build.channels.get("snapcraft") != "apt"):
             # We have to remove the security proxy that Zope applies to this
             # dict, since otherwise we'll be unable to serialise it to
             # XML-RPC.
