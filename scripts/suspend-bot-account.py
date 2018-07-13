@@ -5,7 +5,7 @@
 
 import _pythonpath
 
-from lp.registry.scripts.createbotaccount import SuspendBotAccountScript
+from lp.registry.scripts.suspendbotaccount import SuspendBotAccountScript
 
 
 if __name__ == '__main__':
