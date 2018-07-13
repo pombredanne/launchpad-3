@@ -22,8 +22,7 @@ class SuspendBotAccountScript(LaunchpadScript):
     def add_my_options(self):
         self.parser.add_option(
             '-e', '--email', metavar='ADDR', action='store',
-            type='string', dest='email', default='',
-            help='Email address. Defaults to webops+username@canonical.com')
+            type='string', dest='email', default='', help='Email address')
 
     def main(self):
         emailaddress = unicode(self.options.email)
