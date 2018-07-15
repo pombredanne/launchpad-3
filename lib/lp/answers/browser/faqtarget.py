@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`IFAQTarget` browser views."""
@@ -14,7 +14,6 @@ from lp import _
 from lp.answers.interfaces.faq import IFAQ
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
@@ -45,7 +44,7 @@ class FAQCreateView(LaunchpadFormView):
     label = _('Create a new FAQ')
     field_names = ['title', 'keywords', 'content']
 
-    custom_widget('keywords', TokensTextWidget)
+    custom_widget_keywords = TokensTextWidget
 
     @property
     def page_title(self):

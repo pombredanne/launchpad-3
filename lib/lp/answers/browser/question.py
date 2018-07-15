@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Question views."""
@@ -37,7 +37,10 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.formlib.widget import renderElement
+from zope.formlib.widget import (
+    CustomWidgetFactory,
+    renderElement,
+    )
 from zope.formlib.widgets import (
     TextAreaWidget,
     TextWidget,
@@ -78,7 +81,6 @@ from lp.answers.interfaces.questiontarget import (
 from lp.answers.vocabulary import UsesAnswersDistributionVocabulary
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     safe_action,
@@ -274,7 +276,7 @@ class QuestionSetView(LaunchpadFormView):
     """View for the Answer Tracker index page."""
 
     schema = IAnswersFrontPageSearchForm
-    custom_widget('scope', ProjectScopeWidget)
+    custom_widget_scope = ProjectScopeWidget
 
     page_title = 'Launchpad Answers'
     label = 'Questions and Answers'
@@ -560,7 +562,8 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # The fields displayed on the search page.
     search_field_names = ['language', 'title']
 
-    custom_widget('title', TextWidget, displayWidth=40, displayMaxWidth=250)
+    custom_widget_title = CustomWidgetFactory(
+        TextWidget, displayWidth=40, displayMaxWidth=250)
 
     search_template = ViewPageTemplateFile(
         '../templates/question-add-search.pt')
@@ -603,8 +606,9 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         else:
             fields = self.form_fields
         for field in fields:
-            if field.__name__ in self.custom_widgets:
-                field.custom_widget = self.custom_widgets[field.__name__]
+            widget = getattr(self, 'custom_widget_%s' % field.__name__, None)
+            if widget is not None:
+                field.custom_widget = widget
         return fields
 
     def setUpWidgets(self):
@@ -755,9 +759,9 @@ class QuestionEditView(LaunchpadEditFormView):
         "language", "title", "description", "target", "assignee",
         "whiteboard"]
 
-    custom_widget('title', TextWidget, displayWidth=40)
-    custom_widget('whiteboard', TextAreaWidget, height=5)
-    custom_widget('target', QuestionTargetWidget)
+    custom_widget_title = CustomWidgetFactory(TextWidget, displayWidth=40)
+    custom_widget_whiteboard = CustomWidgetFactory(TextAreaWidget, height=5)
+    custom_widget_target = QuestionTargetWidget
 
     @property
     def page_title(self):
@@ -1239,8 +1243,8 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
 
     field_names = ['title', 'keywords', 'content']
 
-    custom_widget('keywords', TokensTextWidget)
-    custom_widget("message", TextAreaWidget, height=5)
+    custom_widget_keywords = TokensTextWidget
+    custom_widget_message = CustomWidgetFactory(TextAreaWidget, height=5)
 
     @property
     def initial_values(self):
@@ -1262,8 +1266,7 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
             copy_field(IQuestionLinkFAQForm['message']))
         self.form_fields['message'].field.title = _(
             'Additional comment for question #%s' % self.context.id)
-        self.form_fields['message'].custom_widget = (
-            self.custom_widgets['message'])
+        self.form_fields['message'].custom_widget = self.custom_widget_message
 
     @action(_('Create and Link'), name='create_and_link')
     def create_and_link_action(self, action, data):
@@ -1418,9 +1421,9 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
 
     schema = IQuestionLinkFAQForm
 
-    custom_widget('faq', SearchableFAQRadioWidget)
+    custom_widget_faq = SearchableFAQRadioWidget
 
-    custom_widget("message", TextAreaWidget, height=5)
+    custom_widget_message = CustomWidgetFactory(TextAreaWidget, height=5)
 
     label = _('Is this a FAQ?')
 
