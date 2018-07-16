@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
@@ -82,7 +82,6 @@ from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import QuestionTargetTraversalMixin
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     render_radio_widget_part,
@@ -1406,10 +1405,10 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         "licenses",
         "license_info",
         ]
-    custom_widget('licenses', LicenseWidget)
-    custom_widget('license_info', GhostWidget)
-    custom_widget(
-        'information_type', LaunchpadRadioWidgetWithDescription,
+    custom_widget_licenses = LicenseWidget
+    custom_widget_license_info = GhostWidget
+    custom_widget_information_type = CustomWidgetFactory(
+        LaunchpadRadioWidgetWithDescription,
         vocabulary=InformationTypeVocabulary(types=PILLAR_INFORMATION_TYPES))
 
     @property
@@ -1605,8 +1604,10 @@ class ProductAddSeriesView(LaunchpadFormView):
 
     schema = IProductSeries
     field_names = ['name', 'summary', 'branch', 'releasefileglob']
-    custom_widget('summary', TextAreaWidget, height=7, width=62)
-    custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
+    custom_widget_summary = CustomWidgetFactory(
+        TextAreaWidget, height=7, width=62)
+    custom_widget_releasefileglob = CustomWidgetFactory(
+        StrippedTextWidget, displayWidth=40)
 
     series = None
 
@@ -1765,10 +1766,10 @@ class ProductSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     # upon creation.
     for_input = True
 
-    custom_widget('rcs_type', LaunchpadRadioWidget)
-    custom_widget('branch_type', LaunchpadRadioWidget)
-    custom_widget('default_vcs', LaunchpadRadioWidget)
-    custom_widget('git_repository_type', LaunchpadRadioWidget)
+    custom_widget_rcs_type = LaunchpadRadioWidget
+    custom_widget_branch_type = LaunchpadRadioWidget
+    custom_widget_default_vcs = LaunchpadRadioWidget
+    custom_widget_git_repository_type = LaunchpadRadioWidget
 
     errors_in_action = False
     is_series = False
@@ -2219,23 +2220,22 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         ('subscription_modified_after', 'subscription_modified_before'),
         ]
 
-    custom_widget(
-        'licenses', CheckBoxMatrixWidget, column_count=4,
-        orientation='vertical')
-    custom_widget('active', LaunchpadRadioWidget,
-                  _messageNoValue="(do not filter)")
-    custom_widget('project_reviewed', LaunchpadRadioWidget,
-                  _messageNoValue="(do not filter)")
-    custom_widget('license_approved', LaunchpadRadioWidget,
-                  _messageNoValue="(do not filter)")
-    custom_widget('has_subscription', LaunchpadRadioWidget,
-                  _messageNoValue="(do not filter)")
-    custom_widget('created_after', DateWidget)
-    custom_widget('created_before', DateWidget)
-    custom_widget('subscription_expires_after', DateWidget)
-    custom_widget('subscription_expires_before', DateWidget)
-    custom_widget('subscription_modified_after', DateWidget)
-    custom_widget('subscription_modified_before', DateWidget)
+    custom_widget_licenses = CustomWidgetFactory(
+        CheckBoxMatrixWidget, column_count=4, orientation='vertical')
+    custom_widget_active = CustomWidgetFactory(
+        LaunchpadRadioWidget, _messageNoValue="(do not filter)")
+    custom_widget_project_reviewed = CustomWidgetFactory(
+        LaunchpadRadioWidget, _messageNoValue="(do not filter)")
+    custom_widget_license_approved = CustomWidgetFactory(
+        LaunchpadRadioWidget, _messageNoValue="(do not filter)")
+    custom_widget_has_subscription = CustomWidgetFactory(
+        LaunchpadRadioWidget, _messageNoValue="(do not filter)")
+    custom_widget_created_after = DateWidget
+    custom_widget_created_before = DateWidget
+    custom_widget_subscription_expires_after = DateWidget
+    custom_widget_subscription_expires_before = DateWidget
+    custom_widget_subscription_modified_after = DateWidget
+    custom_widget_subscription_modified_before = DateWidget
 
     @property
     def left_side_widgets(self):
@@ -2296,8 +2296,9 @@ class ProjectAddStepOne(StepView):
     template = ViewPageTemplateFile('../templates/product-new.pt')
     page_title = "Register a project in Launchpad"
 
-    custom_widget('display_name', TextWidget, displayWidth=50, label='Name')
-    custom_widget('name', ProductNameWidget, label='URL')
+    custom_widget_display_name = CustomWidgetFactory(
+        TextWidget, displayWidth=50, label='Name')
+    custom_widget_name = CustomWidgetFactory(ProductNameWidget, label='URL')
 
     step_description = 'Project basics'
     search_results_count = 0
@@ -2355,27 +2356,28 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin, ReturnToReferrerMixin):
 
     product = None
 
-    custom_widget('display_name', TextWidget, displayWidth=50, label='Name')
-    custom_widget('name', ProductNameWidget, label='URL')
-    custom_widget('homepageurl', TextWidget, displayWidth=30)
-    custom_widget('licenses', LicenseWidget)
-    custom_widget('license_info', GhostWidget)
-    custom_widget(
-        'information_type',
+    custom_widget_display_name = CustomWidgetFactory(
+        TextWidget, displayWidth=50, label='Name')
+    custom_widget_name = CustomWidgetFactory(ProductNameWidget, label='URL')
+    custom_widget_homepageurl = CustomWidgetFactory(
+        TextWidget, displayWidth=30)
+    custom_widget_licenses = LicenseWidget
+    custom_widget_license_info = GhostWidget
+    custom_widget_information_type = CustomWidgetFactory(
         LaunchpadRadioWidgetWithDescription,
         vocabulary=InformationTypeVocabulary(types=PILLAR_INFORMATION_TYPES))
 
-    custom_widget(
-        'owner', PersonPickerWidget, header="Select the maintainer",
+    custom_widget_owner = CustomWidgetFactory(
+        PersonPickerWidget, header="Select the maintainer",
         show_create_team_link=True)
-    custom_widget(
-        'bug_supervisor', PersonPickerWidget, header="Set a bug supervisor",
+    custom_widget_bug_supervisor = CustomWidgetFactory(
+        PersonPickerWidget, header="Set a bug supervisor",
         required=True, show_create_team_link=True)
-    custom_widget(
-        'driver', PersonPickerWidget, header="Set a driver",
+    custom_widget_driver = CustomWidgetFactory(
+        PersonPickerWidget, header="Set a driver",
         required=True, show_create_team_link=True)
-    custom_widget(
-        'disclaim_maintainer', CheckBoxWidget, cssClass="subordinate")
+    custom_widget_disclaim_maintainer = CustomWidgetFactory(
+        CheckBoxWidget, cssClass="subordinate")
 
     def initialize(self):
         # The JSON cache must be populated before the super call, since
@@ -2656,12 +2658,14 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     # failing.
     initial_values = {'transfer_to_registry': False}
 
-    custom_widget('owner', PersonPickerWidget, header="Select the maintainer",
-                  show_create_team_link=True)
-    custom_widget('transfer_to_registry', CheckBoxWidget,
-                  widget_class='field subordinate')
-    custom_widget('driver', PersonPickerWidget, header="Select the driver",
-                  show_create_team_link=True)
+    custom_widget_owner = CustomWidgetFactory(
+        PersonPickerWidget, header="Select the maintainer",
+        show_create_team_link=True)
+    custom_widget_transfer_to_registry = CustomWidgetFactory(
+        CheckBoxWidget, widget_class='field subordinate')
+    custom_widget_driver = CustomWidgetFactory(
+        PersonPickerWidget, header="Select the driver",
+        show_create_team_link=True)
 
     @property
     def page_title(self):

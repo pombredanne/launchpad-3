@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Project-related View Classes"""
@@ -35,6 +35,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextWidget
 from zope.interface import (
     implementer,
@@ -48,7 +49,6 @@ from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import QuestionCollectionAnswersMenu
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -585,7 +585,8 @@ class ProjectAddView(LaunchpadFormView):
         'owner',
         'homepageurl',
         ]
-    custom_widget('homepageurl', TextWidget, displayWidth=30)
+    custom_widget_homepageurl = CustomWidgetFactory(
+        TextWidget, displayWidth=30)
     label = _('Register a project group with Launchpad')
     page_title = label
     projectgroup = None
