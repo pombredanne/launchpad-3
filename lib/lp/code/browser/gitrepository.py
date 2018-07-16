@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository views."""
@@ -45,7 +45,6 @@ from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -528,7 +527,7 @@ class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
         "default_branch",
         ]
 
-    custom_widget("information_type", LaunchpadRadioWidgetWithDescription)
+    custom_widget_information_type = LaunchpadRadioWidgetWithDescription
 
     any_owner_description = _(
         "As an administrator you are able to assign this repository to any "

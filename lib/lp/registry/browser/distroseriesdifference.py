@@ -26,10 +26,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.app.browser.launchpadform import (
-    custom_widget,
-    LaunchpadFormView,
-    )
+from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -112,7 +109,7 @@ class IDistroSeriesDifferenceForm(Interface):
 @implementer(IConversation)
 class DistroSeriesDifferenceView(LaunchpadFormView):
     schema = IDistroSeriesDifferenceForm
-    custom_widget('blacklist_options', RadioWidget)
+    custom_widget_blacklist_options = RadioWidget
 
     @property
     def initial_values(self):
