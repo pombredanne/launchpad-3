@@ -253,7 +253,7 @@ elementtree==1.2.6-20050316
 enum34==1.1.6
 epydoc==3.0.1
 extras==1.0.0
-feedparser==4.1
+feedparser==5.2.1
 feedvalidator==0.0.0DEV-r1049
 fixtures==3.0.0
 FormEncode==1.2.4
