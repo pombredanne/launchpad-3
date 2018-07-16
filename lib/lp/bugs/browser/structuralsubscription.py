@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -37,7 +37,6 @@ from zope.traversing.browser import absoluteURL
 
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.enums import (
@@ -102,8 +101,8 @@ class StructuralSubscriptionView(LaunchpadFormView):
 
     schema = IStructuralSubscriptionForm
 
-    custom_widget('subscriptions_team', LabeledMultiCheckBoxWidget)
-    custom_widget('remove_other_subscriptions', LabeledMultiCheckBoxWidget)
+    custom_widget_subscriptions_team = LabeledMultiCheckBoxWidget
+    custom_widget_remove_other_subscriptions = LabeledMultiCheckBoxWidget
 
     page_title = 'Subscribe'
 
