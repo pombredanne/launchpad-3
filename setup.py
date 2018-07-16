@@ -156,7 +156,7 @@ setup(
         # Required for dkimpy
         'dnspython',
         'dulwich',
-        'FeedParser',
+        'feedparser',
         'feedvalidator',
         'fixtures',
         'gunicorn[gthread]',
