@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser code for Language table."""
@@ -16,6 +16,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextWidget
 from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
@@ -23,7 +24,6 @@ from zope.schema import TextLine
 
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -120,7 +120,8 @@ class LanguageSetView(LaunchpadFormView):
 
     schema = ILanguageSetSearch
 
-    custom_widget('search_lang', TextWidget, displayWidth=30)
+    custom_widget_search_lang = CustomWidgetFactory(
+        TextWidget, displayWidth=30)
 
     def initialize(self):
         """See `LaunchpadFormView`."""
@@ -290,8 +291,8 @@ class LanguageAdminView(LaunchpadEditFormView):
 
     schema = ILanguage
 
-    custom_widget('countries', LabeledMultiCheckBoxWidget,
-                  orientation='vertical')
+    custom_widget_countries = CustomWidgetFactory(
+        LabeledMultiCheckBoxWidget, orientation='vertical')
 
     field_names = ['code', 'englishname', 'nativename', 'pluralforms',
                    'pluralexpression', 'visible', 'direction', 'countries']
