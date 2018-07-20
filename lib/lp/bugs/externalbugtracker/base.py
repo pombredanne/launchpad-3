@@ -259,8 +259,7 @@ class ExternalBugTracker:
         :raises requests.RequestException: if the request fails.
         """
         with override_timeout(self.timeout):
-            return urlfetch(
-                url, method=method, trust_env=False, use_proxy=True, **kwargs)
+            return urlfetch(url, method=method, use_proxy=True, **kwargs)
 
     def _getPage(self, page, **kwargs):
         """GET the specified page on the remote HTTP server.

@@ -79,7 +79,7 @@ class RequestsTransport(Transport):
                     url, method='POST', headers={'Content-Type': 'text/xml'},
                     data=request_body, cookies=self.cookie_jar,
                     hooks={'response': repost_on_redirect_hook},
-                    trust_env=False, use_proxy=True)
+                    use_proxy=True)
         except requests.HTTPError as e:
             raise ProtocolError(
                 url.decode('utf-8'), e.response.status_code, e.response.reason,

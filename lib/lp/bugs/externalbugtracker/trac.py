@@ -74,7 +74,7 @@ class Trac(ExternalBugTracker):
         auth_url = urlappend(base_auth_url, 'check')
         try:
             with override_timeout(config.checkwatches.default_socket_timeout):
-                response = urlfetch(auth_url, trust_env=False, use_proxy=True)
+                response = urlfetch(auth_url, use_proxy=True)
         except requests.HTTPError as e:
             # If the error is HTTP 401 Unauthorized then we're
             # probably talking to the LP plugin.
