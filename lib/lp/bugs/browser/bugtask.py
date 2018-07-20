@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -308,11 +308,9 @@ def get_visible_comments(comments, user=None):
 class BugTargetTraversalMixin:
     """Mix-in in class that provides .../+bug/NNN traversal."""
 
-    redirection('+bug', '+bugs')
-
     @stepthrough('+bug')
     def traverse_bug(self, name):
-        """Traverses +bug portions of URLs"""
+        """Traverses +bug portions of URLs."""
         return self._get_task_for_context(name)
 
     def _get_task_for_context(self, name):
@@ -350,11 +348,16 @@ class BugTargetTraversalMixin:
         # we raise NotFound error. eg +delete or +edit etc.
         # Otherwise we are simply navigating to a non-existent task and so we
         # redirect to one that exists.
-        travseral_stack = self.request.getTraversalStack()
-        if len(travseral_stack) > 0:
+        traversal_stack = self.request.getTraversalStack()
+        if len(traversal_stack) > 0:
             raise NotFoundError
         return self.redirectSubTree(
             canonical_url(bug.default_bugtask, request=self.request))
+
+    @redirection('+bug')
+    def redirect_bug(self):
+        """If +bug traversal fails, redirect to +bugs."""
+        return '+bugs'
 
 
 class BugTaskNavigation(Navigation):
@@ -407,7 +410,9 @@ class BugTaskNavigation(Navigation):
             return None
         return getUtility(IBugNominationSet).get(nomination_id)
 
-    redirection('references', '..')
+    @redirection('references')
+    def redirect_references(self):
+        return '..'
 
 
 class BugTaskContextMenu(BugContextMenu):
