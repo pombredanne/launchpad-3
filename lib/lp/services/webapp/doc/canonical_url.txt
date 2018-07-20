@@ -54,17 +54,19 @@ Define a navigation for the Country URL.
     ...     Navigation, redirection, stepto, stepthrough)
     >>> from zope.publisher.interfaces.browser import IBrowserPublisher
     >>> class CountryNavigation(Navigation):
-    ...     redirection('+capital', '+towns/London')
+    ...     @redirection('+capital')
+    ...     def redirect_capital(self):
+    ...         return '+towns/London'
     ...
     ...     @stepthrough('+towns')
-    ...     def stepthrown_town(self, name):
+    ...     def stepthrough_town(self, name):
     ...         if name == 'London':
     ...             return town_instance
     ...         else:
     ...             return None
     ...
     ...     @stepto('+greenwich')
-    ...     def stepto_greenwhich(self):
+    ...     def stepto_greenwich(self):
     ...         town = Town()
     ...         town.name = 'Greenwich'
     ...         return town
