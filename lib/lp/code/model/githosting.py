@@ -57,8 +57,7 @@ class GitHostingClient:
             "git-hosting-%s" % method, "%s %s" % (path, json.dumps(kwargs)))
         try:
             response = urlfetch(
-                urljoin(self.endpoint, path), trust_env=False, method=method,
-                **kwargs)
+                urljoin(self.endpoint, path), method=method, **kwargs)
         except TimeoutError:
             # Re-raise this directly so that it can be handled specially by
             # callers.

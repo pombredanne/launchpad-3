@@ -229,8 +229,7 @@ class ProductReleaseFinder:
         self.log.info("Downloading %s", url)
         with tempfile.TemporaryFile(prefix="product-release-finder") as fp:
             try:
-                response = urlfetch(
-                    url, trust_env=False, use_proxy=True, output_file=fp)
+                response = urlfetch(url, use_proxy=True, output_file=fp)
                 # XXX cjwatson 2018-06-26: This will all change with
                 # requests 3.x.  See:
                 #   https://blog.petrzemek.net/2018/04/22/

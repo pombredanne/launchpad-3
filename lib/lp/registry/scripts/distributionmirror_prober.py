@@ -626,7 +626,7 @@ def _get_cdimage_file_list():
     try:
         return urlfetch(
             url, headers={'Pragma': 'no-cache', 'Cache-control': 'no-cache'},
-            trust_env=False, use_proxy=True, allow_file=True)
+            use_proxy=True, allow_file=True)
     except requests.RequestException as e:
         raise UnableToFetchCDImageFileList(
             'Unable to fetch %s: %s' % (url, e))

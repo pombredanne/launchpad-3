@@ -324,14 +324,11 @@ class URLFetcher:
         self.session = None
 
     @with_timeout(cleanup='cleanup')
-    def fetch(self, url, trust_env=None, use_proxy=False, allow_ftp=False,
-              allow_file=False, output_file=None, **request_kwargs):
+    def fetch(self, url, use_proxy=False, allow_ftp=False, allow_file=False,
+              output_file=None, **request_kwargs):
         """Fetch the URL using a custom HTTP handler supporting timeout.
 
         :param url: The URL to fetch.
-        :param trust_env: If not None, set the session's trust_env to this
-            to determine whether it fetches proxy configuration from the
-            environment.
         :param use_proxy: If True, use Launchpad's configured proxy.
         :param allow_ftp: If True, allow ftp:// URLs.
         :param allow_file: If True, allow file:// URLs.  (Be careful to only
@@ -342,8 +339,9 @@ class URLFetcher:
             `Session.request`.
         """
         self.session = Session()
-        if trust_env is not None:
-            self.session.trust_env = trust_env
+        # Always ignore proxy/authentication settings in the environment; we
+        # configure that sort of thing explicitly.
+        self.session.trust_env = False
         # Mount our custom adapters.
         self.session.mount("https://", CleanableHTTPAdapter())
         self.session.mount("http://", CleanableHTTPAdapter())
@@ -385,9 +383,9 @@ class URLFetcher:
         self.session = None
 
 
-def urlfetch(url, trust_env=None, **request_kwargs):
+def urlfetch(url, **request_kwargs):
     """Wrapper for `requests.get()` that times out."""
-    return URLFetcher().fetch(url, trust_env=trust_env, **request_kwargs)
+    return URLFetcher().fetch(url, **request_kwargs)
 
 
 class TransportWithTimeout(Transport):

@@ -285,7 +285,7 @@ class HTTPWalker(WalkerBase):
         self.log.debug("Requesting %s with method %s", path, method)
         return urlfetch(
             urljoin(self.base, path), method=method, allow_redirects=False,
-            trust_env=False, use_proxy=True, allow_ftp=True)
+            use_proxy=True, allow_ftp=True)
 
     def isDirectory(self, path):
         """Return whether the path is a directory.

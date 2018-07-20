@@ -375,10 +375,7 @@ class TestTimeout(TestCase):
         fake_send = FakeMethod(result=Response())
         self.useFixture(
             MonkeyPatch('requests.adapters.HTTPAdapter.send', fake_send))
-        # XXX cjwatson 2018-06-04: Eventually we'll set trust_env=False
-        # everywhere, but for now we just do that as part of the test in
-        # order to avoid environment variation.
-        urlfetch('http://example.com/', trust_env=False)
+        urlfetch('http://example.com/')
         self.assertEqual({}, fake_send.calls[0][1]['proxies'])
 
     def test_urlfetch_uses_proxies_if_requested(self):
@@ -390,10 +387,7 @@ class TestTimeout(TestCase):
         fake_send = FakeMethod(result=Response())
         self.useFixture(
             MonkeyPatch('requests.adapters.HTTPAdapter.send', fake_send))
-        # XXX cjwatson 2018-06-04: Eventually we'll set trust_env=False
-        # everywhere, but for now we just do that as part of the test in
-        # order to avoid environment variation.
-        urlfetch('http://example.com/', trust_env=False, use_proxy=True)
+        urlfetch('http://example.com/', use_proxy=True)
         self.assertEqual(
             {scheme: proxy for scheme in ('http', 'https')},
             fake_send.calls[0][1]['proxies'])
@@ -429,8 +423,7 @@ class TestTimeout(TestCase):
         set_default_timeout_function(lambda: 1)
         self.addCleanup(set_default_timeout_function, None)
         response = urlfetch(
-            'ftp://example.com/', trust_env=False, use_proxy=True,
-            allow_ftp=True)
+            'ftp://example.com/', use_proxy=True, allow_ftp=True)
         self.assertThat(response, MatchesStructure(
             status_code=Equals(200),
             headers=ContainsDict({'content-length': Equals('8')}),
