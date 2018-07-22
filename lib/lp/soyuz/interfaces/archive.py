@@ -462,7 +462,18 @@ class IArchiveSubscriberView(Interface):
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     signing_key = Object(
-        title=_('Repository sigining key.'), required=False, schema=IGPGKey)
+        title=_('Repository signing key.'), required=False, schema=IGPGKey)
+
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getSigningKeyData():
+        """Get the public key used to sign this repository.
+
+        Returns the public key material as a byte string, None if the
+        repository has no signing key, or an HTTP status code if the
+        repository has a signing key but it cannot be retrieved from the
+        keyserver.
+        """
 
     def getAuthToken(person):
         """Returns an IArchiveAuthToken for the archive in question for
