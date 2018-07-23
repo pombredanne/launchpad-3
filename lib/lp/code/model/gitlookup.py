@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database implementation of the Git repository lookup utility."""
@@ -347,7 +347,7 @@ class GitLookup:
                 if repository is None or trailing or list(segments):
                     raise InvalidNamespace(unique_name)
                 return repository
-        except (InvalidNamespace, NameLookupFailed):
+        except (InvalidNamespace, InvalidProductName, NameLookupFailed):
             pass
         return None
 
