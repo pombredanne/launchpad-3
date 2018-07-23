@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the recipe storage.
@@ -61,6 +61,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
     IRecipeBranchSource,
     ISourcePackageRecipeData,
     ISourcePackageRecipeDataSource,
+    RecipeBranchType,
     )
 from lp.code.model.branch import Branch
 from lp.code.model.gitrepository import GitRepository
@@ -239,10 +240,14 @@ class SourcePackageRecipeData(Storm):
         # formats are mostly compatible, the header line must say
         # "bzr-builder" even though git-build-recipe also supports its own
         # name there.
-        recipe_text = re.sub(
+        recipe_text, git_substitutions = re.subn(
             r"^(#\s*)git-build-recipe", r"\1bzr-builder", recipe_text)
+        recipe_branch_type = (
+            RecipeBranchType.GIT if git_substitutions
+            else RecipeBranchType.BZR)
         parser = RecipeParser(recipe_text)
-        return parser.parse(permitted_instructions=SAFE_INSTRUCTIONS)
+        recipe_branch = parser.parse(permitted_instructions=SAFE_INSTRUCTIONS)
+        return recipe_branch, recipe_branch_type
 
     @staticmethod
     def findRecipes(branch_or_repository, revspecs=None):
@@ -306,9 +311,10 @@ class SourcePackageRecipeData(Storm):
     @classmethod
     def createManifestFromText(cls, text, sourcepackage_recipe_build):
         """See `ISourcePackageRecipeDataSource`."""
-        parsed = cls.getParsedRecipe(text)
+        parsed, recipe_branch_type = cls.getParsedRecipe(text)
         return cls(
-            parsed, sourcepackage_recipe_build=sourcepackage_recipe_build)
+            parsed, recipe_branch_type,
+            sourcepackage_recipe_build=sourcepackage_recipe_build)
 
     def getRecipe(self):
         """The BaseRecipeBranch version of the recipe."""
@@ -388,26 +394,26 @@ class SourcePackageRecipeData(Storm):
                 instruction.recipe_branch, insn, branch_map, line_number)
         return line_number
 
-    def setRecipe(self, builder_recipe):
+    def setRecipe(self, builder_recipe, recipe_branch_type):
         """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
         clear_property_cache(self)
         if builder_recipe.format > MAX_RECIPE_FORMAT:
             raise TooNewRecipeFormat(builder_recipe.format, MAX_RECIPE_FORMAT)
-        base = getUtility(IBranchLookup).getByUrl(builder_recipe.url)
-        if base is None:
+        if recipe_branch_type == RecipeBranchType.BZR:
+            base = getUtility(IBranchLookup).getByUrl(builder_recipe.url)
+            if base is None:
+                raise NoSuchBranch(builder_recipe.url)
+            elif base.private:
+                raise PrivateBranchRecipe(base)
+        elif recipe_branch_type == RecipeBranchType.GIT:
             base = getUtility(IGitLookup).getByUrl(builder_recipe.url)
             if base is None:
-                # If possible, try to raise an exception consistent with
-                # whether the current recipe is Bazaar-based or Git-based,
-                # so that error messages make more sense.
-                if self.base_git_repository is not None:
-                    raise NoSuchGitRepository(builder_recipe.url)
-                else:
-                    raise NoSuchBranch(builder_recipe.url)
+                raise NoSuchGitRepository(builder_recipe.url)
             elif base.private:
                 raise PrivateGitRepositoryRecipe(base)
-        elif base.private:
-            raise PrivateBranchRecipe(base)
+        else:
+            raise AssertionError(
+                'Unknown recipe_branch_type: %r' % recipe_branch_type)
         branch_map = self._scanInstructions(base, builder_recipe)
         # If this object hasn't been added to a store yet, there can't be any
         # instructions linking to us yet.
@@ -426,12 +432,12 @@ class SourcePackageRecipeData(Storm):
             self.deb_version_template = unicode(builder_recipe.deb_version)
         self.recipe_format = unicode(builder_recipe.format)
 
-    def __init__(self, recipe, sourcepackage_recipe=None,
+    def __init__(self, recipe, recipe_branch_type, sourcepackage_recipe=None,
                  sourcepackage_recipe_build=None):
         """Initialize from the bzr-builder recipe and link it to a db recipe.
         """
         super(SourcePackageRecipeData, self).__init__()
-        self.setRecipe(recipe)
+        self.setRecipe(recipe, recipe_branch_type)
         self.sourcepackage_recipe = sourcepackage_recipe
         self.sourcepackage_recipe_build = sourcepackage_recipe_build
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface of the `SourcePackageRecipe` content type."""
@@ -15,11 +15,16 @@ __all__ = [
     'ISourcePackageRecipeSource',
     'MINIMAL_RECIPE_TEXT_BZR',
     'MINIMAL_RECIPE_TEXT_GIT',
+    'RecipeBranchType',
     ]
 
 
 from textwrap import dedent
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -105,13 +110,23 @@ class ISourcePackageRecipeData(Interface):
         """An iterator of the branches referenced by this recipe."""
 
 
+class RecipeBranchType(EnumeratedType):
+    """The revision control system used for a recipe."""
+
+    BZR = Item("Bazaar")
+
+    GIT = Item("Git")
+
+
 class IRecipeBranchSource(Interface):
 
     def getParsedRecipe(recipe_text):
         """Parse recipe text into recipe data.
 
         :param recipe_text: Recipe text as a string.
-        :return: a `RecipeBranch` representing the recipe.
+        :return: a tuple of a `RecipeBranch` representing the recipe and a
+            `RecipeBranchType` indicating the revision control system to be
+            used for the recipe.
         """
 
 

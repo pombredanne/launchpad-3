@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation code for source package builds."""
@@ -164,8 +164,9 @@ class SourcePackageRecipeBuild(SpecificBuildFarmJobSourceMixin,
             getUtility(ISourcePackageRecipeDataSource).createManifestFromText(
                 text, self)
         else:
-            self.manifest.setRecipe(
+            parsed, recipe_branch_type = (
                 getUtility(IRecipeBranchSource).getParsedRecipe(text))
+            self.manifest.setRecipe(parsed, recipe_branch_type)
 
     def getManifestText(self):
         if self.manifest is None:
