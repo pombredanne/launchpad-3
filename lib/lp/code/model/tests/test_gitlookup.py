@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the IGitLookup implementation."""
@@ -65,22 +65,47 @@ class TestGetByUniqueName(TestCaseWithFactory):
         unused_name = self.factory.getUniqueString()
         self.assertIsNone(self.lookup.getByUniqueName(unused_name))
 
+    def test_invalid_name(self):
+        # repository:branch forms are not valid as repository unique names.
+        # Provoke various failure modes depending on where the invalid
+        # component occurs in the traversal.
+        repository = self.factory.makeGitRepository()
+        self.assertIsNone(self.lookup.getByUniqueName(
+            repository.unique_name + ":branch-name"))
+        with person_logged_in(repository.owner):
+            getUtility(IGitRepositorySet).setDefaultRepositoryForOwner(
+                repository.owner, repository.target, repository,
+                repository.owner)
+        self.assertIsNone(self.lookup.getByUniqueName(
+            repository.shortened_path + ":branch-name"))
+        with person_logged_in(repository.target.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                repository.target, repository)
+        self.assertIsNone(self.lookup.getByUniqueName(
+            repository.shortened_path + ":branch-name"))
+
     def test_project(self):
         repository = self.factory.makeGitRepository()
         self.assertEqual(
             repository, self.lookup.getByUniqueName(repository.unique_name))
+        self.assertIsNone(self.lookup.getByUniqueName(
+            repository.unique_name + "-nonexistent"))
 
     def test_package(self):
         dsp = self.factory.makeDistributionSourcePackage()
         repository = self.factory.makeGitRepository(target=dsp)
         self.assertEqual(
             repository, self.lookup.getByUniqueName(repository.unique_name))
+        self.assertIsNone(self.lookup.getByUniqueName(
+            repository.unique_name + "-nonexistent"))
 
     def test_personal(self):
         owner = self.factory.makePerson()
         repository = self.factory.makeGitRepository(owner=owner, target=owner)
         self.assertEqual(
             repository, self.lookup.getByUniqueName(repository.unique_name))
+        self.assertIsNone(self.lookup.getByUniqueName(
+            repository.unique_name + "-nonexistent"))
 
 
 class TestGetByPath(TestCaseWithFactory):
