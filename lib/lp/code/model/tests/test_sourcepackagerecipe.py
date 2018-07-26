@@ -37,6 +37,8 @@ from lp.code.errors import (
     PrivateGitRepositoryRecipe,
     TooNewRecipeFormat,
     )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
     ISourcePackageRecipeSource,
@@ -1098,12 +1100,47 @@ class TestRecipeBranchRoundTrippingMixin:
 
 class TestRecipeBranchRoundTrippingBzr(
     TestRecipeBranchRoundTrippingMixin, BzrMixin, TestCaseWithFactory):
-    pass
+
+    def test_builds_recipe_with_ambiguous_git_repository(self):
+        # Arrange for Bazaar and Git prefixes to match.
+        self.pushConfig('codehosting', bzr_lp_prefix='lp:', lp_url_hosts='')
+        project = self.base_branch.product
+        repository = self.factory.makeGitRepository(target=project)
+        with person_logged_in(project.owner):
+            ICanHasLinkedBranch(project).setBranch(self.base_branch)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                project, repository)
+        clear_property_cache(self.base_branch)
+        recipe_text = '''\
+        # %(recipe_id)s format 0.3 deb-version 0.1-{revno}
+        %(base)s
+        ''' % {'recipe_id': self.recipe_id, 'base': self.base_branch.identity}
+        recipe = self.get_recipe(recipe_text)
+        self.assertEqual(self.base_branch, recipe.base_branch)
 
 
 class TestRecipeBranchRoundTrippingGit(
     TestRecipeBranchRoundTrippingMixin, GitMixin, TestCaseWithFactory):
-    pass
+
+    def test_builds_recipe_with_ambiguous_bzr_branch(self):
+        # Arrange for Bazaar and Git prefixes to match.
+        self.pushConfig('codehosting', bzr_lp_prefix='lp:', lp_url_hosts='')
+        project = self.base_branch.target
+        branch = self.factory.makeBranch(product=project)
+        with person_logged_in(project.owner):
+            ICanHasLinkedBranch(project).setBranch(branch)
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                project, self.base_branch.repository)
+        recipe_text = '''\
+        # %(recipe_id)s format 0.3 deb-version 0.1-{revno}
+        %(base)s
+        ''' % {
+            'recipe_id': self.recipe_id,
+            'base': self.base_branch.repository.identity,
+            }
+        recipe = self.get_recipe(recipe_text)
+        self.assertEqual(
+            self.base_branch.repository, recipe.base_git_repository)
 
 
 class RecipeDateLastModified(TestCaseWithFactory):
