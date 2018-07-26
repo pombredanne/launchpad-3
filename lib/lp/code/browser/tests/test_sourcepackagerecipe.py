@@ -1,4 +1,4 @@
-# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the source package recipe view classes and templates."""
@@ -551,12 +551,9 @@ class TestSourcePackageRecipeAddViewMixin:
         # branch location, they should get an error.
         browser = self.createRecipe(
             self.minimal_recipe_text.splitlines()[0] + '\nfoo\n')
-        # This page doesn't know whether the user was aiming for a Bazaar
-        # branch or a Git repository; the error message always says
-        # "branch".
         self.assertEqual(
             get_feedback_messages(browser.contents)[1],
-            'foo is not a branch on Launchpad.')
+            'foo %s' % self.no_such_object_message)
 
     def test_create_recipe_bad_instruction_branch(self):
         # If a user tries to create source package recipe with a bad
