@@ -469,10 +469,10 @@ class IArchiveSubscriberView(Interface):
     def getSigningKeyData():
         """Get the public key used to sign this repository.
 
-        Returns the public key material as a byte string, None if the
-        repository has no signing key, or an HTTP status code if the
-        repository has a signing key but it cannot be retrieved from the
-        keyserver.
+        If the repository has a signing key but it cannot be retrieved from
+        the keyserver, then the response will have an appropriate 4xx or 5xx
+        HTTP status code.  Otherwise, returns the public key material as a
+        byte string, or None if the repository has no signing key.
         """
 
     def getAuthToken(person):
