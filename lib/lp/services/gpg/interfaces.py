@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -21,12 +21,14 @@ __all__ = [
     'valid_keyid',
     ]
 
+import httplib
 import re
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
     Interface,
@@ -112,6 +114,7 @@ class GPGKeyNotFoundError(Exception):
         super(GPGKeyNotFoundError, self).__init__(message)
 
 
+@error_status(httplib.INTERNAL_SERVER_ERROR)
 class GPGKeyTemporarilyNotFoundError(GPGKeyNotFoundError):
     """The GPG key with the given fingerprint was not found on the keyserver.
 
@@ -126,6 +129,7 @@ class GPGKeyTemporarilyNotFoundError(GPGKeyNotFoundError):
             fingerprint, message)
 
 
+@error_status(httplib.NOT_FOUND)
 class GPGKeyDoesNotExistOnServer(GPGKeyNotFoundError):
     """The GPG key with the given fingerprint was not found on the keyserver.
 
