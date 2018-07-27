@@ -120,6 +120,7 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.database.stormexpr import BulkUpdate
 from lp.services.features import getFeatureFlag
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -408,6 +409,14 @@ class Archive(SQLBase):
         if self.signing_key_fingerprint is not None:
             return getUtility(IGPGKeySet).getByFingerprint(
                 self.signing_key_fingerprint)
+
+    def getSigningKeyData(self):
+        """See `IArchive`."""
+        if self.signing_key_fingerprint is not None:
+            # This may raise GPGKeyNotFoundError, which we allow to
+            # propagate as an HTTP error.
+            return getUtility(IGPGHandler).retrieveKey(
+                self.signing_key_fingerprint).export()
 
     @property
     def is_ppa(self):
