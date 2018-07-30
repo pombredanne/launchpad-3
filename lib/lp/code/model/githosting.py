@@ -217,7 +217,8 @@ class GitHostingClient:
             url = "/repo/%s/blob/%s" % (path, quote(filename))
             response = self._get(url, params={"rev": rev})
         except requests.RequestException as e:
-            if e.response.status_code == requests.codes.NOT_FOUND:
+            if (e.response is not None and
+                    e.response.status_code == requests.codes.NOT_FOUND):
                 raise GitRepositoryBlobNotFound(path, filename, rev=rev)
             else:
                 raise GitRepositoryScanFault(
