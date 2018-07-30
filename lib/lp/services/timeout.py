@@ -202,6 +202,16 @@ class with_timeout:
 
     def __call__(self, f):
         """Wraps the method."""
+        def cleanup(t, args):
+            if self.cleanup is not None:
+                if isinstance(self.cleanup, basestring):
+                    # 'self' will be first positional argument.
+                    getattr(args[0], self.cleanup)()
+                else:
+                    self.cleanup()
+                # Collect cleaned-up worker thread.
+                t.join()
+
         def call_with_timeout(*args, **kwargs):
             # Ensure that we have a timeout before we start the thread
             timeout = self.timeout
@@ -214,16 +224,17 @@ class with_timeout:
                     timeout = timeout()
             t = ThreadCapturingResult(f, args, kwargs)
             t.start()
-            t.join(timeout)
+            try:
+                t.join(timeout)
+            except Exception as e:
+                # This will commonly be SoftTimeLimitExceeded from celery,
+                # since celery's timeout often happens before the job's due
+                # to job setup time.
+                if t.isAlive():
+                    cleanup(t, args)
+                raise
             if t.isAlive():
-                if self.cleanup is not None:
-                    if isinstance(self.cleanup, basestring):
-                        # 'self' will be first positional argument.
-                        getattr(args[0], self.cleanup)()
-                    else:
-                        self.cleanup()
-                    # Collect cleaned-up worker thread.
-                    t.join()
+                cleanup(t, args)
                 raise TimeoutError("timeout exceeded.")
             if getattr(t, 'exc_info', None) is not None:
                 exc_info = t.exc_info

@@ -406,6 +406,7 @@ class ISnapView(Interface):
         """
 
     def requestBuildsFromJob(requester, archive, pocket, channels=None,
+                             allow_failures=False, fetch_snapcraft_yaml=True,
                              logger=None):
         """Synchronous part of `Snap.requestBuilds`.
 
@@ -416,6 +417,13 @@ class ISnapView(Interface):
         :param pocket: The pocket that should be targeted.
         :param channels: A dictionary mapping snap names to channels to use
             for these builds.
+        :param allow_failures: If True, log exceptions other than "already
+            pending" from individual build requests; if False, raise them to
+            the caller.
+        :param fetch_snapcraft_yaml: If True, fetch snapcraft.yaml from the
+            appropriate branch or repository and use it to decide which
+            builds to request; if False, fall back to building for all
+            supported architectures.
         :param logger: An optional logger.
         :return: A sequence of `ISnapBuild` instances.
         """
@@ -474,12 +482,17 @@ class ISnapEdit(IWebhookTarget):
     @operation_returns_collection_of(Interface)
     @export_write_operation()
     @operation_for_version("devel")
-    def requestAutoBuilds(allow_failures=False, logger=None):
+    def requestAutoBuilds(allow_failures=False, fetch_snapcraft_yaml=False,
+                          logger=None):
         """Create and return automatic builds for this snap package.
 
         :param allow_failures: If True, log exceptions other than "already
             pending" from individual build requests; if False, raise them to
             the caller.
+        :param fetch_snapcraft_yaml: If True, fetch snapcraft.yaml from the
+            appropriate branch or repository and use it to decide which
+            builds to request; if False, fall back to building for all
+            supported architectures.
         :param logger: An optional logger.
         :raises CannotRequestAutoBuilds: if no auto_build_archive or
             auto_build_pocket is set.

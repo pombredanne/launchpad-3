@@ -1285,9 +1285,10 @@ class TestSnapSet(TestCaseWithFactory):
     def makeAutoBuildableSnap(self, **kwargs):
         processor = self.factory.makeProcessor(supports_virtualized=True)
         das = self.makeBuildableDistroArchSeries(processor=processor)
+        [git_ref] = self.factory.makeGitRefs()
         snap = self.factory.makeSnap(
             distroseries=das.distroseries, processors=[das.processor],
-            auto_build=True, **kwargs)
+            git_ref=git_ref, auto_build=True, **kwargs)
         return das, snap
 
     def test_makeAutoBuilds(self):
@@ -1296,7 +1297,11 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertEqual([], getUtility(ISnapSet).makeAutoBuilds())
         das, snap = self.makeAutoBuildableSnap(is_stale=True)
         logger = BufferLogger()
-        [build] = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
+        with GitHostingFixture(blob=dedent("""\
+                architectures:
+                  - build-on: %s
+                """) % das.architecturetag):
+            [build] = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
         self.assertThat(build, MatchesStructure.byEquality(
             requester=snap.owner, snap=snap, distro_arch_series=das,
             status=BuildStatus.NEEDSBUILD,
@@ -1319,7 +1324,11 @@ class TestSnapSet(TestCaseWithFactory):
             requester=snap.owner, snap=snap, archive=snap.auto_build_archive,
             distroarchseries=das)
         logger = BufferLogger()
-        builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
+        with GitHostingFixture(blob=dedent("""\
+                architectures:
+                  - build-on: %s
+                """) % das.architecturetag):
+            builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
         self.assertEqual([], builds)
         self.assertEqual([], logger.getLogBuffer().splitlines())
 
@@ -1340,7 +1349,13 @@ class TestSnapSet(TestCaseWithFactory):
             channels={"snapcraft": "stable"})
 
         logger = BufferLogger()
-        builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
+        snapcraft_yaml = dedent("""\
+            architectures:
+              - build-on: %s
+              - build-on: %s
+            """) % (das1.architecturetag, das2.architecturetag)
+        with GitHostingFixture(blob=snapcraft_yaml):
+            builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
         self.assertThat(builds, MatchesSetwise(
             MatchesStructure(
                 requester=Equals(snap1.owner), snap=Equals(snap1),
@@ -1369,14 +1384,19 @@ class TestSnapSet(TestCaseWithFactory):
             removeSecurityProxy(snap).is_stale = True
             IStore(snap).flush()
         logger = BufferLogger()
-        builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
+        with GitHostingFixture(blob=snapcraft_yaml):
+            builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
         self.assertEqual([], builds)
         self.assertEqual([], logger.getLogBuffer().splitlines())
 
     def test_makeAutoBuilds_skips_non_stale_snaps(self):
         # ISnapSet.makeAutoBuilds skips snap packages that are not stale.
         das, snap = self.makeAutoBuildableSnap(is_stale=False)
-        self.assertEqual([], getUtility(ISnapSet).makeAutoBuilds())
+        with GitHostingFixture(blob=dedent("""\
+                architectures:
+                  - build-on: %s
+                """) % das.architecturetag):
+            self.assertEqual([], getUtility(ISnapSet).makeAutoBuilds())
 
     def test_makeAutoBuilds_skips_pending(self):
         # ISnapSet.makeAutoBuilds skips snap packages that already have
@@ -1389,14 +1409,15 @@ class TestSnapSet(TestCaseWithFactory):
             distroarchseries=das,
             date_created=datetime.now(pytz.UTC) - timedelta(days=1))
         logger = BufferLogger()
-        builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
+        with GitHostingFixture(blob=dedent("""\
+                architectures:
+                  - build-on: %s
+                """) % das.architecturetag):
+            builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
         self.assertEqual([], builds)
         expected_log_entries = [
             "DEBUG Scheduling builds of snap package %s/%s" % (
                 snap.owner.name, snap.name),
-            "WARNING  - %s/%s/%s: An identical build of this snap package "
-            "is already pending." % (
-                snap.owner.name, snap.name, das.architecturetag),
             ]
         self.assertEqual(
             expected_log_entries, logger.getLogBuffer().splitlines())
@@ -1410,7 +1431,11 @@ class TestSnapSet(TestCaseWithFactory):
             distroarchseries=das,
             date_created=datetime.now(pytz.UTC) - timedelta(days=1),
             status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=1))
-        builds = getUtility(ISnapSet).makeAutoBuilds()
+        with GitHostingFixture(blob=dedent("""\
+                architectures:
+                  - build-on: %s
+                """) % das.architecturetag):
+            builds = getUtility(ISnapSet).makeAutoBuilds()
         self.assertEqual(1, len(builds))
 
     def test_makeAutoBuilds_with_older_and_newer_builds(self):
@@ -1423,7 +1448,11 @@ class TestSnapSet(TestCaseWithFactory):
                 archive=snap.auto_build_archive, distroarchseries=das,
                 date_created=datetime.now(pytz.UTC) - timediff,
                 status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=1))
-        self.assertEqual([], getUtility(ISnapSet).makeAutoBuilds())
+        with GitHostingFixture(blob=dedent("""\
+                architectures:
+                  - build-on: %s
+                """) % das.architecturetag):
+            self.assertEqual([], getUtility(ISnapSet).makeAutoBuilds())
 
     def test_makeAutoBuilds_with_recent_build_from_different_archive(self):
         # If a snap package has been built recently but from an archive
@@ -1434,8 +1463,48 @@ class TestSnapSet(TestCaseWithFactory):
             requester=snap.owner, snap=snap, distroarchseries=das,
             date_created=datetime.now(pytz.UTC) - timedelta(minutes=30),
             status=BuildStatus.FULLYBUILT, duration=timedelta(minutes=1))
-        builds = getUtility(ISnapSet).makeAutoBuilds()
+        with GitHostingFixture(blob=dedent("""\
+                architectures:
+                  - build-on: %s
+                """) % das.architecturetag):
+            builds = getUtility(ISnapSet).makeAutoBuilds()
         self.assertEqual(1, len(builds))
+
+    def test_makeAutoBuilds_honours_explicit_architectures(self):
+        # ISnapSet.makeAutoBuilds honours an explicit list of architectures
+        # in the snap's snapcraft.yaml.
+        das1, snap = self.makeAutoBuildableSnap(is_stale=True)
+        das2 = self.makeBuildableDistroArchSeries(
+            distroseries=das1.distroseries,
+            processor=self.factory.makeProcessor(supports_virtualized=True))
+        das3 = self.makeBuildableDistroArchSeries(
+            distroseries=das1.distroseries,
+            processor=self.factory.makeProcessor(supports_virtualized=True))
+        snap.setProcessors([das1.processor, das2.processor, das3.processor])
+        logger = BufferLogger()
+        with GitHostingFixture(blob=dedent("""\
+                architectures:
+                  - build-on: %s
+                  - build-on: %s
+                """) % (das1.architecturetag, das2.architecturetag)):
+            builds = getUtility(ISnapSet).makeAutoBuilds(logger=logger)
+        self.assertThat(set(builds), MatchesSetwise(*[
+            MatchesStructure.byEquality(
+                requester=snap.owner, snap=snap, distro_arch_series=das,
+                status=BuildStatus.NEEDSBUILD)
+            for das in (das1, das2)
+            ]))
+        expected_log_entries = [
+            "DEBUG Scheduling builds of snap package %s/%s" % (
+                snap.owner.name, snap.name),
+            "DEBUG  - %s/%s/%s: Build requested." % (
+                snap.owner.name, snap.name, das1.architecturetag),
+            "DEBUG  - %s/%s/%s: Build requested." % (
+                snap.owner.name, snap.name, das2.architecturetag),
+            ]
+        self.assertEqual(
+            expected_log_entries, logger.getLogBuffer().splitlines())
+        self.assertFalse(snap.is_stale)
 
     def test_detachFromBranch(self):
         # ISnapSet.detachFromBranch clears the given Bazaar branch from all
