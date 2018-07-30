@@ -138,7 +138,8 @@ class BranchHostingClient:
                 quote(rev or "head:", safe=""), quote(dirname.lstrip("/")))
             return self._get(branch_id, quoted_tail, as_json=True)
         except requests.RequestException as e:
-            if e.response.status_code == requests.codes.NOT_FOUND:
+            if (e.response is not None and
+                    e.response.status_code == requests.codes.NOT_FOUND):
                 raise BranchFileNotFound(branch_id, filename=dirname, rev=rev)
             else:
                 raise BranchHostingFault(
@@ -158,7 +159,8 @@ class BranchHostingClient:
                     quote(rev or "head:", safe=""), quote(file_id, safe="")),
                 as_json=False)
         except requests.RequestException as e:
-            if e.response.status_code == requests.codes.NOT_FOUND:
+            if (e.response is not None and
+                    e.response.status_code == requests.codes.NOT_FOUND):
                 raise BranchFileNotFound(branch_id, file_id=file_id, rev=rev)
             else:
                 raise BranchHostingFault(
