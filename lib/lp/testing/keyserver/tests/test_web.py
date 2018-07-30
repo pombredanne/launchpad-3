@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the web resources of the testkeyserver."""
@@ -9,11 +9,13 @@ import os
 import shutil
 
 from testtools.twistedsupport import AsynchronousDeferredRunTest
+import treq
 from twisted.internet.endpoints import serverFromString
 from twisted.python.failure import Failure
-from twisted.web.client import getPage
 from twisted.web.server import Site
 
+from lp.services.twistedsupport.testing import TReqFixture
+from lp.services.twistedsupport.treq import check_status
 from lp.testing import TestCase
 from lp.testing.keyserver.harness import KEYS_DIR
 from lp.testing.keyserver.web import KeyServerResource
@@ -46,10 +48,13 @@ class TestWebResources(TestCase):
     def fetchResource(self, listening_port, path):
         """GET the content at 'path' from the web server at 'listening_port'.
         """
+        from twisted.internet import reactor
         url = 'http://localhost:%s/%s' % (
             listening_port.getHost().port,
             path.lstrip('/'))
-        return getPage(url)
+        client = self.useFixture(TReqFixture(reactor)).client
+        return client.get(url).addCallback(check_status).addCallback(
+            treq.content)
 
     def getURL(self, path):
         """Start a test key server and get the content at 'path'."""

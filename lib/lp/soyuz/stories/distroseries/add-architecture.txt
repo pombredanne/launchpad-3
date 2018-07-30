@@ -7,7 +7,7 @@ given distro series.
 
     >>> admin_browser.open('http://launchpad.dev/ubuntu/hoary')
     >>> admin_browser.getLink('Add architecture').click()
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     Add a port of The Hoary...
 
 There is a cancel link.
@@ -23,7 +23,7 @@ and/or has PPA support.
     >>> admin_browser.getControl('Processor:').value = ['amd64']
     >>> admin_browser.getControl('Official Support').selected = True
     >>> admin_browser.getControl('Continue').click()
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     ia64 : Hoary (5.04) : Ubuntu
 
 Architecture tag is restricted to the usual Launchpad name format.

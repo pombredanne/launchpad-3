@@ -14,10 +14,10 @@ easily, the numbers are displayed in the comment header.
     ...     person_node = comment.find(
     ...         lambda node: 'person' in node.get('class', ''))
     ...     comment_node = comment.find(None, 'comment-text')
-    ...     print "%s: %s\n  %s" % (
+    ...     print("%s: %s\n  %s" % (
     ...         extract_text(number_node),
     ...         extract_text(person_node),
-    ...         extract_text(comment_node)[:50])
+    ...         extract_text(comment_node)[:50]))
     #1: Valentina Commissari (tsukimi)
       The solution to this is to make Jokosher use autoa
     #2: Diogo Matsubara (matsubara)

@@ -14,6 +14,7 @@ from datetime import (
 import hashlib
 import json
 
+from bzrlib import urlutils
 import pytz
 import responses
 from testtools.matchers import (
@@ -37,6 +38,7 @@ from lp.code.errors import (
     InvalidBranchMergeProposal,
     )
 from lp.code.tests.helpers import GitHostingFixture
+from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.webapp.interfaces import OAuthPermission
@@ -291,6 +293,27 @@ class TestGitRefGetBlob(TestCaseWithFactory):
               {"rev": ref.path})],
             hosting_fixture.getBlob.calls)
 
+    def test_local_by_url(self):
+        # It's possible (though not encouraged) to retrieve files from
+        # self-hosted repositories by URL.
+        [ref] = self.factory.makeGitRefs()
+        hosting_fixture = self.useFixture(GitHostingFixture(blob=b"foo"))
+        https_ref = self.factory.makeGitRefRemote(
+            repository_url=ref.repository.git_https_url, path=ref.path)
+        anon_ref = self.factory.makeGitRefRemote(
+            repository_url=urlutils.join(
+                config.codehosting.git_anon_root,
+                ref.repository.shortened_path),
+            path=ref.path)
+        self.assertEqual(b"foo", https_ref.getBlob("dir/file"))
+        self.assertEqual(b"foo", anon_ref.getBlob("dir/file"))
+        internal_path = ref.repository.getInternalPath()
+        expected_calls = [
+            ((internal_path, "dir/file"), {"rev": ref.path}),
+            ((internal_path, "dir/file"), {"rev": ref.path}),
+            ]
+        self.assertEqual(expected_calls, hosting_fixture.getBlob.calls)
+
     @responses.activate
     def test_remote_github_branch(self):
         ref = self.factory.makeGitRefRemote(
@@ -386,13 +409,24 @@ class TestGitRefCreateMergeProposal(TestCaseWithFactory):
         else:
             self.assertEqual(review_type, vote.review_type)
 
-    def test_personal_source(self):
-        """Personal repositories cannot be used as a source for MPs."""
+    def test_personal_source_project_target(self):
+        """Personal repositories cannot be used as a source for MPs to
+        project repositories.
+        """
         self.source.repository.setTarget(
             target=self.source.owner, user=self.source.owner)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target)
+
+    def test_personal_source_personal_target(self):
+        """A branch in a personal repository can be used as a source for MPs
+        to another branch in the same personal repository.
+        """
+        self.target.repository.setTarget(
+            target=self.target.owner, user=self.target.owner)
+        [source] = self.factory.makeGitRefs(repository=self.target.repository)
+        source.addLandingTarget(self.user, self.target)
 
     def test_target_repository_same_target(self):
         """The target repository's target must match that of the source."""

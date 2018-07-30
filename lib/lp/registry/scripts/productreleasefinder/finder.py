@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,11 +12,12 @@ from datetime import datetime
 import mimetypes
 import os
 import re
-import urllib
+import tempfile
 import urlparse
 
 from cscvs.dircompare import path
 import pytz
+import requests
 from zope.component import getUtility
 
 from lp.app.validators.name import invalid_name_pattern
@@ -32,12 +33,17 @@ from lp.registry.model.productrelease import (
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.scripts.productreleasefinder.filter import FilterPattern
 from lp.registry.scripts.productreleasefinder.hose import Hose
+from lp.services.config import config
 from lp.services.database import (
     read_transaction,
     write_transaction,
     )
 from lp.services.database.interfaces import IStore
 from lp.services.librarian.model import LibraryFileAlias
+from lp.services.timeout import (
+    default_timeout,
+    urlfetch,
+    )
 
 
 processors = '|'.join([
@@ -104,8 +110,9 @@ class ProductReleaseFinder:
 
     def findReleases(self):
         """Scan for new releases in all products."""
-        for product_name, filters in self.getFilters():
-            self.handleProduct(product_name, filters)
+        with default_timeout(config.productreleasefinder.timeout):
+            for product_name, filters in self.getFilters():
+                self.handleProduct(product_name, filters)
 
     @read_transaction
     def getFilters(self):
@@ -220,21 +227,26 @@ class ProductReleaseFinder:
             mimetype = 'application/octet-stream'
 
         self.log.info("Downloading %s", url)
-        try:
-            local, headers = urllib.urlretrieve(url)
-            stat = os.stat(local)
-        except IOError:
-            self.log.error("Download of %s failed", url)
-            raise
-        except OSError:
-            self.log.error("Unable to stat downloaded file")
-            raise
+        with tempfile.TemporaryFile(prefix="product-release-finder") as fp:
+            try:
+                response = urlfetch(url, use_proxy=True, output_file=fp)
+                # XXX cjwatson 2018-06-26: This will all change with
+                # requests 3.x.  See:
+                #   https://blog.petrzemek.net/2018/04/22/
+                expected_length = response.headers.get("Content-Length")
+                if expected_length is not None:
+                    actual_length = response.raw.tell()
+                    expected_length = int(expected_length)
+                    if actual_length < expected_length:
+                        raise IOError(
+                            "Incomplete read: got %d, expected %d" %
+                            (actual_length, expected_length))
+            except (IOError, requests.RequestException):
+                self.log.exception("Download of %s failed", url)
+                raise
+            stat = os.fstat(fp.fileno())
+            fp.seek(0)
 
-        try:
-            fp = open(local, 'r')
-            os.unlink(local)
             self.addReleaseTarball(product_name, series_name, version,
                                    filename, stat.st_size, fp, mimetype)
             file_names.add(filename)
-        finally:
-            fp.close()

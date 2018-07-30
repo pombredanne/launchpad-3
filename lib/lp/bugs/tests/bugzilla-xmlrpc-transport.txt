@@ -61,7 +61,7 @@ transport doesn't validate this cookie, it just checks that it exists.
 
     >>> bugzilla_transport.setCookie(
     ...     "Bugzilla_logincookie=Want moar cookies plz")
-    >>> print server.Test.login_required()
+    >>> print(server.Test.login_required())
     Wonderful, you've logged in! Aren't you a clever biped?
 
 
@@ -85,14 +85,14 @@ In the test instance, the cookie is randomly generated. The returned
 user id is always the same.
 
     >>> response_dict = server.Launchpad.login({'token': token_text})
-    >>> print response_dict['user_id']
+    >>> print(response_dict['user_id'])
     42
 
 The login cookies are in the transport's cookie jar.
 
-    >>> print bugzilla_transport.cookie_processor.cookiejar
-    <...CookieJar[<Cookie Bugzilla_login=...>,
-        <Cookie Bugzilla_logincookie=...>]>
+    >>> print(bugzilla_transport.cookie_jar)
+    <RequestsCookieJar[<Cookie Bugzilla_login=...>,
+                       <Cookie Bugzilla_logincookie=...>]>
 
 
 Launchpad.time()
@@ -104,7 +104,7 @@ current UTC time.
 
     >>> time_dict = server.Launchpad.time()
     >>> for key in sorted(time_dict):
-    ...     print "%s: %s" % (key, time_dict[key])
+    ...     print("%s: %s" % (key, time_dict[key]))
     local_time: 2008-05-01 01:01:01
     tz_name: UTC
     utc_time: 2008-05-01 01:01:01
@@ -121,7 +121,7 @@ more useful.
 
     >>> time_dict = server.Launchpad.time()
     >>> for key in sorted(time_dict):
-    ...     print "%s: %s" % (key, time_dict[key])
+    ...     print("%s: %s" % (key, time_dict[key]))
     local_time: 2008-05-15 16:19:53
     tz_name: US/Central
     utc_time: 2008-05-15 22:19:53
@@ -140,7 +140,7 @@ so that they are treated as "key: value" pairs.
     ...     {'ids': [1], 'permissive': True})
     >>> [bug_dict] = return_value['bugs']
     >>> for key in sorted(bug_dict):
-    ...     print "%s: %s" % (key, bug_dict[key])
+    ...     print("%s: %s" % (key, bug_dict[key]))
     alias:
     assigned_to: test@canonical.com
     component: GPPSystems
@@ -165,8 +165,8 @@ one bug will be returned (assuming they all exist and are accessible).
     >>> bug_dicts = return_value['bugs']
     >>> for bug_dict in bug_dicts:
     ...     for key in sorted(bug_dict):
-    ...         print "%s: %s" % (key, bug_dict[key])
-    ...     print
+    ...         print("%s: %s" % (key, bug_dict[key]))
+    ...     print()
     alias:
     assigned_to: test@canonical.com
     component: GPPSystems
@@ -205,7 +205,7 @@ Bug aliases can also be used to request remote bugs.
     ...     {'ids': ['bug-two'], 'permissive': True})
     >>> [bug_dict] = return_value['bugs']
     >>> for key in sorted(bug_dict):
-    ...     print "%s: %s" % (key, bug_dict[key])
+    ...     print("%s: %s" % (key, bug_dict[key]))
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
@@ -241,7 +241,7 @@ set of remote bugs.
 
     >>> bug_dict = bug_dicts[0]
     >>> for key in sorted(bug_dict):
-    ...     print "%s: %s" % (key, bug_dict[key])
+    ...     print("%s: %s" % (key, bug_dict[key]))
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
@@ -287,7 +287,7 @@ only return bugs which affect those products.
 
     >>> bug_dict = bug_dicts[0]
     >>> for key in sorted(bug_dict):
-    ...     print "%s: %s" % (key, bug_dict[key])
+    ...     print("%s: %s" % (key, bug_dict[key]))
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
@@ -329,17 +329,17 @@ bugs. We'll define a helper method for printing out comments.
     >>> import operator
     >>> def print_bug_comments(bugs_dict, sort_key='number'):
     ...     for key in sorted(bugs_dict):
-    ...         print "Bug %s:" % key
+    ...         print("Bug %s:" % key)
     ...         bug_comments = sorted(
     ...             bugs_dict[key],
     ...             key=operator.itemgetter(sort_key))
     ...
     ...         for comment in bug_comments:
     ...             for comment_key in sorted(comment):
-    ...                 print "    %s: %s" % (
-    ...                     comment_key, comment[comment_key])
-    ...             print
-    ...         print
+    ...                 print("    %s: %s" % (
+    ...                     comment_key, comment[comment_key]))
+    ...             print()
+    ...         print()
 
 If Launchpad.comments() is passed a list of bug IDs it will return all
 the comments for all of those bugs.
@@ -424,7 +424,7 @@ returned for each comment.
 It's worth noting that, due to a quirk in the XML-RPC spec, the bug IDs
 in the returned 'bugs' dict are strings, not integers:
 
-    >>> print sorted(bugs_dict)
+    >>> print(sorted(bugs_dict))
     ['1', '2']
 
 
@@ -450,7 +450,7 @@ on the remote server.
     >>> bugzilla_transport.auth_cookie = 'open sesame'
     >>> return_dict = server.Launchpad.add_comment(
     ...     {'id': 1, 'comment': comment})
-    >>> print return_dict['comment_id']
+    >>> print(return_dict['comment_id'])
     7
 
 The comment will be stored with the other comments on the remote server.
@@ -496,19 +496,19 @@ to the remote bug.
 
     >>> bugzilla_transport.auth_cookie = "here we go again"
     >>> result = server.Launchpad.set_link({'id': 1, 'launchpad_id': 10})
-    >>> print result['launchpad_id']
+    >>> print(result['launchpad_id'])
     0
 
 Otherwise, Launchpad.set_link() will return the ID of the last Launchpad
 bug linked to the remote bug.
 
     >>> result = server.Launchpad.set_link({'id': 1, 'launchpad_id': 11})
-    >>> print result['launchpad_id']
+    >>> print(result['launchpad_id'])
     10
 
 The new Launchpad bug ID will be recorded in the remote bug's
 `internals` dict.
 
     >>> for key, val in bugzilla_transport.bugs[1]['internals'].items():
-    ...     print "%s: %s" % (key, val)
+    ...     print("%s: %s" % (key, val))
     launchpad_id: 11

@@ -28,7 +28,7 @@ Subscribing to one of the similar bugs takes us to the bug page.
     >>> user_browser.getControl(
     ...     "Yes, this is the bug I'm trying to report").click()
 
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://bugs.launchpad.dev/thunderbird/+bug/9
 
     >>> print_feedback_messages(user_browser.contents)
@@ -62,14 +62,14 @@ description.
     >>> field_labels = page_soup.findAll(
     ...     'label', text=re.compile('Further information'))
     >>> for field_label in field_labels:
-    ...     print extract_text(field_label.parent)
+    ...     print(extract_text(field_label.parent))
     Further information:
 
 Finally, let's submit the bug.
 
     >>> user_browser.getControl("Submit Bug Report").click()
 
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...
 
 
@@ -91,7 +91,7 @@ shown.
 
     >>> similar_bugs_list = find_tag_by_id(
     ...     user_browser.contents, "similar-bugs")
-    >>> print similar_bugs_list
+    >>> print(similar_bugs_list)
     None
 
 But the bug can be filed as before.
@@ -102,5 +102,5 @@ But the bug can be filed as before.
     ...     "Frobnobulator is a Firefox add-on, ...")
     >>> user_browser.getControl("Submit Bug Report").click()
 
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...

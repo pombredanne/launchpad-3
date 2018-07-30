@@ -10,7 +10,7 @@ After a bug watch is recorded, it is possible to go back and change it.
     >>> admin_browser.getControl('Change').click()
     >>> admin_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
-    >>> 'https://bugzilla.mozilla.org/show_bug.cgi?id=1000' in (
+    >>> b'https://bugzilla.mozilla.org/show_bug.cgi?id=1000' in (
     ...     admin_browser.contents)
     True
 
@@ -24,7 +24,7 @@ bug tracker already registered with Launchpad.
     >>> admin_browser.url
     'http://bugs.launchpad.dev/bugs/1/+watch/2/+edit'
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     There is 1 error.
     Invalid bug tracker URL.
 
@@ -35,7 +35,7 @@ Likewise, stupid URLs are rejected with a polite error message.
     >>> admin_browser.url
     'http://bugs.launchpad.dev/bugs/1/+watch/2/+edit'
     >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     There is 1 error.
     &quot;GELLER&quot; is not a valid URI
 
@@ -47,7 +47,7 @@ The +edit page for a watch also displays some details about the watch.
 
     >>> for data_tag in find_tags_by_class(
     ...     admin_browser.contents, 'bugwatch-data'):
-    ...     print extract_text(data_tag.renderContents())
+    ...     print(extract_text(data_tag.renderContents()))
     Tracker: The Mozilla.org Bug Tracker
     Remote bug ID: 1000
     Last status: None recorded
@@ -77,7 +77,7 @@ Next check column.
     >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
     >>> data_tag = find_tag_by_id(
     ...     admin_browser.contents, 'bugwatch-next_check')
-    >>> print extract_text(data_tag.renderContents())
+    >>> print(extract_text(data_tag.renderContents()))
     Next check: 2010-04-08...
 
 
@@ -91,7 +91,7 @@ shown.
     >>> user_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
     >>> recent_activity_list = find_tag_by_id(
     ...     user_browser.contents, 'recent-watch-activity')
-    >>> print recent_activity_list
+    >>> print(recent_activity_list)
     None
 
 Adding some activity to the watch will cause it to show up in the recent
@@ -105,7 +105,7 @@ activity list.
     >>> user_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
     >>> recent_activity_list = find_tag_by_id(
     ...     user_browser.contents, 'recent-watch-activity')
-    >>> print extract_text(recent_activity_list)
+    >>> print(extract_text(recent_activity_list))
     Update completed successfully ... ago
 
 If an update fails, that too will be reflected in the list.
@@ -119,7 +119,7 @@ If an update fails, that too will be reflected in the list.
     >>> user_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
     >>> recent_activity_list = find_tag_by_id(
     ...     user_browser.contents, 'recent-watch-activity')
-    >>> print extract_text(recent_activity_list)
+    >>> print(extract_text(recent_activity_list))
     Update failed with error 'Bug Not Found' ... ago
     Update completed successfully ... ago
 
@@ -136,7 +136,7 @@ in the list.
     >>> user_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
     >>> recent_activity_list = find_tag_by_id(
     ...     user_browser.contents, 'recent-watch-activity')
-    >>> print extract_text(recent_activity_list)
+    >>> print(extract_text(recent_activity_list))
     Update failed with error 'Unable to import...' (OOPS-12345TEST) ... ago
     Update failed with error 'Bug Not Found' ... ago
     Update completed successfully ... ago
@@ -145,7 +145,7 @@ If a Launchpad developer views the page the OOPS IDs will be linkified.
 
     >>> admin_browser.open('http://bugs.launchpad.dev/bugs/1/+watch/2')
     >>> oops_link = admin_browser.getLink('OOPS-12345TEST')
-    >>> print oops_link.url
+    >>> print(oops_link.url)
     http...OOPS-12345TEST
 
 
@@ -169,7 +169,7 @@ For a new watch, the "Update Now" button isn't shown.
     >>> user_browser.getControl('Update Now')
     Traceback (most recent call last):
       ...
-    LookupError: label 'Update Now'
+    LookupError: label u'Update Now'
 
 If the watch has been checked but has never failed, the button will
 remain hidden.
@@ -182,7 +182,7 @@ remain hidden.
     >>> user_browser.getControl('Update Now')
     Traceback (most recent call last):
       ...
-    LookupError: label 'Update Now'
+    LookupError: label u'Update Now'
 
 If the watch has failed less than 60% of its recent checks, the button
 will appear on the page.
@@ -196,7 +196,7 @@ will appear on the page.
 
     >>> data_tag = find_tag_by_id(
     ...     user_browser.contents, 'bugwatch-next_check')
-    >>> print extract_text(data_tag.renderContents())
+    >>> print(extract_text(data_tag.renderContents()))
     Next check: Not yet scheduled
 
 Clicking the Update Now button will schedule it to be checked
@@ -206,7 +206,7 @@ immediately.
 
     >>> for message in find_tags_by_class(
     ...     user_browser.contents, 'informational message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     The ... bug watch has been scheduled for immediate checking.
 
 Looking at the watch +edit page again, we can see that the watch has
@@ -215,7 +215,7 @@ been scheduled.
     >>> user_browser.open(watch_url)
     >>> data_tag = find_tag_by_id(
     ...     user_browser.contents, 'bugwatch-next_check')
-    >>> print extract_text(data_tag.renderContents())
+    >>> print(extract_text(data_tag.renderContents()))
     Next check: 2...
 
 The button will no longer be shown on the page.
@@ -223,7 +223,7 @@ The button will no longer be shown on the page.
     >>> reschedule_button = user_browser.getControl('Update Now')
     Traceback (most recent call last):
       ...
-    LookupError: label 'Update Now'
+    LookupError: label u'Update Now'
 
 If a watch has run once and failed once, the reschedule button will be
 shown.
@@ -243,7 +243,7 @@ shown.
 
     >>> for message in find_tags_by_class(
     ...     user_browser.contents, 'informational message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     The ... bug watch has been scheduled for immediate checking.
 
 However, once the watch succeeds the button will disappear, even though
@@ -263,7 +263,7 @@ watch for checking.
     >>> user_browser.getControl('Update Now')
     Traceback (most recent call last):
       ...
-    LookupError: label 'Update Now'
+    LookupError: label u'Update Now'
 
 
 Resetting a watch
@@ -313,12 +313,12 @@ Clicking the button will reset the watch completely.
     >>> reset_button.click()
     >>> for message in find_tags_by_class(
     ...     lp_dev_browser.contents, 'informational message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     The ... bug watch has been reset.
 
     >>> data_tag = find_tag_by_id(
     ...     user_browser.contents, 'bugwatch-lastchecked')
-    >>> print extract_text(data_tag.renderContents())
+    >>> print(extract_text(data_tag.renderContents()))
     Checked:
 
 Should a non-admin, non-Launchpad-developer user visit the page, the
@@ -328,4 +328,4 @@ button will not appear.
     >>> user_browser.getControl('Reset this watch')
     Traceback (most recent call last):
       ...
-    LookupError: label 'Reset this watch'
+    LookupError: label u'Reset this watch'

@@ -57,8 +57,9 @@ his SSH keys. The page allows him to add a key.
     Change your SSH keys...
 
 Any key must be of the form "keytype keytext comment", where keytype must be
-either ssh-rsa or ssh-dss.  If the key doesn't match the expected format, an
-error message will be shown.
+one of ssh-rsa, ssh-dss, ecdsa-sha2-nistp256, ecdsa-sha2-nistp284, or
+ecdsa-sha2-nistp521.  If the key doesn't match the expected format, an error
+message will be shown.
 
     >>> sshkey = "ssh-rsa   "
     >>> browser.getControl(name='sshkey').value = sshkey
@@ -82,7 +83,7 @@ error message will be shown.
     Invalid public key
 
 
-Now, Salgado will upload one RSA and one DSA keys, matching the expected
+Now, Salgado will upload one of each type of key, matching the expected
 format.
 
     >>> sshkey = "ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6VVQrIoBhxSB7duD69PRzYfdJz3QNUky5lSOpl6a9hEP9iAU72RK3fr4uaYiEEjr70EDAROCimi/rtkBuWCRmPJbQDpzBoZ7PDW/jF5tWAuC4+5z/fy05HOhHRH8WGzeEuWn5HBflcx1QasMD95oDiiEuQbF/kGxBM5/no/4FeJU3fgc+1XQNH7tMDQIcaqoHarc2kefGC8/sbRwbzajhg9yeqskgs6o6y+7931/bcZSLZ/wU53m5nB7eVkkVihk7KD+sf9jKG91LnaRW1IjBgo8AAbXl+e556XkwIwVoieKNYW2Fvw8ybcW5rCTvJ1e/3Cvo2hw8ZsDMRofSifiKw== salgado@canario"
@@ -94,6 +95,30 @@ format.
     SSH public key added.
 
     >>> sshkey = "ssh-dss AAAAB3NzaC1kc3MAAAEBAObOoy3fScSSQPHE/V6tPGoFzo5y1JRjDLcs8CNcvIHh9L27Qdj6h18AXn6MUCvvSCKm49aHpp1Xe14a6fmEIesjz6VopPWGENaOwRmhH6zfqM6imKUXQ0sq9p0znYb0TMjyRC0/AmqYneUF6FA2mVXygkGAkp/vDRPFQhPwnHpVD9TVPxHBQdHgM3bTo2TT+GoL7kw/s32ZiAH4OPvN5fN7bCkQWoUs/ySfoNbISMdvdtq07Rra2Biwzgjjs0ZcKbMicbDyYCe4gXlqK4wqcDfcwgrdqdG6NM0LUdekarWjnv0pMb6ttUl4U7e7Nf+eGkiTVItlppC8DyrnqC9SKCUAAAAVAOlEYNobJottyObVWQcrU8eAP4T5AAABAQDmJmL4DcQ1GVvw1Pjy57V0WUyGrOVBRVz7BwYBIvMA7xJCCvzd47mYWrWJkjV6O3tw2vG5oZx+BXE+ve8O6jL89CrwqncoUS8WHCojRmuUHTmtCCiRBCH+/68HMCusO3Blk//kQSsaqfIn+8Xa56Vr2SweSUlLgjvb51+89JJ13oDlUvdftW2GZu+grbmojqcoJ1LVAI5n0qsDItsFid46f8XfNzPeksasY9JbY5fKq/xf1KcgXL2F9XwmrDjFCuI4/xkJWNfGwaLKC/cbrJ1xmvPLl1/Hm5kNqgrwpNwHVOwyYSCUqXroU5PnpE9uydHUhjhtU2K2Hj0i7fOyxoxyAAABAQCpXKgd6lpTAEKm7ECY3TbJaTXPkNvAwg/2ud+PrtefHrVFFWrXrblSQhnmnc6ut8G3BsDzCljAIV2v+XcdOo+m8EViLf+Bi+gfbAIz4vdVepwQ2XHWUOTKk90i7Xqg4mUUDRIVw9ioNF0GAHbNlJTK3FWC3gstbCJU2hyV3UzgB95b6zqpUHeyn1RK4VAFYGY9fCIdZNy926HEart6uO/N6cO1ETw5B63kI8fTBjU7HLGgGXRjOv1APAqvKgry3tQD2WYkVJGRyYLjDK9d8nStUpwN5swI1xx2IWAbD+UCsRXAixn8s3mvpBD/jbnWjrzEensBc96jtiAsx2P5oXEd salgado@canario"
+    >>> browser.getControl(name='sshkey').value = sshkey
+    >>> browser.getControl('Import Public Key').click()
+    >>> soup = find_main_content(browser.contents)
+    >>> for tag in soup('p', 'informational message'):
+    ...     print tag.renderContents()
+    SSH public key added.
+
+    >>> sshkey = "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJseCUmxVG7D6qh4JmhLp0Du4kScScJ9PtZ0LGHYHaURnRw9tbX1wwURAio8og6dbnT75CQ3TbUE/xJhxI0aFXE= salgado@canario"
+    >>> browser.getControl(name='sshkey').value = sshkey
+    >>> browser.getControl('Import Public Key').click()
+    >>> soup = find_main_content(browser.contents)
+    >>> for tag in soup('p', 'informational message'):
+    ...     print tag.renderContents()
+    SSH public key added.
+
+    >>> sshkey = "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBDUR0E0zCHRHJER6uzjfE/o0HAHFLcq/n8lp0duThpeIPsmo+wr3vHHuAAyOddOgkuQC8Lj8FzHlrOEYgXL6qa7FvpviE9YWUgmqVDa/yJbL/m6Mg8fvSIXlDJKmvOSv6g== salgado@canario"
+    >>> browser.getControl(name='sshkey').value = sshkey
+    >>> browser.getControl('Import Public Key').click()
+    >>> soup = find_main_content(browser.contents)
+    >>> for tag in soup('p', 'informational message'):
+    ...     print tag.renderContents()
+    SSH public key added.
+
+    >>> sshkey = "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAACFBAB3rpD+Ozb/kwUOqCZUXSiruAkIx6sNZLJyjJ0zxVTZSannaysCLxMQ/IiVxCd59+U2NaLduMzd93JcYDRlX3M5+AApY+3JjfSPo01Sb17HTLNSYU3RZWx0A3XJxm/YN+x/iuYZ3IziuAKeYMsNsdfHlO4/IWjw4Ruy0enW+QhWaY2qAQ== salgado@canario"
     >>> browser.getControl(name='sshkey').value = sshkey
     >>> browser.getControl('Import Public Key').click()
     >>> soup = find_main_content(browser.contents)
@@ -118,9 +143,11 @@ to edit his keys is on the page.
     >>> browser.open('http://launchpad.dev/~salgado')
     >>> print browser.title
     Guilherme Salgado in Launchpad
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'sshkeys'))
+    >>> print extract_text(find_tag_by_id(browser.contents, 'sshkeys'))
     SSH keys: Update SSH keys
+    salgado@canario
+    salgado@canario
+    salgado@canario
     salgado@canario
     salgado@canario
     >>> browser.getLink('Update SSH keys').click()

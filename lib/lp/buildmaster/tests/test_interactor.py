@@ -1,7 +1,9 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test BuilderInteractor features."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __all__ = [
     'FakeBuildQueue',
@@ -20,20 +22,20 @@ from testtools.matchers import (
     HasLength,
     MatchesDict,
     )
+from testtools.testcase import ExpectedException
 from testtools.twistedsupport import (
     assert_fails_with,
     AsynchronousDeferredRunTest,
     AsynchronousDeferredRunTestForBrokenTwisted,
     SynchronousDeferredRunTest,
     )
-from testtools.testcase import ExpectedException
+import treq
 from twisted.internet import (
     defer,
     reactor as default_reactor,
     )
 from twisted.internet.task import Clock
 from twisted.python.failure import Failure
-from twisted.web.client import getPage
 from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import (
@@ -64,6 +66,8 @@ from lp.buildmaster.tests.mock_slaves import (
     WaitingSlave,
     )
 from lp.services.config import config
+from lp.services.twistedsupport.testing import TReqFixture
+from lp.services.twistedsupport.treq import check_status
 from lp.soyuz.model.binarypackagebuildbehaviour import (
     BinaryPackageBuildBehaviour,
     )
@@ -761,10 +765,12 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
         d.addCallback(self.assertEqual, [True, 'Download'])
         return d
 
+    @defer.inlineCallbacks
     def test_retrieve_files_from_filecache(self):
         # Files that are present on the slave can be downloaded with a
         # filename made from the sha1 of the content underneath the
         # 'filecache' directory.
+        from twisted.internet import reactor
         content = "Hello World"
         lf = self.factory.makeLibraryFileAlias(
             'HelloWorld.txt', content=content)
@@ -773,13 +779,11 @@ class TestSlaveWithLibrarian(TestCaseWithFactory):
             self.slave_helper.base_url, lf.content.sha1)
         self.slave_helper.getServerSlave()
         slave = self.slave_helper.getClientSlave()
-        d = slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
-
-        def check_file(ignored):
-            d = getPage(expected_url.encode('utf8'))
-            return d.addCallback(self.assertEqual, content)
-
-        return d.addCallback(check_file)
+        yield slave.ensurepresent(lf.content.sha1, lf.http_url, "", "")
+        client = self.useFixture(TReqFixture(reactor)).client
+        response = yield client.get(expected_url).addCallback(check_status)
+        got_content = yield treq.content(response)
+        self.assertEqual(content, got_content)
 
     def test_getFiles(self):
         # Test BuilderSlave.getFiles().

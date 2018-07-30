@@ -29,6 +29,7 @@ __all__ = [
     'WikiNameSet',
     ]
 
+import base64
 from datetime import (
     datetime,
     timedelta,
@@ -81,6 +82,7 @@ from storm.store import (
     Store,
     )
 import transaction
+from twisted.conch.ssh.common import getNS
 from twisted.conch.ssh.keys import Key
 from zope.component import (
     adapter,
@@ -205,7 +207,6 @@ from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.ssh import (
     ISSHKey,
     ISSHKeySet,
-    SSH_KEY_TYPE_TO_TEXT,
     SSH_TEXT_TO_KEY_TYPE,
     SSHKeyAdditionError,
     SSHKeyType,
@@ -4122,8 +4123,23 @@ class SSHKey(SQLBase):
         super(SSHKey, self).destroySelf()
 
     def getFullKeyText(self):
-        return "%s %s %s" % (
-            SSH_KEY_TYPE_TO_TEXT[self.keytype], self.keytext, self.comment)
+        try:
+            ssh_keytype = getNS(base64.b64decode(self.keytext))[0]
+        except Exception as e:
+            # We didn't always validate keys, so there might be some that
+            # can't be loaded this way.
+            if self.keytype == SSHKeyType.RSA:
+                ssh_keytype = "ssh-rsa"
+            elif self.keytype == SSHKeyType.DSA:
+                ssh_keytype = "ssh-dss"
+            else:
+                # There's no single ssh_keytype for ECDSA keys (it depends
+                # on the curve), and we've always validated these so this
+                # shouldn't happen.
+                raise ValueError(
+                    "SSH key of type %s has invalid data '%s'" %
+                    (self.keytype, self.keytext))
+        return "%s %s %s" % (ssh_keytype, self.keytext, self.comment)
 
 
 @implementer(ISSHKeySet)
@@ -4131,14 +4147,16 @@ class SSHKeySet:
 
     def new(self, person, sshkey, check_key=True, send_notification=True,
             dry_run=False):
-        keytype, keytext, comment = self._extract_ssh_key_components(sshkey)
+        kind, keytype, keytext, comment = self._extract_ssh_key_components(
+            sshkey)
 
         if check_key:
             try:
-                Key.fromString(sshkey)
+                key = Key.fromString(sshkey)
             except Exception as e:
-                raise SSHKeyAdditionError(
-                    "Invalid SSH key data: '%s' (%s)" % (sshkey, e))
+                raise SSHKeyAdditionError(key=sshkey, exception=e)
+            if kind != key.sshType():
+                raise SSHKeyAdditionError(type_mismatch=(kind, key.sshType()))
 
         if send_notification:
             person.security_field_changed(
@@ -4162,7 +4180,7 @@ class SSHKeySet:
             """ % sqlvalues([person.id for person in people]))
 
     def getByPersonAndKeyText(self, person, sshkey):
-        keytype, keytext, comment = self._extract_ssh_key_components(sshkey)
+        _, keytype, keytext, comment = self._extract_ssh_key_components(sshkey)
         return IStore(SSHKey).find(
             SSHKey,
             person=person, keytype=keytype, keytext=keytext, comment=comment)
@@ -4171,16 +4189,15 @@ class SSHKeySet:
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
         except (ValueError, AttributeError):
-            raise SSHKeyAdditionError("Invalid SSH key data: '%s'" % sshkey)
+            raise SSHKeyAdditionError(key=sshkey)
 
         if not (kind and keytext and comment):
-            raise SSHKeyAdditionError("Invalid SSH key data: '%s'" % sshkey)
+            raise SSHKeyAdditionError(key=sshkey)
 
         keytype = SSH_TEXT_TO_KEY_TYPE.get(kind)
         if keytype is None:
-            raise SSHKeyAdditionError(
-                "Invalid SSH key type: '%s'" % kind)
-        return keytype, keytext, comment
+            raise SSHKeyAdditionError(kind=kind)
+        return kind, keytype, keytext, comment
 
 
 @implementer(IWikiName)

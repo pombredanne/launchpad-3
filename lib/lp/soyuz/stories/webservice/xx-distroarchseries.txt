@@ -6,12 +6,12 @@ operation:
 
     >>> distros = webservice.get("/distros").jsonBody()
     >>> ubuntu = distros['entries'][0]
-    >>> print ubuntu['self_link']
+    >>> print(ubuntu['self_link'])
     http://.../ubuntu
 
     >>> current_series = webservice.get(
     ...     ubuntu['current_series_link']).jsonBody()
-    >>> print current_series['self_link']
+    >>> print(current_series['self_link'])
     http://.../ubuntu/hoary
 
 We'll first set up a buildd chroot, so we can check that its URL is

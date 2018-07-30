@@ -1337,6 +1337,13 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
             }
         self.assertEqual(expected_refs, refs)
 
+    def test_fetchRefCommits_empty(self):
+        # If given an empty refs dictionary, fetchRefCommits returns early
+        # without contacting the hosting service.
+        hosting_fixture = self.useFixture(GitHostingFixture())
+        GitRepository.fetchRefCommits("dummy", {})
+        self.assertEqual([], hosting_fixture.getCommits.calls)
+
     def test_synchroniseRefs(self):
         # synchroniseRefs copes with synchronising a repository where some
         # refs have been created, some deleted, and some changed.

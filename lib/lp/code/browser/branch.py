@@ -137,6 +137,7 @@ from lp.services.webapp.authorization import (
 from lp.services.webapp.breadcrumb import NameBreadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.publisher import DataDownloadView
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.hassnaps import (
     HasSnapsMenuMixin,
@@ -1300,25 +1301,30 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
 
 @implementer(IBrowserPublisher)
-class BranchDiffView:
+class BranchDiffView(DataDownloadView):
+
+    content_type = "text/x-patch"
 
     def __init__(self, context, request, new, old=None):
-        self.context = context
-        self.request = request
+        super(BranchDiffView, self).__init__(context, request)
         self.new = new
         self.old = old
 
     def __call__(self):
-        content = self.context.getDiff(self.new, old=self.old)
+        if getFeatureFlag(u"code.bzr.diff.disable_proxy"):
+            self.request.response.setStatus(401)
+            return "Proxying of branch diffs is disabled.\n"
+        return super(BranchDiffView, self).__call__()
+
+    @property
+    def filename(self):
         if self.old is None:
-            filename = "%s.diff" % self.new
+            return "%s_%s.diff" % (self.context.name, self.new)
         else:
-            filename = "%s_%s.diff" % (self.old, self.new)
-        self.request.response.setHeader("Content-Type", "text/x-patch")
-        self.request.response.setHeader("Content-Length", str(len(content)))
-        self.request.response.setHeader(
-            "Content-Disposition", "attachment; filename=%s" % filename)
-        return content
+            return "%s_%s_%s.diff" % (self.context.name, self.old, self.new)
+
+    def getBody(self):
+        return self.context.getDiff(self.new, old=self.old)
 
     def browserDefault(self, request):
         return self, ()

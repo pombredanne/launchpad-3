@@ -184,8 +184,9 @@ class SourcePackageRecipe(Storm):
             owner_ids, need_validity=True))
 
     def setRecipeText(self, recipe_text):
-        parsed = getUtility(IRecipeBranchSource).getParsedRecipe(recipe_text)
-        self._recipe_data.setRecipe(parsed)
+        parsed, recipe_branch_type = (
+            getUtility(IRecipeBranchSource).getParsedRecipe(recipe_text))
+        self._recipe_data.setRecipe(parsed, recipe_branch_type)
 
     def getRecipeText(self, validate=False):
         """See `ISourcePackageRecipe`."""
@@ -215,9 +216,9 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
-        builder_recipe = getUtility(IRecipeBranchSource).getParsedRecipe(
-            recipe)
-        SourcePackageRecipeData(builder_recipe, sprecipe)
+        builder_recipe, recipe_branch_type = (
+            getUtility(IRecipeBranchSource).getParsedRecipe(recipe))
+        SourcePackageRecipeData(builder_recipe, recipe_branch_type, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
         sprecipe.name = name

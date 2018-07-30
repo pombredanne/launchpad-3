@@ -62,13 +62,13 @@ here.
     >>> distro_pkg_search_view.search_by_binary_name
     True
     >>> for package in distro_pkg_search_view.search_results:
-    ...     print package.name
+    ...     print(package.name)
     mozilla-firefox
 
 Additionally, a helper property 'source_search_url' is included providing
 easy access to the equivalent search on sources:
 
-    >>> print distro_pkg_search_view.source_search_url
+    >>> print(distro_pkg_search_view.source_search_url)
     http://launchpad.dev/ubuntu/+search?search_type=source&text=a
 
 Unicode form variables remain encoded as UTF-8 (as expected by the
@@ -79,7 +79,7 @@ server) when building the 'source_search_url'.
     ...     form={'text': u'\xe7'},
     ...     query_string='text=%C3%A7')
 
-    >>> print distro_pkg_search_view.source_search_url
+    >>> print(distro_pkg_search_view.source_search_url)
     http://launchpad.dev/ubuntu/+search?search_type=source&text=%C3%A7
 
 But users can specify that the search should be on source-package-names
@@ -93,7 +93,7 @@ instead:
     >>> distro_pkg_search_view.search_by_binary_name
     False
     >>> for package in distro_pkg_search_view.search_results:
-    ...     print package.name
+    ...     print(package.name)
     alsa-utils
     commercialpackage
     foobar
@@ -120,8 +120,8 @@ Leading and trailing white-space is stripped from the search text.
     ...     ubuntu, name="+search",
     ...     form={'text': ' a '},
     ...     query_string='text=a')
-    >>> distro_pkg_search_view.text
-    'a'
+    >>> print(distro_pkg_search_view.text)
+    a
 
 If there is more than one text parameter value, the last one is used.
 
@@ -129,8 +129,8 @@ If there is more than one text parameter value, the last one is used.
     ...     ubuntu, name="+search",
     ...     form={'text': ['a','b']},
     ...     query_string='text=a&text=b')
-    >>> distro_pkg_search_view.text
-    'b'
+    >>> print(distro_pkg_search_view.text)
+    b
 
 Exact matches
 .............
@@ -147,7 +147,7 @@ with the exact name 'mozilla-firefox':
     >>> distro_pkg_search_view.has_exact_matches
     True
     >>> for package in distro_pkg_search_view.exact_matches:
-    ...     print package.name
+    ...     print(package.name)
     mozilla-firefox
 
 The view can also help the template know when to display exact matches.
@@ -214,10 +214,10 @@ The matching_binary_names property uses a protected helper method
 names are returned. An ellipse is used to indicate when more than five
 names match:
 
-    >>> print distro_pkg_search_view._listFirstFiveMatchingNames(
+    >>> print(distro_pkg_search_view._listFirstFiveMatchingNames(
     ...     'moz',
     ...     'mozilla-firefox mozilla-data moziki '
-    ...     'limozine moza lamoz') # doctest: -ELLIPSIS
+    ...     'limozine moza lamoz')) # doctest: -ELLIPSIS
     mozilla-firefox, mozilla-data, moziki, limozine, moza, ...
 
 
@@ -231,5 +231,5 @@ The DistributionPackageSearchView includes substring matches by default.
     1
 
     >>> for pkg in search_results:
-    ...     print pkg.name
+    ...     print(pkg.name)
     mozilla-firefox

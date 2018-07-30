@@ -1418,9 +1418,6 @@ class TestSnapSet(TestCaseWithFactory):
         expected_log_entries = [
             "DEBUG Scheduling builds of snap package %s/%s" % (
                 snap.owner.name, snap.name),
-            "WARNING  - %s/%s/%s: An identical build of this snap package "
-            "is already pending." % (
-                snap.owner.name, snap.name, das.architecturetag),
             ]
         self.assertEqual(
             expected_log_entries, logger.getLogBuffer().splitlines())

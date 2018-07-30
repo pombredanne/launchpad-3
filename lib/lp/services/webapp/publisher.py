@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Publisher of objects as web pages.
@@ -17,9 +17,9 @@ __all__ = [
     'canonical_url_iterator',
     'nearest',
     'Navigation',
+    'redirection',
     'rootObject',
     'stepthrough',
-    'redirection',
     'stepto',
     'RedirectionView',
     'RenamedView',
@@ -29,6 +29,7 @@ __all__ = [
 from cgi import FieldStorage
 import httplib
 import re
+from wsgiref.headers import Headers
 
 from lazr.restful import (
     EntryResource,
@@ -49,7 +50,6 @@ from zope.interface import (
     directlyProvides,
     implementer,
     )
-from zope.interface.advice import addClassAdvisor
 from zope.publisher.defaultview import getDefaultViewName
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import (
@@ -100,39 +100,31 @@ error_status(httplib.NOT_FOUND)(NotFound)
 RESERVED_NAMESPACE = re.compile('\\+\\+.*\\+\\+')
 
 
-class DecoratorAdvisor:
-    """Base class for a function decorator that adds class advice.
+class DecoratorAnnotator:
+    """Base class for a function decorator that adds an annotation.
 
-    The advice stores information in a magic attribute in the class's dict.
-    The magic attribute's value is a dict, which contains names and functions
-    that were set in the function decorators.
+    The annotation is stored in a magic attribute in the function's dict.
+    The magic attribute's value is a list, which contains names that were
+    set in the function decorators.
     """
 
-    magic_class_attribute = None
+    magic_attribute = None
 
     def __init__(self, name):
         self.name = name
 
     def __call__(self, fn):
-        self.fn = fn
-        addClassAdvisor(self.advise)
+        if self.magic_attribute is None:
+            raise AssertionError('You must provide the magic_attribute to use')
+        annotations = getattr(fn, self.magic_attribute, None)
+        if annotations is None:
+            annotations = []
+            setattr(fn, self.magic_attribute, annotations)
+        annotations.append(self.name)
         return fn
 
-    def getValueToStore(self):
-        return self.fn
 
-    def advise(self, cls):
-        assert self.magic_class_attribute is not None, (
-            'You must provide the magic_class_attribute to use')
-        D = cls.__dict__.get(self.magic_class_attribute)
-        if D is None:
-            D = {}
-            setattr(cls, self.magic_class_attribute, D)
-        D[self.name] = self.getValueToStore()
-        return cls
-
-
-class stepthrough(DecoratorAdvisor):
+class stepthrough(DecoratorAnnotator):
     """Add the decorated method to stepthrough traversals for a class.
 
     A stepthrough method must take single argument that's the path segment for
@@ -149,17 +141,17 @@ class stepthrough(DecoratorAdvisor):
 
     See also doc/navigation.txt.
 
-    This uses Zope's class advisor stuff to make sure that the path segment
-    passed to `stepthrough` is handled by the decorated method.
+    This sets an attribute on the decorated function, equivalent to:
 
-    That is::
-      cls.__stepthrough_traversals__[argument] = decorated
+      if decorated.__stepthrough_traversals__ is None:
+          decorated.__stepthrough_traversals__ = []
+      decorated.__stepthrough_traversals__.append(argument)
     """
 
-    magic_class_attribute = '__stepthrough_traversals__'
+    magic_attribute = '__stepthrough_traversals__'
 
 
-class stepto(DecoratorAdvisor):
+class stepto(DecoratorAnnotator):
     """Add the decorated method to stepto traversals for a class.
 
     A stepto method must take no arguments and return an object for the URL at
@@ -176,65 +168,52 @@ class stepto(DecoratorAdvisor):
 
     See also doc/navigation.txt.
 
-    This uses Zope's class advisor stuff to make sure that the path segment
-    passed to `stepto` is handled by the decorated method.
+    This sets an attribute on the decorated function, equivalent to:
 
-    That is::
-      cls.__stepto_traversals__[argument] = decorated
+      if decorated.__stepto_traversals__ is None:
+          decorated.__stepto_traversals__ = []
+      decorated.__stepto_traversals__.append(argument)
     """
 
-    magic_class_attribute = '__stepto_traversals__'
+    magic_attribute = '__stepto_traversals__'
 
 
 class redirection:
     """A redirection is used for two related purposes.
 
-    It is a class advisor in its two argument form or as a descriptor.
-    It says what name is mapped to where.
+    As a function decorator, it says what name is mapped to where.
 
-    It is an object returned from a traversal method in its one argument
-    form.  It says that the result of such traversal is a redirect.
+    As an object returned from a traversal method, it says that the result
+    of such traversal is a redirect.
 
     You can use the keyword argument 'status' to change the status code
     from the default of 303 (assuming http/1.1).
     """
 
-    def __init__(self, arg1, arg2=None, status=None):
-        if arg2 is None:
-            self.fromname = None
-            self.toname = arg1
-        else:
-            self.fromname = arg1
-            self.toname = lambda self: arg2
-            addClassAdvisor(self.advise)
+    def __init__(self, name, status=None):
+        # Note that this is the source of the redirection when used as a
+        # decorator, but the target when returned from a traversal method.
+        self.name = name
         self.status = status
 
     def __call__(self, fn):
-        # We are being used as a descriptor.
-        assert self.fromname is None, (
-            "redirection() can not be used as a descriptor in its "
-            "two argument form")
-
-        self.fromname = self.toname
-        self.toname = fn
-        addClassAdvisor(self.advise)
-
-        return fn
-
-    def advise(self, cls):
-        redirections = cls.__dict__.get('__redirections__')
+        # We are being used as a function decorator.
+        redirections = getattr(fn, '__redirections__', None)
         if redirections is None:
             redirections = {}
-            setattr(cls, '__redirections__', redirections)
-        redirections[self.fromname] = (self.toname, self.status)
-        return cls
+            setattr(fn, '__redirections__', redirections)
+        redirections[self.name] = self.status
+        return fn
 
 
 class DataDownloadView:
     """Download data without templating.
 
-    Subclasses must provide getBody, content_type and filename.
+    Subclasses must provide getBody, content_type and filename, and may
+    provide charset.
     """
+
+    charset = None
 
     def __init__(self, context, request):
         self.context = context
@@ -246,10 +225,16 @@ class DataDownloadView:
         It is not necessary to supply Content-length, because this is added by
         the caller.
         """
-        self.request.response.setHeader('Content-Type', self.content_type)
-        self.request.response.setHeader(
-            'Content-Disposition', 'attachment; filename="%s"' % (
-             self.filename))
+        headers = Headers([])
+        content_type_params = {}
+        if self.charset is not None:
+            content_type_params['charset'] = self.charset
+        headers.add_header(
+            'Content-Type', self.content_type, **content_type_params)
+        headers.add_header(
+            'Content-Disposition', 'attachment', filename=self.filename)
+        for key, value in headers.items():
+            self.request.response.setHeader(key, value)
         return self.getBody()
 
 
@@ -931,19 +916,30 @@ class Navigation:
         getUtility(IOpenLaunchBag).add(nextobj)
         return nextobj
 
-    def _combined_class_info(self, attrname):
-        """Walk the class's __mro__ looking for attributes with the given
-        name in class dicts.  Combine the values of these attributes into
-        a single dict.  Return it.
+    def _all_methods(self):
+        """Walk the class's __mro__ looking for methods in class dicts.
+
+        This is careful to avoid evaluating descriptors.
         """
-        combined_info = {}
         # Note that we want to give info from more specific classes priority
         # over info from less specific classes.  We can do this by walking
-        # the __mro__ backwards, and using dict.update(...)
+        # the __mro__ backwards, and by callers considering info from later
+        # methods to override info from earlier methods.
         for cls in reversed(type(self).__mro__):
-            value = cls.__dict__.get(attrname)
+            for value in cls.__dict__.values():
+                if callable(value):
+                    yield value
+
+    def _combined_method_annotations(self, attrname):
+        """Walk through all the methods in the class looking for attributes
+        on those methods with the given name.  Combine the values of these
+        attributes into a single dict.  Return it.
+        """
+        combined_info = {}
+        for method in self._all_methods():
+            value = getattr(method, attrname, None)
             if value is not None:
-                combined_info.update(value)
+                combined_info.update({name: method for name in value})
         return combined_info
 
     def _handle_next_object(self, nextobj, request, name):
@@ -960,7 +956,7 @@ class Navigation:
             raise NotFound(self.context, name)
         elif isinstance(nextobj, redirection):
             return RedirectionView(
-                nextobj.toname, request, status=nextobj.status)
+                nextobj.name, request, status=nextobj.status)
         else:
             return nextobj
 
@@ -976,19 +972,24 @@ class Navigation:
     @property
     def stepto_traversals(self):
         """Return a dictionary containing all the stepto names defined."""
-        return self._combined_class_info('__stepto_traversals__')
+        return self._combined_method_annotations('__stepto_traversals__')
 
     @property
     def stepthrough_traversals(self):
         """Return a dictionary containing all the stepthrough names defined.
         """
-        return self._combined_class_info('__stepthrough_traversals__')
+        return self._combined_method_annotations('__stepthrough_traversals__')
 
     @property
     def redirections(self):
         """Return a dictionary containing all the redirections names defined.
         """
-        return self._combined_class_info('__redirections__')
+        redirections = {}
+        for method in self._all_methods():
+            for fromname, status in getattr(
+                    method, '__redirections__', {}).items():
+                redirections[fromname] = (method, status)
+        return redirections
 
     def _publishTraverse(self, request, name):
         """Traverse, like zope wants."""

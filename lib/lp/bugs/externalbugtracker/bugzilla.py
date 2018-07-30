@@ -15,12 +15,12 @@ from email.utils import parseaddr
 from httplib import BadStatusLine
 import re
 import string
-from urllib2 import URLError
 from xml.dom import minidom
 import xml.parsers.expat
 import xmlrpclib
 
 import pytz
+import requests
 import six
 from zope.component import getUtility
 from zope.interface import (
@@ -40,7 +40,7 @@ from lp.bugs.externalbugtracker.base import (
     UnparsableBugData,
     UnparsableBugTrackerVersion,
     )
-from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
+from lp.bugs.externalbugtracker.xmlrpc import RequestsTransport
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -62,7 +62,7 @@ from lp.services.webapp.url import (
 
 
 class Bugzilla(ExternalBugTracker):
-    """An ExternalBugTrack for dealing with remote Bugzilla systems."""
+    """An ExternalBugTracker for dealing with remote Bugzilla systems."""
 
     batch_query_threshold = 0  # Always use the batch method.
     _test_xmlrpc_proxy = None
@@ -171,7 +171,8 @@ class Bugzilla(ExternalBugTracker):
                 return BugzillaLPPlugin(self.baseurl)
             elif self._remoteSystemHasBugzillaAPI():
                 return BugzillaAPI(self.baseurl)
-        except (xmlrpclib.ProtocolError, URLError, BadStatusLine):
+        except (xmlrpclib.ProtocolError, requests.RequestException,
+                BadStatusLine):
             pass
         return self
 
@@ -201,7 +202,7 @@ class Bugzilla(ExternalBugTracker):
         server cannot be reached `BugTrackerConnectError` will be
         raised.
         """
-        version_xml = self._getPage('xml.cgi?id=1')
+        version_xml = self._getPage('xml.cgi?id=1').content
         try:
             document = self._parseDOMString(version_xml)
         except xml.parsers.expat.ExpatError as e:
@@ -410,7 +411,7 @@ class Bugzilla(ExternalBugTracker):
             severity_tag = 'bz:bug_severity'
 
         buglist_xml = self._postPage(
-            buglist_page, data, repost_on_redirect=True)
+            buglist_page, data, repost_on_redirect=True).content
 
         try:
             document = self._parseDOMString(buglist_xml)
@@ -568,7 +569,7 @@ class BugzillaAPI(Bugzilla):
 
         self.internal_xmlrpc_transport = internal_xmlrpc_transport
         if xmlrpc_transport is None:
-            self.xmlrpc_transport = UrlLib2Transport(self.xmlrpc_endpoint)
+            self.xmlrpc_transport = RequestsTransport(self.xmlrpc_endpoint)
         else:
             self.xmlrpc_transport = xmlrpc_transport
 

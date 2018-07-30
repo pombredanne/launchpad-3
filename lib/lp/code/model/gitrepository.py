@@ -676,6 +676,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     def fetchRefCommits(hosting_path, refs, logger=None):
         """See `IGitRepository`."""
         oids = sorted(set(info["sha1"] for info in refs.values()))
+        if not oids:
+            return
         commits = parse_git_commits(
             getUtility(IGitHostingClient).getCommits(
                 hosting_path, oids, logger=logger))
@@ -946,7 +948,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
     def isRepositoryMergeable(self, other):
         """See `IGitRepository`."""
-        return self.namespace.areRepositoriesMergeable(other.namespace)
+        return self.namespace.areRepositoriesMergeable(self, other)
 
     @property
     def pending_updates(self):

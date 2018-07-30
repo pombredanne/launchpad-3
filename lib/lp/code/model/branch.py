@@ -829,7 +829,7 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         if file_list is unset:
             try:
                 inventory = hosting_client.getInventory(
-                    self.unique_name, dirname, rev=revision_id)
+                    self.id, dirname, rev=revision_id)
                 file_list = {
                     entry['filename']: entry['file_id']
                     for entry in inventory['filelist']}
@@ -843,13 +843,12 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         if file_id is None:
             raise BranchFileNotFound(
                 self.unique_name, filename=filename, rev=revision_id)
-        return hosting_client.getBlob(
-            self.unique_name, file_id, rev=revision_id)
+        return hosting_client.getBlob(self.id, file_id, rev=revision_id)
 
     def getDiff(self, new, old=None):
         """See `IBranch`."""
         hosting_client = getUtility(IBranchHostingClient)
-        return hosting_client.getDiff(self.unique_name, new, old=old)
+        return hosting_client.getDiff(self.id, new, old=old)
 
     def canBeDeleted(self):
         """See `IBranch`."""

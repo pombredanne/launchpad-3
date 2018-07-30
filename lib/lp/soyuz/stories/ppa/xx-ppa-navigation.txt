@@ -5,7 +5,7 @@ user's page in a section titled "Personal package archives".  If not, then
 that section is not present and there are no links to the ppa pages.
 
     >>> anon_browser.open('http://launchpad.dev/~matsubara')
-    >>> print find_tag_by_id(anon_browser.contents, 'ppas')
+    >>> print(find_tag_by_id(anon_browser.contents, 'ppas'))
     None
 
 Navigating to cprov's personal page:
@@ -25,7 +25,7 @@ And the users can click on the item and will be taken to the PPA page.
     >>> anon_browser.url
     'http://launchpad.dev/~cprov/+archive/ubuntu/ppa'
 
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     PPA for Celso Providelo : Celso Providelo
 
 There is a link that allows users with permission to create a PPA.
@@ -35,14 +35,14 @@ There is a link that allows users with permission to create a PPA.
     >>> cprov_browser.open("http://launchpad.dev/~cprov")
     >>> cprov_browser.getLink('Launchpad Buildd Admins').click()
 
-    >>> print cprov_browser.title
+    >>> print(cprov_browser.title)
     Launchpad Buildd Admins in Launchpad
 
     >>> print_tag_with_id(cprov_browser.contents, 'ppas')
     Personal package archives
     Create a new PPA
 
-    >>> print cprov_browser.getLink('Create a new PPA').url
+    >>> print(cprov_browser.getLink('Create a new PPA').url)
     http://launchpad.dev/~launchpad-buildd-admins/+activate-ppa
 
 While navigating around the PPA the "structural location" includes a PPA:
@@ -84,17 +84,17 @@ link. This link is the first link displayed within
 the packages listing portlet.
 
     >>> packages_portlet = find_tag_by_id(anon_browser.contents, 'packages')
-    >>> print packages_portlet.find('a').string
+    >>> print(packages_portlet.find('a').string)
     View package details
     >>> anon_browser.getLink('View package details').click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Packages in...
 
 You can see the build details of the packages in the archive by using
 the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Builds : Default PPA : Celso Providelo
 
     >>> anon_browser.url
@@ -102,7 +102,7 @@ the 'View all builds' link.
 
 The user could return to the 'PPA' overview by using the breadcrumb link.
 
-    >>> print anon_browser.getLink('Default PPA').url
+    >>> print(anon_browser.getLink('Default PPA').url)
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa
 
 The user can navigate to an individual build details:
@@ -110,7 +110,7 @@ The user can navigate to an individual build details:
     >>> anon_browser.getControl('All states').click()
     >>> anon_browser.getControl('Filter').click()
     >>> anon_browser.getLink('i386 build of iceweasel').click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     i386 build of iceweasel 1.0 : Default PPA : Celso Providelo
 
     >>> print_location(anon_browser.contents)

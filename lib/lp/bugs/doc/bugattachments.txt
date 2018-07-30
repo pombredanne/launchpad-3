@@ -26,17 +26,17 @@ Creating attachments
 To create an attachment, call IBug.addAttachment. It will emit an
 ObjectCreatedEvent in order to trigger email notifications:
 
-    >>> from StringIO import StringIO
+    >>> from io import BytesIO
 
     >>> from lp.testing.event import TestEventListener
     >>> from lazr.lifecycle.event import IObjectCreatedEvent
     >>> def attachment_added(attachment, event):
-    ...     print "Attachment added: %r" % attachment.libraryfile.filename
+    ...     print("Attachment added: %r" % attachment.libraryfile.filename)
     >>> event_listener = TestEventListener(
     ...     IBugAttachment, IObjectCreatedEvent, attachment_added)
 
-    >>> filecontent = "Some useful information."
-    >>> data = StringIO(filecontent)
+    >>> filecontent = b"Some useful information."
+    >>> data = BytesIO(filecontent)
 
     >>> foobar = getUtility(IPersonSet).getByName("name16")
 
@@ -82,7 +82,7 @@ passed in is often a file-like object, but can be a string too.
 
 If no description is given, the title is set to the filename.
 
-    >>> data = StringIO(filecontent)
+    >>> data = BytesIO(filecontent)
     >>> screenshot = bug_four.addAttachment(
     ...     owner=foobar,
     ...     data=data,
@@ -98,7 +98,7 @@ The content type is guessed based on the information provided.
     >>> screenshot.libraryfile.mimetype
     u'image/jpeg'
 
-    >>> data = StringIO('</something-htmlish>')
+    >>> data = BytesIO(b'</something-htmlish>')
     >>> debdiff = bug_four.addAttachment(
     ...     owner=foobar,
     ...     data=data,
@@ -120,7 +120,7 @@ attachment needs to handle that:
     >>> from lp.services.webapp.servers import LaunchpadTestRequest
 
     >>> login('test@canonical.com')
-    >>> filecontent = StringIO('')
+    >>> filecontent = BytesIO(b'')
     >>> filecontent.filename = 'foo.bar'
     >>> add_request = LaunchpadTestRequest(
     ...     method="POST",
@@ -151,7 +151,7 @@ max_attachment_size in launchpad.conf. The default value for the
 testrunner is 1024, so let's create a file larger than that and try to
 upload it:
 
-    >>> filecontent = StringIO('x'*1025)
+    >>> filecontent = BytesIO(b'x'*1025)
     >>> filecontent.filename = 'foo.txt'
     >>> add_request = LaunchpadTestRequest(
     ...     method="POST",
@@ -213,8 +213,8 @@ must have at least one.
 
 If the request contains no attachment description the filename should be used.
 
-    >>> filecontent = StringIO(
-    ...     "No, sir. That's one bonehead name, but that ain't me any more.")
+    >>> filecontent = BytesIO(
+    ...     b"No, sir. That's one bonehead name, but that ain't me any more.")
     >>> filecontent.filename = 'RA.txt'
     >>> add_request = LaunchpadTestRequest(
     ...     method="POST",
@@ -237,7 +237,7 @@ attachment was added.
 
     >>> from lp.bugs.model.bugnotification import BugNotification
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     ** Attachment added: "RA.txt"
        http://.../RA.txt
 
@@ -452,7 +452,7 @@ Deleting attachments
 
 It's also possible to delete attachments.
 
-    >>> data = StringIO(filecontent)
+    >>> data = BytesIO(filecontent.getvalue())
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> attachment = bug_two.addAttachment(
     ...     owner=foobar,
@@ -462,7 +462,7 @@ It's also possible to delete attachments.
     ...     comment="a string comment",
     ...     is_patch=False)
     >>> for attachment in bug_two.attachments:
-    ...     print attachment.title
+    ...     print(attachment.title)
     Attachment to be deleted
 
     >>> libraryfile = attachment.libraryfile
@@ -485,7 +485,7 @@ noting that the notification still includes the URL to the attachment.
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> latest_notification.is_comment
     False
-    >>> print latest_notification.message.text_contents
+    >>> print(latest_notification.message.text_contents)
     ** Attachment removed: "Attachment to be deleted"
        http://.../foo.baz
 
@@ -500,7 +500,7 @@ property returning True.
     0
     >>> attachment = bug_two.addAttachment(
     ...     owner=foobar,
-    ...     data=StringIO(filecontent),
+    ...     data=BytesIO(filecontent.getvalue()),
     ...     filename="foo.baz",
     ...     description="A non-patch attachment",
     ...     comment="a string comment",
@@ -511,7 +511,7 @@ property returning True.
     False
     >>> attachment = bug_two.addAttachment(
     ...     owner=foobar,
-    ...     data=StringIO(filecontent),
+    ...     data=BytesIO(filecontent.getvalue()),
     ...     filename="foo.baz",
     ...     description="A patch attachment",
     ...     comment="a string comment",
@@ -538,11 +538,11 @@ LibraryFileAlias.restricted and Bug.private. See also the section
     >>> from lp.services.librarian.interfaces import (
     ...     ILibraryFileAliasSet)
 
-    >>> file_content = "Hello, world"
+    >>> file_content = b"Hello, world"
     >>> content_type = "text/plain"
     >>> file_alias = getUtility(ILibraryFileAliasSet).create(
     ...     name='foobar', size=len(file_content),
-    ...     file=StringIO(file_content), contentType=content_type)
+    ...     file=BytesIO(file_content), contentType=content_type)
     >>> transaction.commit()
 
     >>> bug = factory.makeBug()
@@ -554,13 +554,13 @@ LibraryFileAlias.restricted and Bug.private. See also the section
     >>> bug.attachments.count()
     1
     >>> attachment = bug.attachments[0]
-    >>> print attachment.title
+    >>> print(attachment.title)
     foobar
 
 The attachment will have a type of BugAttachmentType.UNSPECIFIED, since
 we didn't specify that it was a patch.
 
-    >>> print attachment.type.title
+    >>> print(attachment.type.title)
     Unspecified
 
 We can specify that the attachment is a patch and give it a more
@@ -568,7 +568,7 @@ meaningful description.
 
     >>> file_alias = getUtility(ILibraryFileAliasSet).create(
     ...     name='anotherfoobar', size=len(file_content),
-    ...     file=StringIO(file_content), contentType=content_type)
+    ...     file=BytesIO(file_content), contentType=content_type)
     >>> transaction.commit()
 
     >>> bug.linkAttachment(
@@ -580,10 +580,10 @@ meaningful description.
     >>> bug.attachments.count()
     2
     >>> attachment = bug.attachments[1]
-    >>> print attachment.title
+    >>> print(attachment.title)
     An attachment of some sort
 
-    >>> print attachment.type.title
+    >>> print(attachment.type.title)
     Patch
 
 
@@ -620,7 +620,7 @@ its Librarian file is set.
     ...     information_type=InformationType.USERDATA,
     ...     owner=private_bug_owner)
     >>> private_attachment = private_bug.addAttachment(
-    ...     owner=private_bug_owner, data="secret", filename="baz.txt",
+    ...     owner=private_bug_owner, data=b"secret", filename="baz.txt",
     ...     comment="Some attachment")
     >>> private_attachment.libraryfile.restricted
     True
@@ -662,4 +662,4 @@ does not match the file name of the Librarian file.
     >>> attachment.getFileByName('nonsense')
     Traceback (most recent call last):
     ...
-    NotFoundError: 'nonsense'
+    NotFoundError: u'nonsense'

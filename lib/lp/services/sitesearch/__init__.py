@@ -212,7 +212,8 @@ class BingSearchService:
         timeline = get_request_timeline(request)
         action = timeline.start("bing-search-api", search_url)
         try:
-            response = urlfetch(search_url, headers=search_headers)
+            response = urlfetch(
+                search_url, headers=search_headers, use_proxy=True)
         except (TimeoutError, requests.RequestException) as error:
             raise SiteSearchResponseError(
                 "The response errored: %s" % str(error))

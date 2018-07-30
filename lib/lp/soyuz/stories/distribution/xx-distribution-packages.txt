@@ -19,7 +19,7 @@ This page is used to search packages in a distribution context.
     'http://localhost/ubuntu/+search?text=pmount'
 
     >>> for tag in find_tags_by_class(browser.contents, 'package-matches'):
-    ...     print extract_text(tag).encode('us-ascii', 'replace')
+    ...     print(extract_text(tag).encode('us-ascii', 'replace'))
     pmount
     (Matching binaries: pmount.)
 
@@ -31,7 +31,7 @@ Follow pmount source package path
 
 Get pmount 0.1-2 version
 
-    >>> print browser.getLink("0.1-2").url
+    >>> print(browser.getLink("0.1-2").url)
     http://localhost/ubuntu/+source/pmount/0.1-2
 
 Ensure that the correct binaries appear on the search results.  We only
@@ -46,7 +46,7 @@ here first:
     >>> browser.open(
     ...     'http://localhost'
     ...     '/ubuntu/breezy-autotest/+package/mozilla-firefox')
-    >>> print browser.title
+    >>> print(browser.title)
     mozilla-firefox : Breezy Badger Autotest (6.6.6) : Ubuntu
 
 Now run a search for mozilla-firefox and check that it is found:
@@ -56,7 +56,7 @@ Now run a search for mozilla-firefox and check that it is found:
     >>> field.value = 'mozilla-firefox'
     >>> browser.getControl('Search', index=0).click()
     >>> for tag in find_tags_by_class(browser.contents, 'package-matches'):
-    ...     print extract_text(tag).encode('us-ascii', 'replace')
+    ...     print(extract_text(tag).encode('us-ascii', 'replace'))
     mozilla-firefox
     The Mozilla Firefox web browser
     (Matching binaries: mozilla-firefox, mozilla-firefox-data.)
@@ -149,7 +149,7 @@ a distribution.  There are several sections of information.
 The page has an appropriate title and main heading.
 
     >>> from lp.services.helpers import backslashreplace
-    >>> print backslashreplace(user_browser.title)
+    >>> print(backslashreplace(user_browser.title))
     iceweasel package : Ubuntu
 
     >>> print_location(user_browser.contents)
@@ -166,16 +166,16 @@ The page has an appropriate title and main heading.
 Under the title there's a short paragraph that says how many 'new' bugs
 and open questions the package has.
 
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'bugs-and-questions-summary'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bugs-and-questions-summary')))
     This package has 0 new bugs and 0 open questions.
 
 Links exist to jump to the query page for the new bugs and open questions.
 
-    >>> print user_browser.getLink("0 new bugs").url
+    >>> print(user_browser.getLink("0 new bugs").url)
     http://bugs.launchpad.dev/ubuntu/+source/iceweasel/+bugs?field.status:list=NEW
 
-    >>> print user_browser.getLink("0 open questions").url
+    >>> print(user_browser.getLink("0 open questions").url)
     http://answers.launchpad.dev/ubuntu/+source/iceweasel/+questions?field.status=OPEN
 
 The page also has a table that shows the distro series in which the package is
@@ -185,8 +185,8 @@ series a list of the versions available in that series are presented, along
 with which pocket has each version, the component in which it's published, and
 the time elapsed since it was published.
 
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'packages_list'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'packages_list')))
     The Warty Warthog Release (current stable release)      Set upstream link
       1.0  release  (main)  2006-04-11
 
@@ -196,13 +196,13 @@ javascript enabled, the information is shown in-place.
 
     >>> expander_url = find_tags_by_class(
     ...     user_browser.contents, 'expander')[0]
-    >>> print expander_url
+    >>> print(expander_url)
     <a class="expander"
     href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra"
     id="pub26-expander"></a>
 
     >>> browser.open(user_browser.getLink(id="pub26-expander").url)
-    >>> print extract_text(browser.contents)
+    >>> print(extract_text(browser.contents))
     Publishing details
     Published
       on 2006-04-11
@@ -221,12 +221,12 @@ The version itself links to the corresponding distro package release.  (Our
 search includes a leading space in order to exclude the "Latest upload:"
 link.)
 
-    >>> print user_browser.getLink(" 1.0").attrs['href']
+    >>> print(user_browser.getLink(" 1.0").attrs['href'])
     /ubuntu/+source/iceweasel/1.0
 
 There's also a section on the page that gives some package information:
 
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'current'))
+    >>> print(extract_text(find_tag_by_id(user_browser.contents, 'current')))
     Package information
     Maintainer: Foo Bar
     Urgency:* Low Urgency
@@ -238,7 +238,7 @@ There's also a section on the page that gives some package information:
 And if the source has direct packaging linkage, the upstream's description
 is used in another section:
 
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'upstream'))
+    >>> print(extract_text(find_tag_by_id(user_browser.contents, 'upstream')))
     Upstream connections
     Launchpad doesn...t know which project and series this
     package belongs to...
@@ -247,7 +247,7 @@ As can be seen, the packaging is not linked yet.  We can do that now using the
 "Set upstream link" link.
 
     >>> user_browser.getLink("Set upstream link").click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://launchpad.dev/ubuntu/warty/+source/iceweasel/+edit-packaging
 
 In step one the project is specified.
@@ -259,7 +259,7 @@ In step one the project is specified.
 In step two, one of the series for that project can be selected.
 
     >>> series_control = user_browser.getControl(name='field.productseries')
-    >>> print series_control.options
+    >>> print(series_control.options)
     ['trunk', '1.0']
     >>> series_control.value = ['trunk']
     >>> user_browser.getControl('Change').click()
@@ -268,7 +268,7 @@ Go back to the source page, and now the upstream's description is shown and
 linked.
 
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/iceweasel/")
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'upstream'))
+    >>> print(extract_text(find_tag_by_id(user_browser.contents, 'upstream')))
     Upstream connections
     The Mozilla Project...
     Mozilla Firefox...
@@ -285,22 +285,22 @@ Distribution source packages side-bar
 The page has a side-bar with a global actions menu, a "Get Involved"
 menu, and a "Subscribers" portlet.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'global-actions'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'global-actions')))
     View full publishing history
     View full change log
     Subscribe to bug mail
     Edit bug mail
 
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'involvement'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'involvement')))
     Get Involved
     Report a bug
     Ask a question
 
-    >>> print extract_text(
+    >>> print(extract_text(
     ...     find_tag_by_id(user_browser.contents,
-    ...                    'portlet-structural-subscribers'))
+    ...                    'portlet-structural-subscribers')))
     Subscribers
     ...
 
@@ -315,7 +315,7 @@ Switching to a different source now, "netapplet" is published in two
 distroseries.  The distroseries are presented in order, most recent first.
 
     >>> browser.open("http://launchpad.dev/ubuntutest/+source/netapplet/")
-    >>> print extract_text(find_tag_by_id(browser.contents, 'packages_list'))
+    >>> print(extract_text(find_tag_by_id(browser.contents, 'packages_list')))
     Mock Hoary (active development)                   Set upstream link
       1.0.1a  release  (main)  ...
     Breezy Badger Autotest  (active development)      Set upstream link
@@ -327,7 +327,7 @@ registry/stories/distribution/xx-distributionsourcepackage-packaging.txt)
 At the bottom of the page, the three latest PPA uploads of this source package
 are displayed.
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'ppa_packaging'))
+    >>> print(extract_text(find_tag_by_id(browser.contents, 'ppa_packaging')))
     PPA named nightly for Odd owned by Odd
       Versions: Breezy Badger Autotest (0.8.2n3)
     PPA named beta for Even owned by Even
@@ -352,7 +352,7 @@ from the index page.
     >>> browser.open("http://launchpad.dev/ubuntu/+source/foobar/")
     >>> browser.getLink("View full change log").click()
 
-    >>> print backslashreplace(browser.title)
+    >>> print(backslashreplace(browser.title))
     Change log : foobar package : Ubuntu
 
     >>> print_location(browser.contents)
@@ -374,7 +374,7 @@ Package "foobar" is deleted:
 
     >>> first_header = find_tag_by_id(browser.contents,
     ...     "detail_foobar_1.0")
-    >>> print extract_text(first_header)
+    >>> print(extract_text(first_header))
     1.0
     Deleted in warty-release on 2006-12-02 (Reason: I do not like it.)
 
@@ -384,7 +384,7 @@ Package "alsa-utils" is pending in Warty and published in Hoary:
     ...     "http://launchpad.dev/ubuntu/+source/alsa-utils/+changelog")
     >>> first_header = find_tag_by_id(browser.contents,
     ...     'detail_alsa-utils_1.0.9a-4ubuntu1')
-    >>> print extract_text(first_header)
+    >>> print(extract_text(first_header))
     1.0.9a-4ubuntu1
     Pending in warty-release since 2006-02-15 12:19:00 UTC
     Published in hoary-release on 2005-09-15
@@ -393,7 +393,7 @@ The package release version links to the page of this distro package
 release.
 
     >>> first_header_link = first_header.find('a')
-    >>> print extract_text(first_header_link)
+    >>> print(extract_text(first_header_link))
     1.0.9a-4ubuntu1
 
     >>> first_header_link.get('href')
@@ -405,7 +405,7 @@ logged in (this prevents bots from harvesting email addresses).
 
     >>> first_body = find_tag_by_id(browser.contents,
     ...     'body_alsa-utils_1.0.9a-4ubuntu1')
-    >>> print extract_text(first_body)
+    >>> print(extract_text(first_body))
     alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
     * Placeholder
     LP: #10
@@ -420,8 +420,8 @@ address:
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/alsa-utils/+changelog")
-    >>> print extract_text(find_tag_by_id(user_browser.contents,
-    ...     'body_alsa-utils_1.0.9a-4ubuntu1'))
+    >>> print(extract_text(find_tag_by_id(user_browser.contents,
+    ...     'body_alsa-utils_1.0.9a-4ubuntu1')))
     alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
     ...
     -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
@@ -442,7 +442,7 @@ changelog:
     ...     "+changelog")
     >>> changelog = find_tag_by_id(
     ...     user_browser.contents, 'commercialpackage_1.0-1')
-    >>> print extract_text(changelog.find('a'))
+    >>> print(extract_text(changelog.find('a')))
     foo.bar@canonical.com
 
 
@@ -453,14 +453,14 @@ If the package being viewed has no publishing history, a blank table is
 displayed:
 
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/a52dec/")
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'packages_list'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'packages_list')))
 
 The package information portlet also reflects that the package is not present
 at all in the distribution.
 
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'current'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'current')))
      There is no current release for this source package in Ubuntu.
 
 
@@ -475,7 +475,7 @@ as mentioned above.
     ...     version_headers = find_tags_by_class(
     ...         contents, 'boardCommentDetails')
     ...     for section in version_headers:
-    ...         print extract_text(section.div)
+    ...         print(extract_text(section.div))
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/alsa-utils/+changelog")
@@ -527,7 +527,7 @@ Returning to the distribution source package index page using the
 'Overview' facet link.
 
     >>> anon_browser.getLink('Overview').click()
-    >>> print backslashreplace(anon_browser.title)
+    >>> print(backslashreplace(anon_browser.title))
     alsa-utils package : Ubuntu
 
 
@@ -543,7 +543,7 @@ The full publishing history is presented in a new page, with the
 appropriate title and main heading, but preserving the distribution
 source package hierarchy.
 
-    >>> print backslashreplace(anon_browser.title)
+    >>> print(backslashreplace(anon_browser.title))
     Publishing history : alsa-utils package : Ubuntu
 
     >>> print_location(anon_browser.contents)
@@ -561,5 +561,5 @@ Returning to the distribution source package index is also possible via
 the 'back' link at the bottom of the page.
 
     >>> anon_browser.getLink('back').click()
-    >>> print backslashreplace(anon_browser.title)
+    >>> print(backslashreplace(anon_browser.title))
     alsa-utils package : Ubuntu

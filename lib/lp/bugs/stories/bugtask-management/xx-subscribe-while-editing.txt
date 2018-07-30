@@ -12,7 +12,7 @@ you're not already subscribed.
 
     >>> browser.getControl("Save Changes").click()
 
-    >>> print browser.contents
+    >>> print(browser.contents)
     <!DOCTYPE...
     ...You have subscribed to this bug report...
 

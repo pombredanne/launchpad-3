@@ -592,10 +592,7 @@ class Snap(Storm, WebhookTargetMixin):
                         self.owner.name, self.name, arch)
                 builds.append(build)
             except SnapBuildAlreadyPending as e:
-                if logger is not None:
-                    logger.warning(
-                        " - %s/%s/%s: %s",
-                        self.owner.name, self.name, arch, e)
+                pass
             except Exception as e:
                 if not allow_failures:
                     raise

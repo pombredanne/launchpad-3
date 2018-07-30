@@ -61,6 +61,7 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.githosting import IGitHostingClient
+from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitref import (
     IGitRef,
     IGitRefRemoteSet,
@@ -647,6 +648,32 @@ class GitRefFrozen(GitRefDatabaseBackedMixin):
         return ref
 
 
+def _fetch_blob_from_github(repository_url, ref_path, filename):
+    repo_path = urlsplit(repository_url).path.strip("/")
+    if repo_path.endswith(".git"):
+        repo_path = repo_path[:len(".git")]
+    try:
+        response = urlfetch(
+            "https://raw.githubusercontent.com/%s/%s/%s" % (
+                repo_path,
+                # GitHub supports either branch or tag names here, but both
+                # must be shortened.  (If both a branch and a tag exist with
+                # the same name, it appears to pick the branch.)
+                quote(re.sub(r"^refs/(?:heads|tags)/", "", ref_path)),
+                quote(filename)),
+            use_proxy=True)
+    except requests.RequestException as e:
+        if (e.response is not None and
+                e.response.status_code == requests.codes.NOT_FOUND):
+            raise GitRepositoryBlobNotFound(
+                repository_url, filename, rev=ref_path)
+        else:
+            raise GitRepositoryScanFault(
+                "Failed to get file from Git repository at %s: %s" %
+                (repository_url, str(e)))
+    return response.content
+
+
 @implementer(IGitRef)
 @provider(IGitRefRemoteSet)
 class GitRefRemote(GitRefMixin):
@@ -745,31 +772,17 @@ class GitRefRemote(GitRefMixin):
         # dispatch a build job or a code import or something like that to do
         # so.  For now, we just special-case some providers where we know
         # how to fetch a blob on its own.
+        repository = getUtility(IGitLookup).getByUrl(self.repository_url)
+        if repository is not None:
+            # This is one of our own repositories.  Doing this by URL seems
+            # gratuitously complex, but apparently we already have some
+            # examples of this on production.
+            return repository.getBlob(filename, rev=self.path)
         url = urlsplit(self.repository_url)
         if (url.hostname == "github.com" and
                 len(url.path.strip("/").split("/")) == 2):
-            repo_path = url.path.strip("/")
-            if repo_path.endswith(".git"):
-                repo_path = repo_path[:len(".git")]
-            try:
-                response = urlfetch(
-                    "https://raw.githubusercontent.com/%s/%s/%s" % (
-                        repo_path,
-                        # GitHub supports either branch or tag names here,
-                        # but both must be shortened.
-                        quote(re.sub(r"^refs/(?:heads|tags)/", "", self.path)),
-                        quote(filename)),
-                    use_proxy=True)
-            except requests.RequestException as e:
-                if (e.response is not None and
-                        e.response.status_code == requests.codes.NOT_FOUND):
-                    raise GitRepositoryBlobNotFound(
-                        self.repository_url, filename, rev=self.path)
-                else:
-                    raise GitRepositoryScanFault(
-                        "Failed to get file from Git repository at %s: %s" %
-                        (self.repository_url, str(e)))
-            return response.content
+            return _fetch_blob_from_github(
+                self.repository_url, self.path, filename)
         raise GitRepositoryBlobUnsupportedRemote(self.repository_url)
 
     @property

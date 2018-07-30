@@ -43,9 +43,9 @@ method will return the user's user ID in a dict.
 
 The Bugzilla_logincookie will now have been set for the transport, too.
 
-    >>> print bugzilla_transport.cookie_processor.cookiejar
-    <...CookieJar[<Cookie Bugzilla_login=...>,
-        <Cookie Bugzilla_logincookie=...>]>
+    >>> print(bugzilla_transport.cookie_jar)
+    <RequestsCookieJar[<Cookie Bugzilla_login=...>,
+                       <Cookie Bugzilla_logincookie=...>]>
 
 Trying to log in with an incorrect username or password will result in
 an error being raised.
@@ -65,7 +65,7 @@ the remote server.
 
     >>> time_dict = server.Bugzilla.time()
     >>> for key in sorted(time_dict):
-    ...     print "%s: %s" % (key, time_dict[key])
+    ...     print("%s: %s" % (key, time_dict[key]))
     db_time: 2008-05-01 01:01:01
     tz_name: UTC
     tz_offset: +0000
@@ -81,7 +81,7 @@ web_time_utc will be in UTC.
     >>> bugzilla_transport.timezone = 'CET'
     >>> time_dict = server.Bugzilla.time()
     >>> for key in sorted(time_dict):
-    ...     print "%s: %s" % (key, time_dict[key])
+    ...     print("%s: %s" % (key, time_dict[key]))
     db_time: 2008-05-01 01:01:01
     tz_name: CET
     tz_offset: +0100
@@ -101,7 +101,7 @@ list of dicts containing those bugs' data.
     ...     {'ids': [1], 'permissive': True})
     >>> [bug_dict] = return_value['bugs']
     >>> for key in sorted(bug_dict):
-    ...     print "%s: %s" % (key, bug_dict[key])
+    ...     print("%s: %s" % (key, bug_dict[key]))
     alias:
     assigned_to: test@canonical.com
     component: GPPSystems
@@ -145,7 +145,7 @@ date / time.
 
     >>> bug_dict = bug_dicts[0]
     >>> for key in sorted(bug_dict):
-    ...     print "%s: %s" % (key, bug_dict[key])
+    ...     print("%s: %s" % (key, bug_dict[key]))
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
@@ -174,7 +174,7 @@ results to those IDs.
     >>> bug_dicts = return_value['bugs']
     >>> for bug_dict in bug_dicts:
     ...     for key in sorted(bug_dict):
-    ...         print "%s: %s" % (key, bug_dict[key])
+    ...         print("%s: %s" % (key, bug_dict[key]))
     alias:
     assigned_to: test@canonical.com
     component: GPPSystems
@@ -213,7 +213,7 @@ It's possible to search for bugs filed on a particular product.
     >>> bug_dicts = return_value['bugs']
     >>> for bug_dict in bug_dicts:
     ...     for key in sorted(bug_dict):
-    ...         print "%s: %s" % (key, bug_dict[key])
+    ...         print("%s: %s" % (key, bug_dict[key]))
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
@@ -238,7 +238,7 @@ You can search for more than one product.
     >>> bug_dicts = return_value['bugs']
     >>> for bug_dict in bug_dicts:
     ...     for key in sorted(bug_dict):
-    ...         print "%s: %s" % (key, bug_dict[key])
+    ...         print("%s: %s" % (key, bug_dict[key]))
     alias:
     assigned_to: test@canonical.com
     component: GPPSystems
@@ -296,17 +296,17 @@ method to print out comments for us.
     >>> import operator
     >>> def print_bug_comments(bugs_dict, sort_key='id'):
     ...     for key in sorted(bugs_dict):
-    ...         print "Bug %s:" % key
+    ...         print("Bug %s:" % key)
     ...         bug_comments = sorted(
     ...             bugs_dict[key]['comments'],
     ...             key=operator.itemgetter(sort_key))
     ...
     ...         for comment in bug_comments:
     ...             for comment_key in sorted(comment):
-    ...                 print "    %s: %s" % (
-    ...                     comment_key, comment[comment_key])
-    ...             print
-    ...         print
+    ...                 print("    %s: %s" % (
+    ...                     comment_key, comment[comment_key]))
+    ...             print()
+    ...         print()
 
 Passing a list of bug IDs to Bug.comments() will cause it to return all
 the comments for those bugs.
@@ -369,11 +369,11 @@ those comments in a 'comments' dict.
     >>> comments_dict = return_dict['comments']
 
     >>> for comment_id, comment in comments_dict.items():
-    ...     print "Comment %s:" % comment_id
+    ...     print("Comment %s:" % comment_id)
     ...     for comment_key in sorted(comment):
-    ...         print "    %s: %s" % (
-    ...             comment_key, comment[comment_key])
-    ...     print
+    ...         print("    %s: %s" % (
+    ...             comment_key, comment[comment_key]))
+    ...     print()
     Comment 1:
         author: trillian
         bug_id: 1
@@ -393,7 +393,7 @@ those comments in a 'comments' dict.
 Note that only comments have been returned when only 'comment_ids' have
 been passed. The bugs dict is empty.
 
-    >>> print return_dict['bugs']
+    >>> print(return_dict['bugs'])
     {}
 
 Passing an include_fields parameter allows us to limit which fields are
@@ -430,10 +430,10 @@ returned for each comment.
     >>> comments_dict = return_dict['comments']
 
     >>> for comment_id, comment in comments_dict.items():
-    ...     print "Comment %s:" % comment_id
+    ...     print("Comment %s:" % comment_id)
     ...     for comment_key in sorted(comment):
-    ...         print "    %s: %s" % (
-    ...             comment_key, comment[comment_key])
+    ...         print("    %s: %s" % (
+    ...             comment_key, comment[comment_key]))
     Comment 1:
         author: trillian
         id: 1
@@ -474,10 +474,10 @@ The comment will be stored with the other comments on the remote server.
     >>> comments_dict = return_dict['comments']
 
     >>> for comment_id, comment in comments_dict.items():
-    ...     print "Comment %s:" % comment_id
+    ...     print("Comment %s:" % comment_id)
     ...     for comment_key in sorted(comment):
-    ...         print "    %s: %s" % (
-    ...             comment_key, comment[comment_key])
+    ...         print("    %s: %s" % (
+    ...             comment_key, comment[comment_key]))
     Comment 7:
         author: launchpad
         bug_id: 1
@@ -515,7 +515,7 @@ The URL will now have been added to the bug's see_also list.
     ...     {'ids': [1], 'permissive': True})
     >>> bug_dict = return_value['bugs'][0]
     >>> for key in sorted(bug_dict):
-    ...     print "%s: %s" % (key, bug_dict.get(key))
+    ...     print("%s: %s" % (key, bug_dict.get(key)))
     alias:
     assigned_to: test@canonical.com
     component: GPPSystems

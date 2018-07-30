@@ -34,8 +34,8 @@ Now only 3 comments will be displayed; the oldest and the 2 newest.
 
 With a warning telling the user where the comments have gone:
 
-    >>> print extract_text(first_tag_by_class(
-    ...     user_browser.contents, 'informational message'))
+    >>> print(extract_text(first_tag_by_class(
+    ...     user_browser.contents, 'informational message')))
     Displaying first 1
     and last 2
     comments.
@@ -45,8 +45,8 @@ With a warning telling the user where the comments have gone:
 The add comment box is present but hidden so people don't accidentally
 reply to the wrong message.
 
-    >>> print find_tag_by_id(
-    ...     user_browser.contents, 'add-comment-form-container')
+    >>> print(find_tag_by_id(
+    ...     user_browser.contents, 'add-comment-form-container'))
     <div id="add-comment-form-container" class="hidden">...
     <div id="add-comment-form">...</div>...
     </div>
@@ -65,7 +65,7 @@ comments and the add comment box.
     >>> len(comments)
     7
 
-    >>> print find_tag_by_id(user_browser.contents, 'add-comment-form').name
+    >>> print(find_tag_by_id(user_browser.contents, 'add-comment-form').name)
     div
 
 Anonymous users have a slightly different experience. If the comment
@@ -73,8 +73,8 @@ list is truncated, the usual "to post a comment you must log in" note
 is also removed.
 
     >>> anon_browser.open('http://launchpad.dev/bugs/11')
-    >>> print find_tag_by_id(
-    ...     anon_browser.contents, 'add-comment-login-first')
+    >>> print(find_tag_by_id(
+    ...     anon_browser.contents, 'add-comment-login-first'))
     None
 
 When an anonymous user views all comments, the "you must log in" note
@@ -83,9 +83,9 @@ returns.
     >>> anon_browser.getLink('View all 6 comments').click()
     >>> add_comment_link = find_tag_by_id(
     ...     anon_browser.contents, 'add-comment-login-first')
-    >>> print extract_text(add_comment_link)
+    >>> print(extract_text(add_comment_link))
     To post a comment you must log in.
-    >>> print add_comment_link.a.get('href')
+    >>> print(add_comment_link.a.get('href'))
     +login?comments=all
 
 Restore the configuration to its previous setting.

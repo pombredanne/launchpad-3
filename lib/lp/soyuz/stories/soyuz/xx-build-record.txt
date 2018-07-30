@@ -47,7 +47,7 @@ page. It's title briefly describes the build.
     >>> anon_browser.open(build_url)
 
     >>> from lp.services.helpers import backslashreplace
-    >>> print backslashreplace(anon_browser.title)
+    >>> print(backslashreplace(anon_browser.title))
     i386 build : 1.0 : testing package : ubuntutest
 
 In the page body readers can see 2 sections, 'Build status' and 'Build
@@ -61,7 +61,7 @@ Besides 'status' readers can see, at a glance, the context and links
 to the build context, source package, archive, series, pocket and
 component.
 
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print(extract_text(find_main_content(anon_browser.contents)))
     i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
     ...
     Build status
@@ -84,7 +84,7 @@ question.
     >>> build.buildqueue_record.suspend()
     >>> logout()
     >>> anon_browser.open(build_url)
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print(extract_text(find_main_content(anon_browser.contents)))
     i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
     ...
     Build status
@@ -108,23 +108,23 @@ Re-enable the build in order to avoid subsequent test breakage.
 The 'Build details' section exists for all status and contains links
 to all the relevant entities involved in this build.
 
-    >>> print anon_browser.getLink('testing - 1.0').url
+    >>> print(anon_browser.getLink('testing - 1.0').url)
     http://launchpad.dev/ubuntutest/+source/testing/1.0
 
-    >>> print anon_browser.getLink('Primary Archive for Ubuntu Test').url
+    >>> print(anon_browser.getLink('Primary Archive for Ubuntu Test').url)
     http://launchpad.dev/ubuntutest
 
-    >>> print anon_browser.getLink('Breezy Badger Autotest').url
+    >>> print(anon_browser.getLink('Breezy Badger Autotest').url)
     http://launchpad.dev/ubuntutest/breezy-autotest
 
-    >>> print anon_browser.getLink('i386').url
+    >>> print(anon_browser.getLink('i386').url)
     http://launchpad.dev/ubuntutest/breezy-autotest/i386
 
 Pending build records can be 'rescored', which will directly affect
 the time they will get started. A link to the corresponding help text
 about 'Build scores' is available.
 
-    >>> print anon_browser.getLink("What's this").url
+    >>> print(anon_browser.getLink("What's this").url)
     https://help.launchpad.net/Packaging/BuildScores
 
 Adminstrators can rescore pending builds in a separate form.
@@ -140,7 +140,7 @@ new 'score' value is presented.
     >>> print_feedback_messages(admin_browser.contents)
     Build rescored to 0.
 
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
+    >>> print(extract_text(find_tag_by_id(admin_browser.contents, 'status')))
     Build status
     Needs building
     Cancel build
@@ -168,18 +168,18 @@ messages.
 
     >>> anon_browser.reload()
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'status'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'status')))
     Build status
     Currently building on Bob The Builder
     Build score:0 (What's this?)
     Started ... ago
 
-    >>> print anon_browser.getLink('Bob The Builder').url
+    >>> print(anon_browser.getLink('Bob The Builder').url)
     http://launchpad.dev/builders/bob
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'buildlog'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'buildlog')))
     Buildlog
     one line
     another line
@@ -190,8 +190,8 @@ timezone. This way they can easily find out if they are reading
 outdated information.
 
     >>> user_browser.open(anon_browser.url)
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'buildlog'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'buildlog')))
     Buildlog
     one line
     another line
@@ -214,8 +214,8 @@ how long it took.
 
     >>> anon_browser.reload()
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'status'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'status')))
     Build status
     Failed to upload on Bob The Builder
     Started ... ago
@@ -223,7 +223,7 @@ how long it took.
     buildlog (7 bytes)
     uploadlog (7 bytes)
 
-    >>> print anon_browser.getLink('Bob The Builder').url
+    >>> print(anon_browser.getLink('Bob The Builder').url)
     http://launchpad.dev/builders/bob
 
     >>> login(ANONYMOUS)
@@ -241,8 +241,8 @@ Administrators can retry failed builds using the 'retry' icon in the
 'Build Status' section.
 
     >>> admin_browser.open(admin_browser.url)
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'status'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'status')))
     Build status
     Failed to upload on Bob The Builder Retry this build
     Started ... ago
@@ -250,14 +250,14 @@ Administrators can retry failed builds using the 'retry' icon in the
     buildlog (7 bytes)
     uploadlog (7 bytes)
 
-    >>> print admin_browser.getLink('Retry this build').url
+    >>> print(admin_browser.getLink('Retry this build').url)
     http://launchpad.dev/ubuntutest/+source/testing/1.0/+build/.../+retry
 
 By clicking on the 'Retry this build' link, administrators are informed of
 the consequences of this action.
 
     >>> admin_browser.getLink('Retry this build').click()
-    >>> print extract_text(find_main_content(admin_browser.contents))
+    >>> print(extract_text(find_main_content(admin_browser.contents)))
     Retry i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
     ...
     The status of i386 build of testing 1.0 in ubuntutest
@@ -272,8 +272,8 @@ If cancelled, the form sends the user back to the build page, nothing
 is changed.
 
     >>> admin_browser.getLink("Cancel").click()
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'status'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'status')))
     Build status
     Failed to upload on Bob The Builder Retry this build
     Started ... ago
@@ -290,7 +290,7 @@ retrying the build is not a possibility anymore.
     >>> print_feedback_messages(admin_browser.contents)
     Build has been queued
 
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
+    >>> print(extract_text(find_tag_by_id(admin_browser.contents, 'status')))
     Build status
     Needs building
     Cancel build
@@ -324,8 +324,8 @@ appropriate 'Build status' section the user will see 2 new sections,
 
     >>> anon_browser.reload()
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'status'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'status')))
     Build status
     Successfully built on Bob The Builder
     Started on 2008-01-01
@@ -333,17 +333,17 @@ appropriate 'Build status' section the user will see 2 new sections,
     buildlog (7 bytes)
     testing_1.0_all.changes (15 bytes)
 
-    >>> print anon_browser.getLink('testing_1.0_all.changes').url
+    >>> print(anon_browser.getLink('testing_1.0_all.changes').url)
     http://.../+build/.../+files/testing_1.0_all.changes
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'binaries'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'binaries')))
     Binary packages
     Binary packages awaiting approval in NEW queue:
     testing-bin-1.0
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'files'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'files')))
     Built files
     Files resulting from this build:
     testing-bin_1.0_all.deb (8 bytes)
@@ -352,7 +352,7 @@ Since the binary is still 'awaiting approval', it is not
 linkified. That's because its `DistroArchSeriesBinaryPackageRelease`
 page does not exist yet.
 
-    >>> print anon_browser.getLink('testing-bin-1.0')
+    >>> print(anon_browser.getLink('testing-bin-1.0'))
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -360,7 +360,7 @@ page does not exist yet.
 On the other hand, users interested in testing the resulting binaries
 already have access to them.
 
-    >>> print anon_browser.getLink('testing-bin_1.0_all.deb').url
+    >>> print(anon_browser.getLink('testing-bin_1.0_all.deb').url)
     http://.../+build/.../+files/testing-bin_1.0_all.deb
 
 Again, note that the files are `ProxiedLibrarianFile` objects as well.
@@ -374,18 +374,18 @@ Binary upload can also be awaiting approval in UNAPPROVED queue
 
     >>> anon_browser.open(anon_browser.url)
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'binaries'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'binaries')))
     Binary packages
     Binary packages awaiting approval in UNAPPROVED queue:
     testing-bin-1.0
 
-    >>> print anon_browser.getLink('testing-bin-1.0')
+    >>> print(anon_browser.getLink('testing-bin-1.0'))
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-    >>> print anon_browser.getLink('testing-bin_1.0_all.deb').url
+    >>> print(anon_browser.getLink('testing-bin_1.0_all.deb').url)
     http://.../+build/.../+files/testing-bin_1.0_all.deb
 
 When new binaries are accepted by an archive administrator (See
@@ -398,18 +398,18 @@ xx-queue-pages.txt) this condition is presented in the build page.
 
     >>> anon_browser.open(anon_browser.url)
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'binaries'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'binaries')))
     Binary packages
     Binary packages awaiting publication:
     testing-bin-1.0
 
-    >>> print anon_browser.getLink('testing-bin-1.0')
+    >>> print(anon_browser.getLink('testing-bin-1.0'))
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-    >>> print anon_browser.getLink('testing-bin_1.0_all.deb').url
+    >>> print(anon_browser.getLink('testing-bin_1.0_all.deb').url)
     http://.../+build/.../+files/testing-bin_1.0_all.deb
 
 Once the accepted binary upload is processed by the backend, the
@@ -422,13 +422,13 @@ binary reference finally becomes a link to its corresponding page.
 
     >>> anon_browser.open(anon_browser.url)
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'binaries'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'binaries')))
     Binary packages
     Binary packages produced by this build:
     testing-bin 1.0
 
-    >>> print anon_browser.getLink('testing-bin 1.0').url
+    >>> print(anon_browser.getLink('testing-bin 1.0').url)
     http://launchpad.dev/ubuntutest/breezy-autotest/i386/testing-bin/1.0
 
 
@@ -457,12 +457,12 @@ navigate to packages.
 
     >>> anon_browser.open(ppa_build_url)
 
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     i386 build of ppa-test 1.0 : PPA for Celso Providelo : Celso Providelo
 
 The 'Build status' section is identical for PPAs.
 
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'status'))
+    >>> print(extract_text(find_tag_by_id(anon_browser.contents, 'status')))
     Build status
     Successfully built on Bob The Builder
     Build score:...
@@ -471,19 +471,19 @@ The 'Build status' section is identical for PPAs.
     buildlog (6 bytes)
     ppa-test-bin_1.0_i386.changes (23 bytes)
 
-    >>> print anon_browser.getLink('Bob The Builder').url
+    >>> print(anon_browser.getLink('Bob The Builder').url)
     http://launchpad.dev/builders/bob
 
-    >>> print anon_browser.getLink('buildlog').url
+    >>> print(anon_browser.getLink('buildlog').url)
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+build/.../+files/buildlog_...
 
-    >>> print anon_browser.getLink('ppa-test-bin_1.0_i386.changes').url
+    >>> print(anon_browser.getLink('ppa-test-bin_1.0_i386.changes').url)
     http://.../+build/.../+files/ppa-test-bin_1.0_i386.changes
 
 'Build details', as mentioned above, doesn't link to the PPA source
 packages, since they do not exist.
 
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'details'))
+    >>> print(extract_text(find_tag_by_id(anon_browser.contents, 'details')))
     Build details
     Source: ppa-test - 1.0
     Archive: PPA for Celso Providelo
@@ -492,29 +492,29 @@ packages, since they do not exist.
     Pocket: Release
     Component: main
 
-    >>> print anon_browser.getLink('ppa-test - 1.0').url
+    >>> print(anon_browser.getLink('ppa-test - 1.0').url)
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-    >>> print anon_browser.getLink('PPA for Celso Providelo').url
+    >>> print(anon_browser.getLink('PPA for Celso Providelo').url)
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa
 
-    >>> print anon_browser.getLink('Breezy Badger Autotest').url
+    >>> print(anon_browser.getLink('Breezy Badger Autotest').url)
     http://launchpad.dev/ubuntutest/breezy-autotest
 
-    >>> print anon_browser.getLink('i386', index=1).url
+    >>> print(anon_browser.getLink('i386', index=1).url)
     http://launchpad.dev/ubuntutest/breezy-autotest/i386
 
 Similarly, binary packages are not linkified in 'Binary packages'
 section for PPA builds.
 
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'binaries'))
+    >>> print(extract_text(find_tag_by_id(anon_browser.contents, 'binaries')))
     Binary packages
     Binary packages produced by this build:
     ppa-test-bin-1.0
 
-    >>> print anon_browser.getLink('ppa-test-bin-1.0').url
+    >>> print(anon_browser.getLink('ppa-test-bin-1.0').url)
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -536,25 +536,25 @@ If the source package was created from a recipe build, link to it.
     ...  archive=cprov.archive, distroseries=distroseries))
     >>> logout()
     >>> anon_browser.open(ppa_build_url)
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'details'))
+    >>> print(extract_text(find_tag_by_id(anon_browser.contents, 'details')))
     Build details
     ...
     Source package recipe build:
     ~cprov/product/mybranch recipe build in ubuntu shiny [~cprov/ubuntu/ppa]
     ...
 
-    >>> print anon_browser.getLink('~cprov/product/mybranch recipe build').url
+    >>> print(anon_browser.getLink('~cprov/product/mybranch recipe build').url)
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+recipebuild/...
 
 Finally, the 'Build files' section is identical for PPA builds.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'files'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'files')))
     Built files
     Files resulting from this build:
     ppa-test-bin_1.0_all.deb (18 bytes)
 
-    >>> print anon_browser.getLink('ppa-test-bin_1.0_all.deb').url
+    >>> print(anon_browser.getLink('ppa-test-bin_1.0_all.deb').url)
     http://.../+build/.../+files/ppa-test-bin_1.0_all.deb
 
 
@@ -571,7 +571,7 @@ record always link to its binaries.
     >>> unused_binaries = stp.uploadBinaryForBuild(
     ...     imported_build, 'imported-bin')
 
-    >>> print imported_build.package_upload
+    >>> print(imported_build.package_upload)
     None
 
     >>> imported_build_url = (
@@ -581,14 +581,14 @@ record always link to its binaries.
 
     >>> anon_browser.open(imported_build_url)
 
-    >>> print backslashreplace(anon_browser.title)
+    >>> print(backslashreplace(anon_browser.title))
     i386 build : 666 : imported package : ubuntutest
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'binaries'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'binaries')))
     Binary packages
     Binary packages produced by this build:
     imported-bin 666
 
-    >>> print anon_browser.getLink('imported-bin 666').url
+    >>> print(anon_browser.getLink('imported-bin 666').url)
     http://launchpad.dev/ubuntutest/breezy-autotest/i386/imported-bin/666

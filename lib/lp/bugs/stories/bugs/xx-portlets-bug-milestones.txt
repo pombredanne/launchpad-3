@@ -12,7 +12,7 @@ portlet.
     >>> anon_browser.open("http://bugs.launchpad.dev/firefox")
     >>> portlet = find_portlet(
     ...     anon_browser.contents, "Milestone-targeted bugs")
-    >>> print portlet
+    >>> print(portlet)
     None
 
 To enable the portlet, a bugtask needs to have a milestone associated with it.
@@ -22,7 +22,7 @@ Bug 4 has a Firefox bugtask, which can be used once a milestone is selected.
     >>> from zope.component import getUtility
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> ff_bugtask = getUtility(IBugTaskSet).get(13)
-    >>> print ff_bugtask.bug.id
+    >>> print(ff_bugtask.bug.id)
     4
 
     >>> from lp.registry.interfaces.milestone import IMilestoneSet
@@ -30,7 +30,7 @@ Bug 4 has a Firefox bugtask, which can be used once a milestone is selected.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> ff_milestone = getUtility(IMilestoneSet).getByNameAndProduct(
     ...     "1.0", firefox)
-    >>> print ff_milestone.name
+    >>> print(ff_milestone.name)
     1.0
 
 The bugtask milestone is set to the Firefox 1.0 milestone.
@@ -44,7 +44,7 @@ page.
     >>> anon_browser.open("http://bugs.launchpad.dev/firefox")
     >>> portlet = find_portlet(
     ...     anon_browser.contents, "Milestone-targeted bugs")
-    >>> print extract_text(portlet)
+    >>> print(extract_text(portlet))
     Milestone-targeted bugs
     1
     1.0
@@ -61,7 +61,7 @@ And look at the portlet.
     >>> anon_browser.open("http://bugs.launchpad.dev/debian/sarge/+bugs")
     >>> portlet = find_portlet(
     ...     anon_browser.contents, "Milestone-targeted bugs")
-    >>> print extract_text(portlet)
+    >>> print(extract_text(portlet))
     Milestone-targeted bugs
     1
     3.1

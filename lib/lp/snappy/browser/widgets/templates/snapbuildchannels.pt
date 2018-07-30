@@ -1,0 +1,16 @@
+<tal:root
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    omit-tag="">
+
+<table class="subordinate">
+  <tr>
+    <td>core</td>
+    <td><div tal:content="structure view/core_widget" /></td>
+  </tr>
+  <tr>
+    <td>snapcraft</td>
+    <td><div tal:content="structure view/snapcraft_widget" /></td>
+  </tr>
+</table>
+
+</tal:root>

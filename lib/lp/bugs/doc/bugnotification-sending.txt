@@ -25,14 +25,14 @@ easier.
     ...                    'X-Launchpad-Message-For',
     ...                    'X-Launchpad-Subscription'] + extra_headers:
     ...         if email_notification[header]:
-    ...             print "%s: %s" % (header, email_notification[header])
+    ...             print("%s: %s" % (header, email_notification[header]))
 
     >>> def print_notification(email_notification, extra_headers=[]):
     ...     print_notification_headers(
     ...         email_notification, extra_headers=extra_headers)
-    ...     print
-    ...     print email_notification.get_payload(decode=True)
-    ...     print "-" * 70
+    ...     print()
+    ...     print(email_notification.get_payload(decode=True))
+    ...     print("-" * 70)
 
 We'll also import a helper function to help us with database users.
 
@@ -105,7 +105,7 @@ You can see that the message above contains the bug's initial comment's
 message id as its reference, in order to make it thread properly in the
 email client.
 
-    >>> print bug_one.initial_message.rfc822msgid
+    >>> print(bug_one.initial_message.rfc822msgid)
     sdsdfsfd
 
 The notification is still pending to be sent, since date_emailed is
@@ -314,7 +314,7 @@ notification will be sent to all members individually.
     >>> addressless.preferredemail is None
     True
     >>> for member in addressless.activemembers:
-    ...     print member.preferredemail.email
+    ...     print(member.preferredemail.email)
     owner@example.com
 
     >>> with lp_dbuser():
@@ -332,7 +332,7 @@ notification will be sent to all members individually.
     >>> email_notifications = get_email_notifications(pending_notifications)
     >>> for bug_notifications, omitted, messages in email_notifications:
     ...     for message in messages:
-    ...         print message['To']
+    ...         print(message['To'])
     foo.bar@canonical.com
     mark@example.com
     owner@example.com
@@ -538,7 +538,7 @@ makes it write out the emails it sends.
     >>> (out, err) = process.communicate()
     >>> process.returncode
     0
-    >>> print err
+    >>> print(err)
     DEBUG   ...
     INFO    Notifying test@canonical.com about bug 2.
     ...
@@ -624,7 +624,7 @@ been set properly.
     ...         identifier = 'comment'
     ...     else:
     ...         identifier = notification.activity.whatchanged
-    ...     print identifier, notification.status.title
+    ...     print(identifier, notification.status.title)
     comment Sent
     summary Sent
     comment Sent
@@ -744,15 +744,15 @@ assigned to the bug. For backwards compatibility, the X-Launchpad-Bug-Private
 and X-Launchpad-Bug-Security-Vulnerability headers are also set. These headers
 can have the value "yes" or "no".
 
-    >>> print bug_three.information_type.title
+    >>> print(bug_three.information_type.title)
     Public
 
     >>> def print_message_header_details(message):
-    ...     print '%s %s %s %s' % (
+    ...     print('%s %s %s %s' % (
     ...         message['To'],
     ...         message.get_all('X-Launchpad-Bug-Private'),
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'),
-    ...         message.get_all('X-Launchpad-Bug-Information-Type'))
+    ...         message.get_all('X-Launchpad-Bug-Information-Type')))
 
     >>> for message in trigger_and_get_email_messages(bug_three):
     ...     print_message_header_details(message)
@@ -764,7 +764,7 @@ Predictably, private bugs are sent with a slightly different header:
     ...     bug_three.transitionToInformationType(
     ...         InformationType.USERDATA, sample_person)
     True
-    >>> print bug_three.information_type.title
+    >>> print(bug_three.information_type.title)
     Private
 
     >>> for message in trigger_and_get_email_messages(bug_three):
@@ -777,7 +777,7 @@ Now transition the bug to private security:
     ...     bug_three.transitionToInformationType(
     ...         InformationType.PRIVATESECURITY, getUtility(ILaunchBag).user)
     True
-    >>> print bug_three.information_type.title
+    >>> print(bug_three.information_type.title)
     Private Security
 
     >>> for message in trigger_and_get_email_messages(bug_three):
@@ -793,7 +793,7 @@ people who have ever commented on the bug. It's a space-separated
 list.
 
     >>> message = trigger_and_get_email_messages(bug_three)[0]
-    >>> print message.get('X-Launchpad-Bug-Commenters')
+    >>> print(message.get('X-Launchpad-Bug-Commenters'))
     name12
 
     >>> from lp.registry.interfaces.person import IPersonSet
@@ -805,7 +805,7 @@ list.
     ...         'Hungry', bug_three, foo_bar, "Make me a sandwich.")
 
     >>> message = trigger_and_get_email_messages(bug_three)[0]
-    >>> print message.get('X-Launchpad-Bug-Commenters')
+    >>> print(message.get('X-Launchpad-Bug-Commenters'))
     name12 name16
 
 It only lists each user once, no matter how many comments they've
@@ -816,7 +816,7 @@ made.
     ...         'Hungry', bug_three, foo_bar, "Make me a sandwich.")
 
     >>> message = trigger_and_get_email_messages(bug_three)[0]
-    >>> print message.get('X-Launchpad-Bug-Commenters')
+    >>> print(message.get('X-Launchpad-Bug-Commenters'))
     name12 name16
 
 
@@ -827,7 +827,7 @@ The X-Launchpad-Bug-Reporter header contains information about the Launchpad
 user who originally reported the bug and opened the bug's first bug task.
 
     >>> message = trigger_and_get_email_messages(bug_three)[0]
-    >>> print message.get('X-Launchpad-Bug-Reporter')
+    >>> print(message.get('X-Launchpad-Bug-Reporter'))
     Foo Bar (name16)
 
 
@@ -1058,25 +1058,25 @@ and indented correctly in verbose notifications.
 
     >>> message = collated_messages['conciseteam@example.com'][0]
     >>> payload = message.get_payload(decode=True)
-    >>> print payload.split('\n')
+    >>> print(payload.split('\n'))
     [...
-     'Title:',
-     '  In the beginning, the universe was created. This has made a lot of',
-     '  people very angry and has been widely regarded as a bad move',
+     u'Title:',
+     u'  In the beginning, the universe was created. This has made a lot of',
+     u'  people very angry and has been widely regarded as a bad move',
      ...
-     'Bug description:',
-     '  This is a long description of the bug, which will be automatically',
-     "  wrapped by the BugNotification machinery. Ain't technology great?"...]
+     u'Bug description:',
+     u'  This is a long description of the bug, which will be automatically',
+     u"  wrapped by the BugNotification machinery. Ain't technology great?"...]
 
 The title is also wrapped and indented in normal notifications.
 
     >>> message = collated_messages['verboseteam@example.com'][0]
     >>> payload = message.get_payload(decode=True)
-    >>> print payload.strip().split('\n')
+    >>> print(payload.strip().split('\n'))
     [...
-     'Title:',
-     '  In the beginning, the universe was created. This has made a lot of',
-     '  people very angry and has been widely regarded as a bad move'...]
+     u'Title:',
+     u'  In the beginning, the universe was created. This has made a lot of',
+     u'  people very angry and has been widely regarded as a bad move'...]
 
 Self-Generated Bug Notifications
 --------------------------------
@@ -1127,7 +1127,7 @@ of COMMENTS or higher. Sample Person's subscription currently does not
 have any filters other than the initial catch-all one, so they receive these
 notifications.
 
-    >>> print subscription_no_priv.bug_filters.count()
+    >>> print(subscription_no_priv.bug_filters.count())
     1
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'another comment.', sample_person,

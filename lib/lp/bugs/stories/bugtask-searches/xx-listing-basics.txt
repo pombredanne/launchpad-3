@@ -183,7 +183,7 @@ If we search for something and get no matches, it'll say so in a meaningful way
 instead of displaying an empty table.
 
     >>> user_browser.open("http://launchpad.dev/firefox/+bugs?field.searchtext=fdsadsf&search=Search&advanced=&milestone=1&status=10&status=20&assignee=all")
-    >>> print user_browser.contents
+    >>> print(user_browser.contents)
     <...
     ...No results for search...
     ...
@@ -193,7 +193,7 @@ it'll say so.
 
     >>> set_service_usage('iso-codes', bug_tracking_usage='LAUNCHPAD')
     >>> user_browser.open("http://launchpad.dev/iso-codes/+bugs")
-    >>> print user_browser.contents
+    >>> print(user_browser.contents)
     <...
     ...There are currently no open bugs...
     ...
@@ -209,7 +209,7 @@ We display bug badges for associated branches, specifications, patches, etc.
     ...         badge_cell = row.find(None, {'class': 'bug-related-icons'})
     ...         spans = badge_cell.findAll('span')
     ...         for span in spans:
-    ...            print "  Badge:", span.get('alt')
+    ...            print("  Badge:", span.get('alt'))
 
 For instance, these are the badges on the firefox bug listing:
 
@@ -225,7 +225,7 @@ relevant listings:
     >>> browser.open(
     ...     'http://bugs.launchpad.dev/debian/sarge/+source/mozilla-firefox')
     >>> milestone = find_tags_by_class(browser.contents, 'sprite milestone')
-    >>> print milestone[0]
+    >>> print(milestone[0])
     <a href="http://launchpad.dev/debian/+milestone/3.1" alt="milestone 3.1"
     title="Linked to milestone 3.1" class="sprite milestone"></a>
 

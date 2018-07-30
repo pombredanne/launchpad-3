@@ -100,16 +100,16 @@ builder.
     >>> bob = getUtility(IBuilderSet)['bob']
     >>> job = bob.currentjob
 
-    >>> print job.builder.name
+    >>> print(job.builder.name)
     bob
     >>> job.date_started is not None
     True
-    >>> print job.logtail
+    >>> print(job.logtail)
     Dummy sampledata entry, not processing
     >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(job)
-    >>> print build.status.name
+    >>> print(build.status.name)
     BUILDING
-    >>> print job.lastscore
+    >>> print(job.lastscore)
     1
 
 IBuildQueue.reset() will reset the job, enabling it to be dispatched
@@ -118,20 +118,20 @@ to another build. The score value of the job is preserved.
     >>> job.reset()
 
     >>> del get_property_cache(bob).currentjob
-    >>> print bob.currentjob
+    >>> print(bob.currentjob)
     None
 
-    >>> print job.status.name
+    >>> print(job.status.name)
     WAITING
-    >>> print job.builder
+    >>> print(job.builder)
     None
-    >>> print job.date_started
+    >>> print(job.date_started)
     None
-    >>> print job.logtail
+    >>> print(job.logtail)
     None
-    >>> print build.status.name
+    >>> print(build.status.name)
     NEEDSBUILD
-    >>> print job.lastscore
+    >>> print(job.lastscore)
     1
 
 On the flip-side, IBuildQueue.markAsBuilding() will assign the job to
@@ -143,11 +143,11 @@ the specified builder.
     >>> bob.currentjob == job
     True
 
-    >>> print job.builder.name
+    >>> print(job.builder.name)
     bob
     >>> job.date_started is not None
     True
-    >>> print build.status.name
+    >>> print(build.status.name)
     BUILDING
 
 
@@ -171,5 +171,5 @@ there should be only one since the builders are sigle-task
 applications:
 
     >>> current_job = bqset.getByBuilder(bob)
-    >>> print current_job.builder.name
+    >>> print(current_job.builder.name)
     bob

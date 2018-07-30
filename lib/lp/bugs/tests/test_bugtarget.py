@@ -42,7 +42,7 @@ def bugtarget_filebug(bugtarget, summary, status=None):
 
 def productSetUp(test):
     """Setup the `IProduct` test."""
-    setUp(test)
+    setUp(test, future=True)
     test.globs['bugtarget'] = getUtility(IProductSet).getByName('firefox')
     test.globs['filebug'] = bugtarget_filebug
     test.globs['question_target'] = test.globs['bugtarget']
@@ -62,7 +62,7 @@ def project_filebug(project, summary, status=None):
 
 def projectSetUp(test):
     """Setup the `IProjectGroup` test."""
-    setUp(test)
+    setUp(test, future=True)
     projectgroups = getUtility(IProjectGroupSet)
     test.globs['bugtarget'] = projectgroups.getByName('mozilla')
     test.globs['filebug'] = project_filebug
@@ -83,7 +83,7 @@ def productseries_filebug(productseries, summary, status=None):
 
 def productSeriesSetUp(test):
     """Setup the `IProductSeries` test."""
-    setUp(test)
+    setUp(test, future=True)
     firefox = getUtility(IProductSet).getByName('firefox')
     test.globs['bugtarget'] = firefox.getSeries('trunk')
     test.globs['filebug'] = productseries_filebug
@@ -92,7 +92,7 @@ def productSeriesSetUp(test):
 
 def distributionSetUp(test):
     """Setup the `IDistribution` test."""
-    setUp(test)
+    setUp(test, future=True)
     test.globs['bugtarget'] = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['filebug'] = bugtarget_filebug
     test.globs['question_target'] = test.globs['bugtarget']
@@ -100,7 +100,7 @@ def distributionSetUp(test):
 
 def distributionSourcePackageSetUp(test):
     """Setup the `IDistributionSourcePackage` test."""
-    setUp(test)
+    setUp(test, future=True)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['bugtarget'] = ubuntu.getSourcePackage('mozilla-firefox')
     test.globs['filebug'] = bugtarget_filebug
@@ -126,7 +126,7 @@ def distroseries_filebug(distroseries, summary, sourcepackagename=None,
 
 def distributionSeriesSetUp(test):
     """Setup the `IDistroSeries` test."""
-    setUp(test)
+    setUp(test, future=True)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['bugtarget'] = ubuntu.getSeries('hoary')
     test.globs['filebug'] = distroseries_filebug

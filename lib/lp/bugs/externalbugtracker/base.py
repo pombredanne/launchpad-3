@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """External bugtrackers."""
@@ -16,6 +16,7 @@ __all__ = [
     'LookupTree',
     'LP_USER_AGENT',
     'PrivateRemoteBug',
+    'repost_on_redirect_hook',
     'UnknownBugTrackerTypeError',
     'UnknownRemoteImportanceError',
     'UnknownRemoteStatusError',
@@ -26,10 +27,11 @@ __all__ = [
     ]
 
 
-import urllib
-import urllib2
-from urlparse import urlparse
-
+import requests
+from six.moves.urllib_parse import (
+    urljoin,
+    urlparse,
+    )
 from zope.interface import implementer
 
 from lp.bugs.adapters import treelookup
@@ -42,6 +44,10 @@ from lp.bugs.interfaces.externalbugtracker import (
     )
 from lp.services.config import config
 from lp.services.database.isolation import ensure_no_transaction
+from lp.services.timeout import (
+    override_timeout,
+    urlfetch,
+    )
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
@@ -84,7 +90,7 @@ class BugTrackerConnectError(BugWatchUpdateError):
     def __init__(self, url, error):
         BugWatchUpdateError.__init__(self)
         self.url = url
-        self.error = str(error)
+        self.error = error
 
     def __str__(self):
         return "%s: %s" % (self.url, self.error)
@@ -135,6 +141,18 @@ class PrivateRemoteBug(BugWatchUpdateWarning):
     """Raised when a bug is marked private on the remote bugtracker."""
 
 
+def repost_on_redirect_hook(response, *args, **kwargs):
+    # The hook facilities in requests currently only let us modify the
+    # response, so we need to cheat a bit in order to persuade it to make a
+    # POST request to the target URL of a redirection.  The simplest
+    # approach is to pretend that the status code of a redirection response
+    # is 307 Temporary Redirect, which requires the request method to remain
+    # unchanged.
+    if response.status_code in (301, 302, 303):
+        response.status_code = 307
+    return response
+
+
 @implementer(IExternalBugTracker)
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
@@ -153,14 +171,6 @@ class ExternalBugTracker:
                 ISupportsCommentPushing.providedBy(self) or
                 ISupportsCommentImport.providedBy(self) or
                 ISupportsBackLinking.providedBy(self)))
-
-    @ensure_no_transaction
-    def urlopen(self, request, data=None):
-        if self.url_opener:
-            func = self.url_opener.open
-        else:
-            func = urllib2.urlopen
-        return func(request, data, self.timeout)
 
     def getExternalBugTrackerToUse(self):
         """See `IExternalBugTracker`."""
@@ -239,28 +249,34 @@ class ExternalBugTracker:
         # user-agent string (Python-urllib/2.x) to access their bugzilla.
         return {'User-Agent': LP_USER_AGENT, 'Host': self.basehost}
 
-    def _fetchPage(self, page, data=None):
-        """Fetch a page from the remote server.
+    @ensure_no_transaction
+    def makeRequest(self, method, url, **kwargs):
+        """Make a request.
 
-        A BugTrackerConnectError will be raised if anything goes wrong.
+        :param method: The HTTP request method.
+        :param url: The URL to request.
+        :return: A `requests.Response` object.
+        :raises requests.RequestException: if the request fails.
         """
-        if not isinstance(page, urllib2.Request):
-            page = urllib2.Request(page, headers=self._getHeaders())
+        with override_timeout(self.timeout):
+            return urlfetch(url, method=method, use_proxy=True, **kwargs)
+
+    def _getPage(self, page, **kwargs):
+        """GET the specified page on the remote HTTP server.
+
+        :return: A `requests.Response` object.
+        """
         try:
-            return self.urlopen(page, data)
-        except (urllib2.HTTPError, urllib2.URLError) as val:
-            raise BugTrackerConnectError(self.baseurl, val)
-
-    def _getPage(self, page):
-        """GET the specified page on the remote HTTP server."""
-        request = urllib2.Request(
-            "%s/%s" % (self.baseurl, page), headers=self._getHeaders())
-        return self._fetchPage(request).read()
-
-    def _post(self, url, data):
-        """Post to a given URL."""
-        request = urllib2.Request(url, headers=self._getHeaders())
-        return self._fetchPage(request, data=data)
+            url = self.baseurl
+            if not url.endswith("/"):
+                url += "/"
+            url = urljoin(url, page)
+            response = self.makeRequest(
+                "GET", url, headers=self._getHeaders(), **kwargs)
+            response.raise_for_status()
+            return response
+        except requests.RequestException as e:
+            raise BugTrackerConnectError(self.baseurl, e)
 
     def _postPage(self, page, form, repost_on_redirect=False):
         """POST to the specified page and form.
@@ -272,15 +288,23 @@ class ExternalBugTracker:
             `repost_on_redirect` is True, this method will do a second POST
             instead.  Do this only if you are sure that repeated POST to
             this page is safe, as is usually the case with search forms.
+        :return: A `requests.Response` object.
         """
-        url = "%s/%s" % (self.baseurl, page)
-        post_data = urllib.urlencode(form)
-        response = self._post(url, data=post_data)
-
-        if repost_on_redirect and response.url != url:
-            response = self._post(response.url, data=post_data)
-
-        return response.read()
+        hooks = (
+            {'response': repost_on_redirect_hook}
+            if repost_on_redirect else None)
+        try:
+            url = self.baseurl
+            if not url.endswith("/"):
+                url += "/"
+            url = urljoin(url, page)
+            response = self.makeRequest(
+                "POST", url, headers=self._getHeaders(), data=form,
+                hooks=hooks)
+            response.raise_for_status()
+            return response
+        except requests.RequestException as e:
+            raise BugTrackerConnectError(self.baseurl, e)
 
 
 class LookupBranch(treelookup.LookupBranch):
