@@ -2352,8 +2352,9 @@ class IPersonSet(Interface):
     @operation_parameters(
         openid_identifier=TextLine(
             title=_("OpenID identifier suffix"), required=True),
-        key_text=TextLine(
-            title=_("SSH key text"), required=True),
+        # This is more liberal than the type for adding keys, in order to
+        # avoid existing keys being undeleteable.
+        key_text=Text(title=_("SSH key text"), required=True),
         dry_run=Bool(_("Don't save changes")))
     @export_write_operation()
     @operation_for_version("devel")
