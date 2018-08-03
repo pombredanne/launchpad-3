@@ -440,9 +440,10 @@ class ISnapView(Interface):
         :return: `ISnapBuildRequest`.
         """
 
-    pending_build_requests = List(
+    pending_build_requests = exported(doNotSnapshot(CollectionField(
+        title=_("Pending build requests for this snap package."),
         value_type=Reference(ISnapBuildRequest),
-        title=u"Pending build requests", required=True, readonly=True)
+        required=True, readonly=True)))
 
     # XXX cjwatson 2018-06-20: Deprecated as an exported method; can become
     # an internal helper method once production JavaScript no longer uses

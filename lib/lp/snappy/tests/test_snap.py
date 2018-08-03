@@ -169,7 +169,9 @@ class TestSnap(TestCaseWithFactory):
         self.assertThat(
             self.factory.makeSnap(),
             DoesNotSnapshot(
-                ["builds", "completed_builds", "pending_builds"], ISnapView))
+                ["pending_build_requests",
+                 "builds", "completed_builds", "pending_builds"],
+                ISnapView))
 
     def test_initial_date_last_modified(self):
         # The initial value of date_last_modified is date_created.
