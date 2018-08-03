@@ -243,6 +243,11 @@ class SnapRequestBuildsJob(SnapJobDerived):
         self.metadata["error_message"] = message
 
     @property
+    def build_request(self):
+        """See `ISnapRequestBuildsJob`."""
+        return self.snap.getBuildRequest(self.job.id)
+
+    @property
     def builds(self):
         """See `ISnapRequestBuildsJob`."""
         build_ids = self.metadata.get("builds")
@@ -272,7 +277,7 @@ class SnapRequestBuildsJob(SnapJobDerived):
         try:
             self.builds = self.snap.requestBuildsFromJob(
                 requester, archive, self.pocket, channels=self.channels,
-                logger=log)
+                build_request=self.build_request, logger=log)
             self.error_message = None
         except self.retry_error_types:
             raise

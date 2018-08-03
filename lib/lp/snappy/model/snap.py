@@ -14,6 +14,7 @@ from datetime import (
 from operator import attrgetter
 from urlparse import urlsplit
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 from pymacaroons import Macaroon
 import pytz
 from storm.expr import (
@@ -39,6 +40,7 @@ from zope.component import (
     getAdapter,
     getUtility,
     )
+from zope.event import notify
 from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -521,7 +523,7 @@ class Snap(Storm, WebhookTargetMixin):
             raise SnapBuildArchiveOwnerMismatch()
 
     def requestBuild(self, requester, archive, distro_arch_series, pocket,
-                     channels=None):
+                     channels=None, build_request=None):
         """See `ISnap`."""
         self._checkRequestBuild(requester, archive)
         if distro_arch_series not in self.getAllowedArchitectures():
@@ -540,8 +542,9 @@ class Snap(Storm, WebhookTargetMixin):
 
         build = getUtility(ISnapBuildSet).new(
             requester, self, archive, distro_arch_series, pocket,
-            channels=channels)
+            channels=channels, build_request=build_request)
         build.queueBuild()
+        notify(ObjectCreatedEvent(build, user=requester))
         return build
 
     def requestBuilds(self, requester, archive, pocket, channels=None):
@@ -553,7 +556,7 @@ class Snap(Storm, WebhookTargetMixin):
 
     def requestBuildsFromJob(self, requester, archive, pocket, channels=None,
                              allow_failures=False, fetch_snapcraft_yaml=True,
-                             logger=None):
+                             build_request=None, logger=None):
         """See `ISnap`."""
         if fetch_snapcraft_yaml:
             try:
@@ -585,7 +588,7 @@ class Snap(Storm, WebhookTargetMixin):
             try:
                 build = self.requestBuild(
                     requester, archive, supported_arches[arch], pocket,
-                    channels)
+                    channels, build_request=build_request)
                 if logger is not None:
                     logger.debug(
                         " - %s/%s/%s: Build requested.",

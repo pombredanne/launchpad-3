@@ -76,6 +76,7 @@ from lp.services.log.logger import BufferLogger
 from lp.services.propertycache import clear_property_cache
 from lp.services.timeout import default_timeout
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.publisher import canonical_url
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     CannotFetchSnapcraftYaml,
@@ -368,6 +369,38 @@ class TestSnap(TestCaseWithFactory):
             snap.owner, snap.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.UPDATES)
 
+    def test_requestBuild_triggers_webhooks(self):
+        # Requesting a build triggers webhooks.
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            processor=processor)
+        snap = self.factory.makeSnap(
+            distroseries=distroarchseries.distroseries, processors=[processor])
+        hook = self.factory.makeWebhook(
+            target=snap, event_types=["snap:build:0.1"])
+        build = snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.UPDATES)
+        expected_payload = {
+            "snap_build": Equals(canonical_url(build, force_local_path=True)),
+            "action": Equals("created"),
+            "snap": Equals(canonical_url(snap, force_local_path=True)),
+            "build_request": Is(None),
+            "status": Equals("Needs building"),
+            "store_upload_status": Equals("Unscheduled"),
+            }
+        with person_logged_in(snap.owner):
+            delivery = hook.deliveries.one()
+            self.assertThat(
+                delivery, MatchesStructure(
+                    event_type=Equals("snap:build:0.1"),
+                    payload=MatchesDict(expected_payload)))
+            with dbuser(config.IWebhookDeliveryJobSource.dbuser):
+                self.assertEqual(
+                    "<WebhookDeliveryJob for webhook %d on %r>" % (
+                        hook.id, hook.target),
+                    repr(delivery))
+
     def test_requestBuilds(self):
         # requestBuilds schedules a job and returns a corresponding
         # SnapBuildRequest.
@@ -437,7 +470,8 @@ class TestSnap(TestCaseWithFactory):
         with person_logged_in(job.requester):
             builds = job.snap.requestBuildsFromJob(
                 job.requester, job.archive, job.pocket,
-                removeSecurityProxy(job.channels))
+                removeSecurityProxy(job.channels),
+                build_request=job.build_request)
         self.assertRequestedBuildsMatch(builds, job, ["sparc"])
 
     def test_requestBuildsFromJob_no_explicit_architectures(self):
@@ -449,10 +483,11 @@ class TestSnap(TestCaseWithFactory):
         with person_logged_in(job.requester):
             builds = job.snap.requestBuildsFromJob(
                 job.requester, job.archive, job.pocket,
-                removeSecurityProxy(job.channels))
+                removeSecurityProxy(job.channels),
+                build_request=job.build_request)
         self.assertRequestedBuildsMatch(builds, job, ["mips64el", "riscv64"])
 
-    def test_requestBuilds_unsupported_remote(self):
+    def test_requestBuildsFromJob_unsupported_remote(self):
         # If the snap is based on an external Git repository from which we
         # don't support fetching blobs, requestBuildsFromJob falls back to
         # requesting builds for all configured architectures.
@@ -463,8 +498,42 @@ class TestSnap(TestCaseWithFactory):
         with person_logged_in(job.requester):
             builds = job.snap.requestBuildsFromJob(
                 job.requester, job.archive, job.pocket,
-                removeSecurityProxy(job.channels))
+                removeSecurityProxy(job.channels),
+                build_request=job.build_request)
         self.assertRequestedBuildsMatch(builds, job, ["mips64el", "riscv64"])
+
+    def test_requestBuildsFromJob_triggers_webhooks(self):
+        # requestBuildsFromJob triggers webhooks, and the payload includes a
+        # link to the build request.
+        self.useFixture(GitHostingFixture(blob=dedent("""\
+            architectures:
+              - build-on: avr
+              - build-on: riscv64
+            """)))
+        job = self.makeRequestBuildsJob(["avr", "riscv64", "sparc"])
+        hook = self.factory.makeWebhook(
+            target=job.snap, event_types=["snap:build:0.1"])
+        with person_logged_in(job.requester):
+            builds = job.snap.requestBuildsFromJob(
+                job.requester, job.archive, job.pocket,
+                removeSecurityProxy(job.channels),
+                build_request=job.build_request)
+            self.assertEqual(2, len(builds))
+            self.assertThat(hook.deliveries, MatchesSetwise(*(
+                MatchesStructure(
+                    event_type=Equals("snap:build:0.1"),
+                    payload=MatchesDict({
+                        "snap_build": Equals(canonical_url(
+                            build, force_local_path=True)),
+                        "action": Equals("created"),
+                        "snap": Equals(canonical_url(
+                            job.snap, force_local_path=True)),
+                        "build_request": Equals(canonical_url(
+                            job.build_request, force_local_path=True)),
+                        "status": Equals("Needs building"),
+                        "store_upload_status": Equals("Unscheduled"),
+                        }))
+                for build in builds)))
 
     def test_requestAutoBuilds(self):
         # requestAutoBuilds creates new builds for all configured
