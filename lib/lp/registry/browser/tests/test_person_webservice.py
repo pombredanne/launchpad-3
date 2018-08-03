@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+import textwrap
+
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.management import endInteraction
@@ -12,7 +14,10 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     TeamMembershipStatus,
     )
-from lp.registry.interfaces.ssh import SSHKeyType
+from lp.registry.interfaces.ssh import (
+    ISSHKeySet,
+    SSHKeyType,
+    )
 from lp.registry.interfaces.teammembership import ITeamMembershipSet
 from lp.services.identity.interfaces.account import (
     AccountStatus,
@@ -661,6 +666,34 @@ class PersonSetWebServiceTests(TestCaseWithFactory):
         with admin_logged_in():
             person = removeSecurityProxy(self.factory.makePerson())
             key = self.factory.makeSSHKey(person)
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.deleteSSHKeyFromSSO(
+            openid_id, key.getFullKeyText(), dry_run=True)
+
+        self.assertEqual(200, response.status)
+        self.assertEqual(1, person.sshkeys.count())
+
+    def test_deleteSSHKeyFromSSO_allows_newlines(self):
+        # Adding these should normally be forbidden, but we want users to be
+        # able to delete existing rows.
+        with admin_logged_in():
+            person = removeSecurityProxy(self.factory.makePerson())
+            kind, data, comment = self.factory.makeSSHKeyText().split(" ", 2)
+            key_text = "%s %s %s\n" % (kind, textwrap.fill(data), comment)
+            key = getUtility(ISSHKeySet).new(person, key_text, check_key=False)
+            openid_id = person.account.openid_identifiers.any().identifier
+        response = self.deleteSSHKeyFromSSO(
+            openid_id, key.getFullKeyText())
+
+        self.assertEqual(200, response.status)
+        self.assertEqual(0, person.sshkeys.count())
+
+    def test_deleteSSHKeyFromSSO_allows_newlines_dry_run(self):
+        with admin_logged_in():
+            person = removeSecurityProxy(self.factory.makePerson())
+            kind, data, comment = self.factory.makeSSHKeyText().split(" ", 2)
+            key_text = "%s %s %s\n" % (kind, textwrap.fill(data), comment)
+            key = getUtility(ISSHKeySet).new(person, key_text, check_key=False)
             openid_id = person.account.openid_identifiers.any().identifier
         response = self.deleteSSHKeyFromSSO(
             openid_id, key.getFullKeyText(), dry_run=True)
