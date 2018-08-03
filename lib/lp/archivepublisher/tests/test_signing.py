@@ -567,7 +567,7 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
             r'\bextendedKeyUsage\s*=\s*'
             r'codeSigning,1.3.6.1.4.1.2312.16.1.2\s*\b')
 
-        self.assertTrue('[ req ]' in text)
+        self.assertIn('[ req ]', text)
         self.assertIsNotNone(cn_re.search(text))
         self.assertIsNotNone(eku_re.search(text))
 
@@ -645,9 +645,9 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
 
         cn_re = re.compile(r'\bCN\s*=\s*something-unique\b')
 
-        self.assertTrue('[ req ]' in text)
+        self.assertIn('[ req ]', text)
         self.assertIsNotNone(cn_re.search(text))
-        self.assertFalse('extendedKeyUsage' in text)
+        self.assertNotIn('extendedKeyUsage', text)
 
     def test_correct_opal_signing_command_executed(self):
         # Check that calling signOpal() will generate the expected command
