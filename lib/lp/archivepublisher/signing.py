@@ -242,7 +242,7 @@ class SigningUpload(CustomUpload):
         cmdl = ["sbsign", "--key", key, "--cert", cert, image]
         return self.callLog("UEFI signing", cmdl)
 
-    openssl_config_opal = """
+    openssl_config_opal = textwrap.dedent("""
         [ req ]
         default_bits = 4096
         distinguished_name = req_distinguished_name
@@ -258,14 +258,14 @@ class SigningUpload(CustomUpload):
         keyUsage=digitalSignature
         subjectKeyIdentifier=hash
         authorityKeyIdentifier=keyid
-        """
+        """)
 
-    openssl_config_kmod = openssl_config_opal + """
+    openssl_config_kmod = openssl_config_opal + textwrap.dedent("""
         # codeSigning:  specifies that this key is used to sign code.
         # 1.3.6.1.4.1.2312.16.1.2:  defines this key as used for
         #   module signing only. See https://lkml.org/lkml/2015/8/26/741.
         extendedKeyUsage        = codeSigning,1.3.6.1.4.1.2312.16.1.2
-        """
+        """)
 
     def generateOpensslConfig(self, key_type, common_name):
         if key_type == 'Kmod':
@@ -275,7 +275,7 @@ class SigningUpload(CustomUpload):
         else:
             raise ValueError("unknown key_type " + key_type)
 
-        return textwrap.dedent(genkey_tmpl.format(common_name=common_name))
+        return genkey_tmpl.format(common_name=common_name)
 
     def generatePemX509Pair(self, key_type, pem_filename, x509_filename):
         """Generate new pem/x509 key pairs."""
