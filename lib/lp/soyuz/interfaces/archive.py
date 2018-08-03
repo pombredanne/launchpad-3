@@ -471,8 +471,9 @@ class IArchiveSubscriberView(Interface):
 
         If the repository has a signing key but it cannot be retrieved from
         the keyserver, then the response will have an appropriate 4xx or 5xx
-        HTTP status code.  Otherwise, returns the public key material as a
-        byte string, or None if the repository has no signing key.
+        HTTP status code.  Otherwise, returns the ASCII-armoured public key
+        material as a text string, or None if the repository has no signing
+        key.
         """
 
     def getAuthToken(person):
