@@ -242,6 +242,41 @@ class SigningUpload(CustomUpload):
         cmdl = ["sbsign", "--key", key, "--cert", cert, image]
         return self.callLog("UEFI signing", cmdl)
 
+    openssl_config_opal = textwrap.dedent("""
+        [ req ]
+        default_bits = 4096
+        distinguished_name = req_distinguished_name
+        prompt = no
+        string_mask = utf8only
+        x509_extensions = myexts
+
+        [ req_distinguished_name ]
+        CN = {common_name}
+
+        [ myexts ]
+        basicConstraints=critical,CA:FALSE
+        keyUsage=digitalSignature
+        subjectKeyIdentifier=hash
+        authorityKeyIdentifier=keyid
+        """)
+
+    openssl_config_kmod = openssl_config_opal + textwrap.dedent("""
+        # codeSigning:  specifies that this key is used to sign code.
+        # 1.3.6.1.4.1.2312.16.1.2:  defines this key as used for
+        #   module signing only. See https://lkml.org/lkml/2015/8/26/741.
+        extendedKeyUsage        = codeSigning,1.3.6.1.4.1.2312.16.1.2
+        """)
+
+    def generateOpensslConfig(self, key_type, common_name):
+        if key_type == 'Kmod':
+            genkey_tmpl = self.openssl_config_kmod
+        elif key_type == 'Opal':
+            genkey_tmpl = self.openssl_config_opal
+        else:
+            raise ValueError("unknown key_type " + key_type)
+
+        return genkey_tmpl.format(common_name=common_name)
+
     def generatePemX509Pair(self, key_type, pem_filename, x509_filename):
         """Generate new pem/x509 key pairs."""
         directory = os.path.dirname(pem_filename)
@@ -255,24 +290,7 @@ class SigningUpload(CustomUpload):
         old_mask = os.umask(0o077)
         try:
             with tempfile.NamedTemporaryFile(suffix='.keygen') as tf:
-                genkey_text = textwrap.dedent("""\
-                    [ req ]
-                    default_bits = 4096
-                    distinguished_name = req_distinguished_name
-                    prompt = no
-                    string_mask = utf8only
-                    x509_extensions = myexts
-
-                    [ req_distinguished_name ]
-                    CN = %s
-
-                    [ myexts ]
-                    basicConstraints=critical,CA:FALSE
-                    keyUsage=digitalSignature
-                    subjectKeyIdentifier=hash
-                    authorityKeyIdentifier=keyid
-                    """ % common_name)
-
+                genkey_text = self.generateOpensslConfig(key_type, common_name)
                 print(genkey_text, file=tf)
 
                 # Close out the underlying file so we know it is complete.
