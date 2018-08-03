@@ -8,6 +8,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 
 import os
+import re
 import stat
 import tarfile
 
@@ -555,6 +556,21 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
             ]
         self.assertEqual(expected_cmd, args)
 
+    def test_correct_kmod_openssl_config(self):
+        # Check that calling generateOpensslConfig() will return an appropriate
+        # openssl configuration.
+        upload = SigningUpload()
+        text = upload.generateOpensslConfig('Kmod', 'something-unique')
+
+        cn_re = re.compile(r'\bCN\s*=\s*something-unique\b')
+        eku_re = re.compile(
+            r'\bextendedKeyUsage\s*=\s*'
+            r'codeSigning,1.3.6.1.4.1.2312.16.1.2\s*\b')
+
+        self.assertTrue('[ req ]' in text)
+        self.assertIsNotNone(cn_re.search(text))
+        self.assertIsNotNone(eku_re.search(text))
+
     def test_correct_kmod_signing_command_executed(self):
         # Check that calling signKmod() will generate the expected command
         # when appropriate keys are present.
@@ -620,6 +636,18 @@ class TestSigning(RunPartsMixin, TestSigningHelpers):
             '-out', self.kmod_x509
             ]
         self.assertEqual(expected_cmd, args)
+
+    def test_correct_opal_openssl_config(self):
+        # Check that calling generateOpensslConfig() will return an appropriate
+        # openssl configuration.
+        upload = SigningUpload()
+        text = upload.generateOpensslConfig('Opal', 'something-unique')
+
+        cn_re = re.compile(r'\bCN\s*=\s*something-unique\b')
+
+        self.assertTrue('[ req ]' in text)
+        self.assertIsNotNone(cn_re.search(text))
+        self.assertFalse('extendedKeyUsage' in text)
 
     def test_correct_opal_signing_command_executed(self):
         # Check that calling signOpal() will generate the expected command
