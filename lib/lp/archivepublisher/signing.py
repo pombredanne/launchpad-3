@@ -257,7 +257,7 @@ class SigningUpload(CustomUpload):
         basicConstraints=critical,CA:FALSE
         keyUsage=digitalSignature
         subjectKeyIdentifier=hash
-        authorityKeyIdentifier=keyidb
+        authorityKeyIdentifier=keyid
         """
 
     openssl_config_kmod = openssl_config_opal + """
