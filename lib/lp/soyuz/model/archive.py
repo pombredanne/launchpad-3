@@ -415,8 +415,13 @@ class Archive(SQLBase):
         if self.signing_key_fingerprint is not None:
             # This may raise GPGKeyNotFoundError, which we allow to
             # propagate as an HTTP error.
-            return getUtility(IGPGHandler).retrieveKey(
+            key_data = getUtility(IGPGHandler).retrieveKey(
                 self.signing_key_fingerprint).export()
+            # Ideally we'd just return a byte string, but lazr.restful
+            # really wants methods to return something that can be
+            # serialised as JSON, so instead rely on ASCII-armouring
+            # producing something that we can decode as text.
+            return key_data.decode('UTF-8')
 
     @property
     def is_ppa(self):

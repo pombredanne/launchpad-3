@@ -3830,7 +3830,8 @@ class TestGetSigningKeyData(TestCaseWithFactory):
         responses.add("GET", key_url, body=public_key_data)
         gpghandler.resetLocalState()
         with default_timeout(5.0):
-            self.assertEqual(public_key_data, ppa.getSigningKeyData())
+            self.assertEqual(
+                public_key_data.decode("UTF-8"), ppa.getSigningKeyData())
 
     @responses.activate
     def test_getSigningKeyData_not_found_on_keyserver(self):
