@@ -509,6 +509,28 @@
                 <xsl:text>/messages/</xsl:text>
                 <var >&lt;message.index&gt;</var>
             </xsl:when>
+            <xsl:when test="@id = 'snap'">
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+snap/</xsl:text>
+                <var>&lt;snap.name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'snap_build'">
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+snap/</xsl:text>
+                <var>&lt;snap.name&gt;</var>
+                <xsl:text>/+build/</xsl:text>
+                <var>&lt;id&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'snap_build_request'">
+                <xsl:text>/~</xsl:text>
+                <var>&lt;person.name&gt;</var>
+                <xsl:text>/+snap/</xsl:text>
+                <var>&lt;snap.name&gt;</var>
+                <xsl:text>/+build-request/</xsl:text>
+                <var>&lt;id&gt;</var>
+            </xsl:when>
             <xsl:when test="@id = 'source_package'">
                 <xsl:text>/</xsl:text>
                 <var>&lt;distribution.name&gt;</var>
