@@ -233,6 +233,16 @@ class SnapRequestBuildsJob(SnapJobDerived):
         return self.metadata["channels"]
 
     @property
+    def date_created(self):
+        """See `ISnapRequestBuildsJob`."""
+        return self.context.job.date_created
+
+    @property
+    def date_finished(self):
+        """See `ISnapRequestBuildsJob`."""
+        return self.context.job.date_finished
+
+    @property
     def error_message(self):
         """See `ISnapRequestBuildsJob`."""
         return self.metadata.get("error_message")

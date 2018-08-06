@@ -16,6 +16,7 @@ from textwrap import dedent
 from urlparse import urlsplit
 
 from fixtures import MockPatch
+import iso8601
 from lazr.lifecycle.event import ObjectModifiedEvent
 from pymacaroons import Macaroon
 import pytz
@@ -26,7 +27,10 @@ from testtools.matchers import (
     AfterPreprocessing,
     ContainsDict,
     Equals,
+    GreaterThan,
     Is,
+    LessThan,
+    MatchesAll,
     MatchesDict,
     MatchesSetwise,
     MatchesStructure,
@@ -65,7 +69,10 @@ from lp.services.database.constants import (
     UTC_NOW,
     )
 from lp.services.database.interfaces import IStore
-from lp.services.database.sqlbase import flush_database_caches
+from lp.services.database.sqlbase import (
+    flush_database_caches,
+    get_transaction_timestamp,
+    )
 from lp.services.features.testing import (
     FeatureFixture,
     MemoryFeatureFixture,
@@ -372,12 +379,15 @@ class TestSnap(TestCaseWithFactory):
         # requestBuilds schedules a job and returns a corresponding
         # SnapBuildRequest.
         snap = self.factory.makeSnap()
+        now = get_transaction_timestamp(IStore(snap))
         with person_logged_in(snap.owner.teamowner):
             request = snap.requestBuilds(
                 snap.owner.teamowner, snap.distro_series.main_archive,
                 PackagePublishingPocket.UPDATES,
                 channels={"snapcraft": "edge"})
         self.assertThat(request, MatchesStructure(
+            date_requested=Equals(now),
+            date_finished=Is(None),
             snap=Equals(snap),
             status=Equals(SnapBuildRequestStatus.PENDING),
             error_message=Is(None),
@@ -434,6 +444,9 @@ class TestSnap(TestCaseWithFactory):
               - build-on: avr
             """)))
         job = self.makeRequestBuildsJob(["sparc"])
+        self.assertEqual(
+            get_transaction_timestamp(IStore(job.snap)), job.date_created)
+        transaction.commit()
         with person_logged_in(job.requester):
             builds = job.snap.requestBuildsFromJob(
                 job.requester, job.archive, job.pocket,
@@ -446,6 +459,9 @@ class TestSnap(TestCaseWithFactory):
         # architectures.
         self.useFixture(GitHostingFixture(blob="name: foo\n"))
         job = self.makeRequestBuildsJob(["mips64el", "riscv64"])
+        self.assertEqual(
+            get_transaction_timestamp(IStore(job.snap)), job.date_created)
+        transaction.commit()
         with person_logged_in(job.requester):
             builds = job.snap.requestBuildsFromJob(
                 job.requester, job.archive, job.pocket,
@@ -460,6 +476,9 @@ class TestSnap(TestCaseWithFactory):
             repository_url="https://example.com/foo.git")
         job = self.makeRequestBuildsJob(
             ["mips64el", "riscv64"], git_ref=git_ref)
+        self.assertEqual(
+            get_transaction_timestamp(IStore(job.snap)), job.date_created)
+        transaction.commit()
         with person_logged_in(job.requester):
             builds = job.snap.requestBuildsFromJob(
                 job.requester, job.archive, job.pocket,
@@ -2552,6 +2571,7 @@ class TestSnapWebservice(TestCaseWithFactory):
         [git_ref] = self.factory.makeGitRefs()
         snap = self.makeSnap(
             git_ref=git_ref, distroseries=distroseries, processors=processors)
+        now = get_transaction_timestamp(IStore(distroseries))
         response = self.webservice.named_post(
             snap["self_link"], "requestBuilds", archive=archive_url,
             pocket="Updates", channels={"snapcraft": "edge"})
@@ -2559,6 +2579,9 @@ class TestSnapWebservice(TestCaseWithFactory):
         build_request_url = response.getHeader("Location")
         build_request = self.webservice.get(build_request_url).jsonBody()
         self.assertThat(build_request, ContainsDict({
+            "date_requested": AfterPreprocessing(
+                iso8601.parse_date, GreaterThan(now)),
+            "date_finished": Is(None),
             "snap_link": Equals(snap["self_link"]),
             "status": Equals("Pending"),
             "error_message": Is(None),
@@ -2573,9 +2596,16 @@ class TestSnapWebservice(TestCaseWithFactory):
             [job] = getUtility(ISnapRequestBuildsJobSource).iterReady()
             with dbuser(config.ISnapRequestBuildsJobSource.dbuser):
                 JobRunner([job]).runAll()
+        date_requested = iso8601.parse_date(build_request["date_requested"])
+        now = get_transaction_timestamp(IStore(distroseries))
         build_request = self.webservice.get(
             build_request["self_link"]).jsonBody()
         self.assertThat(build_request, ContainsDict({
+            "date_requested": AfterPreprocessing(
+                iso8601.parse_date, Equals(date_requested)),
+            "date_finished": AfterPreprocessing(
+                iso8601.parse_date,
+                MatchesAll(GreaterThan(date_requested), LessThan(now))),
             "snap_link": Equals(snap["self_link"]),
             "status": Equals("Completed"),
             "error_message": Is(None),
@@ -2608,6 +2638,7 @@ class TestSnapWebservice(TestCaseWithFactory):
         snap = self.makeSnap(
             git_ref=git_ref, distroseries=distroseries,
             processors=[processor])
+        now = get_transaction_timestamp(IStore(distroseries))
         response = self.webservice.named_post(
             snap["self_link"], "requestBuilds", archive=archive_url,
             pocket="Updates")
@@ -2615,6 +2646,9 @@ class TestSnapWebservice(TestCaseWithFactory):
         build_request_url = response.getHeader("Location")
         build_request = self.webservice.get(build_request_url).jsonBody()
         self.assertThat(build_request, ContainsDict({
+            "date_requested": AfterPreprocessing(
+                iso8601.parse_date, GreaterThan(now)),
+            "date_finished": Is(None),
             "snap_link": Equals(snap["self_link"]),
             "status": Equals("Pending"),
             "error_message": Is(None),
@@ -2627,9 +2661,16 @@ class TestSnapWebservice(TestCaseWithFactory):
             [job] = getUtility(ISnapRequestBuildsJobSource).iterReady()
             with dbuser(config.ISnapRequestBuildsJobSource.dbuser):
                 JobRunner([job]).runAll()
+        date_requested = iso8601.parse_date(build_request["date_requested"])
+        now = get_transaction_timestamp(IStore(distroseries))
         build_request = self.webservice.get(
             build_request["self_link"]).jsonBody()
         self.assertThat(build_request, ContainsDict({
+            "date_requested": AfterPreprocessing(
+                iso8601.parse_date, Equals(date_requested)),
+            "date_finished": AfterPreprocessing(
+                iso8601.parse_date,
+                MatchesAll(GreaterThan(date_requested), LessThan(now))),
             "snap_link": Equals(snap["self_link"]),
             "status": Equals("Failed"),
             "error_message": Equals("Something went wrong"),

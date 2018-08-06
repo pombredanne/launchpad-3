@@ -13,7 +13,10 @@ from testtools.matchers import (
     AfterPreprocessing,
     ContainsDict,
     Equals,
+    GreaterThan,
     Is,
+    LessThan,
+    MatchesAll,
     MatchesSetwise,
     MatchesStructure,
     )
@@ -21,6 +24,8 @@ from testtools.matchers import (
 from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
+from lp.services.database.interfaces import IStore
+from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
 from lp.services.mail.sendmail import format_address_for_person
@@ -97,6 +102,7 @@ class TestSnapRequestBuildsJob(TestCaseWithFactory):
         [git_ref] = self.factory.makeGitRefs()
         snap = self.factory.makeSnap(
             git_ref=git_ref, distroseries=distroseries, processors=processors)
+        expected_date_created = get_transaction_timestamp(IStore(snap))
         job = SnapRequestBuildsJob.create(
             snap, snap.registrant, distroseries.main_archive,
             PackagePublishingPocket.RELEASE, {"core": "stable"})
@@ -108,9 +114,13 @@ class TestSnapRequestBuildsJob(TestCaseWithFactory):
         self.useFixture(GitHostingFixture(blob=snapcraft_yaml))
         with dbuser(config.ISnapRequestBuildsJobSource.dbuser):
             JobRunner([job]).runAll()
+        now = get_transaction_timestamp(IStore(snap))
         self.assertEmailQueueLength(0)
         self.assertThat(job, MatchesStructure(
             job=MatchesStructure.byEquality(status=JobStatus.COMPLETED),
+            date_created=Equals(expected_date_created),
+            date_finished=MatchesAll(
+                GreaterThan(expected_date_created), LessThan(now)),
             error_message=Is(None),
             builds=AfterPreprocessing(set, MatchesSetwise(*[
                 MatchesStructure.byEquality(
@@ -131,6 +141,7 @@ class TestSnapRequestBuildsJob(TestCaseWithFactory):
         [git_ref] = self.factory.makeGitRefs()
         snap = self.factory.makeSnap(
             git_ref=git_ref, distroseries=distroseries, processors=processors)
+        expected_date_created = get_transaction_timestamp(IStore(snap))
         job = SnapRequestBuildsJob.create(
             snap, snap.registrant, distroseries.main_archive,
             PackagePublishingPocket.RELEASE, {"core": "stable"})
@@ -138,6 +149,7 @@ class TestSnapRequestBuildsJob(TestCaseWithFactory):
             CannotParseSnapcraftYaml("Nonsense on stilts"))
         with dbuser(config.ISnapRequestBuildsJobSource.dbuser):
             JobRunner([job]).runAll()
+        now = get_transaction_timestamp(IStore(snap))
         [notification] = self.assertEmailQueueLength(1)
         self.assertThat(dict(notification), ContainsDict({
             "From": Equals(config.canonical.noreply_from_address),
@@ -151,5 +163,8 @@ class TestSnapRequestBuildsJob(TestCaseWithFactory):
             notification.get_payload(decode=True))
         self.assertThat(job, MatchesStructure(
             job=MatchesStructure.byEquality(status=JobStatus.FAILED),
+            date_created=Equals(expected_date_created),
+            date_finished=MatchesAll(
+                GreaterThan(expected_date_created), LessThan(now)),
             error_message=Equals("Nonsense on stilts"),
             builds=AfterPreprocessing(set, MatchesSetwise())))
