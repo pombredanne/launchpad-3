@@ -19,6 +19,7 @@ from zope.interface import (
     )
 from zope.schema import (
     Choice,
+    Datetime,
     Dict,
     List,
     TextLine,
@@ -73,6 +74,14 @@ class ISnapRequestBuildsJob(IRunnableJob):
             "builds.  Currently only 'core' and 'snapcraft' keys are "
             "supported."),
         key_type=TextLine(), required=False, readonly=True)
+
+    date_created = Datetime(
+        title=_("Time when this job was created."),
+        required=True, readonly=True)
+
+    date_finished = Datetime(
+        title=_("Time when this job finished."),
+        required=True, readonly=True)
 
     error_message = TextLine(
         title=_("Error message resulting from running this job."),
