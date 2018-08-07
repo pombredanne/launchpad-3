@@ -182,6 +182,16 @@ class SnapBuildRequest:
         self.id = id
 
     @property
+    def date_requested(self):
+        """See `ISnapBuildRequest`."""
+        return self._job.date_created
+
+    @property
+    def date_finished(self):
+        """See `ISnapBuildRequest`."""
+        return self._job.date_finished
+
+    @property
     def status(self):
         """See `ISnapBuildRequest`."""
         status_map = {

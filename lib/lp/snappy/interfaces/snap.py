@@ -289,6 +289,14 @@ class ISnapBuildRequest(Interface):
 
     id = Int(title=_("ID"), required=True, readonly=True)
 
+    date_requested = exported(Datetime(
+        title=_("The time when this request was made"),
+        required=True, readonly=True))
+
+    date_finished = exported(Datetime(
+        title=_("The time when this request finished"),
+        required=False, readonly=True))
+
     snap = exported(Reference(
         # Really ISnap, patched in lp.snappy.interfaces.webservice.
         Interface,
