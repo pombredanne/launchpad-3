@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad Form View Classes
@@ -25,7 +25,10 @@ from zope.event import notify
 from zope.formlib import form
 # imported so it may be exported
 from zope.formlib.form import action
-from zope.formlib.interfaces import IInputWidget
+from zope.formlib.interfaces import (
+    IInputWidget,
+    IWidgetFactory,
+    )
 from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import (
     CheckBoxWidget,
@@ -78,7 +81,7 @@ class LaunchpadFormView(LaunchpadView):
     # Subset of fields to use
     field_names = None
     # Dictionary mapping field names to custom widgets
-    custom_widgets = ()
+    custom_widgets = {}
 
     # The next URL to redirect to on successful form submission
     next_url = None
@@ -197,12 +200,19 @@ class LaunchpadFormView(LaunchpadView):
 
         If no context is given, the view's context is used."""
         for field in self.form_fields:
-            if (field.custom_widget is None and
-                field.__name__ in self.custom_widgets):
-                # The check for custom_widget is None means that we honor the
-                # value if previously set. This is important for some existing
-                # forms.
-                field.custom_widget = self.custom_widgets[field.__name__]
+            # Honour the custom_widget value if it was already set.  This is
+            # important for some existing forms.
+            if field.custom_widget is None:
+                widget = getattr(
+                    self, 'custom_widget_%s' % field.__name__, None)
+                if widget is None:
+                    widget = self.custom_widgets.get(field.__name__)
+                if widget is not None:
+                    if IWidgetFactory.providedBy(widget):
+                        field.custom_widget = widget
+                    else:
+                        # Allow views to save some typing in common cases.
+                        field.custom_widget = CustomWidgetFactory(widget)
         if context is None:
             context = self.context
         self.widgets = form.setUpWidgets(

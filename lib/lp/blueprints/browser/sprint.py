@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sprint views."""
@@ -30,13 +30,13 @@ from StringIO import StringIO
 from lazr.restful.utils import smartquote
 import pytz
 from zope.component import getUtility
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import implementer
 
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -261,10 +261,12 @@ class SprintAddView(LaunchpadFormView):
                    'time_zone', 'time_starts', 'time_ends', 'is_physical',
                    'address',
                    ]
-    custom_widget('summary', TextAreaWidget, height=5)
-    custom_widget('time_starts', DateTimeWidget, display_zone=False)
-    custom_widget('time_ends', DateTimeWidget, display_zone=False)
-    custom_widget('address', TextAreaWidget, height=3)
+    custom_widget_summary = CustomWidgetFactory(TextAreaWidget, height=5)
+    custom_widget_time_starts = CustomWidgetFactory(
+        DateTimeWidget, display_zone=False)
+    custom_widget_time_ends = CustomWidgetFactory(
+        DateTimeWidget, display_zone=False)
+    custom_widget_address = CustomWidgetFactory(TextAreaWidget, height=3)
 
     sprint = None
 
@@ -331,10 +333,12 @@ class SprintEditView(LaunchpadEditFormView):
                    'time_zone', 'time_starts', 'time_ends', 'is_physical',
                    'address',
                    ]
-    custom_widget('summary', TextAreaWidget, height=5)
-    custom_widget('time_starts', DateTimeWidget, display_zone=False)
-    custom_widget('time_ends', DateTimeWidget, display_zone=False)
-    custom_widget('address', TextAreaWidget, height=3)
+    custom_widget_summary = CustomWidgetFactory(TextAreaWidget, height=5)
+    custom_widget_time_starts = CustomWidgetFactory(
+        DateTimeWidget, display_zone=False)
+    custom_widget_time_ends = CustomWidgetFactory(
+        DateTimeWidget, display_zone=False)
+    custom_widget_address = CustomWidgetFactory(TextAreaWidget, height=3)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)

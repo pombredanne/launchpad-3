@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IQuestionTarget browser views."""
@@ -35,6 +35,7 @@ from zope.component import (
     queryMultiAdapter,
     )
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import DropdownWidget
 from zope.schema import (
     Bool,
@@ -62,7 +63,6 @@ from lp.answers.interfaces.questiontarget import (
     )
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     safe_action,
     )
@@ -174,11 +174,12 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     schema = ISearchQuestionsForm
 
-    custom_widget('language', LabeledMultiCheckBoxWidget,
-                  orientation='horizontal')
-    custom_widget('sort', DropdownWidget, cssClass='inlined-widget')
-    custom_widget('status', LabeledMultiCheckBoxWidget,
-                  orientation='horizontal')
+    custom_widget_language = CustomWidgetFactory(
+        LabeledMultiCheckBoxWidget, orientation='horizontal')
+    custom_widget_sort = CustomWidgetFactory(
+        DropdownWidget, cssClass='inlined-widget')
+    custom_widget_status = CustomWidgetFactory(
+        LabeledMultiCheckBoxWidget, orientation='horizontal')
 
     default_template = ViewPageTemplateFile(
         '../templates/question-listing.pt')
@@ -597,7 +598,8 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
      for the QuestionTarget context.
      """
 
-    custom_widget('language', LabeledMultiCheckBoxWidget, visible=False)
+    custom_widget_language = CustomWidgetFactory(
+        LabeledMultiCheckBoxWidget, visible=False)
 
     # No point showing a matching FAQs link on this report.
     matching_faqs_count = 0
@@ -672,7 +674,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         return 'Answer contact for %s' % self.context.title
 
     label = page_title
-    custom_widget('answer_contact_teams', LabeledMultiCheckBoxWidget)
+    custom_widget_answer_contact_teams = LabeledMultiCheckBoxWidget
 
     def setUpFields(self):
         """See `LaunchpadFormView`."""

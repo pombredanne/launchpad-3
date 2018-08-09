@@ -12,9 +12,8 @@ a LaunchpadFormView based view class:
  * if only a subset of the fields are to be displayed in the form, the
    "field_names" attribute should be set.
 
- * if any fields require custom widgets, the "custom_widgets"
-   attribute should be set to a dictionary mapping field names to
-   widget factories.
+ * if any fields require custom widgets, the "custom_widget_NAME"
+   attribute for each field NAME should be set to a widget factory.
 
  * one or more actions must be provided by the form if it is to
    support submission.
@@ -127,15 +126,16 @@ should in turn have the FormTest instance as a context:
 == Custom Widgets ==
 
 In some cases we will want to use a custom widget for a particular
-field.  These can be installed easily with the "custom_widgets"
+field.  These can be installed easily with a "custom_widget_NAME"
 attribute:
 
+  >>> from zope.formlib.widget import CustomWidgetFactory
   >>> from zope.formlib.widgets import TextWidget
-  >>> from lp.app.browser.launchpadform import custom_widget
 
   >>> class FormTestView3(LaunchpadFormView):
   ...     schema = IFormTest
-  ...     custom_widget('displayname', TextWidget, displayWidth=50)
+  ...     custom_widget_displayname = CustomWidgetFactory(
+  ...         TextWidget, displayWidth=50)
 
   >>> context = FormTest()
   >>> request = LaunchpadTestRequest()
@@ -462,7 +462,7 @@ error, the generated script will focus the first widget with an error:
 Any widget can be hidden in a LaunchpadFormView while still having its
 value POSTed with the values of the other (visible) ones. The widget's
 visibility is controlled by its 'visible' attribute, which can be set
-through a custom_widget() call.
+using a custom widget.
 
 First we'll create a fake pagetemplate which doesn't use Launchpad's main
 template and thus is way simpler.
@@ -496,7 +496,8 @@ If we change a widget's 'visible' flag to False, that widget is rendered
 using its hidden() method, which should return a hidden <input> tag.
 
   >>> class TestWidgetVisibility2(TestWidgetVisibility):
-  ...     custom_widget('displayname', TextWidget, visible=False)
+  ...     custom_widget_displayname = CustomWidgetFactory(
+  ...         TextWidget, visible=False)
 
   >>> view = TestWidgetVisibility2(context, request)
 

@@ -62,6 +62,7 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import Fields
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import (
     TextAreaWidget,
     TextWidget,
@@ -82,7 +83,6 @@ from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpad import AppFrontPageSearchView
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     safe_action,
@@ -206,8 +206,8 @@ class NewSpecificationView(LaunchpadFormView):
     page_title = 'Register a blueprint in Launchpad'
     label = "Register a new blueprint"
 
-    custom_widget('specurl', TextWidget, displayWidth=60)
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget_specurl = CustomWidgetFactory(TextWidget, displayWidth=60)
+    custom_widget_information_type = LaunchpadRadioWidgetWithDescription
 
     def append_info_type(self, fields):
         """Append an InformationType field for creating a Specification.
@@ -790,9 +790,9 @@ class SpecificationEditView(LaunchpadEditFormView):
     schema = SpecificationEditSchema
     field_names = ['name', 'title', 'specurl', 'summary', 'whiteboard']
     label = 'Edit specification'
-    custom_widget('summary', TextAreaWidget, height=5)
-    custom_widget('whiteboard', TextAreaWidget, height=10)
-    custom_widget('specurl', TextWidget, displayWidth=60)
+    custom_widget_summary = CustomWidgetFactory(TextAreaWidget, height=5)
+    custom_widget_whiteboard = CustomWidgetFactory(TextAreaWidget, height=10)
+    custom_widget_specurl = CustomWidgetFactory(TextWidget, displayWidth=60)
 
     @property
     def adapters(self):
@@ -815,13 +815,14 @@ class SpecificationEditView(LaunchpadEditFormView):
 class SpecificationEditWhiteboardView(SpecificationEditView):
     label = 'Edit specification status whiteboard'
     field_names = ['whiteboard']
-    custom_widget('whiteboard', TextAreaWidget, height=15)
+    custom_widget_whiteboard = CustomWidgetFactory(TextAreaWidget, height=15)
 
 
 class SpecificationEditWorkItemsView(SpecificationEditView):
     label = 'Edit specification work items'
     field_names = ['workitems_text']
-    custom_widget('workitems_text', TextAreaWidget, height=15)
+    custom_widget_workitems_text = CustomWidgetFactory(
+        TextAreaWidget, height=15)
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -863,7 +864,7 @@ class SpecificationInformationTypeEditView(LaunchpadFormView):
 
     field_names = ['information_type']
 
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget_information_type = LaunchpadRadioWidgetWithDescription
 
     @property
     def schema(self):
@@ -913,7 +914,7 @@ class SpecificationGoalProposeView(LaunchpadEditFormView):
     schema = ISpecification
     label = 'Target to a distribution series'
     field_names = ['distroseries', 'whiteboard']
-    custom_widget('whiteboard', TextAreaWidget, height=5)
+    custom_widget_whiteboard = CustomWidgetFactory(TextAreaWidget, height=5)
 
     @property
     def initial_values(self):
