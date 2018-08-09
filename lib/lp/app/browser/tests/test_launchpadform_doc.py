@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import doctest
@@ -95,14 +95,13 @@ class LaunchpadFormTest(unittest.TestCase):
 
 
 def doctest_custom_widget_with_setUpFields_override():
-    """As a regression test, it is important to note that the custom_widget
-    class advisor should still work when setUpFields is overridden.  For
-    instance, consider this custom widget and view:
+    """As a regression test, it is important to note that custom widgets
+    should still work when setUpFields is overridden.  For instance,
+    consider this custom widget and view:
 
         >>> from zope.formlib.interfaces import IDisplayWidget, IInputWidget
         >>> from zope.interface import directlyProvides, implements
-        >>> from lp.app.browser.launchpadform import (
-        ...     LaunchpadFormView, custom_widget)
+        >>> from lp.app.browser.launchpadform import LaunchpadFormView
         >>> from zope.schema import Bool
         >>> from zope.publisher.browser import TestRequest
         >>> from zope.formlib import form
@@ -121,7 +120,7 @@ def doctest_custom_widget_with_setUpFields_override():
         ...         self.value = value
         ...
         >>> class CustomView(LaunchpadFormView):
-        ...     custom_widget('my_bool', CustomStubWidget)
+        ...     custom_widget_my_bool = CustomStubWidget
         ...     def setUpFields(self):
         ...         self.form_fields = form.Fields(Bool(__name__='my_bool'))
         ...

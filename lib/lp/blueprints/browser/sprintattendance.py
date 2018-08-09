@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for SprintAttendance."""
@@ -12,11 +12,11 @@ __all__ = [
 from datetime import timedelta
 
 import pytz
+from zope.formlib.widget import CustomWidgetFactory
 
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.widgets.date import DateTimeWidget
@@ -28,10 +28,10 @@ from lp.services.webapp import canonical_url
 class BaseSprintAttendanceAddView(LaunchpadFormView):
 
     schema = ISprintAttendance
-    custom_widget('time_starts', DateTimeWidget)
-    custom_widget('time_ends', DateTimeWidget)
-    custom_widget(
-        'is_physical', LaunchpadBooleanRadioWidget, orientation='vertical',
+    custom_widget_time_starts = DateTimeWidget
+    custom_widget_time_ends = DateTimeWidget
+    custom_widget_is_physical = CustomWidgetFactory(
+        LaunchpadBooleanRadioWidget, orientation='vertical',
         true_label="Physically", false_label="Remotely", hint=None)
 
     @property

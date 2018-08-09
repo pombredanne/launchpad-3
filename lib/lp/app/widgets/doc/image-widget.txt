@@ -18,7 +18,7 @@ is one.
 Whenever you have a form in which you want to use the image widget, you
 have to explicitly say whether you want to use its ADD_STYLE or
 EDIT_STYLE incarnation, by passing an extra argument to the widget's
-constructor (or to custom_widget(), if you're using it).
+constructor (or to CustomWidgetFactory(), if you're using it).
 
 Our policy is not to ask people to upload images when creating a record,
 but instead to expose this as an edit form after the object is created.
