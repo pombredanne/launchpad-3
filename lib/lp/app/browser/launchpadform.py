@@ -208,7 +208,6 @@ class LaunchpadFormView(LaunchpadView):
                 if widget is None:
                     widget = self.custom_widgets.get(field.__name__)
                 if widget is not None:
-                    field.custom_widget = widget
                     if IWidgetFactory.providedBy(widget):
                         field.custom_widget = widget
                     else:
