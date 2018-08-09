@@ -37,6 +37,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.interfaces import IWidgetFactory
 from zope.formlib.widget import (
     CustomWidgetFactory,
     renderElement,
@@ -608,7 +609,11 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         for field in fields:
             widget = getattr(self, 'custom_widget_%s' % field.__name__, None)
             if widget is not None:
-                field.custom_widget = widget
+                if IWidgetFactory.providedBy(widget):
+                    field.custom_widget = widget
+                else:
+                    # Allow views to save some typing in common cases.
+                    field.custom_widget = CustomWidgetFactory(widget)
         return fields
 
     def setUpWidgets(self):
