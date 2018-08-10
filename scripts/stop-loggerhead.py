@@ -8,10 +8,12 @@ from __future__ import absolute_import, print_function, unicode_literals
 import _pythonpath
 
 from optparse import OptionParser
-import os
-import signal
 import sys
 
+from lp.services.osutils import (
+    process_exists,
+    two_stage_kill,
+    )
 from lp.services.pidfile import get_pid
 
 
@@ -20,9 +22,11 @@ parser.parse_args()
 
 pid = get_pid("codebrowse")
 
-try:
-    os.kill(pid, 0)
-except OSError as e:
+if pid is None:
+    # Already stopped.
+    sys.exit(0)
+
+if not process_exists(pid):
     print('Stale pid file; server is not running.')
     sys.exit(1)
 
@@ -30,4 +34,5 @@ print()
 print('Shutting down previous server @ pid %d.' % (pid,))
 print()
 
-os.kill(pid, signal.SIGTERM)
+# A busy gunicorn can take a while to shut down.
+two_stage_kill(pid, poll_interval=0.5, num_polls=120, get_status=False)
