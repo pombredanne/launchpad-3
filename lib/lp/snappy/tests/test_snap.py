@@ -1441,6 +1441,36 @@ class TestSnapSet(TestCaseWithFactory):
         self.assertEqual(
             expected_log_entries, logger.getLogBuffer().splitlines())
 
+    def test_makeAutoBuilds_tolerates_failures(self):
+        # If requesting builds of one snap fails, ISnapSet.makeAutoBuilds
+        # just logs the problem and carries on to the next.
+        das1, snap1 = self.makeAutoBuildableSnap(is_stale=True)
+        das2, snap2 = self.makeAutoBuildableSnap(is_stale=True)
+        logger = BufferLogger()
+        self.useFixture(GitHostingFixture()).getBlob.failure = (
+            GitRepositoryBlobNotFound("dummy", "snap/snapcraft.yaml"))
+        self.assertEqual(
+            [], getUtility(ISnapSet).makeAutoBuilds(logger=logger))
+        # The u'...' here is a little odd, but that's how KeyError (and thus
+        # NotFoundError) stringifies.
+        expected_log_entries = [
+            "DEBUG Scheduling builds of snap package %s/%s" % (
+                snap1.owner.name, snap1.name),
+            "ERROR  - %s/%s: u'Cannot find snapcraft.yaml in %s'" % (
+                snap1.owner.name, snap1.name, snap1.git_ref.unique_name),
+            "DEBUG Scheduling builds of snap package %s/%s" % (
+                snap2.owner.name, snap2.name),
+            "ERROR  - %s/%s: u'Cannot find snapcraft.yaml in %s'" % (
+                snap2.owner.name, snap2.name, snap2.git_ref.unique_name),
+            ]
+        self.assertThat(
+            logger.getLogBuffer().splitlines(),
+            # Ignore ordering differences, since ISnapSet.makeAutoBuilds
+            # might process the two snaps in either order.
+            MatchesSetwise(*(Equals(entry) for entry in expected_log_entries)))
+        self.assertFalse(snap1.is_stale)
+        self.assertFalse(snap2.is_stale)
+
     def test_makeAutoBuilds_with_older_build(self):
         # If a previous build is not recent and the snap package is stale,
         # ISnapSet.makeAutoBuilds requests builds.
