@@ -110,13 +110,15 @@ def _kill_may_race(pid, signal_number):
         raise
 
 
-def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
+def two_stage_kill(pid, poll_interval=0.1, num_polls=50, get_status=True):
     """Kill process 'pid' with SIGTERM. If it doesn't die, SIGKILL it.
 
     :param pid: The pid of the process to kill.
     :param poll_interval: The polling interval used to check if the
         process is still around.
     :param num_polls: The number of polls to do before doing a SIGKILL.
+    :param get_status: If True, collect the process' exit status (which
+        requires it to be a child of the process running this function).
     """
     # Kill the process.
     _kill_may_race(pid, SIGTERM)
@@ -124,11 +126,16 @@ def two_stage_kill(pid, poll_interval=0.1, num_polls=50):
     # Poll until the process has ended.
     for i in range(num_polls):
         try:
-            # Reap the child process and get its return value. If it's not
-            # gone yet, continue.
-            new_pid, result = os.waitpid(pid, os.WNOHANG)
-            if new_pid:
-                return result
+            if get_status:
+                # Reap the child process and get its return value. If it's
+                # not gone yet, continue.
+                new_pid, result = os.waitpid(pid, os.WNOHANG)
+                if new_pid:
+                    return result
+            else:
+                # If the process isn't gone yet, continue.
+                if not process_exists(pid):
+                    return
             time.sleep(poll_interval)
         except OSError as e:
             if e.errno in (errno.ESRCH, errno.ECHILD):
