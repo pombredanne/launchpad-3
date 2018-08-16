@@ -169,6 +169,23 @@ class TestBazaarBranchStore(WorkerTest):
             store.transport.base.rstrip('/'),
             config.codeimport.bazaar_branch_store.rstrip('/'))
 
+    def test__getMirrorURL(self):
+        # _getMirrorURL returns a URL for the branch with the given id.
+        store = BazaarBranchStore(get_transport_from_url(
+            'sftp://storage.example/branches'))
+        self.assertEqual(
+            'sftp://storage.example/branches/000186a0',
+            store._getMirrorURL(100000))
+
+    def test__getMirrorURL_push(self):
+        # _getMirrorURL prefers bzr+ssh over sftp when constructing push
+        # URLs.
+        store = BazaarBranchStore(get_transport_from_url(
+            'sftp://storage.example/branches'))
+        self.assertEqual(
+            'bzr+ssh://storage.example/branches/000186a0',
+            store._getMirrorURL(100000, push=True))
+
     def test_getNewBranch(self):
         # If there's no Bazaar branch of this id, then pull creates a new
         # Bazaar branch.
