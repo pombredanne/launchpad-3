@@ -565,29 +565,36 @@ class Snap(Storm, WebhookTargetMixin):
                              allow_failures=False, fetch_snapcraft_yaml=True,
                              logger=None):
         """See `ISnap`."""
-        if fetch_snapcraft_yaml:
-            try:
-                snapcraft_data = removeSecurityProxy(
-                    getUtility(ISnapSet).getSnapcraftYaml(self))
-            except CannotFetchSnapcraftYaml as e:
-                if not e.unsupported_remote:
-                    raise
-                # The only reason we can't fetch the file is because we
-                # don't support fetching from this repository's host.  In
-                # this case the best thing is to fall back to building for
-                # all supported architectures.
+        try:
+            if fetch_snapcraft_yaml:
+                try:
+                    snapcraft_data = removeSecurityProxy(
+                        getUtility(ISnapSet).getSnapcraftYaml(self))
+                except CannotFetchSnapcraftYaml as e:
+                    if not e.unsupported_remote:
+                        raise
+                    # The only reason we can't fetch the file is because we
+                    # don't support fetching from this repository's host.
+                    # In this case the best thing is to fall back to
+                    # building for all supported architectures.
+                    snapcraft_data = {}
+            else:
                 snapcraft_data = {}
-        else:
-            snapcraft_data = {}
-        # Sort by Processor.id for determinism.  This is chosen to be the
-        # same order as in BinaryPackageBuildSet.createForSource, to
-        # minimise confusion.
-        supported_arches = OrderedDict(
-            (das.architecturetag, das) for das in sorted(
-                self.getAllowedArchitectures(),
-                key=attrgetter("processor.id")))
-        architectures_to_build = determine_architectures_to_build(
-            snapcraft_data, supported_arches.keys())
+            # Sort by Processor.id for determinism.  This is chosen to be
+            # the same order as in BinaryPackageBuildSet.createForSource, to
+            # minimise confusion.
+            supported_arches = OrderedDict(
+                (das.architecturetag, das) for das in sorted(
+                    self.getAllowedArchitectures(),
+                    key=attrgetter("processor.id")))
+            architectures_to_build = determine_architectures_to_build(
+                snapcraft_data, supported_arches.keys())
+        except Exception as e:
+            if not allow_failures:
+                raise
+            elif logger is not None:
+                logger.exception(" - %s/%s: %s", self.owner.name, self.name, e)
+            return []
 
         builds = []
         for build_instance in architectures_to_build:
