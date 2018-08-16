@@ -166,9 +166,18 @@ class BazaarBranchStore:
         """Construct a Bazaar branch store based at `transport`."""
         self.transport = transport
 
-    def _getMirrorURL(self, db_branch_id):
+    def _getMirrorURL(self, db_branch_id, push=False):
         """Return the URL that `db_branch` is stored at."""
-        return urljoin(self.transport.base, '%08x' % db_branch_id)
+        base_url = self.transport.base
+        if push:
+            # Pulling large branches over sftp is less CPU-intensive, but
+            # pushing over bzr+ssh seems to be more reliable.
+            split = urlsplit(base_url)
+            if split.scheme == 'sftp':
+                base_url = urlunsplit([
+                    'bzr+ssh', split.netloc, split.path, split.query,
+                    split.fragment])
+        return urljoin(base_url, '%08x' % db_branch_id)
 
     def pull(self, db_branch_id, target_path, required_format,
              needs_tree=False, stacked_on_url=None):
@@ -218,7 +227,7 @@ class BazaarBranchStore:
             (i.e. actually transferred revisions).
         """
         self.transport.create_prefix()
-        target_url = self._getMirrorURL(db_branch_id)
+        target_url = self._getMirrorURL(db_branch_id, push=True)
         try:
             remote_branch = Branch.open(target_url)
         except NotBranchError:
