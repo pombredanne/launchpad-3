@@ -153,8 +153,7 @@
                     </td>
                   </tr>
 
-                  <tr id="git_mirror"
-                      tal:condition="request/features/code.import.git_target">
+                  <tr id="git_mirror">
                     <td>
                       <label tal:replace="structure view/git_repository_type_import">
                         Import a repository hosted somewhere else
