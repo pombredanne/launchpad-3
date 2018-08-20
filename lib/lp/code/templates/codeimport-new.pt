@@ -74,8 +74,7 @@
               <tal:widget define="widget nocall:view/widgets/git_repo_url">
                 <metal:block use-macro="context/@@launchpad_form/widget_row" />
               </tal:widget>
-              <tal:widget define="widget nocall:view/widgets/git_target_rcs_type"
-                          condition="request/features/code.import.git_target">
+              <tal:widget define="widget nocall:view/widgets/git_target_rcs_type">
                 <metal:block use-macro="context/@@launchpad_form/widget_row" />
               </tal:widget>
             </table>

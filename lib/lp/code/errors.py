@@ -31,7 +31,6 @@ __all__ = [
     'CodeImportAlreadyRunning',
     'CodeImportInvalidTargetType',
     'CodeImportNotInReviewedState',
-    'CodeImportGitTargetFeatureDisabled',
     'ClaimReviewFailed',
     'DiffNotFound',
     'GitDefaultConflict',
@@ -556,15 +555,6 @@ class CodeImportInvalidTargetType(Exception):
         super(CodeImportInvalidTargetType, self).__init__(
             "Objects of type %s do not support code imports targeting %s." %
             (target.__class__.__name__, target_rcs_type))
-
-
-@error_status(httplib.UNAUTHORIZED)
-class CodeImportGitTargetFeatureDisabled(Exception):
-    """Only certain users can create new Git-targeted code imports."""
-
-    def __init__(self):
-        super(CodeImportGitTargetFeatureDisabled, self).__init__(
-            "You do not have permission to create Git-targeted code imports.")
 
 
 @error_status(httplib.BAD_REQUEST)

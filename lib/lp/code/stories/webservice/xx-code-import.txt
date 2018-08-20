@@ -189,27 +189,14 @@ If we must we can create a CVS import.
     >>> print(representation['date_last_successful'])
     None
 
-We can create a Git-to-Git import, provided that we have the feature flag.
-
-    >>> from lp.code.interfaces.codeimport import (
-    ...     CODE_IMPORT_GIT_TARGET_FEATURE_FLAG,
-    ...     )
-    >>> from lp.services.features.testing import FeatureFixture
+We can create a Git-to-Git import.
 
     >>> product_url = '/' + product_name
     >>> new_remote_url = factory.getUniqueURL()
-    >>> response = import_webservice.named_post(
-    ...     product_url, 'newCodeImport', branch_name='new-import',
-    ...     rcs_type='Git', target_rcs_type='Git', url=new_remote_url)
-    >>> print(response.status)
-    401
-    >>> print(response.body)
-    You do not have permission to create Git-targeted code imports.
-    >>> with FeatureFixture({CODE_IMPORT_GIT_TARGET_FEATURE_FLAG: u'on'}):
-    ...     with GitHostingFixture():
-    ...         response = import_webservice.named_post(
-    ...             product_url, 'newCodeImport', branch_name='new-import',
-    ...             rcs_type='Git', target_rcs_type='Git', url=new_remote_url)
+    >>> with GitHostingFixture():
+    ...     response = import_webservice.named_post(
+    ...         product_url, 'newCodeImport', branch_name='new-import',
+    ...         rcs_type='Git', target_rcs_type='Git', url=new_remote_url)
     >>> print(response.status)
     201
     >>> location = response.getHeader('Location')
@@ -272,12 +259,11 @@ We can create a Git-to-Git import targetting a distribution source package.
     >>> distro_source_package_url = (
     ...     '/' + distribution.name + '/+source/' + source_package.name)
     >>> new_remote_url = factory.getUniqueURL()
-    >>> with FeatureFixture({CODE_IMPORT_GIT_TARGET_FEATURE_FLAG: u'on'}):
-    ...     with GitHostingFixture():
-    ...         response = import_webservice.named_post(
-    ...             distro_source_package_url, 'newCodeImport',
-    ...             branch_name='new-import', rcs_type='Git',
-    ...             target_rcs_type='Git', url=new_remote_url)
+    >>> with GitHostingFixture():
+    ...     response = import_webservice.named_post(
+    ...         distro_source_package_url, 'newCodeImport',
+    ...         branch_name='new-import', rcs_type='Git',
+    ...         target_rcs_type='Git', url=new_remote_url)
     >>> print(response.status)
     201
     >>> location = response.getHeader('Location')
