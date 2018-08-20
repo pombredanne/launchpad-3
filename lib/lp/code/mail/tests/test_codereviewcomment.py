@@ -427,7 +427,7 @@ class TestInlineCommentsSection(testtools.TestCase):
         "=== modified file 'foo/bar/bar.py'\n"
         "--- bar.py\t2009-08-26 15:53:34.000000000 -0400\n"
         "+++ bar.py\t1969-12-31 19:00:00.000000000 -0500\n"
-        "@@ -1,3 +0,0 @@\n"
+        "@@ -1,3 +0,0 @@ msgstr \"\xc3\xa5\"\n"
         "-\xc3\xa5\n"
         "-b\n"
         "-c\n"
@@ -705,7 +705,7 @@ class TestInlineCommentsSection(testtools.TestCase):
              '',
              'Foo',
              '',
-             '> @@ -1,3 +0,0 @@',
+             u'> @@ -1,3 +0,0 @@ msgstr "\xe5"',
              '',
              'Bar',
              ''],
