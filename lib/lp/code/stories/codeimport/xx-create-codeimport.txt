@@ -117,7 +117,7 @@ But a Launchpad Git URL is OK.
     >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
     >>> browser.getControl('Project').value = "firefox"
     >>> browser.getControl('Name').value = "lp-git-import"
-    >>> browser.getControl('Git').click()
+    >>> browser.getControl('Git', index=0).click()
     >>> browser.getControl('Repo URL', index=0).value = (
     ...     "git://git.launchpad.net/firefox.git")
     >>> browser.getControl('Request Import').click()
@@ -189,7 +189,7 @@ a name for the import branch, and a Git repository location.
     >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
     >>> browser.getControl('Project').value = "firefox"
     >>> browser.getControl('Name').value = "git-import"
-    >>> browser.getControl('Git').click()
+    >>> browser.getControl('Git', index=0).click()
     >>> browser.getControl('Repo URL', index=0).value = (
     ...     "git://example.com/firefox.git")
     >>> browser.getControl('Request Import').click()
@@ -210,22 +210,17 @@ The user is required to enter a project that the import is for,
 a name for the import repository, and a Git repository location.  The URL is
 allowed to match that of an existing Bazaar-targeted import.
 
-    >>> from lp.code.interfaces.codeimport import (
-    ...     CODE_IMPORT_GIT_TARGET_FEATURE_FLAG,
-    ...     )
     >>> from lp.code.tests.helpers import GitHostingFixture
-    >>> from lp.services.features.testing import FeatureFixture
 
-    >>> with FeatureFixture({CODE_IMPORT_GIT_TARGET_FEATURE_FLAG: u'on'}):
-    ...     browser.open("http://code.launchpad.dev/+code-imports/+new")
-    ...     browser.getControl('Project').value = "firefox"
-    ...     browser.getControl('Name').value = "upstream"
-    ...     browser.getControl('Git', index=0).click()
-    ...     browser.getControl('Git', index=1).click()
-    ...     browser.getControl('Repo URL', index=0).value = (
-    ...         "git://example.com/firefox.git")
-    ...     with GitHostingFixture():
-    ...         browser.getControl('Request Import').click()
+    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
+    >>> browser.getControl('Project').value = "firefox"
+    >>> browser.getControl('Name').value = "upstream"
+    >>> browser.getControl('Git', index=0).click()
+    >>> browser.getControl('Git', index=1).click()
+    >>> browser.getControl('Repo URL', index=0).value = (
+    ...     "git://example.com/firefox.git")
+    >>> with GitHostingFixture():
+    ...     browser.getControl('Request Import').click()
 
 When the user clicks continue, the approved import repository is created.
 
