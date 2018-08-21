@@ -76,6 +76,11 @@ class TestGitRepositoryNavigation(TestCaseWithFactory):
         url = "%s/+ref/refs/heads/master" % canonical_url(repository)
         self.assertRaises(NotFound, test_traverse, url)
 
+    def test_traverse_quoted_ref(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/with#hash"])
+        url = "%s/+ref/with%%23hash" % canonical_url(ref.repository)
+        self.assertEqual(ref, test_traverse(url)[0])
+
 
 class TestGitRepositoryView(BrowserTestCase):
 

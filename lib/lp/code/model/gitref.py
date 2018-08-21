@@ -108,6 +108,11 @@ class GitRefMixin:
             return self.path
 
     @property
+    def url_quoted_name(self):
+        """See `IGitRef`."""
+        return quote(self.name)
+
+    @property
     def identity(self):
         """See `IGitRef`."""
         return "%s:%s" % (self.repository.shortened_path, self.name)

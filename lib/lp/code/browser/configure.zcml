@@ -913,7 +913,7 @@
         name="+index"/>
     <browser:url
         for="lp.code.interfaces.gitref.IGitRef"
-        path_expression="string:+ref/${name}"
+        path_expression="string:+ref/${url_quoted_name}"
         attribute_to_parent="repository"
         rootsite="code"/>
     <browser:pages

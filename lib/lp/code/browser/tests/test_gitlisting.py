@@ -36,7 +36,10 @@ class TestTargetGitListingView:
             owner=self.owner, target=self.target, name="foo")
         self.factory.makeGitRefs(
             main_repo,
-            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+            paths=[
+                "refs/heads/master", "refs/heads/1.0", "refs/heads/with#hash",
+                "refs/tags/1.1",
+                ])
 
         other_repo = self.factory.makeGitRepository(
             owner=self.factory.makePerson(name="contributor"),
@@ -71,11 +74,14 @@ class TestTargetGitListingView:
         table = soup.find(
             'div', id='default-repository-branches').find('table')
         self.assertContentEqual(
-            ['1.0', 'master'],
+            ['1.0', 'master', 'with#hash'],
             [link.find(text=True) for link in table.findAll('a')])
         self.assertEndsWith(
             table.find(text="1.0").parent['href'],
             "/~foowner/%s/+git/foo/+ref/1.0" % self.target_path)
+        self.assertEndsWith(
+            table.find(text="with#hash").parent['href'],
+            "/~foowner/%s/+git/foo/+ref/with%%23hash" % self.target_path)
 
         # Other repos are listed.
         table = soup.find(

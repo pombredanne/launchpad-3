@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for GitRefView."""
@@ -28,9 +28,13 @@ from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
     StormStatementRecorder,
+    TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     extract_text,
@@ -40,6 +44,35 @@ from lp.testing.views import (
     create_initialized_view,
     create_view,
     )
+
+
+class TestGitRefNavigation(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_canonical_url_branch(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/master"])
+        self.assertEqual(
+            "%s/+ref/master" % canonical_url(ref.repository),
+            canonical_url(ref))
+
+    def test_canonical_url_with_slash(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/with/slash"])
+        self.assertEqual(
+            "%s/+ref/with/slash" % canonical_url(ref.repository),
+            canonical_url(ref))
+
+    def test_canonical_url_percent_encoded(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/with#hash"])
+        self.assertEqual(
+            "%s/+ref/with%%23hash" % canonical_url(ref.repository),
+            canonical_url(ref))
+
+    def test_canonical_url_tag(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/tags/1.0"])
+        self.assertEqual(
+            "%s/+ref/refs/tags/1.0" % canonical_url(ref.repository),
+            canonical_url(ref))
 
 
 class TestGitRefView(BrowserTestCase):
