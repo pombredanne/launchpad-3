@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the helpers in `lp.testing.publication`."""
@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from lazr.restful import EntryResource
 from lazr.restful.utils import get_current_browser_request
+from six.moves.urllib_parse import quote
 from zope.browserpage.simpleviewclass import simple
 from zope.component import (
     getSiteManager,
@@ -80,6 +81,15 @@ class TestTestTraverse(TestCaseWithFactory):
         product = self.factory.makeProduct()
         context, view, request = test_traverse(
             'https://launchpad.dev/' + product.name)
+        self.assertEqual(product, context)
+
+    def test_traverse_quoted(self):
+        # test_traverse decodes percent-encoded segments in URLs when
+        # constructing PATH_INFO so that traversal works.
+        login(ANONYMOUS)
+        product = self.factory.makeProduct(name='foo+bar')
+        context, view, request = test_traverse(
+            'https://launchpad.dev/' + quote(product.name))
         self.assertEqual(product, context)
 
     def test_request_is_current_during_traversal(self):

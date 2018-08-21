@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helpers for testing out publication related code."""
@@ -12,6 +12,7 @@ __all__ = [
 
 from cStringIO import StringIO
 
+from six.moves.urllib_parse import unquote
 from zope.app.publication.requestpublicationregistry import factoryRegistry
 from zope.authentication.interfaces import IUnauthenticatedPrincipal
 from zope.component import (
@@ -98,7 +99,7 @@ def test_traverse(url):
     request, publication = get_request_and_publication(
         host=url_parts[1], extra_environment={
             'SERVER_URL': server_url,
-            'PATH_INFO': path_info})
+            'PATH_INFO': unquote(path_info)})
 
     request.setPublication(publication)
     # We avoid calling publication.beforePublication because this starts a new

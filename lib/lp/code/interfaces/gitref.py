@@ -80,6 +80,8 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         "A shortened version of the full path to this reference, with any "
         "leading refs/heads/ removed.")
 
+    url_quoted_name = Attribute("The reference name, quoted for use in URLs.")
+
     commit_sha1 = exported(TextLine(
         title=_("Commit SHA-1"), required=True, readonly=True,
         description=_(
