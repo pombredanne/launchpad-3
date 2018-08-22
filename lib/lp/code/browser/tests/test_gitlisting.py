@@ -26,6 +26,7 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import BrowsesWithQueryLimit
+from lp.testing.pages import find_tag_by_id
 from lp.testing.views import create_initialized_view
 
 
@@ -334,10 +335,9 @@ class TestProductGitListingView(TestTargetGitListingView,
 
         self.factory.makeBranchMergeProposalForGit(
             target_ref=git_refs[0],
-            set_state=BranchMergeProposalStatus.NEEDS_REVIEW
-        )
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         view = create_initialized_view(self.target, '+git')
-        self.assertIn('active review', view())
+        find_tag_by_id(view(), 'active-review-count')
 
 
 class TestPersonProductGitListingView(TestPersonTargetGitListingView,
