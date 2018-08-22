@@ -63,6 +63,14 @@
           <tal:repository-management
             replace="structure repository/@@++repository-management" />
         </div>
+        <p id="active-review-count"
+          tal:define="count context/menu:branches/active_review_count|nothing;
+                      link context/menu:branches/active_reviews|nothing"
+          tal:condition="python: count &gt; 0">
+          <tal:project replace="context/displayname"/> has
+          <tal:active-count replace="count"/>
+          <tal:link replace="structure python: link.render().lower()"/>.
+        </p>
       </div>
 
       <div class="yui-g">
