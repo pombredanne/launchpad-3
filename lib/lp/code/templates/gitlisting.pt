@@ -55,7 +55,6 @@
     <span class="see-all" tal:condition="view/show_bzr_link">
       <a tal:attributes="href context/fmt:url:code/+branches">View Bazaar branches</a>
     </span>
-
     <tal:default-repository
         condition="view/default_git_repository"
         define="repository view/default_git_repository">
