@@ -10,7 +10,9 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.app.enums import InformationType
+from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.registry.enums import VCSType
 from lp.registry.model.persondistributionsourcepackage import (
     PersonDistributionSourcePackage,
     )
@@ -110,7 +112,7 @@ class TestTargetGitListingView:
                 repository=other_repo, user=other_repo.owner)
 
         self.assertThat(
-            self.target, BrowsesWithQueryLimit(34, self.owner, '+git'))
+            self.target, BrowsesWithQueryLimit(36, self.owner, '+git'))
 
     def test_copes_with_no_default(self):
         self.factory.makeGitRepository(
@@ -314,9 +316,28 @@ class TestProductGitListingView(TestTargetGitListingView,
     def setUp(self):
         super(TestProductGitListingView, self).setUp()
         self.owner = self.factory.makePerson(name="foowner")
-        self.target = self.factory.makeProduct(name="foo", owner=self.owner)
+        self.target = self.factory.makeProduct(name="foo", owner=self.owner,
+                                               vcs=VCSType.GIT)
         self.target_path = "foo"
         self.branch_target = self.target
+
+    def test_active_reviews_link(self):
+        main_repo = self.factory.makeGitRepository(
+            owner=self.owner, target=self.target, name="foo")
+        git_refs = self.factory.makeGitRefs(
+            main_repo,
+            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+
+        with admin_logged_in():
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                    target=self.target, repository=main_repo)
+
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=git_refs[0],
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW
+        )
+        view = create_initialized_view(self.target, '+git')
+        self.assertIn('active review', view())
 
 
 class TestPersonProductGitListingView(TestPersonTargetGitListingView,
