@@ -337,7 +337,7 @@ class TestProductGitListingView(TestTargetGitListingView,
             target_ref=git_refs[0],
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         view = create_initialized_view(self.target, '+git')
-        find_tag_by_id(view(), 'active-review-count')
+        self.assertIsNotNone(find_tag_by_id(view(), 'active-review-count'))
 
 
 class TestPersonProductGitListingView(TestPersonTargetGitListingView,
