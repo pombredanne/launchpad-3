@@ -81,6 +81,11 @@ class TestGitRepositoryNavigation(TestCaseWithFactory):
         url = "%s/+ref/with%%23hash" % canonical_url(ref.repository)
         self.assertEqual(ref, test_traverse(url)[0])
 
+    def test_traverse_non_ascii(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/\N{SNOWMAN}"])
+        url = "%s/+ref/%%E2%%98%%83" % canonical_url(ref.repository)
+        self.assertEqual(ref, test_traverse(url)[0])
+
 
 class TestGitRepositoryView(BrowserTestCase):
 
