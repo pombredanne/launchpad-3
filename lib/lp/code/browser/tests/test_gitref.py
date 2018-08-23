@@ -89,7 +89,7 @@ class TestGitRefView(BrowserTestCase):
         super(TestGitRefView, self).setUp()
         self.hosting_fixture = self.useFixture(GitHostingFixture())
 
-    def test_rendering(self):
+    def _test_rendering(self, branch_name):
         repository = self.factory.makeGitRepository(
             owner=self.factory.makePerson(name="person"),
             target=self.factory.makeProduct(name="target"),
@@ -97,7 +97,7 @@ class TestGitRefView(BrowserTestCase):
         getUtility(IGitRepositorySet).setDefaultRepositoryForOwner(
             repository.owner, repository.target, repository, repository.owner)
         [ref] = self.factory.makeGitRefs(
-            repository=repository, paths=["refs/heads/master"])
+            repository=repository, paths=["refs/heads/%s" % branch_name])
         view = create_view(ref, "+index")
         # To test the breadcrumbs we need a correct traversal stack.
         view.request.traversed_objects = [repository, ref, view]
@@ -124,7 +124,13 @@ class TestGitRefView(BrowserTestCase):
                     breadcrumbs_tag,
                     soupmatchers.Tag(
                         'git ref breadcrumb', 'li',
-                        text=re.compile(r'\smaster\s')))))
+                        text=re.compile(r'\s%s\s' % branch_name)))))
+
+    def test_rendering(self):
+        self._test_rendering("master")
+
+    def test_rendering_non_ascii(self):
+        self._test_rendering("\N{SNOWMAN}")
 
     def test_clone_instructions(self):
         [ref] = self.factory.makeGitRefs(paths=["refs/heads/branch"])
