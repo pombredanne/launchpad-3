@@ -41,7 +41,7 @@ class TestTargetGitListingView:
             main_repo,
             paths=[
                 "refs/heads/master", "refs/heads/1.0", "refs/heads/with#hash",
-                "refs/tags/1.1",
+                "refs/heads/\N{SNOWMAN}", "refs/tags/1.1",
                 ])
 
         other_repo = self.factory.makeGitRepository(
@@ -77,7 +77,7 @@ class TestTargetGitListingView:
         table = soup.find(
             'div', id='default-repository-branches').find('table')
         self.assertContentEqual(
-            ['1.0', 'master', 'with#hash'],
+            ['1.0', 'master', 'with#hash', '\N{SNOWMAN}'],
             [link.find(text=True) for link in table.findAll('a')])
         self.assertEndsWith(
             table.find(text="1.0").parent['href'],
@@ -85,6 +85,9 @@ class TestTargetGitListingView:
         self.assertEndsWith(
             table.find(text="with#hash").parent['href'],
             "/~foowner/%s/+git/foo/+ref/with%%23hash" % self.target_path)
+        self.assertEndsWith(
+            table.find(text="\N{SNOWMAN}").parent['href'],
+            "/~foowner/%s/+git/foo/+ref/%%E2%%98%%83" % self.target_path)
 
         # Other repos are listed.
         table = soup.find(

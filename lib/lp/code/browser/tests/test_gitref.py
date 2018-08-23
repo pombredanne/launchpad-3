@@ -68,6 +68,12 @@ class TestGitRefNavigation(TestCaseWithFactory):
             "%s/+ref/with%%23hash" % canonical_url(ref.repository),
             canonical_url(ref))
 
+    def test_canonical_url_non_ascii(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/\N{SNOWMAN}"])
+        self.assertEqual(
+            "%s/+ref/%%E2%%98%%83" % canonical_url(ref.repository),
+            canonical_url(ref))
+
     def test_canonical_url_tag(self):
         [ref] = self.factory.makeGitRefs(paths=["refs/tags/1.0"])
         self.assertEqual(

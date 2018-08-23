@@ -20,7 +20,6 @@ __all__ = [
     ]
 
 import base64
-from cryptography.utils import int_to_bytes
 from datetime import (
     datetime,
     timedelta,
@@ -49,6 +48,7 @@ import warnings
 
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 from bzrlib.revision import Revision as BzrRevision
+from cryptography.utils import int_to_bytes
 from lazr.jobrunner.jobrunner import SuspendJobException
 import pytz
 from pytz import UTC
@@ -1809,7 +1809,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             paths = [self.getUniqueString('refs/heads/path').decode('utf-8')]
         refs_info = {
             path: {
-                u"sha1": unicode(hashlib.sha1(path).hexdigest()),
+                u"sha1": unicode(
+                    hashlib.sha1(path.encode('utf-8')).hexdigest()),
                 u"type": GitObjectType.COMMIT,
                 }
             for path in paths}
