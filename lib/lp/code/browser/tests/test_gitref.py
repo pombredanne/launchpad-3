@@ -252,8 +252,10 @@ class TestGitRefView(BrowserTestCase):
             [canonical_url(mp)],
             [link["href"] for link in details[5].findAll("a")])
 
-    def test_all_commits_link(self):
-        [ref] = self.factory.makeGitRefs(paths=["refs/heads/branch"])
+    def _test_all_commits_link(self, branch_name, encoded_branch_name=None):
+        if encoded_branch_name is None:
+            encoded_branch_name = branch_name
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/%s" % branch_name])
         log = self.makeCommitLog()
         self.hosting_fixture.getLog.result = list(reversed(log))
         self.scanRef(ref, log[-1])
@@ -261,8 +263,8 @@ class TestGitRefView(BrowserTestCase):
         recent_commits_tag = soupmatchers.Tag(
             'recent commits', 'div', attrs={'id': 'recent-commits'})
         expected_url = (
-            'https://git.launchpad.dev/%s/log/?h=branch' %
-            ref.repository.shortened_path)
+            'https://git.launchpad.dev/%s/log/?h=%s' %
+            (ref.repository.shortened_path, encoded_branch_name))
         self.assertThat(
             view(),
             soupmatchers.HTMLContains(
@@ -271,6 +273,12 @@ class TestGitRefView(BrowserTestCase):
                     soupmatchers.Tag(
                         'all commits link', 'a', text='All commits',
                         attrs={'href': expected_url}))))
+
+    def test_all_commits_link(self):
+        self._test_all_commits_link("branch")
+
+    def test_all_commits_link_non_ascii(self):
+        self._test_all_commits_link("\N{SNOWMAN}", "%E2%98%83")
 
     def test_query_count_landing_candidates(self):
         project = self.factory.makeProduct()
