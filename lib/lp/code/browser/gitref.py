@@ -84,7 +84,7 @@ class GitRefContextMenu(ContextMenu, HasRecipesMenuMixin, HasSnapsMenuMixin):
         text = "All commits"
         url = "%s/log/?h=%s" % (
             self.context.repository.getCodebrowseUrl(),
-            quote_plus(self.context.name))
+            quote_plus(self.context.name.encode("UTF-8")))
         return Link(url, text)
 
     def register_merge(self):
