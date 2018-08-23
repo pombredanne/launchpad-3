@@ -145,7 +145,8 @@ class GitRefMixin:
     def getCodebrowseUrl(self):
         """See `IGitRef`."""
         return "%s?h=%s" % (
-            self.repository.getCodebrowseUrl(), quote_plus(self.name))
+            self.repository.getCodebrowseUrl(),
+            quote_plus(self.name.encode("UTF-8")))
 
     def getCodebrowseUrlForRevision(self, commit):
         """See `IGitRef`."""
