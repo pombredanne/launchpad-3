@@ -819,6 +819,9 @@
             name="++repository-recipes"
             template="../templates/gitrepository-recipes.pt"/>
         <browser:page
+            name="++ref-pending-merges"
+            template="../templates/gitrepository-pending-merges.pt"/>
+        <browser:page
             name="++repository-import-details"
             template="../templates/import-details.pt"/>
     </browser:pages>
@@ -902,6 +905,13 @@
         permission="launchpad.AnyAllowedPerson"
         name="+try-again"
         template="../templates/inline-form-only-buttons.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.branchmergeproposallisting.BranchActiveReviewsView"
+        permission="zope.Public"
+        name="+activereviews"
+        template="../templates/active-reviews.pt"/>
+
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.gitrepository.IGitRepository"

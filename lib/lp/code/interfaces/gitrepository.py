@@ -58,6 +58,7 @@ from lp import _
 from lp.app.enums import InformationType
 from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
+    BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
@@ -530,6 +531,21 @@ class IGitRepositoryView(IHasRecipes):
 
         Source and prerequisite repositories are preloaded.
         """
+
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=Choice(vocabulary=BranchMergeProposalStatus)),
+        merged_revision_ids=List(TextLine(
+            title=_('The target revision ID of the merge.'))))
+    @call_with(visible_by_user=REQUEST_USER)
+    # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getMergeProposals(status=None, visible_by_user=None,
+                          merged_revision_ids=None, eager_load=False):
+        """Return matching BranchMergeProposals."""
 
     def getMergeProposalByID(id):
         """Return this repository's merge proposal with this id, or None."""

@@ -53,6 +53,9 @@ from lp.app.errors import NotFoundError
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.browser.branch import CodeEditOwnerMixin
+from lp.code.browser.branchmergeproposal import (
+    latest_proposals_for_each_branch,
+    )
 from lp.code.browser.codeimport import CodeImportTargetMixin
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.browser.widgets.gitrepositorytarget import (
@@ -356,6 +359,44 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
     def is_imported(self):
         """Is this an imported repository?"""
         return self.context.repository_type == GitRepositoryType.IMPORTED
+
+    @property
+    def show_merge_links(self):
+        return True
+
+    @cachedproperty
+    def landing_candidates(self):
+        candidates = self.context.getPrecachedLandingCandidates(self.user)
+        return [proposal for proposal in candidates
+                if check_permission("launchpad.View", proposal)]
+
+    def _getBranchCountText(self, count):
+        """Help to show user friendly text."""
+        if count == 0:
+            return 'No branches'
+        elif count == 1:
+            return '1 branch'
+        else:
+            return '%s branches' % coun
+
+    @cachedproperty
+    def landing_candidate_count_text(self):
+        return self._getBranchCountText(len(self.landing_candidates))
+
+    @cachedproperty
+    def dependent_landings(self):
+        return [proposal for proposal in self.context.dependent_landings
+                if check_permission("launchpad.View", proposal)]
+
+    @cachedproperty
+    def dependent_landing_count_text(self):
+        return self._getBranchCountText(len(self.dependent_landings))
+
+    @property
+    def landing_targets(self):
+        """Return a filtered list of landing targets."""
+        targets = self.context.getPrecachedLandingTargets(self.user)
+        return latest_proposals_for_each_branch(targets)
 
 
 class GitRepositoryEditFormView(LaunchpadEditFormView):
