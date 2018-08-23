@@ -37,6 +37,7 @@ from lp.code.errors import (
     GitRepositoryScanFault,
     InvalidBranchMergeProposal,
     )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.tests.helpers import GitHostingFixture
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
@@ -70,6 +71,27 @@ class TestGitRef(TestCaseWithFactory):
         self.assertEqual(
             ["%s:master" % repo_path, "%s:people/foo/bar" % repo_path],
             [ref.display_name for ref in (master, personal)])
+
+    def test_codebrowse_url(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/name"])
+        expected_url = "%s?h=name" % urlutils.join(
+            config.codehosting.git_browse_root, ref.repository.shortened_path)
+        self.assertEqual(expected_url, ref.getCodebrowseUrl())
+
+    def test_codebrowse_url_for_default(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/name"])
+        with person_logged_in(ref.repository.target.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                ref.repository.target, ref.repository)
+        expected_url = "%s?h=name" % urlutils.join(
+            config.codehosting.git_browse_root, ref.repository.shortened_path)
+        self.assertEqual(expected_url, ref.getCodebrowseUrl())
+
+    def test_codebrowse_url_non_ascii(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/\N{ANCHOR}"])
+        expected_url = "%s?h=%%E2%%9A%%93" % urlutils.join(
+            config.codehosting.git_browse_root, ref.repository.shortened_path)
+        self.assertEqual(expected_url, ref.getCodebrowseUrl())
 
     def test_getMergeProposals(self):
         [target_ref] = self.factory.makeGitRefs()
