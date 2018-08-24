@@ -12,9 +12,13 @@ __all__ = [
     ]
 
 import json
-from urllib import quote_plus
 
 from lazr.restful.interface import copy_field
+from six.moves.urllib_parse import (
+    quote_plus,
+    urlsplit,
+    urlunsplit,
+    )
 from zope.component import getUtility
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import Interface
@@ -104,6 +108,14 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
     @property
     def label(self):
         return self.context.display_name
+
+    @property
+    def git_ssh_url(self):
+        """The git+ssh:// URL for this branch, adjusted for this user."""
+        base_url = urlsplit(self.context.repository.git_ssh_url)
+        url = list(base_url)
+        url[1] = "{}@{}".format(self.user.name, base_url.hostname)
+        return urlunsplit(url)
 
     @property
     def user_can_push(self):
