@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug attachment views."""
@@ -22,7 +22,6 @@ from zope.interface import implementer
 
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LaunchpadBooleanRadioWidget
@@ -197,7 +196,7 @@ class BugAttachmentPatchConfirmationView(LaunchpadFormView):
 
     schema = IBugAttachmentIsPatchConfirmationForm
 
-    custom_widget('patch', LaunchpadBooleanRadioWidget)
+    custom_widget_patch = LaunchpadBooleanRadioWidget
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)

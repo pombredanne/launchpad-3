@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for bug subscription filters."""
@@ -9,11 +9,11 @@ __all__ = [
     ]
 
 
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextWidget
 
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
@@ -116,11 +116,13 @@ class BugSubscriptionFilterEditViewBase(LaunchpadEditFormView,
         "find_all_tags",
         )
 
-    custom_widget("description", TextWidget, displayWidth=50)
-    custom_widget("statuses", LabeledMultiCheckBoxWidget)
-    custom_widget("importances", LabeledMultiCheckBoxWidget)
-    custom_widget("information_types", LabeledMultiCheckBoxWidget)
-    custom_widget("tags", BugTagsFrozenSetWidget, displayWidth=35)
+    custom_widget_description = CustomWidgetFactory(
+        TextWidget, displayWidth=50)
+    custom_widget_statuses = LabeledMultiCheckBoxWidget
+    custom_widget_importances = LabeledMultiCheckBoxWidget
+    custom_widget_information_types = LabeledMultiCheckBoxWidget
+    custom_widget_tags = CustomWidgetFactory(
+        BugTagsFrozenSetWidget, displayWidth=35)
 
     # Define in concrete subclass to be the target of the
     # structural subscription that we are modifying.

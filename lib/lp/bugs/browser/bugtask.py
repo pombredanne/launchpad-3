@@ -79,7 +79,6 @@ from zope.traversing.interfaces import IPathAdapter
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     ReturnToReferrerMixin,
@@ -1120,10 +1119,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin,
     # the form.
     default_field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
                            'status']
-    custom_widget('target', BugTaskTargetWidget)
-    custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
-    custom_widget('bugwatch', BugTaskBugWatchWidget)
-    custom_widget('assignee', BugTaskAssigneeWidget)
+    custom_widget_target = BugTaskTargetWidget
+    custom_widget_sourcepackagename = BugTaskSourcePackageNameWidget
+    custom_widget_bugwatch = BugTaskBugWatchWidget
+    custom_widget_assignee = BugTaskAssigneeWidget
 
     def initialize(self):
         # Initialize user_is_subscribed, if it hasn't already been set.

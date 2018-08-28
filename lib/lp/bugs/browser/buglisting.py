@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTask-related browser views."""
@@ -52,10 +52,7 @@ from zope.traversing.interfaces import IPathAdapter
 from lp import _
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.browser.launchpad import iter_view_registrations
-from lp.app.browser.launchpadform import (
-    custom_widget,
-    LaunchpadFormView,
-    )
+from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.app.browser.tales import (
     BugTrackerFormatterAPI,
     DateTimeFormatterAPI,
@@ -904,16 +901,16 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     # These widgets are customised so as to keep the presentation of this view
     # and its descendants consistent after refactoring to use
     # LaunchpadFormView as a parent.
-    custom_widget('searchtext', NewLineToSpacesWidget)
-    custom_widget('status_upstream', LabeledMultiCheckBoxWidget)
-    custom_widget('tag', BugTagsWidget)
-    custom_widget('tags_combinator', RadioWidget)
-    custom_widget('component', LabeledMultiCheckBoxWidget)
-    custom_widget('assignee', PersonPickerWidget)
-    custom_widget('bug_reporter', PersonPickerWidget)
-    custom_widget('bug_commenter', PersonPickerWidget)
-    custom_widget('structural_subscriber', PersonPickerWidget)
-    custom_widget('subscriber', PersonPickerWidget)
+    custom_widget_searchtext = NewLineToSpacesWidget
+    custom_widget_status_upstream = LabeledMultiCheckBoxWidget
+    custom_widget_tag = BugTagsWidget
+    custom_widget_tags_combinator = RadioWidget
+    custom_widget_component = LabeledMultiCheckBoxWidget
+    custom_widget_assignee = PersonPickerWidget
+    custom_widget_bug_reporter = PersonPickerWidget
+    custom_widget_bug_commenter = PersonPickerWidget
+    custom_widget_structural_subscriber = PersonPickerWidget
+    custom_widget_subscriber = PersonPickerWidget
 
     _batch_navigator = None
 
@@ -1697,7 +1694,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status", "heat"]
     schema = IFrontPageBugTaskSearch
-    custom_widget('scope', ProjectScopeWidget)
+    custom_widget_scope = ProjectScopeWidget
     label = page_title = 'Search all bug reports'
 
     def initialize(self):
