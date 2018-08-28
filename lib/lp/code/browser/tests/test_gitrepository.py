@@ -93,11 +93,12 @@ class TestGitRepositoryView(BrowserTestCase):
 
     def test_clone_instructions(self):
         repository = self.factory.makeGitRepository()
+        username = repository.owner.name
         text = self.getMainText(repository, "+index", user=repository.owner)
         self.assertTextMatchesExpressionIgnoreWhitespace(r"""
-            git clone https://.*
-            git clone git\+ssh://.*
-            """, text)
+            git clone https://git.launchpad.dev/.*
+            git clone git\+ssh://{username}@git.launchpad.dev/.*
+            """.format(username=username), text)
 
     def test_user_can_push(self):
         # A user can push if they have edit permissions.
@@ -164,13 +165,15 @@ class TestGitRepositoryView(BrowserTestCase):
         # explain how to do so.
         self.factory.makeSSHKey(person=self.user, send_notification=False)
         repository = self.factory.makeGitRepository(owner=self.user)
+        username = self.user.name
         browser = self.getViewBrowser(repository)
         directions = find_tag_by_id(browser.contents, "push-directions")
         login_person(self.user)
         self.assertThat(extract_text(directions), DocTestMatches(dedent("""
             Update this repository:
-            git push git+ssh://git.launchpad.dev/{repository.shortened_path}
-            """).format(repository=repository),
+            git push
+            git+ssh://{username}@git.launchpad.dev/{repository.shortened_path}
+            """).format(username=username, repository=repository),
             flags=doctest.NORMALIZE_WHITESPACE))
 
     def test_push_directions_logged_in_can_push_no_sshkeys(self):

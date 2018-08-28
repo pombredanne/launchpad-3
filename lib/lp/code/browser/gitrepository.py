@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository views."""
@@ -25,6 +25,10 @@ from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import (
     copy_field,
     use_template,
+    )
+from six.moves.urllib_parse import (
+    urlsplit,
+    urlunsplit,
     )
 from zope.component import getUtility
 from zope.event import notify
@@ -322,6 +326,14 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
         if self.user is not None:
             precache_permission_for_objects(
                 self.request, "launchpad.LimitedView", authorised_people)
+
+    @property
+    def git_ssh_url(self):
+        """The git+ssh:// URL for this repository, adjusted for this user."""
+        base_url = urlsplit(self.context.git_ssh_url)
+        url = list(base_url)
+        url[1] = "{}@{}".format(self.user.name, base_url.hostname)
+        return urlunsplit(url)
 
     @property
     def user_can_push(self):
