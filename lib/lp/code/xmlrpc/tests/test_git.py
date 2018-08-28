@@ -700,8 +700,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         self.assertGitRepositoryNotFound(
             None, path, permission="write",
             macaroon_raw=Macaroon(
-                location=config.vhost.mainsite.hostname,
-                identifier="another", key="another-secret").serialize())
+                location=config.vhost.mainsite.hostname, identifier="another",
+                key="another-secret").serialize())
         self.assertGitRepositoryNotFound(
             None, path, permission="write", macaroon_raw="nonsense")
 
