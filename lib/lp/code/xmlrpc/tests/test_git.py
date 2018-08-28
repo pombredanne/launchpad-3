@@ -53,13 +53,14 @@ class TestGitAPIMixin:
         self.repository_set = getUtility(IGitRepositorySet)
 
     def assertGitRepositoryNotFound(self, requester, path, permission="read",
-                                    can_authenticate=False):
+                                    can_authenticate=False, macaroon_raw=None):
         """Assert that the given path cannot be translated."""
         if requester is not None:
             requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = {"uid": requester, "can-authenticate": can_authenticate}
+        if macaroon_raw is not None:
+            auth_params["macaroon"] = macaroon_raw
+        fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(
             faults.GitRepositoryNotFound(path.strip("/")), fault)
 
@@ -145,8 +146,8 @@ class TestGitAPIMixin:
         translation = self.git_api.translatePath(path, permission, auth_params)
         login(ANONYMOUS)
         self.assertEqual(
-            {"path": repository.getInternalPath(), "writable": writable,
-             "trailing": trailing, "private": private},
+            {"path": removeSecurityProxy(repository).getInternalPath(),
+             "writable": writable, "trailing": trailing, "private": private},
             translation)
 
     def assertCreates(self, requester, path, can_authenticate=False,
@@ -661,6 +662,47 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
                 location=config.vhost.mainsite.hostname, identifier="another",
                 key="another-secret").serialize())
         self.assertPermissionDenied(
+            None, path, permission="write", macaroon_raw="nonsense")
+
+    def test_translatePath_private_code_import(self):
+        # A code import worker with a suitable macaroon can write to a
+        # repository associated with a running private code import job.
+        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        code_imports = [
+            self.factory.makeCodeImport(
+                target_rcs_type=TargetRevisionControlSystems.GIT)
+            for _ in range(2)]
+        private_repository = code_imports[0].git_repository
+        removeSecurityProxy(private_repository).transitionToInformationType(
+            InformationType.PRIVATESECURITY, private_repository.owner)
+        with celebrity_logged_in("vcs_imports"):
+            jobs = [
+                self.factory.makeCodeImportJob(code_import=code_import)
+                for code_import in code_imports]
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroons = [
+            removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
+        path = u"/%s" % code_imports[0].git_repository.unique_name
+        self.assertPermissionDenied(
+            None, path, permission="write", macaroon_raw=macaroons[0])
+        with celebrity_logged_in("vcs_imports"):
+            getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
+        self.assertTranslates(
+            None, path, code_imports[0].git_repository, True,
+            permission="write", macaroon_raw=macaroons[0].serialize(),
+            private=True)
+        # The expected faults are slightly different from the public case,
+        # because we deny the existence of private repositories.
+        self.assertGitRepositoryNotFound(
+            None, path, permission="write",
+            macaroon_raw=macaroons[1].serialize())
+        self.assertGitRepositoryNotFound(
+            None, path, permission="write",
+            macaroon_raw=Macaroon(
+                location=config.vhost.mainsite.hostname,
+                identifier="another", key="another-secret").serialize())
+        self.assertGitRepositoryNotFound(
             None, path, permission="write", macaroon_raw="nonsense")
 
     def test_notify(self):
