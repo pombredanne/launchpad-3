@@ -30,7 +30,7 @@
         <tt class="command">
           git clone
           <tal:branch condition="branch_name|nothing" replace="string:-b ${branch_name}" />
-          <span class="ssh-url" tal:content="repository/git_ssh_url" />
+          <span class="ssh-url" tal:content="view/git_ssh_url" />
         </tt>
       </tal:ssh>
     </dd>
@@ -63,7 +63,7 @@
           <dd>
             <tt class="command">
             git push
-            <span class="ssh-url" tal:content="repository/git_ssh_url" />
+            <span class="ssh-url" tal:content="view/git_ssh_url" />
             <tal:branch condition="branch_name|nothing" replace="branch_name" />
             </tt>
           </dd>
