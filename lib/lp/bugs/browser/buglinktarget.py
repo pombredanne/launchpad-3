@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for IBugLinkTarget."""
@@ -23,7 +23,6 @@ from zope.security.interfaces import Unauthorized
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
@@ -130,7 +129,7 @@ class BugsUnlinkView(LaunchpadFormView):
 
     label = _('Remove links to bug reports')
     schema = IUnlinkBugsForm
-    custom_widget('bugs', LabeledMultiCheckBoxWidget)
+    custom_widget_bugs = LabeledMultiCheckBoxWidget
     page_title = label
 
     @property

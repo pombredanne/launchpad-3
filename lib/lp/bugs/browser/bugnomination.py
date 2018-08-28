@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser view classes related to bug nominations."""
@@ -20,7 +20,6 @@ from zope.interface import Interface
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
@@ -43,7 +42,7 @@ class BugNominationView(LaunchpadFormView):
 
     schema = IBugNominationForm
     initial_focus_widget = None
-    custom_widget('nominatable_series', LabeledMultiCheckBoxWidget)
+    custom_widget_nominatable_series = LabeledMultiCheckBoxWidget
 
     def __init__(self, context, request):
         self.current_bugtask = context

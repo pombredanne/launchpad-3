@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugMessage-related browser view classes."""
@@ -11,11 +11,11 @@ __all__ = [
 from StringIO import StringIO
 
 from zope.component import getUtility
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.bugs.browser.bugattachment import BugAttachmentContentCheck
@@ -30,7 +30,8 @@ class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
     schema = IBugMessageAddForm
     initial_focus_widget = None
 
-    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
+    custom_widget_comment = CustomWidgetFactory(
+        TextAreaWidget, cssClass='comment-text')
 
     page_title = "Add a comment or attachment"
 

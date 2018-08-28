@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugWatch-related browser views."""
@@ -17,7 +17,6 @@ from zope.interface import Interface
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.widgets.textwidgets import URIWidget
@@ -93,7 +92,7 @@ class BugWatchEditView(LaunchpadFormView):
 
     schema = BugWatchEditForm
     field_names = ['url']
-    custom_widget('url', URIWidget)
+    custom_widget_url = URIWidget
 
     @property
     def page_title(self):
