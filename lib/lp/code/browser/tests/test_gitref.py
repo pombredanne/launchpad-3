@@ -134,11 +134,12 @@ class TestGitRefView(BrowserTestCase):
 
     def test_clone_instructions(self):
         [ref] = self.factory.makeGitRefs(paths=["refs/heads/branch"])
+        username = ref.owner.name
         text = self.getMainText(ref, "+index", user=ref.owner)
         self.assertTextMatchesExpressionIgnoreWhitespace(r"""
-            git clone -b branch https://.*
-            git clone -b branch git\+ssh://.*
-            """, text)
+            git clone -b branch https://git.launchpad.dev/.*
+            git clone -b branch git\+ssh://{username}@git.launchpad.dev/.*
+            """.format(username=username), text)
 
     def makeCommitLog(self):
         authors = [self.factory.makePerson() for _ in range(5)]
