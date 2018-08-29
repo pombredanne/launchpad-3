@@ -348,6 +348,19 @@ class TestProductGitListingView(TestTargetGitListingView,
         view = create_initialized_view(self.target, '+git')
         self.assertIsNotNone(find_tag_by_id(view(), 'active-review-count'))
 
+    def test_personal_git_instructions_not_present(self):
+        with person_logged_in(self.owner):
+            view = create_initialized_view(
+                self.target, '+git', principal=self.owner)
+            self.assertIsNone(
+                find_tag_by_id(view(), 'personal-git-directions'))
+
+    def test_personal_link(self):
+        with person_logged_in(self.owner):
+            view = create_initialized_view(
+                self.target, '+git', principal=self.owner)
+            self.assertFalse(view.show_personal_directions)
+
 
 class TestPersonProductGitListingView(TestPersonTargetGitListingView,
                                       TestCaseWithFactory):
@@ -486,6 +499,19 @@ class TestPersonGitListingView(TestPlainGitListingView, TestCaseWithFactory):
         super(TestPersonGitListingView, self).setUp()
         self.context = self.user = self.owner = self.factory.makePerson()
         self.target = self.branch_target = None
+
+    def test_personal_git_instructions_present(self):
+        with person_logged_in(self.owner):
+            view = create_initialized_view(
+                self.owner, '+git', principal=self.owner)
+            self.assertIsNotNone(
+                find_tag_by_id(view(), 'personal-git-directions'))
+
+    def test_personal_link(self):
+        with person_logged_in(self.owner):
+            view = create_initialized_view(
+                self.owner, '+git', principal=self.owner)
+            self.assertTrue(view.show_personal_directions)
 
 
 class TestDistributionGitListingView(TestPlainGitListingView,

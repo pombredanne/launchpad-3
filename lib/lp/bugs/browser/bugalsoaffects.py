@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -21,6 +21,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.interfaces import MissingInputError
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import DropdownWidget
 from zope.schema import Choice
 from zope.schema.vocabulary import (
@@ -31,7 +32,6 @@ from zope.schema.vocabulary import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.browser.multistep import (
@@ -126,7 +126,7 @@ class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
     template = ViewPageTemplateFile(
         '../templates/bugtask-choose-affected-product.pt')
 
-    custom_widget('product', SearchForUpstreamPopupWidget)
+    custom_widget_product = SearchForUpstreamPopupWidget
     label = u"Record as affecting another project"
     step_name = "choose_product"
 
@@ -224,7 +224,8 @@ class BugTaskCreationStep(AlsoAffectsStep):
     registered.
     """
 
-    custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
+    custom_widget_bug_url = CustomWidgetFactory(
+        StrippedTextWidget, displayWidth=62)
 
     initial_focus_widget = 'bug_url'
     step_name = 'specify_remote_bug_url'
@@ -363,8 +364,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
         else:
             return IAddBugTaskForm
 
-    custom_widget(
-        'sourcepackagename', BugTaskAlsoAffectsSourcePackageNameWidget)
+    custom_widget_sourcepackagename = BugTaskAlsoAffectsSourcePackageNameWidget
 
     template = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
 
@@ -564,11 +564,12 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
     main_action_label = u'Add to Bug Report'
     schema = IAddBugTaskWithUpstreamLinkForm
 
-    custom_widget('link_upstream_how', LaunchpadRadioWidget,
-                  _displayItemForMissingValue=False)
-    custom_widget('bug_url', StrippedTextWidget, displayWidth=42)
-    custom_widget('upstream_email_address_done',
-                  StrippedTextWidget, displayWidth=42)
+    custom_widget_link_upstream_how = CustomWidgetFactory(
+        LaunchpadRadioWidget, _displayItemForMissingValue=False)
+    custom_widget_bug_url = CustomWidgetFactory(
+        StrippedTextWidget, displayWidth=42)
+    custom_widget_upstream_email_address_done = CustomWidgetFactory(
+        StrippedTextWidget, displayWidth=42)
 
     @property
     def field_names(self):
@@ -708,7 +709,8 @@ class BugTrackerCreationStep(AlsoAffectsStep):
     BugTaskCreationStep's subclasses.
     """
 
-    custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
+    custom_widget_bug_url = CustomWidgetFactory(
+        StrippedTextWidget, displayWidth=62)
     step_name = "bugtracker_creation"
     main_action_label = u'Register Bug Tracker and Add to Bug Report'
     _next_step = None
@@ -729,8 +731,10 @@ class DistroBugTrackerCreationStep(BugTrackerCreationStep):
 
     _next_step = DistroBugTaskCreationStep
     _field_names = ['distribution', 'sourcepackagename', 'bug_url']
-    custom_widget('distribution', DropdownWidget, visible=False)
-    custom_widget('sourcepackagename', DropdownWidget, visible=False)
+    custom_widget_distribution = CustomWidgetFactory(
+        DropdownWidget, visible=False)
+    custom_widget_sourcepackagename = CustomWidgetFactory(
+        DropdownWidget, visible=False)
     label = "Also affects distribution/package"
     template = ViewPageTemplateFile(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
@@ -741,9 +745,9 @@ class UpstreamBugTrackerCreationStep(BugTrackerCreationStep):
     schema = IAddBugTaskWithUpstreamLinkForm
     _next_step = ProductBugTaskCreationStep
     _field_names = ['product', 'bug_url', 'link_upstream_how']
-    custom_widget('product', DropdownWidget, visible=False)
-    custom_widget('link_upstream_how',
-                  LaunchpadRadioWidget, visible=False)
+    custom_widget_product = CustomWidgetFactory(DropdownWidget, visible=False)
+    custom_widget_link_upstream_how = CustomWidgetFactory(
+        LaunchpadRadioWidget, visible=False)
     label = "Confirm project"
     template = ViewPageTemplateFile(
         '../templates/bugtask-confirm-bugtracker-creation.pt')
@@ -759,8 +763,9 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
 
     label = "Register project affected by this bug"
     schema = IAddBugTaskWithProductCreationForm
-    custom_widget('bug_url', StrippedTextWidget, displayWidth=62)
-    custom_widget('existing_product', LaunchpadRadioWidget)
+    custom_widget_bug_url = CustomWidgetFactory(
+        StrippedTextWidget, displayWidth=62)
+    custom_widget_existing_product = LaunchpadRadioWidget
     existing_products = None
     MAX_PRODUCTS_TO_DISPLAY = 10
     licenses = [License.DONT_KNOW]

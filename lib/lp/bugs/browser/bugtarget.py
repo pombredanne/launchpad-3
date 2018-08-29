@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugTarget-related browser views."""
@@ -35,6 +35,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib.form import Fields
 from zope.formlib.interfaces import InputErrors
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import (
     TextAreaWidget,
     TextWidget,
@@ -53,7 +54,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     safe_action,
@@ -182,9 +182,9 @@ class ProductConfigureBugTrackerView(ProductConfigureBase):
     schema = IProductBugConfiguration
     # This ProductBugTrackerWidget renders enable_bug_expiration and
     # remote_product as subordinate fields, so this view suppresses them.
-    custom_widget('bugtracker', ProductBugTrackerWidget)
-    custom_widget('enable_bug_expiration', GhostCheckBoxWidget)
-    custom_widget('remote_product', GhostWidget)
+    custom_widget_bugtracker = ProductBugTrackerWidget
+    custom_widget_enable_bug_expiration = GhostCheckBoxWidget
+    custom_widget_remote_product = GhostWidget
 
     @property
     def field_names(self):
@@ -225,9 +225,10 @@ class FileBugViewBase(LaunchpadFormView):
 
     schema = IBug
 
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
-    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
-    custom_widget('packagename', FileBugSourcePackageNameWidget)
+    custom_widget_information_type = LaunchpadRadioWidgetWithDescription
+    custom_widget_comment = CustomWidgetFactory(
+        TextAreaWidget, cssClass='comment-text')
+    custom_widget_packagename = FileBugSourcePackageNameWidget
 
     extra_data_token = None
 
@@ -925,8 +926,8 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
     # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
     # hack to make the action decorator Just Work across inheritance.
     actions = FileBugViewBase.actions
-    custom_widget('title', TextWidget, displayWidth=40)
-    custom_widget('tags', BugTagsWidget)
+    custom_widget_title = CustomWidgetFactory(TextWidget, displayWidth=40)
+    custom_widget_tags = BugTagsWidget
 
     _MATCHING_BUGS_LIMIT = 10
     show_summary_in_results = False
@@ -1053,8 +1054,8 @@ class ProjectGroupFileBugGuidedView(LaunchpadFormView):
 
     schema = IProjectGroupBugAddForm
 
-    custom_widget('title', TextWidget, displayWidth=40)
-    custom_widget('tags', BugTagsWidget)
+    custom_widget_title = CustomWidgetFactory(TextWidget, displayWidth=40)
+    custom_widget_tags = BugTagsWidget
 
     extra_data_to_process = False
 
@@ -1243,7 +1244,7 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
     """View class for management of official bug tags."""
 
     schema = IOfficialBugTagTargetPublic
-    custom_widget('official_bug_tags', LargeBugTagsWidget)
+    custom_widget_official_bug_tags = LargeBugTagsWidget
 
     label = 'Manage official bug tags'
 
