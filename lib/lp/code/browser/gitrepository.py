@@ -319,6 +319,7 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
         return self.context.display_name
 
     label = page_title
+    show_merge_links = True
 
     def initialize(self):
         super(GitRepositoryView, self).initialize()
@@ -371,10 +372,6 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
     def is_imported(self):
         """Is this an imported repository?"""
         return self.context.repository_type == GitRepositoryType.IMPORTED
-
-    @property
-    def show_merge_links(self):
-        return True
 
     @cachedproperty
     def landing_candidates(self):

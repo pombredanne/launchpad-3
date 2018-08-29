@@ -819,7 +819,7 @@
             name="++repository-recipes"
             template="../templates/gitrepository-recipes.pt"/>
         <browser:page
-            name="++ref-pending-merges"
+            name="++repository-pending-merges"
             template="../templates/gitrepository-pending-merges.pt"/>
         <browser:page
             name="++repository-import-details"
