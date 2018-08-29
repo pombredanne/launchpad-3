@@ -57,8 +57,8 @@
     </span>
 
     <p id="personal-git-directions" tal:condition="view/show_personal_directions">
-      You can push (upload) personal branches (those not related to a project)
-      with the following command:
+      You can create new personal repositories by pushing an existing git repository
+      to launchpad with the following commands:
       <br />
       <tt class="command">git remote add origin git+ssh://<tal:name replace="view/user/name"/>@git.launchpad.net/~<tal:name replace="view/user/name"/>/+git/<em>REPOSITORY_NAME</em></tt>
       <br />
