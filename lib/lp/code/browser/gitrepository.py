@@ -386,7 +386,7 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
         elif count == 1:
             return '1 branch'
         else:
-            return '%s branches' % coun
+            return '%s branches' % count
 
     @cachedproperty
     def landing_candidate_count_text(self):

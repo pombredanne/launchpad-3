@@ -265,6 +265,14 @@ class TestGitRepositoryView(BrowserTestCase):
             self.assertIsNotNone(
                 find_tag_by_id(browser.contents, 'landing-candidates'))
 
+    def test_landing_candidate_count(self):
+        source_repository = self.factory.makeGitRepository()
+        view = create_initialized_view(source_repository, '+index')
+
+        self.assertEqual(view._getBranchCountText(0), 'No branches')
+        self.assertEqual(view._getBranchCountText(1), '1 branch')
+        self.assertEqual(view._getBranchCountText(2), '2 branches')
+
     def test_view_with_landing_targets(self):
         product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
         target_repository = self.factory.makeGitRepository(target=product)
