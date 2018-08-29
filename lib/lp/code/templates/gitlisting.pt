@@ -60,7 +60,9 @@
       You can push (upload) personal branches (those not related to a project)
       with the following command:
       <br />
-      <tt class="command" >git push --set-upstream git+ssh://<tal:name replace="view/user/name"/>@git.launchpad.net/~<tal:name replace="view/user/name"/>/+git/<em>REPOSITORY_NAME</em> master</tt>
+      <tt class="command">git remote add origin git+ssh://<tal:name replace="view/user/name"/>@git.launchpad.net/~<tal:name replace="view/user/name"/>/+git/<em>REPOSITORY_NAME</em></tt>
+      <br />
+      <tt class="command">git push --set-upstream origin master</tt>
     </p>
 
     <tal:default-repository
