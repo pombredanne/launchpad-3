@@ -24,10 +24,16 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
-from lp.code.enums import BranchMergeProposalStatus, GitRepositoryType
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    GitRepositoryType,
+    )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.tests.helpers import GitHostingFixture
-from lp.registry.enums import BranchSharingPolicy, VCSType
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    VCSType,
+    )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.beautifulsoup import BeautifulSoup
