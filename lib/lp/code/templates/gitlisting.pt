@@ -55,6 +55,14 @@
     <span class="see-all" tal:condition="view/show_bzr_link">
       <a tal:attributes="href context/fmt:url:code/+branches">View Bazaar branches</a>
     </span>
+
+    <p id="junk-branch-directions" tal:condition="view/show_junk_directions">
+      You can push (upload) personal branches (those not related to a project)
+      with the following command:
+      <br />
+      <tt class="command">git push --set-upstream git+ssh://git.launchpad.net/~<tal:name replace="view/user/name"/>/+git/<em>REPOSITORY_NAME</em> master</tt>
+    </p>
+
     <tal:default-repository
         condition="view/default_git_repository"
         define="repository view/default_git_repository">
