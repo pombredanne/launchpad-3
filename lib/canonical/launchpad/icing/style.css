@@ -731,6 +731,10 @@ tr.ict-header {
     background-color: #EEEEEE;
 }
 
+p#personal-git-directions {
+    max-width: 100%;
+}
+
 /* === Bugs === */
 
 tr.buglink-summary td {

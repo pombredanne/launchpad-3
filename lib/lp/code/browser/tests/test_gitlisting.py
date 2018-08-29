@@ -353,13 +353,13 @@ class TestProductGitListingView(TestTargetGitListingView,
             view = create_initialized_view(
                 self.target, '+git', principal=self.owner)
             self.assertIsNone(
-                find_tag_by_id(view(), 'junk-branch-directions'))
+                find_tag_by_id(view(), 'personal-git-directions'))
 
-    def test_junk_link(self):
+    def test_personal_link(self):
         with person_logged_in(self.owner):
             view = create_initialized_view(
                 self.target, '+git', principal=self.owner)
-            self.assertFalse(view.show_junk_directions)
+            self.assertFalse(view.show_personal_directions)
 
 
 class TestPersonProductGitListingView(TestPersonTargetGitListingView,
@@ -505,13 +505,13 @@ class TestPersonGitListingView(TestPlainGitListingView, TestCaseWithFactory):
             view = create_initialized_view(
                 self.owner, '+git', principal=self.owner)
             self.assertIsNotNone(
-                find_tag_by_id(view(), 'junk-branch-directions'))
+                find_tag_by_id(view(), 'personal-git-directions'))
 
-    def test_junk_link(self):
+    def test_personal_link(self):
         with person_logged_in(self.owner):
             view = create_initialized_view(
                 self.owner, '+git', principal=self.owner)
-            self.assertTrue(view.show_junk_directions)
+            self.assertTrue(view.show_personal_directions)
 
 
 class TestDistributionGitListingView(TestPlainGitListingView,

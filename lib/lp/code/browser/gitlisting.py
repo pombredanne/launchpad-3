@@ -105,7 +105,7 @@ class BaseGitListingView(LaunchpadView):
         return GitRepositoryBatchNavigator(self, self.repo_collection)
 
     @property
-    def show_junk_directions(self):
+    def show_personal_directions(self):
         return self.user == self.context
 
 
