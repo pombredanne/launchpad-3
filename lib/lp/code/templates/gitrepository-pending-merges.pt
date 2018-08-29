@@ -7,7 +7,7 @@
       features request/features"
   tal:condition="view/show_merge_links">
 
-  <h3>Branch merges</h3>
+  <h3>Proposed merges</h3>
   <div id="merge-links"
        class="actions">
     <div id="merge-summary">

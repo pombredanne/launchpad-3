@@ -915,7 +915,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
     def getPrecachedLandingCandidates(self, user):
-        """See `IGitRef`."""
+        """See `IGitRepository`."""
         loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
         return DecoratedResultSet(
             self.landing_candidates, pre_iter_hook=loader)
@@ -944,7 +944,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
     def getMergeProposals(self, status=None, visible_by_user=None,
                           merged_revision_ids=None, eager_load=False):
-        """See `IGitRef`."""
+        """See `IGitRepository`."""
         if not status:
             status = (
                 BranchMergeProposalStatus.CODE_APPROVED,
