@@ -60,9 +60,10 @@
       You can create new personal repositories by pushing an existing git repository
       to Launchpad with the following commands:
       <br />
-      <tt class="command">git remote add origin git+ssh://<tal:name replace="view/user/name"/>@git.launchpad.net/~<tal:name replace="view/user/name"/>/+git/<em>REPOSITORY_NAME</em></tt>
-      <br />
-      <tt class="command">git push --set-upstream origin master</tt>
+      <pre class="command subordinate">
+git remote add origin git+ssh://<tal:name replace="view/user/name"/>@git.launchpad.net/~<tal:name replace="view/user/name"/>/+git/<em>REPOSITORY_NAME</em>
+git push --set-upstream origin master
+      </pre>
     </p>
 
     <tal:default-repository

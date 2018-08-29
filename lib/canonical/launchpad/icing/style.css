@@ -731,7 +731,7 @@ tr.ict-header {
     background-color: #EEEEEE;
 }
 
-p#personal-git-directions {
+p#personal-git-directions pre{
     max-width: 100%;
 }
 
