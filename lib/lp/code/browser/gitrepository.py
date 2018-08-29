@@ -392,15 +392,6 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
     def landing_candidate_count_text(self):
         return self._getBranchCountText(len(self.landing_candidates))
 
-    @cachedproperty
-    def dependent_landings(self):
-        return [proposal for proposal in self.context.dependent_landings
-                if check_permission("launchpad.View", proposal)]
-
-    @cachedproperty
-    def dependent_landing_count_text(self):
-        return self._getBranchCountText(len(self.dependent_landings))
-
     @property
     def landing_targets(self):
         """Return a filtered list of landing targets."""
