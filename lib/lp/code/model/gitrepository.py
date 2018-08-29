@@ -888,7 +888,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             BranchMergeProposal.source_git_repository == self)
 
     def getPrecachedLandingTargets(self, user):
-        """See `IGitRef`."""
+        """See `IGitRepository`."""
         loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
         return DecoratedResultSet(self.landing_targets, pre_iter_hook=loader)
 
