@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -45,6 +45,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.formlib.boolwidgets import CheckBoxWidget
+from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import implementer
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import Bool
@@ -55,7 +56,6 @@ from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from lp.answers.browser.questiontarget import QuestionTargetTraversalMixin
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -832,8 +832,8 @@ class DistributionAddView(LaunchpadFormView, RequireVirtualizedBuildersMixin,
         "translations_usage",
         "answers_usage",
         ]
-    custom_widget('require_virtualized', CheckBoxWidget)
-    custom_widget('processors', LabeledMultiCheckBoxWidget)
+    custom_widget_require_virtualized = CheckBoxWidget
+    custom_widget_processors = LabeledMultiCheckBoxWidget
 
     @property
     def page_title(self):
@@ -906,11 +906,14 @@ class DistributionEditView(RegistryEditFormView,
         'translation_focus',
         ]
 
-    custom_widget('icon', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('require_virtualized', CheckBoxWidget)
-    custom_widget('processors', LabeledMultiCheckBoxWidget)
+    custom_widget_icon = CustomWidgetFactory(
+        ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget_logo = CustomWidgetFactory(
+        ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget_mugshot = CustomWidgetFactory(
+        ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget_require_virtualized = CheckBoxWidget
+    custom_widget_processors = LabeledMultiCheckBoxWidget
 
     @property
     def label(self):

@@ -13,6 +13,7 @@ __all__ = [
 from lazr.delegates import delegate_to
 from lazr.restful.interface import copy_field
 from zope.component import getUtility
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import (
     DropdownWidget,
     TextAreaWidget,
@@ -27,7 +28,6 @@ from zope.schema import Text
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
@@ -228,9 +228,11 @@ class CodeReviewCommentAddView(LaunchpadFormView):
 
     schema = IEditCodeReviewComment
 
-    custom_widget('review_type', TextWidget, displayWidth=15)
-    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
-    custom_widget('vote', MyDropWidget)
+    custom_widget_review_type = CustomWidgetFactory(
+        TextWidget, displayWidth=15)
+    custom_widget_comment = CustomWidgetFactory(
+        TextAreaWidget, cssClass='comment-text')
+    custom_widget_vote = MyDropWidget
 
     page_title = 'Reply to code review comment'
 

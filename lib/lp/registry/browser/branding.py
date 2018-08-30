@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for items that can be displayed as images."""
@@ -9,9 +9,10 @@ __all__ = [
     'BrandingChangeView',
     ]
 
+from zope.formlib.widget import CustomWidgetFactory
+
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     )
 from lp.app.widgets.image import ImageChangeWidget
@@ -34,9 +35,12 @@ class BrandingChangeView(LaunchpadEditFormView):
 
     page_title = "Change branding"
 
-    custom_widget('icon', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
-    custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget_icon = CustomWidgetFactory(
+        ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget_logo = CustomWidgetFactory(
+        ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget_mugshot = CustomWidgetFactory(
+        ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     @action("Change Branding", name='change')
     def change_action(self, action, data):
