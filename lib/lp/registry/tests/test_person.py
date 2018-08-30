@@ -509,9 +509,9 @@ class TestPerson(TestCaseWithFactory):
         self.assertEqual(to_person, job.to_person)
         self.assertEqual(requester, job.requester)
 
-    def test_selfgenerated_bugnotifications_none_by_default(self):
+    def test_selfgenerated_bugnotifications_false_by_default(self):
         # Default for new accounts is to not get any
-        # self-generated bug notifications by default.
+        # self-generated bug notifications.
         user = self.factory.makePerson()
         self.assertFalse(user.selfgenerated_bugnotifications)
 
@@ -519,6 +519,23 @@ class TestPerson(TestCaseWithFactory):
         # Default for new accounts is to disable expanded notification footers.
         user = self.factory.makePerson()
         self.assertFalse(user.expanded_notification_footers)
+
+    def test_require_strong_email_authentication_false_by_default(self):
+        # Default for new accounts is to not require strong email
+        # authentication.
+        user = self.factory.makePerson()
+        self.assertFalse(user.require_strong_email_authentication)
+
+    def test_require_strong_email_authentication_permissions(self):
+        # A person cannot set require_strong_email_authentication on their
+        # own account, but a registry expert can.
+        user = self.factory.makePerson()
+        with person_logged_in(user):
+            self.assertRaises(
+                Unauthorized, setattr,
+                user, 'require_strong_email_authentication', True)
+        with celebrity_logged_in('registry_experts'):
+            user.require_strong_email_authentication = True
 
     def test_canAccess__anonymous(self):
         # Anonymous users cannot call Person.canAccess()

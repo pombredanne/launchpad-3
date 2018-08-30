@@ -118,8 +118,8 @@ below the text for each uploaded version.
     ...     'http://launchpad.dev/ubuntu/+source/biscuit/+changelog')
     >>> changes = find_tags_by_class(anon_browser.contents, 'boardComment')
     >>> for change in changes:
-    ...     print 30 * '='
-    ...     print extract_text(change)
+    ...     print(30 * '=')
+    ...     print(extract_text(change))
     ==============================
     1.0-3
     Pending in hoary-release
@@ -139,7 +139,7 @@ below the text for each uploaded version.
 
 Diffs already performed are rendered as link to the librarian file.
 
-    >>> print anon_browser.getLink('diff from 1.0-1 to 1.0-2').url
+    >>> print(anon_browser.getLink('diff from 1.0-1 to 1.0-2').url)
     http://.../biscuit_1.0-1_1.0-2.diff.gz
 
 On the other hand, diffs not yet performed are rendered as plain text,
@@ -160,7 +160,7 @@ the missing link is rendered.
     >>> logout()
 
     >>> anon_browser.reload()
-    >>> print anon_browser.getLink('diff from 1.0-2 to 1.0-3').url
+    >>> print(anon_browser.getLink('diff from 1.0-2 to 1.0-3').url)
     http://.../biscuit_1.0-2_1.0-3.diff.gz
 
 The same page section is presented in the corresponding
@@ -170,11 +170,11 @@ The same page section is presented in the corresponding
 
     >>> diff_section = find_tag_by_id(
     ...     anon_browser.contents, 'diff-for-1.0-3')
-    >>> print extract_text(diff_section)
+    >>> print(extract_text(diff_section))
     Available diffs
       diff from 1.0-2 to 1.0-3 (3 bytes)
 
-    >>> print anon_browser.getLink('diff from 1.0-2 to 1.0-3').url
+    >>> print(anon_browser.getLink('diff from 1.0-2 to 1.0-3').url)
     http://.../biscuit_1.0-2_1.0-3.diff.gz
 
 
@@ -198,7 +198,7 @@ The diff starts out as pending:
     >>> expander_url = anon_browser.getLink(
     ...     id='pub%s-expander' % biscuit_ppa_id).url
     >>> anon_browser.open(expander_url)
-    >>> print extract_text(anon_browser.contents)
+    >>> print(extract_text(anon_browser.contents))
     Publishing details
     ...
     Available diffs
@@ -213,7 +213,7 @@ If we complete the diff, the text changes.
     >>> logout()
 
     >>> anon_browser.open(expander_url)
-    >>> print extract_text(anon_browser.contents)
+    >>> print(extract_text(anon_browser.contents))
     Publishing details
     ...
     Available diffs
@@ -222,6 +222,6 @@ If we complete the diff, the text changes.
 
 The text also links to the librarian file containing the diff.
 
-    >>> print anon_browser.getLink(
-    ...     'diff from 1.0-3 (in Ubuntu) to 1.0-4').url
+    >>> print(anon_browser.getLink(
+    ...     'diff from 1.0-3 (in Ubuntu) to 1.0-4').url)
     http://.../biscuit_1.0-3_1.0-4.diff.gz

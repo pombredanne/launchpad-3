@@ -25,7 +25,7 @@ look at it we can see that the added tags are there.
     >>> from lp.bugs.model.bug import BugTag
     >>> bugtags = BugTag.selectBy(bugID=bug_one.id, orderBy='tag')
     >>> for bugtag in bugtags:
-    ...     print bugtag.tag
+    ...     print(bugtag.tag)
     sco
     svg
 
@@ -38,7 +38,7 @@ The tag will be added in the table.
 
     >>> bugtags = BugTag.selectBy(bugID=bug_one.id, orderBy='tag')
     >>> for bugtag in bugtags:
-    ...     print bugtag.tag
+    ...     print(bugtag.tag)
     installl
     sco
     svg
@@ -58,7 +58,7 @@ Let's correct the spelling mistake we did and delete one of the tags:
 
     >>> bugtags = BugTag.selectBy(bugID=bug_one.id, orderBy='tag')
     >>> for bugtag in bugtags:
-    ...     print bugtag.tag
+    ...     print(bugtag.tag)
     install
     sco
 
@@ -119,7 +119,7 @@ wrong.
     ...
     WidgetInputError...
 
-    >>> print tags_widget._error.doc()
+    >>> print(tags_widget._error.doc())
     &#x27;!!!!&#x27; isn&#x27;t a valid tag name. Tags must start with a
     letter or number and be lowercase. The characters &quot;+&quot;,
     &quot;-&quot; and &quot;.&quot; are also allowed after the first
@@ -179,9 +179,9 @@ earlier can be used again.
 _tagsFromFieldValue() converts tags from the field value to tags for
 display. The absense of tags causes it to return None:
 
-    >>> print tags_frozen_set_widget._tagsFromFieldValue(None)
+    >>> print(tags_frozen_set_widget._tagsFromFieldValue(None))
     None
-    >>> print tags_frozen_set_widget._tagsFromFieldValue(frozenset())
+    >>> print(tags_frozen_set_widget._tagsFromFieldValue(frozenset()))
     None
 
 Tags are ordered before returning:
@@ -210,7 +210,7 @@ Large and Small Bug Tags Widget
 
 A regular BugTagsWidget is rendered as an <input> tag,
 
-    >>> print tags_widget()
+    >>> print(tags_widget())
     <input...type="text"...
 
 A LargeBugTagsWidget is rendered as a <textarea>,
@@ -218,7 +218,7 @@ A LargeBugTagsWidget is rendered as a <textarea>,
     >>> from lp.bugs.browser.widgets.bug import LargeBugTagsWidget
     >>> large_text_widget = LargeBugTagsWidget(
     ...     bug_tags_field, tag_field, request)
-    >>> print large_text_widget()
+    >>> print(large_text_widget())
     <textarea...
 
 
@@ -234,7 +234,7 @@ We can search for bugs with some specific tag.
     >>> svg_tasks = ubuntu.searchTasks(
     ...     BugTaskSearchParams(tag=all(u'svg'), user=None))
     >>> for bugtask in svg_tasks:
-    ...     print bugtask.bug.id, bugtask.bug.tags
+    ...     print(bugtask.bug.id, bugtask.bug.tags)
     1 [u'sco', u'svg']
 
 We can also search for bugs with any of the tags in a supplied list.
@@ -243,7 +243,7 @@ We can also search for bugs with any of the tags in a supplied list.
     >>> crash_dataloss_tasks = ubuntu.searchTasks(BugTaskSearchParams(
     ...     tag=any(u'crash', u'dataloss'), orderby='id', user=None))
     >>> for bugtask in crash_dataloss_tasks:
-    ...     print bugtask.bug.id, bugtask.bug.tags
+    ...     print(bugtask.bug.id, bugtask.bug.tags)
     2 [u'dataloss', u'pebcak']
     9 [u'crash']
     10 [u'crash']
@@ -255,7 +255,7 @@ And for bugs with all of the tags in a supplied list.
     >>> crash_burn_tasks = ubuntu.searchTasks(BugTaskSearchParams(
     ...     tag=all(u'crash', u'burn'), orderby='id', user=None))
     >>> for bugtask in crash_burn_tasks:
-    ...     print bugtask.bug.id, bugtask.bug.tags
+    ...     print(bugtask.bug.id, bugtask.bug.tags)
     10 [u'burn', u'crash']
     >>> getUtility(IBugSet).get(10).tags = [u'crash']
 
@@ -280,7 +280,7 @@ If we now set bug one's tag to 'some-tag', it will be found.
     XXX some_tag_tasks = ubuntu.searchTasks(
     ...     BugTaskSearchParams(searchtext=u'some-tag', user=None))
     XXX for bugtask in some_tag_tasks:
-    ...     print bugtask.id, bugtask.bug.id, bugtask.bug.tags
+    ...     print(bugtask.id, bugtask.bug.id, bugtask.bug.tags)
     1 [u'some-tag']
 
 

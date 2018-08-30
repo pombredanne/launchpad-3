@@ -11,13 +11,13 @@ First we mark a bug as private:
     ...         'debian/+source/mozilla-firefox/+bug/8/+secrecy')
     >>> admin_browser.getControl('Private', index=1).selected = True
     >>> admin_browser.getControl('Change').click()
-    >>> print admin_browser.url
+    >>> print(admin_browser.url)
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/8
 
-    >>> print admin_browser.title
+    >>> print(admin_browser.title)
     Bug #8 ...Printing doesn't work...
 
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'privacy'))
+    >>> print(extract_text(find_tag_by_id(admin_browser.contents, 'privacy')))
     This report contains Private information...
 
 Next we mark another bug as a duplicate of the private bug:
@@ -33,21 +33,21 @@ duplicate bug page:
 
     >>> def print_messages(browser):
     ...     for tag in find_tags_by_class(browser.contents, 'message'):
-    ...         print tag.renderContents()
+    ...         print(tag.renderContents())
 
-    >>> print find_tag_by_id(
-    ...     admin_browser.contents, 'duplicate-of').renderContents()
+    >>> print(find_tag_by_id(
+    ...     admin_browser.contents, 'duplicate-of').renderContents())
     bug #8
 
 But when accessing it as an unprivileged user the title of the private
 bug cannot be found in the messages on the duplicate bug page:
 
     >>> user_browser.open(admin_browser.url)
-    >>> print find_tag_by_id(user_browser.contents, 'duplicate-of')
+    >>> print(find_tag_by_id(user_browser.contents, 'duplicate-of'))
     None
 
 The same is true when viewing the duplicate bug anonymously:
 
     >>> anon_browser.open(admin_browser.url)
-    >>> print find_tag_by_id(anon_browser.contents, 'duplicate-of')
+    >>> print(find_tag_by_id(anon_browser.contents, 'duplicate-of'))
     None

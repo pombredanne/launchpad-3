@@ -29,23 +29,23 @@ from lp.testing.systemdocs import (
 
 
 def questionSetUp(test):
-    setUp(test)
+    setUp(test, future=True)
     test.globs['target'] = getUtility(IQuestionSet).get(1)
 
 
 def cveSetUp(test):
-    setUp(test)
+    setUp(test, future=True)
     test.globs['target'] = getUtility(ICveSet)['2005-2730']
 
 
 def specificationSetUp(test):
-    setUp(test)
+    setUp(test, future=True)
     test.globs['target'] = getUtility(ISpecificationSet).getByURL(
         'http://wiki.mozilla.org/Firefox:1.1_Product_Team')
 
 
 def branchMergeProposalSetUp(test):
-    setUp(test)
+    setUp(test, future=True)
     factory = LaunchpadObjectFactory()
     test.globs['target'] = ProxyFactory(
         factory.makeBranchMergeProposalForGit())

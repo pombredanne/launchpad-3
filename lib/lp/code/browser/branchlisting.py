@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch listings."""
@@ -49,10 +49,7 @@ from lp.app.browser.badge import (
     Badge,
     HasBadgeBase,
     )
-from lp.app.browser.launchpadform import (
-    custom_widget,
-    LaunchpadFormView,
-    )
+from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.app.enums import (
     PRIVATE_INFORMATION_TYPES,
     ServiceUsage,
@@ -459,8 +456,8 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     field_names = ['lifecycle', 'sort_by']
     development_focus_branch = None
     show_set_development_focus = False
-    custom_widget('lifecycle', LaunchpadDropdownWidget)
-    custom_widget('sort_by', LaunchpadDropdownWidget)
+    custom_widget_lifecycle = LaunchpadDropdownWidget
+    custom_widget_sort_by = LaunchpadDropdownWidget
     # Showing the series links is only really useful on product listing
     # pages.  Derived views can override this value to have the series links
     # shown in the branch listings.
@@ -839,7 +836,7 @@ class PersonBranchesView(PersonBaseBranchListingView):
 
     schema = IPersonBranchListingFilter
     field_names = ['category', 'lifecycle', 'sort_by']
-    custom_widget('category', LaunchpadDropdownWidget)
+    custom_widget_category = LaunchpadDropdownWidget
 
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
     can_have_git_link = True

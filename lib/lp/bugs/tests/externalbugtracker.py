@@ -1,28 +1,28 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper classes for testing ExternalSystem."""
 
 __metaclass__ = type
 
+from contextlib import contextmanager
 from copy import deepcopy
 from datetime import (
     datetime,
     timedelta,
     )
-from httplib import HTTPMessage
 import os
 import random
 import re
-from StringIO import StringIO
 import time
-from urllib2 import (
-    BaseHandler,
-    Request,
-    )
-import urlparse
 import xmlrpclib
 
+import responses
+from six.moves.urllib_parse import (
+    parse_qs,
+    urljoin,
+    urlsplit,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -46,7 +46,7 @@ from lp.bugs.externalbugtracker.trac import (
     LP_PLUGIN_METADATA_AND_COMMENTS,
     LP_PLUGIN_METADATA_ONLY,
     )
-from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
+from lp.bugs.externalbugtracker.xmlrpc import RequestsTransport
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -158,6 +158,30 @@ def set_bugwatch_error_type(bug_watch, error_type):
         naked.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
 
 
+class BugTrackerResponsesMixin:
+    """A responses-based test mixin for bug trackers.
+
+    The simplest way to use this is as a context manager:
+
+        with bug_tracker.responses():
+            ...
+
+    Classes using this mixin should implement `addResponses`.
+    """
+
+    def addResponses(self, requests_mock, **kwargs):
+        """Add test responses."""
+
+    @contextmanager
+    def responses(self, trace_calls=False, **kwargs):
+        with responses.RequestsMock() as requests_mock:
+            self.addResponses(requests_mock, **kwargs)
+            yield requests_mock
+            if trace_calls:
+                for call in requests_mock.calls:
+                    print call.request.method, call.request.url
+
+
 class TestExternalBugTracker(ExternalBugTracker):
     """A test version of `ExternalBugTracker`.
 
@@ -230,12 +254,8 @@ class TestBrokenExternalBugTracker(TestExternalBugTracker):
             raise self.get_remote_status_error("Testing")
 
 
-class TestBugzilla(Bugzilla):
-    """Bugzilla ExternalSystem for use in tests.
-
-    It overrides _getPage and _postPage, so that access to a real Bugzilla
-    instance isn't needed.
-    """
+class TestBugzilla(BugTrackerResponsesMixin, Bugzilla):
+    """Bugzilla ExternalSystem for use in tests."""
     # We set the batch_query_threshold to zero so that only
     # getRemoteBugBatch() is used to retrieve bugs, since getRemoteBug()
     # calls getRemoteBugBatch() anyway.
@@ -271,40 +291,38 @@ class TestBugzilla(Bugzilla):
         """
         return read_test_file(self.bug_item_file)
 
-    def _getPage(self, page):
-        """GET a page.
+    def _getCallback(self, request):
+        """Handle a test GET request.
 
         Only handles xml.cgi?id=1 so far.
         """
-        if self.trace_calls:
-            print "CALLED _getPage()"
-        if page == 'xml.cgi?id=1':
-            data = read_test_file(self.version_file)
+        url = urlsplit(request.url)
+        if (url.path == urlsplit(self.baseurl).path + '/xml.cgi' and
+                parse_qs(url.query).get('id') == ['1']):
+            body = read_test_file(self.version_file)
             # Add some latin1 to test bug 61129
-            return data % dict(non_ascii_latin1="\xe9")
+            return 200, {}, body % {'non_ascii_latin1': b'\xe9'}
         else:
-            raise AssertionError('Unknown page: %s' % page)
+            raise AssertionError('Unknown URL: %s' % request.url)
 
-    def _postPage(self, page, form, repost_on_redirect=False):
-        """POST to the specified page.
-
-        :form: is a dict of form variables being POSTed.
+    def _postCallback(self, request):
+        """Handle a test POST request.
 
         Only handles buglist.cgi so far.
         """
-        if self.trace_calls:
-            print "CALLED _postPage()"
-        if page == self.buglist_page:
+        url = urlsplit(request.url)
+        if url.path == urlsplit(self.baseurl).path + '/' + self.buglist_page:
             buglist_xml = read_test_file(self.buglist_file)
-            bug_ids = str(form[self.bug_id_form_element]).split(',')
+            form = parse_qs(request.body)
+            bug_ids = str(form[self.bug_id_form_element][0]).split(',')
             bug_li_items = []
             for bug_id in bug_ids:
                 bug_id = int(bug_id)
                 if bug_id not in self.bugzilla_bugs:
-                    #Unknown bugs aren't included in the resulting xml.
+                    # Unknown bugs aren't included in the resulting xml.
                     continue
-                bug_status, bug_resolution, bug_priority, bug_severity = \
-                            self.bugzilla_bugs[int(bug_id)]
+                bug_status, bug_resolution, bug_priority, bug_severity = (
+                    self.bugzilla_bugs[int(bug_id)])
                 bug_item = self._readBugItemFile() % {
                     'bug_id': bug_id,
                     'status': bug_status,
@@ -313,12 +331,22 @@ class TestBugzilla(Bugzilla):
                     'severity': bug_severity,
                     }
                 bug_li_items.append(bug_item)
-            return buglist_xml % {
+            body = buglist_xml % {
                 'bug_li_items': '\n'.join(bug_li_items),
-                'page': page,
+                'page': url.path.lstrip('/'),
                 }
+            return 200, {}, body
         else:
-            raise AssertionError('Unknown page: %s' % page)
+            raise AssertionError('Unknown URL: %s' % request.url)
+
+    def addResponses(self, requests_mock, get=True, post=True):
+        """Add test responses."""
+        if get:
+            requests_mock.add_callback(
+                'GET', re.compile(r'.*'), self._getCallback)
+        if post:
+            requests_mock.add_callback(
+                'POST', re.compile(r'.*'), self._postCallback)
 
 
 class TestWeirdBugzilla(TestBugzilla):
@@ -376,14 +404,7 @@ class TestOldBugzilla(TestBugzilla):
                 123543: ('ASSIGNED', '', 'HIGH', 'BLOCKER')}
 
 
-class FakeHTTPConnection:
-    """A fake HTTP connection."""
-
-    def putheader(self, header, value):
-        print "%s: %s" % (header, value)
-
-
-class TestBugzillaXMLRPCTransport(UrlLib2Transport):
+class TestBugzillaXMLRPCTransport(RequestsTransport):
     """A test implementation of the Bugzilla XML-RPC interface."""
 
     local_datetime = None
@@ -450,7 +471,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         }
 
     # Comments are mapped to bug IDs.
-    comment_id_index = 5
+    comment_id_index = 6
     new_comment_time = datetime(2008, 6, 20, 11, 42, 42)
     _bug_comments = {
         1: {
@@ -508,9 +529,9 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     def __init__(self, *args, **kwargs):
         """Ensure mutable class data is copied to the instance."""
-        # UrlLib2Transport is not a new style class so 'super' cannot be
+        # RequestsTransport is not a new-style class so 'super' cannot be
         # used.
-        UrlLib2Transport.__init__(self, *args, **kwargs)
+        RequestsTransport.__init__(self, *args, **kwargs)
         self.bugs = deepcopy(TestBugzillaXMLRPCTransport._bugs)
         self.bug_aliases = deepcopy(self._bug_aliases)
         self.bug_comments = deepcopy(self._bug_comments)
@@ -521,14 +542,13 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     @property
     def auth_cookie(self):
-        cookies = self.cookie_processor.cookiejar._cookies
+        if len(set(cookie.domain for cookie in self.cookie_jar)) > 1:
+            raise AssertionError(
+                "There should only be cookies for one domain.")
 
-        assert len(cookies) < 2, (
-            "There should only be cookies for one domain.")
-
-        if len(cookies) == 1:
-            [(domain, domain_cookies)] = cookies.items()
-            return domain_cookies.get('', {}).get('Bugzilla_logincookie')
+        for cookie in self.cookie_jar:
+            if cookie.name == 'Bugzilla_logincookie':
+                return cookie
         else:
             return None
 
@@ -868,8 +888,19 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
                 'text': "I never could get the hang of Thursdays.",
                 'time': datetime(2008, 6, 19, 9, 30, 0),
                 },
+            4: {'creator': 'Slartibartfast <slarti@magrathea.example.net>',
+                'bug_id': 2,
+                'id': 6,
+                'is_private': False,
+                'text': (
+                    "You know the fjords in Norway?  I got a prize for "
+                    "creating those, you know."),
+                'time': datetime(2008, 6, 20, 12, 37, 0),
+                },
             },
         }
+
+    include_utc_time_fields = True
 
     def __init__(self, *args, **kwargs):
         """Ensure mutable class data is copied to the instance."""
@@ -903,17 +934,26 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         # data. We do this the old fashioned way because XML-RPC
         # Transports don't support new-style classes.
         time_dict = TestBugzillaXMLRPCTransport.time(self)
-        offset_hours = (self.utc_offset / 60) / 60
-        offset_string = '+%02d00' % offset_hours
 
-        return {
-            'db_time': time_dict['local_time'],
-            'tz_name': time_dict['tz_name'],
-            'tz_offset': offset_string,
-            'tz_short_name': time_dict['tz_name'],
-            'web_time': time_dict['local_time'],
-            'web_time_utc': time_dict['utc_time'],
-            }
+        if self.include_utc_time_fields:
+            # Bugzilla < 5.1.1 (although as of 3.6 the UTC offset is always
+            # 0).
+            offset_hours = (self.utc_offset / 60) / 60
+            offset_string = '+%02d00' % offset_hours
+            return {
+                'db_time': time_dict['local_time'],
+                'tz_name': time_dict['tz_name'],
+                'tz_offset': offset_string,
+                'tz_short_name': time_dict['tz_name'],
+                'web_time': time_dict['local_time'],
+                'web_time_utc': time_dict['utc_time'],
+                }
+        else:
+            # Bugzilla >= 5.1.1.
+            return {
+                'db_time': time_dict['utc_time'],
+                'web_time': time_dict['utc_time'],
+                }
 
     def get(self, arguments):
         """Return a list of bug dicts for a given set of bug ids."""
@@ -1127,70 +1167,68 @@ class NoAliasTestBugzillaAPIXMLRPCTransport(TestBugzillaAPIXMLRPCTransport):
         }
 
 
-class TestMantis(Mantis):
-    """Mantis ExternalSystem for use in tests.
+class TestMantis(BugTrackerResponsesMixin, Mantis):
+    """Mantis ExternalBugTracker for use in tests."""
 
-    It overrides _getPage and _postPage, so that access to a real
-    Mantis instance isn't needed.
-    """
-
-    trace_calls = False
-
-    def _getPage(self, page):
-        if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page)
-        if page == "csv_export.php":
-            return read_test_file('mantis_example_bug_export.csv')
-        elif page.startswith('view.php?id='):
-            bug_id = page.split('id=')[-1]
-            return read_test_file('mantis--demo--bug-%s.html' % bug_id)
+    @staticmethod
+    def _getCallback(request):
+        url = urlsplit(request.url)
+        if url.path == '/csv_export.php':
+            body = read_test_file('mantis_example_bug_export.csv')
+        elif url.path == '/view.php':
+            bug_id = parse_qs(url.query)['id'][0]
+            body = read_test_file('mantis--demo--bug-%s.html' % bug_id)
         else:
-            return ''
+            body = ''
+        return 200, {}, body
 
-    def _postPage(self, page, form, repost_on_redirect=False):
-        if self.trace_calls:
-            print "CALLED _postPage(%r, ...)" % (page)
-        return ''
+    def addResponses(self, requests_mock, get=True, post=True):
+        if get:
+            requests_mock.add_callback(
+                'GET', re.compile(re.escape(self.baseurl)), self._getCallback)
+        if post:
+            requests_mock.add('POST', re.compile(re.escape(self.baseurl)))
 
 
-class TestTrac(Trac):
-    """Trac ExternalBugTracker for testing purposes.
-
-    It overrides urlopen, so that access to a real Trac instance isn't needed,
-    and supportsSingleExports so that the tests don't fail due to the lack of
-    a network connection. Also, it overrides the default batch_query_threshold
-    for the sake of making test data sane.
-    """
+class TestTrac(BugTrackerResponsesMixin, Trac):
+    """Trac ExternalBugTracker for testing purposes."""
 
     # We remove the batch_size limit for the purposes of the tests so
     # that we can test batching and not batching correctly.
     batch_size = None
     batch_query_threshold = 10
     csv_export_file = None
-    supports_single_exports = True
-    trace_calls = False
 
     def getExternalBugTrackerToUse(self):
         return self
 
-    def supportsSingleExports(self, bug_ids):
-        """See `Trac`."""
-        return self.supports_single_exports
-
-    def urlopen(self, url, data=None):
-        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-        url = url.get_full_url()
-        if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url)
-
-        if self.csv_export_file is not None:
-            csv_export_file = self.csv_export_file
-        elif re.match('.*/ticket/[0-9]+\?format=csv$', url):
-            csv_export_file = 'trac_example_single_ticket_export.csv'
+    def _getCallback(self, request, supports_single_exports):
+        url = urlsplit(request.url)
+        if parse_qs(url.query).get('format') == ['csv']:
+            mimetype = 'text/csv'
+            if url.path.startswith('/ticket/'):
+                if not supports_single_exports:
+                    return 404, {}, ''
+                body = read_test_file('trac_example_single_ticket_export.csv')
+            else:
+                body = read_test_file('trac_example_ticket_export.csv')
         else:
-            csv_export_file = 'trac_example_ticket_export.csv'
+            mimetype = 'text/html'
+            body = ''
+        return 200, {'Content-Type': mimetype}, body
 
-        return open(file_path + '/' + csv_export_file, 'r')
+    def addResponses(self, requests_mock, supports_single_exports=True,
+                     broken=False):
+        url_pattern = re.compile(re.escape(self.baseurl))
+        if broken:
+            requests_mock.add(
+                'GET', url_pattern,
+                body=read_test_file('trac_example_broken_ticket_export.csv'))
+        else:
+            requests_mock.add_callback(
+                'GET', url_pattern,
+                lambda request: self._getCallback(
+                    request, supports_single_exports))
 
 
 class MockTracRemoteBug:
@@ -1251,7 +1289,7 @@ def strip_trac_comment(comment):
     return comment
 
 
-class TestTracXMLRPCTransport(UrlLib2Transport):
+class TestTracXMLRPCTransport(RequestsTransport):
     """An XML-RPC transport to be used when testing Trac."""
 
     remote_bugs = {}
@@ -1267,8 +1305,12 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
 
     @property
     def auth_cookie(self):
-        cookies = self.cookie_processor.cookiejar._cookies
-        return cookies.get('example.com', {}).get('', {}).get('trac_auth')
+        for cookie in self.cookie_jar:
+            if (cookie.domain == 'example.com' and cookie.path == '' and
+                    cookie.name == 'trac_auth'):
+                return cookie
+        else:
+            return None
 
     @property
     def has_valid_auth_cookie(self):
@@ -1502,81 +1544,80 @@ class TestTracXMLRPCTransport(UrlLib2Transport):
         return [self.utc_time]
 
 
-class TestRoundup(Roundup):
-    """Roundup ExternalBugTracker for testing purposes.
-
-    It overrides urlopen, so that access to a real Roundup instance isn't
-    needed.
-    """
+class TestRoundup(BugTrackerResponsesMixin, Roundup):
+    """Roundup ExternalBugTracker for testing purposes."""
 
     # We remove the batch_size limit for the purposes of the tests so
     # that we can test batching and not batching correctly.
     batch_size = None
-    trace_calls = False
 
-    def urlopen(self, url, data=None):
-        if self.trace_calls:
-            print "CALLED urlopen(%r)" % (url.get_full_url())
-
-        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-
-        if self.host == 'bugs.python.org':
-            return open(
-                file_path + '/' + 'python_example_ticket_export.csv', 'r')
+    @staticmethod
+    def _getCallback(request):
+        url = urlsplit(request.url)
+        if url.netloc == 'bugs.python.org':
+            body = read_test_file('python_example_ticket_export.csv')
         else:
-            return open(
-                file_path + '/' + 'roundup_example_ticket_export.csv', 'r')
+            body = read_test_file('roundup_example_ticket_export.csv')
+        return 200, {}, body
+
+    def addResponses(self, requests_mock):
+        """Add test responses."""
+        requests_mock.add_callback(
+            'GET', re.compile(re.escape(self.baseurl)), self._getCallback)
 
 
-class TestRequestTracker(RequestTracker):
-    """A Test-oriented `RequestTracker` implementation.
+class TestRequestTracker(BugTrackerResponsesMixin, RequestTracker):
+    """A Test-oriented `RequestTracker` implementation."""
 
-    Overrides _getPage() and _postPage() so that access to an RT
-    instance is not needed.
-    """
-    trace_calls = False
     simulate_bad_response = False
 
-    def urlopen(self, page, data=None):
-        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
-        path = urlparse.urlparse(page)[2].lstrip('/')
-        if self.trace_calls:
-            print "CALLED urlopen(%r)" % path
-
-        if self.simulate_bad_response:
-            return open(file_path + '/' + 'rt-sample-bug-bad.txt')
-
-        if path == self.batch_url:
-            return open(file_path + '/' + 'rt-sample-bug-batch.txt')
+    def _getCallback(self, request):
+        url = urlsplit(request.url)
+        headers = {}
+        if url.path == '/':
+            params = parse_qs(url.query)
+            headers['Set-Cookie'] = 'rt_credentials=%s:%s' % (
+                params['user'][0], params['pass'][0])
+            body = ''
         else:
-            # We extract the ticket ID from the url and use that to find
-            # the test file we want.
-            page_re = re.compile('REST/1.0/ticket/([0-9]+)/show')
-            bug_id = page_re.match(path).groups()[0]
+            if url.path == '/REST/1.0/search/ticket/':
+                body = read_test_file('rt-sample-bug-batch.txt')
+            else:
+                # Extract the ticket ID from the URL and use that to
+                # find the test file we want.
+                bug_id = re.match(
+                    r'/REST/1\.0/ticket/([0-9]+)/show', url.path).group(1)
+                body = read_test_file('rt-sample-bug-%s.txt' % bug_id)
+        return 200, headers, body
 
-            return open(file_path + '/' + 'rt-sample-bug-%s.txt' % bug_id)
+    def addResponses(self, requests_mock, bad=False):
+        """Add test responses."""
+        if bad:
+            requests_mock.add(
+                'GET', re.compile(re.escape(self.baseurl)),
+                body=read_test_file('rt-sample-bug-bad.txt'))
+        else:
+            requests_mock.add_callback(
+                'GET', re.compile(re.escape(self.baseurl)), self._getCallback)
 
 
-class TestSourceForge(SourceForge):
-    """Test-oriented SourceForge ExternalBugTracker.
+class TestSourceForge(BugTrackerResponsesMixin, SourceForge):
+    """Test-oriented SourceForge ExternalBugTracker."""
 
-    Overrides _getPage() so that access to SourceForge itself is not
-    required.
-    """
+    @staticmethod
+    def _getCallback(request):
+        url = urlsplit(request.url)
+        bug_id = parse_qs(url.query)['aid'][0]
+        body = read_test_file('sourceforge-sample-bug-%s.html' % bug_id)
+        return 200, {'Content-Type': 'text/html'}, body
 
-    trace_calls = False
-
-    def _getPage(self, page):
-        if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page)
-
-        page_re = re.compile('support/tracker.php\?aid=([0-9]+)')
-        bug_id = page_re.match(page).groups()[0]
-
-        file_path = os.path.join(
-            os.path.dirname(__file__), 'testfiles',
-            'sourceforge-sample-bug-%s.html' % bug_id)
-        return open(file_path, 'r').read()
+    def addResponses(self, requests_mock):
+        """Add test responses."""
+        requests_mock.add_callback(
+            'GET',
+            re.compile(
+                re.escape(urljoin(self.baseurl, 'support/tracker.php'))),
+            self._getCallback)
 
 
 class TestDebianBug(debbugs.Bug):
@@ -1649,86 +1690,6 @@ class TestDebBugs(DebBugs):
         bug = self.bugs[bug_id]
         self.debbugs_db.load_log(bug)
         return bug
-
-
-class UrlLib2TransportTestInfo:
-    """A url info object for use in the test, returning
-    a hard-coded cookie header.
-    """
-    cookies = 'foo=bar'
-
-    def getheaders(self, header):
-        """Return the hard-coded cookie header."""
-        if header.lower() in ('cookie', 'set-cookie', 'set-cookie2'):
-            return [self.cookies]
-
-
-class UrlLib2TransportTestHandler(BaseHandler):
-    """A test urllib2 handler returning a hard-coded response."""
-
-    def __init__(self):
-        self.redirect_url = None
-        self.raise_error = None
-        self.response = None
-        self.accessed_urls = []
-
-    def setRedirect(self, new_url):
-        """The next call of default_open() will redirect to `url`."""
-        self.redirect_url = new_url
-
-    def setError(self, error, url):
-        """Raise `error` when `url` is accessed."""
-        self.raise_error = error
-        self.raise_url = url
-
-    def setResponse(self, response):
-        self.response = response
-
-    def default_open(self, req):
-        """Catch all requests and return a hard-coded response.
-
-        The response body is an XMLRPC response. In addition we set the
-        info of the response to contain a cookie.
-        """
-        assert isinstance(req, Request), (
-            'Expected a urllib2.Request, got %s' % req)
-
-        self.accessed_urls.append(req.get_full_url())
-        if (self.raise_error is not None and
-              req.get_full_url() == self.raise_url):
-            error = self.raise_error
-            self.raise_error = None
-            raise error
-        elif self.redirect_url is not None:
-            headers = HTTPMessage(StringIO())
-            headers['location'] = self.redirect_url
-            response = StringIO()
-            response.info = lambda: headers
-            response.geturl = req.get_full_url
-            response.code = 302
-            response.msg = 'Moved'
-            self.redirect_url = None
-            response = self.parent.error(
-                'http', req, response, 302, 'Moved', headers)
-        elif self.response is not None:
-            response = StringIO(self.response)
-            info = UrlLib2TransportTestInfo()
-            response.info = lambda: info
-            response.code = 200
-            response.geturl = req.get_full_url
-            response.msg = ''
-            self.response = None
-        else:
-            xmlrpc_response = xmlrpclib.dumps(
-                (req.get_full_url(), ), methodresponse=True)
-            response = StringIO(xmlrpc_response)
-            info = UrlLib2TransportTestInfo()
-            response.info = lambda: info
-            response.code = 200
-            response.geturl = req.get_full_url
-            response.msg = ''
-
-        return response
 
 
 def ensure_response_parser_is_expat(transport):

@@ -23,7 +23,7 @@ there.
 
     >>> browser.open('http://code.launchpad.dev/~eric')
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-team-branches')
-    >>> print portlet
+    >>> print(portlet)
     None
 
     >>> login(ANONYMOUS)
@@ -32,9 +32,9 @@ there.
 
     >>> browser.open('http://code.launchpad.dev/~eric')
     >>> tb = find_tag_by_id(browser.contents, 'portlet-team-branches')
-    >>> print extract_text(tb.h2)
+    >>> print(extract_text(tb.h2))
     Branches owned by
-    >>> print tb.li
+    >>> print(tb.li)
     <li>
       <img src="http://.../vikings.png" width="14" height="14" />
       <a href="/~vikings">Vikings</a>

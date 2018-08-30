@@ -10,12 +10,15 @@ __all__ = [
 
 from datetime import datetime
 from functools import partial
+import json
 import operator
+import os.path
 
 from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
 from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
+from six.moves.urllib_parse import urlsplit
 from sqlobject import (
     ForeignKey,
     IntCol,
@@ -84,6 +87,7 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     AlreadyLatestFormat,
+    BranchFileNotFound,
     BranchMergeProposalExists,
     BranchTargetError,
     BranchTypeError,
@@ -105,6 +109,7 @@ from lp.code.interfaces.branch import (
     WrongNumberOfReviewTypeArguments,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
+from lp.code.interfaces.branchhosting import IBranchHostingClient
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -171,10 +176,12 @@ from lp.services.database.stormexpr import (
     ArrayAgg,
     ArrayIntersects,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -781,6 +788,67 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             bulk.load_related(
                 RevisionAuthor, revisions, ['revision_author_id'])
         return DecoratedResultSet(result, pre_iter_hook=eager_load)
+
+    def getBlob(self, filename, revision_id=None, enable_memcache=None,
+                logger=None):
+        """See `IBranch`."""
+        hosting_client = getUtility(IBranchHostingClient)
+        if enable_memcache is None:
+            enable_memcache = not getFeatureFlag(
+                u'code.bzr.blob.disable_memcache')
+        if revision_id is None:
+            revision_id = self.last_scanned_id
+        if revision_id is None:
+            # revision_id may still be None if the branch scanner hasn't
+            # scanned this branch yet.  In this case, we won't be able to
+            # guarantee that subsequent calls to this method within the same
+            # transaction with revision_id=None will see the same revision,
+            # and we won't be able to cache file lists.  Neither is fatal,
+            # and this should be relatively rare.
+            enable_memcache = False
+        dirname = os.path.dirname(filename)
+        unset = object()
+        file_list = unset
+        if enable_memcache:
+            memcache_client = getUtility(IMemcacheClient)
+            instance_name = urlsplit(
+                config.codehosting.internal_bzr_api_endpoint).hostname
+            memcache_key = '%s:bzr-file-list:%s:%s:%s' % (
+                instance_name, self.id, revision_id, dirname)
+            if not isinstance(memcache_key, bytes):
+                memcache_key = memcache_key.encode('UTF-8')
+            cached_file_list = memcache_client.get(memcache_key)
+            if cached_file_list is not None:
+                try:
+                    file_list = json.loads(cached_file_list)
+                except Exception:
+                    logger.exception(
+                        'Cannot load cached file list for %s:%s:%s; deleting' %
+                        (self.unique_name, revision_id, dirname))
+                    memcache_client.delete(memcache_key)
+        if file_list is unset:
+            try:
+                inventory = hosting_client.getInventory(
+                    self.id, dirname, rev=revision_id)
+                file_list = {
+                    entry['filename']: entry['file_id']
+                    for entry in inventory['filelist']}
+            except BranchFileNotFound:
+                file_list = None
+            if enable_memcache:
+                # Cache the file list in case there's a request for another
+                # file in the same directory.
+                memcache_client.set(memcache_key, json.dumps(file_list))
+        file_id = (file_list or {}).get(os.path.basename(filename))
+        if file_id is None:
+            raise BranchFileNotFound(
+                self.unique_name, filename=filename, rev=revision_id)
+        return hosting_client.getBlob(self.id, file_id, rev=revision_id)
+
+    def getDiff(self, new, old=None):
+        """See `IBranch`."""
+        hosting_client = getUtility(IBranchHostingClient)
+        return hosting_client.getDiff(self.id, new, old=old)
 
     def canBeDeleted(self):
         """See `IBranch`."""

@@ -48,22 +48,22 @@ The fact that an ArchivePermission object is returned means that the
 Ubuntu Team is indeed permissioned to upload to the main archive.  It
 has a number of useful properties that can be checked:
 
-    >>> print main_permission.date_created
+    >>> print(main_permission.date_created)
     2006-10-16...
 
-    >>> print main_permission.archive.displayname
+    >>> print(main_permission.archive.displayname)
     Primary Archive for Ubuntu Linux
 
     >>> main_permission.permission
     <DBItem ArchivePermissionType.UPLOAD, (1) Archive Upload Rights>
 
-    >>> print main_permission.person.name
+    >>> print(main_permission.person.name)
     ubuntu-team
 
-    >>> print main_permission.component_name
+    >>> print(main_permission.component_name)
     main
 
-    >>> print main_permission.source_package_name
+    >>> print(main_permission.source_package_name)
     None
 
 The checkAuthenticated() call is also able to check someone's
@@ -131,7 +131,7 @@ or team has permission to upload to the supplied component:
     >>> uploaders = permission_set.uploadersForComponent(
     ...     ubuntu.main_archive, main_component)
     >>> for uploader in sorted(uploaders, key=operator.attrgetter("id")):
-    ...     print uploader.person.name
+    ...     print(uploader.person.name)
     ubuntu-team
 
 The component argument can also be a string type and it's converted
@@ -153,7 +153,7 @@ ArchivePermission records for all matching components:
 
     >>> uploaders = permission_set.uploadersForComponent(ubuntu.main_archive)
     >>> for uploader in sorted(uploaders, key=operator.attrgetter("id")):
-    ...     print uploader.person.name, uploader.component.name
+    ...     print(uploader.person.name, uploader.component.name)
     ubuntu-team universe
     ubuntu-team restricted
     ubuntu-team main
@@ -166,7 +166,7 @@ components that the supplied user has permission to upload to.
     ...         archive, person)
     ...     for permission in sorted(
     ...         permissions, key=operator.attrgetter("id")):
-    ...         print permission.component.name
+    ...         print(permission.component.name)
 
     >>> showComponentUploaders(ubuntu.main_archive, mark)
     universe
@@ -202,7 +202,7 @@ the supplied user has permission to upload to packages.
     ...     packages = permission_set.packagesForUploader(
     ...         archive, person)
     ...     for permission in sorted(packages, key=operator.attrgetter("id")):
-    ...         print permission.sourcepackagename.name
+    ...         print(permission.sourcepackagename.name)
 
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> showPersonsPackages(ubuntu.main_archive, carlos)
@@ -228,7 +228,7 @@ queues in that component.
     ...         archive, component)
     ...     for archive_admin in sorted(
     ...         archive_admins, key=operator.attrgetter("id")):
-    ...         print archive_admin.person.name
+    ...         print(archive_admin.person.name)
 
     >>> showQueueAdmins(ubuntu.main_archive, main_component)
     ubuntu-team
@@ -243,7 +243,7 @@ enumeration of archives.
     >>> permissions = permission_set.componentsForQueueAdmin(
     ...     ubuntu.main_archive, name12)
     >>> for permission in sorted(permissions, key=operator.attrgetter("id")):
-    ...     print permission.component.name
+    ...     print(permission.component.name)
     main
     restricted
     universe
@@ -253,7 +253,7 @@ enumeration of archives.
     >>> permissions = permission_set.componentsForQueueAdmin(
     ...     ubuntu.all_distro_archives, no_team)
     >>> for permission in sorted(permissions, key=operator.attrgetter("id")):
-    ...     print permission.component.name
+    ...     print(permission.component.name)
     universe
     multiverse
 
@@ -355,7 +355,7 @@ per-series:
     ...         archive, pocket, distroseries=distroseries)
     ...     for archive_admin in sorted(
     ...         archive_admins, key=operator.attrgetter("id")):
-    ...         print archive_admin.person.name
+    ...         print(archive_admin.person.name)
 
     >>> new_permission = permission_set.newPocketQueueAdmin(
     ...     ubuntu.main_archive, carlos, PackagePublishingPocket.SECURITY)

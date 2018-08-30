@@ -26,10 +26,10 @@ if the user is not logged in, they will be asked to log in.
     >>> def printBugBranchLinks(browser):
     ...     tags = find_tags_by_class(browser.contents, 'buglink-summary')
     ...     if len(tags) == 0:
-    ...         print 'No bug branch links'
+    ...         print('No bug branch links')
     ...     else:
     ...         for tag in tags:
-    ...             print extract_text(tag)
+    ...             print(extract_text(tag))
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open(
@@ -38,7 +38,7 @@ if the user is not logged in, they will be asked to log in.
     No bug branch links
 
     >>> browser.getLink('Link a bug report').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Link branch...
 
 When linking from a branch to a bug, the bug widget is used.  This
@@ -76,7 +76,7 @@ to mark the bug private.
     >>> admin_browser.open('http://launchpad.dev/firefox/+bug/4/+secrecy')
     >>> admin_browser.getControl('Private', index=1).click()
     >>> admin_browser.getControl('Change').click()
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'privacy'))
+    >>> print(extract_text(find_tag_by_id(admin_browser.contents, 'privacy')))
     This report contains Private information...
 
 Sample person can see it...
@@ -155,7 +155,7 @@ Deleting a branch with linked bugs
     >>> admin_browser.open(grub_url)
     >>> admin_browser.getLink('Delete branch').click()
 
-    >>> print find_tag_by_id(admin_browser.contents, 'deletion-items')
+    >>> print(find_tag_by_id(admin_browser.contents, 'deletion-items'))
     <ul ...
     <a href...>Bug #...: bug-title...</a>...
 

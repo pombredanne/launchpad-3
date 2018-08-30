@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -442,6 +442,10 @@
         class="lp.code.browser.codeimport.CodeImportEditView"
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
+    <class class="lp.code.browser.branch.BranchDiffView">
+        <allow interface="zope.publisher.interfaces.browser.IBrowserPublisher"
+               attributes="__call__"/>
+    </class>
     <browser:page
         name="+delete"
         for="lp.code.interfaces.branch.IBranch"
@@ -815,6 +819,9 @@
             name="++repository-recipes"
             template="../templates/gitrepository-recipes.pt"/>
         <browser:page
+            name="++repository-pending-merges"
+            template="../templates/gitrepository-pending-merges.pt"/>
+        <browser:page
             name="++repository-import-details"
             template="../templates/import-details.pt"/>
     </browser:pages>
@@ -898,6 +905,13 @@
         permission="launchpad.AnyAllowedPerson"
         name="+try-again"
         template="../templates/inline-form-only-buttons.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.branchmergeproposallisting.BranchActiveReviewsView"
+        permission="zope.Public"
+        name="+activereviews"
+        template="../templates/active-reviews.pt"/>
+
     <adapter
         provides="lp.services.webapp.interfaces.IBreadcrumb"
         for="lp.code.interfaces.gitrepository.IGitRepository"
@@ -909,7 +923,7 @@
         name="+index"/>
     <browser:url
         for="lp.code.interfaces.gitref.IGitRef"
-        path_expression="string:+ref/${name}"
+        path_expression="string:+ref/${url_quoted_name}"
         attribute_to_parent="repository"
         rootsite="code"/>
     <browser:pages

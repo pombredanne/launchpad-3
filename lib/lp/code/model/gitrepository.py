@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -676,6 +676,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     def fetchRefCommits(hosting_path, refs, logger=None):
         """See `IGitRepository`."""
         oids = sorted(set(info["sha1"] for info in refs.values()))
+        if not oids:
+            return
         commits = parse_git_commits(
             getUtility(IGitHostingClient).getCommits(
                 hosting_path, oids, logger=logger))
@@ -886,7 +888,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             BranchMergeProposal.source_git_repository == self)
 
     def getPrecachedLandingTargets(self, user):
-        """See `IGitRef`."""
+        """See `IGitRepository`."""
         loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
         return DecoratedResultSet(self.landing_targets, pre_iter_hook=loader)
 
@@ -913,7 +915,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
     def getPrecachedLandingCandidates(self, user):
-        """See `IGitRef`."""
+        """See `IGitRepository`."""
         loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
         return DecoratedResultSet(
             self.landing_candidates, pre_iter_hook=loader)
@@ -940,13 +942,28 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
+    def getMergeProposals(self, status=None, visible_by_user=None,
+                          merged_revision_ids=None, eager_load=False):
+        """See `IGitRepository`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        collection = getUtility(IAllGitRepositories).visibleByUser(
+            visible_by_user)
+        return collection.getMergeProposals(
+            status, target_repository=self,
+            merged_revision_ids=merged_revision_ids, eager_load=eager_load)
+
     def getMergeProposalByID(self, id):
         """See `IGitRepository`."""
         return self.landing_targets.find(BranchMergeProposal.id == id).one()
 
     def isRepositoryMergeable(self, other):
         """See `IGitRepository`."""
-        return self.namespace.areRepositoriesMergeable(other.namespace)
+        return self.namespace.areRepositoriesMergeable(self, other)
 
     @property
     def pending_updates(self):
@@ -1082,7 +1099,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     def getBlob(self, filename, rev=None):
         """See `IGitRepository`."""
         hosting_client = getUtility(IGitHostingClient)
-        return hosting_client.getBlob(self.getInternalPath(), filename, rev)
+        return hosting_client.getBlob(
+            self.getInternalPath(), filename, rev=rev)
 
     def getDiff(self, old, new):
         """See `IGitRepository`."""

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
@@ -48,6 +48,7 @@ from zope.component import (
     getUtility,
     )
 from zope.event import notify
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextWidget
 from zope.interface import (
     implementer,
@@ -65,7 +66,6 @@ from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -372,8 +372,8 @@ class BugContextMenu(ContextMenu):
 class MaloneView(LaunchpadFormView):
     """The Bugs front page."""
 
-    custom_widget('searchtext', TextWidget, displayWidth=50)
-    custom_widget('scope', ProjectScopeWidget)
+    custom_widget_searchtext = CustomWidgetFactory(TextWidget, displayWidth=50)
+    custom_widget_scope = ProjectScopeWidget
     schema = IFrontPageBugTaskSearch
     field_names = ['searchtext', 'scope']
 
@@ -737,8 +737,8 @@ class BugEditView(BugEditViewBase):
     """The view for the edit bug page."""
 
     field_names = ['title', 'description', 'tags']
-    custom_widget('title', TextWidget, displayWidth=30)
-    custom_widget('tags', BugTagsWidget)
+    custom_widget_title = CustomWidgetFactory(TextWidget, displayWidth=30)
+    custom_widget_tags = BugTagsWidget
 
     @property
     def label(self):
@@ -842,8 +842,8 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
 
     field_names = ['information_type', 'validate_change']
 
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
-    custom_widget('validate_change', GhostCheckBoxWidget)
+    custom_widget_information_type = LaunchpadRadioWidgetWithDescription
+    custom_widget_validate_change = GhostCheckBoxWidget
 
     @property
     def schema(self):
@@ -1225,7 +1225,7 @@ class BugMarkAsAffectingUserView(LaunchpadFormView):
     label = "Does this bug affect you?"
     page_title = label
 
-    custom_widget('affects', LaunchpadRadioWidgetWithDescription)
+    custom_widget_affects = LaunchpadRadioWidgetWithDescription
 
     @property
     def initial_values(self):

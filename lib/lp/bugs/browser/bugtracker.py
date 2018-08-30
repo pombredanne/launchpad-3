@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bug tracker views."""
@@ -25,6 +25,7 @@ from itertools import chain
 from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import implementer
 from zope.schema import Choice
@@ -33,7 +34,6 @@ from zope.schema.vocabulary import SimpleVocabulary
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -243,9 +243,11 @@ class BugTrackerEditView(LaunchpadEditFormView):
 
     schema = IBugTracker
 
-    custom_widget('summary', TextAreaWidget, width=30, height=5)
-    custom_widget('aliases', DelimitedListWidget, height=3)
-    custom_widget('active', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget_summary = CustomWidgetFactory(
+        TextAreaWidget, width=30, height=5)
+    custom_widget_aliases = CustomWidgetFactory(DelimitedListWidget, height=3)
+    custom_widget_active = CustomWidgetFactory(
+        LaunchpadRadioWidget, orientation='vertical')
 
     @property
     def page_title(self):
@@ -464,7 +466,7 @@ class BugTrackerEditComponentView(LaunchpadEditFormView):
     linked to source packages in the Ubuntu distribution.
     """
     schema = IBugTrackerComponent
-    custom_widget('sourcepackagename', UbuntuSourcePackageNameWidget)
+    custom_widget_sourcepackagename = UbuntuSourcePackageNameWidget
     field_names = ['sourcepackagename']
     page_title = 'Link component'
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -482,42 +482,6 @@ class MessageSet:
         # are created.
         Store.of(message).flush()
         return message
-
-    @staticmethod
-    def _parentToChild(messages):
-        """Return a mapping from parent to child and list of root messages."""
-        result = {}
-        roots = []
-        for message in messages:
-            if message.parent is None:
-                roots.append(message)
-            else:
-                result.setdefault(message.parent, []).append(message)
-            result.setdefault(message, [])
-        return result, roots
-
-    @classmethod
-    def threadMessages(klass, messages):
-        """See `IMessageSet`."""
-        result, roots = klass._parentToChild(messages)
-
-        def get_children(node):
-            children = []
-            for child in result[node]:
-                children.append((child, get_children(child)))
-            return children
-        threads = []
-        for root in roots:
-            threads.append((root, get_children(root)))
-        return threads
-
-    @classmethod
-    def flattenThreads(klass, threaded_messages, _depth=0):
-        """See `IMessageSet`."""
-        for message, children in threaded_messages:
-            yield (_depth, message)
-            for depth, message in klass.flattenThreads(children, _depth + 1):
-                yield depth, message
 
 
 @implementer(IMessageChunk)

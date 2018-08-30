@@ -26,6 +26,10 @@ from soupmatchers import (
     Tag,
     Within,
     )
+from testscenarios import (
+    load_tests_apply_scenarios,
+    WithScenarios,
+    )
 from testtools.matchers import (
     ContainsDict,
     DocTestMatches,
@@ -77,10 +81,15 @@ from lp.code.tests.helpers import (
     make_merge_proposal_without_reviewers,
     )
 from lp.code.xmlrpc.git import GitAPI
+from lp.coop.answersbugs.visibility import (
+    TestHideMessageControlMixin,
+    TestMessageVisibilityMixin,
+    )
 from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
     )
+from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.model.message import MessageSet
 from lp.services.timeout import TimeoutError
@@ -1626,8 +1635,24 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
             "on 2015-01-01" % sha1, extract_text(tag))
 
     def test_client_cache_bzr(self):
-        # For Bazaar, the client cache contains the branch name and a
-        # loggerhead-based diff link.
+        # For Bazaar, the client cache contains the branch name and a link
+        # to the Loggerhead diff via the webapp.
+        bmp = self.factory.makeBranchMergeProposal()
+        view = create_initialized_view(bmp, '+index')
+        cache = IJSONRequestCache(view.request)
+        self.assertThat(cache.objects, ContainsDict({
+            'branch_name': Equals(bmp.source_branch.name),
+            'branch_diff_link': Equals(
+                'http://code.launchpad.dev/%s/+diff/' %
+                bmp.source_branch.unique_name),
+            }))
+
+    def test_client_cache_bzr_proxy_feature_disabled(self):
+        # For Bazaar, a feature flag can be set to cause the client cache to
+        # contain a direct link to the Loggerhead diff rather than via the
+        # webapp.  (This only works for public branches.)
+        self.useFixture(
+            FeatureFixture({u'code.bzr.diff.disable_proxy': u'on'}))
         bmp = self.factory.makeBranchMergeProposal()
         view = create_initialized_view(bmp, '+index')
         cache = IJSONRequestCache(view.request)
@@ -1897,6 +1922,64 @@ class TestBranchMergeProposalChangeStatusView(TestCaseWithFactory):
             git_proposal, LaunchpadTestRequest())
         self.assertEqual(
             git_proposal.merge_source.commit_sha1, view.source_revid)
+
+
+class TestCodeReviewCommentVisibility(
+        WithScenarios, BrowserTestCase, TestMessageVisibilityMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    scenarios = [
+        ('bzr', {'git': False}),
+        ('git', {'git': True}),
+        ]
+
+    def makeHiddenMessage(self, comment_owner=None):
+        """See `TestMessageVisibilityMixin`."""
+        if self.git:
+            self.useFixture(GitHostingFixture())
+        comment = self.factory.makeCodeReviewComment(
+            sender=comment_owner, body=self.comment_text, git=self.git)
+        with admin_logged_in():
+            comment.message.visible = False
+        return comment.branch_merge_proposal
+
+    def getView(self, context, user=None, no_login=False):
+        """See `TestMessageVisibilityMixin`."""
+        return self.getViewBrowser(
+            context=context, user=user, no_login=no_login)
+
+
+class TestCodeReviewCommentHideControls(
+        WithScenarios, BrowserTestCase, TestHideMessageControlMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    scenarios = [
+        ('bzr', {'git': False}),
+        ('git', {'git': True}),
+        ]
+
+    def getContext(self, comment_owner=None):
+        """See `TestHideMessageControlMixin`."""
+        if self.git:
+            self.useFixture(GitHostingFixture())
+        comment = self.factory.makeCodeReviewComment(
+            sender=comment_owner, git=self.git)
+        self.control_text = 'mark-spam-%d' % comment.id
+        return comment.branch_merge_proposal
+
+    def getView(self, context, user=None, no_login=False):
+        """See `TestHideMessageControlMixin`."""
+        return self.getViewBrowser(
+            context=context, user=user, no_login=no_login)
+
+    def test_comment_owner_sees_hide_control(self):
+        user = self.factory.makePerson()
+        context = self.getContext(comment_owner=user)
+        view = self.getView(context=context, user=user)
+        hide_link = find_tag_by_id(view.contents, self.control_text)
+        self.assertIsNot(None, hide_link)
 
 
 class TestCommentAttachmentRendering(TestCaseWithFactory):
@@ -2308,3 +2391,6 @@ class TestBranchMergeProposalDeleteViewGit(
 
     def _makeBranchMergeProposal(self, **kwargs):
         return self.factory.makeBranchMergeProposalForGit(**kwargs)
+
+
+load_tests = load_tests_apply_scenarios

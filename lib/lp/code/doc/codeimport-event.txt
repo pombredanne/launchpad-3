@@ -32,9 +32,9 @@ methods, we define a small helper function:
     >>> from lp.code.interfaces.codeimportevent import ICodeImportEvent
     >>> def verify_event(event):
     ...     if verifyObject(ICodeImportEvent, removeSecurityProxy(event)):
-    ...         print event.event_type.name
+    ...         print(event.event_type.name)
     ...     else:
-    ...         print "verifyObject failed"
+    ...         print("verifyObject failed")
 
 To help us test the output of the items() method, we define a helper
 function that do not print values which are potentially unstable
@@ -42,12 +42,12 @@ database ids.
 
     >>> def print_items(event):
     ...     if len(event.items()) == 0:
-    ...         print '<nothing>'
+    ...         print('<nothing>')
     ...     for k, v in sorted(event.items()):
     ...         if k.name == 'CODE_IMPORT':
-    ...             print k.name, '<muted>'
+    ...             print(k.name, '<muted>')
     ...         else:
-    ...             print k.name, repr(v)
+    ...             print(k.name, repr(v))
 
 We want to concisely check that calling the CodeImportEventSet factory
 methods with required arguments set to None raise an AssertionError.
@@ -67,7 +67,7 @@ message.
     ...         else:
     ...             raise
     ...     else:
-    ...         print "No exception raised, expected: %s" % (exc_type,)
+    ...         print("No exception raised, expected: %s" % (exc_type,))
 
 All CodeImportEvent creation methods explicitly check that their
 arguments are not None. See the implementation of CodeImportEventSet for
@@ -108,7 +108,7 @@ and the person that created it. Here, the creator is the nopriv user.
     >>> verify_event(svn_create_event)
     CREATE
 
-    >>> print svn_create_event.person.name
+    >>> print(svn_create_event.person.name)
     no-priv
 
     >>> svn_create_event.code_import == svn_import
@@ -206,7 +206,7 @@ details the changes that have been applied.
     >>> verify_event(modify_event)
     MODIFY
 
-    >>> print modify_event.person.name
+    >>> print(modify_event.person.name)
     no-priv
 
     >>> modify_event.code_import == svn_import
@@ -230,7 +230,7 @@ If no change of interest is found, no event is created.
 
     >>> old_event_set_len = len(list(event_set.getAll()))
     >>> token = event_set.beginModify(svn_import)
-    >>> print event_set.newModify(svn_import, nopriv, token)
+    >>> print(event_set.newModify(svn_import, nopriv, token))
     None
 
     >>> len(list(event_set.getAll())) == old_event_set_len
@@ -251,7 +251,7 @@ code import job was run.
     >>> verify_event(request_event)
     REQUEST
 
-    >>> print request_event.person.name
+    >>> print(request_event.person.name)
     no-priv
 
     >>> print_items(request_event)
@@ -287,10 +287,10 @@ ICodeImportEventSet.newOnline method.
     >>> verify_event(online_event)
     ONLINE
 
-    >>> print online_event.machine.hostname
+    >>> print(online_event.machine.hostname)
     bazaar-importer
 
-    >>> print online_event.person
+    >>> print(online_event.person)
     None
 
     >>> print_items(online_event)
@@ -305,10 +305,10 @@ case when a user updates the state of the machine through the web UI.
     >>> verify_event(online_event)
     ONLINE
 
-    >>> print online_event.machine.hostname
+    >>> print(online_event.machine.hostname)
     apollo
 
-    >>> print online_event.person.name
+    >>> print(online_event.person.name)
     ddaa
 
     >>> print_items(online_event)
@@ -333,7 +333,7 @@ ICodeImportSet.newOffline method.
     >>> verify_event(offline_event)
     OFFLINE
 
-    >>> print offline_event.machine.hostname
+    >>> print(offline_event.machine.hostname)
     bazaar-importer
 
     >>> print_items(offline_event)
@@ -359,10 +359,10 @@ UI.
     >>> verify_event(offline_event)
     OFFLINE
 
-    >>> print offline_event.machine.hostname
+    >>> print(offline_event.machine.hostname)
     apollo
 
-    >>> print offline_event.person.name
+    >>> print(offline_event.person.name)
     ddaa
 
     >>> print_items(offline_event)
@@ -388,10 +388,10 @@ explaining why quiescing was requested.
     >>> verify_event(quiesce_event)
     QUIESCE
 
-    >>> print quiesce_event.machine.hostname
+    >>> print(quiesce_event.machine.hostname)
     bazaar-importer
 
-    >>> print quiesce_event.person.name
+    >>> print(quiesce_event.person.name)
     ddaa
 
     >>> print_items(quiesce_event)
@@ -414,10 +414,10 @@ record which code import is starting and on which machine.
     >>> verify_event(start_event)
     START
 
-    >>> print start_event.machine.hostname
+    >>> print(start_event.machine.hostname)
     bazaar-importer
 
-    >>> print start_event.code_import == svn_import
+    >>> print(start_event.code_import == svn_import)
     True
 
     >>> start_event.items()
@@ -440,10 +440,10 @@ should be created to record that the job has been finished.
     >>> verify_event(finish_event)
     FINISH
 
-    >>> print finish_event.machine.hostname
+    >>> print(finish_event.machine.hostname)
     bazaar-importer
 
-    >>> print finish_event.code_import == svn_import
+    >>> print(finish_event.code_import == svn_import)
     True
 
     >>> finish_event.items()
@@ -466,13 +466,13 @@ and machine
     >>> verify_event(kill_event)
     KILL
 
-    >>> print kill_event.code_import == svn_import
+    >>> print(kill_event.code_import == svn_import)
     True
 
-    >>> print kill_event.person
+    >>> print(kill_event.person)
     None
 
-    >>> print kill_event.machine.hostname
+    >>> print(kill_event.machine.hostname)
     bazaar-importer
 
     >>> kill_event.items()
@@ -503,13 +503,13 @@ finding the log files on the import slave easier).
     >>> verify_event(reclaim_event)
     RECLAIM
 
-    >>> print reclaim_event.code_import == svn_import
+    >>> print(reclaim_event.code_import == svn_import)
     True
 
-    >>> print reclaim_event.person
+    >>> print(reclaim_event.person)
     None
 
-    >>> print reclaim_event.machine.hostname
+    >>> print(reclaim_event.machine.hostname)
     bazaar-importer
 
 The job id is the only datum stored in the key-value data associated

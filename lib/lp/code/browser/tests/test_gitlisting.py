@@ -10,7 +10,9 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from lp.app.enums import InformationType
+from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.registry.enums import VCSType
 from lp.registry.model.persondistributionsourcepackage import (
     PersonDistributionSourcePackage,
     )
@@ -24,6 +26,7 @@ from lp.testing import (
     )
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.matchers import BrowsesWithQueryLimit
+from lp.testing.pages import find_tag_by_id
 from lp.testing.views import create_initialized_view
 
 
@@ -36,7 +39,10 @@ class TestTargetGitListingView:
             owner=self.owner, target=self.target, name="foo")
         self.factory.makeGitRefs(
             main_repo,
-            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+            paths=[
+                "refs/heads/master", "refs/heads/1.0", "refs/heads/with#hash",
+                "refs/heads/\N{SNOWMAN}", "refs/tags/1.1",
+                ])
 
         other_repo = self.factory.makeGitRepository(
             owner=self.factory.makePerson(name="contributor"),
@@ -71,11 +77,17 @@ class TestTargetGitListingView:
         table = soup.find(
             'div', id='default-repository-branches').find('table')
         self.assertContentEqual(
-            ['1.0', 'master'],
+            ['1.0', 'master', 'with#hash', '\N{SNOWMAN}'],
             [link.find(text=True) for link in table.findAll('a')])
         self.assertEndsWith(
             table.find(text="1.0").parent['href'],
             "/~foowner/%s/+git/foo/+ref/1.0" % self.target_path)
+        self.assertEndsWith(
+            table.find(text="with#hash").parent['href'],
+            "/~foowner/%s/+git/foo/+ref/with%%23hash" % self.target_path)
+        self.assertEndsWith(
+            table.find(text="\N{SNOWMAN}").parent['href'],
+            "/~foowner/%s/+git/foo/+ref/%%E2%%98%%83" % self.target_path)
 
         # Other repos are listed.
         table = soup.find(
@@ -110,7 +122,7 @@ class TestTargetGitListingView:
                 repository=other_repo, user=other_repo.owner)
 
         self.assertThat(
-            self.target, BrowsesWithQueryLimit(34, self.owner, '+git'))
+            self.target, BrowsesWithQueryLimit(36, self.owner, '+git'))
 
     def test_copes_with_no_default(self):
         self.factory.makeGitRepository(
@@ -314,9 +326,40 @@ class TestProductGitListingView(TestTargetGitListingView,
     def setUp(self):
         super(TestProductGitListingView, self).setUp()
         self.owner = self.factory.makePerson(name="foowner")
-        self.target = self.factory.makeProduct(name="foo", owner=self.owner)
+        self.target = self.factory.makeProduct(name="foo", owner=self.owner,
+                                               vcs=VCSType.GIT)
         self.target_path = "foo"
         self.branch_target = self.target
+
+    def test_active_reviews_link(self):
+        main_repo = self.factory.makeGitRepository(
+            owner=self.owner, target=self.target, name="foo")
+        git_refs = self.factory.makeGitRefs(
+            main_repo,
+            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+
+        with admin_logged_in():
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                    target=self.target, repository=main_repo)
+
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=git_refs[0],
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        view = create_initialized_view(self.target, '+git')
+        self.assertIsNotNone(find_tag_by_id(view(), 'active-review-count'))
+
+    def test_personal_git_instructions_not_present(self):
+        with person_logged_in(self.owner):
+            view = create_initialized_view(
+                self.target, '+git', principal=self.owner)
+            self.assertIsNone(
+                find_tag_by_id(view(), 'personal-git-directions'))
+
+    def test_personal_link(self):
+        with person_logged_in(self.owner):
+            view = create_initialized_view(
+                self.target, '+git', principal=self.owner)
+            self.assertFalse(view.show_personal_directions)
 
 
 class TestPersonProductGitListingView(TestPersonTargetGitListingView,
@@ -456,6 +499,19 @@ class TestPersonGitListingView(TestPlainGitListingView, TestCaseWithFactory):
         super(TestPersonGitListingView, self).setUp()
         self.context = self.user = self.owner = self.factory.makePerson()
         self.target = self.branch_target = None
+
+    def test_personal_git_instructions_present(self):
+        with person_logged_in(self.owner):
+            view = create_initialized_view(
+                self.owner, '+git', principal=self.owner)
+            self.assertIsNotNone(
+                find_tag_by_id(view(), 'personal-git-directions'))
+
+    def test_personal_link(self):
+        with person_logged_in(self.owner):
+            view = create_initialized_view(
+                self.owner, '+git', principal=self.owner)
+            self.assertTrue(view.show_personal_directions)
 
 
 class TestDistributionGitListingView(TestPlainGitListingView,

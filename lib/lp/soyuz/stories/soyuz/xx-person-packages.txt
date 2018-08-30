@@ -6,7 +6,7 @@ that person's +related-packages page, which is linked to from the
 person's home page.
 
     >>> browser.open("http://launchpad.dev/~mark/+related-packages")
-    >>> print browser.title
+    >>> print(browser.title)
     Related packages : Mark Shuttleworth
 
 This page is just a summary of the user's packages and will only
@@ -14,7 +14,7 @@ display up to the most recent 30 items in each category.  However, it
 has more links that take the user to batched listings in each category
 where all items can be perused.
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'navlinks'))
+    >>> print(extract_text(find_tag_by_id(browser.contents, 'navlinks')))
     Related packages
     Maintained packages
     Uploaded packages
@@ -22,20 +22,20 @@ where all items can be perused.
     Related projects
     Owned teams
 
-    >>> print browser.getLink("Maintained packages").url
+    >>> print(browser.getLink("Maintained packages").url)
     http://launchpad.dev/~mark/+maintained-packages
-    >>> print browser.getLink("Uploaded packages").url
+    >>> print(browser.getLink("Uploaded packages").url)
     http://launchpad.dev/~mark/+uploaded-packages
-    >>> print browser.getLink("PPA packages").url
+    >>> print(browser.getLink("PPA packages").url)
     http://launchpad.dev/~mark/+ppa-packages
-    >>> print browser.getLink("Related projects").url
+    >>> print(browser.getLink("Related projects").url)
     http://launchpad.dev/~mark/+related-projects
 
 Each category on the summary page has a heading that shows how many
 packages are being displayed.
 
     >>> browser.open("http://launchpad.dev/~mark/+related-packages")
-    >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
+    >>> print(extract_text(find_tag_by_id(browser.contents, 'packages')))
     Maintained packages
     Displaying first 5 packages out of 7 total
     ...
@@ -56,7 +56,7 @@ The user chooses to see the distribution information for cnews:
 
     >>> browser.open("http://launchpad.dev/~name16/+related-packages")
     >>> link = browser.getLink("cnews")
-    >>> print link
+    >>> print(link)
     <Link text='cnews' url='http://launchpad.dev/ubuntu/+source/cnews'>
     >>> link.click()
     >>> browser.title
@@ -67,7 +67,7 @@ user follows the "Ubuntu Hoary" link next to cnews:
 
     >>> browser.open("http://launchpad.dev/~name16/+related-packages")
     >>> link = browser.getLink(url="/ubuntu/hoary/+source/cnews")
-    >>> print link
+    >>> print(link)
     <Link text='Ubuntu Hoary' ...>
     >>> link.click()
     >>> browser.title
@@ -78,7 +78,7 @@ user follows the cnews version link to see the page.
 
     >>> browser.open("http://launchpad.dev/~name16/+related-packages")
     >>> link = browser.getLink(url="/ubuntu/+source/cnews/cr.g7-37")
-    >>> print link
+    >>> print(link)
     <Link ... url='http://launchpad.dev/ubuntu/+source/cnews/cr.g7-37'>
     >>> link.click()
     >>> browser.title
@@ -93,7 +93,7 @@ to the page that lists maintained packages in batches.
 
     >>> browser.open("http://launchpad.dev/~mark/+related-packages")
     >>> browser.getLink("Maintained packages").click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
+    >>> print(extract_text(find_tag_by_id(browser.contents, 'packages')))
     1...5 of 7 results
     ...
     Name        Uploaded to  Version   When        Failures
@@ -109,8 +109,8 @@ maintained packages to show. No-priv does not maintain packages.
     PPA for No Privileges Person
     >>> anon_browser.open(
     ...     "http://launchpad.dev/~no-priv/+maintained-packages")
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'packages'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'packages')))
     Name...
     No Privileges Person does not maintain any packages.
 
@@ -118,7 +118,7 @@ The navigation link to "Uploaded packages" takes the user to the
 page that lists uploaded packages in batches.
 
     >>> browser.getLink("Uploaded packages").click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
+    >>> print(extract_text(find_tag_by_id(browser.contents, 'packages')))
     1...5 of 6 results
     ...
     Name    Uploaded to          Version When        Failures
@@ -129,7 +129,7 @@ The navigation link to "PPA packages" takes the user to the
 page that lists PPA packages in batches.
 
     >>> browser.getLink("PPA packages").click()
-    >>> print extract_text(find_tag_by_id(browser.contents, 'packages'))
+    >>> print(extract_text(find_tag_by_id(browser.contents, 'packages')))
     1...1 of 1 result
     ...
     Name      Uploaded to           Version  When        Failures
@@ -159,7 +159,7 @@ Let's make a helper function to print the PPA packages from the page:
     >>> def print_ppa_rows(browser):
     ...     rows = find_tags_by_class(browser.contents, "ppa_row")
     ...     for row in rows:
-    ...         print extract_text(row)
+    ...         print(extract_text(row))
 
 Make a function to update the cached latest person source package release
 records.
@@ -394,10 +394,10 @@ Then delete the 'source2' package.
     >>> def print_ppa_packages(contents):
     ...     packages = find_tags_by_class(contents, 'archive_package_row')
     ...     for pkg in packages:
-    ...         print extract_text(pkg)
+    ...         print(extract_text(pkg))
     ...     empty_section = find_tag_by_id(contents, 'empty-result')
     ...     if empty_section is not None:
-    ...         print extract_text(empty_section)
+    ...         print(extract_text(empty_section))
     >>> print_ppa_packages(admin_browser.contents)
     Source             Published   Status     Series   Section  Build Status
     source2 - 666...   a moment ago Deleted   ...
@@ -418,7 +418,7 @@ Please note also that disabled archives are not viewable by anonymous users.
     ...     package_table = find_tag_by_id(
     ...         anon_browser.contents, 'packages_list')
     ...     for ppa_row in package_table.findChildren('tr'):
-    ...         print extract_text(ppa_row)
+    ...         print(extract_text(ppa_row))
 
     >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> print_archive_package_rows(anon_browser)

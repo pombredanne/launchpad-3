@@ -35,7 +35,7 @@ to the main merge proposal page.
     ...     tags = find_tags_by_class(browser.contents, klass)
     ...     for count, tag in enumerate(tags):
     ...         if count == index:
-    ...             print extract_text(tag)
+    ...             print(extract_text(tag))
 
     >>> print_comments('boardCommentDetails')
     Eric the Viking (eric) wrote ...
@@ -48,7 +48,7 @@ to the main merge proposal page.
 
 The person's name links back to the main site for that person.
 
-    >>> print anon_browser.getLink('Eric the Viking').url
+    >>> print(anon_browser.getLink('Eric the Viking').url)
     http://launchpad.dev/~eric
 
 Reply link is displayed even if the user isn't logged in.
@@ -66,8 +66,8 @@ We can reply to a comment.
 XXX: Bjorn Tillenius 2010-05-19 bug=582842: Following test disabled,
 since it failed spuriously in buildbot.
 
-#    >>> print eric_browser.getControl(name='field.comment').value.replace(
-#    ...     '\r\n', '\n')
+#    >>> print(eric_browser.getControl(name='field.comment').value.replace(
+#    ...     '\r\n', '\n'))
 #    This is a very long comment about what things should be done to the
 #    source branch to land it.  When this comment is replied to, it should
 #    wrap the line properly.
@@ -115,7 +115,7 @@ are also displayed in the new proposal.
     >>> details = find_tags_by_class(
     ...     anon_browser.contents, 'boardCommentDetails')[0]
     >>> links = details.findAll('a')
-    >>> print links[1]['href'] == merge_proposal_path
+    >>> print(links[1]['href'] == merge_proposal_path)
     True
 
 
@@ -143,8 +143,8 @@ Vote summaries
 The summary of the votes that have been made for a code review are shown
 in a table at the top of the page.
 
-    >>> print extract_text(find_tag_by_id(
-    ...     eric_browser.contents, 'code-review-votes'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     eric_browser.contents, 'code-review-votes')))
     Reviewer                     Review Type    Date Requested    Status
     Eric the Viking (community)  timeless       ...               Abstain...
     a moment ago

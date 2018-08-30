@@ -39,6 +39,7 @@ import simplejson
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implementer,
@@ -46,6 +47,7 @@ from zope.interface import (
     providedBy,
     )
 from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import (
     Bool,
     Choice,
@@ -60,7 +62,6 @@ from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -136,6 +137,7 @@ from lp.services.webapp.authorization import (
 from lp.services.webapp.breadcrumb import NameBreadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.publisher import DataDownloadView
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.hassnaps import (
     HasSnapsMenuMixin,
@@ -202,6 +204,22 @@ class BranchNavigation(WebhookTargetNavigationMixin, Navigation):
             # Not a number.
             return None
         return self.context.getMergeProposalByID(id)
+
+    @stepto("+diff")
+    def traverse_diff(self):
+        segments = list(self.request.getTraversalStack())
+        if len(segments) == 1:
+            new = segments.pop()
+            old = None
+            self.request.stepstogo.consume()
+        elif len(segments) == 2:
+            new = segments.pop()
+            old = segments.pop()
+            self.request.stepstogo.consume()
+            self.request.stepstogo.consume()
+        else:
+            return None
+        return BranchDiffView(self.context, self.request, new, old=old)
 
     @stepto("+code-import")
     def traverse_code_import(self):
@@ -1064,9 +1082,9 @@ class BranchEditView(CodeEditOwnerMixin, BranchEditFormView):
             'lifecycle_status'])
         return field_names
 
-    custom_widget('target', BranchTargetWidget)
-    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget_target = BranchTargetWidget
+    custom_widget_lifecycle_status = LaunchpadRadioWidgetWithDescription
+    custom_widget_information_type = LaunchpadRadioWidgetWithDescription
 
     any_owner_description = _(
         "As an administrator you are able to assign this branch to any "
@@ -1183,9 +1201,11 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     schema = RegisterProposalSchema
     for_input = True
 
-    custom_widget('target_branch', TargetBranchWidget)
-    custom_widget('commit_message', TextAreaWidget, cssClass='comment-text')
-    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
+    custom_widget_target_branch = TargetBranchWidget
+    custom_widget_commit_message = CustomWidgetFactory(
+        TextAreaWidget, cssClass='comment-text')
+    custom_widget_comment = CustomWidgetFactory(
+        TextAreaWidget, cssClass='comment-text')
 
     page_title = label = 'Propose branch for merging'
 
@@ -1280,3 +1300,33 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                     'target_branch',
                     "This branch is not mergeable into %s." %
                     target_branch.bzr_identity)
+
+
+@implementer(IBrowserPublisher)
+class BranchDiffView(DataDownloadView):
+
+    content_type = "text/x-patch"
+
+    def __init__(self, context, request, new, old=None):
+        super(BranchDiffView, self).__init__(context, request)
+        self.new = new
+        self.old = old
+
+    def __call__(self):
+        if getFeatureFlag(u"code.bzr.diff.disable_proxy"):
+            self.request.response.setStatus(401)
+            return "Proxying of branch diffs is disabled.\n"
+        return super(BranchDiffView, self).__call__()
+
+    @property
+    def filename(self):
+        if self.old is None:
+            return "%s_%s.diff" % (self.context.name, self.new)
+        else:
+            return "%s_%s_%s.diff" % (self.context.name, self.old, self.new)
+
+    def getBody(self):
+        return self.context.getDiff(self.new, old=self.old)
+
+    def browserDefault(self, request):
+        return self, ()

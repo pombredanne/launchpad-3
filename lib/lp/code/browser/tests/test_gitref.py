@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for GitRefView."""
@@ -28,9 +28,13 @@ from lp.testing import (
     admin_logged_in,
     BrowserTestCase,
     StormStatementRecorder,
+    TestCaseWithFactory,
     )
 from lp.testing.dbuser import dbuser
-from lp.testing.layers import LaunchpadFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import (
     extract_text,
@@ -42,6 +46,41 @@ from lp.testing.views import (
     )
 
 
+class TestGitRefNavigation(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_canonical_url_branch(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/master"])
+        self.assertEqual(
+            "%s/+ref/master" % canonical_url(ref.repository),
+            canonical_url(ref))
+
+    def test_canonical_url_with_slash(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/with/slash"])
+        self.assertEqual(
+            "%s/+ref/with/slash" % canonical_url(ref.repository),
+            canonical_url(ref))
+
+    def test_canonical_url_percent_encoded(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/with#hash"])
+        self.assertEqual(
+            "%s/+ref/with%%23hash" % canonical_url(ref.repository),
+            canonical_url(ref))
+
+    def test_canonical_url_non_ascii(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/\N{SNOWMAN}"])
+        self.assertEqual(
+            "%s/+ref/%%E2%%98%%83" % canonical_url(ref.repository),
+            canonical_url(ref))
+
+    def test_canonical_url_tag(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/tags/1.0"])
+        self.assertEqual(
+            "%s/+ref/refs/tags/1.0" % canonical_url(ref.repository),
+            canonical_url(ref))
+
+
 class TestGitRefView(BrowserTestCase):
 
     layer = LaunchpadFunctionalLayer
@@ -50,7 +89,7 @@ class TestGitRefView(BrowserTestCase):
         super(TestGitRefView, self).setUp()
         self.hosting_fixture = self.useFixture(GitHostingFixture())
 
-    def test_rendering(self):
+    def _test_rendering(self, branch_name):
         repository = self.factory.makeGitRepository(
             owner=self.factory.makePerson(name="person"),
             target=self.factory.makeProduct(name="target"),
@@ -58,7 +97,7 @@ class TestGitRefView(BrowserTestCase):
         getUtility(IGitRepositorySet).setDefaultRepositoryForOwner(
             repository.owner, repository.target, repository, repository.owner)
         [ref] = self.factory.makeGitRefs(
-            repository=repository, paths=["refs/heads/master"])
+            repository=repository, paths=["refs/heads/%s" % branch_name])
         view = create_view(ref, "+index")
         # To test the breadcrumbs we need a correct traversal stack.
         view.request.traversed_objects = [repository, ref, view]
@@ -85,15 +124,22 @@ class TestGitRefView(BrowserTestCase):
                     breadcrumbs_tag,
                     soupmatchers.Tag(
                         'git ref breadcrumb', 'li',
-                        text=re.compile(r'\smaster\s')))))
+                        text=re.compile(r'\s%s\s' % branch_name)))))
+
+    def test_rendering(self):
+        self._test_rendering("master")
+
+    def test_rendering_non_ascii(self):
+        self._test_rendering("\N{SNOWMAN}")
 
     def test_clone_instructions(self):
         [ref] = self.factory.makeGitRefs(paths=["refs/heads/branch"])
+        username = ref.owner.name
         text = self.getMainText(ref, "+index", user=ref.owner)
         self.assertTextMatchesExpressionIgnoreWhitespace(r"""
-            git clone -b branch https://.*
-            git clone -b branch git\+ssh://.*
-            """, text)
+            git clone -b branch https://git.launchpad.dev/.*
+            git clone -b branch git\+ssh://{username}@git.launchpad.dev/.*
+            """.format(username=username), text)
 
     def makeCommitLog(self):
         authors = [self.factory.makePerson() for _ in range(5)]
@@ -207,8 +253,10 @@ class TestGitRefView(BrowserTestCase):
             [canonical_url(mp)],
             [link["href"] for link in details[5].findAll("a")])
 
-    def test_all_commits_link(self):
-        [ref] = self.factory.makeGitRefs(paths=["refs/heads/branch"])
+    def _test_all_commits_link(self, branch_name, encoded_branch_name=None):
+        if encoded_branch_name is None:
+            encoded_branch_name = branch_name
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/%s" % branch_name])
         log = self.makeCommitLog()
         self.hosting_fixture.getLog.result = list(reversed(log))
         self.scanRef(ref, log[-1])
@@ -216,8 +264,8 @@ class TestGitRefView(BrowserTestCase):
         recent_commits_tag = soupmatchers.Tag(
             'recent commits', 'div', attrs={'id': 'recent-commits'})
         expected_url = (
-            'https://git.launchpad.dev/%s/log/?h=branch' %
-            ref.repository.shortened_path)
+            'https://git.launchpad.dev/%s/log/?h=%s' %
+            (ref.repository.shortened_path, encoded_branch_name))
         self.assertThat(
             view(),
             soupmatchers.HTMLContains(
@@ -226,6 +274,12 @@ class TestGitRefView(BrowserTestCase):
                     soupmatchers.Tag(
                         'all commits link', 'a', text='All commits',
                         attrs={'href': expected_url}))))
+
+    def test_all_commits_link(self):
+        self._test_all_commits_link("branch")
+
+    def test_all_commits_link_non_ascii(self):
+        self._test_all_commits_link("\N{SNOWMAN}", "%E2%98%83")
 
     def test_query_count_landing_candidates(self):
         project = self.factory.makeProduct()

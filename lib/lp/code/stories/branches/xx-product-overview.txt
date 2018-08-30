@@ -8,10 +8,10 @@ registered branches.
     ...     browser.open(url)
     ...     branches = find_portlet(browser.contents, 'Latest branches')
     ...     if branches is None:
-    ...         print "No 'Latest branches' portlet found at %s" % (url,)
+    ...         print("No 'Latest branches' portlet found at %s" % (url,))
     ...         return
     ...     for list_item in branches.findAll('li'):
-    ...         print extract_text(list_item)
+    ...         print(extract_text(list_item))
 
     >>> def make_branch_on_product(product, branch_name, person_name):
     ...     """Make a branch on `product`.

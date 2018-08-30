@@ -3,39 +3,13 @@ Text Searching
 
 Introduction
 ------------
-We are currently using tsearch2 to provide full text searching
-capabilities inside the PostgreSQL database.
+We are currently using PostgreSQL's built-in full text search capabilities.
 
 Although in a lot of cases simple substring searches using LIKE would be
 fine or even preferred, the disadvantage of using LIKE is that PostgreSQL
 cannot use any indexes to do the substring search. This does not scale
 when we need to search tens of thousands of entries (packages) or hundreds
 of thousands of entries (people) or millions of entries (translations).
-
-Installation
-------------
-tsearch2 is part of the `postgresql-contrib` package. This is installed
-into the launchpad database using the script `database/schema/fti.py`,
-which is run automatically during database creation.
-
-This script does the following:
-
-    * Hooks `tsearch2` into the launchpad database, installing it into
-      the ts2 schema.
-
-    * Creates all the full text indexes. These are in the form of a new
-      column called `fti` on a number of tables. Which tables and
-      which columns are indexed is defined inside the fti.py script.
-
-    * Creates the `ftq(text)` stored procedure. This procedure makes
-      queries against the indexes simpler and consistant throughout
-      our applications.
-
-It is the Database Administrator's responsibility to rerun `fti.py` as
-part of the production rollouts if this script has been modified. It does
-not need to be rerun if the script has not changed. Rebuilding the indexes
-currently takes several minutes on production, during which time the
-production database is unavailable.
 
 Querying
 --------
@@ -563,11 +537,11 @@ Ranking
 -------
 
 We have ranking information stored in the indexes, as specified in fti.py.
-The rank of a result is calculated using the tsearch2 rank() function.
+The rank of a result is calculated using the ts_rank() function.
 
     >>> runsql(r"""
     ...     SELECT
-    ...         name, rank(fti, ftq('gnome')) AS rank
+    ...         name, ts_rank(fti, ftq('gnome')) AS rank
     ...     FROM product
     ...     WHERE fti @@ ftq('gnome')
     ...     ORDER BY rank DESC, name
@@ -581,7 +555,7 @@ The rank of a result is calculated using the tsearch2 rank() function.
 You can also build complex multi table queries and mush all the
 ranked results together. This query does a full text search on
 the Bug and Message tables, as well as substring name searches on
-SourcepackageName.name and Product.name. The rank() function returns an
+SourcepackageName.name and Product.name. The ts_rank() function returns an
 float between 0 and 1, so I just chose some arbitrary constants for name
 matches that seemed appropriate. It is also doing a full text search
 against the Product table, and manually lowering the rank (again using
@@ -589,7 +563,7 @@ an arbitrary constant that seemed appropriate).
 
     >>> runsql(r"""
     ...   SELECT title, max(ranking) FROM (
-    ...    SELECT Bug.title,rank(Bug.fti||Message.fti,ftq('firefox'))
+    ...    SELECT Bug.title,ts_rank(Bug.fti||Message.fti,ftq('firefox'))
     ...    AS ranking
     ...    FROM Bug, BugMessage, Message
     ...    WHERE Bug.id = BugMessage.bug AND Message.id = BugMessage.message
@@ -607,7 +581,7 @@ an arbitrary constant that seemed appropriate).
     ...       AND BugTask.product = Product.id
     ...       AND Product.name LIKE lower('%firefox%')
     ...    UNION
-    ...    SELECT Bug.title, rank(Product.fti, ftq('firefox')) - 0.3
+    ...    SELECT Bug.title, ts_rank(Product.fti, ftq('firefox')) - 0.3
     ...    AS ranking
     ...    FROM Bug, BugTask, Product
     ...    WHERE Bug.id = BugTask.bug
@@ -657,10 +631,10 @@ by relevance computed using an algorithm similar to TD-IDF
 
 Implementing something similar with tsearch2 is straightforward:
 tsearch2 to_tsquery() already removes stop-words (it also stems the
-words). Relevance can be computed using the rank() or rank_cd()
+words). Relevance can be computed using the ts_rank() or ts_rank_cd()
 functions. These are not TD-IDF scoring functions, but they take into
-account where the words appeared (in the case of rank()) or proximity
-of the words (in the case of rank_cd()). Both scoring functions can
+account where the words appeared (in the case of ts_rank()) or proximity
+of the words (in the case of ts_rank_cd()). Both scoring functions can
 normalize based on document length. So the only part left to implement
 is the >50% filtering part. Howevert the > 50% filtering is very expensive,
 and so is processing every single returned item (> 200000 for common queries

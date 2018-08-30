@@ -321,7 +321,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
                     getUtility(ILaunchBag).user), *vocab_filter)
             order_by = SQL(
                 '(CASE name WHEN %s THEN 1 '
-                ' ELSE rank(fti, ftq(%s)) END) DESC, displayname, name'
+                ' ELSE ts_rank(fti, ftq(%s)) END) DESC, displayname, name'
                 % (fti_query, fti_query))
             return IStore(Product).find(self._table, where_clause).order_by(
                 order_by).config(limit=100)
@@ -628,7 +628,7 @@ class ValidPersonOrTeamVocabulary(
                         when person.name like lower(?) || '%%' then 0.6
                         when lower(person.displayname) like lower(?)
                             || '%%' then 0.5
-                        else rank(fti, ftq(?))
+                        else ts_rank(fti, ftq(?))
                     end) as rank
                     FROM Person
                     WHERE Person.name LIKE lower(?) || '%%'

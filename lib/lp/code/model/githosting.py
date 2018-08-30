@@ -8,6 +8,7 @@ __all__ = [
     'GitHostingClient',
     ]
 
+import base64
 import json
 import sys
 from urllib import quote
@@ -56,8 +57,7 @@ class GitHostingClient:
             "git-hosting-%s" % method, "%s %s" % (path, json.dumps(kwargs)))
         try:
             response = urlfetch(
-                urljoin(self.endpoint, path), trust_env=False, method=method,
-                **kwargs)
+                urljoin(self.endpoint, path), method=method, **kwargs)
         except TimeoutError:
             # Re-raise this directly so that it can be handled specially by
             # callers.
@@ -217,13 +217,14 @@ class GitHostingClient:
             url = "/repo/%s/blob/%s" % (path, quote(filename))
             response = self._get(url, params={"rev": rev})
         except requests.RequestException as e:
-            if e.response.status_code == requests.codes.NOT_FOUND:
+            if (e.response is not None and
+                    e.response.status_code == requests.codes.NOT_FOUND):
                 raise GitRepositoryBlobNotFound(path, filename, rev=rev)
             else:
                 raise GitRepositoryScanFault(
                     "Failed to get file from Git repository: %s" % unicode(e))
         try:
-            blob = response["data"].decode("base64")
+            blob = base64.b64decode(response["data"].encode("UTF-8"))
             if len(blob) != response["size"]:
                 raise GitRepositoryScanFault(
                     "Unexpected size (%s vs %s)" % (

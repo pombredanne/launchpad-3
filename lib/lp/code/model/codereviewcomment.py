@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The database implementation class for CodeReviewComment."""
@@ -124,3 +124,13 @@ class CodeReviewComment(SQLBase):
         if self.message.raw is None:
             return None
         return signed_message_from_string(self.message.raw.read())
+
+    @property
+    def visible(self):
+        return self.message.visible
+
+    def userCanSetCommentVisibility(self, user):
+        """See `ICodeReviewComment`."""
+        return (
+            self.branch_merge_proposal.userCanSetCommentVisibility(user) or
+            (user is not None and user.inTeam(self.author)))

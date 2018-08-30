@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -58,6 +58,7 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
@@ -99,7 +100,10 @@ from lp.services.browser_helpers import (
 from lp.services.database.bulk import load_related
 from lp.services.helpers import english_list
 from lp.services.job.model.job import Job
-from lp.services.librarian.browser import FileNavigationMixin
+from lp.services.librarian.browser import (
+    DeletedProxiedLibraryFileAlias,
+    FileNavigationMixin,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -120,6 +124,7 @@ from lp.services.webapp.interfaces import (
     IStructuredString,
     )
 from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.publisher import RedirectionView
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
@@ -454,6 +459,46 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
             return None
 
         return self.context.getArchiveDependency(archive)
+
+    @stepthrough('+sourcefiles')
+    def traverse_sourcefiles(self, sourcepackagename):
+        """Traverse to a source file in the archive.
+
+        Normally, files in an archive are unique by filename, so the +files
+        traversal is sufficient.  Unfortunately, a gina-imported archive may
+        contain the same filename with different contents due to a
+        combination of epochs and less stringent checks applied by the
+        upstream archive software.  (In practice this only happens for
+        source packages because that's normally all we import using gina.)
+        This provides an unambiguous way to traverse to such files even with
+        this problem.
+
+        The path scheme is::
+
+            +sourcefiles/:sourcename/:sourceversion/:filename
+        """
+        if len(self.request.stepstogo) < 2:
+            return None
+
+        version = self.request.stepstogo.consume()
+        filename = self.request.stepstogo.consume()
+
+        if not check_permission('launchpad.View', self.context):
+            raise Unauthorized()
+
+        library_file = self.context.getSourceFileByName(
+            sourcepackagename, version, filename)
+
+        # Deleted library files result in a NotFound-like error.
+        if library_file.deleted:
+            raise DeletedProxiedLibraryFileAlias(filename, self.context)
+
+        # There can be no further path segments.
+        if len(self.request.stepstogo) > 0:
+            return None
+
+        return RedirectionView(
+            library_file.getURL(include_token=True), self.request)
 
 
 class ArchiveMenuMixin:

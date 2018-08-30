@@ -32,13 +32,13 @@ The code imports overview page is linked off the main code page.
 
     >>> browser.open('http://code.launchpad.dev')
     >>> browser.getLink('3 imported branches').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Code Imports
 
 Any user can look at the current list of imports.
 
     >>> anon_browser.open('http://code.launchpad.dev/+code-imports')
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Code Imports
 
 There are two CodeImports in the sample data and they both show up in
@@ -47,7 +47,7 @@ the page, as well as the two we created above:
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
     >>> names = [extract_text(tr.td) for tr in table.tbody('tr')]
     >>> for name in names:
-    ...     print name
+    ...     print(name)
     ~vcs-imports/gnome-terminal/import
     ~vcs-imports/evolution/import
     ~name12/gnome-terminal/+git/gnome-terminal
@@ -76,8 +76,8 @@ default, as the code that ensures this is poking at Zope 3 internals a bit.
     ['Any']
     >>> control.displayValue = ["Invalid"]
     >>> browser.getControl(name="submit").click()
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'no-imports'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(browser.contents, 'no-imports')))
     No matching code imports found.
 
 Of course selecting the "Any" filtering option ensures that all
@@ -88,7 +88,7 @@ imports appear again.
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
     >>> rows = [extract_text(tr) for tr in table('tr')]
     >>> for row in rows:
-    ...     print row
+    ...     print(row)
     Import                                     Created  Source type        Target type Location     Status
     ~vcs-imports/gnome-terminal/import         2007-... Subversion via ... Bazaar      http://sv... Reviewed
     ~vcs-imports/evolution/import              2007-... Concurrent Vers... Bazaar      :pserver:... Pending Review
@@ -105,7 +105,7 @@ We can also filter by source type.
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
     >>> rows = [extract_text(tr) for tr in table('tr')]
     >>> for row in rows:
-    ...     print row
+    ...     print(row)
     Import                        Created  Source type        Target type Location     Status
     ~vcs-imports/evolution/import 2007-... Concurrent Vers... Bazaar      :pserver:... Pending Review
 
@@ -120,7 +120,7 @@ We can also filter by source type.
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
     >>> rows = [extract_text(tr) for tr in table('tr')]
     >>> for row in rows:
-    ...     print row
+    ...     print(row)
     Import                                     Created  Source type        Target type Location     Status
     ~name12/gnome-terminal/+git/gnome-terminal ...      Git                Git         git://git... Reviewed
     ~name12/evolution/+git/evolution           ...      Git                Git         https://g... Reviewed

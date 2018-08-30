@@ -236,7 +236,8 @@ def build_inline_comments_section(comments, diff_text):
 
             # add context line (hunk header)
             line_count += 1  # inc hunk context line
-            hunk_lines.append(u'> %s' % hunk.get_header().rstrip('\n'))
+            hunk_lines.append(u'> %s' % hunk.get_header().rstrip('\n').decode(
+                'utf-8', 'replace'))
 
             # comment for context line (hunk header)
             comment = comments.get(str(line_count))

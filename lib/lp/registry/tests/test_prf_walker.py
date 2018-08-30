@@ -1,15 +1,24 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.registry.scripts.productreleasefinder.walker."""
 
 import logging
 import StringIO
-import urlparse
 
-from lazr.restful.utils import safe_hasattr
+import responses
 
-from lp.registry.scripts.productreleasefinder.walker import WalkerBase
+from lp.registry.scripts.productreleasefinder.walker import (
+    combine_url,
+    FTPWalker,
+    HTTPWalker,
+    WalkerBase,
+    WalkerError,
+    )
+from lp.services.timeout import (
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
 from lp.testing import (
     reset_logging,
     TestCase,
@@ -20,14 +29,12 @@ class WalkerBase_Logging(TestCase):
 
     def testCreatesDefaultLogger(self):
         """WalkerBase creates a default logger."""
-        from logging import Logger
         w = WalkerBase("/")
-        self.assertTrue(isinstance(w.log, Logger))
+        self.assertTrue(isinstance(w.log, logging.Logger))
 
     def testCreatesChildLogger(self):
         """WalkerBase creates a child logger if given a parent."""
-        from logging import getLogger
-        parent = getLogger("foo")
+        parent = logging.getLogger("foo")
         w = WalkerBase("/", log_parent=parent)
         self.assertEqual(w.log.parent, parent)
 
@@ -56,8 +63,6 @@ class WalkerBase_Base(TestCase):
 
     def testWrongScheme(self):
         """WalkerBase raises WalkerError when given an unhandled scheme."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            WalkerBase, WalkerError)
         self.assertRaises(WalkerError, WalkerBase, "foo://localhost/")
 
     def testUnescapesHost(self):
@@ -201,35 +206,25 @@ class FTPWalker_Base(TestCase):
 
     def testFtpScheme(self):
         """FTPWalker works when initialized with an ftp-scheme URL."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            FTPWalker)
         w = FTPWalker("ftp://localhost/")
         self.assertEqual(w.host, "localhost")
 
     def testNoScheme(self):
         """FTPWalker works when given a URL with no scheme."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            FTPWalker)
         w = FTPWalker("/")
         self.assertEqual(w.host, "")
 
     def testWrongScheme(self):
         """FTPWalker raises WalkerError when given an unhandled scheme."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            FTPWalker, WalkerError)
         self.assertRaises(WalkerError, FTPWalker, "http://localhost/")
 
     def testNoUsername(self):
         """FTPWalker stores 'anonymous' when there is no username."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            FTPWalker)
         w = FTPWalker("ftp://localhost/")
         self.assertEqual(w.user, "anonymous")
 
     def testNoPassword(self):
         """FTPWalker stores empty string when there is no password."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            FTPWalker)
         w = FTPWalker("ftp://scott@localhost/")
         self.assertEqual(w.passwd, "")
 
@@ -238,88 +233,35 @@ class HTTPWalker_Base(TestCase):
 
     def testHttpScheme(self):
         """HTTPWalker works when initialized with an http-scheme URL."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            HTTPWalker)
         w = HTTPWalker("http://localhost/")
         self.assertEqual(w.host, "localhost")
 
     def testHttpsScheme(self):
         """HTTPWalker works when initialized with an https-scheme URL."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            HTTPWalker)
         w = HTTPWalker("https://localhost/")
         self.assertEqual(w.host, "localhost")
 
     def testNoScheme(self):
         """HTTPWalker works when given a URL with no scheme."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            HTTPWalker)
         w = HTTPWalker("/")
         self.assertEqual(w.host, "")
 
     def testWrongScheme(self):
         """HTTPWalker raises WalkerError when given an unhandled scheme."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            HTTPWalker, WalkerError)
         self.assertRaises(WalkerError, HTTPWalker, "foo://localhost/")
-
-
-class HTTPWalker_url_schemes_and_handlers(TestCase):
-    """Verify there is a handler for each URL scheme."""
-
-    def setUp(self):
-        TestCase.setUp(self)
-        from lp.registry.scripts.productreleasefinder.walker import (
-            HTTPWalker)
-        self.walker = HTTPWalker("http://localhost/")
-
-    def verify_url_scheme_and_handler(self, scheme, handler):
-        self.assertIn(scheme, self.walker.URL_SCHEMES)
-        self.assertIn(handler, self.walker.handlers)
-        # urllib2 uses a naming convention to select the handler for
-        # a URL scheme. This test is sanity to check to ensure that the
-        # HTTPWalker's configuration of the OpenerDirector is will work.
-        method_name = '%s_open' % scheme
-        self.assertTrue(safe_hasattr(handler, method_name))
-
-    def test_http_request(self):
-        import urllib2
-        self.verify_url_scheme_and_handler('http', urllib2.HTTPHandler)
-
-    def test_https_request(self):
-        import urllib2
-        self.verify_url_scheme_and_handler('https', urllib2.HTTPSHandler)
-
-    def test_ftp_request(self):
-        import urllib2
-        self.verify_url_scheme_and_handler('ftp', urllib2.FTPHandler)
 
 
 class HTTPWalker_ListDir(TestCase):
 
-    def tearDown(self):
-        reset_logging()
-        super(HTTPWalker_ListDir, self).tearDown()
+    def setUp(self):
+        super(HTTPWalker_ListDir, self).setUp()
+        self.addCleanup(reset_logging)
+        original_timeout_function = get_default_timeout_function()
+        set_default_timeout_function(lambda: 60.0)
+        self.addCleanup(
+            set_default_timeout_function, original_timeout_function)
 
-    def setUpWalker(self, listing_url, listing_content):
-        from lp.registry.scripts.productreleasefinder.walker import (
-            HTTPWalker)
-        test = self
-
-        class TestHTTPWalker(HTTPWalker):
-
-            def request(self, method, path):
-                test.assertEqual(method, 'GET')
-                test.assertEqual(urlparse.urljoin(self.base, path),
-                                 listing_url)
-                return StringIO.StringIO(listing_content)
-
-            def isDirectory(self, path):
-                return path.endswith('/')
-
-        logging.basicConfig(level=logging.CRITICAL)
-        return TestHTTPWalker(listing_url, logging.getLogger())
-
+    @responses.activate
     def testApacheListing(self):
         # Test that list() handles a standard Apache dir listing.
         content = '''
@@ -341,15 +283,22 @@ class HTTPWalker_ListDir(TestCase):
 <address>Apache/2.2.3 (Unix) Server at <a href="mailto:ftp-adm@acc.umu.se">ftp.acc.umu.se</a> Port 80</address>
 </body></html>
         '''
-        walker = self.setUpWalker(
-            'http://ftp.gnome.org/pub/GNOME/sources/gnome-gpg/0.5/', content)
+        listing_url = 'http://ftp.gnome.org/pub/GNOME/sources/gnome-gpg/0.5/'
+        responses.add('GET', listing_url, body=content)
+        expected_filenames = [
+            'LATEST-IS-0.5.0',
+            'gnome-gpg-0.5.0.md5sum',
+            'gnome-gpg-0.5.0.tar.bz2',
+            'gnome-gpg-0.5.0.tar.gz',
+            ]
+        for filename in expected_filenames:
+            responses.add('HEAD', listing_url + filename)
+        walker = HTTPWalker(listing_url, logging.getLogger())
         dirnames, filenames = walker.list('/pub/GNOME/sources/gnome-gpg/0.5/')
         self.assertEqual(dirnames, [])
-        self.assertEqual(filenames, ['LATEST-IS-0.5.0',
-                                     'gnome-gpg-0.5.0.md5sum',
-                                     'gnome-gpg-0.5.0.tar.bz2',
-                                     'gnome-gpg-0.5.0.tar.gz'])
+        self.assertEqual(filenames, expected_filenames)
 
+    @responses.activate
     def testSquidFtpListing(self):
         # Test that a Squid FTP listing can be parsed.
         content = '''
@@ -375,8 +324,9 @@ FTP Directory: <A HREF="/">ftp://ftp.gnome.org</A>/<A HREF="/pub/">pub</A>/<A HR
 Generated Wed, 06 Sep 2006 11:04:02 GMT by squid (squid/2.5.STABLE12)
 </ADDRESS></BODY></HTML>
         '''
-        walker = self.setUpWalker(
-            'ftp://ftp.gnome.org/pub/GNOME/sources/gnome-gpg/0.5/', content)
+        listing_url = 'ftp://ftp.gnome.org/pub/GNOME/sources/gnome-gpg/0.5/'
+        responses.add('GET', listing_url, body=content)
+        walker = HTTPWalker(listing_url, logging.getLogger())
         dirnames, filenames = walker.list('/pub/GNOME/sources/gnome-gpg/0.5/')
         self.assertEqual(dirnames, [])
         self.assertEqual(filenames, ['LATEST-IS-0.5.0',
@@ -384,9 +334,10 @@ Generated Wed, 06 Sep 2006 11:04:02 GMT by squid (squid/2.5.STABLE12)
                                      'gnome-gpg-0.5.0.tar.bz2',
                                      'gnome-gpg-0.5.0.tar.gz'])
 
+    @responses.activate
     def testNonAsciiListing(self):
         # Test that list() handles non-ASCII output.
-        content = '''
+        content = b'''
         <html>
           <head>
             <title>Listing</title>
@@ -409,11 +360,17 @@ Generated Wed, 06 Sep 2006 11:04:02 GMT by squid (squid/2.5.STABLE12)
           </pre>
         </html>
         '''
-        walker = self.setUpWalker('http://example.com/foo/', content)
+        listing_url = 'http://example.com/foo/'
+        responses.add('GET', listing_url, body=content)
+        expected_filenames = ['file1', 'file2', 'file3', 'file99']
+        for filename in expected_filenames:
+            responses.add('HEAD', listing_url + filename)
+        walker = HTTPWalker(listing_url, logging.getLogger())
         dirnames, filenames = walker.list('/foo/')
         self.assertEqual(dirnames, ['subdir1/', 'subdir2/', 'subdir3/'])
-        self.assertEqual(filenames, ['file1', 'file2', 'file3', 'file99'])
+        self.assertEqual(filenames, expected_filenames)
 
+    @responses.activate
     def testDotPaths(self):
         # Test that paths containing dots are handled correctly.
         #
@@ -436,11 +393,15 @@ Generated Wed, 06 Sep 2006 11:04:02 GMT by squid (squid/2.5.STABLE12)
           </pre>
         </html>
         '''
-        walker = self.setUpWalker('http://example.com/foo/', content)
+        listing_url = 'http://example.com/foo/'
+        responses.add('GET', listing_url, body=content)
+        responses.add('HEAD', listing_url + 'file2')
+        walker = HTTPWalker(listing_url, logging.getLogger())
         dirnames, filenames = walker.list('/foo/')
         self.assertEqual(dirnames, ['dir/'])
         self.assertEqual(filenames, ['file2'])
 
+    @responses.activate
     def testNamedAnchors(self):
         # Test that the directory listing parser code handles named anchors.
         # These are <a> tags without an href attribute.
@@ -458,15 +419,21 @@ Generated Wed, 06 Sep 2006 11:04:02 GMT by squid (squid/2.5.STABLE12)
           </pre>
         </html>
         '''
-        walker = self.setUpWalker('http://example.com/foo/', content)
+        listing_url = 'http://example.com/foo/'
+        responses.add('GET', listing_url, body=content)
+        responses.add('HEAD', listing_url + 'file1')
+        walker = HTTPWalker(listing_url, logging.getLogger())
         dirnames, filenames = walker.list('/foo/')
         self.assertEqual(dirnames, ['dir1/'])
         self.assertEqual(filenames, ['file1'])
 
+    @responses.activate
     def testGarbageListing(self):
         # Make sure that garbage doesn't trip up the dir lister.
-        content = '\x01\x02\x03\x00\xff\xf2\xablkjsdflkjsfkljfds'
-        walker = self.setUpWalker('http://example.com/foo/', content)
+        content = b'\x01\x02\x03\x00\xff\xf2\xablkjsdflkjsfkljfds'
+        listing_url = 'http://example.com/foo/'
+        responses.add('GET', listing_url, body=content)
+        walker = HTTPWalker(listing_url, logging.getLogger())
         dirnames, filenames = walker.list('/foo/')
         self.assertEqual(dirnames, [])
         self.assertEqual(filenames, [])
@@ -481,8 +448,6 @@ class HTTPWalker_IsDirectory(TestCase):
     def testFtpIsDirectory(self):
         # Test that no requests are made by isDirectory() when walking
         # FTP sites.
-        from lp.registry.scripts.productreleasefinder.walker import (
-            HTTPWalker)
         test = self
 
         class TestHTTPWalker(HTTPWalker):
@@ -501,8 +466,6 @@ class Walker_CombineUrl(TestCase):
 
     def testConstructsUrl(self):
         """combine_url constructs the URL correctly."""
-        from lp.registry.scripts.productreleasefinder.walker import (
-            combine_url)
         self.assertEqual(combine_url("file:///base", "/subdir/", "file"),
                          "file:///subdir/file")
         self.assertEqual(combine_url("file:///base", "/subdir", "file"),

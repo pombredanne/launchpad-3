@@ -18,7 +18,7 @@ import sys
 from textwrap import dedent
 
 import cssutils
-import Image
+from PIL import Image
 import simplejson
 
 

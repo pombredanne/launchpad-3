@@ -25,7 +25,7 @@ first and requesting a download there.
 The translations export is implemented by the same machinery that does
 it for source packages (tested and documented separately).
 
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Download : Series trunk : Translations...
 
     >>> user_browser.getControl('Request Download').click()
@@ -80,7 +80,7 @@ We can't see its placeholder in non-development mode:
     >>> anon_browser.open('http://translations.launchpad.dev/evolution/')
     >>> for tag in find_tags_by_class(
     ...     anon_browser.contents, 'menu-link-translationdownload'):
-    ...     print tag.renderContents()
+    ...     print(tag.renderContents())
 
     # Reset global configuration...
     >>> config.devmode = True

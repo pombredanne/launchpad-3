@@ -31,21 +31,18 @@ returns a TracLPPlugin if it's found.
 If the LP plugin is installed, the URL will return 401, since it fails
 to validate the token.
 
-    >>> import urllib2
-    >>> class TracHavingLPPlugin401(Trac):
-    ...     def urlopen(self, url, data=None):
-    ...         print url
-    ...         raise urllib2.HTTPError(
-    ...             url, 401, "Unauthorized", None, None)
-    >>> trac = TracHavingLPPlugin401('http://example.com/')
-    >>> chosen_trac = trac.getExternalBugTrackerToUse()
-    http://example.com/launchpad-auth/check
-
+    >>> import responses
     >>> from lp.bugs.externalbugtracker.trac import TracLPPlugin
+
+    >>> trac = Trac('http://example.com/')
+    >>> with responses.RequestsMock() as requests_mock:
+    ...     requests_mock.add(
+    ...         'GET', 'http://example.com/launchpad-auth/check', status=401)
+    ...     chosen_trac = trac.getExternalBugTrackerToUse()
     >>> isinstance(chosen_trac, TracLPPlugin)
     True
-    >>> chosen_trac.baseurl
-    'http://example.com'
+    >>> print(chosen_trac.baseurl)
+    http://example.com
 
 Some Trac instances in the wild return HTTP 200 when the resource is
 not found (HTTP 404 would be more appropriate). A distinguishing
@@ -54,58 +51,37 @@ from a Trac with the plugin installed (when we've accidentally passed
 a valid token, which is very unlikely), is that the broken Trac will
 not include a "trac_auth" cookie.
 
-    >>> from StringIO import StringIO
-    >>> from httplib import HTTPMessage
-    >>> from urllib import addinfourl
-
-    >>> class TracReturning200ForPageNotFound(Trac):
-    ...     def urlopen(self, url, data=None):
-    ...         print url
-    ...         return addinfourl(
-    ...             StringIO(''), HTTPMessage(StringIO('')), url)
-
-    >>> class TracHavingLPPlugin200(Trac):
-    ...     def urlopen(self, url, data=None):
-    ...         print url
-    ...         return addinfourl(
-    ...             StringIO(''), HTTPMessage(
-    ...                 StringIO('Set-Cookie: trac_auth=1234')), url)
-
 The plain, non-plugin, external bug tracker is selected for broken
 Trac installations:
 
-    >>> trac = TracReturning200ForPageNotFound('http://example.com/')
-    >>> chosen_trac = trac.getExternalBugTrackerToUse()
-    http://example.com/launchpad-auth/check
-
+    >>> with responses.RequestsMock() as requests_mock:
+    ...     requests_mock.add(
+    ...         'GET', 'http://example.com/launchpad-auth/check')
+    ...     chosen_trac = trac.getExternalBugTrackerToUse()
     >>> isinstance(chosen_trac, TracLPPlugin)
     False
-    >>> chosen_trac.baseurl
-    'http://example.com'
+    >>> print(chosen_trac.baseurl)
+    http://example.com
 
 In the event that our deliberately bogus token is considered valid,
 the external bug tracker that groks the plugin is selected:
 
-    >>> trac = TracHavingLPPlugin200('http://example.com/')
-    >>> chosen_trac = trac.getExternalBugTrackerToUse()
-    http://example.com/launchpad-auth/check
-
+    >>> with responses.RequestsMock() as requests_mock:
+    ...     requests_mock.add(
+    ...         'GET', 'http://example.com/launchpad-auth/check',
+    ...         headers={'Set-Cookie': 'trac_auth=1234'})
+    ...     chosen_trac = trac.getExternalBugTrackerToUse()
     >>> isinstance(chosen_trac, TracLPPlugin)
     True
-    >>> chosen_trac.baseurl
-    'http://example.com'
+    >>> print(chosen_trac.baseurl)
+    http://example.com
 
 If a 404 is returned, the normal Trac instance is returned.
 
-    >>> class TracNotHavingLPPlugin(Trac):
-    ...     def urlopen(self, url, data=None):
-    ...         print url
-    ...         raise urllib2.HTTPError(
-    ...             url, 404, "Not found", None, None)
-    >>> trac = TracNotHavingLPPlugin('http://example.com/')
-    >>> chosen_trac = trac.getExternalBugTrackerToUse()
-    http://example.com/launchpad-auth/check
-
+    >>> with responses.RequestsMock() as requests_mock:
+    ...     requests_mock.add(
+    ...         'GET', 'http://example.com/launchpad-auth/check', status=404)
+    ...     chosen_trac = trac.getExternalBugTrackerToUse()
     >>> chosen_trac is trac
     True
 
@@ -113,14 +89,12 @@ In the event that a connection error is returned, we return a normal Trac
 instance. It will deal with the connection error later, if the situation
 persists.
 
-    >>> class TracWithConnectionError(Trac):
-    ...     def urlopen(self, url, data=None):
-    ...         print url
-    ...         raise urllib2.URLError("Connection timed out")
-    >>> trac = TracWithConnectionError('http://example.com/')
-    >>> chosen_trac = trac.getExternalBugTrackerToUse()
-    http://example.com/launchpad-auth/check
-
+    >>> from requests.exceptions import ConnectTimeout
+    >>> with responses.RequestsMock() as requests_mock:
+    ...     requests_mock.add(
+    ...         'GET', 'http://example.com/launchpad-auth/check',
+    ...         body=ConnectTimeout())
+    ...     chosen_trac = trac.getExternalBugTrackerToUse()
     >>> chosen_trac is trac
     True
 
@@ -172,18 +146,19 @@ remote bug IDs will fetch those bug IDs from the server and file them in a
 local variable for later use.
 
 We use a test-oriented implementation for the purposes of these tests, which
-overrides ExternalBugTracker.urlopen() so that we don't have to rely on a
-working network connection.
+avoids relying on a network connection.
 
     >>> from lp.bugs.tests.externalbugtracker import TestTrac
     >>> trac = TestTrac(u'http://test.trac/')
-    >>> trac.initializeRemoteBugDB([1])
+    >>> with trac.responses():
+    ...     trac.initializeRemoteBugDB([1])
     >>> sorted(trac.bugs.keys())
     [1]
 
 If we initialize with a different set of keys we overwrite the first set:
 
-    >>> trac.initializeRemoteBugDB([6,7,8,9,10,11,12])
+    >>> with trac.responses():
+    ...     trac.initializeRemoteBugDB([6, 7, 8, 9, 10, 11, 12])
     >>> sorted(trac.bugs.keys())
     [6, 7, 8, 9, 10, 11, 12]
 
@@ -198,36 +173,41 @@ one-at-a-time:
     >>> trac.batch_query_threshold
     10
 
-    >>> trac.trace_calls = True
-    >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
-    CALLED urlopen(u'http://test.trac/ticket/6?format=csv')
-    CALLED urlopen(u'http://test.trac/ticket/7?format=csv')
-    CALLED urlopen(u'http://test.trac/ticket/8?format=csv')
-    CALLED urlopen(u'http://test.trac/ticket/9?format=csv')
-    CALLED urlopen(u'http://test.trac/ticket/10?format=csv')
+    >>> with trac.responses(trace_calls=True):
+    ...     trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    GET http://test.trac/ticket/6
+    GET http://test.trac/ticket/6?format=csv
+    GET http://test.trac/ticket/6?format=csv
+    GET http://test.trac/ticket/7?format=csv
+    GET http://test.trac/ticket/8?format=csv
+    GET http://test.trac/ticket/9?format=csv
+    GET http://test.trac/ticket/10?format=csv
 
 If there are more than batch_query_threshold bugs to update then they are
 fetched as a batch:
 
     >>> trac.batch_query_threshold = 4
-    >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
-    CALLED urlopen(u'http://test.trac/query?id=6&id=7...&format=csv')
+    >>> with trac.responses(trace_calls=True):
+    ...     trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    GET http://test.trac/query?id=6&id=7...&format=csv
 
 The batch updating method will also be used in cases where the Trac instance
 doesn't support CSV exports of individual tickets:
 
     >>> trac.batch_query_threshold = 10
-    >>> trac.supports_single_exports = False
-    >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
-    CALLED urlopen(u'http://test.trac/query?id=6&id=7...&format=csv')
+    >>> with trac.responses(trace_calls=True, supports_single_exports=False):
+    ...     trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    GET http://test.trac/ticket/6
+    GET http://test.trac/ticket/6?format=csv
+    GET http://test.trac/query?id=6&id=7...&format=csv
 
 If, when using the batch export method, the Trac instance comes across
 invalid data, it will raise an UnparsableBugData exception. We will
 force our trac instance to use invalid data for the purposes of this
 test.
 
-    >>> trac.csv_export_file = 'trac_example_broken_ticket_export.csv'
-    >>> trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
+    >>> with trac.responses(broken=True):
+    ...     trac.initializeRemoteBugDB([6, 7, 8, 9, 10])
     Traceback (most recent call last):
       ...
     UnparsableBugData: External bugtracker http://test.trac does not
@@ -236,8 +216,8 @@ test.
 
 This is also true of the single bug export mode.
 
-    >>> trac.supports_single_exports = True
-    >>> trac.initializeRemoteBugDB([6])
+    >>> with trac.responses(broken=True):
+    ...     trac.initializeRemoteBugDB([6])
     Traceback (most recent call last):
       ...
     UnparsableBugData: External bugtracker http://test.trac does not
@@ -256,29 +236,27 @@ Both the single and batch ticket import modes use the _fetchBugData()
 method to retrieve the CSV data from the remote Trac instance. This
 method accepts a URL from which to retrieve the data as a parameter.
 
-    >>> trac.supports_single_exports = False
-    >>> trac.csv_export_file = None
-
-    >>> query_url = 'http://example.com/query?id=%s&format=csv'
+    >>> query_url = 'http://test.trac/query?id=%s&format=csv'
     >>> query_string = '&id='.join(['1', '2', '3', '4', '5'])
     >>> query_url = query_url % query_string
 
-    >>> remote_bugs = trac._fetchBugData(query_url)
-    CALLED urlopen('http://example.com/query?id=1&id=2...&format=csv')
+    >>> with trac.responses(trace_calls=True, supports_single_exports=False):
+    ...     remote_bugs = trac._fetchBugData(query_url)
+    GET http://test.trac/query?id=1&id=2...&format=csv
 
 However, _fetchBugData() doesn't actually check the results it returns
 except for checking that they are valid Trac CSV exports. in this case,
 the IDs returned are nothing like the ones we asked for:
 
     >>> bug_ids = sorted(int(bug['id']) for bug in remote_bugs)
-    >>> print bug_ids
+    >>> print(bug_ids)
     [1, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153]
 
 If _fetchBugData() receives a response that isn't a valid Trac CSV
 export, it will raise an UnparsableBugData error.
 
-    >>> trac.csv_export_file = 'trac_example_broken_ticket_export.csv'
-    >>> trac._fetchBugData(query_url)
+    >>> with trac.responses(broken=True):
+    ...     trac._fetchBugData(query_url)
     Traceback (most recent call last):
       ...
     UnparsableBugData: External bugtracker http://test.trac does not
@@ -308,7 +286,7 @@ First, we create some bug watches to test with:
 Collect the Example.com watches:
 
     >>> for bug_watch in example_bug_tracker.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    ...     print("%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus))
     1: None
 
 And have a Trac instance process them:
@@ -322,11 +300,13 @@ And have a Trac instance process them:
     >>> bug_watch_updater = CheckwatchesMaster(
     ...     txn, FakeLogger())
     >>> trac = TestTrac(example_bug_tracker.baseurl)
-    >>> bug_watch_updater.updateBugWatches(trac, example_bug_tracker.watches)
+    >>> with trac.responses():
+    ...     bug_watch_updater.updateBugWatches(
+    ...         trac, example_bug_tracker.watches)
     INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> for bug_watch in example_bug_tracker.watches:
-    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    ...     print("%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus))
     1: fixed
 
 We'll add some more watches now.
@@ -340,7 +320,7 @@ We'll add some more watches now.
 
     >>> for remote_bug, bug_watch_id in bug_watches.items():
     ...     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
-    ...     print "%s: %s" % (remote_bug, bug_watch.remotestatus)
+    ...     print("%s: %s" % (remote_bug, bug_watch.remotestatus))
     1: fixed
 
     >>> remote_bugs = [
@@ -364,16 +344,17 @@ We'll add some more watches now.
     ...         remotebug=str(remote_bug_id))
     ...     bug_watches[remote_bug_id] = bug_watch.id
 
-    >>> trac.trace_calls = True
-    >>> bug_watch_updater.updateBugWatches(trac, example_bug_tracker.watches)
+    >>> with trac.responses(trace_calls=True):
+    ...     bug_watch_updater.updateBugWatches(
+    ...         trac, example_bug_tracker.watches)
     INFO Updating 12 watches for 12 bugs on http://bugs.some.where
-    CALLED urlopen(u'http://.../query?id=...
+    GET http://bugs.some.where/query?id=...
 
     >>> for remote_bug_id in sorted(bug_watches.keys()):
     ...     bug_watch = getUtility(IBugWatchSet).get(
     ...         bug_watches[remote_bug_id])
     ...     remote_status = bug_watch.remotestatus
-    ...     print 'Remote bug %d: %s' % (remote_bug_id, remote_status)
+    ...     print('Remote bug %d: %s' % (remote_bug_id, remote_status))
     Remote bug 1: fixed
     Remote bug 143: fixed
     Remote bug 144: assigned
@@ -415,8 +396,8 @@ watch hasn't altered:
     u'new'
 
     >>> trac.batch_query_threshold = 0
-    >>> trac.trace_calls = False
-    >>> bug_watch_updater.updateBugWatches(trac, [bug_watch])
+    >>> with trac.responses():
+    ...     bug_watch_updater.updateBugWatches(trac, [bug_watch])
     INFO Updating 1 watches for 1 bugs on http://bugs.some.where
 
     >>> bug_watch.lastchanged == old_last_changed

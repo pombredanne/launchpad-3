@@ -6,10 +6,10 @@ The PPA packages page is accessible from the PPA page.
 
     >>> anon_browser.open('http://launchpad.dev/~cprov/+archive/ubuntu/ppa')
     >>> anon_browser.getLink('View package details').click()
-    >>> print anon_browser.url
+    >>> print(anon_browser.url)
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+packages
 
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Packages in...
 
 
@@ -34,10 +34,10 @@ You can see the build details of the packages in the archive by using
 the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Builds : PPA for Celso Providelo : Celso Providelo
 
-    >>> print anon_browser.url
+    >>> print(anon_browser.url)
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+builds
 
 The rest of the builds page functionality is tested generically at
@@ -54,7 +54,7 @@ actual values are loaded in asynchronously.
     ...     'http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+packages')
     >>> package_totals = find_portlet(
     ...     anon_browser.contents, "Package totals")
-    >>> print extract_text(package_totals)
+    >>> print(extract_text(package_totals))
     Package totals
     ...
     Package counters and estimated archive size temporarily
@@ -68,7 +68,7 @@ A summary of the builds for the PPA is also presented.
 
     >>> build_summary = find_portlet(
     ...     anon_browser.contents, "View all builds Package build summary")
-    >>> print extract_text(build_summary)
+    >>> print(extract_text(build_summary))
     View...
     A total of 4 builds have been created for this PPA.
     Completed builds
@@ -78,7 +78,7 @@ A summary of the builds for the PPA is also presented.
 Successful builds link directly to the builds filter.
 
     >>> successful_builds_link = anon_browser.getLink('3 successful')
-    >>> print successful_builds_link.url
+    >>> print(successful_builds_link.url)
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa/+builds?build_state=built
 
 
@@ -89,7 +89,7 @@ The detailed Packages list
     ...     package_table = find_tag_by_id(
     ...         contents, 'packages_list')
     ...     for ppa_row in package_table.findChildren('tr'):
-    ...         print extract_text(ppa_row)
+    ...         print(extract_text(ppa_row))
 
     >>> print_archive_package_rows(anon_browser.contents)
     Source              Published   Status     Series      Section  Build
@@ -107,7 +107,7 @@ Each data row is expandable to contain some sections containing:
 
     >>> expander_url = anon_browser.getLink(id='pub29-expander').url
     >>> anon_browser.open(expander_url)
-    >>> print extract_text(anon_browser.contents)
+    >>> print(extract_text(anon_browser.contents))
     Publishing details
       Published on 2007-07-09
       Copied from ubuntu hoary in Primary Archive for Ubuntu Linux
@@ -138,7 +138,7 @@ published, this will be indicated to the viewer:
     >>> cprov_ppa = cprov.archive
     >>> pmount_i386_pub = cprov_ppa.getAllPublishedBinaries(
     ...     name=u'pmount', version='0.1-1')[1]
-    >>> print pmount_i386_pub.displayname
+    >>> print(pmount_i386_pub.displayname)
     pmount 0.1-1 in warty i386
     >>> from lp.soyuz.enums import PackagePublishingStatus
     >>> naked_pub = removeSecurityProxy(pmount_i386_pub)
@@ -149,7 +149,7 @@ published, this will be indicated to the viewer:
 
     # Now, to re-display the pmount expanded section:
     >>> anon_browser.open(expander_url)
-    >>> print extract_text(anon_browser.contents)
+    >>> print(extract_text(anon_browser.contents))
     Note: Some binary packages for this source are not yet published in the
     repository.
     Publishing details
@@ -214,7 +214,7 @@ in as Celso.
     ...     "http://launchpad.dev/~joe/+archive/ubuntu/ppa/+packages")
     >>> expander_url = cprov_browser.getLink(id=expander_link_id).url
     >>> cprov_browser.open(expander_url)
-    >>> print cprov_browser.getLink("PPA named p3a for Celso Providelo").url
+    >>> print(cprov_browser.getLink("PPA named p3a for Celso Providelo").url)
     http://launchpad.dev/~cprov/+archive/ubuntu/p3a
 
 But Joe himself will not see the link.
@@ -382,8 +382,8 @@ Links from files go to their on-archive locations:
     ...     foo_browser.contents, 'expander')[0]['id']
     >>> expander_url = foo_browser.getLink(id=expander_id).url
     >>> anon_browser.open(expander_url)
-    >>> print anon_browser.getLink("orig").url
-    http://.../+files/foo.orig.tar.gz
+    >>> print(anon_browser.getLink("orig").url)
+    http://.../+sourcefiles/.../foo.orig.tar.gz
 
 The uploader name is linkified to that user's home page:
 
@@ -416,7 +416,7 @@ Anyone can see the build status for package in Celso's PPA.
     >>> def print_build_status(contents):
     ...     rows = find_tags_by_class(contents, 'archive_package_row')
     ...     headers = rows[0].findAll('th')
-    ...     print extract_text(headers[0]), extract_text(headers[-1])
+    ...     print(extract_text(headers[0]), extract_text(headers[-1]))
     ...     for row in rows[1:]:
     ...         columns = row.findAll('td')
     ...         name = extract_text(columns[0])
@@ -424,7 +424,7 @@ Anyone can see the build status for package in Celso's PPA.
     ...         built_text = columns[-1].a
     ...         if built_text is not None:
     ...             built_text = built_text.renderContents()
-    ...         print name, built_icon, built_text
+    ...         print(name, built_icon, built_text)
 
     >>> print_build_status(anon_browser.contents)
     Source                    Build Status
@@ -438,7 +438,7 @@ of downloading the buildlog).
 
     >>> anon_browser.getLink('i386').click()
 
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     i386 build of cdrkit 1.0 : PPA for Celso Providelo : Celso Providelo
 
 This feature is also useful from the PPA owner perspective. When Celso
@@ -467,5 +467,5 @@ Again the architecture tags listed on the 'built' column link to the
 corresponding build page.
 
     >>> anon_browser.getLink('i386').click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     i386 build of cdrkit 1.0 : PPA for Celso Providelo : Celso Providelo

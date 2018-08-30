@@ -112,7 +112,7 @@ pmount is currently not subscribed to bug 1.
 
     >>> names = subscriber_names(bug_one_in_ubuntu_firefox.bug)
     >>> for name in names:
-    ...     print name
+    ...     print(name)
     Foo Bar
     Mark Shuttleworth
     Sample Person
@@ -178,10 +178,10 @@ of the email with the bug title and URL.
     1
 
     >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
+    >>> print(from_addr)
     bounces@canonical.com
 
-    >>> print to_addr
+    >>> print(to_addr)
     ['daf@canonical.com']
 
     >>> msg = email.message_from_string(raw_message)
@@ -197,7 +197,7 @@ of the email with the bug title and URL.
     >>> msg['Subject']
     '[Bug 1] [NEW] Firefox does not support SVG'
 
-    >>> print msg.get_payload(decode=True)
+    >>> print(msg.get_payload(decode=True))
     You have been subscribed to a public bug:
     <BLANKLINE>
     Firefox needs to support embedded SVG images, now that the standard has
@@ -231,7 +231,7 @@ of the email with the bug title and URL.
 Since the reporter didn't do anything to trigger this change, the bug
 address is used as the From address.
 
-    >>> print msg['From']
+    >>> print(msg['From'])
     Launchpad Bug Tracker <1@bugs.launchpad.net>
 
     >>> stub.test_emails = []
@@ -255,7 +255,7 @@ The package subscribers, Daf and Foo Bar, are implicitly unsubscribed:
 
     >>> names = subscriber_names(bug_one_in_ubuntu_firefox.bug)
     >>> for name in names:
-    ...     print name
+    ...     print(name)
     Mark Shuttleworth
     Sample Person
     Steve Alexander
@@ -306,10 +306,10 @@ bug that aren't already subscribed.
 Then we'll reassign bug #2 in Ubuntu to be in Firefox:
 
     >>> bug_two_in_ubuntu = getUtility(IBugTaskSet).get(3)
-    >>> print bug_two_in_ubuntu.bug.id
+    >>> print(bug_two_in_ubuntu.bug.id)
     2
 
-    >>> print bug_two_in_ubuntu.product.name
+    >>> print(bug_two_in_ubuntu.product.name)
     tomcat
 
     >>> sorted(
@@ -360,7 +360,7 @@ only team that will be listed when the user is changing a package bug
 supervisor:
 
     >>> for team in view.user.getAdministratedTeams():
-    ...        print team.displayname
+    ...        print(team.displayname)
     Landscape Developers
     Launchpad Users
 

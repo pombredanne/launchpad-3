@@ -52,37 +52,37 @@ settings page.
 
 The settings page currently shows that no branch has been selected.
 
-    >>> print extract_text(get_translations_branch_paragraph(owner_browser))
+    >>> print(extract_text(get_translations_branch_paragraph(owner_browser)))
     Currently not exporting translations to a branch.
     Choose a target branch.
 
 The notice links to a page where a translations branch can be selected.
 
     >>> owner_browser.getLink('Choose a target branch').click()
-    >>> print owner_browser.url
+    >>> print(owner_browser.url)
     http://translations.launchpad.dev/.../trunk/+link-translations-branch
 
     >>> set_translations_branch(owner_browser, branch_name)
 
 After setting the branch, the form returns to the settings page.
 
-    >>> print owner_browser.url
+    >>> print(owner_browser.url)
     http://translations.launchpad.dev/.../trunk/+translations-settings
 
 It shows the changed setting.
 
-    >>> print extract_text(get_translations_branch_paragraph(owner_browser))
+    >>> print(extract_text(get_translations_branch_paragraph(owner_browser)))
     Exporting translations to branch: lp:...
 
 The notice links to the branch, and to the page where the setting can be
 changed.
 
     >>> edit_link = owner_browser.getLink(id='translations-branch-edit-link')
-    >>> print edit_link.url
+    >>> print(edit_link.url)
     http://translations.launchpad.dev/.../trunk/+link-translations-branch
 
     >>> branch_link = owner_browser.getLink(url=branch_name)
-    >>> print branch_link.url
+    >>> print(branch_link.url)
     http://code.launchpad.dev/~.../.../...
 
     >>> branch_link.click()
@@ -91,7 +91,7 @@ changed.
 
     >>> back_reference = find_tag_by_id(
     ...     owner_browser.contents, 'translations-sources')
-    >>> print back_reference
+    >>> print(back_reference)
     <div ...>
     <h2>Automatic translations commits</h2>
     <ul>
@@ -108,12 +108,12 @@ The field can also be cleared in order to disable the exports.
     >>> owner_browser.open(link_page)
     >>> set_translations_branch(owner_browser, '')
 
-    >>> print owner_browser.url
+    >>> print(owner_browser.url)
     http://translations.launchpad.dev/.../trunk/+translations-settings
 
 The settings page then goes back to showing the original message.
 
-    >>> print extract_text(get_translations_branch_paragraph(owner_browser))
+    >>> print(extract_text(get_translations_branch_paragraph(owner_browser)))
     Currently not exporting translations to a branch.
     Choose a target branch.
 
@@ -123,7 +123,7 @@ overview as a translations source.
     >>> owner_browser.open(branch_page)
     >>> back_reference = find_tag_by_id(
     ...     owner_browser.contents, 'translations-sources')
-    >>> print back_reference
+    >>> print(back_reference)
     None
 
 
@@ -140,7 +140,7 @@ translations to someone else's branch.
 This leaves the translations_branch unchanged.
 
     >>> owner_browser.open(settings_page)
-    >>> print extract_text(get_translations_branch_paragraph(owner_browser))
+    >>> print(extract_text(get_translations_branch_paragraph(owner_browser)))
     Currently not exporting translations to a branch.
     Choose a target branch.
 

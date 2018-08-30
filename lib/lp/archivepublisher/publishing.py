@@ -34,6 +34,7 @@ from debian.deb822 import (
     _multivalued,
     Release,
     )
+import scandir
 from storm.expr import Desc
 from zope.component import getUtility
 from zope.interface import (
@@ -377,12 +378,12 @@ class ByHash:
             hash_path = os.path.join(self.path, archive_hash.apt_name)
             if os.path.exists(hash_path):
                 prune_hash_directory = True
-                for digest in list(os.listdir(hash_path)):
-                    if digest not in self.known_digests[archive_hash.apt_name]:
-                        digest_path = os.path.join(hash_path, digest)
+                for entry in list(scandir.scandir(hash_path)):
+                    if entry.name not in self.known_digests[
+                            archive_hash.apt_name]:
                         self.log.debug(
-                            "by-hash: Deleting unreferenced %s" % digest_path)
-                        os.unlink(digest_path)
+                            "by-hash: Deleting unreferenced %s" % entry.path)
+                        os.unlink(entry.path)
                     else:
                         prune_hash_directory = False
                 if prune_hash_directory:
@@ -1202,11 +1203,11 @@ class Publisher(object):
                 distroseries, pocket, component, core_files)
             dep11_dir = os.path.join(suite_dir, component, "dep11")
             try:
-                for dep11_file in os.listdir(dep11_dir):
-                    if (dep11_file.startswith("Components-") or
-                            dep11_file.startswith("icons-")):
+                for entry in scandir.scandir(dep11_dir):
+                    if (entry.name.startswith("Components-") or
+                            entry.name.startswith("icons-")):
                         dep11_path = os.path.join(
-                            component, "dep11", dep11_file)
+                            component, "dep11", entry.name)
                         extra_files.add(remove_suffix(dep11_path))
                         extra_files.add(dep11_path)
             except OSError as e:
@@ -1264,12 +1265,10 @@ class Publisher(object):
         if signable_archive.can_sign:
             # Sign the repository.
             self.log.debug("Signing Release file for %s" % suite)
-            signable_archive.signRepository(
-                suite, pubconf=self._config, suffix=".new", log=self.log)
-            core_files.add("Release.gpg")
-            extra_by_hash_files["Release.gpg"] = "Release.gpg.new"
-            core_files.add("InRelease")
-            extra_by_hash_files["InRelease"] = "InRelease.new"
+            for signed_name in signable_archive.signRepository(
+                    suite, pubconf=self._config, suffix=".new", log=self.log):
+                core_files.add(signed_name)
+                extra_by_hash_files[signed_name] = signed_name + ".new"
         else:
             # Skip signature if the archive is not set up for signing.
             self.log.debug("No signing key available, skipping signature.")
@@ -1359,11 +1358,11 @@ class Publisher(object):
         i18n_dir = os.path.join(self._config.distsroot, suite, i18n_subpath)
         i18n_files = set()
         try:
-            for i18n_file in os.listdir(i18n_dir):
-                if not i18n_file.startswith('Translation-'):
+            for entry in scandir.scandir(i18n_dir):
+                if not entry.name.startswith('Translation-'):
                     continue
-                i18n_files.add(remove_suffix(i18n_file))
-                i18n_files.add(i18n_file)
+                i18n_files.add(remove_suffix(entry.name))
+                i18n_files.add(entry.name)
         except OSError as e:
             if e.errno != errno.ENOENT:
                 raise
@@ -1556,7 +1555,7 @@ class DirectoryHash:
 
     def add_dir(self, path):
         """Recursively add a directory path to be checksummed."""
-        for dirpath, dirnames, filenames in os.walk(path):
+        for dirpath, dirnames, filenames in scandir.walk(path):
             for filename in filenames:
                 self.add(os.path.join(dirpath, filename))
 

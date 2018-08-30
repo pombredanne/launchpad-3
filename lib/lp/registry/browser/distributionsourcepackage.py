@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -184,7 +184,9 @@ class DistributionSourcePackageNavigation(Navigation,
 
     usedfor = IDistributionSourcePackage
 
-    redirection("+editbugcontact", "+subscribe")
+    @redirection('+editbugcontact')
+    def redirect_editbugcontact(self):
+        return '+subscribe'
 
     def traverse(self, name):
         return self.context.getVersion(name)

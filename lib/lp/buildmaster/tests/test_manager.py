@@ -2,10 +2,12 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the renovated slave scanner aka BuilddManager."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 import os
 import signal
@@ -902,7 +904,7 @@ class TestSlaveScannerWithoutDB(TestCase):
         with ExpectedException(
                 BuildDaemonIsolationError,
                 "Allegedly clean slave not idle "
-                "\('BuilderStatus.BUILDING' instead\)"):
+                "\(u'BuilderStatus.BUILDING' instead\)"):
             yield scanner.scan()
         self.assertEqual(['status'], slave.call_log)
 
@@ -1057,7 +1059,7 @@ class TestCancellationChecking(TestCaseWithFactory):
         slave = LostBuildingBrokenSlave()
         self.builder.current_build.cancel()
         with ExpectedException(
-                xmlrpclib.Fault, "<Fault 8002: 'Could not abort'>"):
+                xmlrpclib.Fault, "<Fault 8002: u'Could not abort'>"):
             yield self._getScanner().checkCancellation(self.vitals, slave)
 
 

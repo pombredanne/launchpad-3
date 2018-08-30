@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -20,6 +20,15 @@ class MessageComment:
 
     def __init__(self, comment_limit):
         self.comment_limit = comment_limit
+
+    @property
+    def extra_css_class(self):
+        if not self.visible:
+            # If a comment that isn't visible is being rendered, it's being
+            # rendered for an admin or registry_expert.
+            return 'adminHiddenComment'
+        else:
+            return ''
 
     @property
     def display_attachments(self):
@@ -64,3 +73,5 @@ class MessageComment:
         # less than 3 (which can happen in a testcase) and it makes
         # counting the strings harder.
         return "%s..." % self.body_text[:self.comment_limit]
+
+    show_spam_controls = False

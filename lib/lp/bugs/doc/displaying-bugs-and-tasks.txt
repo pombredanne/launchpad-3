@@ -68,10 +68,10 @@ target.
   >>> from lp.bugs.interfaces.bug import IBugSet
   >>> bug1 = getUtility(IBugSet).get(1)
   >>> upstream_task = bug1.bugtasks[0]
-  >>> print upstream_task.product.name
+  >>> print(upstream_task.product.name)
   firefox
   >>> ubuntu_task = bug1.bugtasks[1]
-  >>> print ubuntu_task.distribution.name
+  >>> print(ubuntu_task.distribution.name)
   ubuntu
 
 So the logo for an upstream bug task shows the project icon:

@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git reference ("ref") interfaces."""
@@ -79,6 +79,8 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
     name = Attribute(
         "A shortened version of the full path to this reference, with any "
         "leading refs/heads/ removed.")
+
+    url_quoted_name = Attribute("The reference name, quoted for use in URLs.")
 
     commit_sha1 = exported(TextLine(
         title=_("Commit SHA-1"), required=True, readonly=True,
@@ -381,6 +383,13 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         """Return a specific number of the latest commits in this ref."""
 
     has_commits = Attribute("Whether this reference has any commits.")
+
+    def getBlob(filename):
+        """Get a blob by file name from this reference.
+
+        :param filename: Relative path of a file in the repository.
+        :return: A binary string with the blob content.
+        """
 
 
 class IGitRefBatchNavigator(ITableBatchNavigator):

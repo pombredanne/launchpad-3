@@ -44,7 +44,7 @@ A user can subscribe to a branch through the API.
     >>> def print_subscriber_count(branch):
     ...     subscribers = webservice.get(
     ...         corn['subscribers_collection_link']).jsonBody()
-    ...     print len(subscribers['entries'])
+    ...     print(len(subscribers['entries']))
     >>> print_subscriber_count(corn)
     2
 
@@ -52,7 +52,7 @@ A user can subscribe to a branch through the API.
     ...     subscribers = webservice.get(
     ...         corn['subscribers_collection_link']).jsonBody()
     ...     for subscriber in subscribers['entries']:
-    ...         print subscriber['display_name']
+    ...         print(subscriber['display_name'])
     >>> print_subscriber_names(corn)
     Farmer Bob
     Farmer Joe
@@ -68,7 +68,7 @@ without getting everyone's subscriptions.
     ...     corn['self_link'], 'getSubscription',
     ...     person=joe['self_link']).jsonBody()
 
-    >>> print subscription['self_link']
+    >>> print(subscription['self_link'])
     http://.../~farmer-bob/farm/corn/+subscription/farmer-joe
 
 

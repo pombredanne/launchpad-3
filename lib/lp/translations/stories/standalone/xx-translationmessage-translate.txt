@@ -43,15 +43,15 @@ and the link for switching between translator and reviewer working mode
 will not be displayed in that list.
 
     >>> nav = find_tag_by_id(browser.contents, 'nav-pofile-subpages')
-    >>> print extract_text(nav)
+    >>> print(extract_text(nav))
     Download translation Translation details
 
 Download translations and Translation details should linked to the
 proper pages
 
-  >> print nav.getLink("Download translation").url
+  >> print(nav.getLink("Download translation").url)
   https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+export
-  >> print nav.getLink("Translation details").url
+  >> print(nav.getLink("Translation details").url)
   https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+details
 
 Let's log in.
@@ -86,48 +86,48 @@ right ones.
     LinkNotFoundError
 
     >>> next = browser.getLink('Next')
-    >>> print next.url
+    >>> print(next.url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate
 
-    >>> print browser.getLink('Last').url
+    >>> print(browser.getLink('Last').url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
 And the link to the IPOFile view should be there too:
 
     >>> zoom_link = browser.getLink(id="zoom-out")
-    >>> print zoom_link.url
+    >>> print(zoom_link.url)
     http://.../+source/evolution/+pots/evolution-2.2/es/+translate?start=0
 
 when we choose the next entry, all links should appear.
 
     >>> next.click()
-    >>> print browser.getLink('First').url
+    >>> print(browser.getLink('First').url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
 
-    >>> print browser.getLink('Previous').url
+    >>> print(browser.getLink('Previous').url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
 
-    >>> print browser.getLink('Next').url
+    >>> print(browser.getLink('Next').url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/3/+translate
 
     >>> last = browser.getLink('Last')
-    >>> print last.url
+    >>> print(last.url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
 And the link to the IPOFile view should be there too:
 
     >>> zoom_link = browser.getLink(id="zoom-out")
-    >>> print zoom_link.url
+    >>> print(zoom_link.url)
     http://.../+source/evolution/+pots/evolution-2.2/es/+translate?start=1
 
 And the last one.
 
     >>> last.click()
-    >>> print browser.getLink('First').url
+    >>> print(browser.getLink('First').url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
 
     >>> prev = browser.getLink('Previous')
-    >>> print prev.url
+    >>> print(prev.url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/21/+translate
 
     >>> browser.getLink('Next')
@@ -143,22 +143,22 @@ And the last one.
 And the link to the IPOFile view should be there too:
 
     >>> zoom_link = browser.getLink(id="zoom-out")
-    >>> print zoom_link.url
+    >>> print(zoom_link.url)
     http://.../+source/evolution/+pots/evolution-2.2/es/+translate?start=21
 
 Let's test the ones at the end of the form.
 
     >>> prev.click()
-    >>> print browser.getLink('First').url
+    >>> print(browser.getLink('First').url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/1/+translate
 
-    >>> print browser.getLink('Previous').url
+    >>> print(browser.getLink('Previous').url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/20/+translate
 
-    >>> print browser.getLink('Next').url
+    >>> print(browser.getLink('Next').url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
-    >>> print browser.getLink('Last').url
+    >>> print(browser.getLink('Last').url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
 
 As a translation admin you will have access to the download and details
@@ -167,17 +167,17 @@ access to the link for switching between translator and reviewer working
 mode
 
     >>> nav = find_tag_by_id(browser.contents, 'nav-pofile-subpages')
-    >>> print extract_text(nav)
+    >>> print(extract_text(nav))
     Download translation Translation details
     Reviewer mode (What's this?)
 
 All those links should linked the proper pages
 
-  >> print nav.getLink("Download translation").url
+  >> print(nav.getLink("Download translation").url)
   https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+export
-  >> print nav.getLink("Upload translation").url
+  >> print(nav.getLink("Upload translation").url)
   https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+upload
-  >> print nav.getLink("Translation details").url
+  >> print(nav.getLink("Translation details").url)
   https://.../hoary/+source/evolution/+pots/evolution-2.2/es/+details
 
 Now, we are going to check a message submission.
@@ -190,16 +190,16 @@ Check that the message #13 is without translation.
 
 First what we represent in the form when there is no translation:
 
-    >>> print find_tag_by_id(browser.contents, 'msgset_142').renderContents()
+    >>> print(find_tag_by_id(browser.contents, 'msgset_142').renderContents())
     13.
     <input type="hidden" name="msgset_142" />
 
-    >>> print find_tag_by_id(
-    ...     browser.contents, 'msgset_142_singular').renderContents()
+    >>> print(find_tag_by_id(
+    ...     browser.contents, 'msgset_142_singular').renderContents())
     Migrating `<code>%s</code>&#x27;:
 
-    >>> print find_tag_by_id(
-    ...     browser.contents, 'msgset_142_es_translation_0').renderContents()
+    >>> print(find_tag_by_id(
+    ...     browser.contents, 'msgset_142_es_translation_0').renderContents())
     (no translation yet)
 
 And also, we don't get anyone as the Last translator because there is no
@@ -222,11 +222,11 @@ Let's submit an invalid value for this message #13.
     >>> browser.getControl(
     ...     name='msgset_142_es_translation_0_new').value = 'foo %i'
     >>> browser.getControl(name='submit_translations').click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/13/+translate
 
     >>> for tag in find_tags_by_class(browser.contents, 'error'):
-    ...     print tag
+    ...     print(tag)
     <div class="error message">There is an error in the translation you
       provided. Please correct it before continuing.</div>
     <tr class="error translation">
@@ -244,16 +244,16 @@ Let's submit an invalid value for this message #13.
 
 The message is still without translation:
 
-    >>> print find_tag_by_id(browser.contents, 'msgset_142').renderContents()
+    >>> print(find_tag_by_id(browser.contents, 'msgset_142').renderContents())
     13.
     <input type="hidden" name="msgset_142" />
 
-    >>> print find_tag_by_id(
-    ...     browser.contents, 'msgset_142_singular').renderContents()
+    >>> print(find_tag_by_id(
+    ...     browser.contents, 'msgset_142_singular').renderContents())
     Migrating `<code>%s</code>&#x27;:
 
-    >>> print find_tag_by_id(
-    ...     browser.contents, 'msgset_142_es_translation_0').renderContents()
+    >>> print(find_tag_by_id(
+    ...     browser.contents, 'msgset_142_es_translation_0').renderContents())
     (no translation yet)
 
 And now a good submit.
@@ -267,7 +267,7 @@ And now a good submit.
 
 We moved to the next message, that means this submission worked.
 
-    >>> print browser.url
+    >>> print(browser.url)
     http:/.../hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate
 
 Now, it has the submitted value.
@@ -278,16 +278,16 @@ Now, it has the submitted value.
 
 Check that the message #13 has the new value we submitted.
 
-    >>> print find_tag_by_id(browser.contents, 'msgset_142').renderContents()
+    >>> print(find_tag_by_id(browser.contents, 'msgset_142').renderContents())
     13.
     <input type="hidden" name="msgset_142" />
 
-    >>> print find_tag_by_id(
-    ...     browser.contents, 'msgset_142_singular').renderContents()
+    >>> print(find_tag_by_id(
+    ...     browser.contents, 'msgset_142_singular').renderContents())
     Migrating `<code>%s</code>&#x27;:
 
-    >>> print find_tag_by_id(
-    ...     browser.contents, 'msgset_142_es_translation_0').renderContents()
+    >>> print(find_tag_by_id(
+    ...     browser.contents, 'msgset_142_es_translation_0').renderContents())
     foo <code>%s</code>
 
 And now, we get the translator and reviewer, who happen to be the same
@@ -325,7 +325,7 @@ Now, we will check suggestions in this form.
 
 Check that suggestions come in from other contexts:
 
-    >>> "Suggested in" in browser.contents
+    >>> b"Suggested in" in browser.contents
     True
 
     >>> find_tag_by_id(browser.contents, 'msgset_143_es_suggestion_697_0')
@@ -334,15 +334,15 @@ Check that suggestions come in from other contexts:
 Check that no other suggestions are presented (since no others are
 relevant for this message):
 
-    >>> "Suggested by" in browser.contents
+    >>> b"Suggested by" in browser.contents
     False
 
-    >>> "Used in" in browser.contents
+    >>> b"Used in" in browser.contents
     False
 
 Check for the translator note:
 
-    >>> note = "This is an example of commenttext for a multiline"
+    >>> note = b"This is an example of commenttext for a multiline"
     >>> note in browser.contents
     True
 
@@ -396,13 +396,13 @@ Let's change the translation.
 And submit it.
 
     >>> fast_submission.getControl(name='submit_translations').click()
-    >>> print fast_submission.url
+    >>> print(fast_submission.url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/15/+translate
 
 Now, we check that the translation we are going to add is not yet in the
 form, so we can check later that it's added as a suggestion:
 
-    >>> 'foo!!' in fast_submission.contents
+    >>> b'foo!!' in fast_submission.contents
     False
 
 Now, we update the translation in slow_submission.
@@ -416,11 +416,11 @@ Now, we update the translation in slow_submission.
 We submit it
 
     >>> slow_submission.getControl(name='submit_translations').click()
-    >>> print slow_submission.url
+    >>> print(slow_submission.url)
     http://.../hoary/+source/evolution/+pots/evolution-2.2/es/14/+translate
 
     >>> for tag in find_tags_by_class(slow_submission.contents, 'error'):
-    ...     print tag
+    ...     print(tag)
     <div class="error message">There is an error in the translation you
       provided. Please correct it before continuing.</div>
     <tr class="error translation">
@@ -439,18 +439,18 @@ We submit it
 
 Also, we should still have previous translation:
 
-    >>> print find_tag_by_id(
-    ...     slow_submission.contents, 'msgset_143').renderContents()
+    >>> print(find_tag_by_id(
+    ...     slow_submission.contents, 'msgset_143').renderContents())
     14.
     <input type="hidden" name="msgset_143" />
 
-    >>> print find_tag_by_id(
-    ...     slow_submission.contents, 'msgset_143_singular').renderContents()
+    >>> print(find_tag_by_id(
+    ...     slow_submission.contents, 'msgset_143_singular').renderContents())
     The location and hierarchy of the Evolution contact...
 
-    >>> print find_tag_by_id(
+    >>> print(find_tag_by_id(
     ...     slow_submission.contents,
-    ...     'msgset_143_es_translation_0').renderContents()
+    ...     'msgset_143_es_translation_0').renderContents())
     blah
 
 But also, the new one should appear in the form.
@@ -459,7 +459,7 @@ But also, the new one should appear in the form.
     >>> elements = find_main_content(slow_submission.contents).findAll(
     ...     True, {'id': re.compile(r'^msgset_143_es_suggestion_\d+_0$')})
     >>> for element in elements:
-    ...     print element.renderContents()
+    ...     print(element.renderContents())
     La ubicación ...
     Tenga paciencia ...
     foo!!
@@ -476,14 +476,14 @@ reviewer.
 
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/'
     ...              'mozilla/+pots/pkgconf-mozilla/de/1/+translate')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, "translated_by").parent)
+    >>> print(extract_text(
+    ...     find_tag_by_id(browser.contents, "translated_by").parent))
     Translated by Helge Kreutzmann on 2005-05-06
 
-    >>> print find_tag_by_id(browser.contents, "reviewed_by")
+    >>> print(find_tag_by_id(browser.contents, "reviewed_by"))
     None
 
-    >>> print find_tag_by_id(browser.contents, "translated_and_reviewed_by")
+    >>> print(find_tag_by_id(browser.contents, "translated_and_reviewed_by"))
     None
 
 
@@ -496,8 +496,8 @@ context.
     >>> browser.open(
     ...     'http://translations.launchpad.dev/alsa-utils/trunk/+pots/'
     ...     'alsa-utils/sr/+translate')
-    >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, "msgset_198_context").parent)
+    >>> print(extract_text(find_tag_by_id(
+    ...     browser.contents, "msgset_198_context").parent))
     Something
 
 We can change a translation for messages with context.
@@ -511,13 +511,13 @@ We can change a translation for messages with context.
 And submit it.
 
     >>> browser.getControl(name='submit_translations').click()
-    >>> print browser.url
+    >>> print(browser.url)
     http://.../alsa-utils/trunk/+pots/alsa-utils/sr/+translate
 
 And the translation is now updated.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, "msgset_198_sr_translation_0"))
+    >>> print(extract_text(
+    ...     find_tag_by_id(browser.contents, "msgset_198_sr_translation_0")))
     blah
 
 
@@ -532,7 +532,7 @@ Initially, a message has a non-empty packaged translation.
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/'
     ...              '+source/evolution/+pots/evolution-2.2/es/5/+translate')
     >>> packaged = find_tag_by_id(browser.contents, 'msgset_134_other')
-    >>> print extract_text(packaged)
+    >>> print(extract_text(packaged))
     In upstream: tarjetas
 
 First, we look for an existing imported translation in evolution PO file
@@ -588,7 +588,7 @@ packaged translation anymore.
 
 Also, the page now displays a "(not translated yet)" message.
 
-    >>> print extract_text(packaged)
+    >>> print(extract_text(packaged))
     In upstream: (not translated yet)
 
 
@@ -653,7 +653,7 @@ translation.
     >>> shared_html_id = 'msgset_%d_%s_suggestion_%d_0' % (
     ...     potmsgset.id, pofile.language.code, translationmessage.id)
     >>> shared_message_tag = find_tag_by_id(browser.contents, shared_html_id)
-    >>> print extract_text(shared_message_tag)
+    >>> print(extract_text(shared_message_tag))
     shared translation
 
     >>> extract_text(find_tag_by_id(browser.contents, html_id))

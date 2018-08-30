@@ -116,11 +116,11 @@ def _slow_nl_phrase_search(terms, table, constraints,
     eliminated from the query. That term eliminatation is only done when there
     are 5 candidate rows or more.
 
-    The remaining terms are then ORed together. One should use the rank() or
-    rank_cd() function to order the results from running that query. This will
-    make rows that use more of the terms and for which the terms are found
-    closer in the text at the top of the list, while still returning rows that
-    use only some of the terms.
+    The remaining terms are then ORed together. One should use the
+    ts_rank() or ts_rank_cd() function to order the results from running
+    that query. This will make rows that use more of the terms and for
+    which the terms are found closer in the text at the top of the list,
+    while still returning rows that use only some of the terms.
 
     :terms: Some candidate search terms.
 

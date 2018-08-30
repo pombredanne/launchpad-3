@@ -95,9 +95,9 @@ bug got submitted correctly:
     ...     return latest_notification.bug
     >>> bug = get_latest_added_bug()
 
-    >>> print bug.title
+    >>> print(bug.title)
     A bug in Firefox
-    >>> print bug.description
+    >>> print(bug.description)
     There is a bug in Firefox.
     <BLANKLINE>
      affects firefox
@@ -107,7 +107,7 @@ Also, an upstream bug task was added to it:
     >>> len(bug.bugtasks)
     1
     >>> upstream_task = bug.bugtasks[0]
-    >>> print upstream_task.product.name
+    >>> print(upstream_task.product.name)
     firefox
 
 And the entire body of the email was added as a comment:
@@ -115,22 +115,22 @@ And the entire body of the email was added as a comment:
     >>> bug.messages.count()
     1
     >>> comment = bug.messages[0]
-    >>> print comment.title
+    >>> print(comment.title)
     A bug in Firefox
-    >>> print comment.text_contents
+    >>> print(comment.text_contents)
     There is a bug in Firefox.
     <BLANKLINE>
      affects firefox
 
 The owner of the bug was set to the submitter:
 
-    >>> print bug.owner.displayname
+    >>> print(bug.owner.displayname)
     Foo Bar
 
 A notification was added:
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print bug_notification.message.owner.displayname
+    >>> print(bug_notification.message.owner.displayname)
     Foo Bar
 
     >>> bug_notification.message == bug.initial_message
@@ -163,19 +163,19 @@ this:
     >>> process_email(submit_mail)
     >>> bug = get_latest_added_bug()
 
-    >>> print bug.title
+    >>> print(bug.title)
     A bug in Ubuntu's Mozilla package
 
     >>> distrotask = bug.bugtasks[0]
-    >>> print distrotask.distribution.name
+    >>> print(distrotask.distribution.name)
     ubuntu
-    >>> print distrotask.sourcepackagename.name
+    >>> print(distrotask.sourcepackagename.name)
     mozilla-firefox
 
 A notification was added:
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print bug_notification.message.owner.displayname
+    >>> print(bug_notification.message.owner.displayname)
     Sample Person
 
     >>> bug_notification.message == bug.initial_message
@@ -214,11 +214,11 @@ It's possible to file a bug on more than product/package at once:
     >>> process_email(submit_mail)
     >>> bug = get_latest_added_bug()
 
-    >>> print bug.title
+    >>> print(bug.title)
     Affects many packages
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetname
+    ...     print(bugtask.bugtargetname)
     evolution
     firefox
     evolution (Debian)
@@ -272,7 +272,7 @@ includes commands, the email has to be OpenPGP-signed.
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test1>')[0]
     >>> added_message in bug_one.messages
     True
-    >>> print bug_one.title
+    >>> print(bug_one.title)
     Better summary
 
 If the message doesn't have a Reference or In-Reply-To header, the
@@ -318,9 +318,9 @@ No comments were added to the bugs:
 
 And the summaries were changed:
 
-    >>> print bug_four.title
+    >>> print(bug_four.title)
     Changed summary
-    >>> print bug_five.title
+    >>> print(bug_five.title)
     Nicer summary
 
 The email handler requires that a bug be specified to be changed. If no
@@ -340,9 +340,9 @@ them what happened.
 
 This time, neither bug four or five were updated.
 
-    >>> print bug_four.title
+    >>> print(bug_four.title)
     Changed summary
-    >>> print bug_five.title
+    >>> print(bug_five.title)
     Nicer summary
 
 And the person sending the email has received an error message.
@@ -354,10 +354,10 @@ And the person sending the email has received an error message.
     ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
     ...     sent_msg = email.message_from_string(raw_message)
     ...     error_mail, original_mail = sent_msg.get_payload()
-    ...     print "Subject: %s" % sent_msg['Subject']
-    ...     print "To: %s" % ', '.join(to_addrs)
-    ...     print
-    ...     print error_mail.get_payload(decode=True)
+    ...     print("Subject: %s" % sent_msg['Subject'])
+    ...     print("To: %s" % ', '.join(to_addrs))
+    ...     print()
+    ...     print(error_mail.get_payload(decode=True))
 
     >>> print_latest_email()
     Subject: Submit Request Failure
@@ -431,7 +431,7 @@ changes was made to the bug, and the comment wasn't added.
     NotFoundError:...
 
     >>> bug_one = bugset.get(1)
-    >>> print bug_one.title
+    >>> print(bug_one.title)
     Better summary
 
 And an error message was sent to the Sample Person, telling them what's
@@ -466,7 +466,7 @@ The same will happen if we send the same email without signing it:
     NotFoundError:...
 
     >>> bug_one = bugset.get(1)
-    >>> print bug_one.title
+    >>> print(bug_one.title)
     Better summary
 
 
@@ -576,13 +576,13 @@ Changes the summary of the bug. The title has to be enclosed in
 quotes. Example:
 
     >>> submit_commands(bug_four, 'summary "New summary"')
-    >>> print bug_four.title
+    >>> print(bug_four.title)
     New summary
 
 Whitespace will be preserved in the title:
 
     >>> submit_commands(bug_four, 'summary "New             summary"')
-    >>> print bug_four.title #doctest: -NORMALIZE_WHITESPACE
+    >>> print(bug_four.title) #doctest: -NORMALIZE_WHITESPACE
     New             summary
 
 If we omit the quotes, there will be an error:
@@ -615,7 +615,7 @@ otherwise permission to complete the operation will be denied.)
 We will also add an attachment to the bug.
 
     >>> bug_attachment = bug_four.addAttachment(
-    ...     bug_four.owner, 'Attachment', 'No comment', 'test.txt')
+    ...     bug_four.owner, b'Attachment', 'No comment', 'test.txt')
 
     >>> submit_commands(bug_four, 'private yes')
     >>> bug_four.private
@@ -645,9 +645,9 @@ The bug report can also be made public:
 
 The timestamp and user are cleared:
 
-    >>> print bug_four.date_made_private
+    >>> print(bug_four.date_made_private)
     None
-    >>> print bug_four.who_made_private
+    >>> print(bug_four.who_made_private)
     None
 
 Specifying something else than 'yes' or 'no' produces an error:
@@ -866,7 +866,7 @@ only result in the tag showing up once on the bug.
 
     >>> submit_commands(bug_four, 'tag foo bar foo bar')
     >>> for tag in bug_four.tags:
-    ...     print tag
+    ...     print(tag)
     bar
     foo
     layout-test
@@ -875,7 +875,7 @@ We can also use the tag command to remove tags.
 
     >>> submit_commands(bug_four, 'tag -foo')
     >>> for tag in bug_four.tags:
-    ...     print tag
+    ...     print(tag)
     bar
     layout-test
 
@@ -935,7 +935,7 @@ after the first character.
 
     >>> submit_commands(bug_four, 'tag with-hyphen+period.')
     >>> for tag in bug_four.tags:
-    ...     print tag
+    ...     print(tag)
     bar
     layout-test
     with-hyphen+period.
@@ -1019,7 +1019,7 @@ The 'cve' command associates a bug with a CVE reference.
     >>> bug = new_firefox_bug()
     >>> submit_commands(bug, 'cve CVE-1999-8979')
     >>> for cve in bug.cves:
-    ...     print cve.displayname
+    ...     print(cve.displayname)
     CVE-1999-8979
 
 If the CVE sequence can't be found, an error message is sent to the
@@ -1085,7 +1085,7 @@ created:
 A notification was added:
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print bug_notification.message.text_contents
+    >>> print(bug_notification.message.text_contents)
     ** Also affects: debian
     ...
 
@@ -1107,24 +1107,24 @@ commands. It's possible to have these sub commands on separate lines:
     >>> len(bug_four.bugtasks)
     2
     >>> debian_task = bug_four.bugtasks[-1]
-    >>> print debian_task.importance.name
+    >>> print(debian_task.importance.name)
     CRITICAL
-    >>> print debian_task.status.name
+    >>> print(debian_task.status.name)
     CONFIRMED
-    >>> print debian_task.assignee.displayname
+    >>> print(debian_task.assignee.displayname)
     Sample Person
 
 A milestone can be assigned to the current task.
 
     >>> firefox_task = [bugtask for bugtask in bug_four.bugtasks
     ...                 if bugtask.pillar.name == 'firefox'][0]
-    >>> print firefox_task.milestone
+    >>> print(firefox_task.milestone)
     None
     >>> submit_commands(bug_four, 'milestone 1.0')
-    >>> print firefox_task.milestone.name
+    >>> print(firefox_task.milestone.name)
     1.0
     >>> submit_commands(bug_four, 'milestone -')
-    >>> print firefox_task.milestone
+    >>> print(firefox_task.milestone)
     None
 
 Trying to set a milestone that does not exist elicits a helpful error
@@ -1153,12 +1153,12 @@ permissions also elicits an error message:
 
     >>> login('no-priv@canonical.com')
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.pillar.title
+    ...     print(bugtask.pillar.title)
     Mozilla Firefox
-    >>> print bug.bugtasks[0].milestone
+    >>> print(bug.bugtasks[0].milestone)
     None
     >>> submit_commands(bug, 'milestone 1.0')
-    >>> print bug.bugtasks[0].milestone
+    >>> print(bug.bugtasks[0].milestone)
     None
     >>> print_latest_email()
     Subject: Submit Request Failure
@@ -1211,7 +1211,7 @@ To set which source package the bug affects, we use:
     >>> len(bug_four.bugtasks)
     2
     >>> debian_task = bug_four.bugtasks[-1]
-    >>> print debian_task.sourcepackagename.name
+    >>> print(debian_task.sourcepackagename.name)
     mozilla-firefox
 
 If we specify another source package in the same distribution, a new
@@ -1221,7 +1221,7 @@ task will be created:
     >>> len(bug_four.bugtasks)
     3
     >>> evolution_task = bug_four.bugtasks[-2]
-    >>> print evolution_task.sourcepackagename.name
+    >>> print(evolution_task.sourcepackagename.name)
     evolution
 
 It's also possible to add tasks for specific distribution series as
@@ -1229,7 +1229,7 @@ well.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
 
     >>> submit_commands(bug, 'affects ubuntu/hoary')
@@ -1238,7 +1238,7 @@ This caused one bugtask to be added to the bug. The added bug task is a
 generic Ubuntu task, though.
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
     Ubuntu
 
@@ -1246,7 +1246,7 @@ Because Sample Person isn't a driver of Ubuntu, they're not allowed to
 target a bug directly, instead a nomination was created.
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetdisplayname
+    ...     print(nomination.target.bugtargetdisplayname)
     Ubuntu Hoary
 
 The same happens if we try to target another series.
@@ -1254,12 +1254,12 @@ The same happens if we try to target another series.
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
     Ubuntu
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetdisplayname
+    ...     print(nomination.target.bugtargetdisplayname)
     Ubuntu Hoary
     Ubuntu Warty
 
@@ -1268,12 +1268,12 @@ Targeting an existing nomination won't create another nomination.
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
     Ubuntu
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetdisplayname
+    ...     print(nomination.target.bugtargetdisplayname)
     Ubuntu Hoary
     Ubuntu Warty
 
@@ -1297,7 +1297,7 @@ Now a new bugtask for the series will be created directly.
     >>> submit_commands(bug, 'affects ubuntu/grumpy')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
     Ubuntu
     Ubuntu Grumpy
@@ -1307,7 +1307,7 @@ They can also approve existing nominations.
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
     Ubuntu
     Ubuntu Warty
@@ -1318,7 +1318,7 @@ specific distroseries.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
 
     >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
@@ -1327,7 +1327,7 @@ Now we can see that two tasks were created; both the general Ubuntu
 task, and the series specific task.
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Ubuntu Hoary)
@@ -1344,18 +1344,18 @@ driver of the series, only a nomination will be created.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
 
     >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
     mozilla-firefox (Ubuntu)
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetdisplayname
+    ...     print(nomination.target.bugtargetdisplayname)
     Ubuntu Hoary
 
 Nominating product series work the same way as for distro series.
@@ -1364,20 +1364,20 @@ nomination is automatically approved.
 
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> for driver in firefox.getSeries('trunk').drivers:
-    ...     print driver.displayname
+    ...     print(driver.displayname)
     Sample Person
 
     >>> login(sampledata.USER_EMAIL)
     >>> submit_commands(bug, 'affects /firefox/trunk')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Mozilla Firefox
     Mozilla Firefox trunk
     mozilla-firefox (Ubuntu)
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetdisplayname
+    ...     print(nomination.target.bugtargetdisplayname)
     Mozilla Firefox trunk
     Ubuntu Hoary
 
@@ -1396,12 +1396,12 @@ will be created if one doesn't exist.
     >>> submit_commands(bug, 'affects /evolution/trunk')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.bugtargetdisplayname
+    ...     print(bugtask.bugtargetdisplayname)
     Evolution
     Mozilla Firefox
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetdisplayname
+    ...     print(nomination.target.bugtargetdisplayname)
     Evolution trunk
 
     >>> login(sampledata.USER_EMAIL)
@@ -1421,11 +1421,11 @@ be grouped together:
     >>> len(bug_four.bugtasks)
     3
     >>> upstream_task = bug_four.bugtasks[0]
-    >>> print upstream_task.importance.name
+    >>> print(upstream_task.importance.name)
     CRITICAL
-    >>> print upstream_task.status.name
+    >>> print(upstream_task.status.name)
     CONFIRMED
-    >>> print upstream_task.assignee.displayname
+    >>> print(upstream_task.assignee.displayname)
     Sample Person
 
 
@@ -1443,11 +1443,11 @@ Bug supervisors can set some restricted statuses:
     >>> ignored = login_person(email_user)
 
     >>> submit_commands(bug_four, 'status wontfix')
-    >>> print upstream_task.status.title
+    >>> print(upstream_task.status.title)
     Won't Fix
 
     >>> submit_commands(bug_four, 'status expired')
-    >>> print upstream_task.status.title
+    >>> print(upstream_task.status.title)
     Expired
 
 Everyone else gets an explanatory error message:
@@ -1589,15 +1589,15 @@ An email can contain multiple commands, even for different bugs.
 
     >>> def print_bugtask_modified_event(bugtask, event):
     ...     old_bugtask = event.object_before_modification
-    ...     print "event: bug %i %s => %s" % (bugtask.bug.id,
-    ...         old_bugtask.status.title, bugtask.status.title)
-    ...     print "event: bug %i %s => %s" % (bugtask.bug.id,
-    ...         old_bugtask.importance.title, bugtask.importance.title)
+    ...     print("event: bug %i %s => %s" % (bugtask.bug.id,
+    ...         old_bugtask.status.title, bugtask.status.title))
+    ...     print("event: bug %i %s => %s" % (bugtask.bug.id,
+    ...         old_bugtask.importance.title, bugtask.importance.title))
     >>> def print_bugtask_created_event(bugtask, event):
-    ...     print "event: new bugtask, bug %i %s" % (bugtask.bug.id,
-    ...         bugtask.status.title)
-    ...     print "event: new bugtask, bug %i %s" % (bugtask.bug.id,
-    ...         bugtask.importance.title)
+    ...     print("event: new bugtask, bug %i %s" % (bugtask.bug.id,
+    ...         bugtask.status.title))
+    ...     print("event: new bugtask, bug %i %s" % (bugtask.bug.id,
+    ...         bugtask.importance.title))
     >>> from lazr.lifecycle.interfaces import (
     ...     IObjectCreatedEvent, IObjectModifiedEvent)
     >>> from lp.testing.event import TestEventListener
@@ -1607,14 +1607,14 @@ An email can contain multiple commands, even for different bugs.
     >>> bugtask_created_listener = TestEventListener(
     ...     IBugTask, IObjectCreatedEvent, print_bugtask_created_event)
     >>> bug_four_upstream_task = bug_four.bugtasks[0]
-    >>> print bug_four_upstream_task.status.name
+    >>> print(bug_four_upstream_task.status.name)
     NEW
-    >>> print bug_four_upstream_task.importance.name
+    >>> print(bug_four_upstream_task.importance.name)
     CRITICAL
     >>> bug_five_upstream_task = bug_five.bugtasks[0]
-    >>> print bug_five_upstream_task.status.name
+    >>> print(bug_five_upstream_task.status.name)
     NEW
-    >>> print bug_five_upstream_task.importance.name
+    >>> print(bug_five_upstream_task.importance.name)
     CRITICAL
     >>> submit_commands(bug_four,
     ...     'bug 4', 'status confirmed', 'importance medium',
@@ -1625,13 +1625,13 @@ An email can contain multiple commands, even for different bugs.
     event: bug 4 Critical => Medium
     event: bug 5 New => Fix Released
     event: bug 5 Critical => High
-    >>> print bug_four_upstream_task.status.name
+    >>> print(bug_four_upstream_task.status.name)
     CONFIRMED
-    >>> print bug_four_upstream_task.importance.name
+    >>> print(bug_four_upstream_task.importance.name)
     MEDIUM
-    >>> print bug_five_upstream_task.status.name
+    >>> print(bug_five_upstream_task.status.name)
     FIXRELEASED
-    >>> print bug_five_upstream_task.importance.name
+    >>> print(bug_five_upstream_task.importance.name)
     HIGH
 
     >>> bugtask_modified_listener.unregister()
@@ -1655,13 +1655,13 @@ edited:
     1
     >>> submit_commands(bug_ten, 'status confirmed')
     >>> linux_task = bug_ten.bugtasks[0]
-    >>> print linux_task.status.name
+    >>> print(linux_task.status.name)
     CONFIRMED
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
-    >>> print bug_notification.bug.id
+    >>> print(bug_notification.bug.id)
     10
-    >>> print bug_notification.message.text_contents
+    >>> print(bug_notification.message.text_contents)
     ** Changed in: linux-source-2.6.15 (Ubuntu)
         Status: New => Confirmed
 
@@ -1677,9 +1677,9 @@ The user is a bug supervisors of the upstream product
     >>> submit_commands(
     ...     bug_one, 'status confirmed', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
-    ...     print '%s: %s, assigned to %s' % (
+    ...     print('%s: %s, assigned to %s' % (
     ...         bugtask.bugtargetdisplayname, bugtask.status.title,
-    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    ...         getattr(bugtask.assignee, 'displayname', 'no one')))
     Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): New, assigned to no one
     mozilla-firefox (Debian): Confirmed, assigned to no one
@@ -1687,8 +1687,8 @@ The user is a bug supervisors of the upstream product
     >>> pending_notifications = BugNotification.select(
     ...     orderBy='-id', limit=2)
     >>> for bug_notification in pending_notifications:
-    ...     print bug_notification.bug.id
-    ...     print bug_notification.message.text_contents
+    ...     print(bug_notification.bug.id)
+    ...     print(bug_notification.message.text_contents)
     1
     ** Changed in: firefox
          Assignee: Mark Shuttleworth (mark) => Sample Person (name12)
@@ -1718,17 +1718,17 @@ The user is a package bug supervisor
     ...     bug_one, 'status confirmed',
     ...     'assignee kreutzm@itp.uni-hannover.de')
     >>> for bugtask in bug_one.bugtasks:
-    ...     print '%s: %s, assigned to %s' % (
+    ...     print('%s: %s, assigned to %s' % (
     ...         bugtask.bugtargetdisplayname, bugtask.status.title,
-    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    ...         getattr(bugtask.assignee, 'displayname', 'no one')))
     Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Confirmed, assigned to Helge Kreutzmann
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> pending_notifications = BugNotification.select(orderBy='-id', limit=2)
     >>> for bug_notification in pending_notifications:
-    ...     print bug_notification.bug.id
-    ...     print bug_notification.message.text_contents
+    ...     print(bug_notification.bug.id)
+    ...     print(bug_notification.message.text_contents)
     1
     ** Changed in: mozilla-firefox (Ubuntu)
          Assignee: (unassigned) => Helge Kreutzmann (kreutzm)
@@ -1749,17 +1749,17 @@ The user is a distribution member
     >>> submit_commands(
     ...     bug_one, 'status new', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
-    ...     print '%s: %s, assigned to %s' % (
+    ...     print('%s: %s, assigned to %s' % (
     ...         bugtask.bugtargetdisplayname, bugtask.status.title,
-    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    ...         getattr(bugtask.assignee, 'displayname', 'no one')))
     Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): New, assigned to Sample Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> pending_notifications = BugNotification.select(orderBy='-id', limit=2)
     >>> for bug_notification in pending_notifications:
-    ...     print bug_notification.bug.id
-    ...     print bug_notification.message.text_contents
+    ...     print(bug_notification.bug.id)
+    ...     print(bug_notification.message.text_contents)
     1
     ** Changed in: mozilla-firefox (Ubuntu)
          Assignee: Helge Kreutzmann (kreutzm) => Sample Person (name12)
@@ -1779,9 +1779,9 @@ user, telling them that they have to use the 'affects' command.
     >>> submit_commands(
     ...     bug_one, 'status new', 'assignee foo.bar@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
-    ...     print '%s: %s, assigned to %s' % (
+    ...     print('%s: %s, assigned to %s' % (
     ...         bugtask.bugtargetdisplayname, bugtask.status.title,
-    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    ...         getattr(bugtask.assignee, 'displayname', 'no one')))
     Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): New, assigned to Sample Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
@@ -2057,7 +2057,7 @@ The sent message contains two parts:
 
 The first part is the error message, explaining what went wrong.
 
-    >>> print failure_msg.get_payload(decode=True)
+    >>> print(failure_msg.get_payload(decode=True))
     An error occurred while processing a mail you sent to Launchpad's email
     interface.
     <BLANKLINE>
@@ -2086,7 +2086,7 @@ error to happen.
     'Original Message Subject'
     >>> msg['Message-Id']
     '<original@msg>'
-    >>> print msg.get_payload(decode=True)
+    >>> print(msg.get_payload(decode=True))
     Original message body.
 
 Sometimes the original error was caused by the original message being
@@ -2136,7 +2136,7 @@ Ordinary persons always have a preferred email address, but teams can
 exist without a contact address.
 
     >>> wartygnome = getUtility(IPersonSet).getByName('warty-gnome')
-    >>> print wartygnome.preferredemail
+    >>> print(wartygnome.preferredemail)
     None
 
 We send another email, creating a new task (for the package in ubuntu)
@@ -2148,7 +2148,7 @@ and assigning the bug to `landscape-developers`.
 The email was handled correctly - A new bugtask was added and assigned
 to the specified team.
 
-    >>> print ff_bug.bugtasks[-1].assignee.name
+    >>> print(ff_bug.bugtasks[-1].assignee.name)
     landscape-developers
 
 
@@ -2166,7 +2166,7 @@ The latest firefox bug task has a NEW status.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> for task in ff_bug.bugtasks:
     ...     if task.product == firefox:
-    ...         print task.status.name
+    ...         print(task.status.name)
     NEW
 
 Sample Person sends an email with several commands. First comes an
@@ -2191,7 +2191,7 @@ status for the firefox task is now set to CONFIRMED.
 
     >>> for task in ff_bug.bugtasks:
     ...     if task.product == firefox:
-    ...         print task.status.name
+    ...         print(task.status.name)
     CONFIRMED
 
 The 'subscribe' command failed, and the user is being notified of the
@@ -2200,7 +2200,7 @@ failure in an email.
     >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
     >>> sent_msg = email.message_from_string(raw_message)
     >>> failure_msg, original_msg = sent_msg.get_payload()
-    >>> print failure_msg.get_payload(decode=True)
+    >>> print(failure_msg.get_payload(decode=True))
     An error occurred while processing a mail you sent to Launchpad's email
     interface.
     <BLANKLINE>
@@ -2239,7 +2239,7 @@ The status hasn't changed.
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> for task in ff_bug.bugtasks:
     ...     if task.product == firefox:
-    ...         print task.status.name
+    ...         print(task.status.name)
     CONFIRMED
 
 And the sender receives an email to let them know about the failing
@@ -2248,7 +2248,7 @@ And the sender receives an email to let them know about the failing
     >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
     >>> sent_msg = email.message_from_string(raw_message)
     >>> failure_msg, original_msg = sent_msg.get_payload()
-    >>> print failure_msg.get_payload(decode=True)
+    >>> print(failure_msg.get_payload(decode=True))
     An error occurred while processing a mail you sent to Launchpad's email
     interface.
     <BLANKLINE>
@@ -2299,11 +2299,11 @@ hasn't changed, since the command to set it came after the 'done' statement.
 
     >>> for task in ff_bug.bugtasks:
     ...     if task.product == firefox:
-    ...         print task.importance.name
+    ...         print(task.importance.name)
     HIGH
     >>> for task in ff_bug.bugtasks:
     ...     if task.product == firefox:
-    ...         print task.status.name
+    ...         print(task.status.name)
     CONFIRMED
 
 
@@ -2322,7 +2322,7 @@ email too. Just send an email to `help@bugs.launchpad.net`.
     ... """
     >>> process_email(submit_mail)
     >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    >>> print raw_message
+    >>> print(raw_message)
     Content-Type: text/plain; charset="utf-8"
     ...
     To: test@canonical.com
@@ -2356,7 +2356,7 @@ transformed to be a bit more readable as a plain text document.
     ... Don't push the [#boom red button]!
     ... See you in {{{#launchpad}}}.
     ... """
-    >>> print reformat_wiki_text(wiki_text)
+    >>> print(reformat_wiki_text(wiki_text))
     = Sample Wiki Text =
     Some Text.
     Don't push the red button!
@@ -2371,14 +2371,15 @@ criteria described below).
 
     >>> def print_attachments(attachments):
     ...     if len(list(attachments)) == 0:
-    ...         print "No attachments"
+    ...         print("No attachments")
     ...         return
     ...     transaction.commit()
     ...     for attachment in attachments:
     ...         lib = attachment.libraryfile
-    ...         print lib.__class__.__name__, lib.filename, lib.mimetype,
-    ...         print attachment.type.name
-    ...         print lib.read()
+    ...         print(lib.__class__.__name__, lib.filename, lib.mimetype,
+    ...               end=" ")
+    ...         print(attachment.type.name)
+    ...         print(lib.read())
     >>> login('test@canonical.com')
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
@@ -2451,8 +2452,8 @@ A bugnotification is sent for each attached file.
 
     >>> bug_notifications = BugNotification.select(orderBy='-id', limit=3)
     >>> for bug_notification in bug_notifications:
-    ...     print '-------------------'
-    ...     print bug_notification.message.chunks[0].content
+    ...     print('-------------------')
+    ...     print(bug_notification.message.chunks[0].content)
     -------------------
     Found a bug in Firefox. Nothing displayed. See attached files.
     <BLANKLINE>
@@ -2999,7 +3000,7 @@ importing machinery.
     >>> comment_date = datetime(
     ...     2008, 5, 19, 16, 19, 12, tzinfo=pytz.timezone('Europe/Prague'))
 
-    >>> initial_mail = """From: test@canonical.com
+    >>> initial_mail = b"""From: test@canonical.com
     ... To: %(bug_id)s@malone-domain
     ... Date: %(date)s
     ... Message-Id: <76543@launchpad.net>
@@ -3042,13 +3043,13 @@ been submitted.
     >>> transaction.commit()
 
     >>> [reply_message] = list(bug_with_watch.messages)[-1:]
-    >>> print reply_message.rfc822msgid
+    >>> print(reply_message.rfc822msgid)
     <1234567890@launchpad.net>
 
 The parent of the new comment is set to the message which was imported
 from the remote bugtracker.
 
-    >>> print reply_message.parent.rfc822msgid
+    >>> print(reply_message.parent.rfc822msgid)
     <76543@launchpad.net>
 
 The BugMessage instance which links the emailed comment to the bug also
@@ -3072,7 +3073,7 @@ to the bug and will not have its bugwatch field set.
     >>> comment_date = datetime(
     ...     2008, 5, 21, 11, 9, 12, tzinfo=pytz.timezone('Europe/Prague'))
 
-    >>> initial_mail = """From: test@canonical.com
+    >>> initial_mail = b"""From: test@canonical.com
     ... To: %(bug_id)s@malone-domain
     ... Date: %(date)s
     ... Message-Id: <912876543@launchpad.net>
@@ -3111,5 +3112,5 @@ to the bug and will not have its bugwatch field set.
     ...     IBugMessageSet).getByBugAndMessage(
     ...         bug_with_watch, reply_message)
 
-    >>> print reply_bug_message.bugwatch
+    >>> print(reply_bug_message.bugwatch)
     None

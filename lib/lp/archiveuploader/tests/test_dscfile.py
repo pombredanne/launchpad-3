@@ -1,7 +1,9 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test dscfile.py"""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -192,7 +194,7 @@ class TestSignableTagFile(TestCaseWithFactory):
         name = u'B\u0105r'
         email = u'bar@example.com'
         results = self.makeSignableTagFile().parseAddress(
-            '%s <%s>' % (name.encode('utf-8'), email.encode('utf-8')))
+            (u'%s <%s>' % (name, email)).encode('utf-8'))
         self.assertEqual(email, results['email'])
         self.assertEqual(name, results['name'])
         self.assertEqual(name, results['person'].displayname)

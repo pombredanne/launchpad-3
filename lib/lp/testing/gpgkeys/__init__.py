@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """OpenPGP keys used for testing.
@@ -23,14 +23,12 @@ from cStringIO import StringIO
 import os
 
 import gpgme
+import scandir
 from zope.component import getUtility
 
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.gpg.interfaces import (
-    GPGKeyAlgorithm,
-    IGPGHandler,
-    )
+from lp.services.gpg.interfaces import IGPGHandler
 
 
 gpgkeysdir = os.path.join(os.path.dirname(__file__), 'data')
@@ -109,9 +107,9 @@ def test_pubkey_from_email(email_addr):
 
 def test_keyrings():
     """Iterate over the filenames for test keyrings."""
-    for name in os.listdir(gpgkeysdir):
-        if name.endswith('.gpg'):
-            yield os.path.join(gpgkeysdir, name)
+    for entry in scandir.scandir(gpgkeysdir):
+        if entry.name.endswith('.gpg'):
+            yield entry.path
 
 
 def decrypt_content(content, password):

@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for product views."""
@@ -31,7 +31,6 @@ from lp.app.enums import (
     ServiceUsage,
     )
 from lp.code.enums import RevisionControlSystems
-from lp.code.interfaces.codeimport import CODE_IMPORT_GIT_TARGET_FEATURE_FLAG
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.browser.product import (
@@ -50,7 +49,6 @@ from lp.registry.interfaces.product import (
 from lp.registry.model.product import Product
 from lp.services.config import config
 from lp.services.database.interfaces import IStore
-from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.vhosts import allvhosts
 from lp.testing import (
@@ -947,16 +945,7 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
              text='Project settings updated.')
         self.assertThat(browser.contents, HTMLContains(tag))
 
-    def test_import_git_repository_requires_feature_flag(self):
-        project = self.factory.makeProduct()
-        browser = self.getBrowser(project, '+configure-code')
-        self.assertRaises(
-            LookupError, browser.getControl,
-            'Import a Git repository hosted somewhere else')
-
     def test_import_git_repository(self):
-        self.useFixture(
-            FeatureFixture({CODE_IMPORT_GIT_TARGET_FEATURE_FLAG: u'on'}))
         self.useFixture(GitHostingFixture())
         owner = self.factory.makePerson()
         project = self.factory.makeProduct(owner=owner)
@@ -984,8 +973,6 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         self.assertEqual(project.name, repo.name)
 
     def test_import_git_repository_bad_scheme(self):
-        self.useFixture(
-            FeatureFixture({CODE_IMPORT_GIT_TARGET_FEATURE_FLAG: u'on'}))
         owner = self.factory.makePerson()
         project = self.factory.makeProduct(owner=owner)
         browser = self.getBrowser(project, '+configure-code')
@@ -999,7 +986,7 @@ class TestBrowserProductSetBranchView(BrowserTestCase):
         tag = Tag(
             'error', 'div', attrs={'class': 'message'},
             text=(
-                'The URI scheme &quot;svn&quot; is not allowed.  '
+                'The URI scheme "svn" is not allowed.  '
                 'Only URIs with the following schemes may be used: '
                 'git, http, https'))
         self.assertThat(browser.contents, HTMLContains(tag))

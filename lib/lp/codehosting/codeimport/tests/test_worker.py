@@ -45,6 +45,7 @@ from CVS import (
     )
 from dulwich.repo import Repo as GitRepo
 from fixtures import FakeLogger
+import scandir
 import subvertpy
 import subvertpy.client
 import subvertpy.ra
@@ -136,7 +137,7 @@ class WorkerTest(TestCaseWithTransport, TestCase):
         `directory1` are laid out in the same way as `directory2`.
         """
         def list_files(directory):
-            for path, ignored, ignored in os.walk(directory):
+            for path, ignored, ignored in scandir.walk(directory):
                 yield path[len(directory):]
         self.assertEqual(
             sorted(list_files(directory1)), sorted(list_files(directory2)))
@@ -167,6 +168,23 @@ class TestBazaarBranchStore(WorkerTest):
         self.assertEqual(
             store.transport.base.rstrip('/'),
             config.codeimport.bazaar_branch_store.rstrip('/'))
+
+    def test__getMirrorURL(self):
+        # _getMirrorURL returns a URL for the branch with the given id.
+        store = BazaarBranchStore(get_transport_from_url(
+            'sftp://storage.example/branches'))
+        self.assertEqual(
+            'sftp://storage.example/branches/000186a0',
+            store._getMirrorURL(100000))
+
+    def test__getMirrorURL_push(self):
+        # _getMirrorURL prefers bzr+ssh over sftp when constructing push
+        # URLs.
+        store = BazaarBranchStore(get_transport_from_url(
+            'sftp://storage.example/branches'))
+        self.assertEqual(
+            'bzr+ssh://storage.example/branches/000186a0',
+            store._getMirrorURL(100000, push=True))
 
     def test_getNewBranch(self):
         # If there's no Bazaar branch of this id, then pull creates a new

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -33,7 +33,8 @@ def test_suite():
     for filename in filenames:
         path = filename
         one_test = LayeredDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown,
+            path,
+            setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)

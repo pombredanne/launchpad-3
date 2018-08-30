@@ -57,7 +57,7 @@ normalizes `size` values into the range [MINIMUM_SIZE, MAXIMUM_SIZE].
     >>> naked_overview = removeSecurityProxy(overview)
     >>> result = naked_overview._normalizeSizes(test_list, 0, 3)
     >>> for pillar in result:
-    ...     print "%s: %d" % (pillar['pillar'], pillar['weight'])
+    ...     print("%s: %d" % (pillar['pillar'], pillar['weight']))
     one: 18
     two: 10
     three: 13
@@ -91,8 +91,8 @@ overview.MAXIMUM_SIZE].
 
     >>> def display_pillars(pillars):
     ...     for pillar in pillars:
-    ...         print "%s: %d" % (
-    ...             pillar['pillar'].displayname, pillar['weight'])
+    ...         print("%s: %d" % (
+    ...             pillar['pillar'].displayname, pillar['weight']))
     >>> display_pillars(overview.getMostTranslatedPillars())
     Evolution: 14
 

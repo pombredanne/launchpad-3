@@ -1,7 +1,9 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test NascentUploadFile functionality."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -346,20 +348,20 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
 
     def getBaseControl(self):
         return {
-            "Package": "python-dulwich",
-            "Source": "dulwich",
-            "Version": "0.42",
-            "Architecture": "i386",
-            "Maintainer": "Jelmer Vernooij <jelmer@debian.org>",
-            "Installed-Size": "524",
-            "Depends": "python (<< 2.7), python (>= 2.5)",
-            "Provides": "python2.5-dulwich, python2.6-dulwich",
-            "Section": "python",
-            "Priority": "optional",
-            "Homepage": "http://samba.org/~jelmer/dulwich",
-            "Description": "Pure-python Git library\n"
-                "Dulwich is a Python implementation of the file formats and "
-                "protocols",
+            "Package": b"python-dulwich",
+            "Source": b"dulwich",
+            "Version": b"0.42",
+            "Architecture": b"i386",
+            "Maintainer": b"Jelmer Vernooij <jelmer@debian.org>",
+            "Installed-Size": b"524",
+            "Depends": b"python (<< 2.7), python (>= 2.5)",
+            "Provides": b"python2.5-dulwich, python2.6-dulwich",
+            "Section": b"python",
+            "Priority": b"optional",
+            "Homepage": b"http://samba.org/~jelmer/dulwich",
+            "Description": b"Pure-python Git library\n"
+                b"Dulwich is a Python implementation of the file formats and "
+                b"protocols",
             }
 
     def createDeb(self, filename, control_format, data_format, members=None):
@@ -468,7 +470,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None)
         control = self.getBaseControl()
-        control["Python-Version"] = "2.5"
+        control["Python-Version"] = b"2.5"
         uploadfile.parseControl(control)
         build = self.factory.makeBinaryPackageBuild()
         bpr = uploadfile.storeInDatabase(build)
@@ -481,7 +483,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None)
         control = self.getBaseControl()
-        control["RandomData"] = "Foo\nbar\nbla\n"
+        control["RandomData"] = b"Foo\nbar\nbla\n"
         uploadfile.parseControl(control)
         build = self.factory.makeBinaryPackageBuild()
         bpr = uploadfile.storeInDatabase(build)
@@ -496,7 +498,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None)
         control = self.getBaseControl()
-        control["Python-Version"] = "2.5"
+        control["Python-Version"] = b"2.5"
         uploadfile.parseControl(control)
         build = self.factory.makeBinaryPackageBuild()
         bpr = uploadfile.storeInDatabase(build)
@@ -547,7 +549,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             distroseries=self.policy.distroseries,
             version="0.42", archive=self.policy.archive)
         control = self.getBaseControl()
-        control["Source"] = "foo"
+        control["Source"] = b"foo"
         uploadfile.parseControl(control)
         self.assertEqual(
             spph.sourcepackagerelease, uploadfile.findSourcePackageRelease())
@@ -564,7 +566,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             "foo_0.42_i386.deb", "main/python", "unknown", "mypkg", "0.42",
             None)
         control = self.getBaseControl()
-        control["Source"] = "foo"
+        control["Source"] = b"foo"
         uploadfile.parseControl(control)
         self.assertRaises(UploadError, uploadfile.findSourcePackageRelease)
 
@@ -592,7 +594,7 @@ class DebBinaryUploadFileTests(PackageUploadFileTestCase):
             version="0.42", archive=self.policy.archive,
             status=PackagePublishingStatus.PENDING)
         control = self.getBaseControl()
-        control["Source"] = "foo"
+        control["Source"] = b"foo"
         uploadfile.parseControl(control)
         self.assertEqual(
             spph2.sourcepackagerelease, uploadfile.findSourcePackageRelease())

@@ -91,7 +91,7 @@ Let's download it and make sure the contents look ok.
     >>> from lp.services.helpers import string_to_tarfile
     >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
     >>> for name in sorted(tarball.getnames()):
-    ...     print name
+    ...     print(name)
     pmount
     pmount/pmount-ca.po
     pmount/pmount-cs.po
@@ -115,7 +115,7 @@ queue is initially empty.
     ...         render_request(request)
     ...         for request in POExportRequest.select()]
     ...     for request in sorted(requests):
-    ...         print request
+    ...         print(request)
     >>> print_queue()
 
     >>> request_set.addRequest(person, None, [ca])
@@ -249,7 +249,7 @@ The script is run.
     ...     stderr=subprocess.STDOUT
     ...     )
     >>> (output, empty) = process.communicate()
-    >>> print output
+    >>> print(output)
     DEBUG   ...
     INFO    Creating lockfile: /var/lock/launchpad-rosetta-export-queue.lock
     DEBUG   Exporting objects for Happy Downloader, related to template
@@ -265,4 +265,3 @@ The script is run.
     DEBUG   rosetta-export-queue ran in ...s (excl. load & lock)
     DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
     <BLANKLINE>
-

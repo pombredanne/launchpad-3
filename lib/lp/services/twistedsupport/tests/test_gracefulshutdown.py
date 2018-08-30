@@ -1,14 +1,17 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for our graceful daemon shutdown support."""
 
 __metaclass__ = type
 
+import io
+
 from twisted.application import service
 from twisted.internet.defer import Deferred
 from twisted.internet.protocol import (
     Factory,
+    FileWrapper,
     Protocol,
     )
 from twisted.web import http
@@ -99,7 +102,10 @@ class TestServerAvailableResource(TestCase):
 
     def make_dummy_http_request(self):
         """Make a dummy HTTP request for tests."""
-        return http.Request(http.HTTPChannel(), True)
+        transport = FileWrapper(io.BytesIO())
+        channel = http.HTTPChannel()
+        channel.makeConnection(transport)
+        return http.Request(channel, True)
 
     def test_200_when_available(self):
         """When the factory is available a 200 response is generated."""

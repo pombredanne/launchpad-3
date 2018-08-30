@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for a Git repository namespace."""
@@ -178,8 +178,12 @@ class IGitNamespacePolicy(Interface):
             already exists in the namespace.
         """
 
-    def areRepositoriesMergeable(other_namespace):
-        """Are repositories from other_namespace mergeable into this one?"""
+    def areRepositoriesMergeable(this, other):
+        """Is `other` mergeable into `this`?
+
+        :param this: An `IGitRepository` in this namespace.
+        :param other: An `IGitRepository` in either this or another namespace.
+        """
 
     collection = Attribute("An `IGitCollection` for this namespace.")
 

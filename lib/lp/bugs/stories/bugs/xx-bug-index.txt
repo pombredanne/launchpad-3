@@ -30,7 +30,7 @@ to be fixed. The row for the current context (and not any other row) is
 highlighted.
 
     >>> anon_browser.open('http://launchpad.dev/firefox/+bug/1')
-    >>> print anon_browser.contents
+    >>> print(anon_browser.contents)
     <!DOCTYPE...
     ...
     ...<tr class="highlight" id="...">
@@ -42,12 +42,12 @@ highlighted.
     ...<tr>
     ...mozilla-firefox (Ubuntu)...
     ...
-    >>> anon_browser.contents.count('<tr class="highlight"')
+    >>> anon_browser.contents.count(b'<tr class="highlight"')
     1
 
     >>> anon_browser.open(
     ...     'http://launchpad.dev/debian/+source/mozilla-firefox/+bug/1')
-    >>> print anon_browser.contents
+    >>> print(anon_browser.contents)
     <!DOCTYPE...
     ...
     ...<tr>
@@ -59,17 +59,17 @@ highlighted.
     ...<tr>
     ...mozilla-firefox (Ubuntu)...
     ...
-    >>> anon_browser.contents.count('<tr class="highlight"')
+    >>> anon_browser.contents.count(b'<tr class="highlight"')
     1
 
 If the context is a distribution package, the package name has a
 tooltip containing the package details.
 
-    >>> print anon_browser.getLink('mozilla-firefox (Ubuntu)').attrs['title']
+    >>> print(anon_browser.getLink('mozilla-firefox (Ubuntu)').attrs['title'])
     Latest release: 0.9, uploaded to main on 2004-09-27 11:57:13+00:00...
     by Mark Shuttleworth (mark), maintained by Mark Shuttleworth (mark)
 
-    >>> print anon_browser.getLink('mozilla-firefox (Debian)').attrs['title']
+    >>> print(anon_browser.getLink('mozilla-firefox (Debian)').attrs['title'])
     No current release for this source package in Debian
 
 (XXX 20080623 mpt: Projects and distributions should similarly have a tooltip
@@ -80,7 +80,7 @@ status in that context. The forms are hidden initially using CSS.
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/debian/+source/mozilla-firefox/+bug/2")
-    >>> print user_browser.contents
+    >>> print(user_browser.contents)
     <!DOCTYPE...
     ...
     ...Tomcat...
@@ -100,7 +100,7 @@ including the latest release if it is a distribution package.
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1")
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'task17'))
+    >>> print(extract_text(find_tag_by_id(user_browser.contents, 'task17')))
     Affecting: mozilla-firefox (Ubuntu)
     Filed here by: Foo Bar
     When: 2004-01-17
@@ -110,18 +110,18 @@ including the latest release if it is a distribution package.
 The bug page includes a link to report another bug.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> print user_browser.getLink('Report a bug').url
+    >>> print(user_browser.getLink('Report a bug').url)
     http://bugs.launchpad.dev/firefox/+filebug
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1')
-    >>> print user_browser.getLink('Report a bug').url
+    >>> print(user_browser.getLink('Report a bug').url)
     http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug
 
 There's also a link on the page that will take the user to the "Add
 attachment or patch" page, for use when JavaScript isn't available.
 
-    >>> print user_browser.getLink('Add attachment or patch').url
+    >>> print(user_browser.getLink('Add attachment or patch').url)
     http://bugs.launchpad.dev/ubuntu/+source/.../+bug/1/+addcomment
 
 
@@ -132,7 +132,7 @@ If we navigate to a bug in a context in which it doesn't exist, we are
 redirected to the default context.
 
     >>> browser.open('http://bugs.launchpad.dev/jokosher/+bug/10')
-    >>> print browser.url
+    >>> print(browser.url)
     http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15/+bug/10
 
 
@@ -154,8 +154,8 @@ initialization code if there's more than 10 bug tasks.
 On the bug page, for every bug task there's one expander.
 
     >>> browser.open(bug_url)
-    >>> print len(find_tags_by_class(
-    ...     browser.contents, 'bugtask-expander'))
+    >>> print(len(find_tags_by_class(
+    ...     browser.contents, 'bugtask-expander')))
     1
 
 We add four more tasks.
@@ -168,8 +168,8 @@ We add four more tasks.
 And the expander appears five times.
 
     >>> browser.open(bug_url)
-    >>> print len(find_tags_by_class(
-    ...     browser.contents, 'bugtask-expander'))
+    >>> print(len(find_tags_by_class(
+    ...     browser.contents, 'bugtask-expander')))
     5
 
 But on pages with more than ten bug tasks, we don't include the expander
@@ -181,7 +181,7 @@ at all.
     >>> logout()
 
     >>> browser.open(bug_url)
-    >>> print len(find_tags_by_class(
-    ...     browser.contents, 'bugtask-expander'))
+    >>> print(len(find_tags_by_class(
+    ...     browser.contents, 'bugtask-expander')))
     0
 

@@ -55,14 +55,14 @@ For example, users can view a textual description of bug 1:
     >>> anon_browser.open('http://launchpad.dev/bugs/1/+text')
     >>> anon_browser.url
     'http://launchpad.dev/bugs/1/+text'
-    >>> print anon_browser.headers['content-type']
+    >>> print(anon_browser.headers['content-type'])
     text/plain;charset=utf-8 
 
 The textual description contains basic information about that bug, along with
 all tasks related to that bug, presented in an easy-to-digest format:
 
-    >>> text_bug = anon_browser.contents
-    >>> print text_bug
+    >>> text_bug = anon_browser.contents.decode('UTF-8')
+    >>> print(text_bug)
     bug: 1
     title: Firefox does not support SVG
     date-reported: Thu, 01 Jan 2004 20:58:04 -0000
@@ -151,7 +151,7 @@ are replaced by a single space.
     >>> attachments_text = text_bug[text_bug.find('attachments:'):]
     >>> attachment_2 = attachments_text.split('\n')[2]
     >>> attachment_2
-    ' http://bugs.launchpad.dev/.../file%20with%20space.txt text/plain;
+    u' http://bugs.launchpad.dev/.../file%20with%20space.txt text/plain;
     name="file with space.txt"'
 
 
@@ -169,14 +169,14 @@ description of bug 1 directly from the Mozilla Firefox-specific text page:
     >>> anon_browser.url
     'http://launchpad.dev/firefox/+bug/1/+text'
 
-    >>> print anon_browser.headers['content-type']
+    >>> print(anon_browser.headers['content-type'])
     text/plain;charset=utf-8
 
 The textual report contains the same information as the report provided by the
 parent bug context:
 
-    >>> text_bug_task = anon_browser.contents
-    >>> print text_bug_task
+    >>> text_bug_task = anon_browser.contents.decode('UTF-8')
+    >>> print(text_bug_task)
     bug: 1
     title: Firefox does not support SVG
     ...
@@ -213,8 +213,8 @@ The only differences are the download URLs of bug attachments:
     ...         assert(len(bug_task_lines) == len(bug_lines))
     ...         for line_no in range(len(bug_task_lines)):
     ...             if bug_lines[line_no] != bug_task_lines[line_no]:
-    ...                 print bug_lines[line_no]
-    ...                 print bug_task_lines[line_no]
+    ...                 print(bug_lines[line_no])
+    ...                 print(bug_task_lines[line_no])
     http://bugs.launchpad.dev/bugs/1/+attachment/.../+files/file_a.txt text/html
     http://bugs.launchpad.dev/firefox/+bug/.../+files/file_a.txt text/html
     http://bugs.launchpad.dev/bugs/1/.../+files/file%20with%20space.txt...
@@ -230,10 +230,10 @@ duplicated bug's ID:
     >>> anon_browser.open('http://launchpad.dev/bugs/6/+text')
     >>> anon_browser.url
     'http://launchpad.dev/bugs/6/+text'
-    >>> print anon_browser.headers['content-type']
+    >>> print(anon_browser.headers['content-type'])
     text/plain;charset=utf-8 
 
-    >>> print anon_browser.contents
+    >>> print(anon_browser.contents)
     bug: 6
     ...
     duplicate-of: 5
@@ -245,10 +245,10 @@ duplicate bug IDs:
     >>> anon_browser.open('http://launchpad.dev/bugs/5/+text')
     >>> anon_browser.url
     'http://launchpad.dev/bugs/5/+text'
-    >>> print anon_browser.headers['content-type']
+    >>> print(anon_browser.headers['content-type'])
     text/plain;charset=utf-8 
 
-    >>> print anon_browser.contents
+    >>> print(anon_browser.contents)
     bug: 5
     ...
     duplicate-of: 
@@ -268,10 +268,10 @@ For example, users can see the IDs of open bugs on Mozilla Firefox:
     >>> anon_browser.open('http://launchpad.dev/firefox/+bugs-text')
     >>> anon_browser.url
     'http://launchpad.dev/firefox/+bugs-text'
-    >>> print anon_browser.headers['content-type']
+    >>> print(anon_browser.headers['content-type'])
     text/plain;charset=utf-8 
 
-    >>> print anon_browser.contents
+    >>> print(anon_browser.contents)
     5
     4
 
@@ -283,10 +283,10 @@ of the standard set of search parameters to a textual bugs page URL:
     >>> search_parameters = 'field.status:list=FIXRELEASED'
     >>> url = base_url + '?' + search_parameters
     >>> anon_browser.open(url)
-    >>> print anon_browser.headers['content-type']
+    >>> print(anon_browser.headers['content-type'])
     text/plain;charset=utf-8
 
-    >>> print anon_browser.contents
+    >>> print(anon_browser.contents)
     1
 
 Searching for bugs in a component of a distribution works too.
@@ -295,16 +295,16 @@ Searching for bugs in a component of a distribution works too.
     >>> search_parameters = 'field.component=1'
     >>> url = base_url + '?' + search_parameters
     >>> anon_browser.open(url)
-    >>> print anon_browser.headers['content-type']
+    >>> print(anon_browser.headers['content-type'])
     text/plain;charset=utf-8
 
-    >>> print anon_browser.contents
+    >>> print(anon_browser.contents)
     10
 
 This page is also available for project groups.
 
     >>> anon_browser.open('http://launchpad.dev/mozilla/+bugs-text')
-    >>> print anon_browser.contents
+    >>> print(anon_browser.contents)
     15
     5
     4
@@ -315,7 +315,7 @@ This page is also available for project groups.
 When a bug is private, the textual description reflects this:
 
     >>> admin_browser.open('http://launchpad.dev/bugs/14/+text')
-    >>> print admin_browser.contents
+    >>> print(admin_browser.contents)
     bug: 14
     title: jokosher exposes personal details in its actions portlet
     date-reported: Thu, 09 Aug 2007 11:39:16 -0000

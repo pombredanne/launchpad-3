@@ -26,10 +26,7 @@ from lp.services.pidfile import (
     pidfile_path,
     )
 from lp.services.rabbit.server import RabbitServer
-from lp.services.sitesearch import (
-    bingtestservice,
-    googletestservice,
-    )
+from lp.services.sitesearch import bingtestservice
 from lp.services.txlongpoll.server import TxLongPollServer
 
 
@@ -144,16 +141,6 @@ class CodebrowseService(Service):
             stdin=subprocess.PIPE)
         self.addCleanup(stop_process, process)
         process.stdin.close()
-
-
-class GoogleWebService(Service):
-
-    @property
-    def should_launch(self):
-        return config.google_test_service.launch
-
-    def launch(self):
-        self.addCleanup(stop_process, googletestservice.start_as_process())
 
 
 class BingWebService(Service):
@@ -295,7 +282,6 @@ SERVICES = {
     'mailman': MailmanService(),
     'bing-webservice': BingWebService(),
     'codebrowse': CodebrowseService(),
-    'google-webservice': GoogleWebService(),
     'memcached': MemcachedService(),
     'rabbitmq': RabbitService(),
     'txlongpoll': TxLongPollService(),

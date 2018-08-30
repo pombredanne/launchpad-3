@@ -55,6 +55,17 @@
     <span class="see-all" tal:condition="view/show_bzr_link">
       <a tal:attributes="href context/fmt:url:code/+branches">View Bazaar branches</a>
     </span>
+
+    <p id="personal-git-directions" tal:condition="view/show_personal_directions">
+      You can create new personal repositories by pushing an existing git repository
+      to Launchpad with the following commands:
+      <br />
+      <pre class="command subordinate">
+git remote add origin git+ssh://<tal:name replace="view/user/name"/>@git.launchpad.net/~<tal:name replace="view/user/name"/>/+git/<em>REPOSITORY_NAME</em>
+git push --set-upstream origin master
+      </pre>
+    </p>
+
     <tal:default-repository
         condition="view/default_git_repository"
         define="repository view/default_git_repository">
@@ -63,6 +74,14 @@
           <tal:repository-management
             replace="structure repository/@@++repository-management" />
         </div>
+        <p id="active-review-count"
+          tal:define="count context/menu:branches/active_review_count|nothing;
+                      link context/menu:branches/active_reviews|nothing"
+          tal:condition="python: count &gt; 0">
+          <tal:project replace="context/displayname"/> has
+          <tal:active-count replace="count"/>
+          <tal:link replace="structure python: link.render().lower()"/>.
+        </p>
       </div>
 
       <div class="yui-g">

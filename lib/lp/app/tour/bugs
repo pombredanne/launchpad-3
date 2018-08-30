@@ -41,7 +41,7 @@
 <strong>When projects share free software code they share its bugs</strong>. The discussion about how to fix one bug can become fragmented across different reports in multiple trackers.<br /><br />
 <strong>Launchpad brings the discussion to you</strong>. At a glance you can see how the bug affects different communities, whether they're tracking it in Launchpad or external tools such as Bugzilla, Trac, Sourceforge or elsewhere.<br /><br />
 You can even share a comment history across project boundaries and tools, and use Launchpad's API and email interfaces for easy integration with your project workflow.</p>
-             <div id="left-link-holder"><strong>Need bug tracking for a closed source project?</strong><br /><a href="join-launchpad#commercial">Read about commercial subscriptions &gt;</a></div>
+             <div id="left-link-holder"><strong>Need bug tracking for a closed source project?</strong><br /><a href="join-launchpad#commercial">Read about commercial features &gt;</a></div>
             <div id="link-holder"><a href="https://bugs.launchpad.net/">Visit Launchpad Bugs &gt;</a><br /><a href="https://launchpad.net/projects/+new">Add your project to Launchpad &gt;</a></div>
         </div>
         <div id="page-intro-bottom"></div>

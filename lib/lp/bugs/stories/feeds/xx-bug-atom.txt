@@ -32,41 +32,41 @@ point to the bugs themselves.
     'http://feeds.launchpad.dev/jokosher/latest-bugs.atom'
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
-    >>> print extract_text(soup.find('id'))
+    >>> print(extract_text(soup.find('id')))
     tag:launchpad.net,2007-03-15:/bugs/jokosher
     >>> alternate_links = parse_links(browser.contents, 'alternate')
     >>> for link in alternate_links:
-    ...     print link
+    ...     print(link)
     <link rel="alternate" href="http://bugs.launchpad.dev/jokosher" />
     <link rel="alternate" href="http://bugs.launchpad.dev/bugs/12" />
     <link rel="alternate" href="http://bugs.launchpad.dev/bugs/11" />
 
     >>> self_links = parse_links(browser.contents, 'self')
     >>> for link in self_links:
-    ...     print link
+    ...     print(link)
     <link rel="self" href="http://feeds.launchpad.dev/jokosher/latest-bugs.atom" />
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     2
     >>> entry = entries[0]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [12] Copy, Cut and Delete operations should work on selections
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name16
-    >>> print extract_text(entry.id)
+    >>> print(extract_text(entry.id))
     tag:launchpad.net,2007-03-15:/bugs/12
 
     >>> entry = entries[1]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [11] Make Jokosher use autoaudiosink
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name16
-    >>> print extract_text(entry.id)
+    >>> print(extract_text(entry.id))
     tag:launchpad.net,2007-03-15:/bugs/11
 
 The Atom feed must have the content-type of "application/atom+xml".
@@ -89,40 +89,40 @@ as the latest bugs feed for a product.
     'http://feeds.launchpad.dev/mozilla/latest-bugs.atom'
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
-    >>> print extract_text(soup.find('id'))
+    >>> print(extract_text(soup.find('id')))
     tag:launchpad.net,2004-09-24:/bugs/mozilla
 
     >>> self_links = parse_links(browser.contents, 'self')
     >>> for link in self_links:
-    ...     print link
+    ...     print(link)
     <link rel="self" href="http://feeds.launchpad.dev/mozilla/latest-bugs.atom" />
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     5
 
     >>> entry = entries[0]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [15] Nonsensical bugs are useless
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name16
 
     >>> entry = entries[1]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [9] Thunderbird crashes
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name16
 
     >>> entry = entries[2]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [5] Firefox install instructions should be complete
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Sample Person
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name12
 
 Ensure the entries are in reverse chronological order by published date.
@@ -150,24 +150,24 @@ of content as the latest bugs feed for a product.
     'http://feeds.launchpad.dev/ubuntu/latest-bugs.atom'
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
-    >>> print extract_text(soup.find('id'))
+    >>> print(extract_text(soup.find('id')))
     tag:launchpad.net,2006-10-16:/bugs/ubuntu
 
     >>> self_links = parse_links(browser.contents, 'self')
     >>> for link in self_links:
-    ...     print link
+    ...     print(link)
     <link rel="self" href="http://feeds.launchpad.dev/ubuntu/latest-bugs.atom" />
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     4
 
     >>> entry = entries[1]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [9] Thunderbird crashes
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name16
 
     >>> assert check_entries_order(entries), (
@@ -184,13 +184,13 @@ Create a private team and assign an ubuntu distro bug to that team.
     >>> login('foo.bar@canonical.com')
     >>> priv_team = factory.makeTeam(visibility=PersonVisibility.PRIVATE)
     >>> bug = getUtility(IBugSet).get(1)
-    >>> print bug.title
+    >>> print(bug.title)
     Firefox does not support SVG
-    >>> print len(bug.bugtasks)
+    >>> print(len(bug.bugtasks))
     3
     >>> from zope.security.proxy import removeSecurityProxy
     >>> bugtask = removeSecurityProxy(bug.bugtasks[1])
-    >>> print bugtask.distribution
+    >>> print(bugtask.distribution)
     <Distribution 'Ubuntu' (ubuntu)>
     >>> bugtask.assignee = priv_team
     >>> logout()
@@ -203,13 +203,13 @@ Get the ubuntu/latest-bugs feed.
     No Errors
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     4
 
 The bug should be included in the feed.
 
     >>> entry = entries[3]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [1] Firefox does not support SVG
 
 Private teams should show as '-'.
@@ -218,7 +218,7 @@ Private teams should show as '-'.
     ...     entry.find('content').text,
     ...     convertEntities=BSS.HTML_ENTITIES)
     >>> soup = BSS(entry_content.text)
-    >>> print [tr.findAll('td')[4].text for tr in soup.findAll('tr')[1:4]]
+    >>> print([tr.findAll('td')[4].text for tr in soup.findAll('tr')[1:4]])
     [u'Mark Shuttleworth', u'-', u'-']
 
 == Latest bugs for a source package ==
@@ -237,17 +237,17 @@ type of content as the latest bugs feed for a product.
     >>> browser.url
     'http://feeds.launchpad.dev/ubuntu/+source/thunderbird/latest-bugs.atom'
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
-    >>> print extract_text(soup.find('id'))
+    >>> print(extract_text(soup.find('id')))
     tag:launchpad.net,2008:/bugs/ubuntu/+source/thunderbird
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     1
     >>> entry = entries[0]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [9] Thunderbird crashes
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name16
 
     >>> assert check_entries_order(entries), (
@@ -270,24 +270,24 @@ type of content as the latest bugs feed for a product.
     'http://feeds.launchpad.dev/ubuntu/hoary/latest-bugs.atom'
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
-    >>> print extract_text(soup.find('id'))
+    >>> print(extract_text(soup.find('id')))
     tag:launchpad.net,2006-10-16:/bugs/ubuntu/hoary
 
     >>> self_links = parse_links(browser.contents, 'self')
     >>> for link in self_links:
-    ...     print link
+    ...     print(link)
     <link rel="self" href="http://feeds.launchpad.dev/ubuntu/hoary/latest-bugs.atom" />
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     1
 
     >>> entry = entries[0]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [2] Blackhole Trash folder
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Sample Person
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name12
 
     >>> assert check_entries_order(entries), (
@@ -310,24 +310,24 @@ type of content as the latest bugs feed for a product.
     'http://feeds.launchpad.dev/firefox/1.0/latest-bugs.atom'
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
-    >>> print extract_text(soup.find('id'))
+    >>> print(extract_text(soup.find('id')))
     tag:launchpad.net,2005-06-06:/bugs/firefox/1.0
 
     >>> self_links = parse_links(browser.contents, 'self')
     >>> for link in self_links:
-    ...     print link
+    ...     print(link)
     <link rel="self" href="http://feeds.launchpad.dev/firefox/1.0/latest-bugs.atom" />
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     1
 
     >>> entry = entries[0]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [5] Firefox install instructions should be complete
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Sample Person
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name12
 
     >>> assert check_entries_order(entries), (
@@ -348,32 +348,32 @@ This feed gets the latest bugs for a person.
     'http://feeds.launchpad.dev/~name16/latest-bugs.atom'
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
-    >>> print extract_text(soup.find('id'))
+    >>> print(extract_text(soup.find('id')))
     tag:launchpad.net,2005-06-06:/bugs/~name16
 
     >>> self_links = parse_links(browser.contents, 'self')
     >>> for link in self_links:
-    ...     print link
+    ...     print(link)
     <link rel="self" href="http://feeds.launchpad.dev/~name16/latest-bugs.atom" />
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     7
 
     >>> entry = entries[0]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [15] Nonsensical bugs are useless
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name16
 
     >>> entry = entries[1]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [12] Copy, Cut and Delete operations should work on selections
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name16
 
     >>> assert check_entries_order(entries), (
@@ -421,16 +421,16 @@ some results.
     [u'Bugs for Simple Team']
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
-    >>> print extract_text(soup.find('id'))
+    >>> print(extract_text(soup.find('id')))
     tag:launchpad.net,2007-02-21:/bugs/~simple-team
 
     >>> self_links = parse_links(browser.contents, 'self')
     >>> for link in self_links:
-    ...     print link
+    ...     print(link)
     <link rel="self" href="http://feeds.launchpad.dev/~simple-team/latest-bugs.atom" />
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     3
 
     >>> assert check_entries_order(entries), (
@@ -451,24 +451,24 @@ This feed gets the latest bugs reported against any target.
     'http://feeds.launchpad.dev/bugs/latest-bugs.atom'
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
-    >>> print extract_text(soup.find('id'))
+    >>> print(extract_text(soup.find('id')))
     tag:launchpad.net,2008:/bugs
 
     >>> self_links = parse_links(browser.contents, 'self')
     >>> for link in self_links:
-    ...     print link
+    ...     print(link)
     <link rel="self" href="http://feeds.launchpad.dev/bugs/latest-bugs.atom" />
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     13
 
     >>> entry = entries[0]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [15] Nonsensical bugs are useless
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name16
 
     >>> assert check_entries_order(entries), (
@@ -513,36 +513,36 @@ to True.
 
     >>> soup = BSS(browser.contents, parseOnlyThese=SoupStrainer('id'))
     >>> feed_id = extract_text(soup.find('id'))
-    >>> print feed_id
+    >>> print(feed_id)
     tag:launchpad.net,2008:/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports
 
     >>> from lp.services.webapp.escaping import html_escape
-    >>> print html_escape(browser.url)
+    >>> print(html_escape(browser.url))
     http://feeds.launchpad.dev/bugs/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports
 
     >>> self_links = parse_links(browser.contents, 'self')
     >>> for link in self_links:
-    ...     print link
+    ...     print(link)
     <link rel="self" href="http://feeds.launchpad.dev/bugs/+bugs.atom?field.scope.target=&amp;field.scope=all&amp;field.searchtext=&amp;search=Search+Bug+Reports" />
 
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     12
 
     >>> entry = entries[0]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [15] Nonsensical bugs are useless
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Foo Bar
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name16
 
     >>> entry = entries[1]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [13] Launchpad CSS and JS is not testible
-    >>> print extract_text(entry.author('name')[0])
+    >>> print(extract_text(entry.author('name')[0]))
     Sample Person
-    >>> print extract_text(entry.author('uri')[0])
+    >>> print(extract_text(entry.author('uri')[0]))
     http://bugs.launchpad.dev/~name12
 
 
@@ -557,14 +557,14 @@ This feed shows the status of a single bug.
     >>> BSS(browser.contents).title.contents
     [u'Bug 1']
     >>> entries = parse_entries(browser.contents)
-    >>> print len(entries)
+    >>> print(len(entries))
     1
     >>> entry = entries[0]
-    >>> print extract_text(entry.title)
+    >>> print(extract_text(entry.title))
     [1] Firefox does not support SVG
     >>> self_links = parse_links(browser.contents, 'self')
     >>> for link in self_links:
-    ...     print link
+    ...     print(link)
     <link rel="self" href="http://feeds.launchpad.dev/bugs/1/bug.atom" />
 
 == Feeds Configuration Options ==

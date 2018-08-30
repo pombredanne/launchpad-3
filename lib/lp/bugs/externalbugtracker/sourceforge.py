@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sourceforge ExternalBugTracker utility."""
@@ -48,7 +48,7 @@ class SourceForge(ExternalBugTracker):
 
         for bug_id in bug_ids:
             query_url = self.export_url % bug_id
-            page_data = self._getPage(query_url)
+            page_data = self._getPage(query_url).content
 
             soup = BeautifulSoup(page_data)
             status_tag = soup.find(text=re.compile('Status:'))

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """build.py - Minifies and creates the JS build directory."""
@@ -17,6 +17,7 @@ import sys
 
 import cssutils
 from cssutils import settings
+import scandir
 
 
 HERE = os.path.dirname(__file__)
@@ -276,8 +277,8 @@ class Builder:
             return
 
         # Process sub-skins.
-        for skin in os.listdir(src_skins_dir):
-            self.build_skin(component_name, skin)
+        for entry in scandir.scandir(src_skins_dir):
+            self.build_skin(component_name, entry.name)
 
     def link_directory_content(self, src_dir, target_dir, link_filter=None):
         """Link all the files in src_dir into target_dir.
@@ -289,14 +290,13 @@ class Builder:
             If the filter returns False, no symlink will be created. By
             default a symlink is created for everything.
         """
-        for name in os.listdir(src_dir):
-            if name.endswith('~'):
+        for entry in scandir.scandir(src_dir):
+            if entry.name.endswith('~'):
                 continue
-            src = os.path.join(src_dir, name)
-            if link_filter and not link_filter(src):
+            if link_filter and not link_filter(entry.path):
                 continue
-            target = os.path.join(target_dir, name)
-            self.ensure_link(relative_path(target, src), target)
+            target = os.path.join(target_dir, entry.name)
+            self.ensure_link(relative_path(target, entry.path), target)
 
     def build_skin(self, component_name, skin_name):
         """Build a skin for a particular component."""
@@ -350,11 +350,10 @@ class Builder:
                 combined_css.update()
 
     def do_build(self):
-        for name in os.listdir(self.src_dir):
-            path = os.path.join(self.src_dir, name)
-            if not os.path.isdir(path):
+        for entry in scandir.scandir(self.src_dir):
+            if not entry.is_dir():
                 continue
-            self.build_assets(name)
+            self.build_assets(entry.name)
         self.update_combined_css_skins()
 
 

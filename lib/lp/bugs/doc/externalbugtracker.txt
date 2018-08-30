@@ -26,8 +26,8 @@ transaction, since it doesn't need DB access.
     ...     TestExternalBugTracker)
     >>> class InitializingExternalBugTracker(TestExternalBugTracker):
     ...     def initializeRemoteBugDB(self, remote_bug_ids):
-    ...         print "initializeRemoteBugDB() called: %r" % (
-    ...             remote_bug_ids, )
+    ...         print("initializeRemoteBugDB() called: %r" % (
+    ...             remote_bug_ids, ))
 
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
@@ -76,7 +76,7 @@ private _getExternalBugTrackersAndWatches() method, which returns a set of
     ...     bug_tracker_to_use = Bugzilla
     ...
     ...     def getExternalBugTrackerToUse(self):
-    ...         print "Getting external bugtracker to use"
+    ...         print("Getting external bugtracker to use")
     ...         return self.bug_tracker_to_use(self.baseurl)
 
 We'll create a helper method to allow us to avoid having to connect to a
@@ -180,7 +180,7 @@ connect to any servers.
     ...         }
     ...
     ...     def getProductsForRemoteBugs(self, bug_ids):
-    ...         print "Getting products for remote bugs"
+    ...         print("Getting products for remote bugs")
     ...         mappings = {}
     ...         for bug_id in bug_ids:
     ...             if int(bug_id) in self.remote_bug_products:
@@ -241,7 +241,7 @@ another BugzillaAPI instance which has syncing disabled.
 
     >>> from operator import attrgetter
     >>> for watch in sorted(sync_watches, key=attrgetter('remotebug')):
-    ...     print watch.remotebug
+    ...     print(watch.remotebug)
     1
     3
 
@@ -252,7 +252,7 @@ another BugzillaAPI instance which has syncing disabled.
     False
 
     >>> for watch in sorted(other_watches, key=attrgetter('remotebug')):
-    ...     print watch.remotebug
+    ...     print(watch.remotebug)
     2
     4
     5
@@ -289,14 +289,14 @@ watches will be returned for the two Bugzilla ExternalBugTrackers.
     False
 
     >>> for watch in sorted(sync_watches, key=attrgetter('remotebug')):
-    ...     print watch.remotebug
+    ...     print(watch.remotebug)
     1
     2
     3
     5
 
     >>> for watch in sorted(other_watches, key=attrgetter('remotebug')):
-    ...     print watch.remotebug
+    ...     print(watch.remotebug)
     4
 
 If there are no syncable GNOME products, only one batch is returned,
@@ -324,7 +324,7 @@ the time is.
     >>> class TimeUnknownExternalBugTracker(InitializingExternalBugTracker):
     ...
     ...     def getCurrentDBTime(self):
-    ...         print "getCurrentDBTime() called"
+    ...         print("getCurrentDBTime() called")
     ...         return None
 
     >>> bug_watch_updater.updateBugWatches(
@@ -434,12 +434,12 @@ know that their time is similar to ours.
     ...     def getCurrentDBTime(self):
     ...         return datetime.now(pytz.timezone('UTC'))
     ...     def getModifiedRemoteBugs(self, remote_bug_ids, last_checked):
-    ...         print "last_checked: %s" % last_checked
-    ...         print "getModifiedRemoteBugs() called: %r" % (
-    ...             remote_bug_ids, )
+    ...         print("last_checked: %s" % last_checked)
+    ...         print("getModifiedRemoteBugs() called: %r" % (
+    ...             remote_bug_ids, ))
     ...         return [remote_bug_ids[0], remote_bug_ids[-1]]
     ...     def getRemoteStatus(self, bug_id):
-    ...         print "getRemoteStatus() called: %r" % bug_id
+    ...         print("getRemoteStatus() called: %r" % bug_id)
     ...         return 'UNKNOWN'
 
 Only bugs that have been checked before are passed on to
@@ -498,7 +498,7 @@ _getRemoteIdsToCheck(), which returns a dict containing three lists:
     ...     external_bugtracker, bug_watches,
     ...     external_bugtracker.getCurrentDBTime())
     >>> for key in sorted(ids):
-    ...     print "%s: %s" % (key, sorted(ids[key]))
+    ...     print("%s: %s" % (key, sorted(ids[key])))
     all_remote_ids: [u'1', u'2', u'3', u'4']
     remote_ids_to_check: [u'1', u'2', u'3', u'4']
     unmodified_remote_ids: []
@@ -530,7 +530,7 @@ will then be passed on to initializeRemoteBugDB().
     last_checked: 2007-03-17 15:...:...
 
     >>> for key in sorted(ids):
-    ...     print "%s: %s" % (key, sorted(ids[key]))
+    ...     print("%s: %s" % (key, sorted(ids[key])))
     all_remote_ids: [u'1', u'2', u'3', u'4']
     remote_ids_to_check: [u'1', u'4']
     unmodified_remote_ids: [u'2', u'3']
@@ -548,9 +548,9 @@ as being checked.
 
     >>> for bug_watch in bug_watches:
     ...     if bug_watch.lastchecked > some_time_ago:
-    ...         print "Bug %s was marked checked" % bug_watch.remotebug
+    ...         print("Bug %s was marked checked" % bug_watch.remotebug)
     ...     else:
-    ...         print "Bug %s was NOT marked checked" % bug_watch.remotebug
+    ...         print("Bug %s was NOT marked checked" % bug_watch.remotebug)
     Bug 1 was marked checked
     Bug 2 was marked checked
     Bug 3 was marked checked
@@ -625,10 +625,10 @@ possible.
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
-    >>> print sorted(ids['remote_ids_to_check'])
+    >>> print(sorted(ids['remote_ids_to_check']))
     []
 
-    >>> print sorted(ids['unmodified_remote_ids'])
+    >>> print(sorted(ids['unmodified_remote_ids']))
     [u'1', u'2', u'3', u'4']
 
     >>> comment_message = factory.makeMessage(
@@ -641,7 +641,7 @@ possible.
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
-    >>> print sorted(ids['remote_ids_to_check'])
+    >>> print(sorted(ids['remote_ids_to_check']))
     [u'4']
 
 Once the comment has been pushed it will no longer appear in the list of
@@ -652,7 +652,7 @@ IDs to be updated.
     >>> ids = bug_watch_updater._getRemoteIdsToCheck(
     ...     external_bugtracker, bug_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
-    >>> print sorted(ids['remote_ids_to_check'])
+    >>> print(sorted(ids['remote_ids_to_check']))
     []
 
 
@@ -734,8 +734,8 @@ watch.
     ...             external_bugtracker, [example_bugwatch])
     ...     except error:
     ...         pass
-    ...     print "%s: %s" % (example_bugwatch.last_error_type.title,
-    ...         example_bugwatch.lastchecked is not None)
+    ...     print("%s: %s" % (example_bugwatch.last_error_type.title,
+    ...         example_bugwatch.lastchecked is not None))
     Connection Error: True
     Unparsable Bug: True
     Unparsable Bug Tracker Version: True
@@ -761,10 +761,10 @@ updated.
     ...     bug_watch_updater.updateBugWatches(
     ...         external_bugtracker, [example_bugwatch])
     ...     oops = capture.oopses[-1]
-    ...     print "%s: %s (%s; %s)" % (
+    ...     print("%s: %s (%s; %s)" % (
     ...         example_bugwatch.last_error_type.title,
     ...         example_bugwatch.lastchecked is not None,
-    ...         oops['id'], oops['url'])
+    ...         oops['id'], oops['url']))
     Unparsable Bug: True (OOPS-...; http://bugs.example.com/show_bug.cgi?id=1)
     Unknown: True (OOPS-...; http://bugs.example.com/show_bug.cgi?id=1)
 
@@ -806,7 +806,7 @@ compatible table that describes the paths through the tree. The result
 is always assumed to be a member of `BugTaskStatus`.
 
     >>> for line in tree.moinmoin_table():
-    ...     print line
+    ...     print(line)
     || ASSIGNED '''or''' STARTED || - (''ignored'') || In Progress ||
     || NEEDINFO '''or''' WAITING '''or''' SUSPENDED || - (''ignored'') ...
     || PENDINGUPLOAD '''or''' RELEASE_PENDING || - (''ignored'') || Fix...
@@ -822,7 +822,7 @@ Titles can also be provided for the table.
 
     >>> titles = ('Status', 'Resolution', 'LP status')
     >>> for line in tree.moinmoin_table(titles):
-    ...     print line
+    ...     print(line)
     || '''Status''' || '''Resolution''' || '''LP status''' ||
     || ASSIGNED '''or''' STARTED || - (''ignored'') || In Progress ||
     || NEEDINFO '''or''' WAITING '''or''' SUSPENDED || - (''ignored'') ...
@@ -832,7 +832,7 @@ It will complain if you don't provide a suitable number of titles.
 
     >>> titles = ('Status', 'Resolution')
     >>> for line in tree.moinmoin_table(titles):
-    ...     print line
+    ...     print(line)
     Traceback (most recent call last):
     ...
     ValueError: Table of 3 columns needs 3 titles, but 2 given.
@@ -848,7 +848,7 @@ to make that assumption.
     ...     )
     Traceback (most recent call last):
     ...
-    TypeError: Result is not a member of BugTaskStatus: 'Not a BugTaskStatus'
+    TypeError: Result is not a member of BugTaskStatus: u'Not a BugTaskStatus'
 
 
 Getting the remote product from a remote bug
@@ -884,7 +884,7 @@ capable of dealing with multiple remote products.
 
     >>> basic_external_bugtracker = ExternalBugTracker(
     ...     'http://example.com')
-    >>> print basic_external_bugtracker.getRemoteProduct(1)
+    >>> print(basic_external_bugtracker.getRemoteProduct(1))
     None
 
 
@@ -938,7 +938,7 @@ remote server.
     ...     external_bugtracker,
     ...     unchecked_watches + watches_with_comments,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
-    >>> print sorted(ids['remote_ids_to_check'])
+    >>> print(sorted(ids['remote_ids_to_check']))
     [u'0', u'1', u'5', u'6', u'7']
 
 Previously-checked bug watches that need updating will only be included if
@@ -963,14 +963,14 @@ checked again.
     ...     external_bugtracker,
     ...     unchecked_watches + watches_with_comments + old_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
-    >>> print sorted(ids['remote_ids_to_check'])
+    >>> print(sorted(ids['remote_ids_to_check']))
     [u'0', u'1', u'5', u'6', u'7']
 
 The old IDs that aren't checked aren't included in the unmodified_remote_ids
 list, since they still need checking and shouldn't be marked as having been
 checked already.
 
-    >>> print sorted(ids['unmodified_remote_ids'])
+    >>> print(sorted(ids['unmodified_remote_ids']))
     []
 
 However, if there's room in the batch, old IDs that need checking will
@@ -981,7 +981,7 @@ also be included, up to the batch_size limit.
     ...     external_bugtracker,
     ...     unchecked_watches + watches_with_comments + old_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
-    >>> print sorted(ids['remote_ids_to_check'])
+    >>> print(sorted(ids['remote_ids_to_check']))
     [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8']
 
 If there's no batch_size set, all the bugs that should be checked are
@@ -992,7 +992,7 @@ returned.
     ...     external_bugtracker,
     ...     unchecked_watches + watches_with_comments + old_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now)
-    >>> print sorted(ids['remote_ids_to_check'])
+    >>> print(sorted(ids['remote_ids_to_check']))
     [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']
 
 
@@ -1013,7 +1013,7 @@ results will be returned.
     ...     unchecked_watches + watches_with_comments + old_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now,
     ...     batch_size=2)
-    >>> print sorted(ids['remote_ids_to_check'])
+    >>> print(sorted(ids['remote_ids_to_check']))
     [u'5', u'6']
 
 If the batch_size parameter is set to None (the default value), the
@@ -1024,7 +1024,7 @@ ExternalBugTracker's batch_size is used to decide the number of IDs returned.
     ...     unchecked_watches + watches_with_comments + old_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now,
     ...     batch_size=None)
-    >>> print sorted(ids['remote_ids_to_check'])
+    >>> print(sorted(ids['remote_ids_to_check']))
     [u'0', u'1', u'5', u'6', u'7']
 
 _getRemoteIdsToCheck() will interpret a batch_size parameter of 0 as an
@@ -1039,7 +1039,7 @@ be used in place of using 0 verbatim.
     ...     unchecked_watches + watches_with_comments + old_watches,
     ...     external_bugtracker.getCurrentDBTime(), utc_now,
     ...     batch_size=BATCH_SIZE_UNLIMITED)
-    >>> print sorted(ids['remote_ids_to_check'])
+    >>> print(sorted(ids['remote_ids_to_check']))
     [u'0', u'1', u'2', u'3', u'4', u'5', u'6', u'7', u'8', u'9']
 
 batch_size can be passed to _getRemoteIdsToCheck() via updateBugWatches(),

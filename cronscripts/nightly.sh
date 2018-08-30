@@ -1,14 +1,11 @@
 #!/bin/sh
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This script performs nightly chores. It should be run from
 # cron as the launchpad user once a day. Typically the output
 # will be sent to an email address for inspection.
-
-# Note that http/ftp proxies are needed by the product
-# release finder
 
 
 LOGDIR=$1

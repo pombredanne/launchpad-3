@@ -184,7 +184,7 @@ easier you can use IBugWatchSet.fromText().
     ...     (bug_watch.bugtracker.bugtrackertype, bug_watch.remotebug)
     ...     for bug_watch in bug_watches]
     >>> for bugtracker_type, remotebug in sorted(bugs_and_types):
-    ...     print "%s: %s" % (bugtracker_type.name, remotebug)
+    ...     print("%s: %s" % (bugtracker_type.name, remotebug))
     BUGZILLA: 42
     DEBBUGS: 42
     ROUNDUP: 42
@@ -239,13 +239,13 @@ Updater and get a bug watch and a bugtask to test with.
     >>> bug_watch_updater_user = getUtility(ILaunchBag).user
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.expireNotifications()
-    >>> print len(bug_one.bugtasks)
+    >>> print(len(bug_one.bugtasks))
     3
     >>> debian_task = bug_one.bugtasks[2]
-    >>> print debian_task.bugtargetdisplayname
+    >>> print(debian_task.bugtargetdisplayname)
     mozilla-firefox (Debian)
 
-    >>> print debian_task.status.title
+    >>> print(debian_task.status.title)
     Confirmed
 
     >>> debian_bugwatch = debian_task.bugwatch
@@ -258,11 +258,11 @@ we can confirm that an event is indeed fired off.
     >>> def print_bugtask_modified(bugtask, event):
     ...     old_bugtask = event.object_before_modification
     ...     if bugtask.status != old_bugtask.status:
-    ...         print "%s => %s" % (old_bugtask.status.title,
-    ...             bugtask.status.title)
+    ...         print("%s => %s" % (old_bugtask.status.title,
+    ...             bugtask.status.title))
     ...     if bugtask.importance != old_bugtask.importance:
-    ...         print "%s => %s" % (old_bugtask.importance.title,
-    ...             bugtask.importance.title)
+    ...         print("%s => %s" % (old_bugtask.importance.title,
+    ...             bugtask.importance.title))
     >>> from lp.testing.event import TestEventListener
     >>> from lazr.lifecycle.interfaces import IObjectModifiedEvent
     >>> from lp.bugs.interfaces.bugtask import IBugTask
@@ -288,7 +288,7 @@ status mapping.
 
     >>> debian_bugwatch.remotestatus == old_remotestatus
     True
-    >>> print debian_task.status.title
+    >>> print(debian_task.status.title)
     New
 
 If only the remote status is changed, not the bugtask's status, no
@@ -299,7 +299,7 @@ have to be convertable to a real Malone status.
 
     >>> debian_bugwatch.remotestatus
     u'some status'
-    >>> print debian_task.status.title
+    >>> print(debian_task.status.title)
     New
 
 The lastchanged was updated, though.
@@ -322,10 +322,10 @@ Finally, let's make sure that bug notifications were added:
     ...     BugNotification.selectBy(date_emailed=None, orderBy='id'))
 
     >>> for bug_notification in unsent_notifications:
-    ...     print "Bug %s changed by %s:" % (
+    ...     print("Bug %s changed by %s:" % (
     ...         bug_notification.bug.id,
-    ...         bug_notification.message.owner.displayname)
-    ...     print bug_notification.message.text_contents
+    ...         bug_notification.message.owner.displayname))
+    ...     print(bug_notification.message.text_contents)
     Bug 1 changed by Bug Watch Updater:
     ** Changed in: mozilla-firefox (Debian)
            Status: Confirmed => New
@@ -356,7 +356,7 @@ doesn't get updated since the remote importance hasn't been changed.
     >>> debian_bugwatch.remote_importance == old_remote_importance
     True
 
-    >>> print debian_task.importance.title
+    >>> print(debian_task.importance.title)
     Critical
 
 If only the remote importance is changed, not the bugtask's importance,
@@ -368,7 +368,7 @@ doesn't necessarily have to be convertible to a real Malone status.
 
     >>> debian_bugwatch.remote_importance
     u'some importance'
-    >>> print debian_task.importance.title
+    >>> print(debian_task.importance.title)
     Critical
 
 The `lastchanged` field was updated, though.
@@ -380,10 +380,10 @@ Changes to bug watch statuses will produce notifications in the usual
 manner:
 
     >>> for bug_notification in unsent_notifications:
-    ...     print "Bug %s changed by %s:" % (
+    ...     print("Bug %s changed by %s:" % (
     ...         bug_notification.bug.id,
-    ...         bug_notification.message.owner.displayname)
-    ...     print bug_notification.message.text_contents
+    ...         bug_notification.message.owner.displayname))
+    ...     print(bug_notification.message.text_contents)
     Bug 1 changed by Bug Watch Updater:
     ** Changed in: mozilla-firefox (Debian)
            Status: Confirmed => New
@@ -465,7 +465,9 @@ slaves must be updated through their conjoined master.
     >>> from lp.bugs.scripts.checkwatches import CheckwatchesMaster
     >>> bug_watch_updater = CheckwatchesMaster(transaction, FakeLogger())
     >>> external_bugtracker = TestRoundup(bug_tracker.baseurl)
-    >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
+    >>> with external_bugtracker.responses():
+    ...     bug_watch_updater.updateBugWatches(
+    ...         external_bugtracker, [bug_watch])
     INFO Updating 1 watches for 1 bugs on http://some.where
 
     >>> bug.bugtasks[0].status.title

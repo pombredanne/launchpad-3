@@ -78,9 +78,9 @@ work with the right database user.
 The authorisation cookie will be stored in the auth_cookie property of
 the XML-RPC transport.
 
-    >>> test_transport.cookie_processor.cookiejar
-    <...CookieJar[Cookie(version=0, name='Bugzilla_login'...),
-                  Cookie(version=0, name='Bugzilla_logincookie'...)]>
+    >>> test_transport.cookie_jar
+    <RequestsCookieJar[Cookie(version=0, name='Bugzilla_login'...),
+                       Cookie(version=0, name='Bugzilla_logincookie'...)]>
 
 The externalbugtracker.bugzilla module contains a decorator,
 needs_authentication, which can be used to ensure that a
@@ -123,7 +123,7 @@ login_required() and will retry the method call.
     Successfully validated the token.
     CALLED Test.login_required()
 
-    >>> print return_value
+    >>> print(return_value)
     Wonderful, you've logged in! Aren't you a clever biped?
 
     >>> test_transport.print_method_calls = False
@@ -199,10 +199,10 @@ The bug data is stored as a list of dicts:
 
     >>> def print_bugs(bugs):
     ...     for bug in sorted(bugs):
-    ...         print "Bug %s:" % bug
+    ...         print("Bug %s:" % bug)
     ...         for key in sorted(bugs[bug]):
-    ...             print "    %s: %s" % (key, bugs[bug][key])
-    ...         print "\n"
+    ...             print("    %s: %s" % (key, bugs[bug][key]))
+    ...         print("\n")
 
     >>> print_bugs(bugzilla._bugs)
     Bug 1:
@@ -265,7 +265,7 @@ remote server and passing it a 'changed_since' parameter.
         'ids': [1, 2],
         'permissive': True})
 
-    >>> print bug_ids
+    >>> print(bug_ids)
     [2]
 
 If we alter the changed_since date to move it back by a day, we'll get
@@ -278,7 +278,7 @@ both bugs 1 and 2 back from getModifiedRemoteBugs()
         'ids': [1, 2],
         'permissive': True})
 
-    >>> print bug_ids
+    >>> print(bug_ids)
     [1, 2]
 
 Bugzilla's Launchpad.get_bugs() method returns all the data for each
@@ -286,10 +286,10 @@ bug it returns. getModifiedRemoteBugs() saves this information into the
 BugzillaLPPlugin instance's bugs dict.
 
     >>> for bug in sorted(bugzilla._bugs):
-    ...     print "Bug %s:" % bug
+    ...     print("Bug %s:" % bug)
     ...     for key in sorted(bugzilla._bugs[bug]):
-    ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
-    ...     print "\n"
+    ...         print("    %s: %s" % (key, bugzilla._bugs[bug][key]))
+    ...     print("\n")
     Bug 1:
         alias:
         assigned_to: test@canonical.com...
@@ -373,7 +373,7 @@ comment IDs for a given bug on a remote bugtracker.
     >>> bug_comment_ids = bugzilla.getCommentIds(remote_bug)
     CALLED Launchpad.comments({'bug_ids': [1], 'include_fields': ['id']})
 
-    >>> print sorted(bug_comment_ids)
+    >>> print(sorted(bug_comment_ids))
     ['1', '3']
 
 getCommentIds() can only be called if initializeRemoteBugDB() has been
@@ -406,10 +406,10 @@ comment dict mappings under the key 'comments'.
 
     >>> comments = bugzilla._bugs[1]['comments']
     >>> for comment_id in sorted(comments):
-    ...     print "Comment %s:" % comment_id
+    ...     print("Comment %s:" % comment_id)
     ...     comment = comments[comment_id]
     ...     for key in sorted(comment):
-    ...         print "    %s: %s" % (key, comment[key])
+    ...         print("    %s: %s" % (key, comment[key]))
     Comment 1:
         author: trillian
         id: 1
@@ -460,7 +460,7 @@ authorization cookie so that it gets regenerated.
         'id': 1})
 
     >>> comment_id
-    '6'
+    '7'
 
 The comment will be stored on the remote server with the other comments.
 
@@ -468,15 +468,15 @@ The comment will be stored on the remote server with the other comments.
     >>> transaction.commit()
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> print sorted(bugzilla.getCommentIds(remote_bug))
-    ['1', '3', '6']
+    >>> print(sorted(bugzilla.getCommentIds(remote_bug)))
+    ['1', '3', '7']
 
     >>> transaction.commit()
 
-    >>> bugzilla.fetchComments(remote_bug, ['6'])
+    >>> bugzilla.fetchComments(remote_bug, ['7'])
     >>> message = bugzilla.getMessageForComment(
-    ...     remote_bug, '6', sample_person)
-    >>> print message.text_contents
+    ...     remote_bug, '7', sample_person)
+    >>> print(message.text_contents)
     This is a new remote comment.
     <BLANKLINE>
 
@@ -501,7 +501,7 @@ bug ID for a given remote bug.
 If there is no bug currently linked to the remote bug,
 getLaunchpadBugId() will return None.
 
-    >>> print launchpad_bug_id
+    >>> print(launchpad_bug_id)
     None
 
 We'll set the launchpad_id for the remote bug so that we can retrieve
@@ -513,7 +513,7 @@ getLaunchpadBugId() will return the current Launchpad bug ID if one is
 set.
 
     >>> launchpad_bug_id = bugzilla.getLaunchpadBugId(1)
-    >>> print launchpad_bug_id
+    >>> print(launchpad_bug_id)
     42
 
 setLaunchpadBugId() is used to set the Launchpad bug ID for a given
@@ -542,7 +542,7 @@ the Launchpad bug ID has been updated for remote bug 1.
     CALLED Launchpad.get_bugs({'ids': [1], 'permissive': True})
 
     >>> launchpad_bug_id = bugzilla.getLaunchpadBugId(1)
-    >>> print launchpad_bug_id
+    >>> print(launchpad_bug_id)
     10
 
 
@@ -607,6 +607,6 @@ mappings.
     CALLED Launchpad.get_bugs({'ids': [1, 2], 'permissive': True})
 
     >>> for bug_id in sorted(product_mappings):
-    ...     print "%s: %s" % (bug_id, product_mappings[bug_id])
+    ...     print("%s: %s" % (bug_id, product_mappings[bug_id]))
     1: Marvin
     2: HeartOfGold

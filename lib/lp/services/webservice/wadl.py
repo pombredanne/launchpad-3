@@ -1,14 +1,14 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""APIs to generate the web sercice WADL and documentation HTML."""
+"""APIs to generate the web service WADL and documentation HTML."""
 
 __metaclass__ = type
 
 import subprocess
 import urlparse
 
-import pkg_resources
+import importlib_resources
 
 from lp.services.webapp.interaction import (
     ANONYMOUS,
@@ -57,17 +57,17 @@ def generate_html(wadl_filename, suppress_stderr=True):
     # stderr (like we want to do during test runs), we reassign the subprocess
     # stderr file handle and then discard the output.  Otherwise we let the
     # subprocess inherit stderr.
-    stylesheet = pkg_resources.resource_filename(
-        'lp.services.webservice', 'wadl-to-refhtml.xsl')
-    if suppress_stderr:
-        stderr = subprocess.PIPE
-    else:
-        stderr = None
-    args = ('xsltproc', stylesheet, wadl_filename)
-    process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=stderr)
+    with importlib_resources.path(
+            'lp.services.webservice', 'wadl-to-refhtml.xsl') as stylesheet:
+        if suppress_stderr:
+            stderr = subprocess.PIPE
+        else:
+            stderr = None
+        args = ('xsltproc', str(stylesheet), wadl_filename)
+        process = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=stderr)
 
-    output = process.communicate()[0]
-    if process.returncode != 0:
-        raise subprocess.CalledProcessError(process.returncode, args)
+        output = process.communicate()[0]
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, args)
 
-    return output
+        return output

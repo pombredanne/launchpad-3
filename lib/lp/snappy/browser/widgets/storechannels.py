@@ -1,4 +1,4 @@
-# Copyright 2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2017-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -8,7 +8,10 @@ __all__ = [
     ]
 
 from z3c.ptcompat import ViewPageTemplateFile
-from zope.formlib.interfaces import IInputWidget, WidgetInputError
+from zope.formlib.interfaces import (
+    IInputWidget,
+    WidgetInputError,
+    )
 from zope.formlib.utility import setUpWidget
 from zope.formlib.widget import (
     BrowserWidget,
@@ -55,16 +58,22 @@ class StoreChannelsWidget(BrowserWidget, InputWidget):
         if self._widgets_set_up:
             return
         fields = [
-            TextLine(__name__="track", title=u"Track", required=False,
-                     description=_(
-                         "Track defines a series for your software. "
-                         "If not specified, the default track ('latest') is "
-                         "assumed.")
-                     ),
-            List(__name__="risks", title=u"Risk", required=False,
-                 value_type=Choice(vocabulary="SnapStoreChannel"),
-                 description=_(
-                     "Risks denote the stability of your software.")),
+            TextLine(
+                __name__="track", title=u"Track", required=False,
+                description=_(
+                    "Track defines a series for your software. "
+                    "If not specified, the default track ('latest') is "
+                    "assumed.")),
+            List(
+                __name__="risks", title=u"Risk", required=False,
+                value_type=Choice(vocabulary="SnapStoreChannel"),
+                description=_("Risks denote the stability of your software.")),
+            TextLine(
+                __name__="branch", title=u"Branch", required=False,
+                description=_(
+                    "Branches provide users with an easy way to test bug "
+                    "fixes.  They are temporary and created on demand.  If "
+                    "not specified, no branch is used.")),
             ]
 
         self.risks_widget = CustomWidgetFactory(LabeledMultiCheckBoxWidget)
@@ -79,40 +88,48 @@ class StoreChannelsWidget(BrowserWidget, InputWidget):
         risks_widget = getattr(self, 'risks_widget', None)
         return risks_widget and bool(risks_widget.vocabulary)
 
-    def buildChannelName(self, track, risk):
-        """Return channel name composed from given track and risk."""
+    def buildChannelName(self, track, risk, branch):
+        """Return channel name composed from given track, risk, and branch."""
         channel = risk
         if track and track != self._default_track:
-            channel = track + self._separator + risk
+            channel = self._separator.join((track, channel))
+        if branch:
+            channel = self._separator.join((channel, branch))
         return channel
 
     def splitChannelName(self, channel):
-        """Return extracted track and risk from given channel name."""
+        """Return extracted track, risk, and branch from given channel name."""
         try:
-            track, risk = split_channel_name(channel)
+            track, risk, branch = split_channel_name(channel)
         except ValueError:
             raise AssertionError("Not a valid value: %r" % channel)
-        return track, risk
+        return track, risk, branch
 
     def setRenderedValue(self, value):
         """See `IWidget`."""
         self.setUpSubWidgets()
         if value:
-            # NOTE: atm target channels must belong to the same track
+            # NOTE: atm target channels must belong to the same track and
+            # branch
             tracks = set()
+            branches = set()
             risks = []
             for channel in value:
-                track, risk = self.splitChannelName(channel)
+                track, risk, branch = self.splitChannelName(channel)
                 tracks.add(track)
                 risks.append(risk)
-            if len(tracks) != 1:
+                branches.add(branch)
+            if len(tracks) != 1 or len(branches) != 1:
                 raise AssertionError("Not a valid value: %r" % value)
             track = tracks.pop()
             self.track_widget.setRenderedValue(track)
             self.risks_widget.setRenderedValue(risks)
+            branch = branches.pop()
+            self.branch_widget.setRenderedValue(branch)
         else:
             self.track_widget.setRenderedValue(None)
             self.risks_widget.setRenderedValue(None)
+            self.branch_widget.setRenderedValue(None)
 
     def hasInput(self):
         """See `IInputWidget`."""
@@ -129,13 +146,19 @@ class StoreChannelsWidget(BrowserWidget, InputWidget):
     def getInputValue(self):
         """See `IInputWidget`."""
         self.setUpSubWidgets()
-        risks = self.risks_widget.getInputValue()
         track = self.track_widget.getInputValue()
+        risks = self.risks_widget.getInputValue()
+        branch = self.branch_widget.getInputValue()
         if track and self._separator in track:
             error_msg = "Track name cannot include '%s'." % self._separator
             raise WidgetInputError(
                 self.name, self.label, LaunchpadValidationError(error_msg))
-        channels = [self.buildChannelName(track, risk) for risk in risks]
+        if branch and self._separator in branch:
+            error_msg = "Branch name cannot include '%s'." % self._separator
+            raise WidgetInputError(
+                self.name, self.label, LaunchpadValidationError(error_msg))
+        channels = [
+            self.buildChannelName(track, risk, branch) for risk in risks]
         return channels
 
     def error(self):

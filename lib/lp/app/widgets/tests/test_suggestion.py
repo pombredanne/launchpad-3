@@ -1,4 +1,4 @@
-# Copyright 2011-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -199,11 +199,11 @@ class TestTargetBranchWidget(TestCaseWithFactory):
             DocTestMatches(expected, self.doctest_opts))
 
 
-def make_target_git_repository_widget(repository):
-    """Given a Git repository, return a widget for selecting where to land
-    it."""
+def make_target_git_repository_widget(context):
+    """Given a Git repository or reference, return a widget for selecting
+    where to land it."""
     choice = Choice(__name__='test_field', vocabulary='GitRepository')
-    choice = choice.bind(repository)
+    choice = choice.bind(context)
     request = LaunchpadTestRequest()
     return TargetGitRepositoryWidget(choice, None, request)
 
@@ -216,41 +216,79 @@ class TestTargetGitRepositoryWidget(TestCaseWithFactory):
         doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF |
         doctest.ELLIPSIS)
 
-    def makeRepositoryAndOldMergeProposal(self, timedelta):
-        """Make an old merge proposal and a repository with the same target."""
+    def makeRefAndOldMergeProposal(self, timedelta):
+        """Make an old merge proposal and a ref with the same target."""
         bmp = self.factory.makeBranchMergeProposalForGit(
             date_created=datetime.now(utc) - timedelta)
         login_person(bmp.registrant)
-        target = bmp.target_git_repository
-        return target, self.factory.makeGitRepository(target=target.target)
+        target = bmp.merge_target
+        return target, self.factory.makeGitRefs(target=target.target)[0]
 
     def test_recent_target(self):
         """Targets for proposals newer than 90 days are included."""
-        target, source = self.makeRepositoryAndOldMergeProposal(
-            timedelta(days=89))
+        target, source = self.makeRefAndOldMergeProposal(timedelta(days=89))
         widget = make_target_git_repository_widget(source)
-        self.assertIn(target, widget.suggestion_vocab)
+        self.assertIn(target.repository, widget.suggestion_vocab)
 
     def test_stale_target(self):
         """Targets for proposals older than 90 days are not considered."""
-        target, source = self.makeRepositoryAndOldMergeProposal(
-            timedelta(days=91))
+        target, source = self.makeRefAndOldMergeProposal(timedelta(days=91))
         widget = make_target_git_repository_widget(source)
-        self.assertNotIn(target, widget.suggestion_vocab)
+        self.assertNotIn(target.repository, widget.suggestion_vocab)
+
+    def test_personal_repository(self):
+        """Proposals for personal repositories only suggest that repository."""
+        owner = self.factory.makePerson()
+        this_source, this_target = self.factory.makeGitRefs(
+            owner=owner, target=owner,
+            paths=[u"refs/heads/source", u"refs/heads/target"])
+        bmp = self.factory.makeBranchMergeProposalForGit(
+            source_ref=this_source, target_ref=this_target,
+            date_created=datetime.now(utc) - timedelta(days=1))
+        other_source, other_target = self.factory.makeGitRefs(
+            owner=owner, target=owner,
+            paths=[u"refs/heads/source", u"refs/heads/target"])
+        self.factory.makeBranchMergeProposalForGit(
+            source_ref=other_source, target_ref=other_target,
+            date_created=datetime.now(utc) - timedelta(days=1))
+        login_person(bmp.registrant)
+        [source] = self.factory.makeGitRefs(repository=this_target.repository)
+        widget = make_target_git_repository_widget(source)
+        self.assertContentEqual(
+            [this_target.repository],
+            [term.value for term in widget.suggestion_vocab])
 
     def test__renderSuggestionLabel(self):
         """Git repositories have a reasonable suggestion label."""
-        target, source = self.makeRepositoryAndOldMergeProposal(
-            timedelta(days=1))
+        target, source = self.makeRefAndOldMergeProposal(timedelta(days=1))
         login_person(target.target.owner)
         getUtility(IGitRepositorySet).setDefaultRepository(
-            target.target, target)
+            target.target, target.repository)
         widget = make_target_git_repository_widget(source)
         expected = (
             """<label for="field.test_field.2"
             ...>... (<a href="...">repository details</a>)&ndash;
             <em>default repository</em></label>""")
-        structured_string = widget._renderSuggestionLabel(target, 2)
+        structured_string = widget._renderSuggestionLabel(target.repository, 2)
+        self.assertThat(
+            structured_string.escapedtext,
+            DocTestMatches(expected, self.doctest_opts))
+
+    def test__renderSuggestionLabel_personal(self):
+        """Personal Git repositories have a reasonable suggestion label."""
+        owner = self.factory.makePerson()
+        source, target = self.factory.makeGitRefs(
+            owner=owner, target=owner,
+            paths=[u"refs/heads/source", u"refs/heads/target"])
+        bmp = self.factory.makeBranchMergeProposalForGit(
+            source_ref=source, target_ref=target,
+            date_created=datetime.now(utc) - timedelta(days=1))
+        login_person(bmp.registrant)
+        widget = make_target_git_repository_widget(source)
+        expected = (
+            """<label for="field.test_field.2"
+            ...>... (<a href="...">repository details</a>)</label>""")
+        structured_string = widget._renderSuggestionLabel(target.repository, 2)
         self.assertThat(
             structured_string.escapedtext,
             DocTestMatches(expected, self.doctest_opts))

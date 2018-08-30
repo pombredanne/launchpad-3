@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related view classes."""
@@ -191,6 +191,7 @@ from lp.registry.model.person import get_recipients
 from lp.services.config import config
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.sqlbase import flush_database_updates
+from lp.services.features import getFeatureFlag
 from lp.services.feeds.browser import FeedsMixin
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
 from lp.services.gpg.interfaces import (
@@ -821,7 +822,10 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         target = '+vouchers'
         text = 'Manage commercial subscriptions'
         summary = 'Purchase and redeem commercial subscription vouchers'
-        return Link(target, text, summary, icon='info')
+        return Link(
+            target, text, summary, icon='info',
+            enabled=not bool(
+                getFeatureFlag('commercial_subscriptions.new.disabled')))
 
     @enabled_with_permission('launchpad.Edit')
     def editlanguages(self):
@@ -1231,7 +1235,9 @@ class PersonAdministerView(PersonRenameFormMixin):
     label = "Review person"
     field_names = [
         'name', 'display_name',
-        'personal_standing', 'personal_standing_reason']
+        'personal_standing', 'personal_standing_reason',
+        'require_strong_email_authentication',
+        ]
     custom_widget(
         'personal_standing_reason', TextAreaWidget, height=5, width=60)
 
@@ -3135,8 +3141,8 @@ class PersonEditMailingListsView(LaunchpadFormView):
         """
         # Defaults for the mailing list autosubscribe buttons.
         return dict(
-            mailing_list_auto_subscribe_policy=
-                self.context.mailing_list_auto_subscribe_policy)
+            mailing_list_auto_subscribe_policy=(
+                self.context.mailing_list_auto_subscribe_policy))
 
     def setUpWidgets(self, context=None):
         """See `LaunchpadFormView`."""

@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bugzilla ExternalBugTracker utility."""
@@ -15,12 +15,12 @@ from email.utils import parseaddr
 from httplib import BadStatusLine
 import re
 import string
-from urllib2 import URLError
 from xml.dom import minidom
 import xml.parsers.expat
 import xmlrpclib
 
 import pytz
+import requests
 import six
 from zope.component import getUtility
 from zope.interface import (
@@ -40,7 +40,7 @@ from lp.bugs.externalbugtracker.base import (
     UnparsableBugData,
     UnparsableBugTrackerVersion,
     )
-from lp.bugs.externalbugtracker.xmlrpc import UrlLib2Transport
+from lp.bugs.externalbugtracker.xmlrpc import RequestsTransport
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -62,7 +62,7 @@ from lp.services.webapp.url import (
 
 
 class Bugzilla(ExternalBugTracker):
-    """An ExternalBugTrack for dealing with remote Bugzilla systems."""
+    """An ExternalBugTracker for dealing with remote Bugzilla systems."""
 
     batch_query_threshold = 0  # Always use the batch method.
     _test_xmlrpc_proxy = None
@@ -171,7 +171,8 @@ class Bugzilla(ExternalBugTracker):
                 return BugzillaLPPlugin(self.baseurl)
             elif self._remoteSystemHasBugzillaAPI():
                 return BugzillaAPI(self.baseurl)
-        except (xmlrpclib.ProtocolError, URLError, BadStatusLine):
+        except (xmlrpclib.ProtocolError, requests.RequestException,
+                BadStatusLine):
             pass
         return self
 
@@ -201,7 +202,7 @@ class Bugzilla(ExternalBugTracker):
         server cannot be reached `BugTrackerConnectError` will be
         raised.
         """
-        version_xml = self._getPage('xml.cgi?id=1')
+        version_xml = self._getPage('xml.cgi?id=1').content
         try:
             document = self._parseDOMString(version_xml)
         except xml.parsers.expat.ExpatError as e:
@@ -410,7 +411,7 @@ class Bugzilla(ExternalBugTracker):
             severity_tag = 'bz:bug_severity'
 
         buglist_xml = self._postPage(
-            buglist_page, data, repost_on_redirect=True)
+            buglist_page, data, repost_on_redirect=True).content
 
         try:
             document = self._parseDOMString(buglist_xml)
@@ -568,7 +569,7 @@ class BugzillaAPI(Bugzilla):
 
         self.internal_xmlrpc_transport = internal_xmlrpc_transport
         if xmlrpc_transport is None:
-            self.xmlrpc_transport = UrlLib2Transport(self.xmlrpc_endpoint)
+            self.xmlrpc_transport = RequestsTransport(self.xmlrpc_endpoint)
         else:
             self.xmlrpc_transport = xmlrpc_transport
 
@@ -654,11 +655,18 @@ class BugzillaAPI(Bugzilla):
         # is sane, we work out the server's offset from UTC by looking
         # at the difference between the web_time and the web_time_utc
         # values.
-        server_web_datetime = time_dict['web_time']
-        server_web_datetime_utc = time_dict['web_time_utc']
-        server_utc_offset = server_web_datetime - server_web_datetime_utc
-        server_db_datetime = time_dict['db_time']
-        server_utc_datetime = server_db_datetime - server_utc_offset
+        if 'web_time_utc' in time_dict:
+            # Bugzilla < 5.1.1 (although as of 3.6 the UTC offset is always
+            # 0).
+            server_web_datetime = time_dict['web_time']
+            server_web_datetime_utc = time_dict['web_time_utc']
+            server_utc_offset = server_web_datetime - server_web_datetime_utc
+            server_db_datetime = time_dict['db_time']
+            server_utc_datetime = server_db_datetime - server_utc_offset
+        else:
+            # Bugzilla >= 5.1.1.  Times are always in UTC, so we can just
+            # use db_time directly.
+            server_utc_datetime = time_dict['db_time']
         return server_utc_datetime.replace(tzinfo=pytz.timezone('UTC'))
 
     def _getActualBugId(self, bug_id):
@@ -851,7 +859,12 @@ class BugzillaAPI(Bugzilla):
         comment_id = int(comment_id)
 
         comment = self._bugs[actual_bug_id]['comments'][comment_id]
-        display_name, email = parseaddr(comment['author'])
+        if 'creator' in comment:
+            # Bugzilla >= 4.0
+            creator = comment['creator']
+        else:
+            creator = comment['author']
+        display_name, email = parseaddr(creator)
 
         # If the email isn't valid, return the email address as the
         # display name (a Launchpad Person will be created with this

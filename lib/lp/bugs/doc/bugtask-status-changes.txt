@@ -20,7 +20,7 @@ the project maintainer, driver or bug supervisor:
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> ignored = login_person(owner)
     >>> bugtask.transitionToStatus(BugTaskStatus.WONTFIX, owner)
-    >>> print bugtask.status.title
+    >>> print(bugtask.status.title)
     Won't Fix
 
 Regular users of Launchpad cannot transition a bug task to any of

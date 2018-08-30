@@ -57,7 +57,7 @@ Let's have a look at it. Please note that the source and the target
 components are not set by default. Also, the date started and completed are
 not set either since this is a new package copy request.
 
-    >>> print new_pcr
+    >>> print(new_pcr)
     Package copy request
     source = primary/breezy-autotest/-/RELEASE
     target = our-sample-copy-archive/breezy-autotest/-/RELEASE

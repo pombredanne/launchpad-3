@@ -9,10 +9,13 @@ __all__ = [
     'BadSnapSearchContext',
     'BadSnapSource',
     'CannotAuthorizeStoreUploads',
+    'CannotFetchSnapcraftYaml',
     'CannotModifySnapProcessor',
+    'CannotParseSnapcraftYaml',
     'CannotRequestAutoBuilds',
     'DuplicateSnapName',
     'ISnap',
+    'ISnapBuildRequest',
     'ISnapEdit',
     'ISnapSet',
     'ISnapView',
@@ -26,6 +29,7 @@ __all__ = [
     'SnapBuildAlreadyPending',
     'SnapBuildArchiveOwnerMismatch',
     'SnapBuildDisallowedArchitecture',
+    'SnapBuildRequestStatus',
     'SnapNotOwner',
     'SnapPrivacyMismatch',
     'SnapPrivateFeatureDisabled',
@@ -33,6 +37,10 @@ __all__ = [
 
 import httplib
 
+from lazr.enum import (
+    EnumeratedType,
+    Item,
+    )
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -239,6 +247,77 @@ class CannotRequestAutoBuilds(Exception):
             "because %s is not set." % field)
 
 
+class CannotFetchSnapcraftYaml(Exception):
+    """Launchpad cannot fetch this snap package's snapcraft.yaml."""
+
+    def __init__(self, message, unsupported_remote=False):
+        super(CannotFetchSnapcraftYaml, self).__init__(message)
+        self.unsupported_remote = unsupported_remote
+
+
+class CannotParseSnapcraftYaml(Exception):
+    """Launchpad cannot parse this snap package's snapcraft.yaml."""
+
+
+class SnapBuildRequestStatus(EnumeratedType):
+    """The status of a request to build a snap package."""
+
+    PENDING = Item("""
+        Pending
+
+        This snap build request is pending.
+        """)
+
+    FAILED = Item("""
+        Failed
+
+        This snap build request failed.
+        """)
+
+    COMPLETED = Item("""
+        Completed
+
+        This snap build request completed successfully.
+        """)
+
+
+class ISnapBuildRequest(Interface):
+    """A request to build a snap package."""
+
+    # XXX cjwatson 2018-06-14 bug=760849: "beta" is a lie to get WADL
+    # generation working.  Individual attributes must set their version to
+    # "devel".
+    export_as_webservice_entry(as_of="beta")
+
+    id = Int(title=_("ID"), required=True, readonly=True)
+
+    date_requested = exported(Datetime(
+        title=_("The time when this request was made"),
+        required=True, readonly=True))
+
+    date_finished = exported(Datetime(
+        title=_("The time when this request finished"),
+        required=False, readonly=True))
+
+    snap = exported(Reference(
+        # Really ISnap, patched in lp.snappy.interfaces.webservice.
+        Interface,
+        title=_("Snap package"), required=True, readonly=True))
+
+    status = exported(Choice(
+        title=_("Status"), vocabulary=SnapBuildRequestStatus,
+        required=True, readonly=True))
+
+    error_message = exported(TextLine(
+        title=_("Error message"), required=True, readonly=True))
+
+    builds = exported(CollectionField(
+        title=_("Builds produced by this request"),
+        # Really ISnapBuild, patched in lp.snappy.interfaces.webservice.
+        value_type=Reference(schema=Interface),
+        required=True, readonly=True))
+
+
 class ISnapView(Interface):
     """`ISnap` attributes that require launchpad.View permission."""
 
@@ -308,6 +387,64 @@ class ISnapView(Interface):
         :return: `ISnapBuild`.
         """
 
+    @call_with(requester=REQUEST_USER)
+    @operation_parameters(
+        archive=Reference(schema=IArchive),
+        pocket=Choice(vocabulary=PackagePublishingPocket),
+        channels=Dict(
+            title=_("Source snap channels to use for this build."),
+            description=_(
+                "A dictionary mapping snap names to channels to use for this "
+                "build.  Currently only 'core' and 'snapcraft' keys are "
+                "supported."),
+            key_type=TextLine(), required=False))
+    @export_factory_operation(ISnapBuildRequest, [])
+    @operation_for_version("devel")
+    def requestBuilds(requester, archive, pocket, channels=None):
+        """Request that the snap package be built for relevant architectures.
+
+        This is an asynchronous operation, and returns a job ID which can be
+        passed to `snap.getRequestedBuilds`; once the operation has
+        finished, that method will return the resulting builds.
+
+        :param requester: The person requesting the builds.
+        :param archive: The IArchive to associate the builds with.
+        :param pocket: The pocket that should be targeted.
+        :param channels: A dictionary mapping snap names to channels to use
+            for these builds.
+        :return: An `ISnapBuildRequest`.
+        """
+
+    def requestBuildsFromJob(requester, archive, pocket, channels=None,
+                             allow_failures=False, fetch_snapcraft_yaml=True,
+                             logger=None):
+        """Synchronous part of `Snap.requestBuilds`.
+
+        Request that the snap package be built for relevant architectures.
+
+        :param requester: The person requesting the builds.
+        :param archive: The IArchive to associate the builds with.
+        :param pocket: The pocket that should be targeted.
+        :param channels: A dictionary mapping snap names to channels to use
+            for these builds.
+        :param allow_failures: If True, log exceptions other than "already
+            pending" from individual build requests; if False, raise them to
+            the caller.
+        :param fetch_snapcraft_yaml: If True, fetch snapcraft.yaml from the
+            appropriate branch or repository and use it to decide which
+            builds to request; if False, fall back to building for all
+            supported architectures.
+        :param logger: An optional logger.
+        :return: A sequence of `ISnapBuild` instances.
+        """
+
+    def getBuildRequest(job_id):
+        """Get an asynchronous build request by ID.
+
+        :param job_id: The ID of the build request.
+        :return: `ISnapBuildRequest`.
+        """
+
     @operation_parameters(
         snap_build_ids=List(
             title=_("A list of snap build ids."),
@@ -355,12 +492,17 @@ class ISnapEdit(IWebhookTarget):
     @operation_returns_collection_of(Interface)
     @export_write_operation()
     @operation_for_version("devel")
-    def requestAutoBuilds(allow_failures=False, logger=None):
+    def requestAutoBuilds(allow_failures=False, fetch_snapcraft_yaml=False,
+                          logger=None):
         """Create and return automatic builds for this snap package.
 
         :param allow_failures: If True, log exceptions other than "already
             pending" from individual build requests; if False, raise them to
             the caller.
+        :param fetch_snapcraft_yaml: If True, fetch snapcraft.yaml from the
+            appropriate branch or repository and use it to decide which
+            builds to request; if False, fall back to building for all
+            supported architectures.
         :param logger: An optional logger.
         :raises CannotRequestAutoBuilds: if no auto_build_archive or
             auto_build_pocket is set.
@@ -585,7 +727,9 @@ class ISnapEditableAttributes(IHasOwner):
         description=_(
             "Channels to release this snap package to after uploading it to "
             "the store. A channel is defined by a combination of an optional "
-            " track and a risk, e.g. '2.1/stable', or 'stable'.")))
+            " track, a risk, and an optional branch, e.g. "
+            "'2.1/stable/fix-123', '2.1/stable', 'stable/fix-123', or "
+            "'stable'.")))
 
 
 class ISnapAdminAttributes(Interface):
@@ -786,6 +930,22 @@ class ISnapSet(Interface):
 
     def preloadDataForSnaps(snaps, user):
         """Load the data related to a list of snap packages."""
+
+    def getSnapcraftYaml(context, logger=None):
+        """Fetch a package's snapcraft.yaml from code hosting, if possible.
+
+        :param context: Either an `ISnap` or the source branch for a snap
+            package.
+        :param logger: An optional logger.
+
+        :return: The package's parsed snapcraft.yaml.
+        :raises NotFoundError: if this package has no snapcraft.yaml.
+        :raises CannotFetchSnapcraftYaml: if it was not possible to fetch
+            snapcraft.yaml from the code hosting backend for some other
+            reason.
+        :raises CannotParseSnapcraftYaml: if the fetched snapcraft.yaml
+            cannot be parsed.
+        """
 
     def makeAutoBuilds(logger=None):
         """Create and return automatic builds for stale snap packages.

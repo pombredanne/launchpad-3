@@ -42,13 +42,13 @@ Danilo have a story worth telling.
 
     >>> add_notification = notifications[0]
 
-    >>> print add_notification.subject
+    >>> print(add_notification.subject)
     [Question #...]: Can't install Ubuntu
 
 Like all Launchpad notifications should, the message contain in the
 footer the reason why the user is receiving the notification.
 
-    >>> print add_notification.body
+    >>> print(add_notification.body)
     New question #... on Ubuntu:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -57,7 +57,7 @@ footer the reason why the user is receiving the notification.
 The notification also includes a 'X-Launchpad-Question' header that
 contains information about the question.
 
-    >>> print add_notification.headers['X-Launchpad-Question']
+    >>> print(add_notification.headers['X-Launchpad-Question'])
     distribution=ubuntu; sourcepackage=None; status=Open;
     assignee=None; priority=Normal; language=en
 
@@ -107,10 +107,10 @@ Foo Bar, and one to Ubuntu Team:
 
     >>> notifications = pop_questionemailjobs()
     >>> edit_notification = notifications[1]
-    >>> print edit_notification.subject
+    >>> print(edit_notification.subject)
     Re: [Question #...]: Installer doesn't work on a Mac
 
-    >>> print edit_notification.body
+    >>> print(edit_notification.body)
     Question #... libstdc++ in Ubuntu changed:
     http://.../ubuntu/+source/libstdc++/+question/...
     <BLANKLINE>
@@ -137,7 +137,7 @@ does not include priority.
     ...     ubuntu_question, unmodified_question, ['target']))
     >>> notifications = pop_questionemailjobs()
     >>> edit_notification = notifications[1]
-    >>> print edit_notification.body
+    >>> print(edit_notification.body)
     Question #... Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -154,7 +154,7 @@ Changing the assignee will trigger a notification.
     ...     ubuntu_question, unmodified_question, ['assignee']))
     >>> notifications = pop_questionemailjobs()
     >>> edit_notification = notifications[1]
-    >>> print edit_notification.body
+    >>> print(edit_notification.body)
     Question #... Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -207,7 +207,7 @@ has been linked to it:
     2
 
     >>> edit_notification = notifications[1]
-    >>> print edit_notification.body
+    >>> print(edit_notification.body)
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -234,7 +234,7 @@ A notification is also sent when a bug is unlinked from the question:
     2
 
     >>> edit_notification = notifications[1]
-    >>> print edit_notification.body
+    >>> print(edit_notification.body)
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -263,7 +263,7 @@ workflow action done.
 
     >>> notifications = pop_questionemailjobs()
     >>> support_notification = notifications[1]
-    >>> print support_notification.subject
+    >>> print(support_notification.subject)
     Re: [Question #...]: Installer doesn't work on a Mac
 
 For workflow notifications, the content of the notification is slightly
@@ -272,7 +272,7 @@ different based on whether you are the question owner or somebody else.
 For example, the notification to the answer contacts and every other
 subscribers except the question owner will look like this:
 
-    >>> print support_notification.body
+    >>> print(support_notification.body)
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -284,7 +284,7 @@ subscribers except the question owner will look like this:
 But the owner notification has a slightly different preamble and has an
 extra footer.
 
-    >>> print notifications[0].body
+    >>> print(notifications[0].body)
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -306,7 +306,7 @@ a notification.
     >>> message = ubuntu_question.giveInfo('A PowerMac 7200.')
 
     >>> notifications = pop_questionemailjobs()
-    >>> print notifications[1].body
+    >>> print(notifications[1].body)
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -319,7 +319,7 @@ The notification for new messages on the question contain a 'References'
 header to the previous message for threading purpose.
 
     >>> references = notifications[0].headers['References']
-    >>> print references
+    >>> print(references)
     <...>
 
     >>> references == ubuntu_question.messages[-2].rfc822msgid
@@ -345,7 +345,7 @@ Notifications for expireQuestion()
 
 Default notification when the question is expired:
 
-    >>> print notifications[1].body
+    >>> print(notifications[1].body)
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -357,7 +357,7 @@ Default notification when the question is expired:
 
 Notification received by the owner:
 
-    >>> print notifications[0].body
+    >>> print(notifications[0].body)
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -395,12 +395,12 @@ display.)
 
 Notice also how the 'Re' handling is handled nicely:
 
-    >>> print notifications[0].subject
+    >>> print(notifications[0].subject)
     Re: [Question #...]: Installer doesn't work on a Mac
 
 Default notification when the owner reopens the question:
 
-    >>> print notifications[1].body
+    >>> print(notifications[1].body)
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -414,7 +414,7 @@ Default notification when the owner reopens the question:
 
 Notification received by the owner:
 
-    >>> print notifications[0].body
+    >>> print(notifications[0].body)
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -443,7 +443,7 @@ Notifications for giveAnswer()
 
 Default notification when an answer is proposed:
 
-    >>> print notifications[1].body
+    >>> print(notifications[1].body)
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -459,7 +459,7 @@ Default notification when an answer is proposed:
 
 Notification received by the owner:
 
-    >>> print notifications[0].body
+    >>> print(notifications[0].body)
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -495,7 +495,7 @@ Notifications for confirm()
 
 Default notification when the owner confirms an answer:
 
-    >>> print notifications[1].body
+    >>> print(notifications[1].body)
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -506,7 +506,7 @@ Default notification when the owner confirms an answer:
 
 Notification received by the owner:
 
-    >>> print notifications[0].body
+    >>> print(notifications[0].body)
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -528,7 +528,7 @@ Notifications for addComment()
 
 Default notification when a comment is posted:
 
-    >>> print notifications[1].body
+    >>> print(notifications[1].body)
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -538,7 +538,7 @@ Default notification when a comment is posted:
 
 Notification received by the owner:
 
-    >>> print notifications[0].body
+    >>> print(notifications[0].body)
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -559,7 +559,7 @@ Notifications for reject()
 
 Default notification when the question is rejected:
 
-    >>> print notifications[1].body
+    >>> print(notifications[1].body)
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -571,7 +571,7 @@ Default notification when the question is rejected:
 
 Notification received by the owner:
 
-    >>> print notifications[0].body
+    >>> print(notifications[0].body)
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -599,7 +599,7 @@ Notifications for setStatus()
 
 Default notification when somebody changes the status:
 
-    >>> print notifications[1].body
+    >>> print(notifications[1].body)
     Question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -610,7 +610,7 @@ Default notification when somebody changes the status:
 
 Notification received by the owner:
 
-    >>> print notifications[0].body
+    >>> print(notifications[0].body)
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -635,14 +635,14 @@ information before the message.
 
     >>> login('test@canonical.com')
     >>> firefox_faq = firefox.getFAQ(10)
-    >>> print firefox_faq.title
+    >>> print(firefox_faq.title)
     How do I install plugins (Shockwave, QuickTime, etc.)?
 
     >>> message = firefox_question.linkFAQ(
     ...     sample_person, firefox_faq, "Read the FAQ.")
     >>> notifications = pop_questionemailjobs()
 
-    >>> print notifications[0].body
+    >>> print(notifications[0].body)
     Your question #... on Mozilla Firefox changed:
     http://answers.launchpad.dev/firefox/+question/...
     <BLANKLINE>
@@ -663,7 +663,7 @@ If the FAQ is unlinked, the notification will look like:
     ...     sample_person, None, "Sorry, this wasn't so useful.")
     >>> notifications = pop_questionemailjobs()
 
-    >>> print notifications[0].body
+    >>> print(notifications[0].body)
     Your question #... on Mozilla Firefox changed:
     http://answers.launchpad.dev/firefox/+question/...
     <BLANKLINE>
@@ -720,7 +720,7 @@ receive notifications related to it.
     ...     language=getUtility(ILanguageSet)['pt_BR'])
     >>> notifications = pop_questionemailjobs()
 
-    >>> print notifications[0].subject.encode('ASCII', 'backslashreplace')
+    >>> print(notifications[0].subject.encode('ASCII', 'backslashreplace'))
     [Question #...]: Abrir uma p\xe1gina que requer java quebra o firefox
 
 Similarly, when a question in a non-English language is modified or its
@@ -749,7 +749,7 @@ sent to the support list about that question:
     ...     language=french)
     >>> notifications = pop_questionemailjobs()
 
-    >>> print notifications[1].subject
+    >>> print(notifications[1].subject)
     [Question #...]: (French) Impossible d'installer Ubuntu
 
     # Define a function that will replace non-ascii character with
@@ -760,7 +760,7 @@ sent to the support list about that question:
     ...     return notification.body.encode('ASCII', 'backslashreplace')
 
     >>> notification_body = recode_text(notifications[1])
-    >>> print notification_body
+    >>> print(notification_body)
     A question was asked in a language (French) spoken by
     none of the registered Ubuntu answer contacts.
     <BLANKLINE>
@@ -771,11 +771,11 @@ sent to the support list about that question:
 The notification received by the question owner contain a warning that
 the question is in a language spoken by none of the answer contacts:
 
-    >>> print notifications[0].subject
+    >>> print(notifications[0].subject)
     [Question #...]: Impossible d'installer Ubuntu
 
     >>> notification_body = recode_text(notifications[0])
-    >>> print notification_body
+    >>> print(notification_body)
     New question #... on Ubuntu:
     http://.../ubuntu/+question/...
     <BLANKLINE>
@@ -796,7 +796,7 @@ with a warning appended to it.
     >>> notifications = pop_questionemailjobs()
 
     >>> notification_body = recode_text(notifications[0])
-    >>> print notification_body
+    >>> print(notification_body)
     Your question #... on Ubuntu changed:
     http://.../ubuntu/+question/...
     <BLANKLINE>

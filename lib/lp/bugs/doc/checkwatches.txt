@@ -15,8 +15,8 @@ contact any external servers.
     >>> transaction.commit()
 
 We set a default timeout on checkwatches to 30 seconds. In order to test
-this, we can monkey-patch urllib2.urlopen so that it always raises a
-timeout and call the checkwatches cronscript machinery directly.
+this, we can inject a mock timeout using `responses` and call the
+checkwatches cronscript machinery directly.
 
 First, we create some bug watches to test with:
 
@@ -51,30 +51,31 @@ First, we create some bug watches to test with:
 
     >>> login('no-priv@canonical.com')
 
-Next, we monkey-patch urllib2.urlopen so that it always times out.
+Next, we ensure that the request always times out.
 
 The timeout will not produce an OOPS report; they happen routinely and
 require no action from the Launchpad end.
 
+    >>> from contextlib import contextmanager
+    >>> import re
     >>> import socket
-    >>> import urllib2
-    >>> urlopen = urllib2.urlopen
-
+    >>> import responses
     >>> from lp.testing.fixture import CaptureOops
-    >>> capture = CaptureOops()
-    >>> capture.setUp()
-    >>> def do_not_urlopen(url=None, data=None, timeout=None):
-    ...     raise socket.timeout("Connection timed out.")
-    >>> try:
-    ...     urllib2.urlopen = do_not_urlopen
+
+    >>> @contextmanager
+    ... def timeout_requests():
+    ...     with responses.RequestsMock() as requests_mock:
+    ...         requests_mock.add(
+    ...             'GET', re.compile(r'.*'),
+    ...             body=socket.timeout('Connection timed out.'))
+    ...         yield
+
+    >>> with CaptureOops() as capture, timeout_requests():
     ...     updater = CheckwatchesMaster(transaction.manager)
     ...     updater.updateBugTrackers(
     ...         bug_tracker_names=[example_bug_tracker_name])
-    ... finally:
-    ...     urllib2.urlopen = urlopen
-    >>> capture.oopses
+    ...     print(capture.oopses)
     []
-    >>> capture.cleanUp()
 
 Errors that occur when updating a bug watch are recorded against that
 bug watch. The timeout will be recorded against the bug watch we just
@@ -146,8 +147,8 @@ when checkwatches only updates a subset of them.
 
 Since our example bug tracker is a Roundup bug tracker we can
 monkey-patch the Roundup ExternalBugTrackerClass in order to set its
-batch size. We will also monkey-patch urllib2.urlopen again so that no
-requests are actually made.
+batch size. We will also insert a mock response again so that no requests
+are actually made.
 
     >>> from lp.services.log.logger import FakeLogger
     >>> from lp.bugs import externalbugtracker
@@ -156,16 +157,15 @@ requests are actually made.
     >>> updater = CheckwatchesMaster(transaction.manager)
     >>> original_log = updater.logger
     >>> batch_size = externalbugtracker.Roundup.batch_size
-    >>> try:
-    ...     urllib2.urlopen = do_not_urlopen
-    ...     externalbugtracker.Roundup.batch_size = 5
-    ...     transaction.commit()
-    ...     updater.logger = FakeLogger()
-    ...     updater.updateBugTrackers([example_bug_tracker_name])
-    ... finally:
-    ...     updater.logger = original_log
-    ...     externalbugtracker.Roundup.batch_size = batch_size
-    ...     urllib2.urlopen = urlopen
+    >>> with timeout_requests():
+    ...     try:
+    ...         externalbugtracker.Roundup.batch_size = 5
+    ...         transaction.commit()
+    ...         updater.logger = FakeLogger()
+    ...         updater.updateBugTrackers([example_bug_tracker_name])
+    ...     finally:
+    ...         updater.logger = original_log
+    ...         externalbugtracker.Roundup.batch_size = batch_size
     DEBUG No global batch size specified.
     INFO Updating 5 watches for 5 bugs on http://bugs.example.com
     INFO Connection timed out when updating ...
@@ -223,8 +223,8 @@ its last_error_type field will be set to "Unsupported bug tracker"
 since that's the error that was raised during the update.
 
     >>> for watch in savannah.watches:
-    ...     print "%s, %s" % (
-    ...         watch.lastchecked is not None, watch.last_error_type.title)
+    ...     print("%s, %s" % (
+    ...         watch.lastchecked is not None, watch.last_error_type.title))
     True, Unsupported Bugtracker
 
 If a bug tracker doesn't have any watches to update, forceUpdateAll()
@@ -331,22 +331,22 @@ We'll create a non-functioning ExternalBugtracker to demonstrate this.
     ...         return BugTaskImportance.UNKNOWN
     ...
     ...     def getCommentIds(self, bug_watch):
-    ...         print "getCommentIds() called"
+    ...         print("getCommentIds() called")
     ...         return []
     ...
     ...     def fetchComments(self, bug_watch, comment_ids):
     ...         return []
     ...
     ...     def addRemoteComment(self, bug_watch, comment):
-    ...         print "addRemoteComment() called."
+    ...         print("addRemoteComment() called.")
     ...         return 0
     ...
     ...     def getLaunchpadBugId(self, bug_id):
-    ...         print "getLaunchpadBugId() called"
+    ...         print("getLaunchpadBugId() called")
     ...         return None
     ...
     ...     def setLaunchpadBugId(self, bug_id, lp_bug_id, lp_bug_url):
-    ...         print "setLaunchpadBugId() called"
+    ...         print("setLaunchpadBugId() called")
 
 We'll generate a bug watch with which to test this. The bug watch must
 be associated with at least one bug task to enable syncing.

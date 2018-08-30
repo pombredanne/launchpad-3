@@ -69,7 +69,7 @@ appear in the exported file.
 The POT file header is a template of common information that will get filled
 in with language specifics by translators.
 
-    >>> print first.template_header
+    >>> print(first.template_header)
     Project-Id-Version: PACKAGE VERSION
     Report-Msgid-Bugs-To:
     POT-Creation-Date: 2005-08-25 14:56+0200

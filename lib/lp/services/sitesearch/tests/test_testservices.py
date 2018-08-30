@@ -15,10 +15,7 @@ from testscenarios import WithScenarios
 
 from lp.services.osutils import process_exists
 from lp.services.pidfile import pidfile_path
-from lp.services.sitesearch import (
-    bingtestservice,
-    googletestservice,
-    )
+from lp.services.sitesearch import bingtestservice
 
 
 class TestServiceUtilities(WithScenarios, unittest.TestCase):
@@ -27,9 +24,6 @@ class TestServiceUtilities(WithScenarios, unittest.TestCase):
     scenarios = [
         ("Bing", {
             "testservice": bingtestservice,
-            }),
-        ("Google", {
-            "testservice": googletestservice,
             }),
         ]
 
