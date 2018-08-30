@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Featured Project views."""
@@ -19,7 +19,6 @@ from zope.schema import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
@@ -51,7 +50,7 @@ class FeaturedProjectsView(LaunchpadFormView):
     page_title = label
 
     schema = FeaturedProjectForm
-    custom_widget('remove', LabeledMultiCheckBoxWidget)
+    custom_widget_remove = LabeledMultiCheckBoxWidget
 
     @action(_('Update featured project list'), name='update')
     def update_action(self, action, data):

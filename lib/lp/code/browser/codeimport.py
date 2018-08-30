@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for CodeImports."""
@@ -42,7 +42,6 @@ from zope.traversing.interfaces import IPathAdapter
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
@@ -183,9 +182,11 @@ class CodeImportBaseView(LaunchpadFormView):
 
     schema = ICodeImport
 
-    custom_widget('cvs_root', StrippedTextWidget, displayWidth=50)
-    custom_widget('cvs_module', StrippedTextWidget, displayWidth=20)
-    custom_widget('url', URIWidget, displayWidth=50)
+    custom_widget_cvs_root = CustomWidgetFactory(
+        StrippedTextWidget, displayWidth=50)
+    custom_widget_cvs_module = CustomWidgetFactory(
+        StrippedTextWidget, displayWidth=20)
+    custom_widget_url = CustomWidgetFactory(URIWidget, displayWidth=50)
 
     @cachedproperty
     def _super_user(self):
@@ -328,8 +329,8 @@ class CodeImportNewView(CodeImportBaseView, CodeImportNameValidationMixin):
     schema = NewCodeImportForm
     for_input = True
 
-    custom_widget('rcs_type', LaunchpadRadioWidget)
-    custom_widget('git_target_rcs_type', LaunchpadRadioWidget)
+    custom_widget_rcs_type = LaunchpadRadioWidget
+    custom_widget_git_target_rcs_type = LaunchpadRadioWidget
 
     @property
     def initial_values(self):

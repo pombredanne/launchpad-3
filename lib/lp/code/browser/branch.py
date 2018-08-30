@@ -39,6 +39,7 @@ import simplejson
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implementer,
@@ -61,7 +62,6 @@ from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -1082,9 +1082,9 @@ class BranchEditView(CodeEditOwnerMixin, BranchEditFormView):
             'lifecycle_status'])
         return field_names
 
-    custom_widget('target', BranchTargetWidget)
-    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
-    custom_widget('information_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget_target = BranchTargetWidget
+    custom_widget_lifecycle_status = LaunchpadRadioWidgetWithDescription
+    custom_widget_information_type = LaunchpadRadioWidgetWithDescription
 
     any_owner_description = _(
         "As an administrator you are able to assign this branch to any "
@@ -1201,9 +1201,11 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     schema = RegisterProposalSchema
     for_input = True
 
-    custom_widget('target_branch', TargetBranchWidget)
-    custom_widget('commit_message', TextAreaWidget, cssClass='comment-text')
-    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
+    custom_widget_target_branch = TargetBranchWidget
+    custom_widget_commit_message = CustomWidgetFactory(
+        TextAreaWidget, cssClass='comment-text')
+    custom_widget_comment = CustomWidgetFactory(
+        TextAreaWidget, cssClass='comment-text')
 
     page_title = label = 'Propose branch for merging'
 

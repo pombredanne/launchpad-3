@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes related to `IDistroSeries`."""
@@ -26,6 +26,7 @@ from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import Interface
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.schema import (
@@ -41,7 +42,6 @@ from zope.schema.vocabulary import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -553,7 +553,7 @@ class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     """
     schema = IDistroSeries
     field_names = ['display_name', 'title', 'summary', 'description']
-    custom_widget('status', LaunchpadDropdownWidget)
+    custom_widget_status = LaunchpadDropdownWidget
 
     @property
     def label(self):
@@ -605,7 +605,7 @@ class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
     schema = IDistroSeries
     field_names = [
         'name', 'version', 'changeslist', 'inherit_overrides_from_parents']
-    custom_widget('status', LaunchpadDropdownWidget)
+    custom_widget_status = LaunchpadDropdownWidget
 
     @property
     def label(self):
@@ -866,10 +866,10 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     a derived series and its parent."""
     schema = IDifferencesFormSchema
     field_names = ['selected_differences', 'sponsored_person']
-    custom_widget('selected_differences', LabeledMultiCheckBoxWidget)
-    custom_widget('package_type', LaunchpadRadioWidget)
-    custom_widget(
-        'sponsored_person', PersonPickerWidget,
+    custom_widget_selected_differences = LabeledMultiCheckBoxWidget
+    custom_widget_package_type = LaunchpadRadioWidget
+    custom_widget_sponsored_person = CustomWidgetFactory(
+        PersonPickerWidget,
         header="Select person being sponsored", show_assign_me_button=False)
 
     # Differences type to display. Can be overrided by sublasses.

@@ -49,7 +49,6 @@ from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -569,7 +568,7 @@ class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
         "default_branch",
         ]
 
-    custom_widget("information_type", LaunchpadRadioWidgetWithDescription)
+    custom_widget_information_type = LaunchpadRadioWidgetWithDescription
 
     any_owner_description = _(
         "As an administrator you are able to assign this repository to any "
