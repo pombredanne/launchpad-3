@@ -340,13 +340,6 @@ class ISnapEditSchema(Interface):
         'auto_build_channels',
         'store_upload',
         ])
-    auto_build_channels = copy_field(
-        ISnap['auto_build_channels'],
-        description=(
-            u'The channels to use for build tools when building the snap '
-            u'package.  If unset, or if the channel for snapcraft is set to '
-            u'"apt", the default behaviour is to install snapcraft from the '
-            u'source archive using apt.'))
     store_distro_series = Choice(
         vocabulary='BuildableSnappyDistroSeries', required=True,
         title=u'Series')

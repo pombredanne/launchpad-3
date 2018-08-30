@@ -22,6 +22,7 @@ __all__ = [
     'NoSourceForSnap',
     'NoSuchSnap',
     'SNAP_PRIVATE_FEATURE_FLAG',
+    'SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG',
     'SNAP_TESTING_FLAGS',
     'SNAP_WEBHOOKS_FEATURE_FLAG',
     'SnapAuthorizationBadMacaroon',
@@ -110,6 +111,7 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 
 SNAP_PRIVATE_FEATURE_FLAG = u"snap.allow_private"
+SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG = u"snap.channels.snapcraft"
 SNAP_WEBHOOKS_FEATURE_FLAG = u"snap.webhooks.enabled"
 
 
