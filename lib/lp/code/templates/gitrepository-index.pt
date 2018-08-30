@@ -44,6 +44,13 @@
     </div>
   </div>
 
+  <div class="yui-g first">
+    <div id="repository-relations" class="portlet">
+      <tal:repository-pending-merges
+           replace="structure context/@@++repository-pending-merges" />
+    </div>
+  </div>
+
   <div class="yui-g">
     <div id="repository-relations" class="portlet">
       <tal:repository-recipes

@@ -24,10 +24,16 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
-from lp.code.enums import GitRepositoryType
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    GitRepositoryType,
+    )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.tests.helpers import GitHostingFixture
-from lp.registry.enums import BranchSharingPolicy
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    VCSType,
+    )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.beautifulsoup import BeautifulSoup
@@ -245,6 +251,47 @@ class TestGitRepositoryView(BrowserTestCase):
         # The main check: No Unauthorized error should be raised.
         browser = self.getUserBrowser(url, user=user)
         self.assertIn(project_name, browser.contents)
+
+    def test_view_with_active_reviews(self):
+        repository = self.factory.makeGitRepository()
+        git_refs = self.factory.makeGitRefs(
+            repository,
+            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=git_refs[0],
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        with person_logged_in(repository.owner):
+            browser = self.getViewBrowser(repository)
+            self.assertIsNotNone(
+                find_tag_by_id(browser.contents, 'landing-candidates'))
+
+    def test_landing_candidate_count(self):
+        source_repository = self.factory.makeGitRepository()
+        view = create_initialized_view(source_repository, '+index')
+
+        self.assertEqual('No branches', view._getBranchCountText(0))
+        self.assertEqual('1 branch', view._getBranchCountText(1))
+        self.assertEqual('2 branches', view._getBranchCountText(2))
+
+    def test_view_with_landing_targets(self):
+        product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
+        target_repository = self.factory.makeGitRepository(target=product)
+        source_repository = self.factory.makeGitRepository(target=product)
+        target_git_refs = self.factory.makeGitRefs(
+            target_repository,
+            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+        source_git_refs = self.factory.makeGitRefs(
+            source_repository,
+            paths=["refs/heads/master"])
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_git_refs[0],
+            source_ref=source_git_refs[0],
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        with person_logged_in(target_repository.owner):
+            browser = self.getViewBrowser(
+                source_repository, user=source_repository.owner)
+            self.assertIsNotNone(
+                find_tag_by_id(browser.contents, 'landing-targets'))
 
 
 class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
