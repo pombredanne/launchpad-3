@@ -29,8 +29,12 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
+from lp.services.features import getFeatureFlag
 from lp.services.twistedsupport.treq import check_status
-from lp.snappy.interfaces.snap import SnapBuildArchiveOwnerMismatch
+from lp.snappy.interfaces.snap import (
+    SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG,
+    SnapBuildArchiveOwnerMismatch,
+    )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -108,12 +112,15 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 tools_source=config.snappy.tools_source,
                 tools_fingerprint=config.snappy.tools_fingerprint,
                 logger=logger))
-        if (build.channels is not None and
-                build.channels.get("snapcraft") != "apt"):
+        channels = build.channels or {}
+        if "snapcraft" not in channels:
+            channels["snapcraft"] = (
+                getFeatureFlag(SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG) or "apt")
+        if channels.get("snapcraft") != "apt":
             # We have to remove the security proxy that Zope applies to this
             # dict, since otherwise we'll be unable to serialise it to
             # XML-RPC.
-            args["channels"] = removeSecurityProxy(build.channels)
+            args["channels"] = removeSecurityProxy(channels)
         if build.snap.branch is not None:
             args["branch"] = build.snap.branch.bzr_identity
         elif build.snap.git_ref is not None:

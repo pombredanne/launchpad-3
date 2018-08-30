@@ -14,10 +14,12 @@ from zope.formlib.interfaces import (
 from zope.schema import Dict
 
 from lp.services.beautifulsoup import BeautifulSoup
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.widgets.snapbuildchannels import (
     SnapBuildChannelsWidget,
     )
+from lp.snappy.interfaces.snap import SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG
 from lp.testing import (
     TestCaseWithFactory,
     verifyObject,
@@ -35,9 +37,9 @@ class TestSnapBuildChannelsWidget(TestCaseWithFactory):
             __name__="auto_build_channels",
             title="Source snap channels for automatic builds")
         self.context = self.factory.makeSnap()
-        field = field.bind(self.context)
-        request = LaunchpadTestRequest()
-        self.widget = SnapBuildChannelsWidget(field, request)
+        self.field = field.bind(self.context)
+        self.request = LaunchpadTestRequest()
+        self.widget = SnapBuildChannelsWidget(self.field, self.request)
 
     def test_implements(self):
         self.assertTrue(verifyObject(IBrowserWidget, self.widget))
@@ -47,6 +49,40 @@ class TestSnapBuildChannelsWidget(TestCaseWithFactory):
         self.assertTrue(
             self.widget.template.filename.endswith("snapbuildchannels.pt"),
             "Template was not set up.")
+
+    def test_hint_no_feature_flag(self):
+        self.assertEqual(
+            'The channels to use for build tools when building the snap '
+            'package.\n'
+            'If unset, or if the channel for snapcraft is set to "apt", '
+            'the default is to install snapcraft from the source archive '
+            'using apt.',
+            self.widget.hint)
+
+    def test_hint_feature_flag_apt(self):
+        self.useFixture(
+            FeatureFixture({SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG: "apt"}))
+        widget = SnapBuildChannelsWidget(self.field, self.request)
+        self.assertEqual(
+            'The channels to use for build tools when building the snap '
+            'package.\n'
+            'If unset, or if the channel for snapcraft is set to "apt", '
+            'the default is to install snapcraft from the source archive '
+            'using apt.',
+            widget.hint)
+
+    def test_hint_feature_flag_real_channel(self):
+        self.useFixture(
+            FeatureFixture({SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG: "stable"}))
+        widget = SnapBuildChannelsWidget(self.field, self.request)
+        self.assertEqual(
+            'The channels to use for build tools when building the snap '
+            'package.\n'
+            'If unset, the default is to install snapcraft from the "stable" '
+            'channel.  Setting the channel for snapcraft to "apt" causes '
+            'snapcraft to be installed from the source archive using '
+            'apt.',
+            widget.hint)
 
     def test_setUpSubWidgets_first_call(self):
         # The subwidgets are set up and a flag is set.
