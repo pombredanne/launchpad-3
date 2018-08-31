@@ -22,8 +22,8 @@
 
       </div>
 
-      <div id="landing-targets" tal:condition="view/active_landing_targets">
-        <tal:landing-candidates repeat="mergeproposal view/active_landing_targets">
+      <div id="landing-targets" tal:condition="view/landing_targets">
+        <tal:landing-candidates repeat="mergeproposal view/landing_targets">
           <tal:merge-fragment
               tal:replace="structure mergeproposal/@@+summary-fragment"/>
         </tal:landing-candidates>
