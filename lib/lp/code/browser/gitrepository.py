@@ -397,6 +397,12 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
         targets = self.context.getPrecachedLandingTargets(self.user)
         return latest_proposals_for_each_branch(targets)
 
+    @cachedproperty
+    def active_landing_targets(self):
+        targets = self.context.getPrecachedLandingTargets(
+            self.user, ignore_merged=True)
+        return latest_proposals_for_each_branch(targets)
+
 
 class GitRepositoryEditFormView(LaunchpadEditFormView):
     """Base class for forms that edit a Git repository."""
