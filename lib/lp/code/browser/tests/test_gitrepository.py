@@ -275,6 +275,33 @@ class TestGitRepositoryView(BrowserTestCase):
         self.assertEqual('1 branch', view._getBranchCountText(1))
         self.assertEqual('2 branches', view._getBranchCountText(2))
 
+    def test_landing_candidate_query_count(self):
+        repository = self.factory.makeGitRepository()
+        git_refs = self.factory.makeGitRefs(
+            repository,
+            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=git_refs[0],
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+
+        def login_and_view():
+            with FeatureFixture({"code.git.show_repository_mps": "on"}):
+                with person_logged_in(repository.owner):
+                    browser = self.getViewBrowser(repository)
+                    self.assertIsNotNone(
+                        find_tag_by_id(browser.contents, 'landing-candidates'))
+
+        def create_merge_proposal():
+            self.factory.makeBranchMergeProposalForGit(
+                target_ref=git_refs[0],
+                set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+
+        recorder1, recorder2 = record_two_runs(
+            login_and_view,
+            create_merge_proposal,
+            10)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
     def test_view_with_landing_targets(self):
         product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
         target_repository = self.factory.makeGitRepository(target=product)
@@ -295,6 +322,37 @@ class TestGitRepositoryView(BrowserTestCase):
                     source_repository, user=source_repository.owner)
                 self.assertIsNotNone(
                     find_tag_by_id(browser.contents, 'landing-targets'))
+
+    def test_landing_target_query_count(self):
+        product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
+        target_repository = self.factory.makeGitRepository(target=product)
+        source_repository = self.factory.makeGitRepository(target=product)
+
+        def create_merge_proposal():
+            target_git_refs = self.factory.makeGitRefs(
+                target_repository)
+            source_git_refs = self.factory.makeGitRefs(
+                source_repository)
+            self.factory.makeBranchMergeProposalForGit(
+                target_ref=target_git_refs[0],
+                source_ref=source_git_refs[0],
+                set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+
+        def login_and_view():
+            with FeatureFixture({"code.git.show_repository_mps": "on"}):
+                with person_logged_in(target_repository.owner):
+                    browser = self.getViewBrowser(
+                        source_repository, user=source_repository.owner)
+                    self.assertIsNotNone(
+                        find_tag_by_id(browser.contents, 'landing-targets'))
+
+        create_merge_proposal()
+
+        recorder1, recorder2 = record_two_runs(
+            login_and_view,
+            create_merge_proposal,
+            10)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
     def test_view_with_inactive_landing_targets(self):
         product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
