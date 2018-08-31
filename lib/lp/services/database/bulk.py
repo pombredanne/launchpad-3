@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Optimized bulk operations against the database."""
@@ -16,7 +16,10 @@ __all__ = [
 
 from collections import defaultdict
 from functools import partial
-from itertools import chain
+from itertools import (
+    chain,
+    groupby,
+    )
 from operator import (
     attrgetter,
     itemgetter,
@@ -99,6 +102,26 @@ def _primary_key(object_type, allow_compound=False):
         return primary_key
 
 
+def _make_compound_load_clause(primary_key, values_list):
+    """Construct a bulk-loading query clause for a compound primary key.
+
+    When the primary key is compound, we expect that in practice we will
+    often want to load objects with common leading elements of the key: for
+    example, we often want to load many `GitRef` objects from the same
+    repository.  This helper returns a query clause optimised to be compact
+    in this case.
+    """
+    if len(primary_key) > 1:
+        return Or(*(
+            And(
+                primary_key[0] == leading_value,
+                _make_compound_load_clause(
+                    primary_key[1:], [values[1:] for values in group]))
+            for leading_value, group in groupby(values_list, itemgetter(0))))
+    else:
+        return primary_key[0].is_in([values[0] for values in values_list])
+
+
 def load(object_type, primary_keys, store=None):
     """Load a large number of objects efficiently."""
     primary_key = _primary_key(object_type, allow_compound=True)
@@ -107,9 +130,8 @@ def load(object_type, primary_keys, store=None):
     if not primary_keys:
         return []
     if isinstance(primary_key, tuple):
-        condition = Or(*(
-            And(*(key == value for (key, value) in zip(primary_key, values)))
-            for values in primary_keys))
+        condition = _make_compound_load_clause(
+            primary_key, sorted(primary_keys))
     else:
         condition = primary_key.is_in(primary_keys)
     if store is None:
