@@ -71,6 +71,7 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.app.interfaces.services import IService
 from lp.code.enums import (
+    BranchMergeProposalStatus,
     GitObjectType,
     GitRepositoryType,
     )
@@ -887,10 +888,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             BranchMergeProposal,
             BranchMergeProposal.source_git_repository == self)
 
-    def getPrecachedLandingTargets(self, user, ignore_merged=False):
+    def getPrecachedLandingTargets(self, user, only_active=False):
         """See `IGitRepository`."""
         results = self.landing_targets
-        if ignore_merged:
+        if only_active:
             results = self.landing_targets.find(
                 Not(BranchMergeProposal.queue_status.is_in(
                     BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
