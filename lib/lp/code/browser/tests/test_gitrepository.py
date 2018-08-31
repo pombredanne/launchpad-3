@@ -38,6 +38,7 @@ from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.database.constants import UTC_NOW
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -260,10 +261,11 @@ class TestGitRepositoryView(BrowserTestCase):
         self.factory.makeBranchMergeProposalForGit(
             target_ref=git_refs[0],
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
-        with person_logged_in(repository.owner):
-            browser = self.getViewBrowser(repository)
-            self.assertIsNotNone(
-                find_tag_by_id(browser.contents, 'landing-candidates'))
+        with FeatureFixture({"code.git.show_repository_mps": "on"}):
+            with person_logged_in(repository.owner):
+                browser = self.getViewBrowser(repository)
+                self.assertIsNotNone(
+                    find_tag_by_id(browser.contents, 'landing-candidates'))
 
     def test_landing_candidate_count(self):
         source_repository = self.factory.makeGitRepository()
@@ -287,11 +289,12 @@ class TestGitRepositoryView(BrowserTestCase):
             target_ref=target_git_refs[0],
             source_ref=source_git_refs[0],
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
-        with person_logged_in(target_repository.owner):
-            browser = self.getViewBrowser(
-                source_repository, user=source_repository.owner)
-            self.assertIsNotNone(
-                find_tag_by_id(browser.contents, 'landing-targets'))
+        with FeatureFixture({"code.git.show_repository_mps": "on"}):
+            with person_logged_in(target_repository.owner):
+                browser = self.getViewBrowser(
+                    source_repository, user=source_repository.owner)
+                self.assertIsNotNone(
+                    find_tag_by_id(browser.contents, 'landing-targets'))
 
 
 class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
