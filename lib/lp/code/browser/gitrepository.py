@@ -393,6 +393,7 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
 
     @cachedproperty
     def landing_targets(self):
+        """Return a filtered list of active landing targets."""
         targets = self.context.getPrecachedLandingTargets(
             self.user, only_active=True)
         return latest_proposals_for_each_branch(targets)
