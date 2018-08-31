@@ -44,7 +44,7 @@
     </div>
   </div>
 
-  <div class="yui-g first">
+  <div class="yui-g first" tal:condition="request/features/code.git.show_repository_mps">
     <div id="repository-relations" class="portlet">
       <tal:repository-pending-merges
            replace="structure context/@@++repository-pending-merges" />
