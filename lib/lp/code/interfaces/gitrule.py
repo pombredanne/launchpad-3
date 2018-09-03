@@ -23,7 +23,7 @@ from zope.schema import (
 
 from lp import _
 from lp.code.interfaces.gitrepository import IGitRepository
-from lp.registry.interfaces.person import IPerson
+from lp.services.fields import PublicPersonChoice
 
 
 class IGitRuleView(Interface):
@@ -40,9 +40,9 @@ class IGitRuleView(Interface):
         title=_("Pattern"), required=True, readonly=False,
         description=_("The pattern of references matched by this rule."))
 
-    creator = Reference(
+    creator = PublicPersonChoice(
         title=_("Creator"), required=True, readonly=True,
-        schema=IPerson,
+        vocabulary="ValidPerson",
         description=_("The user who created this rule."))
 
     date_created = Datetime(

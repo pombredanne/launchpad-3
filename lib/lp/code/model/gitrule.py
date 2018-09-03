@@ -22,6 +22,7 @@ from zope.interface import implementer
 
 from lp.code.interfaces.gitrule import IGitRule
 from lp.code.model.gitgrant import GitGrant
+from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -52,7 +53,8 @@ class GitRule(StormBase):
 
     ref_pattern = Unicode(name='ref_pattern', allow_none=False)
 
-    creator_id = Int(name='creator', allow_none=False)
+    creator_id = Int(
+        name='creator', allow_none=False, validator=validate_public_person)
     creator = Reference(creator_id, 'Person.id')
 
     date_created = DateTime(

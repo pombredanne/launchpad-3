@@ -23,6 +23,10 @@ from zope.interface import implementer
 
 from lp.code.enums import GitGranteeType
 from lp.code.interfaces.gitgrant import IGitGrant
+from lp.registry.interfaces.person import (
+    validate_person,
+    validate_public_person,
+    )
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.stormbase import StormBase
@@ -55,14 +59,16 @@ class GitGrant(StormBase):
     grantee_type = EnumCol(
         dbName='grantee_type', enum=GitGranteeType, notNull=True)
 
-    grantee_id = Int(name='grantee', allow_none=True)
+    grantee_id = Int(
+        name='grantee', allow_none=True, validator=validate_person)
     grantee = Reference(grantee_id, 'Person.id')
 
     can_create = Bool(name='can_create', allow_none=False)
     can_push = Bool(name='can_push', allow_none=False)
     can_force_push = Bool(name='can_force_push', allow_none=False)
 
-    grantor_id = Int(name='grantor', allow_none=False)
+    grantor_id = Int(
+        name='grantor', allow_none=False, validator=validate_public_person)
     grantor = Reference(grantor_id, 'Person.id')
 
     date_created = DateTime(

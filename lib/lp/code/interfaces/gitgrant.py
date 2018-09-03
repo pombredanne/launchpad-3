@@ -23,7 +23,10 @@ from lp import _
 from lp.code.enums import GitGranteeType
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.code.interfaces.gitrule import IGitRule
-from lp.registry.interfaces.person import IPerson
+from lp.services.fields import (
+    PersonChoice,
+    PublicPersonChoice,
+    )
 
 
 class IGitGrantView(Interface):
@@ -41,9 +44,9 @@ class IGitGrantView(Interface):
         schema=IGitRule,
         description=_("The rule that this grant is for."))
 
-    grantor = Reference(
+    grantor = PublicPersonChoice(
         title=_("Grantor"), required=True, readonly=True,
-        schema=IPerson,
+        vocabulary="ValidPerson",
         description=_("The user who created this grant."))
 
     date_created = Datetime(
@@ -62,9 +65,9 @@ class IGitGrantEditableAttributes(Interface):
         vocabulary=GitGranteeType,
         description=_("The type of grantee for this grant."))
 
-    grantee = Reference(
+    grantee = PersonChoice(
         title=_("Grantee"), required=False, readonly=False,
-        schema=IPerson,
+        vocabulary="ValidPersonOrTeam",
         description=_("The person being granted access."))
 
     can_create = Bool(
