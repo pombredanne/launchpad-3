@@ -266,6 +266,10 @@ class IGitRepositoryView(IHasRecipes):
         # Really ICodeImport, patched in _schema_circular_imports.py.
         schema=Interface))
 
+    rules = Attribute("The access rules for this repository.")
+
+    grants = Attribute("The access grants for this repository.")
+
     @operation_parameters(
         path=TextLine(title=_("A string to look up as a path.")))
     # Really IGitRef, patched in _schema_circular_imports.py.
@@ -713,6 +717,16 @@ class IGitRepositoryEdit(IWebhookTarget):
         """Force a rescan of this repository.
 
         This may be helpful in cases where a previous scan crashed.
+        """
+
+    def addRule(ref_pattern, creator, position=None):
+        """Add an access rule to this repository.
+
+        :param ref_pattern: The reference pattern that the new rule should
+            match.
+        :param creator: The `IPerson` who is adding the rule.
+        :param position: The list position at which to insert the rule, or
+            None to append it.
         """
 
     @export_read_operation()

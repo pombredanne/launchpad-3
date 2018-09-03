@@ -41,6 +41,7 @@ from storm.locals import (
     Bool,
     DateTime,
     Int,
+    List,
     Reference,
     Unicode,
     )
@@ -108,10 +109,12 @@ from lp.code.interfaces.gitrepository import (
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
 from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.gitgrant import GitGrant
 from lp.code.model.gitref import (
     GitRef,
     GitRefDefault,
     )
+from lp.code.model.gitrule import GitRule
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
@@ -279,6 +282,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     target_default = Bool(name='target_default', allow_none=False)
 
     _default_branch = Unicode(name='default_branch', allow_none=True)
+
+    rule_order = List(type=Int())
 
     def __init__(self, repository_type, registrant, owner, target, name,
                  information_type, date_created, reviewer=None,
@@ -1117,6 +1122,42 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     @cachedproperty
     def code_import(self):
         return getUtility(ICodeImportSet).getByGitRepository(self)
+
+    @property
+    def rules(self):
+        """See `IGitRepository`."""
+        if not self.rule_order:
+            return []
+        rules = {
+            rule.id: rule
+            for rule in Store.of(self).find(
+                GitRule, GitRule.id.is_in(self.rule_order))
+            }
+        for rule_id in self.rule_order:
+            if rule_id not in rules:
+                raise AssertionError(
+                    "GitRule ID %d is in rule_order for %r but does not "
+                    "exist" % (rule_id, self))
+        return [rules[rule_id] for rule_id in self.rule_order]
+
+    def addRule(self, ref_pattern, creator, position=None):
+        """See `IGitRepository`."""
+        rule = GitRule(
+            repository=self, ref_pattern=ref_pattern, creator=creator,
+            date_created=DEFAULT)
+        Store.of(rule).flush()
+        if self.rule_order is None:
+            self.rule_order = []
+        if position is None:
+            self.rule_order.append(rule.id)
+        else:
+            self.rule_order.insert(position, rule.id)
+        return rule
+
+    @property
+    def grants(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(GitGrant, GitGrant.repository_id == self.id)
 
     def canBeDeleted(self):
         """See `IGitRepository`."""

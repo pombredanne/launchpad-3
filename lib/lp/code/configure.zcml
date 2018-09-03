@@ -919,6 +919,33 @@
     <allow interface="lp.code.interfaces.gitref.IGitRefRemoteSet" />
   </securedutility>
 
+  <!-- Git repository access rules -->
+
+  <class class="lp.code.model.gitrule.GitRule">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitrule.IGitRuleView" />
+    <require
+        permission="launchpad.Edit"
+        interface="lp.code.interfaces.gitrule.IGitRuleEdit" />
+  </class>
+  <subscriber
+      for="lp.code.interfaces.gitrule.IGitRule zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+      handler="lp.code.model.gitrule.git_rule_modified"/>
+  <class class="lp.code.model.gitgrant.GitGrant">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitgrant.IGitGrantView
+                   lp.code.interfaces.gitgrant.IGitGrantEditableAttributes" />
+    <require
+        permission="launchpad.Edit"
+        interface="lp.code.interfaces.gitgrant.IGitGrantEdit"
+        set_schema="lp.code.interfaces.gitgrant.IGitGrantEditableAttributes" />
+  </class>
+  <subscriber
+      for="lp.code.interfaces.gitgrant.IGitGrant zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+      handler="lp.code.model.gitgrant.git_grant_modified"/>
+
   <!-- GitCollection -->
 
   <class class="lp.code.model.gitcollection.GenericGitCollection">

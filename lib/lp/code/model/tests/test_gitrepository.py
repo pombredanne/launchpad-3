@@ -23,6 +23,7 @@ from storm.store import Store
 from testtools.matchers import (
     EndsWith,
     LessThan,
+    MatchesListwise,
     MatchesSetwise,
     MatchesStructure,
     )
@@ -2177,6 +2178,72 @@ class TestGitRepositoryGetBlob(TestCaseWithFactory):
         self.useFixture(GitHostingFixture(blob='Some text'))
         ret = repository.getBlob('src/README.txt', 'some-rev')
         self.assertEqual('Some text', ret)
+
+
+class TestGitRepositoryRules(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rules(self):
+        repository = self.factory.makeGitRepository()
+        other_repository = self.factory.makeGitRepository()
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*")
+        self.factory.makeGitRule(
+            repository=other_repository, ref_pattern="refs/heads/*")
+        self.assertThat(repository.rules, MatchesListwise([
+            MatchesStructure.byEquality(
+                repository=repository,
+                ref_pattern="refs/heads/*"),
+            MatchesStructure.byEquality(
+                repository=repository,
+                ref_pattern="refs/heads/stable/*"),
+            ]))
+
+    def test_addRule_append(self):
+        repository = self.factory.makeGitRepository()
+        initial_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        with person_logged_in(repository.owner):
+            new_rule = repository.addRule(
+                "refs/heads/stable/*", repository.owner)
+        self.assertEqual(
+            [initial_rule.id, new_rule.id],
+            removeSecurityProxy(repository).rule_order)
+        self.assertEqual([initial_rule, new_rule], repository.rules)
+
+    def test_addRule_insert(self):
+        repository = self.factory.makeGitRepository()
+        initial_rules = [
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern="refs/heads/*"),
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern="refs/heads/protected"),
+            ]
+        with person_logged_in(repository.owner):
+            new_rule = repository.addRule(
+                "refs/heads/stable/*", repository.owner, position=1)
+        self.assertEqual(
+            [initial_rules[0].id, new_rule.id, initial_rules[1].id],
+            removeSecurityProxy(repository).rule_order)
+        self.assertEqual(
+            [initial_rules[0], new_rule, initial_rules[1]], repository.rules)
+
+    def test_grants(self):
+        repository = self.factory.makeGitRepository()
+        other_repository = self.factory.makeGitRepository()
+        rule = self.factory.makeGitRule(repository=repository)
+        other_rule = self.factory.makeGitRule(repository=other_repository)
+        grants = [
+            self.factory.makeGitGrant(
+                rule=rule, grantee=self.factory.makePerson())
+            for _ in range(2)
+            ]
+        self.factory.makeGitGrant(
+            rule=other_rule, grantee=self.factory.makePerson())
+        self.assertContentEqual(grants, repository.grants)
 
 
 class TestGitRepositorySet(TestCaseWithFactory):

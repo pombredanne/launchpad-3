@@ -82,11 +82,13 @@ from lp.code.interfaces.codereviewcomment import (
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.gitcollection import IGitCollection
+from lp.code.interfaces.gitgrant import IGitGrant
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import (
     IGitRepository,
     user_has_special_git_repository_access,
     )
+from lp.code.interfaces.gitrule import IGitRule
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -2341,6 +2343,42 @@ class EditGitRef(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(EditGitRef, self).__init__(obj, obj.repository)
+
+
+class ViewGitRule(DelegatedAuthorization):
+    """Anyone who can see a Git repository can see its access rules."""
+    permission = 'launchpad.View'
+    usedfor = IGitRule
+
+    def __init__(self, obj):
+        super(ViewGitRule, self).__init__(obj, obj.repository)
+
+
+class EditGitRule(DelegatedAuthorization):
+    """Anyone who can edit a Git repository can edit its access rules."""
+    permission = 'launchpad.Edit'
+    usedfor = IGitRule
+
+    def __init__(self, obj):
+        super(EditGitRule, self).__init__(obj, obj.repository)
+
+
+class ViewGitGrant(DelegatedAuthorization):
+    """Anyone who can see a Git repository can see its access grants."""
+    permission = 'launchpad.View'
+    usedfor = IGitGrant
+
+    def __init__(self, obj):
+        super(ViewGitGrant, self).__init__(obj, obj.repository)
+
+
+class EditGitGrant(DelegatedAuthorization):
+    """Anyone who can edit a Git repository can edit its access grants."""
+    permission = 'launchpad.Edit'
+    usedfor = IGitGrant
+
+    def __init__(self, obj):
+        super(EditGitGrant, self).__init__(obj, obj.repository)
 
 
 class AdminDistroSeriesTranslations(AuthorizationBase):
