@@ -141,6 +141,25 @@ def _mergeAccessPolicyGrant(cur, from_id, to_id):
         ''' % vars())
 
 
+def _mergeGitGrant(cur, from_id, to_id):
+    # Update only the GitGrants that will not conflict.
+    cur.execute('''
+        UPDATE GitGrant
+        SET grantee=%(to_id)d
+        WHERE
+            grantee = %(from_id)d
+            AND rule NOT IN (
+                SELECT rule
+                FROM GitGrant
+                WHERE grantee = %(to_id)d
+                )
+        ''' % vars())
+    # and delete those left over.
+    cur.execute('''
+        DELETE FROM GitGrant WHERE grantee = %(from_id)d
+        ''' % vars())
+
+
 def _mergeBranches(from_person, to_person):
     # This shouldn't use removeSecurityProxy.
     branches = getUtility(IBranchCollection).ownedBy(from_person)
@@ -771,8 +790,10 @@ def merge_people(from_person, to_person, reviewer, delete=False):
 
     _mergeAccessArtifactGrant(cur, from_id, to_id)
     _mergeAccessPolicyGrant(cur, from_id, to_id)
+    _mergeGitGrant(cur, from_id, to_id)
     skip.append(('accessartifactgrant', 'grantee'))
     skip.append(('accesspolicygrant', 'grantee'))
+    skip.append(('gitgrant', 'grantee'))
 
     # Update the Branches that will not conflict, and fudge the names of
     # ones that *do* conflict.

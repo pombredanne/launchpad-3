@@ -494,6 +494,41 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
                 grantee=person,
                 date_created=person_grant_date))
 
+    def test_merge_gitgrants(self):
+        # GitGrants are transferred from the duplicate.
+        rule = self.factory.makeGitRule()
+        person = self.factory.makePerson()
+        grant = self.factory.makeGitGrant(rule=rule)
+        self._do_premerge(grant.grantee, person)
+
+        self.assertEqual(grant.grantee, rule.grants.one().grantee)
+        with person_logged_in(person):
+            self._do_merge(grant.grantee, person)
+        self.assertEqual(person, rule.grants.one().grantee)
+
+    def test_merge_gitgrants_conflicts(self):
+        # Conflicting GitGrants are deleted.
+        rule = self.factory.makeGitRule()
+
+        person = self.factory.makePerson()
+        person_grant = self.factory.makeGitGrant(rule=rule, grantee=person)
+        person_grant_date = person_grant.date_created
+
+        duplicate = self.factory.makePerson()
+        self.factory.makeGitGrant(rule=rule, grantee=duplicate)
+
+        self._do_premerge(duplicate, person)
+        with person_logged_in(person):
+            self._do_merge(duplicate, person)
+
+        # Only one grant for the rule exists: the retained person's.
+        self.assertThat(
+            rule.grants.one(),
+            MatchesStructure.byEquality(
+                rule=rule,
+                grantee=person,
+                date_created=person_grant_date))
+
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.
         from_person = self.factory.makePerson()
