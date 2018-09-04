@@ -28,7 +28,7 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.services.database.constants import UTC_NOW
-from lp.services.database.enumcol import EnumCol
+from lp.services.database.enumcol import DBEnum
 from lp.services.database.stormbase import StormBase
 
 
@@ -56,8 +56,8 @@ class GitGrant(StormBase):
     rule_id = Int(name='rule', allow_none=False)
     rule = Reference(rule_id, 'GitRule.id')
 
-    grantee_type = EnumCol(
-        dbName='grantee_type', enum=GitGranteeType, notNull=True)
+    grantee_type = DBEnum(
+        name='grantee_type', enum=GitGranteeType, allow_none=False)
 
     grantee_id = Int(
         name='grantee', allow_none=True, validator=validate_person)
