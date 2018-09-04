@@ -49,6 +49,16 @@ class IGitGrantView(Interface):
         vocabulary="ValidPerson",
         description=_("The user who created this grant."))
 
+    grantee_type = Choice(
+        title=_("Grantee type"), required=True, readonly=True,
+        vocabulary=GitGranteeType,
+        description=_("The type of grantee for this grant."))
+
+    grantee = PersonChoice(
+        title=_("Grantee"), required=False, readonly=True,
+        vocabulary="ValidPersonOrTeam",
+        description=_("The person being granted access."))
+
     date_created = Datetime(
         title=_("Date created"), required=True, readonly=True,
         description=_("The time when this grant was created."))
@@ -59,16 +69,6 @@ class IGitGrantEditableAttributes(Interface):
 
     These attributes need launchpad.View to see, and launchpad.Edit to change.
     """
-
-    grantee_type = Choice(
-        title=_("Grantee type"), required=True, readonly=False,
-        vocabulary=GitGranteeType,
-        description=_("The type of grantee for this grant."))
-
-    grantee = PersonChoice(
-        title=_("Grantee"), required=False, readonly=False,
-        vocabulary="ValidPersonOrTeam",
-        description=_("The person being granted access."))
 
     can_create = Bool(
         title=_("Can create"), required=True, readonly=False,
