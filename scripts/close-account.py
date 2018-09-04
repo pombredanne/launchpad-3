@@ -162,6 +162,9 @@ def close_account(con, log, username):
 
         # Pending items in queues
         ('POExportRequest', 'person'),
+
+        # Access grants
+        ('GitGrant', 'grantee'),
         ]
     for table, person_id_column in removals:
         table_notification(table)
