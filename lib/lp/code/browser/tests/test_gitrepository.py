@@ -296,6 +296,27 @@ class TestGitRepositoryView(BrowserTestCase):
                 self.assertIsNotNone(
                     find_tag_by_id(browser.contents, 'landing-targets'))
 
+    def test_view_with_inactive_landing_targets(self):
+        product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
+        target_repository = self.factory.makeGitRepository(target=product)
+        source_repository = self.factory.makeGitRepository(target=product)
+        target_git_refs = self.factory.makeGitRefs(
+            target_repository,
+            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+        source_git_refs = self.factory.makeGitRefs(
+            source_repository,
+            paths=["refs/heads/master"])
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_git_refs[0],
+            source_ref=source_git_refs[0],
+            set_state=BranchMergeProposalStatus.MERGED)
+        with FeatureFixture({"code.git.show_repository_mps": "on"}):
+            with person_logged_in(target_repository.owner):
+                browser = self.getViewBrowser(
+                    source_repository, user=source_repository.owner)
+                self.assertIsNone(
+                    find_tag_by_id(browser.contents, 'landing-targets'))
+
 
 class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
     """Tests that Git repositories with private team artifacts can be viewed.
