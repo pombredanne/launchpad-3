@@ -50,7 +50,10 @@ from lp.testing import (
     record_two_runs,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import (
     Contains,
     HasQueryCount,
@@ -96,7 +99,7 @@ class TestGitRepositoryNavigation(TestCaseWithFactory):
 
 class TestGitRepositoryView(BrowserTestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_clone_instructions(self):
         repository = self.factory.makeGitRepository()
@@ -280,9 +283,6 @@ class TestGitRepositoryView(BrowserTestCase):
         git_refs = self.factory.makeGitRefs(
             repository,
             paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
-        self.factory.makeBranchMergeProposalForGit(
-            target_ref=git_refs[0],
-            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
 
         def login_and_view():
             with FeatureFixture({"code.git.show_repository_mps": "on"}):
@@ -292,10 +292,12 @@ class TestGitRepositoryView(BrowserTestCase):
                         find_tag_by_id(browser.contents, 'landing-candidates'))
 
         def create_merge_proposal():
-            self.factory.makeBranchMergeProposalForGit(
+            bmp = self.factory.makeBranchMergeProposalForGit(
                 target_ref=git_refs[0],
                 set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+            self.factory.makePreviewDiff(merge_proposal=bmp)
 
+        create_merge_proposal()
         recorder1, recorder2 = record_two_runs(
             login_and_view,
             create_merge_proposal,
@@ -333,10 +335,11 @@ class TestGitRepositoryView(BrowserTestCase):
                 target_repository)
             source_git_refs = self.factory.makeGitRefs(
                 source_repository)
-            self.factory.makeBranchMergeProposalForGit(
+            bmp = self.factory.makeBranchMergeProposalForGit(
                 target_ref=target_git_refs[0],
                 source_ref=source_git_refs[0],
                 set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+            self.factory.makePreviewDiff(merge_proposal=bmp)
 
         def login_and_view():
             with FeatureFixture({"code.git.show_repository_mps": "on"}):

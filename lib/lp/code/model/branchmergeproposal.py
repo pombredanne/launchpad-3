@@ -122,6 +122,7 @@ from lp.services.database.sqlbase import (
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.mail.sendmail import validate_message
 from lp.services.propertycache import (
     cachedproperty,
@@ -1332,7 +1333,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
                 PreviewDiff.branch_merge_proposal_id,
                 Desc(PreviewDiff.date_created)).config(
                     distinct=[PreviewDiff.branch_merge_proposal_id])
-        load_related(Diff, preview_diffs, ['diff_id'])
+        diffs = load_related(Diff, preview_diffs, ['diff_id'])
         preview_diff_map = {}
         for previewdiff in preview_diffs:
             preview_diff_map[previewdiff.branch_merge_proposal_id] = (
@@ -1378,6 +1379,9 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
                                 ['branch_merge_proposalID']))
             for mp in branch_merge_proposals:
                 get_property_cache(mp).votes = vote_list
+
+            # we also provide a summary of diffs, so load them
+            load_related(LibraryFileAlias, diffs, ['diff_textID'])
 
 
 @implementer(IBranchMergeProposalGetter)
