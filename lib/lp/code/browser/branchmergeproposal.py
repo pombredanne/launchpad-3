@@ -891,6 +891,9 @@ class BranchMergeProposalVoteView(LaunchpadView):
     def reviews(self):
         """Return the decorated votes for the proposal."""
 
+        # this would use getUsersVoteReference, but we need to
+        # be able to cache the property. We dont' need to normalize
+        # the review types.
         users_vote = [uv for uv in self.context.votes
                       if uv.reviewer == self.user]
         return [DecoratedCodeReviewVoteReference(vote, self.user, users_vote)
