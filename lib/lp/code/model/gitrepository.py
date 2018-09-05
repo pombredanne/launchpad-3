@@ -922,7 +922,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
     def getPrecachedLandingCandidates(self, user):
         """See `IGitRepository`."""
-        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
+        loader = partial(
+            BranchMergeProposal.preloadDataForBMPs,
+            user=user,
+            include_summary=True)
         return DecoratedResultSet(
             self.landing_candidates, pre_iter_hook=loader)
 

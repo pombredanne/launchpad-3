@@ -21,7 +21,6 @@ from lazr.lifecycle.event import (
 from sqlobject import (
     ForeignKey,
     IntCol,
-    SQLMultipleJoin,
     StringCol,
     )
 from storm.expr import (
@@ -610,8 +609,11 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
     def preview_diff(self):
         return self._preview_diffs.last()
 
-    votes = SQLMultipleJoin(
-        'CodeReviewVoteReference', joinColumn='branch_merge_proposal')
+    @cachedproperty
+    def votes(self):
+        return list(Store.of(self).find(
+            CodeReviewVoteReference,
+            CodeReviewVoteReference.branch_merge_proposal == self))
 
     def getNotificationRecipients(self, min_level):
         """See IBranchMergeProposal.getNotificationRecipients"""
@@ -1275,7 +1277,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
 
     @staticmethod
-    def preloadDataForBMPs(branch_merge_proposals, user):
+    def preloadDataForBMPs(branch_merge_proposals, user, include_summary=True):
         # Utility to load the data related to a list of bmps.
         # Circular imports.
         from lp.code.model.branch import Branch
@@ -1366,6 +1368,16 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             GenericBranchCollection.preloadDataForBranches(branches)
         if repositories:
             GenericGitCollection.preloadDataForRepositories(repositories)
+
+        # if we need to include a vote summary, we should precache
+        # that data too
+        if include_summary:
+            vote_list = list(load_referencing(
+                                CodeReviewVoteReference,
+                                branch_merge_proposals,
+                                ['branch_merge_proposalID']))
+            for mp in branch_merge_proposals:
+                get_property_cache(mp).votes = vote_list
 
 
 @implementer(IBranchMergeProposalGetter)

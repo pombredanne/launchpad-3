@@ -890,7 +890,9 @@ class BranchMergeProposalVoteView(LaunchpadView):
     @cachedproperty
     def reviews(self):
         """Return the decorated votes for the proposal."""
-        users_vote = self.context.getUsersVoteReference(self.user)
+
+        users_vote = [uv for uv in self.context.votes
+                      if uv.reviewer == self.user]
         return [DecoratedCodeReviewVoteReference(vote, self.user, users_vote)
                 for vote in self.context.votes
                 if check_permission('launchpad.LimitedView', vote.reviewer)]
