@@ -81,6 +81,7 @@ from lp.code.interfaces.codereviewcomment import (
     )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.gitactivity import IGitActivity
 from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitgrant import IGitGrant
 from lp.code.interfaces.gitref import IGitRef
@@ -2379,6 +2380,15 @@ class EditGitGrant(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(EditGitGrant, self).__init__(obj, obj.repository)
+
+
+class ViewGitActivity(DelegatedAuthorization):
+    """Anyone who can see a Git repository can see its activity logs."""
+    permission = 'launchpad.View'
+    usedfor = IGitActivity
+
+    def __init__(self, obj):
+        super(ViewGitActivity, self).__init__(obj, obj.repository)
 
 
 class AdminDistroSeriesTranslations(AuthorizationBase):

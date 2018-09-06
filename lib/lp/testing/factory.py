@@ -1839,10 +1839,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             return repository.addRule(ref_pattern, creator, position=position)
 
     def makeGitGrant(self, rule=None, grantee=None, grantor=None,
-                     can_create=False, can_push=False, can_force_push=False):
+                     can_create=False, can_push=False, can_force_push=False,
+                     **rule_kwargs):
         """Create a Git repository access grant."""
         if rule is None:
-            rule = self.makeGitRule()
+            rule = self.makeGitRule(**rule_kwargs)
         if grantee is None:
             grantee = self.makePerson()
         if grantor is None:

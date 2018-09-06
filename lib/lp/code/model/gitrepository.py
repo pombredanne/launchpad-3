@@ -89,6 +89,7 @@ from lp.code.interfaces.branchmergeproposal import (
     notify_modified,
     )
 from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.gitactivity import IGitActivitySet
 from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
@@ -109,6 +110,7 @@ from lp.code.interfaces.gitrepository import (
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
 from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.gitactivity import GitActivity
 from lp.code.model.gitgrant import GitGrant
 from lp.code.model.gitref import (
     GitRef,
@@ -1152,12 +1154,21 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             self.rule_order.append(rule.id)
         else:
             self.rule_order.insert(position, rule.id)
+        getUtility(IGitActivitySet).logRuleAdded(rule, creator)
         return rule
 
     @property
     def grants(self):
         """See `IGitRepository`."""
         return Store.of(self).find(GitGrant, GitGrant.repository_id == self.id)
+
+    @property
+    def activity(self):
+        """See `IGitRepository`."""
+        rows = Store.of(self).find(
+            GitActivity, GitActivity.repository_id == self.id)
+        return rows.order_by(
+            Desc(GitActivity.date_changed), Desc(GitActivity.id))
 
     def canBeDeleted(self):
         """See `IGitRepository`."""

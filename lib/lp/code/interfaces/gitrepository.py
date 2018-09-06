@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository interfaces."""
@@ -269,6 +269,8 @@ class IGitRepositoryView(IHasRecipes):
     rules = Attribute("The access rules for this repository.")
 
     grants = Attribute("The access grants for this repository.")
+
+    activity = Attribute("The activity log entries for this repository.")
 
     @operation_parameters(
         path=TextLine(title=_("A string to look up as a path.")))

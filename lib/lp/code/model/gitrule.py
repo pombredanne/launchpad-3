@@ -18,11 +18,17 @@ from storm.locals import (
     Store,
     Unicode,
     )
+from zope.component import getUtility
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
+from lp.code.interfaces.gitactivity import IGitActivitySet
 from lp.code.interfaces.gitrule import IGitRule
 from lp.code.model.gitgrant import GitGrant
-from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.person import (
+    IPerson,
+    validate_public_person,
+    )
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -37,7 +43,10 @@ def git_rule_modified(rule, event):
     events on Git repository rules.
     """
     if event.edited_fields:
-        rule.date_last_modified = UTC_NOW
+        user = IPerson(event.user)
+        getUtility(IGitActivitySet).logRuleChanged(
+            event.object_before_modification, rule, user)
+        removeSecurityProxy(rule).date_last_modified = UTC_NOW
 
 
 @implementer(IGitRule)
@@ -81,12 +90,15 @@ class GitRule(StormBase):
     def addGrant(self, grantee, grantor, can_create=False, can_push=False,
                  can_force_push=False):
         """See `IGitRule`."""
-        return GitGrant(
+        grant = GitGrant(
             rule=self, grantee=grantee, can_create=can_create,
             can_push=can_push, can_force_push=can_force_push, grantor=grantor,
             date_created=DEFAULT)
+        getUtility(IGitActivitySet).logGrantAdded(grant, grantor)
+        return grant
 
-    def destroySelf(self):
+    def destroySelf(self, user):
         """See `IGitRule`."""
+        getUtility(IGitActivitySet).logRuleRemoved(self, user)
         self.repository.rule_order.remove(self.id)
         Store.of(self).remove(self)

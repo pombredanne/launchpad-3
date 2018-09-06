@@ -7,18 +7,27 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from storm.store import Store
 from testtools.matchers import (
     Equals,
     Is,
+    MatchesDict,
     MatchesSetwise,
     MatchesStructure,
     )
+from zope.event import notify
+from zope.interface import providedBy
 
-from lp.code.enums import GitGranteeType
+from lp.code.enums import (
+    GitActivityType,
+    GitGranteeType,
+    )
 from lp.code.interfaces.gitrule import IGitRule
 from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.testing import (
+    person_logged_in,
     TestCaseWithFactory,
     verifyObject,
     )
@@ -90,3 +99,55 @@ class TestGitRule(TestCaseWithFactory):
                 can_create=Is(False),
                 can_push=Is(False),
                 can_force_push=Is(True))))
+
+    def test_activity_rule_added(self):
+        owner = self.factory.makeTeam()
+        member = self.factory.makePerson(member_of=[owner])
+        repository = self.factory.makeGitRepository(owner=owner)
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*",
+            creator=member)
+        self.assertThat(repository.activity.one(), MatchesStructure(
+            repository=Equals(repository),
+            changer=Equals(member),
+            changee=Is(None),
+            what_changed=Equals(GitActivityType.RULE_ADDED),
+            old_value=Is(None),
+            new_value=MatchesDict(
+                {"ref_pattern": Equals("refs/heads/stable/*")})))
+
+    def test_activity_rule_changed(self):
+        owner = self.factory.makeTeam()
+        member = self.factory.makePerson(member_of=[owner])
+        repository = self.factory.makeGitRepository(owner=owner)
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        rule_before_modification = Snapshot(rule, providing=providedBy(rule))
+        with person_logged_in(member):
+            rule.ref_pattern = "refs/heads/other/*"
+            notify(ObjectModifiedEvent(
+                rule, rule_before_modification, ["ref_pattern"]))
+        self.assertThat(repository.activity.first(), MatchesStructure(
+            repository=Equals(repository),
+            changer=Equals(member),
+            changee=Is(None),
+            what_changed=Equals(GitActivityType.RULE_CHANGED),
+            old_value=MatchesDict({"ref_pattern": Equals("refs/heads/*")}),
+            new_value=MatchesDict(
+                {"ref_pattern": Equals("refs/heads/other/*")})))
+
+    def test_activity_rule_removed(self):
+        owner = self.factory.makeTeam()
+        member = self.factory.makePerson(member_of=[owner])
+        repository = self.factory.makeGitRepository(owner=owner)
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        with person_logged_in(member):
+            rule.destroySelf(member)
+        self.assertThat(repository.activity.first(), MatchesStructure(
+            repository=Equals(repository),
+            changer=Equals(member),
+            changee=Is(None),
+            what_changed=Equals(GitActivityType.RULE_REMOVED),
+            old_value=MatchesDict({"ref_pattern": Equals("refs/heads/*")}),
+            new_value=Is(None)))

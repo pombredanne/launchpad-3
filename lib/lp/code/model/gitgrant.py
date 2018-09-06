@@ -19,11 +19,15 @@ from storm.locals import (
     Reference,
     Store,
     )
+from zope.component import getUtility
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import GitGranteeType
+from lp.code.interfaces.gitactivity import IGitActivitySet
 from lp.code.interfaces.gitgrant import IGitGrant
 from lp.registry.interfaces.person import (
+    IPerson,
     validate_person,
     validate_public_person,
     )
@@ -39,7 +43,10 @@ def git_grant_modified(grant, event):
     events on Git repository grants.
     """
     if event.edited_fields:
-        grant.date_last_modified = UTC_NOW
+        user = IPerson(event.user)
+        getUtility(IGitActivitySet).logGrantChanged(
+            event.object_before_modification, grant, user)
+        removeSecurityProxy(grant).date_last_modified = UTC_NOW
 
 
 @implementer(IGitGrant)
@@ -114,6 +121,7 @@ class GitGrant(StormBase):
         return "<GitGrant [%s] to %s> for %r" % (
             ", ".join(permissions), grantee_name, self.rule)
 
-    def destroySelf(self):
+    def destroySelf(self, user):
         """See `IGitGrant`."""
+        getUtility(IGitActivitySet).logGrantRemoved(self, user)
         Store.of(self).remove(self)

@@ -90,8 +90,11 @@ class IGitGrantEditableAttributes(Interface):
 class IGitGrantEdit(Interface):
     """`IGitGrant` attributes that require launchpad.Edit."""
 
-    def destroySelf():
-        """Delete this access grant."""
+    def destroySelf(user):
+        """Delete this access grant.
+
+        :param user: The `IPerson` doing the deletion.
+        """
 
 
 class IGitGrant(IGitGrantView, IGitGrantEditableAttributes, IGitGrantEdit):

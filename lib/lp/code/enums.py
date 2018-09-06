@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/code modules."""
@@ -21,6 +21,7 @@ __all__ = [
     'CodeImportReviewStatus',
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
+    'GitActivityType',
     'GitGranteeType',
     'GitObjectType',
     'GitRepositoryType',
@@ -194,6 +195,25 @@ class GitGranteeType(DBEnumeratedType):
 
         A grant to a particular person or team.
         """)
+
+
+class GitActivityType(DBEnumeratedType):
+    """Git Activity Type
+
+    Various kinds of change can be recorded for a Git repository.
+    """
+
+    RULE_ADDED = DBItem(1, "Added access rule")
+
+    RULE_CHANGED = DBItem(2, "Changed access rule")
+
+    RULE_REMOVED = DBItem(3, "Removed access rule")
+
+    GRANT_ADDED = DBItem(4, "Added access grant")
+
+    GRANT_CHANGED = DBItem(5, "Changed access grant")
+
+    GRANT_REMOVED = DBItem(6, "Removed access grant")
 
 
 class BranchLifecycleStatusFilter(EnumeratedType):

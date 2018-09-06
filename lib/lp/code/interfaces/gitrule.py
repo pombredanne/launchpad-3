@@ -82,8 +82,11 @@ class IGitRuleEdit(Interface):
             matching this rule.
         """
 
-    def destroySelf():
-        """Delete this rule."""
+    def destroySelf(user):
+        """Delete this rule.
+
+        :param user: The `IPerson` doing the deletion.
+        """
 
 
 class IGitRule(IGitRuleView, IGitRuleEditableAttributes, IGitRuleEdit):

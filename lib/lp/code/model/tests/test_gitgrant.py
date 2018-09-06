@@ -7,15 +7,23 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from storm.store import Store
 from testtools.matchers import (
     Equals,
     Is,
+    MatchesDict,
     MatchesSetwise,
     MatchesStructure,
     )
+from zope.event import notify
+from zope.interface import providedBy
 
-from lp.code.enums import GitGranteeType
+from lp.code.enums import (
+    GitActivityType,
+    GitGranteeType,
+    )
 from lp.code.interfaces.gitgrant import IGitGrant
 from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.testing import (
@@ -92,6 +100,80 @@ class TestGitGrant(TestCaseWithFactory):
             "<GitGrant [push] to ~%s> for %r" % (grantee.name, rule),
             repr(grant))
 
+    def test_activity_grant_added(self):
+        owner = self.factory.makeTeam()
+        member = self.factory.makePerson(member_of=[owner])
+        repository = self.factory.makeGitRepository(owner=owner)
+        grant = self.factory.makeGitGrant(
+            repository=repository, grantor=member, can_push=True)
+        self.assertThat(repository.activity.first(), MatchesStructure(
+            repository=Equals(repository),
+            changer=Equals(member),
+            changee=Equals(grant.grantee),
+            what_changed=Equals(GitActivityType.GRANT_ADDED),
+            old_value=Is(None),
+            new_value=MatchesDict({
+                "grantee_type": Equals("Person"),
+                "can_create": Is(False),
+                "can_push": Is(True),
+                "can_force_push": Is(False),
+                })))
+
+    def test_activity_grant_changed(self):
+        owner = self.factory.makeTeam()
+        member = self.factory.makePerson(member_of=[owner])
+        repository = self.factory.makeGitRepository(owner=owner)
+        grant = self.factory.makeGitGrant(
+            repository=repository, grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_create=True)
+        grant_before_modification = Snapshot(
+            grant, providing=providedBy(grant))
+        with person_logged_in(member):
+            grant.can_create = False
+            grant.can_force_push = True
+            notify(ObjectModifiedEvent(
+                grant, grant_before_modification,
+                ["can_create", "can_force_push"]))
+        self.assertThat(repository.activity.first(), MatchesStructure(
+            repository=Equals(repository),
+            changer=Equals(member),
+            changee=Is(None),
+            what_changed=Equals(GitActivityType.GRANT_CHANGED),
+            old_value=MatchesDict({
+                "grantee_type": Equals("Repository owner"),
+                "can_create": Is(True),
+                "can_push": Is(False),
+                "can_force_push": Is(False),
+                }),
+            new_value=MatchesDict({
+                "grantee_type": Equals("Repository owner"),
+                "can_create": Is(False),
+                "can_push": Is(False),
+                "can_force_push": Is(True),
+                })))
+
+    def test_activity_grant_removed(self):
+        owner = self.factory.makeTeam()
+        member = self.factory.makePerson(member_of=[owner])
+        repository = self.factory.makeGitRepository(owner=owner)
+        grant = self.factory.makeGitGrant(
+            repository=repository, can_create=True, can_push=True)
+        grantee = grant.grantee
+        with person_logged_in(member):
+            grant.destroySelf(member)
+        self.assertThat(repository.activity.first(), MatchesStructure(
+            repository=Equals(repository),
+            changer=Equals(member),
+            changee=Equals(grantee),
+            what_changed=Equals(GitActivityType.GRANT_REMOVED),
+            old_value=MatchesDict({
+                "grantee_type": Equals("Person"),
+                "can_create": Is(True),
+                "can_push": Is(True),
+                "can_force_push": Is(False),
+                }),
+            new_value=Is(None)))
+
     def test_destroySelf(self):
         rule = self.factory.makeGitRule()
         grants = [
@@ -101,5 +183,5 @@ class TestGitGrant(TestCaseWithFactory):
             self.factory.makeGitGrant(rule=rule, can_push=True),
             ]
         with person_logged_in(rule.repository.owner):
-            grants[1].destroySelf()
+            grants[1].destroySelf(rule.repository.owner)
         self.assertThat(rule.grants, MatchesSetwise(Equals(grants[0])))
