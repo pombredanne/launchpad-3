@@ -925,7 +925,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         loader = partial(
             BranchMergeProposal.preloadDataForBMPs,
             user=user,
-            include_summary=True)
+            include_votes=True)
         return DecoratedResultSet(
             self.landing_candidates, pre_iter_hook=loader)
 

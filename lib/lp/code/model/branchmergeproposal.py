@@ -1278,7 +1278,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
 
     @staticmethod
-    def preloadDataForBMPs(branch_merge_proposals, user, include_summary=True):
+    def preloadDataForBMPs(branch_merge_proposals, user, include_votes=True):
         # Utility to load the data related to a list of bmps.
         # Circular imports.
         from lp.code.model.branch import Branch
@@ -1372,16 +1372,17 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
 
         # if we need to include a vote summary, we should precache
         # that data too
-        if include_summary:
+        if include_votes:
             vote_list = list(load_referencing(
-                                CodeReviewVoteReference,
-                                branch_merge_proposals,
-                                ['branch_merge_proposalID']))
+                CodeReviewVoteReference, branch_merge_proposals,
+                ['branch_merge_proposalID']))
             for mp in branch_merge_proposals:
                 get_property_cache(mp).votes = vote_list
 
             # we also provide a summary of diffs, so load them
             load_related(LibraryFileAlias, diffs, ['diff_textID'])
+            load_referencing(CodeReviewVoteReference, branch_merge_proposals,
+            ['branch_merge_proposalID'])
 
 
 @implementer(IBranchMergeProposalGetter)
