@@ -48,8 +48,7 @@ class TestGitGrant(TestCaseWithFactory):
             grantee_type=Equals(GitGranteeType.REPOSITORY_OWNER),
             grantee=Is(None),
             can_create=Is(True),
-            # can_force_push implies can_push.
-            can_push=Is(True),
+            can_push=Is(False),
             can_force_push=Is(True),
             grantor=Equals(member),
             date_created=Equals(now),

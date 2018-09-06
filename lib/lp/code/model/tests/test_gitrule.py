@@ -88,6 +88,5 @@ class TestGitRule(TestCaseWithFactory):
                 grantee_type=Equals(GitGranteeType.PERSON),
                 grantee=Equals(grantees[1]),
                 can_create=Is(False),
-                # can_force_push implies can_push.
-                can_push=Is(True),
+                can_push=Is(False),
                 can_force_push=Is(True))))

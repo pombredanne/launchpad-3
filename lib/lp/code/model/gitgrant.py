@@ -93,7 +93,7 @@ class GitGrant(StormBase):
         self.grantee_type = grantee_type
         self.grantee = grantee
         self.can_create = can_create
-        self.can_push = can_push or can_force_push
+        self.can_push = can_push
         self.can_force_push = can_force_push
         self.grantor = grantor
         self.date_created = date_created
