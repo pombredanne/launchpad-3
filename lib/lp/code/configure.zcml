@@ -924,10 +924,12 @@
   <class class="lp.code.model.gitrule.GitRule">
     <require
         permission="launchpad.View"
-        interface="lp.code.interfaces.gitrule.IGitRuleView" />
+        interface="lp.code.interfaces.gitrule.IGitRuleView
+                   lp.code.interfaces.gitrule.IGitRuleEditableAttributes" />
     <require
         permission="launchpad.Edit"
-        interface="lp.code.interfaces.gitrule.IGitRuleEdit" />
+        interface="lp.code.interfaces.gitrule.IGitRuleEdit"
+        set_schema="lp.code.interfaces.gitrule.IGitRuleEditableAttributes" />
   </class>
   <subscriber
       for="lp.code.interfaces.gitrule.IGitRule zope.lifecycleevent.interfaces.IObjectModifiedEvent"

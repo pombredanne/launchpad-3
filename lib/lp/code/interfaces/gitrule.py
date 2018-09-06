@@ -36,10 +36,6 @@ class IGitRuleView(Interface):
         schema=IGitRepository,
         description=_("The repository that this rule is for."))
 
-    ref_pattern = TextLine(
-        title=_("Pattern"), required=True, readonly=False,
-        description=_("The pattern of references matched by this rule."))
-
     creator = PublicPersonChoice(
         title=_("Creator"), required=True, readonly=True,
         vocabulary="ValidPerson",
@@ -49,11 +45,22 @@ class IGitRuleView(Interface):
         title=_("Date created"), required=True, readonly=True,
         description=_("The time when this rule was created."))
 
+    grants = Attribute("The access grants for this rule.")
+
+
+class IGitRuleEditableAttributes(Interface):
+    """`IGitRule` attributes that can be edited.
+
+    These attributes need launchpad.View to see, and launchpad.Edit to change.
+    """
+
+    ref_pattern = TextLine(
+        title=_("Pattern"), required=True, readonly=False,
+        description=_("The pattern of references matched by this rule."))
+
     date_last_modified = Datetime(
         title=_("Date last modified"), required=True, readonly=True,
         description=_("The time when this rule was last modified."))
-
-    grants = Attribute("The access grants for this rule.")
 
 
 class IGitRuleEdit(Interface):
@@ -79,5 +86,5 @@ class IGitRuleEdit(Interface):
         """Delete this rule."""
 
 
-class IGitRule(IGitRuleView, IGitRuleEdit):
+class IGitRule(IGitRuleView, IGitRuleEditableAttributes, IGitRuleEdit):
     """An access rule for a Git repository."""
