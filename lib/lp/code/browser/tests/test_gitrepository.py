@@ -50,7 +50,10 @@ from lp.testing import (
     record_two_runs,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import (
     Contains,
     HasQueryCount,
@@ -96,7 +99,7 @@ class TestGitRepositoryNavigation(TestCaseWithFactory):
 
 class TestGitRepositoryView(BrowserTestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_clone_instructions(self):
         repository = self.factory.makeGitRepository()
@@ -267,7 +270,7 @@ class TestGitRepositoryView(BrowserTestCase):
                 self.assertIsNotNone(
                     find_tag_by_id(browser.contents, 'landing-candidates'))
 
-    def test_landing_candidate_count(self):
+    def test_landing_candidates_count(self):
         source_repository = self.factory.makeGitRepository()
         view = create_initialized_view(source_repository, '+index')
 
@@ -275,19 +278,44 @@ class TestGitRepositoryView(BrowserTestCase):
         self.assertEqual('1 branch', view._getBranchCountText(1))
         self.assertEqual('2 branches', view._getBranchCountText(2))
 
+    def test_landing_candidates_query_count(self):
+        repository = self.factory.makeGitRepository()
+        git_refs = self.factory.makeGitRefs(
+            repository,
+            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+
+        def login_and_view():
+            with FeatureFixture({"code.git.show_repository_mps": "on"}):
+                with person_logged_in(repository.owner):
+                    browser = self.getViewBrowser(repository)
+                    self.assertIsNotNone(
+                        find_tag_by_id(browser.contents, 'landing-candidates'))
+
+        def create_merge_proposal():
+            bmp = self.factory.makeBranchMergeProposalForGit(
+                target_ref=git_refs[0],
+                set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+            self.factory.makePreviewDiff(merge_proposal=bmp)
+
+        recorder1, recorder2 = record_two_runs(
+            login_and_view,
+            create_merge_proposal,
+            2)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
     def test_view_with_landing_targets(self):
         product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
         target_repository = self.factory.makeGitRepository(target=product)
         source_repository = self.factory.makeGitRepository(target=product)
-        target_git_refs = self.factory.makeGitRefs(
+        [target_git_ref] = self.factory.makeGitRefs(
             target_repository,
-            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
-        source_git_refs = self.factory.makeGitRefs(
+            paths=["refs/heads/master"])
+        [source_git_ref] = self.factory.makeGitRefs(
             source_repository,
             paths=["refs/heads/master"])
         self.factory.makeBranchMergeProposalForGit(
-            target_ref=target_git_refs[0],
-            source_ref=source_git_refs[0],
+            target_ref=target_git_ref,
+            source_ref=source_git_ref,
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         with FeatureFixture({"code.git.show_repository_mps": "on"}):
             with person_logged_in(target_repository.owner):
@@ -296,19 +324,49 @@ class TestGitRepositoryView(BrowserTestCase):
                 self.assertIsNotNone(
                     find_tag_by_id(browser.contents, 'landing-targets'))
 
+    def test_landing_targets_query_count(self):
+        product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
+        target_repository = self.factory.makeGitRepository(target=product)
+        source_repository = self.factory.makeGitRepository(target=product)
+
+        def create_merge_proposal():
+            [target_git_ref] = self.factory.makeGitRefs(
+                target_repository)
+            [source_git_ref] = self.factory.makeGitRefs(
+                source_repository)
+            bmp = self.factory.makeBranchMergeProposalForGit(
+                target_ref=target_git_ref,
+                source_ref=source_git_ref,
+                set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+            self.factory.makePreviewDiff(merge_proposal=bmp)
+
+        def login_and_view():
+            with FeatureFixture({"code.git.show_repository_mps": "on"}):
+                with person_logged_in(target_repository.owner):
+                    browser = self.getViewBrowser(
+                        source_repository, user=source_repository.owner)
+                    self.assertIsNotNone(
+                        find_tag_by_id(browser.contents, 'landing-targets'))
+
+        recorder1, recorder2 = record_two_runs(
+            login_and_view,
+            create_merge_proposal,
+            2)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
     def test_view_with_inactive_landing_targets(self):
         product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
         target_repository = self.factory.makeGitRepository(target=product)
         source_repository = self.factory.makeGitRepository(target=product)
-        target_git_refs = self.factory.makeGitRefs(
+        [target_git_ref] = self.factory.makeGitRefs(
             target_repository,
-            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
-        source_git_refs = self.factory.makeGitRefs(
+            paths=["refs/heads/master"])
+        [source_git_ref] = self.factory.makeGitRefs(
             source_repository,
             paths=["refs/heads/master"])
         self.factory.makeBranchMergeProposalForGit(
-            target_ref=target_git_refs[0],
-            source_ref=source_git_refs[0],
+            target_ref=target_git_ref,
+            source_ref=source_git_ref,
             set_state=BranchMergeProposalStatus.MERGED)
         with FeatureFixture({"code.git.show_repository_mps": "on"}):
             with person_logged_in(target_repository.owner):

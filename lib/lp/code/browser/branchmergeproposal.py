@@ -266,7 +266,7 @@ class BranchMergeProposalMenuMixin:
         if (self.context.queue_status ==
             BranchMergeProposalStatus.NEEDS_REVIEW):
             enabled = True
-            if (self.context.votes.count()) > 0:
+            if len(self.context.votes) > 0:
                 text = 'Request another review'
         return Link('+request-review', text, icon='add', enabled=enabled)
 
@@ -890,8 +890,15 @@ class BranchMergeProposalVoteView(LaunchpadView):
     @cachedproperty
     def reviews(self):
         """Return the decorated votes for the proposal."""
-        users_vote = self.context.getUsersVoteReference(self.user)
-        return [DecoratedCodeReviewVoteReference(vote, self.user, users_vote)
+
+        # This would use getUsersVoteReference, but we need to
+        # be able to cache the property. We don't need to normalize
+        # the review types.
+        users_vote = sorted((uv for uv in self.context.votes
+                             if uv.reviewer == self.user),
+                            key=operator.attrgetter('date_created'))
+        final_vote = users_vote[0] if users_vote else None
+        return [DecoratedCodeReviewVoteReference(vote, self.user, final_vote)
                 for vote in self.context.votes
                 if check_permission('launchpad.LimitedView', vote.reviewer)]
 
