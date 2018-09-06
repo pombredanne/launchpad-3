@@ -39,8 +39,7 @@ CREATE TABLE GitGrant (
     date_created timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     date_last_modified timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     -- 2 == PERSON
-    CONSTRAINT has_grantee CHECK ((grantee_type = 2) = (grantee IS NOT NULL)),
-    CONSTRAINT force_push_implies_push CHECK (can_push OR NOT can_force_push)
+    CONSTRAINT has_grantee CHECK ((grantee_type = 2) = (grantee IS NOT NULL))
 );
 
 CREATE INDEX gitgrant__repository__idx
