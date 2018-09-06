@@ -1381,8 +1381,6 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
 
             # we also provide a summary of diffs, so load them
             load_related(LibraryFileAlias, diffs, ['diff_textID'])
-            load_referencing(CodeReviewVoteReference, branch_merge_proposals,
-            ['branch_merge_proposalID'])
 
 
 @implementer(IBranchMergeProposalGetter)

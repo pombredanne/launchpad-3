@@ -307,15 +307,15 @@ class TestGitRepositoryView(BrowserTestCase):
         product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
         target_repository = self.factory.makeGitRepository(target=product)
         source_repository = self.factory.makeGitRepository(target=product)
-        [target_git_refs] = self.factory.makeGitRefs(
+        [target_git_ref] = self.factory.makeGitRefs(
             target_repository,
             paths=["refs/heads/master"])
-        [source_git_refs] = self.factory.makeGitRefs(
+        [source_git_ref] = self.factory.makeGitRefs(
             source_repository,
             paths=["refs/heads/master"])
         self.factory.makeBranchMergeProposalForGit(
-            target_ref=target_git_refs,
-            source_ref=source_git_refs,
+            target_ref=target_git_ref,
+            source_ref=source_git_ref,
             set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
         with FeatureFixture({"code.git.show_repository_mps": "on"}):
             with person_logged_in(target_repository.owner):
@@ -330,13 +330,13 @@ class TestGitRepositoryView(BrowserTestCase):
         source_repository = self.factory.makeGitRepository(target=product)
 
         def create_merge_proposal():
-            [target_git_refs] = self.factory.makeGitRefs(
+            [target_git_ref] = self.factory.makeGitRefs(
                 target_repository)
-            [source_git_refs] = self.factory.makeGitRefs(
+            [source_git_ref] = self.factory.makeGitRefs(
                 source_repository)
             bmp = self.factory.makeBranchMergeProposalForGit(
-                target_ref=target_git_refs,
-                source_ref=source_git_refs,
+                target_ref=target_git_ref,
+                source_ref=source_git_ref,
                 set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
             self.factory.makePreviewDiff(merge_proposal=bmp)
 
@@ -358,15 +358,15 @@ class TestGitRepositoryView(BrowserTestCase):
         product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
         target_repository = self.factory.makeGitRepository(target=product)
         source_repository = self.factory.makeGitRepository(target=product)
-        [target_git_refs] = self.factory.makeGitRefs(
+        [target_git_ref] = self.factory.makeGitRefs(
             target_repository,
             paths=["refs/heads/master"])
-        [source_git_refs] = self.factory.makeGitRefs(
+        [source_git_ref] = self.factory.makeGitRefs(
             source_repository,
             paths=["refs/heads/master"])
         self.factory.makeBranchMergeProposalForGit(
-            target_ref=target_git_refs,
-            source_ref=source_git_refs,
+            target_ref=target_git_ref,
+            source_ref=source_git_ref,
             set_state=BranchMergeProposalStatus.MERGED)
         with FeatureFixture({"code.git.show_repository_mps": "on"}):
             with person_logged_in(target_repository.owner):
