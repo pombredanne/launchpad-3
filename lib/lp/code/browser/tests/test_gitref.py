@@ -295,7 +295,7 @@ class TestGitRefView(BrowserTestCase):
         view = create_view(ref, '+index')
         with StormStatementRecorder() as recorder:
             view.landing_candidates
-        self.assertThat(recorder, HasQueryCount(Equals(11)))
+        self.assertThat(recorder, HasQueryCount(Equals(12)))
 
     def test_query_count_landing_targets(self):
         project = self.factory.makeProduct()
@@ -311,4 +311,4 @@ class TestGitRefView(BrowserTestCase):
         view = create_view(ref, '+index')
         with StormStatementRecorder() as recorder:
             view.landing_targets
-        self.assertThat(recorder, HasQueryCount(Equals(11)))
+        self.assertThat(recorder, HasQueryCount(Equals(12)))
