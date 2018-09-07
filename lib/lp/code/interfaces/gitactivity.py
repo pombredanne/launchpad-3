@@ -16,7 +16,9 @@ from zope.interface import Interface
 from zope.schema import (
     Choice,
     Datetime,
+    Dict,
     Int,
+    Text,
     TextLine,
     )
 
@@ -58,13 +60,15 @@ class IGitActivity(Interface):
         vocabulary=GitActivityType,
         description=_("The property of the repository that changed."))
 
-    old_value = TextLine(
-        title=_("Old value"), required=True, readonly=True,
-        description=_("The value before the change."))
+    old_value = Dict(
+        title=_("Old value"), required=False, readonly=True,
+        description=_("The value before the change."),
+        key_type=TextLine(), value_type=Text())
 
-    new_value = TextLine(
-        title=_("New value"), required=True, readonly=True,
-        description=_("The value after the change."))
+    new_value = Dict(
+        title=_("New value"), required=False, readonly=True,
+        description=_("The value after the change."),
+        key_type=TextLine(), value_type=Text())
 
 
 class IGitActivitySet(Interface):
