@@ -82,7 +82,7 @@ def _make_grant_value(grant):
         # If the grantee is a person, then we store that in
         # GitActivity.changee; this makes it visible to person merges and so
         # on.
-        "grantee_type": grant.grantee_type.title,
+        "changee_type": grant.grantee_type.title,
         "ref_pattern": grant.rule.ref_pattern,
         "can_create": grant.can_create,
         "can_push": grant.can_push,

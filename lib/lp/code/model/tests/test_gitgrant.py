@@ -113,7 +113,7 @@ class TestGitGrant(TestCaseWithFactory):
             what_changed=Equals(GitActivityType.GRANT_ADDED),
             old_value=Is(None),
             new_value=MatchesDict({
-                "grantee_type": Equals("Person"),
+                "changee_type": Equals("Person"),
                 "ref_pattern": Equals("refs/heads/*"),
                 "can_create": Is(False),
                 "can_push": Is(True),
@@ -141,14 +141,14 @@ class TestGitGrant(TestCaseWithFactory):
             changee=Is(None),
             what_changed=Equals(GitActivityType.GRANT_CHANGED),
             old_value=MatchesDict({
-                "grantee_type": Equals("Repository owner"),
+                "changee_type": Equals("Repository owner"),
                 "ref_pattern": Equals("refs/heads/*"),
                 "can_create": Is(True),
                 "can_push": Is(False),
                 "can_force_push": Is(False),
                 }),
             new_value=MatchesDict({
-                "grantee_type": Equals("Repository owner"),
+                "changee_type": Equals("Repository owner"),
                 "ref_pattern": Equals("refs/heads/*"),
                 "can_create": Is(False),
                 "can_push": Is(False),
@@ -170,7 +170,7 @@ class TestGitGrant(TestCaseWithFactory):
             changee=Equals(grantee),
             what_changed=Equals(GitActivityType.GRANT_REMOVED),
             old_value=MatchesDict({
-                "grantee_type": Equals("Person"),
+                "changee_type": Equals("Person"),
                 "ref_pattern": Equals("refs/heads/*"),
                 "can_create": Is(True),
                 "can_push": Is(True),
