@@ -270,8 +270,6 @@ class IGitRepositoryView(IHasRecipes):
 
     grants = Attribute("The access grants for this repository.")
 
-    activity = Attribute("The activity log entries for this repository.")
-
     @operation_parameters(
         path=TextLine(title=_("A string to look up as a path.")))
     # Really IGitRef, patched in _schema_circular_imports.py.
@@ -622,6 +620,12 @@ class IGitRepositoryView(IHasRecipes):
         :param old: The OID of the old commit.
         :param new: The OID of the new commit.
         :return: The diff as a binary string.
+        """
+
+    def getActivity():
+        """Get activity log entries for this repository.
+
+        :return: A `ResultSet` of `IGitActivity`.
         """
 
 

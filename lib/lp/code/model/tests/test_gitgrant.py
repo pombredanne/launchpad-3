@@ -106,7 +106,7 @@ class TestGitGrant(TestCaseWithFactory):
         repository = self.factory.makeGitRepository(owner=owner)
         grant = self.factory.makeGitGrant(
             repository=repository, grantor=member, can_push=True)
-        self.assertThat(repository.activity.first(), MatchesStructure(
+        self.assertThat(repository.getActivity().first(), MatchesStructure(
             repository=Equals(repository),
             changer=Equals(member),
             changee=Equals(grant.grantee),
@@ -135,7 +135,7 @@ class TestGitGrant(TestCaseWithFactory):
             notify(ObjectModifiedEvent(
                 grant, grant_before_modification,
                 ["can_create", "can_force_push"]))
-        self.assertThat(repository.activity.first(), MatchesStructure(
+        self.assertThat(repository.getActivity().first(), MatchesStructure(
             repository=Equals(repository),
             changer=Equals(member),
             changee=Is(None),
@@ -164,7 +164,7 @@ class TestGitGrant(TestCaseWithFactory):
         grantee = grant.grantee
         with person_logged_in(member):
             grant.destroySelf(member)
-        self.assertThat(repository.activity.first(), MatchesStructure(
+        self.assertThat(repository.getActivity().first(), MatchesStructure(
             repository=Equals(repository),
             changer=Equals(member),
             changee=Equals(grantee),

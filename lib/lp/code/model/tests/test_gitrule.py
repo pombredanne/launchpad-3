@@ -107,7 +107,7 @@ class TestGitRule(TestCaseWithFactory):
         self.factory.makeGitRule(
             repository=repository, ref_pattern="refs/heads/stable/*",
             creator=member)
-        self.assertThat(repository.activity.one(), MatchesStructure(
+        self.assertThat(repository.getActivity().one(), MatchesStructure(
             repository=Equals(repository),
             changer=Equals(member),
             changee=Is(None),
@@ -127,7 +127,7 @@ class TestGitRule(TestCaseWithFactory):
             rule.ref_pattern = "refs/heads/other/*"
             notify(ObjectModifiedEvent(
                 rule, rule_before_modification, ["ref_pattern"]))
-        self.assertThat(repository.activity.first(), MatchesStructure(
+        self.assertThat(repository.getActivity().first(), MatchesStructure(
             repository=Equals(repository),
             changer=Equals(member),
             changee=Is(None),
@@ -144,7 +144,7 @@ class TestGitRule(TestCaseWithFactory):
             repository=repository, ref_pattern="refs/heads/*")
         with person_logged_in(member):
             rule.destroySelf(member)
-        self.assertThat(repository.activity.first(), MatchesStructure(
+        self.assertThat(repository.getActivity().first(), MatchesStructure(
             repository=Equals(repository),
             changer=Equals(member),
             changee=Is(None),

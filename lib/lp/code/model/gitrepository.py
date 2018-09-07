@@ -1162,12 +1162,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         """See `IGitRepository`."""
         return Store.of(self).find(GitGrant, GitGrant.repository_id == self.id)
 
-    @property
-    def activity(self):
+    def getActivity(self):
         """See `IGitRepository`."""
-        rows = Store.of(self).find(
-            GitActivity, GitActivity.repository_id == self.id)
-        return rows.order_by(
+        clauses = [GitActivity.repository_id == self.id]
+        return Store.of(self).find(GitActivity, *clauses).order_by(
             Desc(GitActivity.date_changed), Desc(GitActivity.id))
 
     def canBeDeleted(self):
