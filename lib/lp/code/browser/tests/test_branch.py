@@ -568,7 +568,7 @@ class TestBranchView(BrowserTestCase):
         view = create_view(branch, '+index')
         with StormStatementRecorder() as recorder:
             view.landing_candidates
-        self.assertThat(recorder, HasQueryCount(Equals(13)))
+        self.assertThat(recorder, HasQueryCount(Equals(14)))
 
     def test_query_count_landing_targets(self):
         product = self.factory.makeProduct()
@@ -586,7 +586,7 @@ class TestBranchView(BrowserTestCase):
         view = create_view(branch, '+index')
         with StormStatementRecorder() as recorder:
             view.landing_targets
-        self.assertThat(recorder, HasQueryCount(Equals(12)))
+        self.assertThat(recorder, HasQueryCount(Equals(13)))
 
     def test_query_count_subscriber_content(self):
         branch = self.factory.makeBranch()
