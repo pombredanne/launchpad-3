@@ -12,7 +12,10 @@ __all__ = [
     ]
 
 from lazr.restful.fields import Reference
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Choice,
     Datetime,
@@ -54,6 +57,9 @@ class IGitActivity(Interface):
         title=_("Changee"), required=False, readonly=True,
         vocabulary="ValidPersonOrTeam",
         description=_("The person or team that this change was applied to."))
+
+    changee_description = Attribute(
+        "A human-readable description of the changee.")
 
     what_changed = Choice(
         title=_("What changed"), required=True, readonly=True,

@@ -238,7 +238,7 @@ def git_repository_modified(repository, event):
     """
     if event.edited_fields:
         repository.date_last_modified = UTC_NOW
-        send_git_repository_modified_notifications(repository, event)
+    send_git_repository_modified_notifications(repository, event)
 
 
 @implementer(IGitRepository, IHasOwner, IPrivacy, IInformationType)
@@ -1162,9 +1162,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         """See `IGitRepository`."""
         return Store.of(self).find(GitGrant, GitGrant.repository_id == self.id)
 
-    def getActivity(self):
+    def getActivity(self, changed_after=None):
         """See `IGitRepository`."""
         clauses = [GitActivity.repository_id == self.id]
+        if changed_after is not None:
+            clauses.append(GitActivity.date_changed > changed_after)
         return Store.of(self).find(GitActivity, *clauses).order_by(
             Desc(GitActivity.date_changed), Desc(GitActivity.id))
 

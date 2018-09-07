@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repositories."""
@@ -838,6 +838,7 @@ class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
         # Attribute modifications send mail to subscribers.
         self.assertEqual(0, len(stub.test_emails))
         repository = self.factory.makeGitRepository(name="foo")
+        transaction.commit()
         repository_before_modification = Snapshot(
             repository, providing=providedBy(repository))
         with person_logged_in(repository.owner):
@@ -848,6 +849,7 @@ class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
                 CodeReviewNotificationLevel.NOEMAIL,
                 repository.owner)
             repository.setName("bar", repository.owner)
+            repository.addRule("refs/heads/stable/*", repository.owner)
             notify(ObjectModifiedEvent(
                 repository, repository_before_modification, ["name"],
                 user=repository.owner))
@@ -857,12 +859,13 @@ class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
         self.assertEqual(1, len(stub.test_emails))
         message = email.message_from_string(stub.test_emails[0][2])
         body = message.get_payload(decode=True)
-        self.assertIn("Name: foo => bar\n", body)
-        self.assertIn(
-            "Git identity: lp:~{person}/{project}/+git/foo => "
-            "lp:~{person}/{project}/+git/bar\n".format(
+        self.assertEqual(
+            "    Name: foo => bar\n"
+            "    Git identity: lp:~{person}/{project}/+git/foo => "
+            "lp:~{person}/{project}/+git/bar\n"
+            "    Added protected ref: refs/heads/stable/*".format(
                 person=repository.owner.name, project=repository.target.name),
-            body)
+            body.split("\n\n--\n")[0])
 
     # XXX cjwatson 2015-02-04: This will need to be expanded once Launchpad
     # actually notices any interesting kind of repository modifications.

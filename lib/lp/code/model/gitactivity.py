@@ -72,6 +72,17 @@ class GitActivity(StormBase):
         self.old_value = old_value
         self.new_value = new_value
 
+    @property
+    def changee_description(self):
+        if self.changee is not None:
+            return "~" + self.changee.name
+        elif self.new_value is not None and "changee_type" in self.new_value:
+            return self.new_value["changee_type"].lower()
+        elif self.old_value is not None and "changee_type" in self.old_value:
+            return self.old_value["changee_type"].lower()
+        else:
+            return None
+
 
 def _make_rule_value(rule):
     return {"ref_pattern": rule.ref_pattern}

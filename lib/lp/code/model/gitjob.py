@@ -1,9 +1,10 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 __all__ = [
+    'describe_repository_delta',
     'GitJob',
     'GitJobType',
     'GitRefScanJob',
@@ -32,6 +33,7 @@ from zope.interface import (
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
+from lp.code.enums import GitActivityType
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import (
     IGitJob,
@@ -57,6 +59,7 @@ from lp.services.database.locking import (
     )
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
+from lp.services.helpers import english_list
 from lp.services.job.model.job import (
     EnumeratedSubclass,
     Job,
@@ -298,6 +301,51 @@ class ReclaimGitRepositorySpaceJob(GitJobDerived):
         getUtility(IGitHostingClient).delete(self.repository_path, logger=log)
 
 
+activity_descriptions = {
+    GitActivityType.RULE_ADDED: "Added protected ref: {new[ref_pattern]}",
+    GitActivityType.RULE_CHANGED: (
+        "Changed protected ref: {old[ref_pattern]} => {new[ref_pattern]}"),
+    GitActivityType.RULE_REMOVED: "Removed protected ref: {old[ref_pattern]}",
+    GitActivityType.GRANT_ADDED: (
+        "Added access for {changee} to {new[ref_pattern]}: {new_grants}"),
+    GitActivityType.GRANT_CHANGED: (
+        "Changed access for {changee} to {new[ref_pattern]}: "
+        "{old_grants} => {new_grants}"),
+    GitActivityType.GRANT_REMOVED: (
+        "Removed access for {changee} to {old[ref_pattern]}: {old_grants}"),
+    }
+
+
+def describe_grants(activity_value):
+    output = []
+    if activity_value is not None:
+        if activity_value.get("can_create"):
+            output.append("create")
+        if activity_value.get("can_push"):
+            output.append("push")
+        if activity_value.get("can_force_push"):
+            output.append("force-push")
+    return english_list(output)
+
+
+def describe_repository_delta(repository_delta):
+    output = text_delta(
+        repository_delta, repository_delta.delta_values,
+        repository_delta.new_values, repository_delta.interface).split("\n")
+    if output and not output[-1]:  # text_delta returned empty string
+        output.pop()
+    indent = " " * 4
+    for activity in repository_delta.activities:
+        if activity.what_changed in activity_descriptions:
+            description = activity_descriptions[activity.what_changed].format(
+                old=activity.old_value, new=activity.new_value,
+                changee=activity.changee_description,
+                old_grants=describe_grants(activity.old_value),
+                new_grants=describe_grants(activity.new_value))
+            output.append(indent + description)
+    return "\n".join(output)
+
+
 @implementer(IGitRepositoryModifiedMailJob)
 @provider(IGitRepositoryModifiedMailJobSource)
 class GitRepositoryModifiedMailJob(GitJobDerived):
@@ -312,9 +360,7 @@ class GitRepositoryModifiedMailJob(GitJobDerived):
         """See `IGitRepositoryModifiedMailJobSource`."""
         metadata = {
             "user": user.id,
-            "repository_delta": text_delta(
-                repository_delta, repository_delta.delta_values,
-                repository_delta.new_values, repository_delta.interface),
+            "repository_delta": describe_repository_delta(repository_delta),
             }
         git_job = GitJob(repository, cls.class_job_type, metadata)
         job = cls(git_job)

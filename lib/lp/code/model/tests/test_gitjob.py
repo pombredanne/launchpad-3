@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `GitJob`s."""
@@ -13,6 +13,8 @@ from datetime import (
     )
 import hashlib
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from testtools.matchers import (
     ContainsDict,
@@ -21,9 +23,16 @@ from testtools.matchers import (
     MatchesSetwise,
     MatchesStructure,
     )
+import transaction
+from zope.event import notify
+from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.enums import GitObjectType
+from lp.code.adapters.gitrepository import GitRepositoryDelta
+from lp.code.enums import (
+    GitGranteeType,
+    GitObjectType,
+    )
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_WEBHOOKS_FEATURE_FLAG,
     )
@@ -33,6 +42,7 @@ from lp.code.interfaces.gitjob import (
     IReclaimGitRepositorySpaceJob,
     )
 from lp.code.model.gitjob import (
+    describe_repository_delta,
     GitJob,
     GitJobDerived,
     GitJobType,
@@ -46,6 +56,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.job.runner import JobRunner
 from lp.services.webapp import canonical_url
 from lp.testing import (
+    person_logged_in,
     TestCaseWithFactory,
     time_counter,
     )
@@ -336,6 +347,111 @@ class TestReclaimGitRepositorySpaceJob(TestCaseWithFactory):
         with dbuser("branchscanner"):
             JobRunner([job]).runAll()
         self.assertEqual([(path,)], hosting_fixture.delete.extract_args())
+
+
+class TestDescribeRepositoryDelta(TestCaseWithFactory):
+    """Tests for `describe_repository_delta`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def assertDeltaDescriptionEqual(self, expected, snapshot, repository):
+        repository_delta = GitRepositoryDelta.construct(
+            snapshot, repository, repository.owner)
+        self.assertEqual(
+            "\n".join("    %s" % line for line in expected),
+            describe_repository_delta(repository_delta))
+
+    def test_change_basic_properties(self):
+        repository = self.factory.makeGitRepository(name="foo")
+        transaction.commit()
+        snapshot = Snapshot(repository, providing=providedBy(repository))
+        with person_logged_in(repository.owner):
+            repository.setName("bar", repository.owner)
+        expected = [
+            "Name: foo => bar",
+            "Git identity: lp:~{person}/{project}/+git/foo => "
+            "lp:~{person}/{project}/+git/bar".format(
+                person=repository.owner.name, project=repository.target.name),
+            ]
+        self.assertDeltaDescriptionEqual(expected, snapshot, repository)
+
+    def test_add_rule(self):
+        repository = self.factory.makeGitRepository()
+        transaction.commit()
+        snapshot = Snapshot(repository, providing=providedBy(repository))
+        with person_logged_in(repository.owner):
+            repository.addRule("refs/heads/*", repository.owner)
+        self.assertDeltaDescriptionEqual(
+            ["Added protected ref: refs/heads/*"], snapshot, repository)
+
+    def test_change_rule(self):
+        repository = self.factory.makeGitRepository()
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/foo")
+        transaction.commit()
+        snapshot = Snapshot(repository, providing=providedBy(repository))
+        rule_snapshot = Snapshot(rule, providing=providedBy(rule))
+        with person_logged_in(repository.owner):
+            rule.ref_pattern = "refs/heads/bar"
+            notify(ObjectModifiedEvent(rule, rule_snapshot, ["ref_pattern"]))
+        self.assertDeltaDescriptionEqual(
+            ["Changed protected ref: refs/heads/foo => refs/heads/bar"],
+            snapshot, repository)
+
+    def test_remove_rule(self):
+        repository = self.factory.makeGitRepository()
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        transaction.commit()
+        snapshot = Snapshot(repository, providing=providedBy(repository))
+        with person_logged_in(repository.owner):
+            rule.destroySelf(repository.owner)
+        self.assertDeltaDescriptionEqual(
+            ["Removed protected ref: refs/heads/*"], snapshot, repository)
+
+    def test_add_grant(self):
+        repository = self.factory.makeGitRepository()
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        transaction.commit()
+        snapshot = Snapshot(repository, providing=providedBy(repository))
+        with person_logged_in(repository.owner):
+            rule.addGrant(
+                GitGranteeType.REPOSITORY_OWNER, repository.owner,
+                can_create=True, can_push=True, can_force_push=True)
+        self.assertDeltaDescriptionEqual(
+            ["Added access for repository owner to refs/heads/*: "
+             "create, push, and force-push"],
+            snapshot, repository)
+
+    def test_change_grant(self):
+        repository = self.factory.makeGitRepository()
+        grant = self.factory.makeGitGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            can_create=True)
+        transaction.commit()
+        snapshot = Snapshot(repository, providing=providedBy(repository))
+        grant_snapshot = Snapshot(grant, providing=providedBy(grant))
+        with person_logged_in(repository.owner):
+            grant.can_push = True
+            notify(ObjectModifiedEvent(grant, grant_snapshot, ["can_push"]))
+        self.assertDeltaDescriptionEqual(
+            ["Changed access for ~{grantee} to refs/heads/*: "
+             "create => create and push".format(grantee=grant.grantee.name)],
+            snapshot, repository)
+
+    def test_remove_grant(self):
+        repository = self.factory.makeGitRepository()
+        grant = self.factory.makeGitGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=GitGranteeType.REPOSITORY_OWNER, can_push=True)
+        transaction.commit()
+        snapshot = Snapshot(repository, providing=providedBy(repository))
+        with person_logged_in(repository.owner):
+            grant.destroySelf(repository.owner)
+        self.assertDeltaDescriptionEqual(
+            ["Removed access for repository owner to refs/heads/*: push"],
+            snapshot, repository)
 
 
 # XXX cjwatson 2015-03-12: We should test that the jobs work via Celery too,
