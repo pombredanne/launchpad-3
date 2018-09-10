@@ -33,7 +33,10 @@ from lp.services.job.interfaces.job import (
     IJobSource,
     IRunnableJob,
     )
-from lp.snappy.interfaces.snap import ISnap
+from lp.snappy.interfaces.snap import (
+    ISnap,
+    ISnapBuildRequest,
+    )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.interfaces.archive import IArchive
 
@@ -86,6 +89,10 @@ class ISnapRequestBuildsJob(IRunnableJob):
     error_message = TextLine(
         title=_("Error message resulting from running this job."),
         required=False, readonly=True)
+
+    build_request = Reference(
+        title=_("The build request corresponding to this job."),
+        schema=ISnapBuildRequest, required=True, readonly=True)
 
     builds = List(
         title=_("The builds created by this request."),
