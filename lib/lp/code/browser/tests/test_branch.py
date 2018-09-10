@@ -598,7 +598,7 @@ class TestBranchView(BrowserTestCase):
             branch, '+branch-portlet-subscriber-content')
         with StormStatementRecorder() as recorder:
             view.render()
-        self.assertThat(recorder, HasQueryCount(Equals(9)))
+        self.assertThat(recorder, HasQueryCount(Equals(6)))
 
     def test_query_count_index_with_subscribers(self):
         branch = self.factory.makeBranch()

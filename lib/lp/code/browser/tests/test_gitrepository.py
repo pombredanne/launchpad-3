@@ -13,7 +13,11 @@ from textwrap import dedent
 
 from fixtures import FakeLogger
 import pytz
-from testtools.matchers import DocTestMatches
+from storm.store import Store
+from testtools.matchers import (
+    DocTestMatches,
+    Equals,
+    )
 import transaction
 from zope.component import getUtility
 from zope.formlib.itemswidgets import ItemDisplayWidget
@@ -48,6 +52,7 @@ from lp.testing import (
     logout,
     person_logged_in,
     record_two_runs,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.layers import (
@@ -374,6 +379,18 @@ class TestGitRepositoryView(BrowserTestCase):
                     source_repository, user=source_repository.owner)
                 self.assertIsNone(
                     find_tag_by_id(browser.contents, 'landing-targets'))
+
+    def test_query_count_subscriber_content(self):
+        repository = self.factory.makeGitRepository()
+        for _ in range(10):
+            self.factory.makeGitSubscription(repository=repository)
+        Store.of(repository).flush()
+        Store.of(repository).invalidate()
+        view = create_initialized_view(
+            repository, "+repository-portlet-subscriber-content")
+        with StormStatementRecorder() as recorder:
+            view.render()
+        self.assertThat(recorder, HasQueryCount(Equals(6)))
 
 
 class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
