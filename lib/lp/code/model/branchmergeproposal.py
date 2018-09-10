@@ -1362,10 +1362,6 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             repository.owner_id for repository in repositories
             if repository.id in git_repository_ids)
 
-        # Pre-load Person and ValidPersonCache.
-        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-            person_ids, need_validity=True))
-
         # Pre-load branches'/repositories' data.
         if branches:
             GenericBranchCollection.preloadDataForBranches(branches)
@@ -1382,11 +1378,14 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
                 get_property_cache(mp).votes = votes
             comments = load_related(CodeReviewComment, votes, ['commentID'])
             load_related(Message, comments, ['messageID'])
-            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                [vote.reviewerID for vote in votes], need_validity=True))
+            person_ids.update(vote.reviewerID for vote in votes)
 
             # we also provide a summary of diffs, so load them
             load_related(LibraryFileAlias, diffs, ['diff_textID'])
+
+        # Pre-load Person and ValidPersonCache.
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True))
 
 
 @implementer(IBranchMergeProposalGetter)
