@@ -123,13 +123,14 @@ class TestSnapRequestBuildsJob(TestCaseWithFactory):
                 GreaterThan(expected_date_created), LessThan(now)),
             error_message=Is(None),
             builds=AfterPreprocessing(set, MatchesSetwise(*[
-                MatchesStructure.byEquality(
-                    requester=snap.registrant,
-                    snap=snap,
-                    archive=distroseries.main_archive,
-                    distro_arch_series=distroseries[arch],
-                    pocket=PackagePublishingPocket.RELEASE,
-                    channels={"core": "stable"})
+                MatchesStructure(
+                    build_request=MatchesStructure.byEquality(id=job.job.id),
+                    requester=Equals(snap.registrant),
+                    snap=Equals(snap),
+                    archive=Equals(distroseries.main_archive),
+                    distro_arch_series=Equals(distroseries[arch]),
+                    pocket=Equals(PackagePublishingPocket.RELEASE),
+                    channels=Equals({"core": "stable"}))
                 for arch in ("avr2001", "x32")]))))
 
     def test_run_failed(self):

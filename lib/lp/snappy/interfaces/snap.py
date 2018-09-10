@@ -375,7 +375,7 @@ class ISnapView(Interface):
     @export_factory_operation(Interface, [])
     @operation_for_version("devel")
     def requestBuild(requester, archive, distro_arch_series, pocket,
-                     channels=None):
+                     channels=None, build_request=None):
         """Request that the snap package be built.
 
         :param requester: The person requesting the build.
@@ -384,6 +384,8 @@ class ISnapView(Interface):
         :param pocket: The pocket that should be targeted.
         :param channels: A dictionary mapping snap names to channels to use
             for this build.
+        :param build_request: The `ISnapBuildRequest` job being processed,
+            if any.
         :return: `ISnapBuild`.
         """
 
@@ -417,7 +419,7 @@ class ISnapView(Interface):
 
     def requestBuildsFromJob(requester, archive, pocket, channels=None,
                              allow_failures=False, fetch_snapcraft_yaml=True,
-                             logger=None):
+                             build_request=None, logger=None):
         """Synchronous part of `Snap.requestBuilds`.
 
         Request that the snap package be built for relevant architectures.
@@ -434,6 +436,8 @@ class ISnapView(Interface):
             appropriate branch or repository and use it to decide which
             builds to request; if False, fall back to building for all
             supported architectures.
+        :param build_request: The `ISnapBuildRequest` job being processed,
+            if any.
         :param logger: An optional logger.
         :return: A sequence of `ISnapBuild` instances.
         """

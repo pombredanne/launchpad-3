@@ -20,6 +20,7 @@ from pymacaroons import Macaroon
 import pytz
 from testtools.matchers import (
     Equals,
+    Is,
     MatchesDict,
     MatchesStructure,
     )
@@ -241,6 +242,7 @@ class TestSnapBuild(TestCaseWithFactory):
             "action": Equals("status-changed"),
             "snap": Equals(
                 canonical_url(self.build.snap, force_local_path=True)),
+            "build_request": Is(None),
             "status": Equals("Successfully built"),
             "store_upload_status": Equals("Unscheduled"),
             }
@@ -516,6 +518,7 @@ class TestSnapBuild(TestCaseWithFactory):
             "action": Equals("status-changed"),
             "snap": Equals(
                 canonical_url(self.build.snap, force_local_path=True)),
+            "build_request": Is(None),
             "status": Equals("Successfully built"),
             "store_upload_status": Equals("Pending"),
             }

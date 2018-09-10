@@ -1,4 +1,4 @@
-# Copyright 2016-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for snap build jobs."""
@@ -12,6 +12,7 @@ from datetime import timedelta
 from fixtures import FakeLogger
 from testtools.matchers import (
     Equals,
+    Is,
     MatchesDict,
     MatchesListwise,
     MatchesStructure,
@@ -125,6 +126,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
             "action": Equals("status-changed"),
             "snap": Equals(
                 canonical_url(snapbuild.snap, force_local_path=True)),
+            "build_request": Is(None),
             "status": Equals("Successfully built"),
             "store_upload_status": Equals(expected),
             } for expected in expected_store_upload_statuses]
