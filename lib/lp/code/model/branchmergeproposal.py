@@ -124,6 +124,10 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.librarian.model import LibraryFileAlias
 from lp.services.mail.sendmail import validate_message
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -1018,8 +1022,6 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             if not subject.startswith('Re: '):
                 subject = 'Re: ' + subject
 
-        # Avoid circular dependencies.
-        from lp.services.messages.model.message import Message, MessageChunk
         msgid = make_msgid('codereview')
         message = Message(
             parent=parent_message, owner=owner, rfc822msgid=msgid,
@@ -1360,10 +1362,6 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             repository.owner_id for repository in repositories
             if repository.id in git_repository_ids)
 
-        # Pre-load Person and ValidPersonCache.
-        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-            person_ids, need_validity=True))
-
         # Pre-load branches'/repositories' data.
         if branches:
             GenericBranchCollection.preloadDataForBranches(branches)
@@ -1373,14 +1371,21 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         # if we need to include a vote summary, we should precache
         # that data too
         if include_votes:
-            vote_list = list(load_referencing(
+            votes = load_referencing(
                 CodeReviewVoteReference, branch_merge_proposals,
-                ['branch_merge_proposalID']))
+                ['branch_merge_proposalID'])
             for mp in branch_merge_proposals:
-                get_property_cache(mp).votes = vote_list
+                get_property_cache(mp).votes = votes
+            comments = load_related(CodeReviewComment, votes, ['commentID'])
+            load_related(Message, comments, ['messageID'])
+            person_ids.update(vote.reviewerID for vote in votes)
 
             # we also provide a summary of diffs, so load them
             load_related(LibraryFileAlias, diffs, ['diff_textID'])
+
+        # Pre-load Person and ValidPersonCache.
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True))
 
 
 @implementer(IBranchMergeProposalGetter)

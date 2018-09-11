@@ -30,6 +30,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchMergeProposalStatus,
+    CodeReviewVote,
     GitRepositoryType,
     )
 from lp.code.interfaces.revision import IRevisionSet
@@ -301,6 +302,8 @@ class TestGitRepositoryView(BrowserTestCase):
                 target_ref=git_refs[0],
                 set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
             self.factory.makePreviewDiff(merge_proposal=bmp)
+            self.factory.makeCodeReviewComment(
+                vote=CodeReviewVote.APPROVE, merge_proposal=bmp)
 
         recorder1, recorder2 = record_two_runs(
             login_and_view,
@@ -344,6 +347,8 @@ class TestGitRepositoryView(BrowserTestCase):
                 source_ref=source_git_ref,
                 set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
             self.factory.makePreviewDiff(merge_proposal=bmp)
+            self.factory.makeCodeReviewComment(
+                vote=CodeReviewVote.APPROVE, merge_proposal=bmp)
 
         def login_and_view():
             with FeatureFixture({"code.git.show_repository_mps": "on"}):
@@ -357,7 +362,12 @@ class TestGitRepositoryView(BrowserTestCase):
             login_and_view,
             create_merge_proposal,
             2)
-        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+        # XXX cjwatson 2018-09-10: There is currently one extra
+        # TeamParticipation query per reviewer (at least in this test setup)
+        # due to GitRepository.isPersonTrustedReviewer.  Fixing this
+        # probably requires a suitable helper to update Person._inTeam_cache
+        # in bulk.
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count + 2)))
 
     def test_view_with_inactive_landing_targets(self):
         product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
