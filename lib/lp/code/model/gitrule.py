@@ -83,6 +83,27 @@ class GitRule(StormBase):
         return "<GitRule '%s'> for %r" % (self.ref_pattern, self.repository)
 
     @property
+    def position(self):
+        """See `IGitRule`."""
+        rule_order = self.repository.rule_order
+        if not rule_order:
+            raise AssertionError("%r has no access rules" % self.repository)
+        try:
+            return rule_order.index(self.id)
+        except ValueError:
+            raise AssertionError(
+                "%r is not in rule_order for %r" % (self, self.repository))
+
+    def move(self, position):
+        """See `IGitRule`."""
+        if position < 0:
+            raise ValueError("Negative positions are not supported")
+        current_position = self.position
+        if position != current_position:
+            del self.repository.rule_order[current_position]
+            self.repository.rule_order.insert(position, self.id)
+
+    @property
     def grants(self):
         """See `IGitRule`."""
         return Store.of(self).find(GitGrant, GitGrant.rule_id == self.id)
