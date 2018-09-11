@@ -94,28 +94,33 @@ def _make_grant_value(grant):
 class GitActivitySet:
 
     def logRuleAdded(self, rule, user):
+        """See `IGitActivitySet`."""
         return GitActivity(
             rule.repository, user, GitActivityType.RULE_ADDED,
             new_value=_make_rule_value(rule))
 
     def logRuleChanged(self, old_rule, new_rule, user):
+        """See `IGitActivitySet`."""
         return GitActivity(
             new_rule.repository, user, GitActivityType.RULE_CHANGED,
             old_value=_make_rule_value(old_rule),
             new_value=_make_rule_value(new_rule))
 
     def logRuleRemoved(self, rule, user):
+        """See `IGitActivitySet`."""
         return GitActivity(
             rule.repository, user, GitActivityType.RULE_REMOVED,
             old_value=_make_rule_value(rule))
 
     def logGrantAdded(self, grant, user):
+        """See `IGitActivitySet`."""
         return GitActivity(
             grant.repository, user, GitActivityType.GRANT_ADDED,
             changee=grant.grantee,
             new_value=_make_grant_value(grant))
 
     def logGrantChanged(self, old_grant, new_grant, user):
+        """See `IGitActivitySet`."""
         return GitActivity(
             new_grant.repository, user, GitActivityType.GRANT_CHANGED,
             changee=new_grant.grantee,
@@ -123,6 +128,7 @@ class GitActivitySet:
             new_value=_make_grant_value(new_grant))
 
     def logGrantRemoved(self, grant, user):
+        """See `IGitActivitySet`."""
         return GitActivity(
             grant.repository, user, GitActivityType.GRANT_REMOVED,
             changee=grant.grantee,
