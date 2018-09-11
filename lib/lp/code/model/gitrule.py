@@ -94,7 +94,7 @@ class GitRule(StormBase):
             raise AssertionError(
                 "%r is not in rule_order for %r" % (self, self.repository))
 
-    def move(self, position):
+    def move(self, position, user):
         """See `IGitRule`."""
         if position < 0:
             raise ValueError("Negative positions are not supported")
@@ -102,6 +102,8 @@ class GitRule(StormBase):
         if position != current_position:
             del self.repository.rule_order[current_position]
             self.repository.rule_order.insert(position, self.id)
+            getUtility(IGitActivitySet).logRuleMoved(
+                self, current_position, position, user)
 
     @property
     def grants(self):

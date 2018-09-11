@@ -209,6 +209,8 @@ class GitActivityType(DBEnumeratedType):
 
     RULE_REMOVED = DBItem(3, "Removed access rule")
 
+    RULE_MOVED = DBItem(4, "Moved access rule")
+
     GRANT_ADDED = DBItem(11, "Added access grant")
 
     GRANT_CHANGED = DBItem(12, "Changed access grant")

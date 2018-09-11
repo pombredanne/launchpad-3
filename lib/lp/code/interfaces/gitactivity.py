@@ -99,6 +99,16 @@ class IGitActivitySet(Interface):
         :return: The new `IGitActivity`.
         """
 
+    def logRuleMoved(rule, old_position, new_position, user):
+        """Log that an access rule was moved to a different position.
+
+        :param rule: The `IGitRule` that was moved.
+        :param old_position: The old position in its repository's order.
+        :param new_position: The new position in its repository's order.
+        :param user: The `IPerson` who moved it.
+        :return: The new `IGitActivity`.
+        """
+
     def logGrantAdded(grant, user):
         """Log that an access grant was added.
 

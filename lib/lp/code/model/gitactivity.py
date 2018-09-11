@@ -73,8 +73,11 @@ class GitActivity(StormBase):
         self.new_value = new_value
 
 
-def _make_rule_value(rule):
-    return {"ref_pattern": rule.ref_pattern}
+def _make_rule_value(rule, position=None):
+    return {
+        "ref_pattern": rule.ref_pattern,
+        "position": position if position is not None else rule.position,
+        }
 
 
 def _make_grant_value(grant):
@@ -111,6 +114,13 @@ class GitActivitySet:
         return GitActivity(
             rule.repository, user, GitActivityType.RULE_REMOVED,
             old_value=_make_rule_value(rule))
+
+    def logRuleMoved(self, rule, old_position, new_position, user):
+        """See `IGitActivitySet`."""
+        return GitActivity(
+            rule.repository, user, GitActivityType.RULE_MOVED,
+            old_value=_make_rule_value(rule, position=old_position),
+            new_value=_make_rule_value(rule, position=new_position))
 
     def logGrantAdded(self, grant, user):
         """See `IGitActivitySet`."""
