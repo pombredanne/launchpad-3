@@ -74,7 +74,7 @@ class IGitActivity(Interface):
 class IGitActivitySet(Interface):
     """Utilities for managing Git repository activity log entries."""
 
-    def logRuleAdded(grant, user):
+    def logRuleAdded(rule, user):
         """Log that an access rule was added.
 
         :param rule: The `IGitRule` that was added.
@@ -82,7 +82,7 @@ class IGitActivitySet(Interface):
         :return: The new `IGitActivity`.
         """
 
-    def logRuleChanged(old_grant, new_grant, user):
+    def logRuleChanged(old_rule, new_rule, user):
         """Log that an access rule was changed.
 
         :param old_rule: The `IGitRule` before the change.
@@ -91,7 +91,7 @@ class IGitActivitySet(Interface):
         :return: The new `IGitActivity`.
         """
 
-    def logRuleRemoved(grant, user):
+    def logRuleRemoved(rule, user):
         """Log that an access rule was removed.
 
         :param rule: The `IGitRule` that was removed.
