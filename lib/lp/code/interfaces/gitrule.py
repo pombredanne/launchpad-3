@@ -45,6 +45,9 @@ class IGitRuleView(Interface):
         title=_("Date created"), required=True, readonly=True,
         description=_("The time when this rule was created."))
 
+    position = Attribute(
+        "The position of this rule in its repository's rule order.")
+
     grants = Attribute("The access grants for this rule.")
 
 
@@ -65,6 +68,14 @@ class IGitRuleEditableAttributes(Interface):
 
 class IGitRuleEdit(Interface):
     """`IGitRule` attributes that require launchpad.Edit."""
+
+    def move(position):
+        """Move this rule to a new position in its repository's rule order.
+
+        :param position: The new position.  For example, 0 puts the rule at
+            the start, while `len(repository.rules)` puts the rule at the
+            end.
+        """
 
     def addGrant(grantee, grantor, can_create=False, can_push=False,
                  can_force_push=False):

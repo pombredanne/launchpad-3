@@ -19,6 +19,7 @@ from lp.code.enums import GitGranteeType
 from lp.code.interfaces.gitrule import IGitRule
 from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.testing import (
+    person_logged_in,
     TestCaseWithFactory,
     verifyObject,
     )
@@ -53,6 +54,40 @@ class TestGitRule(TestCaseWithFactory):
         rule = self.factory.makeGitRule(repository=repository)
         self.assertEqual(
             "<GitRule 'refs/heads/*'> for %r" % repository, repr(rule))
+
+    def test_position(self):
+        repository = self.factory.makeGitRepository()
+        rules = [
+            self.factory.makeGitRule(
+                repository=repository,
+                ref_pattern=self.factory.getUniqueUnicode(
+                    prefix="refs/heads/"))
+            for _ in range(2)]
+        for i, rule in enumerate(rules):
+            self.assertEqual(i, rule.position)
+
+    def test_move(self):
+        repository = self.factory.makeGitRepository()
+        rules = [
+            self.factory.makeGitRule(
+                repository=repository,
+                ref_pattern=self.factory.getUniqueUnicode(
+                    prefix="refs/heads/"))
+            for _ in range(4)]
+        with person_logged_in(repository.owner):
+            self.assertEqual(rules, repository.rules)
+            rules[0].move(3)
+            self.assertEqual(rules[1:] + [rules[0]], repository.rules)
+            rules[0].move(0)
+            self.assertEqual(rules, repository.rules)
+            rules[2].move(1)
+            self.assertEqual(
+                [rules[0], rules[2], rules[1], rules[3]], repository.rules)
+
+    def test_move_non_negative(self):
+        rule = self.factory.makeGitRule()
+        with person_logged_in(rule.repository.owner):
+            self.assertRaises(ValueError, rule.move, -1)
 
     def test_grants(self):
         rule = self.factory.makeGitRule()
