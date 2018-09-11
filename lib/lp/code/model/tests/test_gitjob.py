@@ -409,6 +409,20 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
         self.assertDeltaDescriptionEqual(
             ["Removed protected ref: refs/heads/*"], snapshot, repository)
 
+    def test_move_rule(self):
+        repository = self.factory.makeGitRepository()
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*")
+        transaction.commit()
+        snapshot = Snapshot(repository, providing=providedBy(repository))
+        with person_logged_in(repository.owner):
+            rule.move(1, repository.owner)
+        self.assertDeltaDescriptionEqual(
+            ["Moved rule for protected ref refs/heads/*: position 0 => 1"],
+            snapshot, repository)
+
     def test_add_grant(self):
         repository = self.factory.makeGitRepository()
         rule = self.factory.makeGitRule(

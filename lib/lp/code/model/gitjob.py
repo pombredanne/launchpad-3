@@ -306,6 +306,9 @@ activity_descriptions = {
     GitActivityType.RULE_CHANGED: (
         "Changed protected ref: {old[ref_pattern]} => {new[ref_pattern]}"),
     GitActivityType.RULE_REMOVED: "Removed protected ref: {old[ref_pattern]}",
+    GitActivityType.RULE_MOVED: (
+        "Moved rule for protected ref {new[ref_pattern]}: "
+        "position {old[position]} => {new[position]}"),
     GitActivityType.GRANT_ADDED: (
         "Added access for {changee} to {new[ref_pattern]}: {new_grants}"),
     GitActivityType.GRANT_CHANGED: (
