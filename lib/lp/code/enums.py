@@ -209,11 +209,13 @@ class GitActivityType(DBEnumeratedType):
 
     RULE_REMOVED = DBItem(3, "Removed access rule")
 
-    GRANT_ADDED = DBItem(4, "Added access grant")
+    RULE_MOVED = DBItem(4, "Moved access rule")
 
-    GRANT_CHANGED = DBItem(5, "Changed access grant")
+    GRANT_ADDED = DBItem(11, "Added access grant")
 
-    GRANT_REMOVED = DBItem(6, "Removed access grant")
+    GRANT_CHANGED = DBItem(12, "Changed access grant")
+
+    GRANT_REMOVED = DBItem(13, "Removed access grant")
 
 
 class BranchLifecycleStatusFilter(EnumeratedType):

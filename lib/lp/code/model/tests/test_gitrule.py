@@ -63,6 +63,41 @@ class TestGitRule(TestCaseWithFactory):
         self.assertEqual(
             "<GitRule 'refs/heads/*'> for %r" % repository, repr(rule))
 
+    def test_position(self):
+        repository = self.factory.makeGitRepository()
+        rules = [
+            self.factory.makeGitRule(
+                repository=repository,
+                ref_pattern=self.factory.getUniqueUnicode(
+                    prefix="refs/heads/"))
+            for _ in range(2)]
+        for i, rule in enumerate(rules):
+            self.assertEqual(i, rule.position)
+
+    def test_move(self):
+        repository = self.factory.makeGitRepository()
+        rules = [
+            self.factory.makeGitRule(
+                repository=repository,
+                ref_pattern=self.factory.getUniqueUnicode(
+                    prefix="refs/heads/"))
+            for _ in range(4)]
+        with person_logged_in(repository.owner):
+            self.assertEqual(rules, repository.rules)
+            rules[0].move(3, repository.owner)
+            self.assertEqual(rules[1:] + [rules[0]], repository.rules)
+            rules[0].move(0, repository.owner)
+            self.assertEqual(rules, repository.rules)
+            rules[2].move(1, repository.owner)
+            self.assertEqual(
+                [rules[0], rules[2], rules[1], rules[3]], repository.rules)
+
+    def test_move_non_negative(self):
+        rule = self.factory.makeGitRule()
+        with person_logged_in(rule.repository.owner):
+            self.assertRaises(
+                ValueError, rule.move, -1, rule.repository.owner)
+
     def test_grants(self):
         rule = self.factory.makeGitRule()
         other_rule = self.factory.makeGitRule(
@@ -104,17 +139,20 @@ class TestGitRule(TestCaseWithFactory):
         owner = self.factory.makeTeam()
         member = self.factory.makePerson(member_of=[owner])
         repository = self.factory.makeGitRepository(owner=owner)
+        self.factory.makeGitRule(repository=repository, creator=member)
         self.factory.makeGitRule(
             repository=repository, ref_pattern="refs/heads/stable/*",
             creator=member)
-        self.assertThat(repository.getActivity().one(), MatchesStructure(
+        self.assertThat(repository.getActivity().first(), MatchesStructure(
             repository=Equals(repository),
             changer=Equals(member),
             changee=Is(None),
             what_changed=Equals(GitActivityType.RULE_ADDED),
             old_value=Is(None),
-            new_value=MatchesDict(
-                {"ref_pattern": Equals("refs/heads/stable/*")})))
+            new_value=MatchesDict({
+                "ref_pattern": Equals("refs/heads/stable/*"),
+                "position": Equals(1),
+                })))
 
     def test_activity_rule_changed(self):
         owner = self.factory.makeTeam()
@@ -132,9 +170,14 @@ class TestGitRule(TestCaseWithFactory):
             changer=Equals(member),
             changee=Is(None),
             what_changed=Equals(GitActivityType.RULE_CHANGED),
-            old_value=MatchesDict({"ref_pattern": Equals("refs/heads/*")}),
-            new_value=MatchesDict(
-                {"ref_pattern": Equals("refs/heads/other/*")})))
+            old_value=MatchesDict({
+                "ref_pattern": Equals("refs/heads/*"),
+                "position": Equals(0),
+                }),
+            new_value=MatchesDict({
+                "ref_pattern": Equals("refs/heads/other/*"),
+                "position": Equals(0),
+                })))
 
     def test_activity_rule_removed(self):
         owner = self.factory.makeTeam()
@@ -149,5 +192,32 @@ class TestGitRule(TestCaseWithFactory):
             changer=Equals(member),
             changee=Is(None),
             what_changed=Equals(GitActivityType.RULE_REMOVED),
-            old_value=MatchesDict({"ref_pattern": Equals("refs/heads/*")}),
+            old_value=MatchesDict({
+                "ref_pattern": Equals("refs/heads/*"),
+                "position": Equals(0),
+                }),
             new_value=Is(None)))
+
+    def test_activity_rule_moved(self):
+        owner = self.factory.makeTeam()
+        member = self.factory.makePerson(member_of=[owner])
+        repository = self.factory.makeGitRepository(owner=owner)
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*")
+        with person_logged_in(member):
+            rule.move(0, member)
+        self.assertThat(repository.getActivity().first(), MatchesStructure(
+            repository=Equals(repository),
+            changer=Equals(member),
+            changee=Is(None),
+            what_changed=Equals(GitActivityType.RULE_MOVED),
+            old_value=MatchesDict({
+                "ref_pattern": Equals("refs/heads/stable/*"),
+                "position": Equals(1),
+                }),
+            new_value=MatchesDict({
+                "ref_pattern": Equals("refs/heads/stable/*"),
+                "position": Equals(0),
+                })))
