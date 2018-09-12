@@ -55,40 +55,6 @@ class TestGitRule(TestCaseWithFactory):
         self.assertEqual(
             "<GitRule 'refs/heads/*'> for %r" % repository, repr(rule))
 
-    def test_position(self):
-        repository = self.factory.makeGitRepository()
-        rules = [
-            self.factory.makeGitRule(
-                repository=repository,
-                ref_pattern=self.factory.getUniqueUnicode(
-                    prefix="refs/heads/"))
-            for _ in range(2)]
-        for i, rule in enumerate(rules):
-            self.assertEqual(i, rule.position)
-
-    def test_move(self):
-        repository = self.factory.makeGitRepository()
-        rules = [
-            self.factory.makeGitRule(
-                repository=repository,
-                ref_pattern=self.factory.getUniqueUnicode(
-                    prefix="refs/heads/"))
-            for _ in range(4)]
-        with person_logged_in(repository.owner):
-            self.assertEqual(rules, repository.rules)
-            rules[0].move(3)
-            self.assertEqual(rules[1:] + [rules[0]], repository.rules)
-            rules[0].move(0)
-            self.assertEqual(rules, repository.rules)
-            rules[2].move(1)
-            self.assertEqual(
-                [rules[0], rules[2], rules[1], rules[3]], repository.rules)
-
-    def test_move_non_negative(self):
-        rule = self.factory.makeGitRule()
-        with person_logged_in(rule.repository.owner):
-            self.assertRaises(ValueError, rule.move, -1)
-
     def test_grants(self):
         rule = self.factory.makeGitRule()
         other_rule = self.factory.makeGitRule(
@@ -125,3 +91,19 @@ class TestGitRule(TestCaseWithFactory):
                 can_create=Is(False),
                 can_push=Is(False),
                 can_force_push=Is(True))))
+
+    def test_destroySelf(self):
+        repository = self.factory.makeGitRepository()
+        rules = [
+            self.factory.makeGitRule(
+                repository=repository,
+                ref_pattern=self.factory.getUniqueUnicode(
+                    prefix="refs/heads/"))
+            for _ in range(4)]
+        self.assertEqual([0, 1, 2, 3], [rule.position for rule in rules])
+        self.assertEqual(rules, list(repository.rules))
+        with person_logged_in(repository.owner):
+            rules[1].destroySelf()
+        del rules[1]
+        self.assertEqual([0, 1, 2], [rule.position for rule in rules])
+        self.assertEqual(rules, list(repository.rules))

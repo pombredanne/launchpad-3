@@ -19,6 +19,7 @@ from storm.locals import (
     Unicode,
     )
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.interfaces.gitrule import IGitRule
 from lp.code.model.gitrulegrant import GitRuleGrant
@@ -51,6 +52,8 @@ class GitRule(StormBase):
     repository_id = Int(name='repository', allow_none=False)
     repository = Reference(repository_id, 'GitRepository.id')
 
+    position = Int(name='position', allow_none=False)
+
     ref_pattern = Unicode(name='ref_pattern', allow_none=False)
 
     creator_id = Int(
@@ -62,9 +65,11 @@ class GitRule(StormBase):
     date_last_modified = DateTime(
         name='date_last_modified', tzinfo=pytz.UTC, allow_none=False)
 
-    def __init__(self, repository, ref_pattern, creator, date_created):
+    def __init__(self, repository, position, ref_pattern, creator,
+                 date_created):
         super(GitRule, self).__init__()
         self.repository = repository
+        self.position = position
         self.ref_pattern = ref_pattern
         self.creator = creator
         self.date_created = date_created
@@ -72,27 +77,6 @@ class GitRule(StormBase):
 
     def __repr__(self):
         return "<GitRule '%s'> for %r" % (self.ref_pattern, self.repository)
-
-    @property
-    def position(self):
-        """See `IGitRule`."""
-        rule_order = self.repository.rule_order
-        if not rule_order:
-            raise AssertionError("%r has no access rules" % self.repository)
-        try:
-            return rule_order.index(self.id)
-        except ValueError:
-            raise AssertionError(
-                "%r is not in rule_order for %r" % (self, self.repository))
-
-    def move(self, position):
-        """See `IGitRule`."""
-        if position < 0:
-            raise ValueError("Negative positions are not supported")
-        current_position = self.position
-        if position != current_position:
-            del self.repository.rule_order[current_position]
-            self.repository.rule_order.insert(position, self.id)
 
     @property
     def grants(self):
@@ -110,5 +94,7 @@ class GitRule(StormBase):
 
     def destroySelf(self):
         """See `IGitRule`."""
-        self.repository.rule_order.remove(self.id)
+        rules = list(self.repository.rules)
         Store.of(self).remove(self)
+        rules.remove(self)
+        removeSecurityProxy(self.repository)._syncRulePositions(rules)
