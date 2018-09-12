@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for sourcepackages."""
@@ -37,6 +37,7 @@ from zope.component import (
     )
 from zope.formlib.form import Fields
 from zope.formlib.interfaces import IInputWidget
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import DropdownWidget
 from zope.interface import Interface
 from zope.schema import (
@@ -52,7 +53,6 @@ from zope.schema.vocabulary import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     ReturnToReferrerMixin,
     )
@@ -316,8 +316,8 @@ class SourcePackageChangeUpstreamStepTwo(ReturnToReferrerMixin, StepView):
     # The DropdownWidget is used, since the VocabularyPickerWidget
     # does not support visible=False to turn it into a hidden input
     # to continue passing the variable in the form.
-    custom_widget('product', DropdownWidget, visible=False)
-    custom_widget('productseries', LaunchpadRadioWidget)
+    custom_widget_product = CustomWidgetFactory(DropdownWidget, visible=False)
+    custom_widget_productseries = LaunchpadRadioWidget
 
     def setUpFields(self):
         super(SourcePackageChangeUpstreamStepTwo, self).setUpFields()
@@ -556,8 +556,8 @@ class SourcePackageAssociationPortletView(LaunchpadFormView):
     """A view for linking to an upstream package."""
 
     schema = Interface
-    custom_widget(
-        'upstream', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget_upstream = CustomWidgetFactory(
+        LaunchpadRadioWidget, orientation='vertical')
     product_suggestions = None
     initial_focus_widget = None
     max_suggestions = 9

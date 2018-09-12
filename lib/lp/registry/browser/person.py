@@ -74,6 +74,7 @@ from zope.component import (
 from zope.error.interfaces import IErrorReportingUtility
 from zope.formlib import form
 from zope.formlib.form import FormFields
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import (
     TextAreaWidget,
     TextWidget,
@@ -101,7 +102,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -1041,7 +1041,8 @@ class PersonDeactivateAccountView(LaunchpadFormView):
 
     schema = DeactivateAccountSchema
     label = "Deactivate your Launchpad account"
-    custom_widget('comment', TextAreaWidget, height=5, width=60)
+    custom_widget_comment = CustomWidgetFactory(
+        TextAreaWidget, height=5, width=60)
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
@@ -1238,8 +1239,8 @@ class PersonAdministerView(PersonRenameFormMixin):
         'personal_standing', 'personal_standing_reason',
         'require_strong_email_authentication',
         ]
-    custom_widget(
-        'personal_standing_reason', TextAreaWidget, height=5, width=60)
+    custom_widget_personal_standing_reason = CustomWidgetFactory(
+        TextAreaWidget, height=5, width=60)
 
     @property
     def is_viewing_person(self):
@@ -1278,7 +1279,8 @@ class PersonAccountAdministerView(LaunchpadFormView):
     schema = IAccountAdministerSchema
     label = "Review person's account"
     field_names = ['status', 'comment']
-    custom_widget('comment', TextAreaWidget, height=5, width=60)
+    custom_widget_comment = CustomWidgetFactory(
+        TextAreaWidget, height=5, width=60)
 
     def __init__(self, context, request):
         """See `LaunchpadEditFormView`."""
@@ -1351,7 +1353,7 @@ class PersonAccountAdministerView(LaunchpadFormView):
 class PersonVouchersView(LaunchpadFormView):
     """Form for displaying and redeeming commercial subscription vouchers."""
 
-    custom_widget('voucher', LaunchpadDropdownWidget)
+    custom_widget_voucher = LaunchpadDropdownWidget
 
     @property
     def page_title(self):
@@ -2705,7 +2707,8 @@ class PersonEditView(PersonRenameFormMixin, BasePersonEditView):
                    'hide_email_addresses', 'verbose_bugnotifications',
                    'selfgenerated_bugnotifications',
                    'expanded_notification_footers']
-    custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget_mugshot = CustomWidgetFactory(
+        ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     label = 'Change your personal details'
     page_title = label
@@ -2775,10 +2778,10 @@ class PersonEditEmailsView(LaunchpadFormView):
 
     schema = IEmailAddress
 
-    custom_widget('VALIDATED_SELECTED', LaunchpadRadioWidget,
-                  orientation='vertical')
-    custom_widget('UNVALIDATED_SELECTED', LaunchpadRadioWidget,
-                  orientation='vertical')
+    custom_widget_VALIDATED_SELECTED = CustomWidgetFactory(
+        LaunchpadRadioWidget, orientation='vertical')
+    custom_widget_UNVALIDATED_SELECTED = CustomWidgetFactory(
+        LaunchpadRadioWidget, orientation='vertical')
 
     label = 'Change your email settings'
 
@@ -2840,8 +2843,7 @@ class PersonEditEmailsView(LaunchpadFormView):
             Choice(__name__='VALIDATED_SELECTED',
                    title=_('These addresses are confirmed as being yours'),
                    source=SimpleVocabulary(terms),
-                   ),
-            custom_widget=self.custom_widgets['VALIDATED_SELECTED'])
+                   ))
 
     def _unvalidated_emails_field(self):
         """Create a field with a vocabulary of unvalidated and guessed emails.
@@ -2862,8 +2864,7 @@ class PersonEditEmailsView(LaunchpadFormView):
 
         return FormFields(
             Choice(__name__='UNVALIDATED_SELECTED', title=title,
-                   source=SimpleVocabulary(terms)),
-            custom_widget=self.custom_widgets['UNVALIDATED_SELECTED'])
+                   source=SimpleVocabulary(terms)))
 
     def _validate_selected_address(self, data, field='VALIDATED_SELECTED'):
         """A generic validator for this view's actions.
@@ -3104,8 +3105,8 @@ class PersonEditMailingListsView(LaunchpadFormView):
 
     schema = IEmailAddress
 
-    custom_widget('mailing_list_auto_subscribe_policy',
-                  LaunchpadRadioWidgetWithDescription)
+    custom_widget_mailing_list_auto_subscribe_policy = (
+        LaunchpadRadioWidgetWithDescription)
 
     label = 'Change your mailing list subscriptions'
 
@@ -4016,7 +4017,7 @@ class EmailToPersonView(LaunchpadFormView):
 
     schema = IEmailToPerson
     field_names = ['subject', 'message']
-    custom_widget('subject', TextWidget, displayWidth=60)
+    custom_widget_subject = CustomWidgetFactory(TextWidget, displayWidth=60)
 
     def initialize(self):
         """See `ILaunchpadFormView`."""
