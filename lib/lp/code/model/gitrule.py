@@ -8,10 +8,13 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 __all__ = [
     'GitRule',
+    'GitRuleGrant',
     ]
 
+from lazr.enum import DBItem
 import pytz
 from storm.locals import (
+    Bool,
     DateTime,
     Int,
     Reference,
@@ -22,17 +25,22 @@ from zope.component import getUtility
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
+from lp.code.enums import GitGranteeType
 from lp.code.interfaces.gitactivity import IGitActivitySet
-from lp.code.interfaces.gitrule import IGitRule
-from lp.code.model.gitgrant import GitGrant
+from lp.code.interfaces.gitrule import (
+    IGitRule,
+    IGitRuleGrant,
+    )
 from lp.registry.interfaces.person import (
     IPerson,
+    validate_person,
     validate_public_person,
     )
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
     )
+from lp.services.database.enumcol import DBEnum
 from lp.services.database.stormbase import StormBase
 
 
@@ -60,6 +68,8 @@ class GitRule(StormBase):
     repository_id = Int(name='repository', allow_none=False)
     repository = Reference(repository_id, 'GitRepository.id')
 
+    position = Int(name='position', allow_none=False)
+
     ref_pattern = Unicode(name='ref_pattern', allow_none=False)
 
     creator_id = Int(
@@ -71,9 +81,11 @@ class GitRule(StormBase):
     date_last_modified = DateTime(
         name='date_last_modified', tzinfo=pytz.UTC, allow_none=False)
 
-    def __init__(self, repository, ref_pattern, creator, date_created):
+    def __init__(self, repository, position, ref_pattern, creator,
+                 date_created):
         super(GitRule, self).__init__()
         self.repository = repository
+        self.position = position
         self.ref_pattern = ref_pattern
         self.creator = creator
         self.date_created = date_created
@@ -83,37 +95,15 @@ class GitRule(StormBase):
         return "<GitRule '%s'> for %r" % (self.ref_pattern, self.repository)
 
     @property
-    def position(self):
-        """See `IGitRule`."""
-        rule_order = self.repository.rule_order
-        if not rule_order:
-            raise AssertionError("%r has no access rules" % self.repository)
-        try:
-            return rule_order.index(self.id)
-        except ValueError:
-            raise AssertionError(
-                "%r is not in rule_order for %r" % (self, self.repository))
-
-    def move(self, position, user):
-        """See `IGitRule`."""
-        if position < 0:
-            raise ValueError("Negative positions are not supported")
-        current_position = self.position
-        if position != current_position:
-            del self.repository.rule_order[current_position]
-            self.repository.rule_order.insert(position, self.id)
-            getUtility(IGitActivitySet).logRuleMoved(
-                self, current_position, position, user)
-
-    @property
     def grants(self):
         """See `IGitRule`."""
-        return Store.of(self).find(GitGrant, GitGrant.rule_id == self.id)
+        return Store.of(self).find(
+            GitRuleGrant, GitRuleGrant.rule_id == self.id)
 
     def addGrant(self, grantee, grantor, can_create=False, can_push=False,
                  can_force_push=False):
         """See `IGitRule`."""
-        grant = GitGrant(
+        grant = GitRuleGrant(
             rule=self, grantee=grantee, can_create=can_create,
             can_push=can_push, can_force_push=can_force_push, grantor=grantor,
             date_created=DEFAULT)
@@ -123,5 +113,101 @@ class GitRule(StormBase):
     def destroySelf(self, user):
         """See `IGitRule`."""
         getUtility(IGitActivitySet).logRuleRemoved(self, user)
-        self.repository.rule_order.remove(self.id)
+        for grant in self.grants:
+            grant.destroySelf()
+        rules = list(self.repository.rules)
+        Store.of(self).remove(self)
+        rules.remove(self)
+        removeSecurityProxy(self.repository)._syncRulePositions(rules)
+
+
+def git_rule_grant_modified(grant, event):
+    """Update date_last_modified when a GitRuleGrant is modified.
+
+    This method is registered as a subscriber to `IObjectModifiedEvent`
+    events on Git repository grants.
+    """
+    if event.edited_fields:
+        user = IPerson(event.user)
+        getUtility(IGitActivitySet).logGrantChanged(
+            event.object_before_modification, grant, user)
+        removeSecurityProxy(grant).date_last_modified = UTC_NOW
+
+
+@implementer(IGitRuleGrant)
+class GitRuleGrant(StormBase):
+    """See `IGitRuleGrant`."""
+
+    __storm_table__ = 'GitRuleGrant'
+
+    id = Int(primary=True)
+
+    repository_id = Int(name='repository', allow_none=False)
+    repository = Reference(repository_id, 'GitRepository.id')
+
+    rule_id = Int(name='rule', allow_none=False)
+    rule = Reference(rule_id, 'GitRule.id')
+
+    grantee_type = DBEnum(
+        name='grantee_type', enum=GitGranteeType, allow_none=False)
+
+    grantee_id = Int(
+        name='grantee', allow_none=True, validator=validate_person)
+    grantee = Reference(grantee_id, 'Person.id')
+
+    can_create = Bool(name='can_create', allow_none=False)
+    can_push = Bool(name='can_push', allow_none=False)
+    can_force_push = Bool(name='can_force_push', allow_none=False)
+
+    grantor_id = Int(
+        name='grantor', allow_none=False, validator=validate_public_person)
+    grantor = Reference(grantor_id, 'Person.id')
+
+    date_created = DateTime(
+        name='date_created', tzinfo=pytz.UTC, allow_none=False)
+    date_last_modified = DateTime(
+        name='date_last_modified', tzinfo=pytz.UTC, allow_none=False)
+
+    def __init__(self, rule, grantee, can_create, can_push, can_force_push,
+                 grantor, date_created):
+        if isinstance(grantee, DBItem) and grantee.enum == GitGranteeType:
+            if grantee == GitGranteeType.PERSON:
+                raise ValueError(
+                    "grantee may not be GitGranteeType.PERSON; pass a person "
+                    "object instead")
+            grantee_type = grantee
+            grantee = None
+        else:
+            grantee_type = GitGranteeType.PERSON
+
+        self.repository = rule.repository
+        self.rule = rule
+        self.grantee_type = grantee_type
+        self.grantee = grantee
+        self.can_create = can_create
+        self.can_push = can_push
+        self.can_force_push = can_force_push
+        self.grantor = grantor
+        self.date_created = date_created
+        self.date_last_modified = date_created
+
+    def __repr__(self):
+        permissions = []
+        if self.can_create:
+            permissions.append("create")
+        if self.can_push:
+            permissions.append("push")
+        if self.can_force_push:
+            permissions.append("force-push")
+        if self.grantee_type == GitGranteeType.PERSON:
+            grantee_name = "~%s" % self.grantee.name
+        else:
+            grantee_name = self.grantee_type.title.lower()
+        return "<GitRuleGrant [%s] to %s> for %r" % (
+            ", ".join(permissions), grantee_name, self.rule)
+
+    def destroySelf(self, user=None):
+        """See `IGitRuleGrant`."""
+        if user is not None:
+            getUtility(IGitActivitySet).logGrantRemoved(self, user)
         Store.of(self).remove(self)

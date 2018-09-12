@@ -418,7 +418,7 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
         transaction.commit()
         snapshot = Snapshot(repository, providing=providedBy(repository))
         with person_logged_in(repository.owner):
-            rule.move(1, repository.owner)
+            repository.moveRule(rule, 1, repository.owner)
         self.assertDeltaDescriptionEqual(
             ["Moved rule for protected ref refs/heads/*: position 0 => 1"],
             snapshot, repository)
@@ -440,7 +440,7 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
 
     def test_change_grant(self):
         repository = self.factory.makeGitRepository()
-        grant = self.factory.makeGitGrant(
+        grant = self.factory.makeGitRuleGrant(
             repository=repository, ref_pattern="refs/heads/*",
             can_create=True)
         transaction.commit()
@@ -456,7 +456,7 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
 
     def test_remove_grant(self):
         repository = self.factory.makeGitRepository()
-        grant = self.factory.makeGitGrant(
+        grant = self.factory.makeGitRuleGrant(
             repository=repository, ref_pattern="refs/heads/*",
             grantee=GitGranteeType.REPOSITORY_OWNER, can_push=True)
         transaction.commit()

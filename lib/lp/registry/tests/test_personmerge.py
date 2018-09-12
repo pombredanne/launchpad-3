@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for merge_people."""
@@ -494,11 +494,11 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
                 grantee=person,
                 date_created=person_grant_date))
 
-    def test_merge_gitgrants(self):
-        # GitGrants are transferred from the duplicate.
+    def test_merge_gitrulegrants(self):
+        # GitRuleGrants are transferred from the duplicate.
         rule = self.factory.makeGitRule()
         person = self.factory.makePerson()
-        grant = self.factory.makeGitGrant(rule=rule)
+        grant = self.factory.makeGitRuleGrant(rule=rule)
         self._do_premerge(grant.grantee, person)
 
         self.assertEqual(grant.grantee, rule.grants.one().grantee)
@@ -506,16 +506,16 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
             self._do_merge(grant.grantee, person)
         self.assertEqual(person, rule.grants.one().grantee)
 
-    def test_merge_gitgrants_conflicts(self):
-        # Conflicting GitGrants are deleted.
+    def test_merge_gitrulegrants_conflicts(self):
+        # Conflicting GitRuleGrants are deleted.
         rule = self.factory.makeGitRule()
 
         person = self.factory.makePerson()
-        person_grant = self.factory.makeGitGrant(rule=rule, grantee=person)
+        person_grant = self.factory.makeGitRuleGrant(rule=rule, grantee=person)
         person_grant_date = person_grant.date_created
 
         duplicate = self.factory.makePerson()
-        self.factory.makeGitGrant(rule=rule, grantee=duplicate)
+        self.factory.makeGitRuleGrant(rule=rule, grantee=duplicate)
 
         self._do_premerge(duplicate, person)
         with person_logged_in(person):

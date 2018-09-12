@@ -111,12 +111,14 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.gitactivity import GitActivity
-from lp.code.model.gitgrant import GitGrant
 from lp.code.model.gitref import (
     GitRef,
     GitRefDefault,
     )
-from lp.code.model.gitrule import GitRule
+from lp.code.model.gitrule import (
+    GitRule,
+    GitRuleGrant,
+    )
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
@@ -284,8 +286,6 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     target_default = Bool(name='target_default', allow_none=False)
 
     _default_branch = Unicode(name='default_branch', allow_none=True)
-
-    rule_order = List(type=Int())
 
     def __init__(self, repository_type, registrant, owner, target, name,
                  information_type, date_created, reviewer=None,
@@ -1128,39 +1128,61 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     @property
     def rules(self):
         """See `IGitRepository`."""
-        if not self.rule_order:
-            return []
-        rules = {
-            rule.id: rule
-            for rule in Store.of(self).find(
-                GitRule, GitRule.id.is_in(self.rule_order))
-            }
-        for rule_id in self.rule_order:
-            if rule_id not in rules:
-                raise AssertionError(
-                    "GitRule ID %d is in rule_order for %r but does not "
-                    "exist" % (rule_id, self))
-        return [rules[rule_id] for rule_id in self.rule_order]
+        return Store.of(self).find(
+            GitRule, GitRule.repository == self).order_by(GitRule.position)
+
+    def _syncRulePositions(self, rules):
+        """Synchronise rule positions with their order in a provided list.
+
+        :param rules: A sequence of `IGitRule`s in the desired order.
+        """
+        # This approach requires fetching all this repository's rules, which
+        # is potentially more work than necessary.  However, it has the
+        # benefit of being simple, and because it ensures the correct
+        # position of all rules it tends to be self-correcting.
+        for position, rule in enumerate(rules):
+            if rule.repository != self:
+                raise AssertionError("%r does not belong to %r" % (rule, self))
+            if rule.position != position:
+                removeSecurityProxy(rule).position = position
 
     def addRule(self, ref_pattern, creator, position=None):
         """See `IGitRepository`."""
+        rules = list(self.rules)
         rule = GitRule(
-            repository=self, ref_pattern=ref_pattern, creator=creator,
-            date_created=DEFAULT)
-        Store.of(rule).flush()
-        if self.rule_order is None:
-            self.rule_order = []
+            repository=self,
+            # -1 isn't a valid position, but _syncRulePositions will correct
+            # it in a moment.
+            position=position if position is not None else -1,
+            ref_pattern=ref_pattern, creator=creator, date_created=DEFAULT)
         if position is None:
-            self.rule_order.append(rule.id)
+            rules.append(rule)
         else:
-            self.rule_order.insert(position, rule.id)
+            rules.insert(position, rule)
+        self._syncRulePositions(rules)
         getUtility(IGitActivitySet).logRuleAdded(rule, creator)
         return rule
+
+    def moveRule(self, rule, position, user):
+        """See `IGitRepository`."""
+        if rule.repository != self:
+            raise ValueError("%r does not belong to %r" % (rule, self))
+        if position < 0:
+            raise ValueError("Negative positions are not supported")
+        current_position = rule.position
+        if position != current_position:
+            rules = list(self.rules)
+            rules.remove(rule)
+            rules.insert(position, rule)
+            self._syncRulePositions(rules)
+            getUtility(IGitActivitySet).logRuleMoved(
+                rule, current_position, position, user)
 
     @property
     def grants(self):
         """See `IGitRepository`."""
-        return Store.of(self).find(GitGrant, GitGrant.repository_id == self.id)
+        return Store.of(self).find(
+            GitRuleGrant, GitRuleGrant.repository_id == self.id)
 
     def getActivity(self, changed_after=None):
         """See `IGitRepository`."""

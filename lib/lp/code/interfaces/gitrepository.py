@@ -737,6 +737,16 @@ class IGitRepositoryEdit(IWebhookTarget):
             None to append it.
         """
 
+    def moveRule(rule, position, user):
+        """Move a rule to a new position in its repository's rule order.
+
+        :param rule: The `IGitRule` to move.
+        :param position: The new position.  For example, 0 puts the rule at
+            the start, while `len(repository.rules)` puts the rule at the
+            end.
+        :param user: The `IPerson` who is moving the rule.
+        """
+
     @export_read_operation()
     @operation_for_version("devel")
     def canBeDeleted():

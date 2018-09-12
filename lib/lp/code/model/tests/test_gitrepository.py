@@ -2196,7 +2196,7 @@ class TestGitRepositoryRules(TestCaseWithFactory):
             repository=repository, ref_pattern="refs/heads/stable/*")
         self.factory.makeGitRule(
             repository=other_repository, ref_pattern="refs/heads/*")
-        self.assertThat(repository.rules, MatchesListwise([
+        self.assertThat(list(repository.rules), MatchesListwise([
             MatchesStructure.byEquality(
                 repository=repository,
                 ref_pattern="refs/heads/*"),
@@ -2209,13 +2209,12 @@ class TestGitRepositoryRules(TestCaseWithFactory):
         repository = self.factory.makeGitRepository()
         initial_rule = self.factory.makeGitRule(
             repository=repository, ref_pattern="refs/heads/*")
+        self.assertEqual(0, initial_rule.position)
         with person_logged_in(repository.owner):
             new_rule = repository.addRule(
                 "refs/heads/stable/*", repository.owner)
-        self.assertEqual(
-            [initial_rule.id, new_rule.id],
-            removeSecurityProxy(repository).rule_order)
-        self.assertEqual([initial_rule, new_rule], repository.rules)
+        self.assertEqual(1, new_rule.position)
+        self.assertEqual([initial_rule, new_rule], list(repository.rules))
 
     def test_addRule_insert(self):
         repository = self.factory.makeGitRepository()
@@ -2224,15 +2223,44 @@ class TestGitRepositoryRules(TestCaseWithFactory):
                 repository=repository, ref_pattern="refs/heads/*"),
             self.factory.makeGitRule(
                 repository=repository, ref_pattern="refs/heads/protected"),
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern="refs/heads/another"),
             ]
+        self.assertEqual([0, 1, 2], [rule.position for rule in initial_rules])
         with person_logged_in(repository.owner):
             new_rule = repository.addRule(
                 "refs/heads/stable/*", repository.owner, position=1)
+        self.assertEqual(1, new_rule.position)
+        self.assertEqual([0, 2, 3], [rule.position for rule in initial_rules])
         self.assertEqual(
-            [initial_rules[0].id, new_rule.id, initial_rules[1].id],
-            removeSecurityProxy(repository).rule_order)
-        self.assertEqual(
-            [initial_rules[0], new_rule, initial_rules[1]], repository.rules)
+            [initial_rules[0], new_rule, initial_rules[1], initial_rules[2]],
+            list(repository.rules))
+
+    def test_moveRule(self):
+        repository = self.factory.makeGitRepository()
+        rules = [
+            self.factory.makeGitRule(
+                repository=repository,
+                ref_pattern=self.factory.getUniqueUnicode(
+                    prefix="refs/heads/"))
+            for _ in range(5)]
+        with person_logged_in(repository.owner):
+            self.assertEqual(rules, list(repository.rules))
+            repository.moveRule(rules[0], 4, repository.owner)
+            self.assertEqual(rules[1:] + [rules[0]], list(repository.rules))
+            repository.moveRule(rules[0], 0, repository.owner)
+            self.assertEqual(rules, list(repository.rules))
+            repository.moveRule(rules[2], 1, repository.owner)
+            self.assertEqual(
+                [rules[0], rules[2], rules[1], rules[3], rules[4]],
+                list(repository.rules))
+
+    def test_moveRule_non_negative(self):
+        rule = self.factory.makeGitRule()
+        with person_logged_in(rule.repository.owner):
+            self.assertRaises(
+                ValueError, rule.repository.moveRule,
+                rule, -1, rule.repository.owner)
 
     def test_grants(self):
         repository = self.factory.makeGitRepository()
@@ -2240,11 +2268,11 @@ class TestGitRepositoryRules(TestCaseWithFactory):
         rule = self.factory.makeGitRule(repository=repository)
         other_rule = self.factory.makeGitRule(repository=other_repository)
         grants = [
-            self.factory.makeGitGrant(
+            self.factory.makeGitRuleGrant(
                 rule=rule, grantee=self.factory.makePerson())
             for _ in range(2)
             ]
-        self.factory.makeGitGrant(
+        self.factory.makeGitRuleGrant(
             rule=other_rule, grantee=self.factory.makePerson())
         self.assertContentEqual(grants, repository.grants)
 
