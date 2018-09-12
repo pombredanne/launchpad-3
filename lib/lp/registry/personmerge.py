@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person/team merger implementation."""
@@ -141,22 +141,22 @@ def _mergeAccessPolicyGrant(cur, from_id, to_id):
         ''' % vars())
 
 
-def _mergeGitGrant(cur, from_id, to_id):
-    # Update only the GitGrants that will not conflict.
+def _mergeGitRuleGrant(cur, from_id, to_id):
+    # Update only the GitRuleGrants that will not conflict.
     cur.execute('''
-        UPDATE GitGrant
+        UPDATE GitRuleGrant
         SET grantee=%(to_id)d
         WHERE
             grantee = %(from_id)d
             AND rule NOT IN (
                 SELECT rule
-                FROM GitGrant
+                FROM GitRuleGrant
                 WHERE grantee = %(to_id)d
                 )
         ''' % vars())
     # and delete those left over.
     cur.execute('''
-        DELETE FROM GitGrant WHERE grantee = %(from_id)d
+        DELETE FROM GitRuleGrant WHERE grantee = %(from_id)d
         ''' % vars())
 
 
@@ -790,10 +790,10 @@ def merge_people(from_person, to_person, reviewer, delete=False):
 
     _mergeAccessArtifactGrant(cur, from_id, to_id)
     _mergeAccessPolicyGrant(cur, from_id, to_id)
-    _mergeGitGrant(cur, from_id, to_id)
+    _mergeGitRuleGrant(cur, from_id, to_id)
     skip.append(('accessartifactgrant', 'grantee'))
     skip.append(('accesspolicygrant', 'grantee'))
-    skip.append(('gitgrant', 'grantee'))
+    skip.append(('gitrulegrant', 'grantee'))
 
     # Update the Branches that will not conflict, and fudge the names of
     # ones that *do* conflict.

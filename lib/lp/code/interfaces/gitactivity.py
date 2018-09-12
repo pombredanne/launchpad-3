@@ -112,7 +112,7 @@ class IGitActivitySet(Interface):
     def logGrantAdded(grant, user):
         """Log that an access grant was added.
 
-        :param grant: The `IGitGrant` that was added.
+        :param grant: The `IGitRuleGrant` that was added.
         :param user: The `IPerson` who added it.
         :return: The new `IGitActivity`.
         """
@@ -120,8 +120,8 @@ class IGitActivitySet(Interface):
     def logGrantChanged(old_grant, new_grant, user):
         """Log that an access grant was changed.
 
-        :param old_grant: The `IGitGrant` before the change.
-        :param new_grant: The `IGitGrant` after the change.
+        :param old_grant: The `IGitRuleGrant` before the change.
+        :param new_grant: The `IGitRuleGrant` after the change.
         :param user: The `IPerson` who made the change.
         :return: The new `IGitActivity`.
         """
@@ -129,7 +129,7 @@ class IGitActivitySet(Interface):
     def logGrantRemoved(grant, user):
         """Log that an access grant was removed.
 
-        :param grant: The `IGitGrant` that was removed.
+        :param grant: The `IGitRuleGrant` that was removed.
         :param user: The `IPerson` who removed it.
         :return: The new `IGitActivity`.
         """
