@@ -28,7 +28,7 @@ COMMENT ON COLUMN GitRule.date_last_modified IS 'The time when this rule was las
 CREATE TABLE GitRuleGrant (
     id serial PRIMARY KEY,
     repository integer NOT NULL REFERENCES gitrepository ON DELETE CASCADE,
-    rule integer NOT NULL REFERENCES gitrule ON DELETE CASCADE,
+    rule integer NOT NULL REFERENCES gitrule,
     grantee_type integer NOT NULL,
     grantee integer REFERENCES person,
     can_create boolean DEFAULT false NOT NULL,
