@@ -109,12 +109,12 @@ from lp.code.interfaces.gitrepository import (
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
 from lp.code.model.branchmergeproposal import BranchMergeProposal
-from lp.code.model.gitgrant import GitGrant
 from lp.code.model.gitref import (
     GitRef,
     GitRefDefault,
     )
 from lp.code.model.gitrule import GitRule
+from lp.code.model.gitrulegrant import GitRuleGrant
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
@@ -1157,7 +1157,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     @property
     def grants(self):
         """See `IGitRepository`."""
-        return Store.of(self).find(GitGrant, GitGrant.repository_id == self.id)
+        return Store.of(self).find(
+            GitRuleGrant, GitRuleGrant.repository_id == self.id)
 
     def canBeDeleted(self):
         """See `IGitRepository`."""

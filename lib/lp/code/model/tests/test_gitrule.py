@@ -94,14 +94,14 @@ class TestGitRule(TestCaseWithFactory):
         other_rule = self.factory.makeGitRule(
             repository=rule.repository, ref_pattern="refs/heads/stable/*")
         grantees = [self.factory.makePerson() for _ in range(2)]
-        self.factory.makeGitGrant(
+        self.factory.makeGitRuleGrant(
             rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
             can_create=True)
-        self.factory.makeGitGrant(
+        self.factory.makeGitRuleGrant(
             rule=rule, grantee=grantees[0], can_push=True)
-        self.factory.makeGitGrant(
+        self.factory.makeGitRuleGrant(
             rule=rule, grantee=grantees[1], can_force_push=True)
-        self.factory.makeGitGrant(
+        self.factory.makeGitRuleGrant(
             rule=other_rule, grantee=grantees[0], can_push=True)
         self.assertThat(rule.grants, MatchesSetwise(
             MatchesStructure(

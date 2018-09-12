@@ -21,7 +21,7 @@ from storm.locals import (
 from zope.interface import implementer
 
 from lp.code.interfaces.gitrule import IGitRule
-from lp.code.model.gitgrant import GitGrant
+from lp.code.model.gitrulegrant import GitRuleGrant
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.database.constants import (
     DEFAULT,
@@ -97,12 +97,13 @@ class GitRule(StormBase):
     @property
     def grants(self):
         """See `IGitRule`."""
-        return Store.of(self).find(GitGrant, GitGrant.rule_id == self.id)
+        return Store.of(self).find(
+            GitRuleGrant, GitRuleGrant.rule_id == self.id)
 
     def addGrant(self, grantee, grantor, can_create=False, can_push=False,
                  can_force_push=False):
         """See `IGitRule`."""
-        return GitGrant(
+        return GitRuleGrant(
             rule=self, grantee=grantee, can_create=can_create,
             can_push=can_push, can_force_push=can_force_push, grantor=grantor,
             date_created=DEFAULT)

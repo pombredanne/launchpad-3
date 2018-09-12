@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repositories."""
@@ -2237,11 +2237,11 @@ class TestGitRepositoryRules(TestCaseWithFactory):
         rule = self.factory.makeGitRule(repository=repository)
         other_rule = self.factory.makeGitRule(repository=other_repository)
         grants = [
-            self.factory.makeGitGrant(
+            self.factory.makeGitRuleGrant(
                 rule=rule, grantee=self.factory.makePerson())
             for _ in range(2)
             ]
-        self.factory.makeGitGrant(
+        self.factory.makeGitRuleGrant(
             rule=other_rule, grantee=self.factory.makePerson())
         self.assertContentEqual(grants, repository.grants)
 

@@ -16,7 +16,7 @@ from testtools.matchers import (
     )
 
 from lp.code.enums import GitGranteeType
-from lp.code.interfaces.gitgrant import IGitGrant
+from lp.code.interfaces.gitrulegrant import IGitRuleGrant
 from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.testing import (
     person_logged_in,
@@ -26,19 +26,19 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-class TestGitGrant(TestCaseWithFactory):
+class TestGitRuleGrant(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_implements_IGitGrant(self):
-        grant = self.factory.makeGitGrant()
-        verifyObject(IGitGrant, grant)
+    def test_implements_IGitRuleGrant(self):
+        grant = self.factory.makeGitRuleGrant()
+        verifyObject(IGitRuleGrant, grant)
 
     def test_properties_owner(self):
         owner = self.factory.makeTeam()
         member = self.factory.makePerson(member_of=[owner])
         rule = self.factory.makeGitRule(owner=owner)
-        grant = self.factory.makeGitGrant(
+        grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER, grantor=member,
             can_create=True, can_force_push=True)
         now = get_transaction_timestamp(Store.of(grant))
@@ -59,7 +59,7 @@ class TestGitGrant(TestCaseWithFactory):
         member = self.factory.makePerson(member_of=[owner])
         rule = self.factory.makeGitRule(owner=owner)
         grantee = self.factory.makePerson()
-        grant = self.factory.makeGitGrant(
+        grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=grantee, grantor=member, can_push=True)
         now = get_transaction_timestamp(Store.of(rule))
         self.assertThat(grant, MatchesStructure(
@@ -76,29 +76,29 @@ class TestGitGrant(TestCaseWithFactory):
 
     def test_repr_owner(self):
         rule = self.factory.makeGitRule()
-        grant = self.factory.makeGitGrant(
+        grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
             can_create=True, can_push=True)
         self.assertEqual(
-            "<GitGrant [create, push] to repository owner> for %r" % rule,
+            "<GitRuleGrant [create, push] to repository owner> for %r" % rule,
             repr(grant))
 
     def test_repr_person(self):
         rule = self.factory.makeGitRule()
         grantee = self.factory.makePerson()
-        grant = self.factory.makeGitGrant(
+        grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=grantee, can_push=True)
         self.assertEqual(
-            "<GitGrant [push] to ~%s> for %r" % (grantee.name, rule),
+            "<GitRuleGrant [push] to ~%s> for %r" % (grantee.name, rule),
             repr(grant))
 
     def test_destroySelf(self):
         rule = self.factory.makeGitRule()
         grants = [
-            self.factory.makeGitGrant(
+            self.factory.makeGitRuleGrant(
                 rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
                 can_create=True),
-            self.factory.makeGitGrant(rule=rule, can_push=True),
+            self.factory.makeGitRuleGrant(rule=rule, can_push=True),
             ]
         with person_logged_in(rule.repository.owner):
             grants[1].destroySelf()

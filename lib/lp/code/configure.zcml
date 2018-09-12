@@ -934,19 +934,19 @@
   <subscriber
       for="lp.code.interfaces.gitrule.IGitRule zope.lifecycleevent.interfaces.IObjectModifiedEvent"
       handler="lp.code.model.gitrule.git_rule_modified"/>
-  <class class="lp.code.model.gitgrant.GitGrant">
+  <class class="lp.code.model.gitrulegrant.GitRuleGrant">
     <require
         permission="launchpad.View"
-        interface="lp.code.interfaces.gitgrant.IGitGrantView
-                   lp.code.interfaces.gitgrant.IGitGrantEditableAttributes" />
+        interface="lp.code.interfaces.gitrulegrant.IGitRuleGrantView
+                   lp.code.interfaces.gitrulegrant.IGitRuleGrantEditableAttributes" />
     <require
         permission="launchpad.Edit"
-        interface="lp.code.interfaces.gitgrant.IGitGrantEdit"
-        set_schema="lp.code.interfaces.gitgrant.IGitGrantEditableAttributes" />
+        interface="lp.code.interfaces.gitrulegrant.IGitRuleGrantEdit"
+        set_schema="lp.code.interfaces.gitrulegrant.IGitRuleGrantEditableAttributes" />
   </class>
   <subscriber
-      for="lp.code.interfaces.gitgrant.IGitGrant zope.lifecycleevent.interfaces.IObjectModifiedEvent"
-      handler="lp.code.model.gitgrant.git_grant_modified"/>
+      for="lp.code.interfaces.gitrulegrant.IGitRuleGrant zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+      handler="lp.code.model.gitrulegrant.git_rule_grant_modified"/>
 
   <!-- GitCollection -->
 

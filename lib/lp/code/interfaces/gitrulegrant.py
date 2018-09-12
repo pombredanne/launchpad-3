@@ -7,7 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
-    'IGitGrant',
+    'IGitRuleGrant',
     ]
 
 from lazr.restful.fields import Reference
@@ -29,8 +29,8 @@ from lp.services.fields import (
     )
 
 
-class IGitGrantView(Interface):
-    """`IGitGrant` attributes that require launchpad.View."""
+class IGitRuleGrantView(Interface):
+    """`IGitRuleGrant` attributes that require launchpad.View."""
 
     id = Int(title=_("ID"), readonly=True, required=True)
 
@@ -64,8 +64,8 @@ class IGitGrantView(Interface):
         description=_("The time when this grant was created."))
 
 
-class IGitGrantEditableAttributes(Interface):
-    """`IGitGrant` attributes that can be edited.
+class IGitRuleGrantEditableAttributes(Interface):
+    """`IGitRuleGrant` attributes that can be edited.
 
     These attributes need launchpad.View to see, and launchpad.Edit to change.
     """
@@ -87,12 +87,13 @@ class IGitGrantEditableAttributes(Interface):
         description=_("The time when this grant was last modified."))
 
 
-class IGitGrantEdit(Interface):
-    """`IGitGrant` attributes that require launchpad.Edit."""
+class IGitRuleGrantEdit(Interface):
+    """`IGitRuleGrant` attributes that require launchpad.Edit."""
 
     def destroySelf():
         """Delete this access grant."""
 
 
-class IGitGrant(IGitGrantView, IGitGrantEditableAttributes, IGitGrantEdit):
+class IGitRuleGrant(IGitRuleGrantView, IGitRuleGrantEditableAttributes,
+                    IGitRuleGrantEdit):
     """An access grant for a Git repository rule."""

@@ -7,7 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
-    'GitGrant',
+    'GitRuleGrant',
     ]
 
 from lazr.enum import DBItem
@@ -22,7 +22,7 @@ from storm.locals import (
 from zope.interface import implementer
 
 from lp.code.enums import GitGranteeType
-from lp.code.interfaces.gitgrant import IGitGrant
+from lp.code.interfaces.gitrulegrant import IGitRuleGrant
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -32,8 +32,8 @@ from lp.services.database.enumcol import DBEnum
 from lp.services.database.stormbase import StormBase
 
 
-def git_grant_modified(grant, event):
-    """Update date_last_modified when a GitGrant is modified.
+def git_rule_grant_modified(grant, event):
+    """Update date_last_modified when a GitRuleGrant is modified.
 
     This method is registered as a subscriber to `IObjectModifiedEvent`
     events on Git repository grants.
@@ -42,11 +42,11 @@ def git_grant_modified(grant, event):
         grant.date_last_modified = UTC_NOW
 
 
-@implementer(IGitGrant)
-class GitGrant(StormBase):
-    """See `IGitGrant`."""
+@implementer(IGitRuleGrant)
+class GitRuleGrant(StormBase):
+    """See `IGitRuleGrant`."""
 
-    __storm_table__ = 'GitGrant'
+    __storm_table__ = 'GitRuleGrant'
 
     id = Int(primary=True)
 
@@ -111,9 +111,9 @@ class GitGrant(StormBase):
             grantee_name = "~%s" % self.grantee.name
         else:
             grantee_name = self.grantee_type.title.lower()
-        return "<GitGrant [%s] to %s> for %r" % (
+        return "<GitRuleGrant [%s] to %s> for %r" % (
             ", ".join(permissions), grantee_name, self.rule)
 
     def destroySelf(self):
-        """See `IGitGrant`."""
+        """See `IGitRuleGrant`."""
         Store.of(self).remove(self)
