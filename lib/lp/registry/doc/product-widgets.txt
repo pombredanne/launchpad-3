@@ -403,8 +403,7 @@ Launchpad form macros do not generate table rows for the GhostWidget.
 
     >>> from lp.services.config import config
     >>> from z3c.ptcompat import ViewPageTemplateFile
-    >>> from lp.app.browser.launchpadform import (
-    ...     custom_widget, LaunchpadFormView)
+    >>> from lp.app.browser.launchpadform import LaunchpadFormView
 
     >>> class GhostWidgetView(LaunchpadFormView):
     ...     page_title = 'Test'
@@ -412,7 +411,7 @@ Launchpad form macros do not generate table rows for the GhostWidget.
     ...         config.root + '/lib/lp/app/templates/generic-edit.pt')
     ...     schema = IProduct
     ...     field_names = ['license_info']
-    ...     custom_widget('license_info', GhostWidget)
+    ...     custom_widget_license_info = GhostWidget
 
     >>> request = LaunchpadTestRequest()
     >>> request.setPrincipal(factory.makePerson())

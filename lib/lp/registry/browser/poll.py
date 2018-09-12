@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -21,6 +21,7 @@ __all__ = [
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextWidget
 from zope.interface import (
     implementer,
@@ -30,7 +31,6 @@ from zope.lifecycleevent import ObjectCreatedEvent
 
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -443,7 +443,7 @@ class PollOptionEditView(LaunchpadEditFormView):
     label = "Edit option details"
     page_title = 'Edit option'
     field_names = ["name", "title"]
-    custom_widget("title", TextWidget, displayWidth=30)
+    custom_widget_title = CustomWidgetFactory(TextWidget, displayWidth=30)
 
     @property
     def cancel_url(self):
@@ -463,7 +463,7 @@ class PollOptionAddView(LaunchpadFormView):
     label = "Create new poll option"
     page_title = "New option"
     field_names = ["name", "title"]
-    custom_widget("title", TextWidget, displayWidth=30)
+    custom_widget_title = CustomWidgetFactory(TextWidget, displayWidth=30)
 
     @property
     def cancel_url(self):
