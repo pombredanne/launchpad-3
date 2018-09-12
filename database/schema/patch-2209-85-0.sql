@@ -6,25 +6,22 @@ SET client_min_messages=ERROR;
 CREATE TABLE GitRule (
     id serial PRIMARY KEY,
     repository integer NOT NULL REFERENCES gitrepository ON DELETE CASCADE,
+    position integer NOT NULL,
     ref_pattern text NOT NULL,
     creator integer NOT NULL REFERENCES person,
     date_created timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
-    date_last_modified timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL
+    date_last_modified timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
+    CONSTRAINT gitrule__repository__position__key UNIQUE (repository, position) DEFERRABLE INITIALLY DEFERRED,
+    CONSTRAINT gitrule__repository__ref_pattern__key UNIQUE (repository, ref_pattern)
 );
-
-CREATE UNIQUE INDEX gitrule__repository__ref_pattern__key
-    ON GitRule(repository, ref_pattern);
 
 COMMENT ON TABLE GitRule IS 'An access rule for a Git repository.';
 COMMENT ON COLUMN GitRule.repository IS 'The repository that this rule is for.';
+COMMENT ON COLUMN GitRule.position IS 'The position of this rule in its repository''s rule order.';
 COMMENT ON COLUMN GitRule.ref_pattern IS 'The pattern of references matched by this rule.';
 COMMENT ON COLUMN GitRule.creator IS 'The user who created this rule.';
 COMMENT ON COLUMN GitRule.date_created IS 'The time when this rule was created.';
 COMMENT ON COLUMN GitRule.date_last_modified IS 'The time when this rule was last modified.';
-
-ALTER TABLE GitRepository ADD COLUMN rule_order integer[];
-
-COMMENT ON COLUMN GitRepository.rule_order IS 'An ordered array of access rule IDs in this repository.';
 
 CREATE TABLE GitRuleGrant (
     id serial PRIMARY KEY,
