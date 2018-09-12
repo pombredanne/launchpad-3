@@ -12,7 +12,9 @@ CREATE TABLE GitRule (
     date_created timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     date_last_modified timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     CONSTRAINT gitrule__repository__position__key UNIQUE (repository, position) DEFERRABLE INITIALLY DEFERRED,
-    CONSTRAINT gitrule__repository__ref_pattern__key UNIQUE (repository, ref_pattern)
+    CONSTRAINT gitrule__repository__ref_pattern__key UNIQUE (repository, ref_pattern),
+    -- Used by repository_matches_rule constraint on GitRuleGrant.
+    CONSTRAINT gitrule__repository__id__key UNIQUE (repository, id)
 );
 
 COMMENT ON TABLE GitRule IS 'An access rule for a Git repository.';
@@ -35,6 +37,7 @@ CREATE TABLE GitRuleGrant (
     grantor integer NOT NULL REFERENCES person,
     date_created timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     date_last_modified timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
+    CONSTRAINT repository_matches_rule FOREIGN KEY (repository, rule) REFERENCES gitrule (repository, id),
     -- 2 == PERSON
     CONSTRAINT has_grantee CHECK ((grantee_type = 2) = (grantee IS NOT NULL))
 );
