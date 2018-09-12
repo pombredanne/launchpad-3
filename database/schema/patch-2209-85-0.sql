@@ -26,7 +26,7 @@ ALTER TABLE GitRepository ADD COLUMN rule_order integer[];
 
 COMMENT ON COLUMN GitRepository.rule_order IS 'An ordered array of access rule IDs in this repository.';
 
-CREATE TABLE GitGrant (
+CREATE TABLE GitRuleGrant (
     id serial PRIMARY KEY,
     repository integer NOT NULL REFERENCES gitrepository ON DELETE CASCADE,
     rule integer NOT NULL REFERENCES gitrule ON DELETE CASCADE,
@@ -42,21 +42,21 @@ CREATE TABLE GitGrant (
     CONSTRAINT has_grantee CHECK ((grantee_type = 2) = (grantee IS NOT NULL))
 );
 
-CREATE INDEX gitgrant__repository__idx
-    ON GitGrant(repository);
-CREATE UNIQUE INDEX gitgrant__rule__grantee_type__grantee_key
-    ON GitGrant(rule, grantee_type, grantee);
+CREATE INDEX gitrulegrant__repository__idx
+    ON GitRuleGrant(repository);
+CREATE UNIQUE INDEX gitrulegrant__rule__grantee_type__grantee_key
+    ON GitRuleGrant(rule, grantee_type, grantee);
 
-COMMENT ON TABLE GitGrant IS 'An access grant for a Git repository rule.';
-COMMENT ON COLUMN GitGrant.repository IS 'The repository that this grant is for.';
-COMMENT ON COLUMN GitGrant.rule IS 'The rule that this grant is for.';
-COMMENT ON COLUMN GitGrant.grantee_type IS 'The type of entity being granted access.';
-COMMENT ON COLUMN GitGrant.grantee IS 'The person or team being granted access.';
-COMMENT ON COLUMN GitGrant.can_create IS 'Whether creating references is allowed.';
-COMMENT ON COLUMN GitGrant.can_push IS 'Whether pushing references is allowed.';
-COMMENT ON COLUMN GitGrant.can_force_push IS 'Whether force-pushing references is allowed.';
-COMMENT ON COLUMN GitGrant.grantor IS 'The user who created this grant.';
-COMMENT ON COLUMN GitGrant.date_created IS 'The time when this grant was created.';
-COMMENT ON COLUMN GitGrant.date_last_modified IS 'The time when this grant was last modified.';
+COMMENT ON TABLE GitRuleGrant IS 'An access grant for a Git repository rule.';
+COMMENT ON COLUMN GitRuleGrant.repository IS 'The repository that this grant is for.';
+COMMENT ON COLUMN GitRuleGrant.rule IS 'The rule that this grant is for.';
+COMMENT ON COLUMN GitRuleGrant.grantee_type IS 'The type of entity being granted access.';
+COMMENT ON COLUMN GitRuleGrant.grantee IS 'The person or team being granted access.';
+COMMENT ON COLUMN GitRuleGrant.can_create IS 'Whether creating references is allowed.';
+COMMENT ON COLUMN GitRuleGrant.can_push IS 'Whether pushing references is allowed.';
+COMMENT ON COLUMN GitRuleGrant.can_force_push IS 'Whether force-pushing references is allowed.';
+COMMENT ON COLUMN GitRuleGrant.grantor IS 'The user who created this grant.';
+COMMENT ON COLUMN GitRuleGrant.date_created IS 'The time when this grant was created.';
+COMMENT ON COLUMN GitRuleGrant.date_last_modified IS 'The time when this grant was last modified.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 85, 0);
