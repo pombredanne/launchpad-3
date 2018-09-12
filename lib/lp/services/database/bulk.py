@@ -110,6 +110,12 @@ def _make_compound_load_clause(primary_key, values_list):
     example, we often want to load many `GitRef` objects from the same
     repository.  This helper returns a query clause optimised to be compact
     in this case.
+
+    :param primary_key: The primary key columns.
+    :param values_list: A sequence of values of the primary key whose
+        corresponding rows should be loaded.  This must be sorted by the
+        caller (because this function calls itself recursively, and it's
+        usually more efficient to sort the whole sequence in one go).
     """
     if len(primary_key) > 1:
         return Or(*(
