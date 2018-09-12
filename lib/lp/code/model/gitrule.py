@@ -94,6 +94,8 @@ class GitRule(StormBase):
 
     def destroySelf(self):
         """See `IGitRule`."""
+        for grant in self.grants:
+            grant.destroySelf()
         rules = list(self.repository.rules)
         Store.of(self).remove(self)
         rules.remove(self)

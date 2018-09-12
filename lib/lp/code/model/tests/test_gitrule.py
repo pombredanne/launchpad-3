@@ -107,3 +107,12 @@ class TestGitRule(TestCaseWithFactory):
         del rules[1]
         self.assertEqual([0, 1, 2], [rule.position for rule in rules])
         self.assertEqual(rules, list(repository.rules))
+
+    def test_destroySelf_removes_grants(self):
+        repository = self.factory.makeGitRepository()
+        rule = self.factory.makeGitRule(repository=repository)
+        grant = self.factory.makeGitRuleGrant(rule=rule)
+        self.assertEqual([grant], list(repository.grants))
+        with person_logged_in(repository.owner):
+            rule.destroySelf()
+        self.assertEqual([], list(repository.grants))
