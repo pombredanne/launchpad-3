@@ -87,8 +87,10 @@ from lp.code.interfaces.gitrepository import (
     IGitRepository,
     user_has_special_git_repository_access,
     )
-from lp.code.interfaces.gitrule import IGitRule
-from lp.code.interfaces.gitrulegrant import IGitRuleGrant
+from lp.code.interfaces.gitrule import (
+    IGitRule,
+    IGitRuleGrant,
+    )
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,

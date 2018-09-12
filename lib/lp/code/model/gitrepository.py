@@ -113,8 +113,10 @@ from lp.code.model.gitref import (
     GitRef,
     GitRefDefault,
     )
-from lp.code.model.gitrule import GitRule
-from lp.code.model.gitrulegrant import GitRuleGrant
+from lp.code.model.gitrule import (
+    GitRule,
+    GitRuleGrant,
+    )
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
