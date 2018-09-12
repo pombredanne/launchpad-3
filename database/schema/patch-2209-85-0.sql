@@ -44,8 +44,14 @@ CREATE TABLE GitRuleGrant (
 
 CREATE INDEX gitrulegrant__repository__idx
     ON GitRuleGrant(repository);
+CREATE UNIQUE INDEX gitrulegrant__rule__grantee_type__key
+    ON GitRuleGrant(rule, grantee_type)
+    -- 2 == PERSON
+    WHERE grantee_type != 2;
 CREATE UNIQUE INDEX gitrulegrant__rule__grantee_type__grantee_key
-    ON GitRuleGrant(rule, grantee_type, grantee);
+    ON GitRuleGrant(rule, grantee_type, grantee)
+    -- 2 == PERSON
+    WHERE grantee_type = 2;
 
 COMMENT ON TABLE GitRuleGrant IS 'An access grant for a Git repository rule.';
 COMMENT ON COLUMN GitRuleGrant.repository IS 'The repository that this grant is for.';
