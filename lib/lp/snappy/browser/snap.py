@@ -25,6 +25,7 @@ from lazr.restful.interface import (
     )
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
+from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import Interface
 from zope.schema import (
     Choice,
@@ -35,7 +36,6 @@ from zope.schema import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     render_radio_widget_part,
@@ -263,9 +263,9 @@ class SnapRequestBuildsView(LaunchpadFormView):
             description=u'The package stream within the source distribution '
                 'series to use when building the snap package.')
 
-    custom_widget('archive', SnapArchiveWidget)
-    custom_widget('distro_arch_series', LabeledMultiCheckBoxWidget)
-    custom_widget('pocket', LaunchpadDropdownWidget)
+    custom_widget_archive = SnapArchiveWidget
+    custom_widget_distro_arch_series = LabeledMultiCheckBoxWidget
+    custom_widget_pocket = LaunchpadDropdownWidget
 
     help_links = {
         "pocket": u"/+help-snappy/snap-build-pocket.html",
@@ -400,11 +400,11 @@ class SnapAddView(
         'store_name',
         'store_channels',
         ]
-    custom_widget('store_distro_series', LaunchpadRadioWidget)
-    custom_widget('auto_build_archive', SnapArchiveWidget)
-    custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
-    custom_widget('auto_build_channels', SnapBuildChannelsWidget)
-    custom_widget('store_channels', StoreChannelsWidget)
+    custom_widget_store_distro_series = LaunchpadRadioWidget
+    custom_widget_auto_build_archive = SnapArchiveWidget
+    custom_widget_auto_build_pocket = LaunchpadDropdownWidget
+    custom_widget_auto_build_channels = SnapBuildChannelsWidget
+    custom_widget_store_channels = StoreChannelsWidget
 
     help_links = {
         "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",
@@ -696,13 +696,14 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
         'store_name',
         'store_channels',
         ]
-    custom_widget('store_distro_series', LaunchpadRadioWidget)
-    custom_widget('vcs', LaunchpadRadioWidget)
-    custom_widget('git_ref', GitRefWidget, allow_external=True)
-    custom_widget('auto_build_archive', SnapArchiveWidget)
-    custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
-    custom_widget('auto_build_channels', SnapBuildChannelsWidget)
-    custom_widget('store_channels', StoreChannelsWidget)
+    custom_widget_store_distro_series = LaunchpadRadioWidget
+    custom_widget_vcs = LaunchpadRadioWidget
+    custom_widget_git_ref = CustomWidgetFactory(
+        GitRefWidget, allow_external=True)
+    custom_widget_auto_build_archive = SnapArchiveWidget
+    custom_widget_auto_build_pocket = LaunchpadDropdownWidget
+    custom_widget_auto_build_channels = SnapBuildChannelsWidget
+    custom_widget_store_channels = StoreChannelsWidget
 
     help_links = {
         "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",
