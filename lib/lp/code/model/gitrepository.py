@@ -41,7 +41,6 @@ from storm.locals import (
     Bool,
     DateTime,
     Int,
-    List,
     Reference,
     Unicode,
     )
@@ -1323,6 +1322,9 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         self._deleteRepositorySubscriptions()
         self._deleteJobs()
         getUtility(IWebhookSet).delete(self.webhooks)
+        self.getActivity().remove()
+        self.grants.remove()
+        self.rules.remove()
 
         # Now destroy the repository.
         repository_name = self.unique_name
