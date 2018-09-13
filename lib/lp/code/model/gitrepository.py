@@ -1309,6 +1309,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         self._deleteRepositorySubscriptions()
         self._deleteJobs()
         getUtility(IWebhookSet).delete(self.webhooks)
+        self.grants.remove()
+        self.rules.remove()
 
         # Now destroy the repository.
         repository_name = self.unique_name

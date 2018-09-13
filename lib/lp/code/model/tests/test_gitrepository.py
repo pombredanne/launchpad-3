@@ -538,6 +538,14 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
         transaction.commit()
         self.assertRaises(LostObjectError, getattr, webhook, 'target')
 
+    def test_related_rules_and_grants_deleted(self):
+        rule = self.factory.makeGitRule(repository=self.repository)
+        grant = self.factory.makeGitRuleGrant(rule=rule)
+        self.repository.destroySelf()
+        transaction.commit()
+        self.assertRaises(LostObjectError, getattr, grant, 'rule')
+        self.assertRaises(LostObjectError, getattr, rule, 'repository')
+
 
 class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
     """Test determination and application of repository deletion
