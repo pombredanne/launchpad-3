@@ -135,7 +135,7 @@ class HasTranslationImportsView(LaunchpadFormView):
                 __name__=name,
                 source=EntryImportStatusVocabularyFactory(entry, self.user),
                 title=_('Select import status')),
-            custom_widget=self.custom_widgets_status,
+            custom_widget=self.custom_widget_status,
             render_context=self.render_context)
 
     def setUpFields(self):
