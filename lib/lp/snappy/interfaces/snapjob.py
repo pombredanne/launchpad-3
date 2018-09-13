@@ -112,10 +112,31 @@ class ISnapRequestBuildsJobSource(IJobSource):
             for these builds.
         """
 
+    def findBySnap(snap, statuses=None, job_ids=None):
+        """Find jobs for a snap.
+
+        :param snap: A snap package to search for.
+        :param statuses: An optional iterable of `JobStatus`es to search for.
+        :param job_ids: An optional iterable of job IDs to search for.
+        :return: A sequence of `SnapRequestBuildsJob`s with the specified
+            snap.
+        """
+
     def getBySnapAndID(snap, job_id):
         """Get a job by snap and job ID.
 
         :return: The `SnapRequestBuildsJob` with the specified snap and ID.
         :raises: `NotFoundError` if there is no job with the specified snap
             and ID, or its `job_type` is not `SnapJobType.REQUEST_BUILDS`.
+        """
+
+    def findBuildsForJobs(jobs, user=None):
+        """Find builds resulting from an iterable of `SnapRequestBuildJob`s.
+
+        :param jobs: An iterable of `SnapRequestBuildJob`s to search for.
+        :param user: If passed, check that the builds are for archives
+            visible by this user.  (No access checks are performed on the
+            snaps or on the builds.)
+        :return: A dictionary mapping `SnapRequestBuildJob` IDs to lists of
+            their resulting builds.
         """

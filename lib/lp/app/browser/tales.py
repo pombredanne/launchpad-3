@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -95,6 +95,7 @@ from lp.services.webapp.publisher import (
     )
 from lp.services.webapp.session import get_cookie_domain
 from lp.services.webapp.url import urlappend
+from lp.snappy.interfaces.snap import SnapBuildRequestStatus
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     IArchive,
@@ -1162,6 +1163,39 @@ class ArchiveImageDisplayAPI(ObjectImageDisplayAPI):
         source = icon_map[self._context.purpose]
 
         return self.icon_template % (alt, title, source)
+
+
+class SnapBuildRequestImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for ISnapBuildRequest objects to an image.
+
+    Used for image:icon.
+    """
+    icon_template = (
+        '<img width="%(width)s" height="14" alt="%(alt)s" '
+        'title="%(title)s" src="%(src)s" />')
+
+    def icon(self):
+        """Return the appropriate <img> tag for the build request icon."""
+        icon_map = {
+            SnapBuildRequestStatus.PENDING: {'src': "/@@/processing"},
+            SnapBuildRequestStatus.FAILED: {
+                'src': "/@@/build-failed",
+                'width': "16",
+                },
+            SnapBuildRequestStatus.COMPLETED: {'src': "/@@/build-success"},
+            }
+
+        alt = '[%s]' % self._context.status.name
+        title = self._context.status.title
+        source = icon_map[self._context.status].get('src')
+        width = icon_map[self._context.status].get('width', '14')
+
+        return self.icon_template % {
+            'alt': alt,
+            'title': title,
+            'src': source,
+            'width': width,
+            }
 
 
 class BadgeDisplayAPI:

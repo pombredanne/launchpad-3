@@ -317,6 +317,11 @@ class ISnapBuildRequest(Interface):
         value_type=Reference(schema=Interface),
         required=True, readonly=True))
 
+    archive = Reference(
+        IArchive,
+        title=u"The source archive for builds produced by this request",
+        required=True, readonly=True)
+
 
 class ISnapView(Interface):
     """`ISnap` attributes that require launchpad.View permission."""
@@ -449,19 +454,47 @@ class ISnapView(Interface):
         :return: `ISnapBuildRequest`.
         """
 
+    pending_build_requests = exported(doNotSnapshot(CollectionField(
+        title=_("Pending build requests for this snap package."),
+        value_type=Reference(ISnapBuildRequest),
+        required=True, readonly=True)))
+
+    # XXX cjwatson 2018-06-20: Deprecated as an exported method; can become
+    # an internal helper method once production JavaScript no longer uses
+    # it.
     @operation_parameters(
         snap_build_ids=List(
-            title=_("A list of snap build ids."),
-            value_type=Int()))
+            title=_("A list of snap build IDs."), value_type=Int()))
     @export_read_operation()
     @operation_for_version("devel")
     def getBuildSummariesForSnapBuildIds(snap_build_ids):
         """Return a dictionary containing a summary of the build statuses.
 
-        :param snap_build_ids: A list of snap build ids.
+        :param snap_build_ids: A list of snap build IDs.
         :type source_ids: ``list``
         :return: A dict consisting of the overall status summaries for the
             given snap builds.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        request_ids=List(
+            title=_("A list of snap build request IDs."), value_type=Int(),
+            required=False),
+        build_ids=List(
+            title=_("A list of snap build IDs."), value_type=Int(),
+            required=False))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getBuildSummaries(request_ids=None, build_ids=None, user=None):
+        """Return a dictionary containing a summary of build information.
+
+        :param request_ids: A list of snap build request IDs.
+        :param build_ids: A list of snap build IDs.
+        :param user: The `IPerson` requesting this information.
+        :return: A dict of {"requests", "builds"}, consisting of the overall
+            status summaries for the given snap build requests and snap
+            builds respectively.
         """
 
     builds = exported(doNotSnapshot(CollectionField(
