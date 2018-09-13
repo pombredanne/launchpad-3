@@ -20,6 +20,7 @@ from lazr.enum import (
     DBItem,
     )
 from storm.locals import (
+    Desc,
     Int,
     JSON,
     Reference,
@@ -209,7 +210,8 @@ class SnapRequestBuildsJob(SnapJobDerived):
                 ])
         if job_ids is not None:
             clauses.append(SnapJob.job_id.is_in(job_ids))
-        snap_jobs = IStore(SnapJob).find(SnapJob, *clauses)
+        snap_jobs = IStore(SnapJob).find(SnapJob, *clauses).order_by(
+            Desc(SnapJob.job_id))
 
         def preload_jobs(rows):
             load_related(Job, rows, ["job_id"])
