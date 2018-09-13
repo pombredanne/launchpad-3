@@ -654,6 +654,7 @@ class Snap(Storm, WebhookTargetMixin):
     def pending_build_requests(self):
         """See `ISnap`."""
         job_source = getUtility(ISnapRequestBuildsJobSource)
+        # The returned jobs are ordered by descending ID.
         jobs = job_source.findBySnap(
             self, statuses=(JobStatus.WAITING, JobStatus.RUNNING))
         return [SnapBuildRequest.fromJob(job) for job in jobs]
