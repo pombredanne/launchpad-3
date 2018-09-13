@@ -87,6 +87,7 @@ from lp.code.model.branchmergeproposaljob import (
     UpdatePreviewDiffJob,
     )
 from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.model.gitactivity import GitActivity
 from lp.code.model.gitjob import (
     GitJob,
     GitJobType,
@@ -541,10 +542,18 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
     def test_related_rules_and_grants_deleted(self):
         rule = self.factory.makeGitRule(repository=self.repository)
         grant = self.factory.makeGitRuleGrant(rule=rule)
+        store = Store.of(self.repository)
+        repository_id = self.repository.id
+        activities = store.find(
+            GitActivity, GitActivity.repository_id == repository_id)
+        self.assertNotEqual([], list(activities))
         self.repository.destroySelf()
         transaction.commit()
         self.assertRaises(LostObjectError, getattr, grant, 'rule')
         self.assertRaises(LostObjectError, getattr, rule, 'repository')
+        activities = store.find(
+            GitActivity, GitActivity.repository_id == repository_id)
+        self.assertEqual([], list(activities))
 
 
 class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):

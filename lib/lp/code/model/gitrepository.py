@@ -1320,6 +1320,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         self._deleteRepositorySubscriptions()
         self._deleteJobs()
         getUtility(IWebhookSet).delete(self.webhooks)
+        self.getActivity().remove()
         self.grants.remove()
         self.rules.remove()
 
