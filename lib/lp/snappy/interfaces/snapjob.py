@@ -114,9 +114,13 @@ class ISnapRequestBuildsJobSource(IJobSource):
             and ID, or its `job_type` is not `SnapJobType.REQUEST_BUILDS`.
         """
 
-    def findBuildsForJobs(jobs):
+    def findBuildsForJobs(jobs, user=None):
         """Find builds resulting from an iterable of `SnapRequestBuildJob`s.
 
+        :param jobs: An iterable of `SnapRequestBuildJob`s to search for.
+        :param user: If passed, check that the builds are for archives
+            visible by this user.  (No access checks are performed on the
+            snaps or on the builds.)
         :return: A dictionary mapping `SnapRequestBuildJob` IDs to lists of
             their resulting builds.
         """
