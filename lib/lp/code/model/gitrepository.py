@@ -41,7 +41,6 @@ from storm.locals import (
     Bool,
     DateTime,
     Int,
-    List,
     Reference,
     Unicode,
     )
