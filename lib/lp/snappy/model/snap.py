@@ -120,6 +120,10 @@ from lp.services.librarian.model import (
     LibraryFileContent,
     )
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
 from lp.services.webapp.authorization import precache_permission_for_objects
 from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import canonical_url
@@ -180,21 +184,21 @@ class SnapBuildRequest:
     webservice-friendly view of an asynchronous build request.
     """
 
-    def __init__(self, snap, id, job=None):
-        if job is None:
-            job_source = getUtility(ISnapRequestBuildsJobSource)
-            job = job_source.getBySnapAndID(snap, id)
-        if snap != job.snap:
-            raise AssertionError(
-                "Mismatched SnapRequestBuildsJob: expected %r, got %r" %
-                (snap, job.snap))
-        if id != job.job_id:
-            raise AssertionError(
-                "Mismatched SnapRequestBuildsJob: expected %d, got %d" %
-                (id, job.job_id))
-        self._job = job
+    def __init__(self, snap, id):
         self.snap = snap
         self.id = id
+
+    @classmethod
+    def fromJob(cls, job):
+        """See `ISnapBuildRequest`."""
+        request = cls(job.snap, job.job_id)
+        get_property_cache(request)._job = job
+        return request
+
+    @cachedproperty
+    def _job(self):
+        job_source = getUtility(ISnapRequestBuildsJobSource)
+        return job_source.getBySnapAndID(self.snap, self.id)
 
     @property
     def status(self):
@@ -651,7 +655,7 @@ class Snap(Storm, WebhookTargetMixin):
         """See `ISnap`."""
         job_source = getUtility(ISnapRequestBuildsJobSource)
         return [
-            SnapBuildRequest(self, job.job_id, job=job)
+            SnapBuildRequest.fromJob(job)
             for job in job_source.findBySnap(
                 self, statuses=(JobStatus.WAITING, JobStatus.RUNNING))]
 
@@ -722,8 +726,7 @@ class Snap(Storm, WebhookTargetMixin):
         if request_ids:
             job_source = getUtility(ISnapRequestBuildsJobSource)
             jobs = job_source.findBySnap(self, job_ids=request_ids)
-            requests = [
-                SnapBuildRequest(self, job.job_id, job=job) for job in jobs]
+            requests = [SnapBuildRequest.fromJob(job) for job in jobs]
             builds_by_request = job_source.findBuildsForJobs(jobs)
             for builds in builds_by_request.values():
                 # It's safe to remove the proxy here, because the IDs will
