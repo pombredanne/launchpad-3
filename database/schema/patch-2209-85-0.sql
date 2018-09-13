@@ -5,7 +5,7 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE GitRule (
     id serial PRIMARY KEY,
-    repository integer NOT NULL REFERENCES gitrepository ON DELETE CASCADE,
+    repository integer NOT NULL REFERENCES gitrepository,
     position integer NOT NULL,
     ref_pattern text NOT NULL,
     creator integer NOT NULL REFERENCES person,
@@ -27,7 +27,7 @@ COMMENT ON COLUMN GitRule.date_last_modified IS 'The time when this rule was las
 
 CREATE TABLE GitRuleGrant (
     id serial PRIMARY KEY,
-    repository integer NOT NULL REFERENCES gitrepository ON DELETE CASCADE,
+    repository integer NOT NULL REFERENCES gitrepository,
     rule integer NOT NULL REFERENCES gitrule,
     grantee_type integer NOT NULL,
     grantee integer REFERENCES person,
