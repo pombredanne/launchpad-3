@@ -5,7 +5,7 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE GitActivity (
     id serial PRIMARY KEY,
-    repository integer NOT NULL REFERENCES gitrepository ON DELETE CASCADE,
+    repository integer NOT NULL REFERENCES gitrepository,
     date_changed timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     changer integer NOT NULL REFERENCES person,
     changee integer REFERENCES person,
