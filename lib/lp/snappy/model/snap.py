@@ -718,7 +718,7 @@ class Snap(Storm, WebhookTargetMixin):
                 }
         return result
 
-    def getBuildSummaries(self, request_ids=None, build_ids=None):
+    def getBuildSummaries(self, request_ids=None, build_ids=None, user=None):
         """See `ISnap`."""
         all_build_ids = []
         result = {"requests": {}, "builds": {}}
@@ -727,7 +727,7 @@ class Snap(Storm, WebhookTargetMixin):
             job_source = getUtility(ISnapRequestBuildsJobSource)
             jobs = job_source.findBySnap(self, job_ids=request_ids)
             requests = [SnapBuildRequest.fromJob(job) for job in jobs]
-            builds_by_request = job_source.findBuildsForJobs(jobs)
+            builds_by_request = job_source.findBuildsForJobs(jobs, user=user)
             for builds in builds_by_request.values():
                 # It's safe to remove the proxy here, because the IDs will
                 # go through Snap._getBuilds which checks visibility.  This

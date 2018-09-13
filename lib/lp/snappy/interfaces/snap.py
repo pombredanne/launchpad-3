@@ -462,6 +462,7 @@ class ISnapView(Interface):
             given snap builds.
         """
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         request_ids=List(
             title=_("A list of snap build request IDs."), value_type=Int(),
@@ -471,11 +472,12 @@ class ISnapView(Interface):
             required=False))
     @export_read_operation()
     @operation_for_version("devel")
-    def getBuildSummaries(request_ids=None, build_ids=None):
+    def getBuildSummaries(request_ids=None, build_ids=None, user=None):
         """Return a dictionary containing a summary of build information.
 
         :param request_ids: A list of snap build request IDs.
         :param build_ids: A list of snap build IDs.
+        :param user: The `IPerson` requesting this information.
         :return: A dict of {"requests", "builds"}, consisting of the overall
             status summaries for the given snap build requests and snap
             builds respectively.
