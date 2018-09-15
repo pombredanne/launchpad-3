@@ -2436,6 +2436,15 @@ class PreviewDiffView(DelegatedAuthorization):
         super(PreviewDiffView, self).__init__(obj, obj.branch_merge_proposal)
 
 
+class CodeReviewVoteReferenceView(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ICodeReviewVoteReference
+
+    def __init__(self, obj):
+        super(CodeReviewVoteReferenceView, self).__init__(
+            obj, obj.branch_merge_proposal)
+
+
 class CodeReviewVoteReferenceEdit(DelegatedAuthorization):
     permission = 'launchpad.Edit'
     usedfor = ICodeReviewVoteReference
