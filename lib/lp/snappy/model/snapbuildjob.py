@@ -197,7 +197,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         )
 
     retry_error_types = (UploadNotScannedYetResponse, RetryableSnapStoreError)
-    max_retries = 20
+    max_retries = 30
 
     config = config.ISnapStoreUploadJobSource
 
