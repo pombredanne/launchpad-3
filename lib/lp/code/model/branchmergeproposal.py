@@ -1379,7 +1379,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             for vote in votes:
                 votes_map[vote.branch_merge_proposalID].append(vote)
             for mp in branch_merge_proposals:
-                get_property_cache(mp).votes = votes_map.get(mp.id)
+                get_property_cache(mp).votes = votes_map[mp.id]
             comments = load_related(CodeReviewComment, votes, ['commentID'])
             load_related(Message, comments, ['messageID'])
             person_ids.update(vote.reviewerID for vote in votes)
