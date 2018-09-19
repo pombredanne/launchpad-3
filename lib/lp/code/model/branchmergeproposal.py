@@ -10,6 +10,7 @@ __all__ = [
     'is_valid_transition',
     ]
 
+from collections import defaultdict
 from email.utils import make_msgid
 from operator import attrgetter
 import sys
@@ -1374,8 +1375,11 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             votes = load_referencing(
                 CodeReviewVoteReference, branch_merge_proposals,
                 ['branch_merge_proposalID'])
+            votes_map = defaultdict(list)
+            for vote in votes:
+                votes_map[vote.branch_merge_proposalID].append(vote)
             for mp in branch_merge_proposals:
-                get_property_cache(mp).votes = votes
+                get_property_cache(mp).votes = votes_map.get(mp.id)
             comments = load_related(CodeReviewComment, votes, ['commentID'])
             load_related(Message, comments, ['messageID'])
             person_ids.update(vote.reviewerID for vote in votes)
