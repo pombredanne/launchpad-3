@@ -1179,8 +1179,9 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             rules.remove(rule)
             rules.insert(position, rule)
             self._syncRulePositions(rules)
-            getUtility(IGitActivitySet).logRuleMoved(
-                rule, current_position, position, user)
+            if rule.position != current_position:
+                getUtility(IGitActivitySet).logRuleMoved(
+                    rule, current_position, rule.position, user)
 
     @property
     def grants(self):
