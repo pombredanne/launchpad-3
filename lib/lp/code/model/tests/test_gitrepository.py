@@ -2236,9 +2236,9 @@ class TestGitRepositoryRules(TestCaseWithFactory):
             self.factory.makeGitRule(
                 repository=repository, ref_pattern="refs/heads/*"),
             self.factory.makeGitRule(
-                repository=repository, ref_pattern="refs/heads/protected"),
+                repository=repository, ref_pattern="refs/heads/protected/*"),
             self.factory.makeGitRule(
-                repository=repository, ref_pattern="refs/heads/another"),
+                repository=repository, ref_pattern="refs/heads/another/*"),
             ]
         self.assertEqual([0, 1, 2], [rule.position for rule in initial_rules])
         with person_logged_in(repository.owner):
@@ -2250,13 +2250,35 @@ class TestGitRepositoryRules(TestCaseWithFactory):
             [initial_rules[0], new_rule, initial_rules[1], initial_rules[2]],
             list(repository.rules))
 
+    def test_addRule_exact_first(self):
+        repository = self.factory.makeGitRepository()
+        initial_rules = [
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern="refs/heads/exact"),
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern="refs/heads/*"),
+            ]
+        self.assertEqual([0, 1], [rule.position for rule in initial_rules])
+        with person_logged_in(repository.owner):
+            exact_rule = repository.addRule(
+                "refs/heads/exact-2", repository.owner)
+        self.assertEqual(
+            [initial_rules[0], exact_rule, initial_rules[1]],
+            list(repository.rules))
+        with person_logged_in(repository.owner):
+            wildcard_rule = repository.addRule(
+                "refs/heads/wildcard/*", repository.owner, position=0)
+        self.assertEqual(
+            [initial_rules[0], exact_rule, wildcard_rule, initial_rules[1]],
+            list(repository.rules))
+
     def test_moveRule(self):
         repository = self.factory.makeGitRepository()
         rules = [
             self.factory.makeGitRule(
                 repository=repository,
                 ref_pattern=self.factory.getUniqueUnicode(
-                    prefix="refs/heads/"))
+                    prefix="refs/heads/*/"))
             for _ in range(5)]
         with person_logged_in(repository.owner):
             self.assertEqual(rules, list(repository.rules))
