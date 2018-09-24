@@ -57,6 +57,12 @@ class IGitRuleView(Interface):
         title=_("Date created"), required=True, readonly=True,
         description=_("The time when this rule was created."))
 
+    is_exact = Bool(
+        title=_("Is this an exact-match rule?"), required=True, readonly=True,
+        description=_(
+            "True if this rule is for an exact reference name, or False if "
+            "it is for a wildcard."))
+
     grants = Attribute("The access grants for this rule.")
 
 
