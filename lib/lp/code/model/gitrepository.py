@@ -1135,10 +1135,15 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
         :param rules: A sequence of `IGitRule`s in the desired order.
         """
-        # This approach requires fetching all this repository's rules, which
-        # is potentially more work than necessary.  However, it has the
-        # benefit of being simple, and because it ensures the correct
-        # position of all rules it tends to be self-correcting.
+        # Canonicalise rule ordering: exact-match rules come first in
+        # lexicographical order, followed by wildcard rules in the requested
+        # order.  (Note that `sorted` is guaranteed to be stable.)
+        rules = sorted(
+            rules,
+            key=lambda rule: (0, rule.ref_pattern) if rule.is_exact else (1,))
+        # Ensure the correct position of all rules, which may involve more
+        # work than necessary, but is simple and tends to be
+        # self-correcting.
         for position, rule in enumerate(rules):
             if rule.repository != self:
                 raise AssertionError("%r does not belong to %r" % (rule, self))
@@ -1174,8 +1179,9 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             rules.remove(rule)
             rules.insert(position, rule)
             self._syncRulePositions(rules)
-            getUtility(IGitActivitySet).logRuleMoved(
-                rule, current_position, position, user)
+            if rule.position != current_position:
+                getUtility(IGitActivitySet).logRuleMoved(
+                    rule, current_position, rule.position, user)
 
     @property
     def grants(self):

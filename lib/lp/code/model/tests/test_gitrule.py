@@ -66,6 +66,21 @@ class TestGitRule(TestCaseWithFactory):
         self.assertEqual(
             "<GitRule 'refs/heads/*'> for %r" % repository, repr(rule))
 
+    def test_is_exact(self):
+        repository = self.factory.makeGitRepository()
+        for ref_pattern, is_exact in (
+                ("refs/heads/master", True),
+                ("refs/heads/*", False),
+                ("refs/heads/?", False),
+                ("refs/heads/[abc]", False),
+                (r"refs/heads/.\$", True),
+                ):
+            self.assertEqual(
+                is_exact,
+                self.factory.makeGitRule(
+                    repository=repository,
+                    ref_pattern=ref_pattern).is_exact)
+
     def test_grants(self):
         rule = self.factory.makeGitRule()
         other_rule = self.factory.makeGitRule(

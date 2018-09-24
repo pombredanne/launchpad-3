@@ -11,6 +11,8 @@ __all__ = [
     'GitRuleGrant',
     ]
 
+import re
+
 from lazr.enum import DBItem
 import pytz
 from storm.locals import (
@@ -93,6 +95,14 @@ class GitRule(StormBase):
 
     def __repr__(self):
         return "<GitRule '%s'> for %r" % (self.ref_pattern, self.repository)
+
+    @property
+    def is_exact(self):
+        """See `IGitRule`."""
+        # Python's fnmatch implementation only treats *, ?, and [...] as
+        # special, so any rule whose pattern contains none of *, ?, or [
+        # must be an exact-match rule.
+        return re.search(r"[*?[]", self.ref_pattern) is None
 
     @property
     def grants(self):
