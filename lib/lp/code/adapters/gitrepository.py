@@ -45,8 +45,8 @@ class GitRepositoryDelta:
         """
         delta = ObjectDelta(old_repository, new_repository)
         delta.recordNewAndOld(klass.delta_values)
-        activities = new_repository.getActivity(
-            changed_after=old_repository.date_last_modified)
+        activities = list(new_repository.getActivity(
+            changed_after=old_repository.date_last_modified))
         if delta.changes or activities:
             changes = delta.changes
             changes["repository"] = new_repository
