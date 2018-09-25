@@ -12,7 +12,6 @@ __all__ = [
     ]
 
 from collections import OrderedDict
-import re
 
 from lazr.enum import DBItem
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -113,10 +112,9 @@ class GitRule(StormBase):
     @property
     def is_exact(self):
         """See `IGitRule`."""
-        # Python's fnmatch implementation only treats *, ?, and [...] as
-        # special, so any rule whose pattern contains none of *, ?, or [
-        # must be an exact-match rule.
-        return re.search(r"[*?[]", self.ref_pattern) is None
+        # turnip's glob_to_re only treats * as special, so any rule whose
+        # pattern does not contain * must be an exact-match rule.
+        return "*" not in self.ref_pattern
 
     @property
     def grants(self):
