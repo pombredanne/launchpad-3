@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A collection of Git repositories.
@@ -114,6 +114,12 @@ class IGitCollection(Interface):
         :param status: An iterable of queue_status of the proposals to
             return.  If None is specified, all the proposals of all possible
             states are returned.
+        """
+
+    def getGrantsForGrantee(grantee):
+        """Return a result set of access grants to the given grantee.
+
+        :param grantee: An `IPerson`.
         """
 
     def getTeamsWithRepositories(person):
