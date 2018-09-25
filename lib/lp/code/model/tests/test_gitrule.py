@@ -71,8 +71,11 @@ class TestGitRule(TestCaseWithFactory):
         for ref_pattern, is_exact in (
                 ("refs/heads/master", True),
                 ("refs/heads/*", False),
-                ("refs/heads/?", False),
-                ("refs/heads/[abc]", False),
+                # XXX cjwatson 2018-09-25: We may want to support ? and
+                # [...] in the future, since they're potentially useful and
+                # don't collide with valid ref names.
+                ("refs/heads/?", True),
+                ("refs/heads/[abc]", True),
                 (r"refs/heads/.\$", True),
                 ):
             self.assertEqual(
