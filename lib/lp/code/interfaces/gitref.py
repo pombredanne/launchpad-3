@@ -16,6 +16,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     export_factory_operation,
     export_read_operation,
+    export_write_operation,
     exported,
     operation_for_version,
     operation_parameters,
@@ -50,16 +51,12 @@ from lp.code.enums import (
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.person import IPerson
+from lp.services.fields import InlineObject
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
-class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
-    """A reference in a Git repository."""
-
-    # XXX cjwatson 2015-01-19 bug=760849: "beta" is a lie to get WADL
-    # generation working.  Individual attributes must set their version to
-    # "devel".
-    export_as_webservice_entry(as_of="beta")
+class IGitRefView(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
+    """IGitRef attributes that require launchpad.View permission."""
 
     repository = exported(ReferenceChoice(
         title=_("Repository"), required=True, readonly=True,
@@ -390,6 +387,36 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         :param filename: Relative path of a file in the repository.
         :return: A binary string with the blob content.
         """
+
+
+class IGitRefEdit(Interface):
+    """IGitRef methods that require launchpad.Edit permission."""
+
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getGrants():
+        """Get the access grants for this reference."""
+
+    @operation_parameters(
+        grants=List(
+            title=_("Grants"),
+            # Really IGitNascentRuleGrant, patched in
+            # _schema_circular_imports.py.
+            value_type=InlineObject(schema=Interface)))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setGrants(grants, user):
+        """Set the access grants for this reference."""
+
+
+class IGitRef(IGitRefView, IGitRefEdit):
+    """A reference in a Git repository."""
+
+    # XXX cjwatson 2015-01-19 bug=760849: "beta" is a lie to get WADL
+    # generation working.  Individual attributes must set their version to
+    # "devel".
+    export_as_webservice_entry(as_of="beta")
 
 
 class IGitRefBatchNavigator(ITableBatchNavigator):

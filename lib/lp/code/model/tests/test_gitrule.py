@@ -17,14 +17,17 @@ from testtools.matchers import (
     MatchesSetwise,
     MatchesStructure,
     )
+import transaction
 from zope.event import notify
 from zope.interface import providedBy
+from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import (
     GitActivityType,
     GitGranteeType,
     )
 from lp.code.interfaces.gitrule import (
+    IGitNascentRuleGrant,
     IGitRule,
     IGitRuleGrant,
     )
@@ -117,6 +120,185 @@ class TestGitRule(TestCaseWithFactory):
                 can_create=Is(False),
                 can_push=Is(False),
                 can_force_push=Is(True))))
+
+    def test__validateGrants_ok(self):
+        rule = self.factory.makeGitRule()
+        grants = [
+            IGitNascentRuleGrant({
+                "grantee_type": GitGranteeType.REPOSITORY_OWNER,
+                "can_force_push": True,
+                }),
+            ]
+        removeSecurityProxy(rule)._validateGrants(grants)
+
+    def test__validateGrants_grantee_type_person_but_no_grantee(self):
+        rule = self.factory.makeGitRule(ref_pattern="refs/heads/*")
+        grants = [
+            IGitNascentRuleGrant({
+                "grantee_type": GitGranteeType.PERSON,
+                "can_force_push": True,
+                }),
+            ]
+        self.assertRaisesWithContent(
+            ValueError,
+            "Permission grant for refs/heads/* has grantee_type 'Person' but "
+            "no grantee",
+            removeSecurityProxy(rule)._validateGrants, grants)
+
+    def test__validateGrants_grantee_but_wrong_grantee_type(self):
+        rule = self.factory.makeGitRule(ref_pattern="refs/heads/*")
+        grantee = self.factory.makePerson()
+        grants = [
+            IGitNascentRuleGrant({
+                "grantee_type": GitGranteeType.REPOSITORY_OWNER,
+                "grantee": grantee,
+                "can_force_push": True,
+                }),
+            ]
+        self.assertRaisesWithContent(
+            ValueError,
+            "Permission grant for refs/heads/* has grantee_type "
+            "'Repository owner', contradicting grantee ~%s" % grantee.name,
+            removeSecurityProxy(rule)._validateGrants, grants)
+
+    def test_setGrants_add(self):
+        owner = self.factory.makeTeam()
+        member = self.factory.makePerson(member_of=[owner])
+        rule = self.factory.makeGitRule(owner=owner)
+        grantee = self.factory.makePerson()
+        with person_logged_in(member):
+            rule.setGrants([
+                IGitNascentRuleGrant({
+                    "grantee_type": GitGranteeType.REPOSITORY_OWNER,
+                    "can_create": True,
+                    "can_force_push": True,
+                    }),
+                IGitNascentRuleGrant({
+                    "grantee_type": GitGranteeType.PERSON,
+                    "grantee": grantee,
+                    "can_push": True,
+                    }),
+                ], member)
+        self.assertThat(rule.grants, MatchesSetwise(
+            MatchesStructure(
+                rule=Equals(rule),
+                grantor=Equals(member),
+                grantee_type=Equals(GitGranteeType.REPOSITORY_OWNER),
+                grantee=Is(None),
+                can_create=Is(True),
+                can_push=Is(False),
+                can_force_push=Is(True)),
+            MatchesStructure(
+                rule=Equals(rule),
+                grantor=Equals(member),
+                grantee_type=Equals(GitGranteeType.PERSON),
+                grantee=Equals(grantee),
+                can_create=Is(False),
+                can_push=Is(True),
+                can_force_push=Is(False))))
+
+    def test_setGrants_modify(self):
+        owner = self.factory.makeTeam()
+        members = [
+            self.factory.makePerson(member_of=[owner]) for _ in range(2)]
+        rule = self.factory.makeGitRule(owner=owner)
+        grantees = [self.factory.makePerson() for _ in range(2)]
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            grantor=members[0], can_create=True)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=grantees[0], grantor=members[0], can_push=True)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=grantees[1], grantor=members[0],
+            can_force_push=True)
+        date_created = get_transaction_timestamp(Store.of(rule))
+        transaction.commit()
+        with person_logged_in(members[1]):
+            rule.setGrants([
+                IGitNascentRuleGrant({
+                    "grantee_type": GitGranteeType.REPOSITORY_OWNER,
+                    "can_force_push": True,
+                    }),
+                IGitNascentRuleGrant({
+                    "grantee_type": GitGranteeType.PERSON,
+                    "grantee": grantees[1],
+                    "can_create": True,
+                    }),
+                IGitNascentRuleGrant({
+                    "grantee_type": GitGranteeType.PERSON,
+                    "grantee": grantees[0],
+                    "can_push": True,
+                    "can_force_push": True,
+                    }),
+                ], members[1])
+            date_modified = get_transaction_timestamp(Store.of(rule))
+        self.assertThat(rule.grants, MatchesSetwise(
+            MatchesStructure(
+                rule=Equals(rule),
+                grantor=Equals(members[0]),
+                grantee_type=Equals(GitGranteeType.REPOSITORY_OWNER),
+                grantee=Is(None),
+                can_create=Is(False),
+                can_push=Is(False),
+                can_force_push=Is(True),
+                date_created=Equals(date_created),
+                date_last_modified=Equals(date_modified)),
+            MatchesStructure(
+                rule=Equals(rule),
+                grantor=Equals(members[0]),
+                grantee_type=Equals(GitGranteeType.PERSON),
+                grantee=Equals(grantees[0]),
+                can_create=Is(False),
+                can_push=Is(True),
+                can_force_push=Is(True),
+                date_created=Equals(date_created),
+                date_last_modified=Equals(date_modified)),
+            MatchesStructure(
+                rule=Equals(rule),
+                grantor=Equals(members[0]),
+                grantee_type=Equals(GitGranteeType.PERSON),
+                grantee=Equals(grantees[1]),
+                can_create=Is(True),
+                can_push=Is(False),
+                can_force_push=Is(False),
+                date_created=Equals(date_created),
+                date_last_modified=Equals(date_modified))))
+
+    def test_setGrants_remove(self):
+        owner = self.factory.makeTeam()
+        members = [
+            self.factory.makePerson(member_of=[owner]) for _ in range(2)]
+        rule = self.factory.makeGitRule(owner=owner)
+        grantees = [self.factory.makePerson() for _ in range(2)]
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            grantor=members[0], can_create=True)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=grantees[0], grantor=members[0], can_push=True)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=grantees[1], grantor=members[0],
+            can_force_push=True)
+        date_created = get_transaction_timestamp(Store.of(rule))
+        transaction.commit()
+        with person_logged_in(members[1]):
+            rule.setGrants([
+                IGitNascentRuleGrant({
+                    "grantee_type": GitGranteeType.PERSON,
+                    "grantee": grantees[0],
+                    "can_push": True,
+                    }),
+                ], members[1])
+        self.assertThat(rule.grants, MatchesSetwise(
+            MatchesStructure(
+                rule=Equals(rule),
+                grantor=Equals(members[0]),
+                grantee_type=Equals(GitGranteeType.PERSON),
+                grantee=Equals(grantees[0]),
+                can_create=Is(False),
+                can_push=Is(True),
+                can_force_push=Is(False),
+                date_created=Equals(date_created),
+                date_last_modified=Equals(date_created))))
 
     def test_activity_rule_added(self):
         owner = self.factory.makeTeam()
