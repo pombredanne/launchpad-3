@@ -78,6 +78,7 @@ from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IPersonRoles
 from lp.services.fields import (
+    InlineObject,
     PersonChoice,
     PublicPersonChoice,
     )
@@ -746,6 +747,23 @@ class IGitRepositoryEdit(IWebhookTarget):
             end.
         :param user: The `IPerson` who is moving the rule.
         """
+
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getRules():
+        """Get the access rules for this repository."""
+
+    @operation_parameters(
+        rules=List(
+            title=_("Rules"),
+            # Really IGitNascentRule, patched in
+            # _schema_circular_imports.py.
+            value_type=InlineObject(schema=Interface)))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setRules(rules, user):
+        """Set the access rules for this repository."""
 
     @export_read_operation()
     @operation_for_version("devel")

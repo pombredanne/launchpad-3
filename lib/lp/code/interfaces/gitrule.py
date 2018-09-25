@@ -7,6 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
+    'IGitNascentRule',
     'IGitNascentRuleGrant',
     'IGitRule',
     'IGitRuleGrant',
@@ -23,6 +24,7 @@ from zope.schema import (
     Choice,
     Datetime,
     Int,
+    List,
     TextLine,
     )
 
@@ -30,6 +32,7 @@ from lp import _
 from lp.code.enums import GitGranteeType
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.services.fields import (
+    InlineObject,
     PersonChoice,
     PublicPersonChoice,
     )
@@ -209,3 +212,15 @@ class IGitNascentRuleGrant(Interface):
 
     can_force_push = copy_field(
         IGitRuleGrant["can_force_push"], required=False, default=False)
+
+
+class IGitNascentRule(Interface):
+    """An access rule in the process of being created.
+
+    This represents parameters for a rule that have been deserialised from a
+    webservice request, but that have not yet been attached to a repository.
+    """
+
+    ref_pattern = copy_field(IGitRule["ref_pattern"])
+
+    grants = List(value_type=InlineObject(schema=IGitNascentRuleGrant))

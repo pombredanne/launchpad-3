@@ -7,7 +7,10 @@ from datetime import datetime
 from operator import attrgetter
 
 import pytz
-from testtools.matchers import MatchesStructure
+from testtools.matchers import (
+    MatchesListwise,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -501,10 +504,12 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
         grant = self.factory.makeGitRuleGrant(rule=rule)
         self._do_premerge(grant.grantee, person)
 
-        self.assertEqual(grant.grantee, rule.grants.one().grantee)
+        self.assertEqual(1, len(rule.grants))
+        self.assertEqual(grant.grantee, rule.grants[0].grantee)
         with person_logged_in(person):
             self._do_merge(grant.grantee, person)
-        self.assertEqual(person, rule.grants.one().grantee)
+        self.assertEqual(1, len(rule.grants))
+        self.assertEqual(person, rule.grants[0].grantee)
 
     def test_merge_gitrulegrants_conflicts(self):
         # Conflicting GitRuleGrants are deleted.
@@ -522,12 +527,11 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
             self._do_merge(duplicate, person)
 
         # Only one grant for the rule exists: the retained person's.
-        self.assertThat(
-            rule.grants.one(),
+        self.assertThat(rule.grants, MatchesListwise([
             MatchesStructure.byEquality(
                 rule=rule,
                 grantee=person,
-                date_created=person_grant_date))
+                date_created=person_grant_date)]))
 
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.
