@@ -1,10 +1,11 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import absolute_import, print_function, unicode_literals
 
 from zope.security.interfaces import Unauthorized
 
+from lp.app.enums import InformationType
 from lp.code.enums import CodeReviewVote
 from lp.code.errors import (
     ClaimReviewFailed,
@@ -14,7 +15,10 @@ from lp.code.errors import (
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.tests.helpers import make_merge_proposal_without_reviewers
 from lp.services.database.constants import UTC_NOW
+from lp.services.webapp.authorization import check_permission
 from lp.testing import (
+    ANONYMOUS,
+    login,
     login_person,
     TestCaseWithFactory,
     )
@@ -39,6 +43,29 @@ class TestCodeReviewVote(TestCaseWithFactory):
         self.assertSqlAttributeEqualsDate(
             vote, 'date_created', UTC_NOW)
         self.assertProvides(vote, ICodeReviewVoteReference)
+
+    def test_anonymous_public(self):
+        """Anonymous users can see votes on public merge proposals."""
+        merge_proposal = make_merge_proposal_without_reviewers(self.factory)
+        reviewer = self.factory.makePerson()
+        login_person(merge_proposal.registrant)
+        vote = merge_proposal.nominateReviewer(
+            reviewer, merge_proposal.registrant)
+        login(ANONYMOUS)
+        self.assertTrue(check_permission('launchpad.View', vote))
+
+    def test_anonymous_private(self):
+        """Anonymous users cannot see votes on private merge proposals."""
+        owner = self.factory.makePerson()
+        login_person(owner)
+        target_branch = self.factory.makeBranch(
+            owner=owner, information_type=InformationType.USERDATA)
+        merge_proposal = make_merge_proposal_without_reviewers(
+            self.factory, target_branch=target_branch, registrant=owner)
+        reviewer = self.factory.makePerson()
+        vote = merge_proposal.nominateReviewer(reviewer, owner)
+        login(ANONYMOUS)
+        self.assertFalse(check_permission('launchpad.View', vote))
 
 
 class TestCodeReviewVoteReferenceClaimReview(TestCaseWithFactory):
