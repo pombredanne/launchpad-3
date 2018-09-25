@@ -1,10 +1,9 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
     'AnnouncementDate',
-    'FormattableDate',
     'BaseImageUpload',
     'BlacklistableContentNameField',
     'BugField',
@@ -13,10 +12,12 @@ __all__ = [
     'Datetime',
     'DuplicateBug',
     'FieldNotBoundError',
+    'FormattableDate',
     'IAnnouncementDate',
     'IBaseImageUpload',
     'IBugField',
     'IDescription',
+    'IInlineObject',
     'INoneableTextLine',
     'IPersonChoice',
     'IStrippedTextLine',
@@ -26,6 +27,7 @@ __all__ = [
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
+    'InlineObject',
     'KEEP_SAME_IMAGE',
     'LogoImageUpload',
     'MugshotImageUpload',
@@ -71,6 +73,7 @@ from zope.schema import (
     Date,
     Datetime,
     Int,
+    Object,
     Text,
     TextLine,
     Tuple,
@@ -909,3 +912,12 @@ class WorkItemsText(Text):
                                            "for the target '%s'." % \
                                                (milestone_name, target.name))
         return milestone
+
+
+class IInlineObject(IObject):
+    """A marker for an object represented as a dict."""
+
+
+@implementer(IInlineObject)
+class InlineObject(Object):
+    """An object that is represented as a dict rather than a URL reference."""
