@@ -453,7 +453,10 @@ class GitRef(StormBase, GitRefMixin):
 
     @property
     def commit_message_first_line(self):
-        return self.commit_message.split("\n", 1)[0]
+        if self.commit_message is not None:
+            return self.commit_message.split("\n", 1)[0]
+        else:
+            return None
 
     @property
     def has_commits(self):

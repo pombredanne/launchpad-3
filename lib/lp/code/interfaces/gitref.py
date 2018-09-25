@@ -119,7 +119,7 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
 
     commit_message_first_line = TextLine(
         title=_("The first line of the commit message."),
-        required=True, readonly=True)
+        required=False, readonly=True)
 
     identity = Attribute(
         "The identity of this reference.  This will be the shortened path to "
