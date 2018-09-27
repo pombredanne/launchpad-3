@@ -27,7 +27,6 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.gitlookup import (
     IGitLookup,
-    IGitRuleGrantLookup,
     IGitTraversable,
     IGitTraverser,
     )
@@ -374,14 +373,3 @@ class GitLookup:
         if trailing:
             trailing_segments.insert(0, trailing)
         return repository, "/".join(trailing_segments)
-
-
-@implementer(IGitRuleGrantLookup)
-class GitRuleGrantLookup:
-
-    def getByRulesAffectingPerson(self, repository, grantee):
-        grants = IStore(GitRuleGrant).find(
-            GitRuleGrant,
-            GitRuleGrant.repository == repository)
-        grants = [grant for grant in grants if grantee.inTeam(grant.grantee)]
-        return grants

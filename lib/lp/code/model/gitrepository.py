@@ -1185,6 +1185,12 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         return Store.of(self).find(
             GitRuleGrant, GitRuleGrant.repository_id == self.id)
 
+    def findGrantsByGrantee(self, grantee):
+        grants = [grant for grant in self.grants
+                  if grantee.inTeam(grant.grantee)]
+        return grants
+
+
     def canBeDeleted(self):
         """See `IGitRepository`."""
         # Can't delete if the repository is associated with anything.

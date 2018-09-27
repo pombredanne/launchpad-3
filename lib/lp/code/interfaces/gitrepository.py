@@ -738,6 +738,12 @@ class IGitRepositoryEdit(IWebhookTarget):
             end.
         """
 
+    def findGrantsByGrantee(grantee):
+        """Find the grants for a grantee applied to this repository.
+
+        :param grantee: The Person affected
+        """
+
     @export_read_operation()
     @operation_for_version("devel")
     def canBeDeleted():

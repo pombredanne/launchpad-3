@@ -40,7 +40,6 @@ from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitlookup import (
     IGitLookup,
-    IGitRuleGrantLookup,
     IGitTraverser,
     )
 from lp.code.interfaces.gitnamespace import (
@@ -335,8 +334,10 @@ class GitAPI(LaunchpadXMLRPCView):
 
     def _listRefRules(self, requester, translated_path):
         repository = getUtility(IGitLookup).getByHostingPath(translated_path)
-        grants = getUtility(IGitRuleGrantLookup).getByRulesAffectingPerson(
-            repository, requester)
+        try:
+            grants = repository.findGrantsByGrantee(requester)
+        except Unauthorized:
+            return []
 
         lines = []
         for grant in grants:
