@@ -348,14 +348,15 @@ class GitAPI(LaunchpadXMLRPCView):
                 permissions.append("push")
             if grant.can_force_push:
                 permissions.append("force-push")
-            lines.append(
-                {'ref_pattern': grant.rule.ref_pattern,
-                'permissions': permissions})
+            lines.append({'ref_pattern': grant.rule.ref_pattern,
+                          'permissions': permissions,
+                          })
 
         if self._isRepositoryOwner(requester, repository):
             lines.append({
                 'ref_pattern': '*',
-                'permissions': ['create', 'push', 'force-push']})
+                'permissions': ['create', 'push', 'force-push'],
+                })
         return lines
 
     def listRefRules(self, translated_path, auth_params):
@@ -368,4 +369,4 @@ class GitAPI(LaunchpadXMLRPCView):
             requester_id,
             self._listRefRules,
             translated_path,
-        )
+            )
