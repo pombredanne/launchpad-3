@@ -676,6 +676,14 @@ class Snap(Storm, WebhookTargetMixin):
             self, statuses=(JobStatus.WAITING, JobStatus.RUNNING))
         return [SnapBuildRequest.fromJob(job) for job in jobs]
 
+    @property
+    def failed_build_requests(self):
+        """See `ISnap`."""
+        job_source = getUtility(ISnapRequestBuildsJobSource)
+        # The returned jobs are ordered by descending ID.
+        jobs = job_source.findBySnap(self, statuses=(JobStatus.FAILED,))
+        return [SnapBuildRequest.fromJob(job) for job in jobs]
+
     def _getBuilds(self, filter_term, order_by):
         """The actual query to get the builds."""
         query_args = [
