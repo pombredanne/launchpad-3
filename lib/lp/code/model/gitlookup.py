@@ -380,7 +380,8 @@ class GitLookup:
 class GitRuleGrantLookup:
 
     def getByRulesAffectingPerson(self, repository, grantee):
-        return IStore(GitRuleGrant).find(
+        grants = IStore(GitRuleGrant).find(
             GitRuleGrant,
-            GitRuleGrant.repository == repository,
-            GitRuleGrant.grantee == grantee)
+            GitRuleGrant.repository == repository)
+        grants = [grant for grant in grants if grantee.inTeam(grant.grantee)]
+        return grants

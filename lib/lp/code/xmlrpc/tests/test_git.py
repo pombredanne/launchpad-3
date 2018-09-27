@@ -269,13 +269,116 @@ class TestGitAPIMixin:
 
         rule = self.factory.makeGitRule(repository)
         self.factory.makeGitRuleGrant(
-            rule=rule, grantee=requester, can_push=True)
+            rule=rule, grantee=requester, can_push=True, can_create=True)
 
         results = self.git_api.listRefRules(
             repository.getInternalPath(),
             {'uid': requester.id})
-        self.assertEqual(len(results), 1)
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0]['ref_pattern'], 'refs/heads/*')
+        self.assertEqual(results[0]['permissions'], ['create', 'push'])
 
+    def test_listRefRules_no_grants(self):
+        # User that has no grants and is not the owner
+        requester = self.factory.makePerson()
+        owner = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                owner=owner, information_type=InformationType.USERDATA))
+
+        rule = self.factory.makeGitRule(repository)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=owner, can_push=True, can_create=True)
+
+        results = self.git_api.listRefRules(
+            repository.getInternalPath(),
+            {'uid': requester.id})
+        self.assertEqual(len(results), 0)
+
+    def test_listRefRules_owner_has_default(self):
+        owner = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                owner=owner, information_type=InformationType.USERDATA))
+
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern=u'refs/heads/master')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=owner, can_push=True, can_create=True)
+
+        results = self.git_api.listRefRules(
+            repository.getInternalPath(),
+            {'uid': owner.id})
+        self.assertEqual(len(results), 2)
+        # Default grant should be last in pattern
+        self.assertEqual(results[-1]['ref_pattern'], '*')
+
+    def test_listRefRules_owner_is_team(self):
+        member = self.factory.makePerson()
+        owner = self.factory.makeTeam(members=[member])
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                owner=owner, information_type=InformationType.USERDATA))
+
+        results = self.git_api.listRefRules(
+            repository.getInternalPath(),
+            {'uid': member.id})
+
+        # Should have default grant as member of owning team
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[-1]['ref_pattern'], '*')
+
+    def test_listRefRules_owner_is_team_with_grants(self):
+        member = self.factory.makePerson()
+        owner = self.factory.makeTeam(members=[member])
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                owner=owner, information_type=InformationType.USERDATA))
+
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern=u'refs/heads/master')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=owner, can_push=True, can_create=True)
+
+        results = self.git_api.listRefRules(
+            repository.getInternalPath(),
+            {'uid': member.id})
+
+        # Should have default grant as member of owning team
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[-1]['ref_pattern'], '*')
+
+    def test_listRefRules_owner_is_team_with_grants_to_person(self):
+        member = self.factory.makePerson()
+        other_member = self.factory.makePerson()
+        owner = self.factory.makeTeam(members=[member, other_member])
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                owner=owner, information_type=InformationType.USERDATA))
+
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern=u'refs/heads/master')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=owner, can_push=True, can_create=True)
+
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern=u'refs/heads/tags')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=member, can_create=True)
+
+        # This should not appear
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=other_member, can_push=True)
+
+        results = self.git_api.listRefRules(
+            repository.getInternalPath(),
+            {'uid': member.id})
+
+        # Should have default grant as member of owning team
+        self.assertEqual(len(results), 3)
+        self.assertEqual(results[-1]['ref_pattern'], '*')
+        tags_rule = results[1]
+        self.assertEqual(tags_rule['permissions'], ['create'])
 
 class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     """Tests for the implementation of `IGitAPI`."""

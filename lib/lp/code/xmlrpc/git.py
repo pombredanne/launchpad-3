@@ -327,6 +327,12 @@ class GitAPI(LaunchpadXMLRPCView):
             # Only macaroons are supported for password authentication.
             return faults.Unauthorized()
 
+    def _isRepositoryOwner(self, requester, repository):
+        try:
+            return requester.inTeam(repository.owner)
+        except Unauthorized:
+            return False
+
     def _listRefRules(self, requester, translated_path):
         repository = getUtility(IGitLookup).getByHostingPath(translated_path)
         grants = getUtility(IGitRuleGrantLookup).getByRulesAffectingPerson(
@@ -334,7 +340,6 @@ class GitAPI(LaunchpadXMLRPCView):
 
         lines = []
         for grant in grants:
-            permissions = []
             permissions = []
             if grant.can_create:
                 permissions.append("create")
@@ -344,7 +349,12 @@ class GitAPI(LaunchpadXMLRPCView):
                 permissions.append("force-push")
             lines.append(
                 {'ref_pattern': grant.rule.ref_pattern,
-                 'permissions': permissions})
+                'permissions': permissions})
+
+        if self._isRepositoryOwner(requester, repository):
+            lines.append({
+                'ref_pattern': '*',
+                'permissions': ['create', 'push', 'force-push']})
         return lines
 
     def listRefRules(self, translated_path, auth_params):
