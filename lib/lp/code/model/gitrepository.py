@@ -112,6 +112,10 @@ from lp.code.model.gitref import (
     GitRef,
     GitRefDefault,
     )
+from lp.code.model.gitrule import (
+    GitRule,
+    GitRuleGrant,
+    )
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import PersonVisibility
 from lp.registry.errors import CannotChangeInformationType
@@ -1121,6 +1125,66 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     def code_import(self):
         return getUtility(ICodeImportSet).getByGitRepository(self)
 
+    @property
+    def rules(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(
+            GitRule, GitRule.repository == self).order_by(GitRule.position)
+
+    def _syncRulePositions(self, rules):
+        """Synchronise rule positions with their order in a provided list.
+
+        :param rules: A sequence of `IGitRule`s in the desired order.
+        """
+        # Canonicalise rule ordering: exact-match rules come first in
+        # lexicographical order, followed by wildcard rules in the requested
+        # order.  (Note that `sorted` is guaranteed to be stable.)
+        rules = sorted(
+            rules,
+            key=lambda rule: (0, rule.ref_pattern) if rule.is_exact else (1,))
+        # Ensure the correct position of all rules, which may involve more
+        # work than necessary, but is simple and tends to be
+        # self-correcting.
+        for position, rule in enumerate(rules):
+            if rule.repository != self:
+                raise AssertionError("%r does not belong to %r" % (rule, self))
+            if rule.position != position:
+                removeSecurityProxy(rule).position = position
+
+    def addRule(self, ref_pattern, creator, position=None):
+        """See `IGitRepository`."""
+        rules = list(self.rules)
+        rule = GitRule(
+            repository=self,
+            # -1 isn't a valid position, but _syncRulePositions will correct
+            # it in a moment.
+            position=position if position is not None else -1,
+            ref_pattern=ref_pattern, creator=creator, date_created=DEFAULT)
+        if position is None:
+            rules.append(rule)
+        else:
+            rules.insert(position, rule)
+        self._syncRulePositions(rules)
+        return rule
+
+    def moveRule(self, rule, position):
+        """See `IGitRepository`."""
+        if rule.repository != self:
+            raise ValueError("%r does not belong to %r" % (rule, self))
+        if position < 0:
+            raise ValueError("Negative positions are not supported")
+        if position != rule.position:
+            rules = list(self.rules)
+            rules.remove(rule)
+            rules.insert(position, rule)
+            self._syncRulePositions(rules)
+
+    @property
+    def grants(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(
+            GitRuleGrant, GitRuleGrant.repository_id == self.id)
+
     def canBeDeleted(self):
         """See `IGitRepository`."""
         # Can't delete if the repository is associated with anything.
@@ -1252,6 +1316,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         self._deleteRepositorySubscriptions()
         self._deleteJobs()
         getUtility(IWebhookSet).delete(self.webhooks)
+        self.grants.remove()
+        self.rules.remove()
 
         # Now destroy the repository.
         repository_name = self.unique_name

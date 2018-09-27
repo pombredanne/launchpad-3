@@ -1828,6 +1828,31 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             path = self.getUniqueString('refs/heads/path').decode('utf-8')
         return getUtility(IGitRefRemoteSet).new(repository_url, path)
 
+    def makeGitRule(self, repository=None, ref_pattern=u"refs/heads/*",
+                    creator=None, position=None, **repository_kwargs):
+        """Create a Git repository access rule."""
+        if repository is None:
+            repository = self.makeGitRepository(**repository_kwargs)
+        if creator is None:
+            creator = repository.owner
+        with person_logged_in(creator):
+            return repository.addRule(ref_pattern, creator, position=position)
+
+    def makeGitRuleGrant(self, rule=None, grantee=None, grantor=None,
+                         can_create=False, can_push=False,
+                         can_force_push=False):
+        """Create a Git repository access grant."""
+        if rule is None:
+            rule = self.makeGitRule()
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = rule.repository.owner
+        with person_logged_in(grantor):
+            return rule.addGrant(
+                grantee, grantor, can_create=can_create, can_push=can_push,
+                can_force_push=can_force_push)
+
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,
                 date_created=None, description=None, comment=None,
