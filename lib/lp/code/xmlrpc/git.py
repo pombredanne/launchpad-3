@@ -325,3 +325,15 @@ class GitAPI(LaunchpadXMLRPCView):
         else:
             # Only macaroons are supported for password authentication.
             return faults.Unauthorized()
+
+    def listRefRules(self, repository, auth_params):
+        """See `IGitAPI`"""
+        requester_id = auth_params.get("uid")
+        if requester_id is None:
+            requester_id = LAUNCHPAD_ANONYMOUS
+        print("listRefRules: {}, {}".format(repository, requester_id))
+
+        return [
+            {'pattern': 'refs/heads/master', 'permissions': ['push', 'force_push']},
+            {'pattern': 'refs/heads/noperms', 'permissions': []}
+        ]
