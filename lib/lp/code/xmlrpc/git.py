@@ -335,5 +335,7 @@ class GitAPI(LaunchpadXMLRPCView):
 
         return [
             {'pattern': 'refs/heads/master', 'permissions': ['push', 'force_push']},
+            {'pattern': 'refs/heads/push', 'permissions': ['push']},
+            {'pattern': 'refs/heads/forcepush', 'permissions': ['force_push']},
             {'pattern': 'refs/heads/noperms', 'permissions': []}
         ]
