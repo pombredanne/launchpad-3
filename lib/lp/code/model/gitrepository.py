@@ -1186,10 +1186,9 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             GitRuleGrant, GitRuleGrant.repository_id == self.id)
 
     def findGrantsByGrantee(self, grantee):
-        grants = [grant for grant in self.grants
-                  if grantee.inTeam(grant.grantee)]
-        return grants
-
+        clauses = [TeamParticipation.person == grantee,
+                   GitRuleGrant.grantee == TeamParticipation.teamID]
+        return self.grants.find(*clauses)
 
     def canBeDeleted(self):
         """See `IGitRepository`."""

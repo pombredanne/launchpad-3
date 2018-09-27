@@ -260,7 +260,7 @@ class TestGitAPIMixin:
         self.assertEqual(
             initial_count, getUtility(IAllGitRepositories).count())
 
-    def test_listRefRules(self):
+    def test_listRefRules_simple(self):
         # Test that GitGrantRule (ref rule) can be retrieved for a user
         requester = self.factory.makePerson()
         repository = removeSecurityProxy(
@@ -277,6 +277,25 @@ class TestGitAPIMixin:
         self.assertEqual(len(results), 2)
         self.assertEqual(results[0]['ref_pattern'], 'refs/heads/*')
         self.assertEqual(results[0]['permissions'], ['create', 'push'])
+
+    def test_listRefRules_with_other_grants(self):
+        # Test that findGrantsByGrantee only returns relevant rules
+        requester = self.factory.makePerson()
+        other_user = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                owner=requester, information_type=InformationType.USERDATA))
+
+        rule = self.factory.makeGitRule(repository)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=other_user, can_create=True)
+
+        results = self.git_api.listRefRules(
+            repository.getInternalPath(),
+            {'uid': requester.id})
+        self.assertEqual(len(results), 2)
 
     def test_listRefRules_no_grants(self):
         # User that has no grants and is not the owner
@@ -377,7 +396,7 @@ class TestGitAPIMixin:
         # Should have default grant as member of owning team
         self.assertEqual(len(results), 3)
         self.assertEqual(results[-1]['ref_pattern'], '*')
-        tags_rule = results[1]
+        tags_rule = results[0]
         self.assertEqual(tags_rule['permissions'], ['create'])
 
 class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
