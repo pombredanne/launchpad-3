@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repositories."""
@@ -124,6 +124,7 @@ from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.services.propertycache import clear_property_cache
+from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
@@ -1283,7 +1284,6 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         author = self.factory.makePerson()
         with person_logged_in(author):
             author_email = author.preferredemail.email
-        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         author_date = datetime(2015, 1, 1, tzinfo=pytz.UTC)
         committer_date = datetime(2015, 1, 2, tzinfo=pytz.UTC)
         hosting_fixture = self.useFixture(GitHostingFixture(commits=[
@@ -1293,12 +1293,12 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 "author": {
                     "name": author.displayname,
                     "email": author_email,
-                    "time": int((author_date - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(author_date)),
                     },
                 "committer": {
                     "name": "New Person",
                     "email": "new-person@example.org",
-                    "time": int((committer_date - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(committer_date)),
                     },
                 "parents": [],
                 "tree": unicode(hashlib.sha1("").hexdigest()),
