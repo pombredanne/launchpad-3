@@ -260,6 +260,22 @@ class TestGitAPIMixin:
         self.assertEqual(
             initial_count, getUtility(IAllGitRepositories).count())
 
+    def test_listRefRules(self):
+        # Test that GitGrantRule (ref rule) can be retrieved for a user
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                owner=requester, information_type=InformationType.USERDATA))
+
+        rule = self.factory.makeGitRule(repository)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True)
+
+        results = self.git_api.listRefRules(
+            repository.getInternalPath(),
+            {'uid': requester.id})
+        self.assertEqual(len(results), 1)
+
 
 class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     """Tests for the implementation of `IGitAPI`."""

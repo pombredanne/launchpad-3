@@ -27,6 +27,7 @@ from lp.code.errors import (
     )
 from lp.code.interfaces.gitlookup import (
     IGitLookup,
+    IGitRuleGrantLookup,
     IGitTraversable,
     IGitTraverser,
     )
@@ -34,6 +35,7 @@ from lp.code.interfaces.gitnamespace import IGitNamespaceSet
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.model.gitrepository import GitRepository
+from lp.code.model.gitrule import GitRuleGrant
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -372,3 +374,13 @@ class GitLookup:
         if trailing:
             trailing_segments.insert(0, trailing)
         return repository, "/".join(trailing_segments)
+
+
+@implementer(IGitRuleGrantLookup)
+class GitRuleGrantLookup:
+
+    def getByRulesAffectingPerson(self, repository, grantee):
+        return IStore(GitRuleGrant).find(
+            GitRuleGrant,
+            GitRuleGrant.repository == repository,
+            GitRuleGrant.grantee == grantee)

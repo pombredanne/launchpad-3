@@ -1004,6 +1004,9 @@
   <adapter factory="lp.code.model.defaultgit.OwnerProjectDefaultGitRepository" />
   <adapter factory="lp.code.model.defaultgit.OwnerPackageDefaultGitRepository" />
 
+  <class class="lp.code.model.gitlookup.GitRuleGrantLookup">
+    <allow interface="lp.code.interfaces.gitlookup.IGitRuleGrantLookup" />
+  </class>
   <class class="lp.code.model.gitlookup.GitLookup">
     <allow interface="lp.code.interfaces.gitlookup.IGitLookup" />
   </class>
@@ -1011,6 +1014,11 @@
       class="lp.code.model.gitlookup.GitLookup"
       provides="lp.code.interfaces.gitlookup.IGitLookup">
     <allow interface="lp.code.interfaces.gitlookup.IGitLookup" />
+  </securedutility>
+  <securedutility
+      class="lp.code.model.gitlookup.GitRuleGrantLookup"
+      provides="lp.code.interfaces.gitlookup.IGitRuleGrantLookup">
+    <allow interface="lp.code.interfaces.gitlookup.IGitRuleGrantLookup" />
   </securedutility>
   <securedutility
       class="lp.code.model.gitlookup.GitTraverser"

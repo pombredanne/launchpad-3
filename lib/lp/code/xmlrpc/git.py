@@ -40,6 +40,7 @@ from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import IGitRefScanJobSource
 from lp.code.interfaces.gitlookup import (
     IGitLookup,
+    IGitRuleGrantLookup,
     IGitTraverser,
     )
 from lp.code.interfaces.gitnamespace import (
@@ -326,16 +327,34 @@ class GitAPI(LaunchpadXMLRPCView):
             # Only macaroons are supported for password authentication.
             return faults.Unauthorized()
 
-    def listRefRules(self, repository, auth_params):
+    def _listRefRules(self, requester, translated_path):
+        repository = getUtility(IGitLookup).getByHostingPath(translated_path)
+        grants = getUtility(IGitRuleGrantLookup).getByRulesAffectingPerson(
+            repository, requester)
+
+        lines = []
+        for grant in grants:
+            permissions = []
+            permissions = []
+            if grant.can_create:
+                permissions.append("create")
+            if grant.can_push:
+                permissions.append("push")
+            if grant.can_force_push:
+                permissions.append("force-push")
+            lines.append(
+                {'ref_pattern': grant.rule.ref_pattern,
+                 'permissions': permissions})
+        return lines
+
+    def listRefRules(self, translated_path, auth_params):
         """See `IGitAPI`"""
         requester_id = auth_params.get("uid")
         if requester_id is None:
             requester_id = LAUNCHPAD_ANONYMOUS
-        print("listRefRules: {}, {}".format(repository, requester_id))
 
-        return [
-            {'pattern': 'refs/heads/master', 'permissions': ['push', 'force_push']},
-            {'pattern': 'refs/heads/push', 'permissions': ['push']},
-            {'pattern': 'refs/heads/forcepush', 'permissions': ['force_push']},
-            {'pattern': 'refs/heads/noperms', 'permissions': []}
-        ]
+        return run_with_login(
+            requester_id,
+            self._listRefRules,
+            translated_path,
+        )

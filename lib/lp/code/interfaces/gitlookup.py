@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'IGitLookup',
+    'IGitRuleGrantLookup',
     'IGitTraversable',
     'IGitTraverser',
     ]
@@ -144,4 +145,15 @@ class IGitLookup(Interface):
             'extra_path' may be used by applications that need to traverse a
             leading part of a path as a repository, such as external code
             browsers.
+        """
+
+
+class IGitRuleGrantLookup(Interface):
+    """Utility for looking up a GitRuleGrant by properties"""
+
+    def getByRulesAffectingPerson(repository, grantee_id):
+        """Find all the rules for a repository that affect a Person.
+
+        :param repository: An instance of a GitRepository
+        :param granteed_id: An integer of the id of the Person
         """
