@@ -362,9 +362,6 @@ class GitAPI(LaunchpadXMLRPCView):
     def listRefRules(self, translated_path, auth_params):
         """See `IGitAPI`"""
         requester_id = auth_params.get("uid")
-        if requester_id is None:
-            requester_id = LAUNCHPAD_ANONYMOUS
-
         return run_with_login(
             requester_id,
             self._listRefRules,
