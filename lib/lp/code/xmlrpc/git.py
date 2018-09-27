@@ -8,6 +8,7 @@ __all__ = [
     'GitAPI',
     ]
 
+from operator import attrgetter
 import sys
 
 from pymacaroons import Macaroon
@@ -350,13 +351,19 @@ class GitAPI(LaunchpadXMLRPCView):
             return []
 
         lines = []
-        rules = {x.rule for x in grants}
+        # Check for duplicate rules, and sort them by position
+        rules = sorted(
+            {x.rule for x in grants},
+            key=attrgetter('position'),
+            reverse=True)
         for rule in rules:
+            # Find all the grants that apply for that rule
             matching_grants = [x for x in grants if x.rule == rule]
+            # Collapse the permissions for all applicable grants
             permissions = self._buildPermissions(matching_grants)
             lines.append({'ref_pattern': rule.ref_pattern,
-                        'permissions': permissions,
-                        })
+                          'permissions': permissions,
+                         })
 
         if self._isRepositoryOwner(requester, repository):
             lines.append({

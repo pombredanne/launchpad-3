@@ -6,6 +6,11 @@
 __metaclass__ = type
 
 from pymacaroons import Macaroon
+from testtools.matchers import (
+    Equals,
+    MatchesListwise,
+    MatchesDict,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -274,9 +279,16 @@ class TestGitAPIMixin:
         results = self.git_api.listRefRules(
             repository.getInternalPath(),
             {'uid': requester.id})
-        self.assertEqual(len(results), 2)
-        self.assertEqual(results[0]['ref_pattern'], 'refs/heads/*')
-        self.assertEqual(results[0]['permissions'], ['create', 'push'])
+        self.assertThat(results, MatchesListwise([
+            MatchesDict({
+                'ref_pattern': Equals('refs/heads/*'),
+                'permissions': Equals(['create', 'push']),
+                }),
+            MatchesDict({
+                'ref_pattern': Equals('*'),
+                'permissions': Equals(['create', 'push', 'force-push']),
+                }),
+            ]))
 
     def test_listRefRules_with_other_grants(self):
         # Test that findGrantsByGrantee only returns relevant rules
@@ -295,7 +307,16 @@ class TestGitAPIMixin:
         results = self.git_api.listRefRules(
             repository.getInternalPath(),
             {'uid': requester.id})
-        self.assertEqual(len(results), 2)
+        self.assertThat(results, MatchesListwise([
+            MatchesDict({
+                'ref_pattern': Equals('refs/heads/*'),
+                'permissions': Equals(['push']),
+                }),
+            MatchesDict({
+                'ref_pattern': Equals('*'),
+                'permissions': Equals(['create', 'push', 'force-push']),
+                }),
+            ]))
 
     def test_listRefRules_no_grants(self):
         # User that has no grants and is not the owner
@@ -312,7 +333,7 @@ class TestGitAPIMixin:
         results = self.git_api.listRefRules(
             repository.getInternalPath(),
             {'uid': requester.id})
-        self.assertEqual(len(results), 0)
+        self.assertEqual(0, len(results))
 
     def test_listRefRules_owner_has_default(self):
         owner = self.factory.makePerson()
@@ -330,7 +351,16 @@ class TestGitAPIMixin:
             {'uid': owner.id})
         self.assertEqual(len(results), 2)
         # Default grant should be last in pattern
-        self.assertEqual(results[-1]['ref_pattern'], '*')
+        self.assertThat(results, MatchesListwise([
+            MatchesDict({
+                'ref_pattern': Equals('refs/heads/master'),
+                'permissions': Equals(['create', 'push']),
+                }),
+            MatchesDict({
+                'ref_pattern': Equals('*'),
+                'permissions': Equals(['create', 'push', 'force-push']),
+                }),
+            ]))
 
     def test_listRefRules_owner_is_team(self):
         member = self.factory.makePerson()
@@ -344,8 +374,12 @@ class TestGitAPIMixin:
             {'uid': member.id})
 
         # Should have default grant as member of owning team
-        self.assertEqual(len(results), 1)
-        self.assertEqual(results[-1]['ref_pattern'], '*')
+        self.assertThat(results, MatchesListwise([
+            MatchesDict({
+                'ref_pattern': Equals('*'),
+                'permissions': Equals(['create', 'push', 'force-push']),
+                }),
+            ]))
 
     def test_listRefRules_owner_is_team_with_grants(self):
         member = self.factory.makePerson()
@@ -364,8 +398,16 @@ class TestGitAPIMixin:
             {'uid': member.id})
 
         # Should have default grant as member of owning team
-        self.assertEqual(len(results), 2)
-        self.assertEqual(results[-1]['ref_pattern'], '*')
+        self.assertThat(results, MatchesListwise([
+            MatchesDict({
+                'ref_pattern': Equals('refs/heads/master'),
+                'permissions': Equals(['create', 'push']),
+                }),
+            MatchesDict({
+                'ref_pattern': Equals('*'),
+                'permissions': Equals(['create', 'push', 'force-push']),
+                }),
+            ]))
 
     def test_listRefRules_owner_is_team_with_grants_to_person(self):
         member = self.factory.makePerson()
@@ -394,10 +436,20 @@ class TestGitAPIMixin:
             {'uid': member.id})
 
         # Should have default grant as member of owning team
-        self.assertEqual(len(results), 3)
-        self.assertEqual(results[-1]['ref_pattern'], '*')
-        tags_rule = results[0]
-        self.assertEqual(tags_rule['permissions'], ['create'])
+        self.assertThat(results, MatchesListwise([
+            MatchesDict({
+                'ref_pattern': Equals('refs/heads/tags'),
+                'permissions': Equals(['create']),
+                }),
+            MatchesDict({
+                'ref_pattern': Equals('refs/heads/master'),
+                'permissions': Equals(['create', 'push']),
+                }),
+            MatchesDict({
+                'ref_pattern': Equals('*'),
+                'permissions': Equals(['create', 'push', 'force-push']),
+                }),
+            ]))
 
     def test_listRefRules_multiple_grants_to_same_ref(self):
         member = self.factory.makePerson()
@@ -416,7 +468,17 @@ class TestGitAPIMixin:
             repository.getInternalPath(),
             {'uid': member.id})
 
-        self.assertEqual(len(results), 2)
+        self.assertThat(results, MatchesListwise([
+            MatchesDict({
+                'ref_pattern': Equals('refs/heads/*'),
+                'permissions': Equals(['create', 'push']),
+                }),
+            MatchesDict({
+                'ref_pattern': Equals('*'),
+                'permissions': Equals(['create', 'push', 'force-push']),
+                }),
+            ]))
+
 
 class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     """Tests for the implementation of `IGitAPI`."""
