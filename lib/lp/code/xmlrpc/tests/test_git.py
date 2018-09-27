@@ -399,6 +399,25 @@ class TestGitAPIMixin:
         tags_rule = results[0]
         self.assertEqual(tags_rule['permissions'], ['create'])
 
+    def test_listRefRules_multiple_grants_to_same_ref(self):
+        member = self.factory.makePerson()
+        owner = self.factory.makeTeam(members=[member])
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                owner=owner, information_type=InformationType.USERDATA))
+
+        rule = self.factory.makeGitRule(repository=repository)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=member, can_create=True)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=owner, can_push=True)
+
+        results = self.git_api.listRefRules(
+            repository.getInternalPath(),
+            {'uid': member.id})
+
+        self.assertEqual(len(results), 2)
+
 class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     """Tests for the implementation of `IGitAPI`."""
 

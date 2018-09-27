@@ -332,6 +332,16 @@ class GitAPI(LaunchpadXMLRPCView):
         except Unauthorized:
             return False
 
+    def _buildPermissions(self, grants):
+        permissions = []
+        if any(grant.can_create for grant in grants):
+            permissions.append("create")
+        if any(grant.can_push for grant in grants):
+            permissions.append("push")
+        if any(grant.can_force_push for grant in grants):
+            permissions.append("force-push")
+        return permissions
+
     def _listRefRules(self, requester, translated_path):
         repository = getUtility(IGitLookup).getByHostingPath(translated_path)
         try:
@@ -340,17 +350,13 @@ class GitAPI(LaunchpadXMLRPCView):
             return []
 
         lines = []
-        for grant in grants:
-            permissions = []
-            if grant.can_create:
-                permissions.append("create")
-            if grant.can_push:
-                permissions.append("push")
-            if grant.can_force_push:
-                permissions.append("force-push")
-            lines.append({'ref_pattern': grant.rule.ref_pattern,
-                          'permissions': permissions,
-                          })
+        rules = {x.rule for x in grants}
+        for rule in rules:
+            matching_grants = [x for x in grants if x.rule == rule]
+            permissions = self._buildPermissions(matching_grants)
+            lines.append({'ref_pattern': rule.ref_pattern,
+                        'permissions': permissions,
+                        })
 
         if self._isRepositoryOwner(requester, repository):
             lines.append({
