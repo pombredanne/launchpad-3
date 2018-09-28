@@ -222,6 +222,59 @@ class TestGitRepository(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposalForGit(target_ref=ref)
         self.assertEqual([bmp], list(repository.getMergeProposals()))
 
+    def test_findGrantsByGrantee_person(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True, can_create=True)
+
+        results = repository.findGrantsByGrantee(requester)
+        self.assertEqual([grant], list(results))
+
+    def test_findGrantsByGrantee_team(self):
+        requester = self.factory.makeTeam()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True, can_create=True)
+
+        results = repository.findGrantsByGrantee(requester)
+        self.assertEqual([grant], list(results))
+
+    def test_findGrantsByGrantee_member_of_team(self):
+        member = self.factory.makePerson()
+        requester = self.factory.makeTeam(members=[member])
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True, can_create=True)
+
+        results = repository.findGrantsByGrantee(requester)
+        self.assertEqual([grant], list(results))
+
+    def test_findGrantsByGrantee_team_in_team(self):
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=member, members=[member])
+        top_level = removeSecurityProxy(self.factory.makeTeam())
+        top_level.addMember(team, top_level.teamowner, force_team_add=True)
+
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=top_level))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=top_level, can_push=True, can_create=True)
+
+        results = repository.findGrantsByGrantee(member)
+        self.assertEqual([grant], list(results))
+
 
 class TestGitIdentityMixin(TestCaseWithFactory):
     """Test the defaults and identities provided by GitIdentityMixin."""
