@@ -69,7 +69,7 @@ class IGitAPI(Interface):
         """
 
     def listRefRules(self, repository, user):
-        """Return the list of RefRules for `user` in `repository`
+        """Return the list of ref rules for `user` in `repository`
 
         :returns: A list of rules for the user in the specified repository
         """
