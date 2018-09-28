@@ -266,7 +266,7 @@ class TestGitAPIMixin:
             initial_count, getUtility(IAllGitRepositories).count())
 
     def test_listRefRules_simple(self):
-        # Test that GitGrantRule (ref rule) can be retrieved for a user
+        # Test that correct ref rules are retrieved for a Person
         requester = self.factory.makePerson()
         repository = removeSecurityProxy(
             self.factory.makeGitRepository(
