@@ -335,23 +335,32 @@ class GitAPI(LaunchpadXMLRPCView):
             getUtility(IGitLookup).getByHostingPath(translated_path))
         grants = repository.findGrantsByGrantee(requester)
         is_owner = requester.inTeam(repository.owner)
-
         lines = []
-        grants = repository.grants if is_owner else repository.findGrantsByGrantee(requester)
+
+        # If we are the repository owner, we need all of the grants
+        # as we get different permissions if a grant already exists
+        if is_owner:
+            grants = repository.grants
+        else:
+            repository.findGrantsByGrantee(requester)
+
         for rule in repository.rules:
             # Get the grants applicable for this rule
             matching_grants = [x for x in grants if x.rule == rule]
             if not matching_grants:
                 continue
 
+            # If we are the owner, and there is a grant in which we are the
+            # grantee, we cannot override the permissions given there,
+            # so we can ignore the grants to other people
             explicit_owner = [
                 g for g in matching_grants
                 if (requester.inTeam(g.grantee) and is_owner) or
                     g.grantee_type == GitGranteeType.REPOSITORY_OWNER
             ]
             permissions = []
-            #import pdb; pdb.set_trace()
             for grant in explicit_owner or matching_grants:
+                # If we are the target of the grant
                 if requester.inTeam(grant.grantee):
                     if grant.can_create:
                         permissions.append('create')
@@ -359,6 +368,8 @@ class GitAPI(LaunchpadXMLRPCView):
                         permissions.append('push')
                     if grant.can_force_push:
                         permissions.append('force-push')
+                # If we are the owner, and we are looking at a grant
+                # that is explicitly aimed at us
                 elif is_owner and explicit_owner:
                     permissions = []
                     if grant.can_create:
@@ -367,14 +378,16 @@ class GitAPI(LaunchpadXMLRPCView):
                         permissions.append('push')
                     if grant.can_force_push:
                         permissions.append('force-push')
+                # If we get here, we are the owner and there is no overriding
+                # grant, so we can get the default permissions
                 else:
                     permissions = ['create', 'push']
-
-
             lines.append({'ref_pattern': rule.ref_pattern,
                         'permissions': permissions,
                         })
-
+        # The last rule for a repository owner is a default permission
+        # for everything. This is overriden by any matching rules previously
+        # in the list
         if is_owner:
             lines.append({
                 'ref_pattern': '*',
