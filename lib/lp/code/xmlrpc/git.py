@@ -327,12 +327,6 @@ class GitAPI(LaunchpadXMLRPCView):
             # Only macaroons are supported for password authentication.
             return faults.Unauthorized()
 
-    def _isRepositoryOwner(self, requester, repository):
-        try:
-            return requester.inTeam(repository.owner)
-        except Unauthorized:
-            return False
-
     def _buildPermissions(self, grants):
         permissions = []
         if any(grant.can_create for grant in grants):
@@ -344,11 +338,10 @@ class GitAPI(LaunchpadXMLRPCView):
         return permissions
 
     def _listRefRules(self, requester, translated_path):
-        repository = getUtility(IGitLookup).getByHostingPath(translated_path)
-        try:
-            grants = repository.findGrantsByGrantee(requester)
-        except Unauthorized:
-            return []
+        repository = removeSecurityProxy(
+            getUtility(IGitLookup).getByHostingPath(translated_path))
+
+        grants = repository.findGrantsByGrantee(requester)
 
         lines = []
         # Check for duplicate rules, and sort them by position
@@ -365,7 +358,7 @@ class GitAPI(LaunchpadXMLRPCView):
                           'permissions': permissions,
                          })
 
-        if self._isRepositoryOwner(requester, repository):
+        if requester.inTeam(repository.owner):
             lines.append({
                 'ref_pattern': '*',
                 'permissions': ['create', 'push', 'force-push'],
