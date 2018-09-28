@@ -355,9 +355,10 @@ class GitAPI(LaunchpadXMLRPCView):
             # so we can ignore the grants to other people
             explicit_owner = [
                 g for g in matching_grants
-                if (requester.inTeam(g.grantee) and is_owner) or
-                    g.grantee_type == GitGranteeType.REPOSITORY_OWNER
-            ]
+                if (requester.inTeam(g.grantee) or
+                    g.grantee_type == GitGranteeType.REPOSITORY_OWNER) and
+                    is_owner
+                ]
             permissions = []
             for grant in explicit_owner or matching_grants:
                 # If we are the target of the grant
