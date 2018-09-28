@@ -16,6 +16,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.code.enums import (
+    GitGranteeType,
     GitRepositoryType,
     TargetRevisionControlSystems,
     )
@@ -593,6 +594,31 @@ class TestGitAPIMixin:
                 'permissions': Equals(['create', 'push', 'force-push']),
                 }),
             ]))
+
+    def test_listRefRules_grantee_owner_type(self):
+        owner = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=owner))
+        rule = self.factory.makeGitRule(repository=repository)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_create=True)
+
+        results = self.git_api.listRefRules(
+            repository.getInternalPath(),
+            {'uid': owner.id})
+
+        self.assertThat(results, MatchesListwise([
+            MatchesDict({
+                'ref_pattern': Equals('refs/heads/*'),
+                'permissions': Equals(['create']),
+                }),
+            MatchesDict({
+                'ref_pattern': Equals('*'),
+                'permissions': Equals(['create', 'push', 'force-push']),
+                }),
+            ]))
+
 
 
 

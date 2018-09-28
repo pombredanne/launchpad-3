@@ -25,7 +25,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
-from lp.code.enums import GitRepositoryType
+from lp.code.enums import (
+    GitGranteeType,
+    GitRepositoryType,
+    )
 from lp.code.errors import (
     GitRepositoryCreationException,
     GitRepositoryCreationFault,
@@ -327,28 +330,6 @@ class GitAPI(LaunchpadXMLRPCView):
             # Only macaroons are supported for password authentication.
             return faults.Unauthorized()
 
-    def _buildPermissions(self, grants, requester, is_owner):
-        permissions = []
-
-        # If we are the owner of the repository, we usually just get
-        # 'create' and 'push' permissions on a grant to someone else.
-        # However, if there is an explicit grant to us, we can only have
-        # the permissions that are allowed by that grant.
-        if is_owner and any(requester.inTeam(g.grantee) for g in grants):
-            is_owner = False
-        for grant in grants:
-            if requester.inTeam(grant.grantee) and not is_owner:
-                if grant.can_create:
-                    permissions.append('create')
-                if grant.can_push:
-                    permissions.append('push')
-                if grant.can_force_push:
-                    permissions.append('force-push')
-            elif not requester.inTeam(grant.grantee) and is_owner:
-                permissions = ['create', 'push']
-
-        return permissions
-
     def _listRefRules(self, requester, translated_path):
         repository = removeSecurityProxy(
             getUtility(IGitLookup).getByHostingPath(translated_path))
@@ -356,27 +337,50 @@ class GitAPI(LaunchpadXMLRPCView):
         is_owner = requester.inTeam(repository.owner)
 
         lines = []
+        grants = repository.grants if is_owner else repository.findGrantsByGrantee(requester)
         for rule in repository.rules:
-            # Find all the grants that apply for that rule
+            # Get the grants applicable for this rule
             matching_grants = [x for x in grants if x.rule == rule]
-            # We are iterating all of the rules for the repository,
-            # we may not have any grants that match this particular one
             if not matching_grants:
                 continue
-            # Collapse the permissions for all applicable grants
-            permissions = self._buildPermissions(
-                matching_grants, requester, is_owner)
-            lines.append({'ref_pattern': rule.ref_pattern,
-                          'permissions': permissions,
-                         })
 
-        # The owner has a default grant to everything that isn't
-        # explicitly listed
+            explicit_owner = [
+                g for g in matching_grants
+                if (requester.inTeam(g.grantee) and is_owner) or
+                    g.grantee_type == GitGranteeType.REPOSITORY_OWNER
+            ]
+            permissions = []
+            #import pdb; pdb.set_trace()
+            for grant in explicit_owner or matching_grants:
+                if requester.inTeam(grant.grantee):
+                    if grant.can_create:
+                        permissions.append('create')
+                    if grant.can_push:
+                        permissions.append('push')
+                    if grant.can_force_push:
+                        permissions.append('force-push')
+                elif is_owner and explicit_owner:
+                    permissions = []
+                    if grant.can_create:
+                        permissions.append('create')
+                    if grant.can_push:
+                        permissions.append('push')
+                    if grant.can_force_push:
+                        permissions.append('force-push')
+                else:
+                    permissions = ['create', 'push']
+
+
+            lines.append({'ref_pattern': rule.ref_pattern,
+                        'permissions': permissions,
+                        })
+
         if is_owner:
             lines.append({
                 'ref_pattern': '*',
                 'permissions': ['create', 'push', 'force-push'],
                 })
+
         return lines
 
     def listRefRules(self, translated_path, auth_params):
