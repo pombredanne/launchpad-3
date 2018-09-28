@@ -34,7 +34,6 @@ from lp.code.interfaces.gitnamespace import IGitNamespaceSet
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.interfaces.hasgitrepositories import IHasGitRepositories
 from lp.code.model.gitrepository import GitRepository
-from lp.code.model.gitrule import GitRuleGrant
 from lp.registry.errors import NoSuchSourcePackageName
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
