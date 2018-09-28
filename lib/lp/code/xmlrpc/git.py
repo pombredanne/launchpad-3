@@ -327,38 +327,52 @@ class GitAPI(LaunchpadXMLRPCView):
             # Only macaroons are supported for password authentication.
             return faults.Unauthorized()
 
-    def _buildPermissions(self, grants):
+    def _buildPermissions(self, grants, requester, is_owner):
         permissions = []
-        if any(grant.can_create for grant in grants):
-            permissions.append("create")
-        if any(grant.can_push for grant in grants):
-            permissions.append("push")
-        if any(grant.can_force_push for grant in grants):
-            permissions.append("force-push")
+
+        # If we are the owner of the repository, we usually just get
+        # 'create' and 'push' permissions on a grant to someone else.
+        # However, if there is an explicit grant to us, we can only have
+        # the permissions that are allowed by that grant.
+        if is_owner and any(requester.inTeam(g.grantee) for g in grants):
+            is_owner = False
+        for grant in grants:
+            if requester.inTeam(grant.grantee) and not is_owner:
+                if grant.can_create:
+                    permissions.append('create')
+                if grant.can_push:
+                    permissions.append('push')
+                if grant.can_force_push:
+                    permissions.append('force-push')
+            elif not requester.inTeam(grant.grantee) and is_owner:
+                permissions = ['create', 'push']
+
         return permissions
 
     def _listRefRules(self, requester, translated_path):
         repository = removeSecurityProxy(
             getUtility(IGitLookup).getByHostingPath(translated_path))
-
         grants = repository.findGrantsByGrantee(requester)
+        is_owner = requester.inTeam(repository.owner)
 
         lines = []
-        # Check for duplicate rules, and sort them by position
-        rules = sorted(
-            {x.rule for x in grants},
-            key=attrgetter('position'),
-            reverse=True)
-        for rule in rules:
+        for rule in repository.rules:
             # Find all the grants that apply for that rule
             matching_grants = [x for x in grants if x.rule == rule]
+            # We are iterating all of the rules for the repository,
+            # we may not have any grants that match this particular one
+            if not matching_grants:
+                continue
             # Collapse the permissions for all applicable grants
-            permissions = self._buildPermissions(matching_grants)
+            permissions = self._buildPermissions(
+                matching_grants, requester, is_owner)
             lines.append({'ref_pattern': rule.ref_pattern,
                           'permissions': permissions,
                          })
 
-        if requester.inTeam(repository.owner):
+        # The owner has a default grant to everything that isn't
+        # explicitly listed
+        if is_owner:
             lines.append({
                 'ref_pattern': '*',
                 'permissions': ['create', 'push', 'force-push'],

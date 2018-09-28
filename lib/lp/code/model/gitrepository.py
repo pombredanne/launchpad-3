@@ -1186,6 +1186,12 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             GitRuleGrant, GitRuleGrant.repository_id == self.id)
 
     def findGrantsByGrantee(self, grantee):
+        # If we are the owner, we need to be able to see all the grants
+        # as repository owners modify other grants with different permissions
+        if grantee.inTeam(self.owner):
+            return self.grants
+
+        # If we're not the owner, just get all the grants relevant to us
         clauses = [TeamParticipation.person == grantee,
                    GitRuleGrant.grantee == TeamParticipation.teamID]
         return self.grants.find(*clauses)
