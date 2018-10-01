@@ -72,6 +72,7 @@ from lp.app.interfaces.launchpad import (
 from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchMergeProposalStatus,
+    GitGranteeType,
     GitObjectType,
     GitRepositoryType,
     )
@@ -1186,9 +1187,18 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             GitRuleGrant, GitRuleGrant.repository_id == self.id)
 
     def findGrantsByGrantee(self, grantee):
-        clauses = [TeamParticipation.person == grantee,
-                   GitRuleGrant.grantee == TeamParticipation.teamID]
-        return self.grants.find(*clauses)
+
+        is_owner = grantee.inTeam(self.owner)
+        clauses = [
+            And(
+                GitRuleGrant.grantee_type == GitGranteeType.PERSON,
+                TeamParticipation.person == grantee,
+                GitRuleGrant.grantee == TeamParticipation.teamID
+            )]
+        if is_owner:
+            clauses.append(
+                GitRuleGrant.grantee_type == GitGranteeType.REPOSITORY_OWNER)
+        return self.grants.find(Or(*clauses)).config(distinct=True)
 
     def canBeDeleted(self):
         """See `IGitRepository`."""

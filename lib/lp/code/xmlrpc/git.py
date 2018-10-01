@@ -8,7 +8,6 @@ __all__ = [
     'GitAPI',
     ]
 
-from operator import attrgetter
 import sys
 
 from pymacaroons import Macaroon
@@ -25,10 +24,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
-from lp.code.enums import (
-    GitGranteeType,
-    GitRepositoryType,
-    )
+from lp.code.enums import GitRepositoryType
 from lp.code.errors import (
     GitRepositoryCreationException,
     GitRepositoryCreationFault,
@@ -337,55 +333,30 @@ class GitAPI(LaunchpadXMLRPCView):
         is_owner = requester.inTeam(repository.owner)
         lines = []
 
-        # If we are the repository owner, we need all of the grants
-        # as we get different permissions if a grant already exists
-        if is_owner:
-            grants = repository.grants
-        else:
-            repository.findGrantsByGrantee(requester)
-
         for rule in repository.rules:
-            # Get the grants applicable for this rule
+            # Do we have any grants for this rule, for this user?
             matching_grants = [x for x in grants if x.rule == rule]
-            if not matching_grants:
-                continue
+            # If we don't have any grants, but the user is the owner,
+            # they get a default grant to the ref specified by the rule.
+            if is_owner and not matching_grants:
+                lines.append({'ref_pattern': rule.ref_pattern,
+                              'permissions': ['create', 'push'],
+                             })
+            # If we have a grant for the user, they get the permissions
+            # given by that grant
+            elif matching_grants:
+                permissions = []
+                for grant in matching_grants:
+                    if grant.can_create:
+                        permissions.append('create')
+                    if grant.can_push:
+                        permissions.append('push')
+                    if grant.can_force_push:
+                        permissions.append('force-push')
+                lines.append({'ref_pattern': rule.ref_pattern,
+                              'permissions': permissions,
+                            })
 
-            # If we are the owner, and there is a grant in which we are the
-            # grantee, we cannot override the permissions given there,
-            # so we can ignore the grants to other people
-            explicit_owner = [
-                g for g in matching_grants
-                if (requester.inTeam(g.grantee) or
-                    g.grantee_type == GitGranteeType.REPOSITORY_OWNER) and
-                    is_owner
-                ]
-            permissions = []
-            for grant in explicit_owner or matching_grants:
-                # If we are the target of the grant
-                if requester.inTeam(grant.grantee):
-                    if grant.can_create:
-                        permissions.append('create')
-                    if grant.can_push:
-                        permissions.append('push')
-                    if grant.can_force_push:
-                        permissions.append('force-push')
-                # If we are the owner, and we are looking at a grant
-                # that is explicitly aimed at us
-                elif is_owner and explicit_owner:
-                    permissions = []
-                    if grant.can_create:
-                        permissions.append('create')
-                    if grant.can_push:
-                        permissions.append('push')
-                    if grant.can_force_push:
-                        permissions.append('force-push')
-                # If we get here, we are the owner and there is no overriding
-                # grant, so we can get the default permissions
-                else:
-                    permissions = ['create', 'push']
-            lines.append({'ref_pattern': rule.ref_pattern,
-                        'permissions': permissions,
-                        })
         # The last rule for a repository owner is a default permission
         # for everything. This is overriden by any matching rules previously
         # in the list

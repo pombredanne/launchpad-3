@@ -47,6 +47,7 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
+    GitGranteeType,
     GitObjectType,
     GitRepositoryType,
     TargetRevisionControlSystems,
@@ -274,6 +275,78 @@ class TestGitRepository(TestCaseWithFactory):
 
         results = repository.findGrantsByGrantee(member)
         self.assertEqual([grant], list(results))
+
+    def test_findGrantsByGrantee_team_in_team_not_owner(self):
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=member, members=[member])
+        top_level = removeSecurityProxy(self.factory.makeTeam())
+        top_level.addMember(team, top_level.teamowner, force_team_add=True)
+
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository())
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=top_level, can_push=True, can_create=True)
+
+        results = repository.findGrantsByGrantee(member)
+        self.assertEqual([grant], list(results))
+
+    def test_findGrantsByGrantee_not_owner(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository())
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True, can_create=True)
+
+        results = repository.findGrantsByGrantee(requester)
+        self.assertEqual([grant], list(results))
+
+    def test_findGrantsByGrantee_grantee_type(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule,
+            grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_push=True,
+            can_create=True)
+
+        results = repository.findGrantsByGrantee(requester)
+        self.assertEqual([grant], list(results))
+
+    def test_findGrantsByGrantee_owner_and_other(self):
+        requester = self.factory.makePerson()
+        other = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=other, can_push=True, can_create=True)
+
+        results = repository.findGrantsByGrantee(requester)
+        self.assertEqual([], list(results))
+
+    def test_findGrantsByGrantee_owner_and_other_with_owner_grant(self):
+        requester = self.factory.makePerson()
+        other = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=other, can_push=True, can_create=True)
+        owner_grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True)
+
+        results = repository.findGrantsByGrantee(requester)
+        self.assertEqual([owner_grant], list(results))
+
 
 
 class TestGitIdentityMixin(TestCaseWithFactory):

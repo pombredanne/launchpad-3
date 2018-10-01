@@ -421,8 +421,7 @@ class TestGitAPIMixin:
             {'uid': requester.id})
         self.assertEqual(0, len(results))
 
-
-    def test_listRefRules_owner_has_default(self):
+    def test_listRefRules_owner_has_default_with_other_grant(self):
         owner = self.factory.makePerson()
         repository = removeSecurityProxy(
             self.factory.makeGitRepository(owner=owner))
@@ -619,7 +618,39 @@ class TestGitAPIMixin:
                 }),
             ]))
 
+    def test_listRefRules_grantee_owner_type_and_other_grants(self):
+        owner = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=owner))
+        rule = self.factory.makeGitRule(repository=repository)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_create=True)
 
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern=u'refs/heads/other')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=other_person, can_push=True)
+
+        results = self.git_api.listRefRules(
+            repository.getInternalPath(),
+            {'uid': owner.id})
+
+        self.assertThat(results, MatchesListwise([
+            MatchesDict({
+                'ref_pattern': Equals('refs/heads/other'),
+                'permissions': Equals(['create', 'push']),
+                }),
+            MatchesDict({
+                'ref_pattern': Equals('refs/heads/*'),
+                'permissions': Equals(['create']),
+                }),
+            MatchesDict({
+                'ref_pattern': Equals('*'),
+                'permissions': Equals(['create', 'push', 'force-push']),
+                }),
+            ]))
 
 
 class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
