@@ -395,17 +395,16 @@ class GitAPI(LaunchpadXMLRPCView):
             # Sort the permissions from the set for consistency
             sorted_permissions = self._sortPermissions(union_permissions)
             lines.append({'ref_pattern': rule.ref_pattern,
-                              'permissions': sorted_permissions,
-                             })
+                          'permissions': sorted_permissions,
+                         })
 
         # The last rule for a repository owner is a default permission
         # for everything. This is overriden by any matching rules previously
         # in the list
         if is_owner:
-            lines.append({
-                'ref_pattern': '*',
-                'permissions': ['create', 'push', 'force_push'],
-                })
+            lines.append({'ref_pattern': '*',
+                          'permissions': ['create', 'push', 'force_push'],
+                         })
 
         return lines
 
