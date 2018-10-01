@@ -24,7 +24,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
-from lp.code.enums import GitRepositoryType
+from lp.code.enums import (
+    GitGranteeType,
+    GitRepositoryType,
+    )
 from lp.code.errors import (
     GitRepositoryCreationException,
     GitRepositoryCreationFault,
@@ -326,6 +329,31 @@ class GitAPI(LaunchpadXMLRPCView):
             # Only macaroons are supported for password authentication.
             return faults.Unauthorized()
 
+    def _sortPermissions(self, set_of_permissions):
+        """Sort an iterable of permission strings for consistency"""
+        permissions = []
+        if 'create' in set_of_permissions:
+            permissions.append('create')
+        if 'push' in set_of_permissions:
+            permissions.append('push')
+        if 'force_push' in set_of_permissions:
+            permissions.append('force_push')
+        return permissions
+
+    def _buildPermissions(self, grant):
+        """Build a list of the available permissions from a GitRuleGrant"""
+        permissions = []
+        if grant.can_create:
+            permissions.append('create')
+        if grant.can_push:
+            permissions.append('push')
+        if grant.can_force_push and not grant.can_push:
+            permissions.append('push')
+            permissions.append('force_push')
+        elif grant.can_force_push and grant.can_push:
+            permissions.append('force_push')
+        return permissions
+
     def _listRefRules(self, requester, translated_path):
         repository = removeSecurityProxy(
             getUtility(IGitLookup).getByHostingPath(translated_path))
@@ -342,20 +370,33 @@ class GitAPI(LaunchpadXMLRPCView):
                 lines.append({'ref_pattern': rule.ref_pattern,
                               'permissions': ['create', 'push'],
                              })
-            # If we have a grant for the user, they get the permissions
-            # given by that grant
-            elif matching_grants:
-                permissions = []
-                for grant in matching_grants:
-                    if grant.can_create:
-                        permissions.append('create')
-                    if grant.can_push:
-                        permissions.append('push')
-                    if grant.can_force_push:
-                        permissions.append('force-push')
-                lines.append({'ref_pattern': rule.ref_pattern,
-                              'permissions': permissions,
-                            })
+                continue
+            # If we otherwise don't have any matching grants,
+            # we can ignore this rule
+            if not matching_grants:
+                continue
+
+            # Permissions are a union of all the applicable grants
+            union_permissions = set()
+            for grant in matching_grants:
+                permissions = self._buildPermissions(grant)
+                union_permissions.update(permissions)
+
+            # If the user is the repository owner, they essentially have
+            # the equivalent of a default team grant, but only
+            # if there is no explicit grant to them otherwise specified
+            owner_grant = any(
+                (g.grantee_type == GitGranteeType.REPOSITORY_OWNER or
+                 g.grantee.inTeam(repository.owner))
+                 for g in matching_grants)
+            if is_owner and not owner_grant:
+                union_permissions.update(['create', 'push'])
+
+            # Sort the permissions from the set for consistency
+            sorted_permissions = self._sortPermissions(union_permissions)
+            lines.append({'ref_pattern': rule.ref_pattern,
+                              'permissions': sorted_permissions,
+                             })
 
         # The last rule for a repository owner is a default permission
         # for everything. This is overriden by any matching rules previously
@@ -363,7 +404,7 @@ class GitAPI(LaunchpadXMLRPCView):
         if is_owner:
             lines.append({
                 'ref_pattern': '*',
-                'permissions': ['create', 'push', 'force-push'],
+                'permissions': ['create', 'push', 'force_push'],
                 })
 
         return lines

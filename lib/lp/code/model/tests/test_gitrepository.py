@@ -348,7 +348,6 @@ class TestGitRepository(TestCaseWithFactory):
         self.assertEqual([owner_grant], list(results))
 
 
-
 class TestGitIdentityMixin(TestCaseWithFactory):
     """Test the defaults and identities provided by GitIdentityMixin."""
 
