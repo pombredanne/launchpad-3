@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Webhook browser and API classes."""
@@ -17,7 +17,6 @@ from zope.interface import Interface
 
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -119,7 +118,7 @@ class WebhookAddView(LaunchpadFormView):
     page_title = label = "Add webhook"
 
     schema = WebhookEditSchema
-    custom_widget('event_types', LabeledMultiCheckBoxWidget)
+    custom_widget_event_types = LabeledMultiCheckBoxWidget
 
     @property
     def inside_breadcrumb(self):
@@ -152,7 +151,7 @@ class WebhookView(LaunchpadEditFormView):
     schema = WebhookEditSchema
     # XXX wgrant 2015-08-04: Need custom widget for secret.
     field_names = ['delivery_url', 'event_types', 'active']
-    custom_widget('event_types', LabeledMultiCheckBoxWidget)
+    custom_widget_event_types = LabeledMultiCheckBoxWidget
 
     def initialize(self):
         super(WebhookView, self).initialize()

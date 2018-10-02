@@ -23,10 +23,12 @@ from zope.schema import TextLine
 from zope.security.proxy import isinstance as zope_isinstance
 
 from lp.app.errors import UnexpectedFormData
+from lp.services.features import getFeatureFlag
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     ISingleLineWidgetLayout,
     )
+from lp.snappy.interfaces.snap import SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG
 
 
 @implementer(ISingleLineWidgetLayout, IAlwaysSubmittedWidget, IInputWidget)
@@ -36,6 +38,25 @@ class SnapBuildChannelsWidget(BrowserWidget, InputWidget):
     hint = False
     snap_names = ["core", "snapcraft"]
     _widgets_set_up = False
+
+    def __init__(self, context, request):
+        super(SnapBuildChannelsWidget, self).__init__(context, request)
+        self.hint = (
+            'The channels to use for build tools when building the snap '
+            'package.\n')
+        default_snapcraft_channel = (
+            getFeatureFlag(SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG) or "apt")
+        if default_snapcraft_channel == "apt":
+            self.hint += (
+                'If unset, or if the channel for snapcraft is set to "apt", '
+                'the default is to install snapcraft from the source archive '
+                'using apt.')
+        else:
+            self.hint += (
+                'If unset, the default is to install snapcraft from the "%s" '
+                'channel.  Setting the channel for snapcraft to "apt" causes '
+                'snapcraft to be installed from the source archive using '
+                'apt.' % default_snapcraft_channel)
 
     def setUpSubWidgets(self):
         if self._widgets_set_up:

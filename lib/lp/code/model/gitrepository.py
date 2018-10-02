@@ -71,6 +71,7 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.app.interfaces.services import IService
 from lp.code.enums import (
+    BranchMergeProposalStatus,
     GitObjectType,
     GitRepositoryType,
     )
@@ -887,10 +888,15 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             BranchMergeProposal,
             BranchMergeProposal.source_git_repository == self)
 
-    def getPrecachedLandingTargets(self, user):
-        """See `IGitRef`."""
+    def getPrecachedLandingTargets(self, user, only_active=False):
+        """See `IGitRepository`."""
+        results = self.landing_targets
+        if only_active:
+            results = self.landing_targets.find(
+                Not(BranchMergeProposal.queue_status.is_in(
+                    BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
         loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
-        return DecoratedResultSet(self.landing_targets, pre_iter_hook=loader)
+        return DecoratedResultSet(results, pre_iter_hook=loader)
 
     @property
     def _api_landing_targets(self):
@@ -915,8 +921,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
     def getPrecachedLandingCandidates(self, user):
-        """See `IGitRef`."""
-        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
+        """See `IGitRepository`."""
+        loader = partial(
+            BranchMergeProposal.preloadDataForBMPs,
+            user=user,
+            include_votes=True)
         return DecoratedResultSet(
             self.landing_candidates, pre_iter_hook=loader)
 
@@ -941,6 +950,21 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             BranchMergeProposal.prerequisite_git_repository == self,
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
+
+    def getMergeProposals(self, status=None, visible_by_user=None,
+                          merged_revision_ids=None, eager_load=False):
+        """See `IGitRepository`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        collection = getUtility(IAllGitRepositories).visibleByUser(
+            visible_by_user)
+        return collection.getMergeProposals(
+            status, target_repository=self,
+            merged_revision_ids=merged_revision_ids, eager_load=eager_load)
 
     def getMergeProposalByID(self, id):
         """See `IGitRepository`."""

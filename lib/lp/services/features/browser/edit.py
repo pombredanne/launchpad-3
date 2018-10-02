@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View and edit feature rules."""
@@ -13,13 +13,13 @@ __all__ = [
 from difflib import unified_diff
 import logging
 
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import Interface
 from zope.schema import Text
 
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.browser.stringformatter import FormattersAPI
@@ -59,7 +59,7 @@ class FeatureControlView(LaunchpadFormView):
     page_title = label = 'Feature control'
     diff = None
     logger_name = 'lp.services.features'
-    custom_widget('comment', TextAreaWidget, height=2)
+    custom_widget_comment = CustomWidgetFactory(TextAreaWidget, height=2)
 
     @property
     def field_names(self):

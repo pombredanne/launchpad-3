@@ -12,12 +12,15 @@ __all__ = [
     'SnapRequestBuildsJob',
     ]
 
+from itertools import chain
+
 from lazr.delegates import delegate_to
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
 from storm.locals import (
+    Desc,
     Int,
     JSON,
     Reference,
@@ -29,11 +32,14 @@ from zope.interface import (
     implementer,
     provider,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
+from lp.services.database.bulk import load_related
+from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
 from lp.services.database.interfaces import (
     IMasterStore,
@@ -58,7 +64,10 @@ from lp.snappy.interfaces.snapjob import (
     ISnapRequestBuildsJobSource,
     )
 from lp.snappy.model.snapbuild import SnapBuild
-from lp.soyuz.model.archive import Archive
+from lp.soyuz.model.archive import (
+    Archive,
+    get_enabled_archive_filter,
+    )
 
 
 class SnapJobType(DBEnumeratedType):
@@ -188,6 +197,30 @@ class SnapRequestBuildsJob(SnapJobDerived):
         return job
 
     @classmethod
+    def findBySnap(cls, snap, statuses=None, job_ids=None):
+        """See `ISnapRequestBuildsJobSource`."""
+        clauses = [
+            SnapJob.snap == snap,
+            SnapJob.job_type == cls.class_job_type,
+            ]
+        if statuses is not None:
+            clauses.extend([
+                SnapJob.job == Job.id,
+                Job._status.is_in(statuses),
+                ])
+        if job_ids is not None:
+            clauses.append(SnapJob.job_id.is_in(job_ids))
+        snap_jobs = IStore(SnapJob).find(SnapJob, *clauses).order_by(
+            Desc(SnapJob.job_id))
+
+        def preload_jobs(rows):
+            load_related(Job, rows, ["job_id"])
+
+        return DecoratedResultSet(
+            snap_jobs, lambda snap_job: cls(snap_job),
+            pre_iter_hook=preload_jobs)
+
+    @classmethod
     def getBySnapAndID(cls, snap, job_id):
         """See `ISnapRequestBuildsJobSource`."""
         snap_job = IStore(SnapJob).find(
@@ -200,6 +233,31 @@ class SnapRequestBuildsJob(SnapJobDerived):
                 "No REQUEST_BUILDS job with ID %d found for %r" %
                 (job_id, snap))
         return cls(snap_job)
+
+    @classmethod
+    def findBuildsForJobs(cls, jobs, user=None):
+        """See `ISnapRequestBuildsJobSource`."""
+        build_ids = {
+            job.job_id: removeSecurityProxy(job).metadata.get("builds") or []
+            for job in jobs}
+        all_build_ids = set(chain.from_iterable(build_ids.values()))
+        if all_build_ids:
+            all_builds = {
+                build.id: build for build in IStore(SnapBuild).find(
+                    SnapBuild,
+                    SnapBuild.id.is_in(all_build_ids),
+                    SnapBuild.archive_id == Archive.id,
+                    Archive._enabled == True,
+                    get_enabled_archive_filter(
+                        user, include_public=True, include_subscribed=True))
+                }
+        else:
+            all_builds = {}
+        return {
+            job.job_id: [
+                all_builds[build_id] for build_id in build_ids[job.job_id]
+                if build_id in all_builds]
+            for job in jobs}
 
     def getOperationDescription(self):
         return "requesting builds of %s" % self.snap.name
@@ -253,14 +311,19 @@ class SnapRequestBuildsJob(SnapJobDerived):
         self.metadata["error_message"] = message
 
     @property
+    def build_request(self):
+        """See `ISnapRequestBuildsJob`."""
+        return self.snap.getBuildRequest(self.job.id)
+
+    @property
     def builds(self):
         """See `ISnapRequestBuildsJob`."""
         build_ids = self.metadata.get("builds")
-        if build_ids is None:
-            return EmptyResultSet()
-        else:
+        if build_ids:
             return IStore(SnapBuild).find(
                 SnapBuild, SnapBuild.id.is_in(build_ids))
+        else:
+            return EmptyResultSet()
 
     @builds.setter
     def builds(self, builds):
@@ -282,7 +345,7 @@ class SnapRequestBuildsJob(SnapJobDerived):
         try:
             self.builds = self.snap.requestBuildsFromJob(
                 requester, archive, self.pocket, channels=self.channels,
-                logger=log)
+                build_request=self.build_request, logger=log)
             self.error_message = None
         except self.retry_error_types:
             raise

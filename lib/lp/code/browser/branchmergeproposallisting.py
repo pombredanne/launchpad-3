@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class view for branch merge proposal listings."""
@@ -31,10 +31,7 @@ from zope.interface import (
 from zope.schema import Choice
 
 from lp import _
-from lp.app.browser.launchpadform import (
-    custom_widget,
-    LaunchpadFormView,
-    )
+from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.app.interfaces.launchpad import IHeadingContext
 from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.code.enums import (
@@ -201,7 +198,7 @@ class BranchMergeProposalListingView(LaunchpadFormView):
 
     schema = BranchMergeProposalFilterSchema
     field_names = ['status']
-    custom_widget('status', LaunchpadDropdownWidget)
+    custom_widget_status = LaunchpadDropdownWidget
 
     extra_columns = []
     _queue_status = None

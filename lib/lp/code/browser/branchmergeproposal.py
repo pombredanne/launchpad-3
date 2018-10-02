@@ -41,6 +41,7 @@ from zope.component import (
     getUtility,
     )
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implementer,
@@ -60,7 +61,6 @@ from zope.schema.vocabulary import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -266,7 +266,7 @@ class BranchMergeProposalMenuMixin:
         if (self.context.queue_status ==
             BranchMergeProposalStatus.NEEDS_REVIEW):
             enabled = True
-            if (self.context.votes.count()) > 0:
+            if len(self.context.votes) > 0:
                 text = 'Request another review'
         return Link('+request-review', text, icon='add', enabled=enabled)
 
@@ -890,8 +890,15 @@ class BranchMergeProposalVoteView(LaunchpadView):
     @cachedproperty
     def reviews(self):
         """Return the decorated votes for the proposal."""
-        users_vote = self.context.getUsersVoteReference(self.user)
-        return [DecoratedCodeReviewVoteReference(vote, self.user, users_vote)
+
+        # This would use getUsersVoteReference, but we need to
+        # be able to cache the property. We don't need to normalize
+        # the review types.
+        users_vote = sorted((uv for uv in self.context.votes
+                             if uv.reviewer == self.user),
+                            key=operator.attrgetter('date_created'))
+        final_vote = users_vote[0] if users_vote else None
+        return [DecoratedCodeReviewVoteReference(vote, self.user, final_vote)
                 for vote in self.context.votes
                 if check_permission('launchpad.LimitedView', vote.reviewer)]
 
@@ -1308,7 +1315,8 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
     schema = IAddVote
     field_names = ['vote', 'review_type', 'comment']
 
-    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
+    custom_widget_comment = CustomWidgetFactory(
+        TextAreaWidget, cssClass='comment-text')
 
     @cachedproperty
     def initial_values(self):

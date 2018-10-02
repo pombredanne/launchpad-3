@@ -13,7 +13,11 @@ from textwrap import dedent
 
 from fixtures import FakeLogger
 import pytz
-from testtools.matchers import DocTestMatches
+from storm.store import Store
+from testtools.matchers import (
+    DocTestMatches,
+    Equals,
+    )
 import transaction
 from zope.component import getUtility
 from zope.formlib.itemswidgets import ItemDisplayWidget
@@ -24,14 +28,22 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
-from lp.code.enums import GitRepositoryType
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    GitRepositoryType,
+    )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.tests.helpers import GitHostingFixture
-from lp.registry.enums import BranchSharingPolicy
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    VCSType,
+    )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.database.constants import UTC_NOW
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -41,9 +53,13 @@ from lp.testing import (
     logout,
     person_logged_in,
     record_two_runs,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import (
     Contains,
     HasQueryCount,
@@ -89,7 +105,7 @@ class TestGitRepositoryNavigation(TestCaseWithFactory):
 
 class TestGitRepositoryView(BrowserTestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_clone_instructions(self):
         repository = self.factory.makeGitRepository()
@@ -245,6 +261,146 @@ class TestGitRepositoryView(BrowserTestCase):
         # The main check: No Unauthorized error should be raised.
         browser = self.getUserBrowser(url, user=user)
         self.assertIn(project_name, browser.contents)
+
+    def test_view_with_active_reviews(self):
+        repository = self.factory.makeGitRepository()
+        git_refs = self.factory.makeGitRefs(
+            repository,
+            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=git_refs[0],
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        with FeatureFixture({"code.git.show_repository_mps": "on"}):
+            with person_logged_in(repository.owner):
+                browser = self.getViewBrowser(repository)
+                self.assertIsNotNone(
+                    find_tag_by_id(browser.contents, 'landing-candidates'))
+
+    def test_landing_candidates_count(self):
+        source_repository = self.factory.makeGitRepository()
+        view = create_initialized_view(source_repository, '+index')
+
+        self.assertEqual('No branches', view._getBranchCountText(0))
+        self.assertEqual('1 branch', view._getBranchCountText(1))
+        self.assertEqual('2 branches', view._getBranchCountText(2))
+
+    def test_landing_candidates_query_count(self):
+        repository = self.factory.makeGitRepository()
+        git_refs = self.factory.makeGitRefs(
+            repository,
+            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+
+        def login_and_view():
+            with FeatureFixture({"code.git.show_repository_mps": "on"}):
+                with person_logged_in(repository.owner):
+                    browser = self.getViewBrowser(repository)
+                    self.assertIsNotNone(
+                        find_tag_by_id(browser.contents, 'landing-candidates'))
+
+        def create_merge_proposal():
+            bmp = self.factory.makeBranchMergeProposalForGit(
+                target_ref=git_refs[0],
+                set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+            self.factory.makePreviewDiff(merge_proposal=bmp)
+            self.factory.makeCodeReviewComment(
+                vote=CodeReviewVote.APPROVE, merge_proposal=bmp)
+
+        recorder1, recorder2 = record_two_runs(
+            login_and_view,
+            create_merge_proposal,
+            2)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
+    def test_view_with_landing_targets(self):
+        product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
+        target_repository = self.factory.makeGitRepository(target=product)
+        source_repository = self.factory.makeGitRepository(target=product)
+        [target_git_ref] = self.factory.makeGitRefs(
+            target_repository,
+            paths=["refs/heads/master"])
+        [source_git_ref] = self.factory.makeGitRefs(
+            source_repository,
+            paths=["refs/heads/master"])
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_git_ref,
+            source_ref=source_git_ref,
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        with FeatureFixture({"code.git.show_repository_mps": "on"}):
+            with person_logged_in(target_repository.owner):
+                browser = self.getViewBrowser(
+                    source_repository, user=source_repository.owner)
+                self.assertIsNotNone(
+                    find_tag_by_id(browser.contents, 'landing-targets'))
+
+    def test_landing_targets_query_count(self):
+        product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
+        target_repository = self.factory.makeGitRepository(target=product)
+        source_repository = self.factory.makeGitRepository(target=product)
+
+        def create_merge_proposal():
+            [target_git_ref] = self.factory.makeGitRefs(
+                target_repository)
+            [source_git_ref] = self.factory.makeGitRefs(
+                source_repository)
+            bmp = self.factory.makeBranchMergeProposalForGit(
+                target_ref=target_git_ref,
+                source_ref=source_git_ref,
+                set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+            self.factory.makePreviewDiff(merge_proposal=bmp)
+            self.factory.makeCodeReviewComment(
+                vote=CodeReviewVote.APPROVE, merge_proposal=bmp)
+
+        def login_and_view():
+            with FeatureFixture({"code.git.show_repository_mps": "on"}):
+                with person_logged_in(target_repository.owner):
+                    browser = self.getViewBrowser(
+                        source_repository, user=source_repository.owner)
+                    self.assertIsNotNone(
+                        find_tag_by_id(browser.contents, 'landing-targets'))
+
+        recorder1, recorder2 = record_two_runs(
+            login_and_view,
+            create_merge_proposal,
+            2)
+        # XXX cjwatson 2018-09-10: There is currently one extra
+        # TeamParticipation query per reviewer (at least in this test setup)
+        # due to GitRepository.isPersonTrustedReviewer.  Fixing this
+        # probably requires a suitable helper to update Person._inTeam_cache
+        # in bulk.
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count + 2)))
+
+    def test_view_with_inactive_landing_targets(self):
+        product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
+        target_repository = self.factory.makeGitRepository(target=product)
+        source_repository = self.factory.makeGitRepository(target=product)
+        [target_git_ref] = self.factory.makeGitRefs(
+            target_repository,
+            paths=["refs/heads/master"])
+        [source_git_ref] = self.factory.makeGitRefs(
+            source_repository,
+            paths=["refs/heads/master"])
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_git_ref,
+            source_ref=source_git_ref,
+            set_state=BranchMergeProposalStatus.MERGED)
+        with FeatureFixture({"code.git.show_repository_mps": "on"}):
+            with person_logged_in(target_repository.owner):
+                browser = self.getViewBrowser(
+                    source_repository, user=source_repository.owner)
+                self.assertIsNone(
+                    find_tag_by_id(browser.contents, 'landing-targets'))
+
+    def test_query_count_subscriber_content(self):
+        repository = self.factory.makeGitRepository()
+        for _ in range(10):
+            self.factory.makeGitSubscription(repository=repository)
+        Store.of(repository).flush()
+        Store.of(repository).invalidate()
+        view = create_initialized_view(
+            repository, "+repository-portlet-subscriber-content")
+        with StormStatementRecorder() as recorder:
+            view.render()
+        self.assertThat(recorder, HasQueryCount(Equals(6)))
 
 
 class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):

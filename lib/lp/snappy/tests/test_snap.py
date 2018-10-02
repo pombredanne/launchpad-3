@@ -12,6 +12,7 @@ from datetime import (
     timedelta,
     )
 import json
+from operator import attrgetter
 from textwrap import dedent
 from urlparse import urlsplit
 
@@ -83,6 +84,7 @@ from lp.services.log.logger import BufferLogger
 from lp.services.propertycache import clear_property_cache
 from lp.services.timeout import default_timeout
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.publisher import canonical_url
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     CannotFetchSnapcraftYaml,
@@ -175,7 +177,9 @@ class TestSnap(TestCaseWithFactory):
         self.assertThat(
             self.factory.makeSnap(),
             DoesNotSnapshot(
-                ["builds", "completed_builds", "pending_builds"], ISnapView))
+                ["pending_build_requests",
+                 "builds", "completed_builds", "pending_builds"],
+                ISnapView))
 
     def test_initial_date_last_modified(self):
         # The initial value of date_last_modified is date_created.
@@ -375,6 +379,38 @@ class TestSnap(TestCaseWithFactory):
             snap.owner, snap.distro_series.main_archive, distroarchseries,
             PackagePublishingPocket.UPDATES)
 
+    def test_requestBuild_triggers_webhooks(self):
+        # Requesting a build triggers webhooks.
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        distroarchseries = self.makeBuildableDistroArchSeries(
+            processor=processor)
+        snap = self.factory.makeSnap(
+            distroseries=distroarchseries.distroseries, processors=[processor])
+        hook = self.factory.makeWebhook(
+            target=snap, event_types=["snap:build:0.1"])
+        build = snap.requestBuild(
+            snap.owner, snap.distro_series.main_archive, distroarchseries,
+            PackagePublishingPocket.UPDATES)
+        expected_payload = {
+            "snap_build": Equals(canonical_url(build, force_local_path=True)),
+            "action": Equals("created"),
+            "snap": Equals(canonical_url(snap, force_local_path=True)),
+            "build_request": Is(None),
+            "status": Equals("Needs building"),
+            "store_upload_status": Equals("Unscheduled"),
+            }
+        with person_logged_in(snap.owner):
+            delivery = hook.deliveries.one()
+            self.assertThat(
+                delivery, MatchesStructure(
+                    event_type=Equals("snap:build:0.1"),
+                    payload=MatchesDict(expected_payload)))
+            with dbuser(config.IWebhookDeliveryJobSource.dbuser):
+                self.assertEqual(
+                    "<WebhookDeliveryJob for webhook %d on %r>" % (
+                        hook.id, hook.target),
+                    repr(delivery))
+
     def test_requestBuilds(self):
         # requestBuilds schedules a job and returns a corresponding
         # SnapBuildRequest.
@@ -391,7 +427,8 @@ class TestSnap(TestCaseWithFactory):
             snap=Equals(snap),
             status=Equals(SnapBuildRequestStatus.PENDING),
             error_message=Is(None),
-            builds=AfterPreprocessing(set, MatchesSetwise())))
+            builds=AfterPreprocessing(set, MatchesSetwise()),
+            archive=Equals(snap.distro_series.main_archive)))
         [job] = getUtility(ISnapRequestBuildsJobSource).iterReady()
         self.assertThat(job, MatchesStructure(
             job_id=Equals(request.id),
@@ -450,7 +487,8 @@ class TestSnap(TestCaseWithFactory):
         with person_logged_in(job.requester):
             builds = job.snap.requestBuildsFromJob(
                 job.requester, job.archive, job.pocket,
-                removeSecurityProxy(job.channels))
+                removeSecurityProxy(job.channels),
+                build_request=job.build_request)
         self.assertRequestedBuildsMatch(builds, job, ["sparc"])
 
     def test_requestBuildsFromJob_no_explicit_architectures(self):
@@ -465,10 +503,11 @@ class TestSnap(TestCaseWithFactory):
         with person_logged_in(job.requester):
             builds = job.snap.requestBuildsFromJob(
                 job.requester, job.archive, job.pocket,
-                removeSecurityProxy(job.channels))
+                removeSecurityProxy(job.channels),
+                build_request=job.build_request)
         self.assertRequestedBuildsMatch(builds, job, ["mips64el", "riscv64"])
 
-    def test_requestBuilds_unsupported_remote(self):
+    def test_requestBuildsFromJob_unsupported_remote(self):
         # If the snap is based on an external Git repository from which we
         # don't support fetching blobs, requestBuildsFromJob falls back to
         # requesting builds for all configured architectures.
@@ -482,8 +521,42 @@ class TestSnap(TestCaseWithFactory):
         with person_logged_in(job.requester):
             builds = job.snap.requestBuildsFromJob(
                 job.requester, job.archive, job.pocket,
-                removeSecurityProxy(job.channels))
+                removeSecurityProxy(job.channels),
+                build_request=job.build_request)
         self.assertRequestedBuildsMatch(builds, job, ["mips64el", "riscv64"])
+
+    def test_requestBuildsFromJob_triggers_webhooks(self):
+        # requestBuildsFromJob triggers webhooks, and the payload includes a
+        # link to the build request.
+        self.useFixture(GitHostingFixture(blob=dedent("""\
+            architectures:
+              - build-on: avr
+              - build-on: riscv64
+            """)))
+        job = self.makeRequestBuildsJob(["avr", "riscv64", "sparc"])
+        hook = self.factory.makeWebhook(
+            target=job.snap, event_types=["snap:build:0.1"])
+        with person_logged_in(job.requester):
+            builds = job.snap.requestBuildsFromJob(
+                job.requester, job.archive, job.pocket,
+                removeSecurityProxy(job.channels),
+                build_request=job.build_request)
+            self.assertEqual(2, len(builds))
+            self.assertThat(hook.deliveries, MatchesSetwise(*(
+                MatchesStructure(
+                    event_type=Equals("snap:build:0.1"),
+                    payload=MatchesDict({
+                        "snap_build": Equals(canonical_url(
+                            build, force_local_path=True)),
+                        "action": Equals("created"),
+                        "snap": Equals(canonical_url(
+                            job.snap, force_local_path=True)),
+                        "build_request": Equals(canonical_url(
+                            job.build_request, force_local_path=True)),
+                        "status": Equals("Needs building"),
+                        "store_upload_status": Equals("Unscheduled"),
+                        }))
+                for build in builds)))
 
     def test_requestAutoBuilds(self):
         # requestAutoBuilds creates new builds for all configured
@@ -673,6 +746,172 @@ class TestSnap(TestCaseWithFactory):
                     build.id for build in snap.builds),
                 lambda: snap_build_creator(snap),
                 1, 5)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
+    def test_getBuildSummaries(self):
+        snap1 = self.factory.makeSnap()
+        snap2 = self.factory.makeSnap()
+        request11 = self.factory.makeSnapBuildRequest(snap=snap1)
+        request12 = self.factory.makeSnapBuildRequest(snap=snap1)
+        request2 = self.factory.makeSnapBuildRequest(snap=snap2)
+        self.factory.makeSnapBuildRequest()
+        build11 = self.factory.makeSnapBuild(snap=snap1)
+        build12 = self.factory.makeSnapBuild(snap=snap1)
+        build2 = self.factory.makeSnapBuild(snap=snap2)
+        self.factory.makeSnapBuild()
+        summary1 = snap1.getBuildSummaries(
+            request_ids=[request11.id, request12.id],
+            build_ids=[build11.id, build12.id])
+        summary2 = snap2.getBuildSummaries(
+            request_ids=[request2.id], build_ids=[build2.id])
+        request_summary_matcher = MatchesDict({
+            "status": Equals("PENDING"),
+            "error_message": Is(None),
+            "builds": Equals([]),
+            })
+        build_summary_matcher = MatchesDict({
+            "status": Equals("NEEDSBUILD"),
+            "buildstate": Equals("Needs building"),
+            "when_complete": Is(None),
+            "when_complete_estimate": Is(False),
+            "build_log_url": Is(None),
+            "build_log_size": Is(None),
+            })
+        self.assertThat(summary1, MatchesDict({
+            "requests": MatchesDict({
+                request11.id: request_summary_matcher,
+                request12.id: request_summary_matcher,
+                }),
+            "builds": MatchesDict({
+                build11.id: build_summary_matcher,
+                build12.id: build_summary_matcher,
+                }),
+            }))
+        self.assertThat(summary2, MatchesDict({
+            "requests": MatchesDict({request2.id: request_summary_matcher}),
+            "builds": MatchesDict({build2.id: build_summary_matcher}),
+            }))
+
+    def test_getBuildSummaries_empty_input(self):
+        snap = self.factory.makeSnap()
+        self.factory.makeSnapBuildRequest(snap=snap)
+        self.assertEqual(
+            {"requests": {}, "builds": {}},
+            snap.getBuildSummaries(request_ids=None, build_ids=None))
+        self.assertEqual(
+            {"requests": {}, "builds": {}},
+            snap.getBuildSummaries(request_ids=[], build_ids=[]))
+        self.assertEqual(
+            {"requests": {}, "builds": {}},
+            snap.getBuildSummaries(request_ids=(), build_ids=()))
+
+    def test_getBuildSummaries_not_matching_snap(self):
+        # getBuildSummaries does not return information for other snaps.
+        snap1 = self.factory.makeSnap()
+        snap2 = self.factory.makeSnap()
+        self.factory.makeSnapBuildRequest(snap=snap1)
+        self.factory.makeSnapBuild(snap=snap1)
+        request2 = self.factory.makeSnapBuildRequest(snap=snap2)
+        build2 = self.factory.makeSnapBuild(snap=snap2)
+        summary1 = snap1.getBuildSummaries(
+            request_ids=[request2.id], build_ids=[build2.id])
+        self.assertEqual({"requests": {}, "builds": {}}, summary1)
+
+    def test_getBuildSummaries_request_error_message_field(self):
+        # The error_message field for a build request should be None unless
+        # the build request failed.
+        snap = self.factory.makeSnap()
+        request = self.factory.makeSnapBuildRequest(snap=snap)
+        self.assertIsNone(request.error_message)
+        summary = snap.getBuildSummaries(request_ids=[request.id])
+        self.assertIsNone(summary["requests"][request.id]["error_message"])
+        job = removeSecurityProxy(request)._job
+        removeSecurityProxy(job).error_message = "Boom"
+        summary = snap.getBuildSummaries(request_ids=[request.id])
+        self.assertEqual(
+            "Boom", summary["requests"][request.id]["error_message"])
+
+    def test_getBuildSummaries_request_builds_field(self):
+        # The builds field should be an empty list unless the build request
+        # has completed and produced builds.
+        self.useFixture(GitHostingFixture(blob=dedent("""\
+            architectures:
+              - build-on: mips64el
+              - build-on: riscv64
+            """)))
+        job = self.makeRequestBuildsJob(["mips64el", "riscv64", "sh4"])
+        snap = job.snap
+        request = snap.getBuildRequest(job.job_id)
+        self.assertEqual([], list(request.builds))
+        summary = snap.getBuildSummaries(request_ids=[request.id])
+        self.assertEqual([], summary["requests"][request.id]["builds"])
+        with person_logged_in(job.requester):
+            with dbuser(config.ISnapRequestBuildsJobSource.dbuser):
+                JobRunner([job]).runAll()
+        summary = snap.getBuildSummaries(request_ids=[request.id])
+        expected_snap_url = "/~%s/+snap/%s" % (snap.owner.name, snap.name)
+        builds = sorted(request.builds, key=attrgetter("id"), reverse=True)
+        expected_builds = [
+            {
+                "self_link": expected_snap_url + "/+build/%d" % build.id,
+                "id": build.id,
+                "distro_arch_series_link": "/%s/%s/%s" % (
+                    snap.distro_series.distribution.name,
+                    snap.distro_series.name,
+                    build.distro_arch_series.architecturetag),
+                "architecture_tag": build.distro_arch_series.architecturetag,
+                "archive_link": (
+                    '<a href="/%s" class="sprite distribution">%s</a>' % (
+                        build.archive.distribution.name,
+                        build.archive.displayname)),
+                "status": "NEEDSBUILD",
+                "buildstate": "Needs building",
+                "when_complete": None,
+                "when_complete_estimate": False,
+                "build_log_url": None,
+                "build_log_size": None,
+            } for build in builds]
+        self.assertEqual(
+            expected_builds, summary["requests"][request.id]["builds"])
+
+    def test_getBuildSummaries_query_count(self):
+        # The DB query count remains constant regardless of the number of
+        # requests and the number of builds resulting from them.
+        self.useFixture(GitHostingFixture(blob=dedent("""\
+            architectures:
+              - build-on: mips64el
+              - build-on: riscv64
+            """)))
+        job = self.makeRequestBuildsJob(["mips64el", "riscv64", "sh4"])
+        snap = job.snap
+        request_ids = []
+        build_ids = []
+
+        def create_items():
+            request = self.factory.makeSnapBuildRequest(
+                snap=snap, archive=self.factory.makeArchive())
+            request_ids.append(request.id)
+            job = removeSecurityProxy(request)._job
+            with person_logged_in(snap.owner.teamowner):
+                # Using the normal job runner interferes with SQL statement
+                # recording, so we run the job by hand.
+                job.start()
+                job.run()
+                job.complete()
+            # XXX cjwatson 2018-06-20: Queued builds with
+            # BuildQueueStatus.WAITING incur extra queries per build due to
+            # estimating start times.  For the moment, we dodge this by
+            # starting the builds.
+            for build in job.builds:
+                build.buildqueue_record.markAsBuilding(
+                    self.factory.makeBuilder())
+            build_ids.append(self.factory.makeSnapBuild(
+                snap=snap, archive=self.factory.makeArchive()).id)
+
+        recorder1, recorder2 = record_two_runs(
+            lambda: snap.getBuildSummaries(
+                request_ids=request_ids, build_ids=build_ids),
+            create_items, 1, 5)
         self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
 
 

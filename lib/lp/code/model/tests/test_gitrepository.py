@@ -215,6 +215,12 @@ class TestGitRepository(TestCaseWithFactory):
         clear_property_cache(repository)
         self.assertIsNone(repository.code_import)
 
+    def test_getMergeProposals(self):
+        repository = self.factory.makeGitRepository()
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        bmp = self.factory.makeBranchMergeProposalForGit(target_ref=ref)
+        self.assertEqual([bmp], list(repository.getMergeProposals()))
+
 
 class TestGitIdentityMixin(TestCaseWithFactory):
     """Test the defaults and identities provided by GitIdentityMixin."""

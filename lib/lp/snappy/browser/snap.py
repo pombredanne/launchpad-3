@@ -25,6 +25,7 @@ from lazr.restful.interface import (
     )
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
+from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import Interface
 from zope.schema import (
     Choice,
@@ -35,7 +36,6 @@ from zope.schema import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     render_radio_widget_part,
@@ -257,15 +257,20 @@ class SnapRequestBuildsView(LaunchpadFormView):
         archive = Reference(IArchive, title=u'Source archive', required=True)
         distro_arch_series = List(
             Choice(vocabulary='SnapDistroArchSeries'),
-            title=u'Architectures', required=True)
+            title=u'Architectures', required=True,
+            description=(
+                u'If you do not explicitly select any architectures, then '
+                u'the snap package will be built for all architectures '
+                u'allowed by its configuration.'))
         pocket = Choice(
             title=u'Pocket', vocabulary=PackagePublishingPocket, required=True,
-            description=u'The package stream within the source distribution '
-                'series to use when building the snap package.')
+            description=(
+                u'The package stream within the source distribution series '
+                u'to use when building the snap package.'))
 
-    custom_widget('archive', SnapArchiveWidget)
-    custom_widget('distro_arch_series', LabeledMultiCheckBoxWidget)
-    custom_widget('pocket', LaunchpadDropdownWidget)
+    custom_widget_archive = SnapArchiveWidget
+    custom_widget_distro_arch_series = LabeledMultiCheckBoxWidget
+    custom_widget_pocket = LaunchpadDropdownWidget
 
     help_links = {
         "pocket": u"/+help-snappy/snap-build-pocket.html",
@@ -280,17 +285,9 @@ class SnapRequestBuildsView(LaunchpadFormView):
         """See `LaunchpadFormView`."""
         return {
             'archive': self.context.distro_series.main_archive,
-            'distro_arch_series': self.context.getAllowedArchitectures(),
+            'distro_arch_series': [],
             'pocket': PackagePublishingPocket.UPDATES,
             }
-
-    def validate(self, data):
-        """See `LaunchpadFormView`."""
-        arches = data.get('distro_arch_series', [])
-        if not arches:
-            self.setFieldError(
-                'distro_arch_series',
-                "You need to select at least one architecture.")
 
     def requestBuild(self, data):
         """User action for requesting a number of builds.
@@ -318,12 +315,18 @@ class SnapRequestBuildsView(LaunchpadFormView):
 
     @action('Request builds', name='request')
     def request_action(self, action, data):
-        builds, informational = self.requestBuild(data)
+        if data['distro_arch_series']:
+            builds, informational = self.requestBuild(data)
+            already_pending = informational.get('already_pending')
+            notification_text = new_builds_notification_text(
+                builds, already_pending)
+            self.request.response.addNotification(notification_text)
+        else:
+            self.context.requestBuilds(
+                self.user, data['archive'], data['pocket'])
+            self.request.response.addNotification(
+                _('Builds will be dispatched soon.'))
         self.next_url = self.cancel_url
-        already_pending = informational.get('already_pending')
-        notification_text = new_builds_notification_text(
-            builds, already_pending)
-        self.request.response.addNotification(notification_text)
 
 
 class ISnapEditSchema(Interface):
@@ -340,13 +343,6 @@ class ISnapEditSchema(Interface):
         'auto_build_channels',
         'store_upload',
         ])
-    auto_build_channels = copy_field(
-        ISnap['auto_build_channels'],
-        description=(
-            u'The channels to use for build tools when building the snap '
-            u'package.  If unset, or if the channel for snapcraft is set to '
-            u'"apt", the default behaviour is to install snapcraft from the '
-            u'source archive using apt.'))
     store_distro_series = Choice(
         vocabulary='BuildableSnappyDistroSeries', required=True,
         title=u'Series')
@@ -407,11 +403,11 @@ class SnapAddView(
         'store_name',
         'store_channels',
         ]
-    custom_widget('store_distro_series', LaunchpadRadioWidget)
-    custom_widget('auto_build_archive', SnapArchiveWidget)
-    custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
-    custom_widget('auto_build_channels', SnapBuildChannelsWidget)
-    custom_widget('store_channels', StoreChannelsWidget)
+    custom_widget_store_distro_series = LaunchpadRadioWidget
+    custom_widget_auto_build_archive = SnapArchiveWidget
+    custom_widget_auto_build_pocket = LaunchpadDropdownWidget
+    custom_widget_auto_build_channels = SnapBuildChannelsWidget
+    custom_widget_store_channels = StoreChannelsWidget
 
     help_links = {
         "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",
@@ -703,13 +699,14 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
         'store_name',
         'store_channels',
         ]
-    custom_widget('store_distro_series', LaunchpadRadioWidget)
-    custom_widget('vcs', LaunchpadRadioWidget)
-    custom_widget('git_ref', GitRefWidget, allow_external=True)
-    custom_widget('auto_build_archive', SnapArchiveWidget)
-    custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
-    custom_widget('auto_build_channels', SnapBuildChannelsWidget)
-    custom_widget('store_channels', StoreChannelsWidget)
+    custom_widget_store_distro_series = LaunchpadRadioWidget
+    custom_widget_vcs = LaunchpadRadioWidget
+    custom_widget_git_ref = CustomWidgetFactory(
+        GitRefWidget, allow_external=True)
+    custom_widget_auto_build_archive = SnapArchiveWidget
+    custom_widget_auto_build_pocket = LaunchpadDropdownWidget
+    custom_widget_auto_build_channels = SnapBuildChannelsWidget
+    custom_widget_store_channels = StoreChannelsWidget
 
     help_links = {
         "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",

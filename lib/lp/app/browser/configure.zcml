@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -588,6 +588,13 @@
       for="lp.blueprints.interfaces.specification.ISpecification"
       provides="zope.traversing.interfaces.IPathAdapter"
       factory="lp.app.browser.tales.SpecificationImageDisplayAPI"
+      name="image"
+      />
+
+  <adapter
+      for="lp.snappy.interfaces.snap.ISnapBuildRequest"
+      provides="zope.traversing.interfaces.IPathAdapter"
+      factory="lp.app.browser.tales.SnapBuildRequestImageDisplayAPI"
       name="image"
       />
 

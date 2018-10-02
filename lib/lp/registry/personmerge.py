@@ -732,6 +732,10 @@ def merge_people(from_person, to_person, reviewer, delete=False):
         ('latestpersonsourcepackagereleasecache', 'maintainer'),
         # Obsolete table.
         ('branchmergequeue', 'owner'),
+        # This needs handling before we deploy the Git permissions model
+        # code, but can be ignored for the purpose of deploying the database
+        # tables.
+        ('gitrulegrant', 'grantee'),
         ]
 
     references = list(postgresql.listReferences(cur, 'person', 'id'))

@@ -22,6 +22,7 @@ __all__ = [
     'NoSourceForSnap',
     'NoSuchSnap',
     'SNAP_PRIVATE_FEATURE_FLAG',
+    'SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG',
     'SNAP_TESTING_FLAGS',
     'SNAP_WEBHOOKS_FEATURE_FLAG',
     'SnapAuthorizationBadMacaroon',
@@ -110,6 +111,7 @@ from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
 
 SNAP_PRIVATE_FEATURE_FLAG = u"snap.allow_private"
+SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG = u"snap.channels.snapcraft"
 SNAP_WEBHOOKS_FEATURE_FLAG = u"snap.webhooks.enabled"
 
 
@@ -315,6 +317,11 @@ class ISnapBuildRequest(Interface):
         value_type=Reference(schema=Interface),
         required=True, readonly=True))
 
+    archive = Reference(
+        IArchive,
+        title=u"The source archive for builds produced by this request",
+        required=True, readonly=True)
+
 
 class ISnapView(Interface):
     """`ISnap` attributes that require launchpad.View permission."""
@@ -373,7 +380,7 @@ class ISnapView(Interface):
     @export_factory_operation(Interface, [])
     @operation_for_version("devel")
     def requestBuild(requester, archive, distro_arch_series, pocket,
-                     channels=None):
+                     channels=None, build_request=None):
         """Request that the snap package be built.
 
         :param requester: The person requesting the build.
@@ -382,6 +389,8 @@ class ISnapView(Interface):
         :param pocket: The pocket that should be targeted.
         :param channels: A dictionary mapping snap names to channels to use
             for this build.
+        :param build_request: The `ISnapBuildRequest` job being processed,
+            if any.
         :return: `ISnapBuild`.
         """
 
@@ -415,7 +424,7 @@ class ISnapView(Interface):
 
     def requestBuildsFromJob(requester, archive, pocket, channels=None,
                              allow_failures=False, fetch_snapcraft_yaml=True,
-                             logger=None):
+                             build_request=None, logger=None):
         """Synchronous part of `Snap.requestBuilds`.
 
         Request that the snap package be built for relevant architectures.
@@ -432,6 +441,8 @@ class ISnapView(Interface):
             appropriate branch or repository and use it to decide which
             builds to request; if False, fall back to building for all
             supported architectures.
+        :param build_request: The `ISnapBuildRequest` job being processed,
+            if any.
         :param logger: An optional logger.
         :return: A sequence of `ISnapBuild` instances.
         """
@@ -443,19 +454,47 @@ class ISnapView(Interface):
         :return: `ISnapBuildRequest`.
         """
 
+    pending_build_requests = exported(doNotSnapshot(CollectionField(
+        title=_("Pending build requests for this snap package."),
+        value_type=Reference(ISnapBuildRequest),
+        required=True, readonly=True)))
+
+    # XXX cjwatson 2018-06-20: Deprecated as an exported method; can become
+    # an internal helper method once production JavaScript no longer uses
+    # it.
     @operation_parameters(
         snap_build_ids=List(
-            title=_("A list of snap build ids."),
-            value_type=Int()))
+            title=_("A list of snap build IDs."), value_type=Int()))
     @export_read_operation()
     @operation_for_version("devel")
     def getBuildSummariesForSnapBuildIds(snap_build_ids):
         """Return a dictionary containing a summary of the build statuses.
 
-        :param snap_build_ids: A list of snap build ids.
+        :param snap_build_ids: A list of snap build IDs.
         :type source_ids: ``list``
         :return: A dict consisting of the overall status summaries for the
             given snap builds.
+        """
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(
+        request_ids=List(
+            title=_("A list of snap build request IDs."), value_type=Int(),
+            required=False),
+        build_ids=List(
+            title=_("A list of snap build IDs."), value_type=Int(),
+            required=False))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getBuildSummaries(request_ids=None, build_ids=None, user=None):
+        """Return a dictionary containing a summary of build information.
+
+        :param request_ids: A list of snap build request IDs.
+        :param build_ids: A list of snap build IDs.
+        :param user: The `IPerson` requesting this information.
+        :return: A dict of {"requests", "builds"}, consisting of the overall
+            status summaries for the given snap build requests and snap
+            builds respectively.
         """
 
     builds = exported(doNotSnapshot(CollectionField(

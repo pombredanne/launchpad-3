@@ -52,7 +52,10 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import DEFAULT
 from lp.services.librarian.interfaces import ILibraryFileAlias
-from lp.snappy.interfaces.snap import ISnap
+from lp.snappy.interfaces.snap import (
+    ISnap,
+    ISnapBuildRequest,
+    )
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 
@@ -121,6 +124,11 @@ class SnapBuildStoreUploadStatus(EnumeratedType):
 
 class ISnapBuildView(IPackageBuild):
     """`ISnapBuild` attributes that require launchpad.View permission."""
+
+    build_request = Reference(
+        ISnapBuildRequest,
+        title=_("The build request that caused this build to be created."),
+        required=False, readonly=True)
 
     requester = exported(Reference(
         IPerson,

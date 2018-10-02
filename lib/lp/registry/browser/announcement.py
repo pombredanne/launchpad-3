@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Announcement views."""
@@ -29,7 +29,6 @@ from zope.schema import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.validators.url import valid_webref
@@ -149,7 +148,7 @@ class AnnouncementAddView(LaunchpadFormView):
     label = "Make an announcement"
     page_title = label
 
-    custom_widget('publication_date', AnnouncementDateWidget)
+    custom_widget_publication_date = AnnouncementDateWidget
 
     @action(_('Make announcement'), name='announce')
     def announce_action(self, action, data):
@@ -246,7 +245,7 @@ class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
     field_names = ['publication_date']
     page_title = 'Publish announcement'
 
-    custom_widget('publication_date', AnnouncementDateWidget)
+    custom_widget_publication_date = AnnouncementDateWidget
 
     @action(_('Publish'), name='publish')
     def publish_action(self, action, data):

@@ -20,6 +20,7 @@ from six.moves.urllib_parse import (
     urlunsplit,
     )
 from zope.component import getUtility
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import Interface
 from zope.publisher.interfaces import NotFound
@@ -33,7 +34,6 @@ from zope.schema import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.widgets.suggestion import TargetGitRepositoryWidget
@@ -259,9 +259,11 @@ class GitRefRegisterMergeProposalView(LaunchpadFormView):
     schema = GitRefRegisterMergeProposalSchema
     for_input = True
 
-    custom_widget('target_git_repository', TargetGitRepositoryWidget)
-    custom_widget('commit_message', TextAreaWidget, cssClass='comment-text')
-    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
+    custom_widget_target_git_repository = TargetGitRepositoryWidget
+    custom_widget_commit_message = CustomWidgetFactory(
+        TextAreaWidget, cssClass='comment-text')
+    custom_widget_comment = CustomWidgetFactory(
+        TextAreaWidget, cssClass='comment-text')
 
     page_title = label = 'Propose for merging'
 

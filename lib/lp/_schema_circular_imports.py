@@ -521,6 +521,8 @@ patch_collection_property(
     IGitRepository, '_api_landing_candidates', IBranchMergeProposal)
 patch_collection_property(
     IGitRepository, 'dependent_landings', IBranchMergeProposal)
+patch_collection_return_type(
+    IGitRepository, 'getMergeProposals', IBranchMergeProposal)
 
 # ILiveFSFile
 patch_reference_property(ILiveFSFile, 'livefsbuild', ILiveFSBuild)
