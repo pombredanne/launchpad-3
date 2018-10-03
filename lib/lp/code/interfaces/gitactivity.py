@@ -62,12 +62,12 @@ class IGitActivity(Interface):
 
     old_value = Dict(
         title=_("Old value"), required=False, readonly=True,
-        description=_("The value before the change."),
+        description=_("Representation of the value before the change."),
         key_type=TextLine(), value_type=Text())
 
     new_value = Dict(
         title=_("New value"), required=False, readonly=True,
-        description=_("The value after the change."),
+        description=_("Representation of the value after the change."),
         key_type=TextLine(), value_type=Text())
 
 
