@@ -387,9 +387,8 @@ class GitAPI(LaunchpadXMLRPCView):
             # the equivalent of a default team grant, but only
             # if there is no explicit grant to them otherwise specified
             owner_grant = any(
-                (g.grantee_type == GitGranteeType.REPOSITORY_OWNER or
-                 g.grantee.inTeam(repository.owner))
-                 for g in matching_grants)
+                g.grantee_type == GitGranteeType.REPOSITORY_OWNER
+                for g in matching_grants)
             if is_owner and not owner_grant:
                 union_permissions.update(['create', 'push'])
 

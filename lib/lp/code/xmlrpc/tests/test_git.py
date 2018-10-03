@@ -359,7 +359,7 @@ class TestGitAPIMixin:
         rule = self.factory.makeGitRule(
             repository, ref_pattern=u'refs/heads/stable/*')
         self.factory.makeGitRuleGrant(
-            rule=rule, grantee=owner, can_push=True)
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER, can_push=True)
 
         results = self.git_api.listRefRules(
             repository.getInternalPath(),
@@ -388,7 +388,7 @@ class TestGitAPIMixin:
             rule=rule, grantee=person, can_push=True, can_create=True)
 
         self.factory.makeGitRuleGrant(
-            rule=rule, grantee=owner, can_push=True)
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER, can_push=True)
 
         results = self.git_api.listRefRules(
             repository.getInternalPath(),
@@ -505,7 +505,8 @@ class TestGitAPIMixin:
         rule = self.factory.makeGitRule(
             repository=repository, ref_pattern=u'refs/heads/master')
         self.factory.makeGitRuleGrant(
-            rule=rule, grantee=owner, can_push=True, can_create=True)
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_push=True, can_create=True)
 
         rule = self.factory.makeGitRule(
             repository=repository, ref_pattern=u'refs/heads/tags')
@@ -528,7 +529,7 @@ class TestGitAPIMixin:
                 }),
             MatchesDict({
                 'ref_pattern': Equals('refs/heads/tags'),
-                'permissions': Equals(['create']),
+                'permissions': Equals(['create', 'push']),
                 }),
             MatchesDict({
                 'ref_pattern': Equals('*'),
@@ -665,12 +666,13 @@ class TestGitAPIMixin:
         rule = self.factory.makeGitRule(
             repository, ref_pattern=u'refs/heads/stable/next')
         self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_a, can_force_push=True)
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_force_push=True)
 
         rule = self.factory.makeGitRule(
             repository, ref_pattern=u'refs/heads/archived/*')
         self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_a)
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER)
         self.factory.makeGitRuleGrant(
             rule=rule, grantee=user_b, can_create=True)
 
@@ -687,7 +689,8 @@ class TestGitAPIMixin:
         rule = self.factory.makeGitRule(
             repository, ref_pattern=u'refs/tags/*')
         self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_a, can_create=True)
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_create=True)
         self.factory.makeGitRuleGrant(
             rule=rule, grantee=stable_team, can_create=True)
 
