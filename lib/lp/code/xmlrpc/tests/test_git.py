@@ -696,29 +696,29 @@ class TestGitAPIMixin:
             {'uid': user_a.id})
 
         self.assertThat(results, MatchesListwise([
-            MatchesDict({
-                'ref_pattern': Equals('refs/heads/stable/next'),
-                'permissions': Equals(['push', 'force_push']),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/stable/next'),
+                 'permissions': Equals(['push', 'force_push']),
                 }),
-            MatchesDict({
-                'ref_pattern': Equals('refs/heads/archived/*'),
-                'permissions': Equals([]),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/archived/*'),
+                 'permissions': Equals([]),
                 }),
-            MatchesDict({
-                'ref_pattern': Equals('refs/heads/stable/*'),
-                'permissions': Equals(['create', 'push']),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/stable/*'),
+                 'permissions': Equals(['create', 'push']),
                 }),
-            MatchesDict({
-                'ref_pattern': Equals('refs/heads/*/next'),
-                'permissions': Equals(['create', 'push']),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/*/next'),
+                 'permissions': Equals(['create', 'push']),
                 }),
-            MatchesDict({
-                'ref_pattern': Equals('refs/tags/*'),
-                'permissions': Equals(['create']),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/tags/*'),
+                 'permissions': Equals(['create']),
                 }),
-            MatchesDict({
-                'ref_pattern': Equals('*'),
-                'permissions': Equals(['create', 'push', 'force_push']),
+            MatchesDict(
+                {'ref_pattern': Equals('*'),
+                 'permissions': Equals(['create', 'push', 'force_push']),
                 }),
             ]))
 
@@ -766,21 +766,21 @@ class TestGitAPIMixin:
             {'uid': user_b.id})
 
         self.assertThat(results, MatchesListwise([
-            MatchesDict({
-                'ref_pattern': Equals('refs/heads/archived/*'),
-                'permissions': Equals(['create']),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/archived/*'),
+                 'permissions': Equals(['create']),
                 }),
-            MatchesDict({
-                'ref_pattern': Equals('refs/heads/stable/*'),
-                'permissions': Equals(['push']),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/stable/*'),
+                 'permissions': Equals(['push']),
                 }),
-            MatchesDict({
-                'ref_pattern': Equals('refs/heads/*/next'),
-                'permissions': Equals(['push', 'force_push']),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/*/next'),
+                 'permissions': Equals(['push', 'force_push']),
                 }),
-            MatchesDict({
-                'ref_pattern': Equals('refs/tags/*'),
-                'permissions': Equals(['create']),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/tags/*'),
+                 'permissions': Equals(['create']),
                 }),
             ]))
 
@@ -828,9 +828,9 @@ class TestGitAPIMixin:
             {'uid': user_c.id})
 
         self.assertThat(results, MatchesListwise([
-            MatchesDict({
-                'ref_pattern': Equals('refs/heads/*/next'),
-                'permissions': Equals(['push', 'force_push']),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/*/next'),
+                 'permissions': Equals(['push', 'force_push']),
                 }),
             ]))
 

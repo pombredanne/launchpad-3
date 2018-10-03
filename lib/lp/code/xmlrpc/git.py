@@ -341,17 +341,17 @@ class GitAPI(LaunchpadXMLRPCView):
         return permissions
 
     def _buildPermissions(self, grant):
-        """Build a list of the available permissions from a GitRuleGrant"""
-        permissions = []
+        """Build a set of the available permissions from a GitRuleGrant"""
+        permissions = set()
         if grant.can_create:
-            permissions.append('create')
+            permissions.add('create')
         if grant.can_push:
-            permissions.append('push')
+            permissions.add('push')
         if grant.can_force_push and not grant.can_push:
-            permissions.append('push')
-            permissions.append('force_push')
+            permissions.add('push')
+            permissions.add('force_push')
         elif grant.can_force_push and grant.can_push:
-            permissions.append('force_push')
+            permissions.add('force_push')
         return permissions
 
     def _listRefRules(self, requester, translated_path):
@@ -359,7 +359,7 @@ class GitAPI(LaunchpadXMLRPCView):
             getUtility(IGitLookup).getByHostingPath(translated_path))
         grants = repository.findGrantsByGrantee(requester)
         is_owner = requester.inTeam(repository.owner)
-        lines = []
+        result = []
 
         for rule in repository.rules:
             # Do we have any grants for this rule, for this user?
@@ -367,9 +367,10 @@ class GitAPI(LaunchpadXMLRPCView):
             # If we don't have any grants, but the user is the owner,
             # they get a default grant to the ref specified by the rule.
             if is_owner and not matching_grants:
-                lines.append({'ref_pattern': rule.ref_pattern,
-                              'permissions': ['create', 'push'],
-                             })
+                result.append(
+                    {'ref_pattern': rule.ref_pattern,
+                     'permissions': ['create', 'push'],
+                    })
                 continue
             # If we otherwise don't have any matching grants,
             # we can ignore this rule
@@ -394,19 +395,21 @@ class GitAPI(LaunchpadXMLRPCView):
 
             # Sort the permissions from the set for consistency
             sorted_permissions = self._sortPermissions(union_permissions)
-            lines.append({'ref_pattern': rule.ref_pattern,
-                          'permissions': sorted_permissions,
-                         })
+            result.append(
+                {'ref_pattern': rule.ref_pattern,
+                 'permissions': sorted_permissions,
+                })
 
         # The last rule for a repository owner is a default permission
-        # for everything. This is overriden by any matching rules previously
+        # for everything. This is overridden by any matching rules previously
         # in the list
         if is_owner:
-            lines.append({'ref_pattern': '*',
-                          'permissions': ['create', 'push', 'force_push'],
-                         })
+            result.append(
+                {'ref_pattern': '*',
+                 'permissions': ['create', 'push', 'force_push'],
+                })
 
-        return lines
+        return result
 
     def listRefRules(self, translated_path, auth_params):
         """See `IGitAPI`"""

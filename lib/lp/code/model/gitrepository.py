@@ -1187,7 +1187,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             GitRuleGrant, GitRuleGrant.repository_id == self.id)
 
     def findGrantsByGrantee(self, grantee):
-
+        """See `IGitRepository`."""
         is_owner = grantee.inTeam(self.owner)
         clauses = [
             And(
