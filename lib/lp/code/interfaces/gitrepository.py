@@ -735,7 +735,8 @@ class IGitRepositoryEdit(IWebhookTarget):
         :param rule: The `IGitRule` to move.
         :param position: The new position.  For example, 0 puts the rule at
             the start, while `len(repository.rules)` puts the rule at the
-            end.
+            end.  If the new position is before the end of the list, then
+            other rules are shifted to later positions to make room.
         """
 
     @export_read_operation()

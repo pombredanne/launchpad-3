@@ -1141,7 +1141,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             key=lambda rule: (0, rule.ref_pattern) if rule.is_exact else (1,))
         # Ensure the correct position of all rules, which may involve more
         # work than necessary, but is simple and tends to be
-        # self-correcting.
+        # self-correcting.  This works because the unique constraint on
+        # GitRule(repository, position) is deferred.
         for position, rule in enumerate(rules):
             if rule.repository != self:
                 raise AssertionError("%r does not belong to %r" % (rule, self))
@@ -1313,6 +1314,9 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         self._deleteRepositorySubscriptions()
         self._deleteJobs()
         getUtility(IWebhookSet).delete(self.webhooks)
+        # We intentionally skip the usual destructors; the only other useful
+        # thing they do is to log the removal activity, and we remove the
+        # activity logs for removed repositories anyway.
         self.grants.remove()
         self.rules.remove()
 
