@@ -24,10 +24,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
-from lp.code.enums import (
-    GitGranteeType,
-    GitRepositoryType,
-    )
+from lp.code.enums import GitRepositoryType
 from lp.code.errors import (
     GitRepositoryCreationException,
     GitRepositoryCreationFault,
@@ -357,8 +354,13 @@ class GitAPI(LaunchpadXMLRPCView):
     def _listRefRules(self, requester, translated_path):
         repository = removeSecurityProxy(
             getUtility(IGitLookup).getByHostingPath(translated_path))
-        grants = repository.findGrantsByGrantee(requester)
         is_owner = requester.inTeam(repository.owner)
+        grants = repository.findGrantsByGrantee(requester)
+        # If the user is the owner, get the grants for REPOSITORY_OWNER
+        # add add them to our available grants to match against
+        if is_owner:
+            owner_grants = repository.findGrantsForRepositoryOwner()
+            grants = grants.union(owner_grants)
         result = []
 
         for rule in repository.rules:
@@ -386,10 +388,7 @@ class GitAPI(LaunchpadXMLRPCView):
             # If the user is the repository owner, they essentially have
             # the equivalent of a default team grant, but only
             # if there is no explicit grant to them otherwise specified
-            owner_grant = any(
-                g.grantee_type == GitGranteeType.REPOSITORY_OWNER
-                for g in matching_grants)
-            if is_owner and not owner_grant:
+            if is_owner and not any(g for g in owner_grants if g.rule == rule):
                 union_permissions.update(['create', 'push'])
 
             # Sort the permissions from the set for consistency

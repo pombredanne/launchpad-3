@@ -744,6 +744,10 @@ class IGitRepositoryEdit(IWebhookTarget):
         :param grantee: The Person affected
         """
 
+    def findGrantsForRepositoryOwner():
+        """Find the grants of type REPOSITORY_OWNER applied to this repository.
+        """
+
     @export_read_operation()
     @operation_for_version("devel")
     def canBeDeleted():

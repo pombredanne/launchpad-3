@@ -1188,17 +1188,18 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
     def findGrantsByGrantee(self, grantee):
         """See `IGitRepository`."""
-        is_owner = grantee.inTeam(self.owner)
         clauses = [
             And(
                 GitRuleGrant.grantee_type == GitGranteeType.PERSON,
                 TeamParticipation.person == grantee,
                 GitRuleGrant.grantee == TeamParticipation.teamID
             )]
-        if is_owner:
-            clauses.append(
-                GitRuleGrant.grantee_type == GitGranteeType.REPOSITORY_OWNER)
         return self.grants.find(Or(*clauses)).config(distinct=True)
+
+    def findGrantsForRepositoryOwner(self):
+        """See `IGitRepository`."""
+        return self.grants.find(
+            GitRuleGrant.grantee_type == GitGranteeType.REPOSITORY_OWNER)
 
     def canBeDeleted(self):
         """See `IGitRepository`."""
