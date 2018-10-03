@@ -86,7 +86,8 @@ class GitRule(StormBase):
         self.date_last_modified = date_created
 
     def __repr__(self):
-        return "<GitRule '%s'> for %r" % (self.ref_pattern, self.repository)
+        return "<GitRule '%s' for %s>" % (
+            self.ref_pattern, self.repository.unique_name)
 
     @property
     def is_exact(self):
@@ -198,8 +199,9 @@ class GitRuleGrant(StormBase):
             grantee_name = "~%s" % self.grantee.name
         else:
             grantee_name = self.grantee_type.title.lower()
-        return "<GitRuleGrant [%s] to %s> for %r" % (
-            ", ".join(permissions), grantee_name, self.rule)
+        return "<GitRuleGrant [%s] to %s for %s:%s>" % (
+            ", ".join(permissions), grantee_name, self.repository.unique_name,
+            self.rule.ref_pattern)
 
     def destroySelf(self):
         """See `IGitRuleGrant`."""
