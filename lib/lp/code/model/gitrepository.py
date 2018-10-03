@@ -1189,12 +1189,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     def findGrantsByGrantee(self, grantee):
         """See `IGitRepository`."""
         clauses = [
-            And(
-                GitRuleGrant.grantee_type == GitGranteeType.PERSON,
-                TeamParticipation.person == grantee,
-                GitRuleGrant.grantee == TeamParticipation.teamID
-            )]
-        return self.grants.find(Or(*clauses)).config(distinct=True)
+            GitRuleGrant.grantee_type == GitGranteeType.PERSON,
+            TeamParticipation.person == grantee,
+            GitRuleGrant.grantee == TeamParticipation.teamID
+            ]
+        return self.grants.find(*clauses).config(distinct=True)
 
     def findGrantsForRepositoryOwner(self):
         """See `IGitRepository`."""
