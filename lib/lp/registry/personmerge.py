@@ -142,7 +142,7 @@ def _mergeAccessPolicyGrant(cur, from_id, to_id):
 
 
 def _mergeGitRuleGrant(cur, from_id, to_id):
-    # Update only the GitRuleGrants that will not conflict.
+    # Transfer GitRuleGrants that only exist on from_person.
     cur.execute('''
         UPDATE GitRuleGrant
         SET grantee=%(to_id)d
@@ -154,7 +154,24 @@ def _mergeGitRuleGrant(cur, from_id, to_id):
                 WHERE grantee = %(to_id)d
                 )
         ''' % vars())
-    # and delete those left over.
+    # Merge permissions on GitRuleGrants that exist on both from_person and
+    # to_person.  When multiple grants match a user we take the union of the
+    # permissions they confer, so it's safe to do that here too.
+    cur.execute('''
+        UPDATE GitRuleGrant
+        SET
+            can_create = GitRuleGrant.can_create OR other.can_create,
+            can_push = GitRuleGrant.can_push OR other.can_push,
+            can_force_push =
+                GitRuleGrant.can_force_push OR other.can_force_push
+        FROM GitRuleGrant AS other
+        WHERE
+            GitRuleGrant.grantee = %(to_id)d
+            AND other.grantee = %(from_id)d
+            AND GitRuleGrant.rule = other.rule
+        ''' % vars())
+    # Delete the remaining GitRuleGrants for from_person, which have now all
+    # been either transferred or merged.
     cur.execute('''
         DELETE FROM GitRuleGrant WHERE grantee = %(from_id)d
         ''' % vars())
