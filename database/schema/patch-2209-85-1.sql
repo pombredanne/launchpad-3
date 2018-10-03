@@ -23,7 +23,7 @@ COMMENT ON COLUMN GitActivity.date_changed IS 'The time when this change happene
 COMMENT ON COLUMN GitActivity.changer IS 'The user who made this change.';
 COMMENT ON COLUMN GitActivity.changee IS 'The person or team that this change was applied to.';
 COMMENT ON COLUMN GitActivity.what_changed IS 'The property of the repository that changed.';
-COMMENT ON COLUMN GitActivity.old_value IS 'The value before the change.';
-COMMENT ON COLUMN GitActivity.new_value IS 'The value after the change.';
+COMMENT ON COLUMN GitActivity.old_value IS 'JSON object representing the value before the change.';
+COMMENT ON COLUMN GitActivity.new_value IS 'JSON object representing the value after the change.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 85, 1);
