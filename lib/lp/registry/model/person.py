@@ -2370,6 +2370,8 @@ class Person(
             ('bugtask', 'assignee'),
             ('codereviewvote', 'reviewer'),
             ('emailaddress', 'person'),
+            ('gitactivity', 'changee'),
+            ('gitactivity', 'changer'),
             ('gitrepository', 'owner'),
             ('gitrule', 'creator'),
             ('gitrulegrant', 'grantee'),
