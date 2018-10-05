@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for merge_people."""
@@ -7,7 +7,10 @@ from datetime import datetime
 from operator import attrgetter
 
 import pytz
-from testtools.matchers import MatchesStructure
+from testtools.matchers import (
+    MatchesSetwise,
+    MatchesStructure,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -493,6 +496,73 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
                 policy=policy,
                 grantee=person,
                 date_created=person_grant_date))
+
+    def test_merge_transfers_non_conflicting_gitrulegrants(self):
+        # GitRuleGrants are transferred from the duplicate.
+        rule = self.factory.makeGitRule()
+        person = self.factory.makePerson()
+        grant = self.factory.makeGitRuleGrant(rule=rule)
+        self._do_premerge(grant.grantee, person)
+
+        self.assertEqual(grant.grantee, rule.grants.one().grantee)
+        with person_logged_in(person):
+            self._do_merge(grant.grantee, person)
+        self.assertEqual(person, rule.grants.one().grantee)
+
+    def test_merge_conflicting_gitrulegrants(self):
+        # Conflicting GitRuleGrants have their permissions merged.
+        rule = self.factory.makeGitRule()
+
+        person = self.factory.makePerson()
+        person_grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=person, can_create=True)
+        person_grant_date = person_grant.date_created
+
+        duplicate = self.factory.makePerson()
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=duplicate, can_push=True)
+
+        other_person = self.factory.makePerson()
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=other_person, can_push=True)
+
+        other_rule = self.factory.makeGitRule(
+            rule.repository, ref_pattern=u"refs/heads/other/*")
+        self.factory.makeGitRuleGrant(
+            rule=other_rule, grantee=other_person, can_force_push=True)
+
+        self._do_premerge(duplicate, person)
+        with person_logged_in(person):
+            self._do_merge(duplicate, person)
+
+        # Only two grants for the rule exist: the retained person's, with
+        # the union of permissions from the duplicate and target grants, and
+        # the grant to an unrelated person.
+        self.assertThat(
+            list(rule.grants),
+            MatchesSetwise(
+                MatchesStructure.byEquality(
+                    rule=rule,
+                    grantee=person,
+                    date_created=person_grant_date,
+                    can_create=True,
+                    can_push=True,
+                    can_force_push=False),
+                MatchesStructure.byEquality(
+                    rule=rule,
+                    grantee=other_person,
+                    can_create=False,
+                    can_push=True,
+                    can_force_push=False)))
+        # A grant for another rule is untouched.
+        self.assertThat(
+            other_rule.grants.one(),
+            MatchesStructure.byEquality(
+                rule=other_rule,
+                grantee=other_person,
+                can_create=False,
+                can_push=False,
+                can_force_push=True))
 
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.

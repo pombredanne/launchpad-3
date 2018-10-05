@@ -87,6 +87,10 @@ from lp.code.interfaces.gitrepository import (
     IGitRepository,
     user_has_special_git_repository_access,
     )
+from lp.code.interfaces.gitrule import (
+    IGitRule,
+    IGitRuleGrant,
+    )
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -2341,6 +2345,42 @@ class EditGitRef(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(EditGitRef, self).__init__(obj, obj.repository)
+
+
+class ViewGitRule(DelegatedAuthorization):
+    """Anyone who can see a Git repository can see its access rules."""
+    permission = 'launchpad.View'
+    usedfor = IGitRule
+
+    def __init__(self, obj):
+        super(ViewGitRule, self).__init__(obj, obj.repository)
+
+
+class EditGitRule(DelegatedAuthorization):
+    """Anyone who can edit a Git repository can edit its access rules."""
+    permission = 'launchpad.Edit'
+    usedfor = IGitRule
+
+    def __init__(self, obj):
+        super(EditGitRule, self).__init__(obj, obj.repository)
+
+
+class ViewGitRuleGrant(DelegatedAuthorization):
+    """Anyone who can see a Git repository can see its access grants."""
+    permission = 'launchpad.View'
+    usedfor = IGitRuleGrant
+
+    def __init__(self, obj):
+        super(ViewGitRuleGrant, self).__init__(obj, obj.repository)
+
+
+class EditGitRuleGrant(DelegatedAuthorization):
+    """Anyone who can edit a Git repository can edit its access grants."""
+    permission = 'launchpad.Edit'
+    usedfor = IGitRuleGrant
+
+    def __init__(self, obj):
+        super(EditGitRuleGrant, self).__init__(obj, obj.repository)
 
 
 class AdminDistroSeriesTranslations(AuthorizationBase):
