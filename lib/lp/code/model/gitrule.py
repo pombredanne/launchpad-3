@@ -48,7 +48,7 @@ def git_rule_modified(rule, event):
     events on Git repository rules.
     """
     if event.edited_fields:
-        rule.date_last_modified = UTC_NOW
+        removeSecurityProxy(rule).date_last_modified = UTC_NOW
 
 
 @implementer(IGitRule)
@@ -127,7 +127,7 @@ def git_rule_grant_modified(grant, event):
     events on Git repository grants.
     """
     if event.edited_fields:
-        grant.date_last_modified = UTC_NOW
+        removeSecurityProxy(grant).date_last_modified = UTC_NOW
 
 
 @implementer(IGitRuleGrant)
