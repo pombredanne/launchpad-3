@@ -100,6 +100,31 @@ class TestSnapBuild(TestCaseWithFactory):
         self.assertProvides(self.build, IPackageBuild)
         self.assertProvides(self.build, ISnapBuild)
 
+    def test_title(self):
+        # SnapBuild has an informative title.
+        das = self.build.distro_arch_series
+        self.assertIsNone(self.build.snap.store_name)
+        self.assertEqual(
+            "%s build of %s snap package in %s %s" % (
+                das.architecturetag, self.build.snap.name,
+                das.distroseries.distribution.name,
+                das.distroseries.getSuite(self.build.pocket)),
+            self.build.title)
+        self.build.snap.store_name = self.build.snap.name
+        self.assertEqual(
+            "%s build of %s snap package in %s %s" % (
+                das.architecturetag, self.build.snap.name,
+                das.distroseries.distribution.name,
+                das.distroseries.getSuite(self.build.pocket)),
+            self.build.title)
+        self.build.snap.store_name = self.factory.getUniqueUnicode()
+        self.assertEqual(
+            "%s build of %s snap package (%s) in %s %s" % (
+                das.architecturetag, self.build.snap.name,
+                self.build.snap.store_name, das.distroseries.distribution.name,
+                das.distroseries.getSuite(self.build.pocket)),
+            self.build.title)
+
     def test_queueBuild(self):
         # SnapBuild can create the queue entry for itself.
         bq = self.build.queueBuild()
