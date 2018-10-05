@@ -177,7 +177,7 @@ class TestSnap(TestCaseWithFactory):
         self.assertThat(
             self.factory.makeSnap(),
             DoesNotSnapshot(
-                ["pending_build_requests",
+                ["pending_build_requests", "failed_build_requests",
                  "builds", "completed_builds", "pending_builds"],
                 ISnapView))
 

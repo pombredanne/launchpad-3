@@ -674,7 +674,17 @@ class Snap(Storm, WebhookTargetMixin):
         # The returned jobs are ordered by descending ID.
         jobs = job_source.findBySnap(
             self, statuses=(JobStatus.WAITING, JobStatus.RUNNING))
-        return [SnapBuildRequest.fromJob(job) for job in jobs]
+        return DecoratedResultSet(
+            jobs, result_decorator=SnapBuildRequest.fromJob)
+
+    @property
+    def failed_build_requests(self):
+        """See `ISnap`."""
+        job_source = getUtility(ISnapRequestBuildsJobSource)
+        # The returned jobs are ordered by descending ID.
+        jobs = job_source.findBySnap(self, statuses=(JobStatus.FAILED,))
+        return DecoratedResultSet(
+            jobs, result_decorator=SnapBuildRequest.fromJob)
 
     def _getBuilds(self, filter_term, order_by):
         """The actual query to get the builds."""

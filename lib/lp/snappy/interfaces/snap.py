@@ -459,6 +459,11 @@ class ISnapView(Interface):
         value_type=Reference(ISnapBuildRequest),
         required=True, readonly=True)))
 
+    failed_build_requests = exported(doNotSnapshot(CollectionField(
+        title=_("Failed build requests for this snap package."),
+        value_type=Reference(ISnapBuildRequest),
+        required=True, readonly=True)))
+
     # XXX cjwatson 2018-06-20: Deprecated as an exported method; can become
     # an internal helper method once production JavaScript no longer uses
     # it.
