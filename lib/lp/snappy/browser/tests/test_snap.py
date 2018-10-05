@@ -29,6 +29,7 @@ from testtools.matchers import (
     AfterPreprocessing,
     Equals,
     Is,
+    MatchesListwise,
     MatchesSetwise,
     MatchesStructure,
     )
@@ -56,6 +57,8 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import get_property_cache
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.snap import (
@@ -1344,7 +1347,7 @@ class TestSnapView(BaseTestSnapView):
             "This snap package has not been built yet.",
             self.getMainText(snap))
 
-    def test_index_pending(self):
+    def test_index_pending_build(self):
         # A pending build is listed as such.
         build = self.makeBuild()
         build.queueBuild()
@@ -1354,6 +1357,38 @@ class TestSnapView(BaseTestSnapView):
             Needs building in .* \(estimated\) i386
             Primary Archive for Ubuntu Linux
             """, self.getMainText(build.snap))
+
+    def test_index_pending_build_request(self):
+        # A pending build request is listed as such.
+        snap = self.makeSnap()
+        with person_logged_in(snap.owner):
+            snap.requestBuilds(
+                snap.owner, snap.distro_series.main_archive,
+                PackagePublishingPocket.UPDATES)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Latest builds
+            Status When complete Architecture Archive
+            Pending build request
+            Primary Archive for Ubuntu Linux
+            """, self.getMainText(snap))
+
+    def test_index_failed_build_request(self):
+        # A failed build request is listed as such, with its error message.
+        snap = self.makeSnap()
+        with person_logged_in(snap.owner):
+            request = snap.requestBuilds(
+                snap.owner, snap.distro_series.main_archive,
+                PackagePublishingPocket.UPDATES)
+        job = removeSecurityProxy(removeSecurityProxy(request)._job)
+        job.job._status = JobStatus.FAILED
+        job.job.date_finished = datetime.now(pytz.UTC) - timedelta(hours=1)
+        job.error_message = "Boom"
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Latest builds
+            Status When complete Architecture Archive
+            Failed build request 1 hour ago \(Boom\)
+            Primary Archive for Ubuntu Linux
+            """, self.getMainText(snap))
 
     def test_index_store_upload(self):
         # If the snap package is to be automatically uploaded to the store,
@@ -1382,8 +1417,8 @@ class TestSnapView(BaseTestSnapView):
         build.updateStatus(
             status, date_finished=build.date_started + timedelta(minutes=30))
 
-    def test_builds(self):
-        # SnapView.builds produces reasonable results.
+    def test_builds_and_requests(self):
+        # SnapView.builds_and_requests produces reasonable results.
         snap = self.makeSnap()
         # Create oldest builds first so that they sort properly by id.
         date_gen = time_counter(
@@ -1392,16 +1427,67 @@ class TestSnapView(BaseTestSnapView):
             self.makeBuild(snap=snap, date_created=next(date_gen))
             for i in range(11)]
         view = SnapView(snap, None)
-        self.assertEqual(list(reversed(builds)), view.builds)
+        self.assertEqual(list(reversed(builds)), view.builds_and_requests)
         self.setStatus(builds[10], BuildStatus.FULLYBUILT)
         self.setStatus(builds[9], BuildStatus.FAILEDTOBUILD)
+        del get_property_cache(view).builds_and_requests
         # When there are >= 9 pending builds, only the most recent of any
         # completed builds is returned.
         self.assertEqual(
-            list(reversed(builds[:9])) + [builds[10]], view.builds)
+            list(reversed(builds[:9])) + [builds[10]],
+            view.builds_and_requests)
         for build in builds[:9]:
             self.setStatus(build, BuildStatus.FULLYBUILT)
-        self.assertEqual(list(reversed(builds[1:])), view.builds)
+        del get_property_cache(view).builds_and_requests
+        self.assertEqual(list(reversed(builds[1:])), view.builds_and_requests)
+
+    def test_builds_and_requests_shows_build_requests(self):
+        # SnapView.builds_and_requests interleaves build requests with
+        # builds.
+        snap = self.makeSnap()
+        date_gen = time_counter(
+            datetime(2000, 1, 1, tzinfo=pytz.UTC), timedelta(days=1))
+        builds = [
+            self.makeBuild(snap=snap, date_created=next(date_gen))
+            for i in range(3)]
+        self.setStatus(builds[2], BuildStatus.FULLYBUILT)
+        with person_logged_in(snap.owner):
+            request = snap.requestBuilds(
+                snap.owner, snap.distro_series.main_archive,
+                PackagePublishingPocket.UPDATES)
+        job = removeSecurityProxy(removeSecurityProxy(request)._job)
+        job.job.date_created = next(date_gen)
+        view = SnapView(snap, None)
+        # The pending build request is interleaved in date order with
+        # pending builds, and these are followed by completed builds.
+        self.assertThat(view.builds_and_requests, MatchesListwise([
+            MatchesStructure.byEquality(id=request.id),
+            Equals(builds[1]),
+            Equals(builds[0]),
+            Equals(builds[2]),
+            ]))
+        transaction.commit()
+        builds.append(self.makeBuild(snap=snap))
+        del get_property_cache(view).builds_and_requests
+        self.assertThat(view.builds_and_requests, MatchesListwise([
+            Equals(builds[3]),
+            MatchesStructure.byEquality(id=request.id),
+            Equals(builds[1]),
+            Equals(builds[0]),
+            Equals(builds[2]),
+            ]))
+        # If we pretend that the job failed, it is still listed, but after
+        # any pending builds.
+        job.job._status = JobStatus.FAILED
+        job.job.date_finished = job.date_created + timedelta(minutes=30)
+        del get_property_cache(view).builds_and_requests
+        self.assertThat(view.builds_and_requests, MatchesListwise([
+            Equals(builds[3]),
+            Equals(builds[1]),
+            Equals(builds[0]),
+            MatchesStructure.byEquality(id=request.id),
+            Equals(builds[2]),
+            ]))
 
     def test_store_channels_empty(self):
         snap = self.factory.makeSnap()

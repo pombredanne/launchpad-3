@@ -25,6 +25,7 @@ __all__ = [
     'run_capturing_output',
     'sanitise_urls',
     'save_bz2_pickle',
+    'seconds_since_epoch',
     'text_delta',
     'traceback_info',
     'utc_now',
@@ -300,6 +301,14 @@ def traceback_info(info):
 def utc_now():
     """Return a timezone-aware timestamp for the current time."""
     return datetime.now(tz=pytz.UTC)
+
+
+_epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
+
+
+def seconds_since_epoch(dt):
+    """Express a `datetime` as the number of seconds since the Unix epoch."""
+    return (dt - _epoch).total_seconds()
 
 
 # This is a regular expression that matches email address embedded in
