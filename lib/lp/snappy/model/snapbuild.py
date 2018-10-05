@@ -212,9 +212,13 @@ class SnapBuild(PackageBuildMixin, Storm):
     @property
     def title(self):
         das = self.distro_arch_series
-        name = self.snap.name
-        return "%s build of %s snap package in %s %s" % (
-            das.architecturetag, name, das.distroseries.distribution.name,
+        snap_title = "%s snap package" % self.snap.name
+        if (self.snap.store_name is not None and
+                self.snap.store_name != self.snap.name):
+            snap_title += " (%s)" % self.snap.store_name
+        return "%s build of %s in %s %s" % (
+            das.architecturetag, snap_title,
+            das.distroseries.distribution.name,
             das.distroseries.getSuite(self.pocket))
 
     @property
