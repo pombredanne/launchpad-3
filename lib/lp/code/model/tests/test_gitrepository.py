@@ -23,6 +23,7 @@ from storm.store import Store
 from testtools.matchers import (
     EndsWith,
     LessThan,
+    MatchesListwise,
     MatchesSetwise,
     MatchesStructure,
     )
@@ -537,6 +538,14 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
         self.repository.destroySelf()
         transaction.commit()
         self.assertRaises(LostObjectError, getattr, webhook, 'target')
+
+    def test_related_rules_and_grants_deleted(self):
+        rule = self.factory.makeGitRule(repository=self.repository)
+        grant = self.factory.makeGitRuleGrant(rule=rule)
+        self.repository.destroySelf()
+        transaction.commit()
+        self.assertRaises(LostObjectError, getattr, grant, 'rule')
+        self.assertRaises(LostObjectError, getattr, rule, 'repository')
 
 
 class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
@@ -2177,6 +2186,120 @@ class TestGitRepositoryGetBlob(TestCaseWithFactory):
         self.useFixture(GitHostingFixture(blob='Some text'))
         ret = repository.getBlob('src/README.txt', 'some-rev')
         self.assertEqual('Some text', ret)
+
+
+class TestGitRepositoryRules(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rules(self):
+        repository = self.factory.makeGitRepository()
+        other_repository = self.factory.makeGitRepository()
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*")
+        self.factory.makeGitRule(
+            repository=other_repository, ref_pattern="refs/heads/*")
+        self.assertThat(list(repository.rules), MatchesListwise([
+            MatchesStructure.byEquality(
+                repository=repository,
+                ref_pattern="refs/heads/*"),
+            MatchesStructure.byEquality(
+                repository=repository,
+                ref_pattern="refs/heads/stable/*"),
+            ]))
+
+    def test_addRule_append(self):
+        repository = self.factory.makeGitRepository()
+        initial_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        self.assertEqual(0, initial_rule.position)
+        with person_logged_in(repository.owner):
+            new_rule = repository.addRule(
+                "refs/heads/stable/*", repository.owner)
+        self.assertEqual(1, new_rule.position)
+        self.assertEqual([initial_rule, new_rule], list(repository.rules))
+
+    def test_addRule_insert(self):
+        repository = self.factory.makeGitRepository()
+        initial_rules = [
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern="refs/heads/*"),
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern="refs/heads/protected/*"),
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern="refs/heads/another/*"),
+            ]
+        self.assertEqual([0, 1, 2], [rule.position for rule in initial_rules])
+        with person_logged_in(repository.owner):
+            new_rule = repository.addRule(
+                "refs/heads/stable/*", repository.owner, position=1)
+        self.assertEqual(1, new_rule.position)
+        self.assertEqual([0, 2, 3], [rule.position for rule in initial_rules])
+        self.assertEqual(
+            [initial_rules[0], new_rule, initial_rules[1], initial_rules[2]],
+            list(repository.rules))
+
+    def test_addRule_exact_first(self):
+        repository = self.factory.makeGitRepository()
+        initial_rules = [
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern="refs/heads/exact"),
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern="refs/heads/*"),
+            ]
+        self.assertEqual([0, 1], [rule.position for rule in initial_rules])
+        with person_logged_in(repository.owner):
+            exact_rule = repository.addRule(
+                "refs/heads/exact-2", repository.owner)
+        self.assertEqual(
+            [initial_rules[0], exact_rule, initial_rules[1]],
+            list(repository.rules))
+        with person_logged_in(repository.owner):
+            wildcard_rule = repository.addRule(
+                "refs/heads/wildcard/*", repository.owner, position=0)
+        self.assertEqual(
+            [initial_rules[0], exact_rule, wildcard_rule, initial_rules[1]],
+            list(repository.rules))
+
+    def test_moveRule(self):
+        repository = self.factory.makeGitRepository()
+        rules = [
+            self.factory.makeGitRule(
+                repository=repository,
+                ref_pattern=self.factory.getUniqueUnicode(
+                    prefix="refs/heads/*/"))
+            for _ in range(5)]
+        with person_logged_in(repository.owner):
+            self.assertEqual(rules, list(repository.rules))
+            repository.moveRule(rules[0], 4)
+            self.assertEqual(rules[1:] + [rules[0]], list(repository.rules))
+            repository.moveRule(rules[0], 0)
+            self.assertEqual(rules, list(repository.rules))
+            repository.moveRule(rules[2], 1)
+            self.assertEqual(
+                [rules[0], rules[2], rules[1], rules[3], rules[4]],
+                list(repository.rules))
+
+    def test_moveRule_non_negative(self):
+        rule = self.factory.makeGitRule()
+        with person_logged_in(rule.repository.owner):
+            self.assertRaises(ValueError, rule.repository.moveRule, rule, -1)
+
+    def test_grants(self):
+        repository = self.factory.makeGitRepository()
+        other_repository = self.factory.makeGitRepository()
+        rule = self.factory.makeGitRule(repository=repository)
+        other_rule = self.factory.makeGitRule(repository=other_repository)
+        grants = [
+            self.factory.makeGitRuleGrant(
+                rule=rule, grantee=self.factory.makePerson())
+            for _ in range(2)
+            ]
+        self.factory.makeGitRuleGrant(
+            rule=other_rule, grantee=self.factory.makePerson())
+        self.assertContentEqual(grants, repository.grants)
 
 
 class TestGitRepositorySet(TestCaseWithFactory):

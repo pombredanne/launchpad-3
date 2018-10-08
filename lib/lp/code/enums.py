@@ -21,6 +21,7 @@ __all__ = [
     'CodeImportReviewStatus',
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
+    'GitGranteeType',
     'GitObjectType',
     'GitRepositoryType',
     'NON_CVS_RCS_TYPES',
@@ -172,6 +173,26 @@ class GitObjectType(DBEnumeratedType):
         Tag
 
         An annotated tag object.
+        """)
+
+
+class GitGranteeType(DBEnumeratedType):
+    """Git Grantee Type
+
+    Access grants for Git repositories can be made to various kinds of
+    grantees.
+    """
+
+    REPOSITORY_OWNER = DBItem(1, """
+        Repository owner
+
+        A grant to the owner of the associated repository.
+        """)
+
+    PERSON = DBItem(2, """
+        Person
+
+        A grant to a particular person or team.
         """)
 
 
