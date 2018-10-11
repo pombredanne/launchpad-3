@@ -57,6 +57,7 @@ from lp.services.scripts import log
 from lp.snappy.interfaces.snap import (
     CannotFetchSnapcraftYaml,
     CannotParseSnapcraftYaml,
+    MissingSnapcraftYaml,
     )
 from lp.snappy.interfaces.snapjob import (
     ISnapJob,
@@ -175,7 +176,7 @@ class SnapRequestBuildsJob(SnapJobDerived):
 
     class_job_type = SnapJobType.REQUEST_BUILDS
 
-    user_error_types = (CannotParseSnapcraftYaml, NotFoundError)
+    user_error_types = (CannotParseSnapcraftYaml, MissingSnapcraftYaml)
     retry_error_types = (CannotFetchSnapcraftYaml,)
 
     max_retries = 5

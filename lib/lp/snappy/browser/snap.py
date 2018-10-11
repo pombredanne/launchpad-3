@@ -43,7 +43,6 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
-from lp.app.errors import NotFoundError
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -88,6 +87,7 @@ from lp.snappy.interfaces.snap import (
     CannotParseSnapcraftYaml,
     ISnap,
     ISnapSet,
+    MissingSnapcraftYaml,
     NoSuchSnap,
     SNAP_PRIVATE_FEATURE_FLAG,
     SnapBuildAlreadyPending,
@@ -476,7 +476,7 @@ class SnapAddView(
             try:
                 snapcraft_data = getUtility(ISnapSet).getSnapcraftYaml(
                     self.context, logger=log)
-            except (NotFoundError, CannotFetchSnapcraftYaml,
+            except (MissingSnapcraftYaml, CannotFetchSnapcraftYaml,
                     CannotParseSnapcraftYaml):
                 pass
             else:
