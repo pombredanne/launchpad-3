@@ -228,7 +228,8 @@ class ISnapBuildView(IPackageBuild):
         title=_("Store upload error message"),
         description=_(
             "The error message, if any, from the last attempt to upload "
-            "this snap build to the store."),
+            "this snap build to the store.  (Deprecated; use "
+            "store_upload_error_messages instead.)"),
         required=False, readonly=True))
 
     store_upload_error_messages = exported(List(

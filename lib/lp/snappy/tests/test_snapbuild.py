@@ -455,6 +455,32 @@ class TestSnapBuild(TestCaseWithFactory):
             SnapBuildStoreUploadStatus.FAILEDTORELEASE,
             build.store_upload_status)
 
+    def test_store_upload_error_messages_no_job(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        self.assertEqual([], build.store_upload_error_messages)
+
+    def test_store_upload_error_messages_job_no_error(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        getUtility(ISnapStoreUploadJobSource).create(build)
+        self.assertEqual([], build.store_upload_error_messages)
+
+    def test_store_upload_error_messages_job_error_messages(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        removeSecurityProxy(job).error_messages = [
+            {"message": "Scan failed.", "link": "link1"},
+            ]
+        self.assertEqual(
+            [{"message": "Scan failed.", "link": "link1"}],
+            build.store_upload_error_messages)
+
+    def test_store_upload_error_messages_job_error_message(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        removeSecurityProxy(job).error_message = "Boom"
+        self.assertEqual(
+            [{"message": "Boom"}], build.store_upload_error_messages)
+
     def test_scheduleStoreUpload(self):
         # A build not previously uploaded to the store can be uploaded
         # manually.
