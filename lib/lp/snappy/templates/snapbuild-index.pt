@@ -177,9 +177,6 @@
         <tal:failed-upload
             condition="context/store_upload_status/enumvalue:FAILEDTOUPLOAD">
           Store upload failed:
-          <tal:error-message
-            condition="not: context/store_upload_error_messages"
-            replace="context/store_upload_error_message" />
           <ul id="store-upload-error-messages">
             <li tal:repeat="error context/store_upload_error_messages">
               <span tal:replace="error/message"/>

@@ -144,6 +144,7 @@ from lp.snappy.interfaces.snap import (
     ISnap,
     ISnapBuildRequest,
     ISnapSet,
+    MissingSnapcraftYaml,
     NoSourceForSnap,
     NoSuchSnap,
     SNAP_PRIVATE_FEATURE_FLAG,
@@ -1171,10 +1172,11 @@ class SnapSet:
                 except (BranchFileNotFound, GitRepositoryBlobNotFound):
                     pass
             else:
-                msg = "Cannot find snapcraft.yaml in %s"
                 if logger is not None:
-                    logger.exception(msg, context.unique_name)
-                raise NotFoundError(msg % context.unique_name)
+                    logger.exception(
+                        "Cannot find snapcraft.yaml in %s",
+                        context.unique_name)
+                raise MissingSnapcraftYaml(context.unique_name)
         except GitRepositoryBlobUnsupportedRemote as e:
             raise CannotFetchSnapcraftYaml(str(e), unsupported_remote=True)
         except (BranchHostingFault, GitRepositoryScanFault) as e:

@@ -19,6 +19,7 @@ __all__ = [
     'ISnapEdit',
     'ISnapSet',
     'ISnapView',
+    'MissingSnapcraftYaml',
     'NoSourceForSnap',
     'NoSuchSnap',
     'SNAP_PRIVATE_FEATURE_FLAG',
@@ -245,6 +246,14 @@ class CannotRequestAutoBuilds(Exception):
         super(CannotRequestAutoBuilds, self).__init__(
             "This snap package cannot have automatic builds created for it "
             "because %s is not set." % field)
+
+
+class MissingSnapcraftYaml(Exception):
+    """The repository for this snap package does not have a snapcraft.yaml."""
+
+    def __init__(self, branch_name):
+        super(MissingSnapcraftYaml, self).__init__(
+            "Cannot find snapcraft.yaml in %s" % branch_name)
 
 
 class CannotFetchSnapcraftYaml(Exception):
@@ -981,7 +990,7 @@ class ISnapSet(Interface):
         :param logger: An optional logger.
 
         :return: The package's parsed snapcraft.yaml.
-        :raises NotFoundError: if this package has no snapcraft.yaml.
+        :raises MissingSnapcraftYaml: if this package has no snapcraft.yaml.
         :raises CannotFetchSnapcraftYaml: if it was not possible to fetch
             snapcraft.yaml from the code hosting backend for some other
             reason.
