@@ -57,6 +57,10 @@ class IGitRuleView(Interface):
         title=_("Date created"), required=True, readonly=True,
         description=_("The time when this rule was created."))
 
+    date_last_modified = Datetime(
+        title=_("Date last modified"), required=True, readonly=True,
+        description=_("The time when this rule was last modified."))
+
     is_exact = Bool(
         title=_("Is this an exact-match rule?"), required=True, readonly=True,
         description=_(
@@ -75,10 +79,6 @@ class IGitRuleEditableAttributes(Interface):
     ref_pattern = TextLine(
         title=_("Pattern"), required=True, readonly=False,
         description=_("The pattern of references matched by this rule."))
-
-    date_last_modified = Datetime(
-        title=_("Date last modified"), required=True, readonly=True,
-        description=_("The time when this rule was last modified."))
 
 
 class IGitRuleEdit(Interface):
@@ -145,6 +145,10 @@ class IGitRuleGrantView(Interface):
         title=_("Date created"), required=True, readonly=True,
         description=_("The time when this grant was created."))
 
+    date_last_modified = Datetime(
+        title=_("Date last modified"), required=True, readonly=True,
+        description=_("The time when this grant was last modified."))
+
 
 class IGitRuleGrantEditableAttributes(Interface):
     """`IGitRuleGrant` attributes that can be edited.
@@ -163,10 +167,6 @@ class IGitRuleGrantEditableAttributes(Interface):
     can_force_push = Bool(
         title=_("Can force-push"), required=True, readonly=False,
         description=_("Whether force-pushing references is allowed."))
-
-    date_last_modified = Datetime(
-        title=_("Date last modified"), required=True, readonly=True,
-        description=_("The time when this grant was last modified."))
 
 
 class IGitRuleGrantEdit(Interface):

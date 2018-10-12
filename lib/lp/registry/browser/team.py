@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -52,6 +52,7 @@ from zope.formlib.form import (
     FormFields,
     )
 from zope.formlib.textwidgets import IntWidget
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     classImplements,
@@ -76,7 +77,6 @@ from lp import _
 from lp.app.browser.badge import HasBadgeBase
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.browser.tales import PersonFormatterAPI
@@ -299,14 +299,14 @@ class TeamEditView(TeamFormMixin, PersonRenameFormMixin,
 
     page_title = label
 
-    custom_widget(
-        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
-    custom_widget('defaultrenewalperiod', IntWidget,
-        widget_class='field subordinate')
-    custom_widget(
-        'membership_policy', LaunchpadRadioWidgetWithDescription,
-        orientation='vertical')
-    custom_widget('description', TextAreaWidget, height=10, width=30)
+    custom_widget_renewal_policy = CustomWidgetFactory(
+        LaunchpadRadioWidget, orientation='vertical')
+    custom_widget_defaultrenewalperiod = CustomWidgetFactory(
+        IntWidget, widget_class='field subordinate')
+    custom_widget_membership_policy = CustomWidgetFactory(
+        LaunchpadRadioWidgetWithDescription, orientation='vertical')
+    custom_widget_description = CustomWidgetFactory(
+        TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):
         """See `LaunchpadViewForm`."""
@@ -442,8 +442,8 @@ class TeamContactAddressView(MailingListTeamBaseView):
 
     schema = ITeamContactAddressForm
 
-    custom_widget(
-        'contact_method', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget_contact_method = CustomWidgetFactory(
+        LaunchpadRadioWidget, orientation='vertical')
 
     @property
     def label(self):
@@ -603,7 +603,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
     schema = IMailingList
     field_names = ['welcome_message']
     label = "Mailing list configuration"
-    custom_widget('welcome_message', TextAreaWidget, width=72, height=10)
+    custom_widget_welcome_message = CustomWidgetFactory(
+        TextAreaWidget, width=72, height=10)
     page_title = label
 
     def __init__(self, context, request):
@@ -1001,14 +1002,13 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     page_title = 'Register a new team in Launchpad'
     label = page_title
 
-    custom_widget('teamowner', HiddenUserWidget)
-    custom_widget(
-        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
-    custom_widget(
-        'membership_policy', LaunchpadRadioWidgetWithDescription,
-        orientation='vertical')
-    custom_widget('defaultrenewalperiod', IntWidget,
-        widget_class='field subordinate')
+    custom_widget_teamowner = HiddenUserWidget
+    custom_widget_renewal_policy = CustomWidgetFactory(
+        LaunchpadRadioWidget, orientation='vertical')
+    custom_widget_membership_policy = CustomWidgetFactory(
+        LaunchpadRadioWidgetWithDescription, orientation='vertical')
+    custom_widget_defaultrenewalperiod = CustomWidgetFactory(
+        IntWidget, widget_class='field subordinate')
 
     def setUpFields(self):
         """See `LaunchpadViewForm`.
@@ -1073,9 +1073,8 @@ class SimpleTeamAddView(TeamAddView):
 
     # Use a dropdown - Javascript will be used to change this to a choice
     # popup widget.
-    custom_widget(
-        'membership_policy', LaunchpadDropdownWidget,
-        orientation='vertical')
+    custom_widget_membership_policy = CustomWidgetFactory(
+        LaunchpadDropdownWidget, orientation='vertical')
 
 
 class ProposedTeamMembersEditView(LaunchpadFormView):
@@ -1164,8 +1163,8 @@ class TeamMemberAddView(LaunchpadFormView):
     # below should be changed to the more appropriate False bool when we're
     # making use of the JSON cache to setup pickers, rather than assembling
     # javascript in a view macro.
-    custom_widget(
-        'newmember', PersonPickerWidget,
+    custom_widget_newmember = CustomWidgetFactory(
+        PersonPickerWidget,
         show_assign_me_button='false', show_remove_button='false')
 
     @property
@@ -1362,7 +1361,8 @@ class TeamInvitationView(LaunchpadFormView):
     __name__ = '+invitation'
     schema = ITeamMembershipInvitationAcknowledgementForm
     field_names = ['acknowledger_comment']
-    custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
+    custom_widget_acknowledger_comment = CustomWidgetFactory(
+        TextAreaWidget, height=5, width=60)
     template = ViewPageTemplateFile(
         '../templates/teammembership-invitation.pt')
 
@@ -1893,7 +1893,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
     """Propose/add to this team any team that you're an administrator of."""
 
     page_title = 'Propose/add one of your teams to another one'
-    custom_widget('teams', LabeledMultiCheckBoxWidget)
+    custom_widget_teams = LabeledMultiCheckBoxWidget
 
     def initialize(self):
         context = self.context

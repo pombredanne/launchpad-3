@@ -93,6 +93,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.model.message import MessageSet
 from lp.services.timeout import TimeoutError
+from lp.services.utils import seconds_since_epoch
 from lp.services.webapp import canonical_url
 from lp.services.webapp.interfaces import BrowserNotificationLevel
 from lp.services.webapp.servers import LaunchpadTestRequest
@@ -1515,7 +1516,6 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         author = self.factory.makePerson()
         with person_logged_in(author):
             author_email = author.preferredemail.email
-        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         review_date = self.factory.getUniqueDate()
         commit_date = self.factory.getUniqueDate()
         bmp = self.factory.makeBranchMergeProposalForGit(
@@ -1527,7 +1527,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                 'author': {
                     'name': author.display_name,
                     'email': author_email,
-                    'time': int((commit_date - epoch).total_seconds()),
+                    'time': int(seconds_since_epoch(commit_date)),
                     },
                 }
             ]))
@@ -1614,7 +1614,6 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         # SHA-1 and can ask the repository for its unmerged commits.
         bmp = self.factory.makeBranchMergeProposalForGit()
         sha1 = unicode(hashlib.sha1(b'0').hexdigest())
-        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         commit_date = datetime(2015, 1, 1, tzinfo=pytz.UTC)
         self.useFixture(GitHostingFixture(log=[
             {
@@ -1623,7 +1622,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                 'author': {
                     'name': 'Example Person',
                     'email': 'person@example.org',
-                    'time': int((commit_date - epoch).total_seconds()),
+                    'time': int(seconds_since_epoch(commit_date)),
                     },
                 }
             ]))

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 """Browser code for PO templates."""
 
@@ -42,7 +42,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     ReturnToReferrerMixin,
     )
@@ -524,7 +523,7 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
         else:
             return IPOTemplate
 
-    custom_widget('sourcepackagename', POTemplateEditSourcePackageNameWidget)
+    custom_widget_sourcepackagename = POTemplateEditSourcePackageNameWidget
     label = 'Edit translation template details'
     page_title = 'Edit details'
     PRIORITY_MIN_VALUE = 0
@@ -700,9 +699,9 @@ class POTemplateAdminView(POTemplateEditView):
         'from_sourcepackagename', 'sourcepackageversion',
         'languagepack', 'path', 'source_file_format', 'priority',
         'date_last_updated']
-    custom_widget('sourcepackagename', POTemplateAdminSourcePackageNameWidget)
-    custom_widget(
-        'from_sourcepackagename', POTemplateAdminSourcePackageNameWidget)
+    custom_widget_sourcepackagename = POTemplateAdminSourcePackageNameWidget
+    custom_widget_from_sourcepackagename = (
+        POTemplateAdminSourcePackageNameWidget)
     label = 'Administer translation template'
     page_title = "Administer"
 

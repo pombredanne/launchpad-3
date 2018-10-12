@@ -37,6 +37,7 @@ from lp.services.utils import (
     run_capturing_output,
     sanitise_urls,
     save_bz2_pickle,
+    seconds_since_epoch,
     traceback_info,
     utc_now,
     )
@@ -378,6 +379,18 @@ class TestUTCNow(TestCase):
         new_now = datetime.utcnow().replace(tzinfo=UTC)
         self.assertThat(now, GreaterThanOrEqual(old_now))
         self.assertThat(now, LessThanOrEqual(new_now))
+
+
+class TestSecondsSinceEpoch(TestCase):
+    """Tests for `seconds_since_epoch`."""
+
+    def test_epoch(self):
+        epoch = datetime.fromtimestamp(0, tz=UTC)
+        self.assertEqual(0, seconds_since_epoch(epoch))
+
+    def test_start_of_2018(self):
+        dt = datetime(2018, 1, 1, tzinfo=UTC)
+        self.assertEqual(1514764800, seconds_since_epoch(dt))
 
 
 class TestBZ2Pickle(TestCase):

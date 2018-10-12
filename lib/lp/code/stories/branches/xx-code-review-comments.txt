@@ -192,11 +192,11 @@ The same thing works for Git.  Note that the hosting client returns newest
 log entries first.
 
     >>> from lp.code.tests.helpers import GitHostingFixture
+    >>> from lp.services.utils import seconds_since_epoch
 
     >>> login('admin@canonical.com')
     >>> bmp = factory.makeBranchMergeProposalForGit()
     >>> bmp.requestReview(review_date)
-    >>> epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
     >>> commit_date = review_date + timedelta(days=1)
     >>> hosting_fixture = GitHostingFixture()
     >>> for i in range(2):
@@ -206,7 +206,7 @@ log entries first.
     ...         u'author': {
     ...             u'name': bmp.registrant.display_name,
     ...             u'email': bmp.registrant.preferredemail.email,
-    ...             u'time': int((commit_date - epoch).total_seconds()),
+    ...             u'time': int(seconds_since_epoch(commit_date)),
     ...             },
     ...         })
     ...     hosting_fixture.getLog.result.insert(0, {
@@ -215,7 +215,7 @@ log entries first.
     ...         u'author': {
     ...             u'name': bmp.registrant.display_name,
     ...             u'email': bmp.registrant.preferredemail.email,
-    ...             u'time': int((commit_date - epoch).total_seconds()),
+    ...             u'time': int(seconds_since_epoch(commit_date)),
     ...             },
     ...         })
     ...     commit_date += timedelta(days=1)

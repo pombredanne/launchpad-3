@@ -49,6 +49,7 @@ from lp.code.model.seriessourcepackagebranch import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.sqlbase import cursor
+from lp.services.propertycache import get_property_cache
 from lp.services.memcache.testing import MemcacheFixture
 from lp.testing import (
     run_with_login,
@@ -275,6 +276,7 @@ def make_merge_proposal_without_reviewers(factory, **kwargs):
     proposal = factory.makeBranchMergeProposal(**kwargs)
     for vote in proposal.votes:
         removeSecurityProxy(vote).destroySelf()
+    del get_property_cache(proposal).votes
     return proposal
 
 

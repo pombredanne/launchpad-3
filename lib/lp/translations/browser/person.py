@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related translations view classes."""
@@ -21,6 +21,7 @@ import urllib
 import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextWidget
 from zope.interface import (
     implementer,
@@ -30,7 +31,6 @@ from zope.interface import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.enums import ServiceUsage
@@ -443,9 +443,9 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
     schema = ITranslationRelicensingAgreementEdit
     field_names = ['allow_relicensing', 'back_to']
-    custom_widget(
-        'allow_relicensing', LaunchpadRadioWidget, orientation='vertical')
-    custom_widget('back_to', TextWidget, visible=False)
+    custom_widget_allow_relicensing = CustomWidgetFactory(
+        LaunchpadRadioWidget, orientation='vertical')
+    custom_widget_back_to = CustomWidgetFactory(TextWidget, visible=False)
 
     page_title = "Licensing"
 

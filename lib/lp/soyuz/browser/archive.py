@@ -65,7 +65,6 @@ from lp import _
 from lp.app.browser.badge import HasBadgeBase
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -830,8 +829,8 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
     """A Form view for filtering and batching source packages."""
 
     schema = IPPAPackageFilter
-    custom_widget('series_filter', SeriesFilterWidget)
-    custom_widget('status_filter', StatusFilterWidget)
+    custom_widget_series_filter = SeriesFilterWidget
+    custom_widget_status_filter = StatusFilterWidget
 
     # By default this view will not display the sources with selectable
     # checkboxes, but subclasses can override as needed.
@@ -1129,7 +1128,7 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):
     """Base class to implement a source selection widget for PPAs."""
 
-    custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
+    custom_widget_selected_sources = LabeledMultiCheckBoxWidget
 
     selectable_sources = True
 
@@ -1212,7 +1211,8 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     """
 
     schema = IArchivePackageDeletionForm
-    custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
+    custom_widget_deletion_comment = CustomWidgetFactory(
+        StrippedTextWidget, displayWidth=50)
     label = 'Delete packages'
 
     @property
@@ -1450,9 +1450,9 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
     a copying action that can be performed upon a set of selected packages.
     """
     schema = IPPAPackageFilter
-    custom_widget('destination_archive', DestinationArchiveDropdownWidget)
-    custom_widget('destination_series', DestinationSeriesDropdownWidget)
-    custom_widget('include_binaries', LaunchpadRadioWidget)
+    custom_widget_destination_archive = DestinationArchiveDropdownWidget
+    custom_widget_destination_series = DestinationSeriesDropdownWidget
+    custom_widget_include_binaries = LaunchpadRadioWidget
     label = 'Copy packages'
 
     @property
@@ -1615,12 +1615,13 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
     schema = IArchiveEditDependenciesForm
 
-    custom_widget('selected_dependencies', PlainMultiCheckBoxWidget,
-                  cssClass='line-through-when-checked ppa-dependencies')
-    custom_widget('primary_dependencies', LaunchpadRadioWidget,
-                  cssClass='highlight-selected')
-    custom_widget('primary_components', LaunchpadRadioWidget,
-                  cssClass='highlight-selected')
+    custom_widget_selected_dependencies = CustomWidgetFactory(
+        PlainMultiCheckBoxWidget,
+        cssClass='line-through-when-checked ppa-dependencies')
+    custom_widget_primary_dependencies = CustomWidgetFactory(
+        LaunchpadRadioWidget, cssClass='highlight-selected')
+    custom_widget_primary_components = CustomWidgetFactory(
+        LaunchpadRadioWidget, cssClass='highlight-selected')
 
     label = "Edit PPA dependencies"
     page_title = label
@@ -1922,8 +1923,8 @@ class ArchiveActivateView(LaunchpadFormView):
 
     schema = IArchive
     field_names = ('name', 'displayname', 'description')
-    custom_widget('description', TextAreaWidget, height=3)
-    custom_widget('name', PPANameWidget, label="URL")
+    custom_widget_description = CustomWidgetFactory(TextAreaWidget, height=3)
+    custom_widget_name = CustomWidgetFactory(PPANameWidget, label="URL")
     label = 'Activate a Personal Package Archive'
     page_title = 'Activate PPA'
 
@@ -2106,8 +2107,8 @@ class ArchiveEditView(BaseArchiveEditView, EnableProcessorsMixin):
         'build_debug_symbols',
         'publish_debug_symbols',
         ]
-    custom_widget(
-        'description', TextAreaWidget, height=10, width=30)
+    custom_widget_description = CustomWidgetFactory(
+        TextAreaWidget, height=10, width=30)
     page_title = 'Change details'
 
     @property
@@ -2160,7 +2161,8 @@ class ArchiveAdminView(BaseArchiveEditView, EnableProcessorsMixin):
         'relative_build_score',
         'external_dependencies',
         ]
-    custom_widget('external_dependencies', TextAreaWidget, height=3)
+    custom_widget_external_dependencies = CustomWidgetFactory(
+        TextAreaWidget, height=3)
     page_title = 'Administer'
 
     @property
