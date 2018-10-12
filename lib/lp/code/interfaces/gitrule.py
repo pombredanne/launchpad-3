@@ -100,8 +100,11 @@ class IGitRuleEdit(Interface):
             matching this rule.
         """
 
-    def destroySelf():
-        """Delete this rule."""
+    def destroySelf(user):
+        """Delete this rule.
+
+        :param user: The `IPerson` doing the deletion.
+        """
 
 
 class IGitRule(IGitRuleView, IGitRuleEditableAttributes, IGitRuleEdit):
@@ -169,8 +172,12 @@ class IGitRuleGrantEditableAttributes(Interface):
 class IGitRuleGrantEdit(Interface):
     """`IGitRuleGrant` attributes that require launchpad.Edit."""
 
-    def destroySelf():
-        """Delete this access grant."""
+    def destroySelf(user=None):
+        """Delete this access grant.
+
+        :param user: The `IPerson` doing the deletion, or None if the
+            deletion should not be logged.
+        """
 
 
 class IGitRuleGrant(IGitRuleGrantView, IGitRuleGrantEditableAttributes,

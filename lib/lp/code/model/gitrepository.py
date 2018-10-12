@@ -88,6 +88,7 @@ from lp.code.interfaces.branchmergeproposal import (
     notify_modified,
     )
 from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.gitactivity import IGitActivitySet
 from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
@@ -108,6 +109,7 @@ from lp.code.interfaces.gitrepository import (
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
 from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.gitactivity import GitActivity
 from lp.code.model.gitref import (
     GitRef,
     GitRefDefault,
@@ -1166,25 +1168,36 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         else:
             rules.insert(position, rule)
         self._syncRulePositions(rules)
+        getUtility(IGitActivitySet).logRuleAdded(rule, creator)
         return rule
 
-    def moveRule(self, rule, position):
+    def moveRule(self, rule, position, user):
         """See `IGitRepository`."""
         if rule.repository != self:
             raise ValueError("%r does not belong to %r" % (rule, self))
         if position < 0:
             raise ValueError("Negative positions are not supported")
-        if position != rule.position:
+        current_position = rule.position
+        if position != current_position:
             rules = list(self.rules)
             rules.remove(rule)
             rules.insert(position, rule)
             self._syncRulePositions(rules)
+            if rule.position != current_position:
+                getUtility(IGitActivitySet).logRuleMoved(
+                    rule, current_position, rule.position, user)
 
     @property
     def grants(self):
         """See `IGitRepository`."""
         return Store.of(self).find(
             GitRuleGrant, GitRuleGrant.repository_id == self.id)
+
+    def getActivity(self):
+        """See `IGitRepository`."""
+        clauses = [GitActivity.repository_id == self.id]
+        return Store.of(self).find(GitActivity, *clauses).order_by(
+            Desc(GitActivity.date_changed), Desc(GitActivity.id))
 
     def canBeDeleted(self):
         """See `IGitRepository`."""
@@ -1317,6 +1330,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         self._deleteRepositorySubscriptions()
         self._deleteJobs()
         getUtility(IWebhookSet).delete(self.webhooks)
+        self.getActivity().remove()
         # We intentionally skip the usual destructors; the only other useful
         # thing they do is to log the removal activity, and we remove the
         # activity logs for removed repositories anyway.

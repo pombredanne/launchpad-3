@@ -87,6 +87,7 @@ from lp.code.model.branchmergeproposaljob import (
     UpdatePreviewDiffJob,
     )
 from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.model.gitactivity import GitActivity
 from lp.code.model.gitjob import (
     GitJob,
     GitJobType,
@@ -542,10 +543,18 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
     def test_related_rules_and_grants_deleted(self):
         rule = self.factory.makeGitRule(repository=self.repository)
         grant = self.factory.makeGitRuleGrant(rule=rule)
+        store = Store.of(self.repository)
+        repository_id = self.repository.id
+        activities = store.find(
+            GitActivity, GitActivity.repository_id == repository_id)
+        self.assertNotEqual([], list(activities))
         self.repository.destroySelf()
         transaction.commit()
         self.assertRaises(LostObjectError, getattr, grant, 'rule')
         self.assertRaises(LostObjectError, getattr, rule, 'repository')
+        activities = store.find(
+            GitActivity, GitActivity.repository_id == repository_id)
+        self.assertEqual([], list(activities))
 
 
 class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
@@ -2273,11 +2282,11 @@ class TestGitRepositoryRules(TestCaseWithFactory):
             for _ in range(5)]
         with person_logged_in(repository.owner):
             self.assertEqual(rules, list(repository.rules))
-            repository.moveRule(rules[0], 4)
+            repository.moveRule(rules[0], 4, repository.owner)
             self.assertEqual(rules[1:] + [rules[0]], list(repository.rules))
-            repository.moveRule(rules[0], 0)
+            repository.moveRule(rules[0], 0, repository.owner)
             self.assertEqual(rules, list(repository.rules))
-            repository.moveRule(rules[2], 1)
+            repository.moveRule(rules[2], 1, repository.owner)
             self.assertEqual(
                 [rules[0], rules[2], rules[1], rules[3], rules[4]],
                 list(repository.rules))
@@ -2285,7 +2294,9 @@ class TestGitRepositoryRules(TestCaseWithFactory):
     def test_moveRule_non_negative(self):
         rule = self.factory.makeGitRule()
         with person_logged_in(rule.repository.owner):
-            self.assertRaises(ValueError, rule.repository.moveRule, rule, -1)
+            self.assertRaises(
+                ValueError, rule.repository.moveRule,
+                rule, -1, rule.repository.owner)
 
     def test_grants(self):
         repository = self.factory.makeGitRepository()
