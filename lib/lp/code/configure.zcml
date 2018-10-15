@@ -948,6 +948,19 @@
       for="lp.code.interfaces.gitrule.IGitRuleGrant zope.lifecycleevent.interfaces.IObjectModifiedEvent"
       handler="lp.code.model.gitrule.git_rule_grant_modified"/>
 
+  <!-- GitActivity -->
+
+  <class class="lp.code.model.gitactivity.GitActivity">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitactivity.IGitActivity" />
+  </class>
+  <securedutility
+      class="lp.code.model.gitactivity.GitActivitySet"
+      provides="lp.code.interfaces.gitactivity.IGitActivitySet">
+    <allow interface="lp.code.interfaces.gitactivity.IGitActivitySet" />
+  </securedutility>
+
   <!-- GitCollection -->
 
   <class class="lp.code.model.gitcollection.GenericGitCollection">
