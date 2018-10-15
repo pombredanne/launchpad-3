@@ -19,6 +19,7 @@ __all__ = [
     'ISnapEdit',
     'ISnapSet',
     'ISnapView',
+    'MissingSnapcraftYaml',
     'NoSourceForSnap',
     'NoSuchSnap',
     'SNAP_PRIVATE_FEATURE_FLAG',
@@ -247,6 +248,14 @@ class CannotRequestAutoBuilds(Exception):
             "because %s is not set." % field)
 
 
+class MissingSnapcraftYaml(Exception):
+    """The repository for this snap package does not have a snapcraft.yaml."""
+
+    def __init__(self, branch_name):
+        super(MissingSnapcraftYaml, self).__init__(
+            "Cannot find snapcraft.yaml in %s" % branch_name)
+
+
 class CannotFetchSnapcraftYaml(Exception):
     """Launchpad cannot fetch this snap package's snapcraft.yaml."""
 
@@ -456,6 +465,11 @@ class ISnapView(Interface):
 
     pending_build_requests = exported(doNotSnapshot(CollectionField(
         title=_("Pending build requests for this snap package."),
+        value_type=Reference(ISnapBuildRequest),
+        required=True, readonly=True)))
+
+    failed_build_requests = exported(doNotSnapshot(CollectionField(
+        title=_("Failed build requests for this snap package."),
         value_type=Reference(ISnapBuildRequest),
         required=True, readonly=True)))
 
@@ -976,7 +990,7 @@ class ISnapSet(Interface):
         :param logger: An optional logger.
 
         :return: The package's parsed snapcraft.yaml.
-        :raises NotFoundError: if this package has no snapcraft.yaml.
+        :raises MissingSnapcraftYaml: if this package has no snapcraft.yaml.
         :raises CannotFetchSnapcraftYaml: if it was not possible to fetch
             snapcraft.yaml from the code hosting backend for some other
             reason.

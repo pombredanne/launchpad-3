@@ -57,6 +57,10 @@ class IGitRuleView(Interface):
         title=_("Date created"), required=True, readonly=True,
         description=_("The time when this rule was created."))
 
+    date_last_modified = Datetime(
+        title=_("Date last modified"), required=True, readonly=True,
+        description=_("The time when this rule was last modified."))
+
     is_exact = Bool(
         title=_("Is this an exact-match rule?"), required=True, readonly=True,
         description=_(
@@ -75,10 +79,6 @@ class IGitRuleEditableAttributes(Interface):
     ref_pattern = TextLine(
         title=_("Pattern"), required=True, readonly=False,
         description=_("The pattern of references matched by this rule."))
-
-    date_last_modified = Datetime(
-        title=_("Date last modified"), required=True, readonly=True,
-        description=_("The time when this rule was last modified."))
 
 
 class IGitRuleEdit(Interface):
@@ -100,8 +100,11 @@ class IGitRuleEdit(Interface):
             matching this rule.
         """
 
-    def destroySelf():
-        """Delete this rule."""
+    def destroySelf(user):
+        """Delete this rule.
+
+        :param user: The `IPerson` doing the deletion.
+        """
 
 
 class IGitRule(IGitRuleView, IGitRuleEditableAttributes, IGitRuleEdit):
@@ -142,6 +145,10 @@ class IGitRuleGrantView(Interface):
         title=_("Date created"), required=True, readonly=True,
         description=_("The time when this grant was created."))
 
+    date_last_modified = Datetime(
+        title=_("Date last modified"), required=True, readonly=True,
+        description=_("The time when this grant was last modified."))
+
 
 class IGitRuleGrantEditableAttributes(Interface):
     """`IGitRuleGrant` attributes that can be edited.
@@ -161,16 +168,16 @@ class IGitRuleGrantEditableAttributes(Interface):
         title=_("Can force-push"), required=True, readonly=False,
         description=_("Whether force-pushing references is allowed."))
 
-    date_last_modified = Datetime(
-        title=_("Date last modified"), required=True, readonly=True,
-        description=_("The time when this grant was last modified."))
-
 
 class IGitRuleGrantEdit(Interface):
     """`IGitRuleGrant` attributes that require launchpad.Edit."""
 
-    def destroySelf():
-        """Delete this access grant."""
+    def destroySelf(user=None):
+        """Delete this access grant.
+
+        :param user: The `IPerson` doing the deletion, or None if the
+            deletion should not be logged.
+        """
 
 
 class IGitRuleGrant(IGitRuleGrantView, IGitRuleGrantEditableAttributes,

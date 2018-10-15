@@ -144,6 +144,7 @@ from lp.snappy.interfaces.snap import (
     ISnap,
     ISnapBuildRequest,
     ISnapSet,
+    MissingSnapcraftYaml,
     NoSourceForSnap,
     NoSuchSnap,
     SNAP_PRIVATE_FEATURE_FLAG,
@@ -674,7 +675,17 @@ class Snap(Storm, WebhookTargetMixin):
         # The returned jobs are ordered by descending ID.
         jobs = job_source.findBySnap(
             self, statuses=(JobStatus.WAITING, JobStatus.RUNNING))
-        return [SnapBuildRequest.fromJob(job) for job in jobs]
+        return DecoratedResultSet(
+            jobs, result_decorator=SnapBuildRequest.fromJob)
+
+    @property
+    def failed_build_requests(self):
+        """See `ISnap`."""
+        job_source = getUtility(ISnapRequestBuildsJobSource)
+        # The returned jobs are ordered by descending ID.
+        jobs = job_source.findBySnap(self, statuses=(JobStatus.FAILED,))
+        return DecoratedResultSet(
+            jobs, result_decorator=SnapBuildRequest.fromJob)
 
     def _getBuilds(self, filter_term, order_by):
         """The actual query to get the builds."""
@@ -1161,10 +1172,11 @@ class SnapSet:
                 except (BranchFileNotFound, GitRepositoryBlobNotFound):
                     pass
             else:
-                msg = "Cannot find snapcraft.yaml in %s"
                 if logger is not None:
-                    logger.exception(msg, context.unique_name)
-                raise NotFoundError(msg % context.unique_name)
+                    logger.exception(
+                        "Cannot find snapcraft.yaml in %s",
+                        context.unique_name)
+                raise MissingSnapcraftYaml(context.unique_name)
         except GitRepositoryBlobUnsupportedRemote as e:
             raise CannotFetchSnapcraftYaml(str(e), unsupported_remote=True)
         except (BranchHostingFault, GitRepositoryScanFault) as e:

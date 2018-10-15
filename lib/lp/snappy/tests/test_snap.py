@@ -177,7 +177,7 @@ class TestSnap(TestCaseWithFactory):
         self.assertThat(
             self.factory.makeSnap(),
             DoesNotSnapshot(
-                ["pending_build_requests",
+                ["pending_build_requests", "failed_build_requests",
                  "builds", "completed_builds", "pending_builds"],
                 ISnapView))
 
@@ -1690,16 +1690,14 @@ class TestSnapSet(TestCaseWithFactory):
             GitRepositoryBlobNotFound("dummy", "snap/snapcraft.yaml"))
         self.assertEqual(
             [], getUtility(ISnapSet).makeAutoBuilds(logger=logger))
-        # The u'...' here is a little odd, but that's how KeyError (and thus
-        # NotFoundError) stringifies.
         expected_log_entries = [
             "DEBUG Scheduling builds of snap package %s/%s" % (
                 snap1.owner.name, snap1.name),
-            "ERROR  - %s/%s: u'Cannot find snapcraft.yaml in %s'" % (
+            "ERROR  - %s/%s: Cannot find snapcraft.yaml in %s" % (
                 snap1.owner.name, snap1.name, snap1.git_ref.unique_name),
             "DEBUG Scheduling builds of snap package %s/%s" % (
                 snap2.owner.name, snap2.name),
-            "ERROR  - %s/%s: u'Cannot find snapcraft.yaml in %s'" % (
+            "ERROR  - %s/%s: Cannot find snapcraft.yaml in %s" % (
                 snap2.owner.name, snap2.name, snap2.git_ref.unique_name),
             ]
         self.assertThat(

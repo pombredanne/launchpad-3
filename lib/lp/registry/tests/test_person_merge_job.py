@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests of `PersonMergeJob`."""
@@ -16,6 +16,7 @@ from lp.registry.interfaces.persontransferjob import (
     IPersonMergeJob,
     IPersonMergeJobSource,
     )
+from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.identity.interfaces.emailaddress import EmailAddressStatus
@@ -30,6 +31,7 @@ from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
+from lp.testing.dbuser import dbuser
 from lp.testing.layers import (
     CeleryJobLayer,
     DatabaseFunctionalLayer,
@@ -114,7 +116,7 @@ class TestPersonMergeJob(TestCaseWithFactory):
         # When run it merges from_person into to_person.
         self.transfer_email()
         logger = BufferLogger()
-        with log.use(logger):
+        with log.use(logger), dbuser(config.IPersonMergeJobSource.dbuser):
             self.job.run()
 
         self.assertEqual(self.to_person, self.from_person.merged)

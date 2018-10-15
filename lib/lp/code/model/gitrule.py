@@ -21,15 +21,18 @@ from storm.locals import (
     Store,
     Unicode,
     )
+from zope.component import getUtility
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import GitGranteeType
+from lp.code.interfaces.gitactivity import IGitActivitySet
 from lp.code.interfaces.gitrule import (
     IGitRule,
     IGitRuleGrant,
     )
 from lp.registry.interfaces.person import (
+    IPerson,
     validate_person,
     validate_public_person,
     )
@@ -48,7 +51,10 @@ def git_rule_modified(rule, event):
     events on Git repository rules.
     """
     if event.edited_fields:
-        rule.date_last_modified = UTC_NOW
+        user = IPerson(event.user)
+        getUtility(IGitActivitySet).logRuleChanged(
+            event.object_before_modification, rule, user)
+        removeSecurityProxy(rule).date_last_modified = UTC_NOW
 
 
 @implementer(IGitRule)
@@ -86,7 +92,8 @@ class GitRule(StormBase):
         self.date_last_modified = date_created
 
     def __repr__(self):
-        return "<GitRule '%s'> for %r" % (self.ref_pattern, self.repository)
+        return "<GitRule '%s' for %s>" % (
+            self.ref_pattern, self.repository.unique_name)
 
     @property
     def is_exact(self):
@@ -104,13 +111,16 @@ class GitRule(StormBase):
     def addGrant(self, grantee, grantor, can_create=False, can_push=False,
                  can_force_push=False):
         """See `IGitRule`."""
-        return GitRuleGrant(
+        grant = GitRuleGrant(
             rule=self, grantee=grantee, can_create=can_create,
             can_push=can_push, can_force_push=can_force_push, grantor=grantor,
             date_created=DEFAULT)
+        getUtility(IGitActivitySet).logGrantAdded(grant, grantor)
+        return grant
 
-    def destroySelf(self):
+    def destroySelf(self, user):
         """See `IGitRule`."""
+        getUtility(IGitActivitySet).logRuleRemoved(self, user)
         for grant in self.grants:
             grant.destroySelf()
         rules = list(self.repository.rules)
@@ -126,7 +136,10 @@ def git_rule_grant_modified(grant, event):
     events on Git repository grants.
     """
     if event.edited_fields:
-        grant.date_last_modified = UTC_NOW
+        user = IPerson(event.user)
+        getUtility(IGitActivitySet).logGrantChanged(
+            event.object_before_modification, grant, user)
+        removeSecurityProxy(grant).date_last_modified = UTC_NOW
 
 
 @implementer(IGitRuleGrant)
@@ -198,9 +211,12 @@ class GitRuleGrant(StormBase):
             grantee_name = "~%s" % self.grantee.name
         else:
             grantee_name = self.grantee_type.title.lower()
-        return "<GitRuleGrant [%s] to %s> for %r" % (
-            ", ".join(permissions), grantee_name, self.rule)
+        return "<GitRuleGrant [%s] to %s for %s:%s>" % (
+            ", ".join(permissions), grantee_name, self.repository.unique_name,
+            self.rule.ref_pattern)
 
-    def destroySelf(self):
+    def destroySelf(self, user=None):
         """See `IGitRuleGrant`."""
+        if user is not None:
+            getUtility(IGitActivitySet).logGrantRemoved(self, user)
         Store.of(self).remove(self)

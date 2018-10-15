@@ -88,6 +88,7 @@ from lp.code.model.branchmergeproposaljob import (
     UpdatePreviewDiffJob,
     )
 from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.model.gitactivity import GitActivity
 from lp.code.model.gitjob import (
     GitJob,
     GitJobType,
@@ -126,6 +127,7 @@ from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.services.propertycache import clear_property_cache
+from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
@@ -666,10 +668,18 @@ class TestGitRepositoryDeletion(TestCaseWithFactory):
     def test_related_rules_and_grants_deleted(self):
         rule = self.factory.makeGitRule(repository=self.repository)
         grant = self.factory.makeGitRuleGrant(rule=rule)
+        store = Store.of(self.repository)
+        repository_id = self.repository.id
+        activities = store.find(
+            GitActivity, GitActivity.repository_id == repository_id)
+        self.assertNotEqual([], list(activities))
         self.repository.destroySelf()
         transaction.commit()
         self.assertRaises(LostObjectError, getattr, grant, 'rule')
         self.assertRaises(LostObjectError, getattr, rule, 'repository')
+        activities = store.find(
+            GitActivity, GitActivity.repository_id == repository_id)
+        self.assertEqual([], list(activities))
 
 
 class TestGitRepositoryDeletionConsequences(TestCaseWithFactory):
@@ -1417,7 +1427,6 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         author = self.factory.makePerson()
         with person_logged_in(author):
             author_email = author.preferredemail.email
-        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         author_date = datetime(2015, 1, 1, tzinfo=pytz.UTC)
         committer_date = datetime(2015, 1, 2, tzinfo=pytz.UTC)
         hosting_fixture = self.useFixture(GitHostingFixture(commits=[
@@ -1427,12 +1436,12 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 "author": {
                     "name": author.displayname,
                     "email": author_email,
-                    "time": int((author_date - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(author_date)),
                     },
                 "committer": {
                     "name": "New Person",
                     "email": "new-person@example.org",
-                    "time": int((committer_date - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(committer_date)),
                     },
                 "parents": [],
                 "tree": unicode(hashlib.sha1("").hexdigest()),
@@ -2398,11 +2407,11 @@ class TestGitRepositoryRules(TestCaseWithFactory):
             for _ in range(5)]
         with person_logged_in(repository.owner):
             self.assertEqual(rules, list(repository.rules))
-            repository.moveRule(rules[0], 4)
+            repository.moveRule(rules[0], 4, repository.owner)
             self.assertEqual(rules[1:] + [rules[0]], list(repository.rules))
-            repository.moveRule(rules[0], 0)
+            repository.moveRule(rules[0], 0, repository.owner)
             self.assertEqual(rules, list(repository.rules))
-            repository.moveRule(rules[2], 1)
+            repository.moveRule(rules[2], 1, repository.owner)
             self.assertEqual(
                 [rules[0], rules[2], rules[1], rules[3], rules[4]],
                 list(repository.rules))
@@ -2410,7 +2419,9 @@ class TestGitRepositoryRules(TestCaseWithFactory):
     def test_moveRule_non_negative(self):
         rule = self.factory.makeGitRule()
         with person_logged_in(rule.repository.owner):
-            self.assertRaises(ValueError, rule.repository.moveRule, rule, -1)
+            self.assertRaises(
+                ValueError, rule.repository.moveRule,
+                rule, -1, rule.repository.owner)
 
     def test_grants(self):
         repository = self.factory.makeGitRepository()

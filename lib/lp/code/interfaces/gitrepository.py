@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository interfaces."""
@@ -622,6 +622,12 @@ class IGitRepositoryView(IHasRecipes):
         :return: The diff as a binary string.
         """
 
+    def getActivity():
+        """Get activity log entries for this repository.
+
+        :return: A `ResultSet` of `IGitActivity`.
+        """
+
 
 class IGitRepositoryModerateAttributes(Interface):
     """IGitRepository attributes that can be edited by more than one community.
@@ -729,13 +735,15 @@ class IGitRepositoryEdit(IWebhookTarget):
             None to append it.
         """
 
-    def moveRule(rule, position):
+    def moveRule(rule, position, user):
         """Move a rule to a new position in its repository's rule order.
 
         :param rule: The `IGitRule` to move.
         :param position: The new position.  For example, 0 puts the rule at
             the start, while `len(repository.rules)` puts the rule at the
-            end.
+            end.  If the new position is before the end of the list, then
+            other rules are shifted to later positions to make room.
+        :param user: The `IPerson` who is moving the rule.
         """
 
     def findRuleGrantsByGrantee(grantee):
