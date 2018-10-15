@@ -738,13 +738,13 @@ class IGitRepositoryEdit(IWebhookTarget):
             end.
         """
 
-    def findGrantsByGrantee(grantee):
+    def findRuleGrantsByGrantee(grantee):
         """Find the grants for a grantee applied to this repository.
 
         :param grantee: The Person affected
         """
 
-    def findGrantsForRepositoryOwner():
+    def findRuleGrantsForRepositoryOwner():
         """Find the grants of type REPOSITORY_OWNER applied to this repository.
         """
 

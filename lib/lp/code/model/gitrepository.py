@@ -1186,7 +1186,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         return Store.of(self).find(
             GitRuleGrant, GitRuleGrant.repository_id == self.id)
 
-    def findGrantsByGrantee(self, grantee):
+    def findRuleGrantsByGrantee(self, grantee):
         """See `IGitRepository`."""
         clauses = [
             GitRuleGrant.grantee_type == GitGranteeType.PERSON,
@@ -1195,7 +1195,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             ]
         return self.grants.find(*clauses).config(distinct=True)
 
-    def findGrantsForRepositoryOwner(self):
+    def findRuleGrantsForRepositoryOwner(self):
         """See `IGitRepository`."""
         return self.grants.find(
             GitRuleGrant.grantee_type == GitGranteeType.REPOSITORY_OWNER)

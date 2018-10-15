@@ -344,10 +344,9 @@ class GitAPI(LaunchpadXMLRPCView):
             permissions.add('create')
         if grant.can_push:
             permissions.add('push')
-        if grant.can_force_push and not grant.can_push:
+        if grant.can_force_push:
+            # can_force_push implies can_push.
             permissions.add('push')
-            permissions.add('force_push')
-        elif grant.can_force_push and grant.can_push:
             permissions.add('force_push')
         return permissions
 
@@ -355,11 +354,11 @@ class GitAPI(LaunchpadXMLRPCView):
         repository = removeSecurityProxy(
             getUtility(IGitLookup).getByHostingPath(translated_path))
         is_owner = requester.inTeam(repository.owner)
-        grants = repository.findGrantsByGrantee(requester)
+        grants = repository.findRuleGrantsByGrantee(requester)
         # If the user is the owner, get the grants for REPOSITORY_OWNER
-        # add add them to our available grants to match against
+        # and add them to our available grants to match against
         if is_owner:
-            owner_grants = repository.findGrantsForRepositoryOwner()
+            owner_grants = repository.findRuleGrantsForRepositoryOwner()
             grants = grants.union(owner_grants)
         result = []
 

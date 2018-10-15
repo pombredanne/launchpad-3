@@ -287,7 +287,7 @@ class TestGitAPIMixin:
             ]))
 
     def test_listRefRules_with_other_grants(self):
-        # Test that findGrantsByGrantee only returns relevant rules
+        # Test that findRuleGrantsByGrantee only returns relevant rules
         requester = self.factory.makePerson()
         other_user = self.factory.makePerson()
         repository = removeSecurityProxy(

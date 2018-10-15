@@ -223,7 +223,7 @@ class TestGitRepository(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposalForGit(target_ref=ref)
         self.assertEqual([bmp], list(repository.getMergeProposals()))
 
-    def test_findGrantsByGrantee_person(self):
+    def test_findRuleGrantsByGrantee_person(self):
         requester = self.factory.makePerson()
         repository = removeSecurityProxy(
             self.factory.makeGitRepository(owner=requester))
@@ -232,10 +232,10 @@ class TestGitRepository(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=requester, can_push=True, can_create=True)
 
-        results = repository.findGrantsByGrantee(requester)
+        results = repository.findRuleGrantsByGrantee(requester)
         self.assertEqual([grant], list(results))
 
-    def test_findGrantsByGrantee_team(self):
+    def test_findRuleGrantsByGrantee_team(self):
         requester = self.factory.makeTeam()
         repository = removeSecurityProxy(
             self.factory.makeGitRepository(owner=requester))
@@ -244,10 +244,10 @@ class TestGitRepository(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=requester, can_push=True, can_create=True)
 
-        results = repository.findGrantsByGrantee(requester)
+        results = repository.findRuleGrantsByGrantee(requester)
         self.assertEqual([grant], list(results))
 
-    def test_findGrantsByGrantee_member_of_team(self):
+    def test_findRuleGrantsByGrantee_member_of_team(self):
         member = self.factory.makePerson()
         requester = self.factory.makeTeam(members=[member])
         repository = removeSecurityProxy(
@@ -257,10 +257,10 @@ class TestGitRepository(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=requester, can_push=True, can_create=True)
 
-        results = repository.findGrantsByGrantee(requester)
+        results = repository.findRuleGrantsByGrantee(requester)
         self.assertEqual([grant], list(results))
 
-    def test_findGrantsByGrantee_team_in_team(self):
+    def test_findRuleGrantsByGrantee_team_in_team(self):
         member = self.factory.makePerson()
         team = self.factory.makeTeam(owner=member, members=[member])
         top_level = removeSecurityProxy(self.factory.makeTeam())
@@ -273,10 +273,10 @@ class TestGitRepository(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=top_level, can_push=True, can_create=True)
 
-        results = repository.findGrantsByGrantee(member)
+        results = repository.findRuleGrantsByGrantee(member)
         self.assertEqual([grant], list(results))
 
-    def test_findGrantsByGrantee_team_in_team_not_owner(self):
+    def test_findRuleGrantsByGrantee_team_in_team_not_owner(self):
         member = self.factory.makePerson()
         team = self.factory.makeTeam(owner=member, members=[member])
         top_level = removeSecurityProxy(self.factory.makeTeam())
@@ -289,10 +289,10 @@ class TestGitRepository(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=top_level, can_push=True, can_create=True)
 
-        results = repository.findGrantsByGrantee(member)
+        results = repository.findRuleGrantsByGrantee(member)
         self.assertEqual([grant], list(results))
 
-    def test_findGrantsByGrantee_not_owner(self):
+    def test_findRuleGrantsByGrantee_not_owner(self):
         requester = self.factory.makePerson()
         repository = removeSecurityProxy(
             self.factory.makeGitRepository())
@@ -301,10 +301,10 @@ class TestGitRepository(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=requester, can_push=True, can_create=True)
 
-        results = repository.findGrantsByGrantee(requester)
+        results = repository.findRuleGrantsByGrantee(requester)
         self.assertEqual([grant], list(results))
 
-    def test_findGrantsByGrantee_grantee_type(self):
+    def test_findRuleGrantsByGrantee_grantee_type(self):
         requester = self.factory.makePerson()
         repository = removeSecurityProxy(
             self.factory.makeGitRepository(owner=requester))
@@ -316,10 +316,10 @@ class TestGitRepository(TestCaseWithFactory):
             can_push=True,
             can_create=True)
 
-        results = repository.findGrantsByGrantee(requester)
+        results = repository.findRuleGrantsForRepositoryOwner()
         self.assertEqual([grant], list(results))
 
-    def test_findGrantsByGrantee_owner_and_other(self):
+    def test_findRuleGrantsByGrantee_owner_and_other(self):
         requester = self.factory.makePerson()
         other = self.factory.makePerson()
         repository = removeSecurityProxy(
@@ -329,10 +329,10 @@ class TestGitRepository(TestCaseWithFactory):
         self.factory.makeGitRuleGrant(
             rule=rule, grantee=other, can_push=True, can_create=True)
 
-        results = repository.findGrantsByGrantee(requester)
+        results = repository.findRuleGrantsByGrantee(requester)
         self.assertEqual([], list(results))
 
-    def test_findGrantsByGrantee_owner_and_other_with_owner_grant(self):
+    def test_findRuleGrantsByGrantee_owner_and_other_with_owner_grant(self):
         requester = self.factory.makePerson()
         other = self.factory.makePerson()
         repository = removeSecurityProxy(
@@ -344,7 +344,7 @@ class TestGitRepository(TestCaseWithFactory):
         owner_grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=requester, can_push=True)
 
-        results = repository.findGrantsByGrantee(requester)
+        results = repository.findRuleGrantsByGrantee(requester)
         self.assertEqual([owner_grant], list(results))
 
 
