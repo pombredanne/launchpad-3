@@ -7,11 +7,13 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
+    'IGitNascentRuleGrant',
     'IGitRule',
     'IGitRuleGrant',
     ]
 
 from lazr.restful.fields import Reference
+from lazr.restful.interface import copy_field
 from zope.interface import (
     Attribute,
     Interface,
@@ -100,6 +102,9 @@ class IGitRuleEdit(Interface):
             matching this rule.
         """
 
+    def setGrants(grants, user):
+        """Set the access grants for this rule."""
+
     def destroySelf(user):
         """Delete this rule.
 
@@ -183,3 +188,24 @@ class IGitRuleGrantEdit(Interface):
 class IGitRuleGrant(IGitRuleGrantView, IGitRuleGrantEditableAttributes,
                     IGitRuleGrantEdit):
     """An access grant for a Git repository rule."""
+
+
+class IGitNascentRuleGrant(Interface):
+    """An access grant in the process of being created.
+
+    This represents parameters for a grant that have been deserialised from
+    a webservice request, but that have not yet been attached to a rule.
+    """
+
+    grantee_type = copy_field(IGitRuleGrant["grantee_type"])
+
+    grantee = copy_field(IGitRuleGrant["grantee"])
+
+    can_create = copy_field(
+        IGitRuleGrant["can_create"], required=False, default=False)
+
+    can_push = copy_field(
+        IGitRuleGrant["can_push"], required=False, default=False)
+
+    can_force_push = copy_field(
+        IGitRuleGrant["can_force_push"], required=False, default=False)

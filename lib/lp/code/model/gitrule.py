@@ -11,7 +11,16 @@ __all__ = [
     'GitRuleGrant',
     ]
 
+from collections import OrderedDict
+
 from lazr.enum import DBItem
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interfaces import (
+    IFieldMarshaller,
+    IJSONPublishable,
+    )
+from lazr.restful.utils import get_current_browser_request
 import pytz
 from storm.locals import (
     Bool,
@@ -21,13 +30,22 @@ from storm.locals import (
     Store,
     Unicode,
     )
-from zope.component import getUtility
-from zope.interface import implementer
+from zope.component import (
+    adapter,
+    getMultiAdapter,
+    getUtility,
+    )
+from zope.event import notify
+from zope.interface import (
+    implementer,
+    providedBy,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import GitGranteeType
 from lp.code.interfaces.gitactivity import IGitActivitySet
 from lp.code.interfaces.gitrule import (
+    IGitNascentRuleGrant,
     IGitRule,
     IGitRuleGrant,
     )
@@ -42,6 +60,7 @@ from lp.services.database.constants import (
     )
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.stormbase import StormBase
+from lp.services.fields import InlineObject
 
 
 def git_rule_modified(rule, event):
@@ -118,6 +137,58 @@ class GitRule(StormBase):
         getUtility(IGitActivitySet).logGrantAdded(grant, grantor)
         return grant
 
+    def _validateGrants(self, grants):
+        """Validate a new iterable of access grants."""
+        for grant in grants:
+            if grant.grantee_type == GitGranteeType.PERSON:
+                if grant.grantee is None:
+                    raise ValueError(
+                        "Permission grant for %s has grantee_type 'Person' "
+                        "but no grantee" % self.ref_pattern)
+            else:
+                if grant.grantee is not None:
+                    raise ValueError(
+                        "Permission grant for %s has grantee_type '%s', "
+                        "contradicting grantee ~%s" %
+                        (self.ref_pattern, grant.grantee_type,
+                         grant.grantee.name))
+
+    def setGrants(self, grants, user):
+        """See `IGitRule`."""
+        self._validateGrants(grants)
+        existing_grants = {
+            (grant.grantee_type, grant.grantee): grant
+            for grant in self.grants}
+        new_grants = OrderedDict(
+            ((grant.grantee_type, grant.grantee), grant)
+            for grant in grants)
+
+        for grant_key, grant in existing_grants.items():
+            if grant_key not in new_grants:
+                grant.destroySelf(user)
+
+        for grant_key, new_grant in new_grants.items():
+            grant = existing_grants.get(grant_key)
+            if grant is None:
+                new_grantee = (
+                    new_grant.grantee
+                    if new_grant.grantee_type == GitGranteeType.PERSON
+                    else new_grant.grantee_type)
+                grant = self.addGrant(
+                    new_grantee, user, can_create=new_grant.can_create,
+                    can_push=new_grant.can_push,
+                    can_force_push=new_grant.can_force_push)
+            else:
+                grant_before_modification = Snapshot(
+                    grant, providing=providedBy(grant))
+                edited_fields = []
+                for field in ("can_create", "can_push", "can_force_push"):
+                    if getattr(grant, field) != getattr(new_grant, field):
+                        setattr(grant, field, getattr(new_grant, field))
+                        edited_fields.append(field)
+                notify(ObjectModifiedEvent(
+                    grant, grant_before_modification, edited_fields))
+
     def destroySelf(self, user):
         """See `IGitRule`."""
         getUtility(IGitActivitySet).logRuleRemoved(self, user)
@@ -142,7 +213,7 @@ def git_rule_grant_modified(grant, event):
         removeSecurityProxy(grant).date_last_modified = UTC_NOW
 
 
-@implementer(IGitRuleGrant)
+@implementer(IGitRuleGrant, IJSONPublishable)
 class GitRuleGrant(StormBase):
     """See `IGitRuleGrant`."""
 
@@ -215,8 +286,35 @@ class GitRuleGrant(StormBase):
             ", ".join(permissions), grantee_name, self.repository.unique_name,
             self.rule.ref_pattern)
 
+    def toDataForJSON(self, media_type):
+        """See `IJSONPublishable`."""
+        if media_type != "application/json":
+            raise ValueError("Unhandled media type %s" % media_type)
+        request = get_current_browser_request()
+        field = InlineObject(schema=IGitNascentRuleGrant).bind(self)
+        marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+        return marshaller.unmarshall(None, self)
+
     def destroySelf(self, user=None):
         """See `IGitRuleGrant`."""
         if user is not None:
             getUtility(IGitActivitySet).logGrantRemoved(self, user)
         Store.of(self).remove(self)
+
+
+@implementer(IGitNascentRuleGrant)
+class GitNascentRuleGrant:
+
+    def __init__(self, grantee_type, grantee=None, can_create=False,
+                 can_push=False, can_force_push=False):
+        self.grantee_type = grantee_type
+        self.grantee = grantee
+        self.can_create = can_create
+        self.can_push = can_push
+        self.can_force_push = can_force_push
+
+
+@adapter(dict)
+@implementer(IGitNascentRuleGrant)
+def nascent_rule_grant_from_dict(template):
+    return GitNascentRuleGrant(**template)

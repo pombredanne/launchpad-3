@@ -68,6 +68,7 @@ from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepository
+from lp.code.interfaces.gitrule import IGitNascentRuleGrant
 from lp.code.interfaces.gitsubscription import IGitSubscription
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
@@ -150,6 +151,7 @@ from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.fields import InlineObject
 from lp.services.messages.interfaces.message import (
     IIndexedMessage,
     IMessage,
@@ -506,6 +508,8 @@ patch_collection_property(IGitRef, 'dependent_landings', IBranchMergeProposal)
 patch_entry_return_type(IGitRef, 'createMergeProposal', IBranchMergeProposal)
 patch_collection_return_type(
     IGitRef, 'getMergeProposals', IBranchMergeProposal)
+patch_list_parameter_type(
+    IGitRef, 'setGrants', 'grants', InlineObject(schema=IGitNascentRuleGrant))
 
 # IGitRepository
 patch_collection_property(IGitRepository, 'branches', IGitRef)
