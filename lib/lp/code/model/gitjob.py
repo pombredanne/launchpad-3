@@ -337,6 +337,9 @@ def describe_repository_delta(repository_delta):
         repository_delta.new_values, repository_delta.interface).split("\n")
     if output and not output[-1]:  # text_delta returned empty string
         output.pop()
+    # Parts of the delta are only visible to people who can edit the
+    # repository.
+    output_for_editors = list(output)
     indent = " " * 4
     for activity in repository_delta.activities:
         if activity.what_changed in activity_descriptions:
@@ -345,8 +348,8 @@ def describe_repository_delta(repository_delta):
                 changee=activity.changee_description,
                 old_grants=describe_grants(activity.old_value),
                 new_grants=describe_grants(activity.new_value))
-            output.append(indent + description)
-    return "\n".join(output)
+            output_for_editors.append(indent + description)
+    return "\n".join(output), "\n".join(output_for_editors)
 
 
 @implementer(IGitRepositoryModifiedMailJob)
@@ -361,9 +364,11 @@ class GitRepositoryModifiedMailJob(GitJobDerived):
     @classmethod
     def create(cls, repository, user, repository_delta):
         """See `IGitRepositoryModifiedMailJobSource`."""
+        delta, delta_for_editors = describe_repository_delta(repository_delta)
         metadata = {
             "user": user.id,
-            "repository_delta": describe_repository_delta(repository_delta),
+            "repository_delta": delta,
+            "repository_delta_for_editors": delta_for_editors,
             }
         git_job = GitJob(repository, cls.class_job_type, metadata)
         job = cls(git_job)
@@ -378,10 +383,15 @@ class GitRepositoryModifiedMailJob(GitJobDerived):
     def repository_delta(self):
         return self.metadata["repository_delta"]
 
+    @property
+    def repository_delta_for_editors(self):
+        return self.metadata["repository_delta_for_editors"]
+
     def getMailer(self):
         """Return a `BranchMailer` for this job."""
         return BranchMailer.forBranchModified(
-            self.repository, self.user, self.repository_delta)
+            self.repository, self.user, self.repository_delta,
+            delta_for_editors=self.repository_delta_for_editors)
 
     def run(self):
         """See `IGitRepositoryModifiedMailJob`."""
