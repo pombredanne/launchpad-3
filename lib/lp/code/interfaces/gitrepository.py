@@ -622,9 +622,11 @@ class IGitRepositoryView(IHasRecipes):
         :return: The diff as a binary string.
         """
 
-    def getActivity():
+    def getActivity(changed_after=None):
         """Get activity log entries for this repository.
 
+        :param changed_after: If supplied, only return entries for changes
+            made after this date.
         :return: A `ResultSet` of `IGitActivity`.
         """
 

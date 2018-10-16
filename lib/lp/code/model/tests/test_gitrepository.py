@@ -981,6 +981,12 @@ class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
         # Attribute modifications send mail to subscribers.
         self.assertEqual(0, len(stub.test_emails))
         repository = self.factory.makeGitRepository(name="foo")
+        subscriber = self.factory.makePerson()
+        owner_address = (
+            removeSecurityProxy(repository.owner.preferredemail).email)
+        subscriber_address = (
+            removeSecurityProxy(subscriber.preferredemail).email)
+        transaction.commit()
         repository_before_modification = Snapshot(
             repository, providing=providedBy(repository))
         with person_logged_in(repository.owner):
@@ -990,22 +996,45 @@ class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
                 BranchSubscriptionDiffSize.NODIFF,
                 CodeReviewNotificationLevel.NOEMAIL,
                 repository.owner)
+            repository.subscribe(
+                subscriber,
+                BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+                BranchSubscriptionDiffSize.NODIFF,
+                CodeReviewNotificationLevel.NOEMAIL,
+                repository.owner)
             repository.setName("bar", repository.owner)
+            repository.addRule("refs/heads/stable/*", repository.owner)
             notify(ObjectModifiedEvent(
                 repository, repository_before_modification, ["name"],
                 user=repository.owner))
         with dbuser(config.IGitRepositoryModifiedMailJobSource.dbuser):
             JobRunner.fromReady(
                 getUtility(IGitRepositoryModifiedMailJobSource)).runAll()
-        self.assertEqual(1, len(stub.test_emails))
-        message = email.message_from_string(stub.test_emails[0][2])
-        body = message.get_payload(decode=True)
-        self.assertIn("Name: foo => bar\n", body)
-        self.assertIn(
-            "Git identity: lp:~{person}/{project}/+git/foo => "
-            "lp:~{person}/{project}/+git/bar\n".format(
+        bodies_by_recipient = {}
+        for from_addr, to_addrs, message in stub.test_emails:
+            body = email.message_from_string(message).get_payload(decode=True)
+            for to_addr in to_addrs:
+                bodies_by_recipient[to_addr] = body
+        # Both the owner and the unprivileged subscriber receive email.
+        self.assertContentEqual(
+            [owner_address, subscriber_address], bodies_by_recipient.keys())
+        # The owner receives a message including details of permission
+        # changes.
+        self.assertEqual(
+            "    Name: foo => bar\n"
+            "    Git identity: lp:~{person}/{project}/+git/foo => "
+            "lp:~{person}/{project}/+git/bar\n"
+            "    Added protected ref: refs/heads/stable/*".format(
                 person=repository.owner.name, project=repository.target.name),
-            body)
+            bodies_by_recipient[owner_address].split("\n\n--\n")[0])
+        # The unprivileged subscriber receives a message omitting details of
+        # permission changes.
+        self.assertEqual(
+            "    Name: foo => bar\n"
+            "    Git identity: lp:~{person}/{project}/+git/foo => "
+            "lp:~{person}/{project}/+git/bar".format(
+                person=repository.owner.name, project=repository.target.name),
+            bodies_by_recipient[subscriber_address].split("\n\n--\n")[0])
 
     # XXX cjwatson 2015-02-04: This will need to be expanded once Launchpad
     # actually notices any interesting kind of repository modifications.

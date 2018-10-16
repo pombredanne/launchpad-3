@@ -1,12 +1,16 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to branches."""
 
 __metaclass__ = type
 
-from zope.component import getUtility
+from zope.component import (
+    getAdapter,
+    getUtility,
+    )
 
+from lp.app.interfaces.security import IAuthorization
 from lp.code.adapters.branch import BranchDelta
 from lp.code.adapters.gitrepository import GitRepositoryDelta
 from lp.code.enums import (
@@ -20,6 +24,7 @@ from lp.code.interfaces.gitjob import IGitRepositoryModifiedMailJobSource
 from lp.code.interfaces.gitref import IGitRef
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.role import IPersonRoles
 from lp.services.config import config
 from lp.services.mail import basemailer
 from lp.services.mail.basemailer import BaseMailer
@@ -163,13 +168,14 @@ class BranchMailer(BaseMailer):
     app = 'code'
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None, contents=None, diff=None, message_id=None,
-                 revno=None, revision_id=None, notification_type=None,
-                 **kwargs):
+                 delta=None, delta_for_editors=None, contents=None, diff=None,
+                 message_id=None, revno=None, revision_id=None,
+                 notification_type=None, **kwargs):
         super(BranchMailer, self).__init__(
             subject, template_name, recipients, from_address,
             message_id=message_id, notification_type=notification_type)
         self.delta_text = delta
+        self.delta_for_editors_text = delta_for_editors
         self.contents = contents
         self.diff = diff
         if diff is None:
@@ -181,12 +187,16 @@ class BranchMailer(BaseMailer):
         self.extra_template_params = kwargs
 
     @classmethod
-    def forBranchModified(cls, branch, user, delta):
+    def forBranchModified(cls, branch, user, delta, delta_for_editors=None):
         """Construct a BranchMailer for mail about a branch modification.
 
         :param branch: The branch that was modified.
         :param user: The user making the change.
-        :param delta: an IBranchDelta representing the modification.
+        :param delta: an IBranchDelta representing the modification as
+            visible to people who cannot edit the branch.
+        :param delta_for_editors: an IBranchDelta representing the
+            notification as visible to people who can edit the branch.  If
+            None, `delta` is used for people who can edit the branch too.
         :return: a BranchMailer.
         """
         recipients = branch.getNotificationRecipients()
@@ -218,6 +228,7 @@ class BranchMailer(BaseMailer):
         return cls(
             '[Branch %(unique_name)s]', 'branch-modified.txt',
             actual_recipients, from_address, delta=delta,
+            delta_for_editors=delta_for_editors,
             notification_type='branch-updated')
 
     @classmethod
@@ -288,8 +299,14 @@ class BranchMailer(BaseMailer):
         params['diff'] = self.contents or ''
         if not self._includeDiff(email):
             params['diff'] += self._explainNotPresentDiff(email)
-        params['delta'] = (
-            self.delta_text if self.delta_text is not None else '')
+        if self.delta_for_editors_text is not None:
+            authz = getAdapter(branch, IAuthorization, 'launchpad.Edit')
+            if authz.checkAuthenticated(IPersonRoles(recipient)):
+                params['delta'] = self.delta_for_editors_text
+            else:
+                params['delta'] = self.delta_text or ''
+        else:
+            params['delta'] = self.delta_text or ''
         params.update(self.extra_template_params)
         return params
 
