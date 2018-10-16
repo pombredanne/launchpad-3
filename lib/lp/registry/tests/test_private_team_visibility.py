@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for visibility of private teams.
@@ -274,6 +274,33 @@ class TestPrivateTeamVisibility(TestCaseWithFactory):
 
     def test_teams_with_private_branch_review_requests(self, private=True):
         self._test_teams_with_branch_review_requests()
+
+    def _test_git_repository_grantee(self, private):
+        # Users who own Git repositories can see private teams that have
+        # been granted some kind of write access to those repositories.
+        some_person = self.factory.makePerson()
+        self._check_permission(some_person, False)
+        login_person(some_person)
+        project = self.factory.makeProduct()
+        if private:
+            information_type = InformationType.USERDATA
+        else:
+            information_type = InformationType.PUBLIC
+        repository = self.factory.makeGitRepository(
+            owner=some_person, target=project,
+            information_type=information_type)
+        self.factory.makeGitRuleGrant(
+            repository=repository, grantee=self.priv_team)
+        # The team is now visible to the repository owner.
+        self._check_permission(some_person, True)
+        # The team is still invisible to other users.
+        self._check_permission(self.factory.makePerson(), False)
+
+    def test_public_git_repository_grantee(self):
+        self._test_git_repository_grantee(private=False)
+
+    def test_private_git_repository_grantee(self):
+        self._test_git_repository_grantee(private=True)
 
     def test_private_ppa_subscriber(self):
         # Subscribers to the team's private PPA have limited view permission.
