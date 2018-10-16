@@ -14,6 +14,7 @@ from testtools.matchers import (
     Equals,
     Is,
     MatchesDict,
+    MatchesListwise,
     MatchesSetwise,
     MatchesStructure,
     )
@@ -169,6 +170,7 @@ class TestGitRule(TestCaseWithFactory):
         member = self.factory.makePerson(member_of=[owner])
         rule = self.factory.makeGitRule(owner=owner)
         grantee = self.factory.makePerson()
+        removeSecurityProxy(rule.repository.getActivity()).remove()
         with person_logged_in(member):
             rule.setGrants([
                 IGitNascentRuleGrant({
@@ -199,6 +201,34 @@ class TestGitRule(TestCaseWithFactory):
                 can_create=Is(False),
                 can_push=Is(True),
                 can_force_push=Is(False))))
+        self.assertThat(list(rule.repository.getActivity()), MatchesListwise([
+            MatchesStructure(
+                repository=Equals(rule.repository),
+                changer=Equals(member),
+                changee=Equals(grantee),
+                what_changed=Equals(GitActivityType.GRANT_ADDED),
+                old_value=Is(None),
+                new_value=MatchesDict({
+                    "changee_type": Equals("Person"),
+                    "ref_pattern": Equals(rule.ref_pattern),
+                    "can_create": Is(False),
+                    "can_push": Is(True),
+                    "can_force_push": Is(False),
+                    })),
+            MatchesStructure(
+                repository=Equals(rule.repository),
+                changer=Equals(member),
+                changee=Is(None),
+                what_changed=Equals(GitActivityType.GRANT_ADDED),
+                old_value=Is(None),
+                new_value=MatchesDict({
+                    "changee_type": Equals("Repository owner"),
+                    "ref_pattern": Equals(rule.ref_pattern),
+                    "can_create": Is(True),
+                    "can_push": Is(False),
+                    "can_force_push": Is(True),
+                    })),
+            ]))
 
     def test_setGrants_modify(self):
         owner = self.factory.makeTeam()
@@ -216,6 +246,7 @@ class TestGitRule(TestCaseWithFactory):
             can_force_push=True)
         date_created = get_transaction_timestamp(Store.of(rule))
         transaction.commit()
+        removeSecurityProxy(rule.repository.getActivity()).remove()
         with person_logged_in(members[1]):
             rule.setGrants([
                 IGitNascentRuleGrant({
@@ -266,6 +297,65 @@ class TestGitRule(TestCaseWithFactory):
                 can_force_push=Is(False),
                 date_created=Equals(date_created),
                 date_last_modified=Equals(date_modified))))
+        self.assertThat(list(rule.repository.getActivity()), MatchesListwise([
+            MatchesStructure(
+                repository=Equals(rule.repository),
+                changer=Equals(members[1]),
+                changee=Equals(grantees[0]),
+                what_changed=Equals(GitActivityType.GRANT_CHANGED),
+                old_value=MatchesDict({
+                    "changee_type": Equals("Person"),
+                    "ref_pattern": Equals(rule.ref_pattern),
+                    "can_create": Is(False),
+                    "can_push": Is(True),
+                    "can_force_push": Is(False),
+                    }),
+                new_value=MatchesDict({
+                    "changee_type": Equals("Person"),
+                    "ref_pattern": Equals(rule.ref_pattern),
+                    "can_create": Is(False),
+                    "can_push": Is(True),
+                    "can_force_push": Is(True),
+                    })),
+            MatchesStructure(
+                repository=Equals(rule.repository),
+                changer=Equals(members[1]),
+                changee=Equals(grantees[1]),
+                what_changed=Equals(GitActivityType.GRANT_CHANGED),
+                old_value=MatchesDict({
+                    "changee_type": Equals("Person"),
+                    "ref_pattern": Equals(rule.ref_pattern),
+                    "can_create": Is(False),
+                    "can_push": Is(False),
+                    "can_force_push": Is(True),
+                    }),
+                new_value=MatchesDict({
+                    "changee_type": Equals("Person"),
+                    "ref_pattern": Equals(rule.ref_pattern),
+                    "can_create": Is(True),
+                    "can_push": Is(False),
+                    "can_force_push": Is(False),
+                    })),
+            MatchesStructure(
+                repository=Equals(rule.repository),
+                changer=Equals(members[1]),
+                changee=Is(None),
+                what_changed=Equals(GitActivityType.GRANT_CHANGED),
+                old_value=MatchesDict({
+                    "changee_type": Equals("Repository owner"),
+                    "ref_pattern": Equals(rule.ref_pattern),
+                    "can_create": Is(True),
+                    "can_push": Is(False),
+                    "can_force_push": Is(False),
+                    }),
+                new_value=MatchesDict({
+                    "changee_type": Equals("Repository owner"),
+                    "ref_pattern": Equals(rule.ref_pattern),
+                    "can_create": Is(False),
+                    "can_push": Is(False),
+                    "can_force_push": Is(True),
+                    })),
+            ]))
 
     def test_setGrants_remove(self):
         owner = self.factory.makeTeam()
@@ -283,6 +373,7 @@ class TestGitRule(TestCaseWithFactory):
             can_force_push=True)
         date_created = get_transaction_timestamp(Store.of(rule))
         transaction.commit()
+        removeSecurityProxy(rule.repository.getActivity()).remove()
         with person_logged_in(members[1]):
             rule.setGrants([
                 IGitNascentRuleGrant({
@@ -302,6 +393,34 @@ class TestGitRule(TestCaseWithFactory):
                 can_force_push=Is(False),
                 date_created=Equals(date_created),
                 date_last_modified=Equals(date_created))))
+        self.assertThat(list(rule.repository.getActivity()), MatchesSetwise(
+            MatchesStructure(
+                repository=Equals(rule.repository),
+                changer=Equals(members[1]),
+                changee=Is(None),
+                what_changed=Equals(GitActivityType.GRANT_REMOVED),
+                old_value=MatchesDict({
+                    "changee_type": Equals("Repository owner"),
+                    "ref_pattern": Equals(rule.ref_pattern),
+                    "can_create": Is(True),
+                    "can_push": Is(False),
+                    "can_force_push": Is(False),
+                    }),
+                new_value=Is(None)),
+            MatchesStructure(
+                repository=Equals(rule.repository),
+                changer=Equals(members[1]),
+                changee=Equals(grantees[1]),
+                what_changed=Equals(GitActivityType.GRANT_REMOVED),
+                old_value=MatchesDict({
+                    "changee_type": Equals("Person"),
+                    "ref_pattern": Equals(rule.ref_pattern),
+                    "can_create": Is(False),
+                    "can_push": Is(False),
+                    "can_force_push": Is(True),
+                    }),
+                new_value=Is(None)),
+            ))
 
     def test_activity_rule_added(self):
         owner = self.factory.makeTeam()

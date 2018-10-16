@@ -173,16 +173,20 @@ class GitRule(StormBase):
                     new_grant.grantee
                     if new_grant.grantee_type == GitGranteeType.PERSON
                     else new_grant.grantee_type)
-                grant = self.addGrant(new_grantee, user)
-            grant_before_modification = Snapshot(
-                grant, providing=providedBy(grant))
-            edited_fields = []
-            for field in ("can_create", "can_push", "can_force_push"):
-                if getattr(grant, field) != getattr(new_grant, field):
-                    setattr(grant, field, getattr(new_grant, field))
-                    edited_fields.append(field)
-            notify(ObjectModifiedEvent(
-                grant, grant_before_modification, edited_fields))
+                grant = self.addGrant(
+                    new_grantee, user, can_create=new_grant.can_create,
+                    can_push=new_grant.can_push,
+                    can_force_push=new_grant.can_force_push)
+            else:
+                grant_before_modification = Snapshot(
+                    grant, providing=providedBy(grant))
+                edited_fields = []
+                for field in ("can_create", "can_push", "can_force_push"):
+                    if getattr(grant, field) != getattr(new_grant, field):
+                        setattr(grant, field, getattr(new_grant, field))
+                        edited_fields.append(field)
+                notify(ObjectModifiedEvent(
+                    grant, grant_before_modification, edited_fields))
 
     def destroySelf(self, user):
         """See `IGitRule`."""
