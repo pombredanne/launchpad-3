@@ -184,7 +184,7 @@ class TestInlineObjectFieldMarshaller(TestCaseWithFactory):
         obj = InlineExample(self.factory.makePerson(), JobStatus.WAITING)
         result = marshaller.unmarshall(None, obj)
         self.assertThat(result, MatchesDict({
-            "person": Equals(canonical_url(obj.person, request=request)),
+            "person_link": Equals(canonical_url(obj.person, request=request)),
             "status": Equals("Waiting"),
             }))
 
@@ -196,7 +196,7 @@ class TestInlineObjectFieldMarshaller(TestCaseWithFactory):
         marshaller = InlineObjectFieldMarshaller(field, request)
         person = self.factory.makePerson()
         data = {
-            "person": canonical_url(person, request=request),
+            "person_link": canonical_url(person, request=request),
             "status": "Running",
             }
         obj = marshaller.marshall_from_json_data(data)

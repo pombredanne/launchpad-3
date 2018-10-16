@@ -73,7 +73,8 @@ class InlineObjectFieldMarshaller(SimpleFieldMarshaller):
                         (sub_value, self.request), IEntry)
                 except ComponentLookupError:
                     sub_entry = entry
-                result[name] = marshaller.unmarshall(sub_entry, sub_value)
+                result[marshaller.representation_name] = marshaller.unmarshall(
+                    sub_entry, sub_value)
         return result
 
     def _marshall_from_json_data(self, value):
@@ -82,11 +83,11 @@ class InlineObjectFieldMarshaller(SimpleFieldMarshaller):
         for name in self.field.schema.names(all=True):
             field = self.field.schema[name]
             if IField.providedBy(field):
-                if field.required and name not in value:
-                    raise RequiredMissing(name)
-                if name in value:
-                    marshaller = getMultiAdapter(
-                        (field, self.request), IFieldMarshaller)
+                marshaller = getMultiAdapter(
+                    (field, self.request), IFieldMarshaller)
+                if marshaller.representation_name in value:
                     template[name] = marshaller.marshall_from_json_data(
-                        value[name])
+                        value[marshaller.representation_name])
+                elif field.required:
+                    raise RequiredMissing(name)
         return self.field.schema(template)
