@@ -16,7 +16,10 @@ from collections import OrderedDict
 from lazr.enum import DBItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interfaces import IJSONPublishable
+from lazr.restful.interfaces import (
+    IFieldMarshaller,
+    IJSONPublishable,
+    )
 from lazr.restful.utils import get_current_browser_request
 import pytz
 from storm.locals import (
@@ -29,6 +32,7 @@ from storm.locals import (
     )
 from zope.component import (
     adapter,
+    getMultiAdapter,
     getUtility,
     )
 from zope.event import notify
@@ -56,7 +60,7 @@ from lp.services.database.constants import (
     )
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.stormbase import StormBase
-from lp.services.webapp.publisher import canonical_url
+from lp.services.fields import InlineObject
 
 
 def git_rule_modified(rule, event):
@@ -281,15 +285,9 @@ class GitRuleGrant(StormBase):
         if media_type != "application/json":
             raise ValueError("Unhandled media type %s" % media_type)
         request = get_current_browser_request()
-        return {
-            "grantee_type": self.grantee_type,
-            "grantee": (
-                canonical_url(self.grantee, request=request)
-                if self.grantee is not None else None),
-            "can_create": self.can_create,
-            "can_push": self.can_push,
-            "can_force_push": self.can_force_push,
-            }
+        field = InlineObject(schema=IGitNascentRuleGrant).bind(self)
+        marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+        return marshaller.unmarshall(None, self)
 
     def destroySelf(self, user=None):
         """See `IGitRuleGrant`."""

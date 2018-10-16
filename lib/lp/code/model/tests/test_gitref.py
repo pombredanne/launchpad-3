@@ -814,14 +814,14 @@ class TestGitRefWebservice(TestCaseWithFactory):
         self.assertThat(json.loads(response.body), MatchesSetwise(
             MatchesDict({
                 "grantee_type": Equals("Repository owner"),
-                "grantee": Is(None),
+                "grantee_link": Is(None),
                 "can_create": Is(True),
                 "can_push": Is(False),
                 "can_force_push": Is(True),
                 }),
             MatchesDict({
                 "grantee_type": Equals("Person"),
-                "grantee": Equals(webservice.getAbsoluteUrl(grantee_url)),
+                "grantee_link": Equals(webservice.getAbsoluteUrl(grantee_url)),
                 "can_create": Is(False),
                 "can_push": Is(True),
                 "can_force_push": Is(False),
@@ -847,7 +847,7 @@ class TestGitRefWebservice(TestCaseWithFactory):
                     },
                 {
                     "grantee_type": "Person",
-                    "grantee": grantee_url,
+                    "grantee_link": grantee_url,
                     "can_push": True,
                     },
                 ])
