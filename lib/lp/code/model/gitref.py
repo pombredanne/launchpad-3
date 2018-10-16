@@ -69,6 +69,10 @@ from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
     BranchMergeProposalGetter,
     )
+from lp.code.model.gitrule import (
+    GitRule,
+    GitRuleGrant,
+    )
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.decoratedresultset import DecoratedResultSet
@@ -421,6 +425,24 @@ class GitRefMixin:
         hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
         return DecoratedResultSet(recipes, pre_iter_hook=hook)
 
+    def getGrants(self):
+        """See `IGitRef`."""
+        return list(Store.of(self).find(
+            GitRuleGrant, GitRuleGrant.rule_id == GitRule.id,
+            GitRule.repository_id == self.repository_id,
+            GitRule.ref_pattern == self.path))
+
+    def setGrants(self, grants, user):
+        """See `IGitRef`."""
+        rule = Store.of(self).find(
+            GitRule, GitRule.repository_id == self.repository_id,
+            GitRule.ref_pattern == self.path).one()
+        if rule is None:
+            # We don't need to worry about position, since this is an
+            # exact-match rule and therefore has a canonical position.
+            rule = self.repository.addRule(self.path, user)
+        rule.setGrants(grants, user)
+
 
 @implementer(IGitRef)
 class GitRef(StormBase, GitRefMixin):
@@ -452,7 +474,10 @@ class GitRef(StormBase, GitRefMixin):
 
     @property
     def commit_message_first_line(self):
-        return self.commit_message.split("\n", 1)[0]
+        if self.commit_message is not None:
+            return self.commit_message.split("\n", 1)[0]
+        else:
+            return None
 
     @property
     def has_commits(self):
@@ -794,6 +819,12 @@ class GitRefRemote(GitRefMixin):
     def recipes(self):
         """See `IHasRecipes`."""
         return []
+
+    def getGrants(self):
+        """See `IGitRef`."""
+        return []
+
+    setGrants = _unimplemented
 
     def __eq__(self, other):
         return (

@@ -1,19 +1,40 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the webservice marshallers."""
 
 __metaclass__ = type
 
+from testtools.matchers import (
+    Equals,
+    MatchesDict,
+    MatchesStructure,
+    )
 import transaction
+from zope.component import adapter
+from zope.interface import (
+    implementer,
+    Interface,
+    )
+from zope.schema import Choice
 
-from lp.app.webservice.marshallers import TextFieldMarshaller
+from lp.app.webservice.marshallers import (
+    InlineObjectFieldMarshaller,
+    TextFieldMarshaller,
+    )
+from lp.services.fields import (
+    InlineObject,
+    PersonChoice,
+    )
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import WebServiceTestRequest
 from lp.testing import (
     logout,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.fixture import ZopeAdapterFixture
 from lp.testing.layers import DatabaseFunctionalLayer
 from lp.testing.pages import (
     LaunchpadWebServiceCaller,
@@ -37,7 +58,7 @@ class TestTextFieldMarshaller(TestCaseWithFactory):
         self.assertEqual(u"<email address hidden>", result)
 
     def test_unmarshall_not_obfuscated(self):
-        # Data is not obfuccated if the user is authenticated.
+        # Data is not obfuscated if the user is authenticated.
         marshaller = TextFieldMarshaller(None, WebServiceTestRequest())
         with person_logged_in(self.factory.makePerson()):
             result = marshaller.unmarshall(None, u"foo@example.com")
@@ -128,3 +149,56 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
         webservice = LaunchpadWebServiceCaller()
         etag_logged_out = webservice(ws_url(bug)).getheader('etag')
         self.assertNotEqual(etag_logged_in, etag_logged_out)
+
+
+class IInlineExample(Interface):
+
+    person = PersonChoice(vocabulary="ValidPersonOrTeam")
+
+    status = Choice(vocabulary=JobStatus)
+
+
+@implementer(IInlineExample)
+class InlineExample:
+
+    def __init__(self, person, status):
+        self.person = person
+        self.status = status
+
+
+@adapter(dict)
+@implementer(IInlineExample)
+def inline_example_from_dict(template):
+    return InlineExample(**template)
+
+
+class TestInlineObjectFieldMarshaller(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_unmarshall(self):
+        field = InlineObject(schema=IInlineExample)
+        request = WebServiceTestRequest()
+        request.setVirtualHostRoot(names=["devel"])
+        marshaller = InlineObjectFieldMarshaller(field, request)
+        obj = InlineExample(self.factory.makePerson(), JobStatus.WAITING)
+        result = marshaller.unmarshall(None, obj)
+        self.assertThat(result, MatchesDict({
+            "person_link": Equals(canonical_url(obj.person, request=request)),
+            "status": Equals("Waiting"),
+            }))
+
+    def test_marshall_from_json_data(self):
+        self.useFixture(ZopeAdapterFixture(inline_example_from_dict))
+        field = InlineObject(schema=IInlineExample)
+        request = WebServiceTestRequest()
+        request.setVirtualHostRoot(names=["devel"])
+        marshaller = InlineObjectFieldMarshaller(field, request)
+        person = self.factory.makePerson()
+        data = {
+            "person_link": canonical_url(person, request=request),
+            "status": "Running",
+            }
+        obj = marshaller.marshall_from_json_data(data)
+        self.assertThat(obj, MatchesStructure.byEquality(
+            person=person, status=JobStatus.RUNNING))
