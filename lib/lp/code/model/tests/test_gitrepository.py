@@ -135,6 +135,7 @@ from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
 from lp.services.mail import stub
 from lp.services.propertycache import clear_property_cache
+from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
@@ -231,6 +232,130 @@ class TestGitRepository(TestCaseWithFactory):
         [ref] = self.factory.makeGitRefs(repository=repository)
         bmp = self.factory.makeBranchMergeProposalForGit(target_ref=ref)
         self.assertEqual([bmp], list(repository.getMergeProposals()))
+
+    def test_findRuleGrantsByGrantee_person(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True, can_create=True)
+
+        results = repository.findRuleGrantsByGrantee(requester)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_team(self):
+        requester = self.factory.makeTeam()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True, can_create=True)
+
+        results = repository.findRuleGrantsByGrantee(requester)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_member_of_team(self):
+        member = self.factory.makePerson()
+        requester = self.factory.makeTeam(members=[member])
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True, can_create=True)
+
+        results = repository.findRuleGrantsByGrantee(requester)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_team_in_team(self):
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=member, members=[member])
+        top_level = removeSecurityProxy(self.factory.makeTeam())
+        top_level.addMember(team, top_level.teamowner, force_team_add=True)
+
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=top_level))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=top_level, can_push=True, can_create=True)
+
+        results = repository.findRuleGrantsByGrantee(member)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_team_in_team_not_owner(self):
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=member, members=[member])
+        top_level = removeSecurityProxy(self.factory.makeTeam())
+        top_level.addMember(team, top_level.teamowner, force_team_add=True)
+
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository())
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=top_level, can_push=True, can_create=True)
+
+        results = repository.findRuleGrantsByGrantee(member)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_not_owner(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository())
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True, can_create=True)
+
+        results = repository.findRuleGrantsByGrantee(requester)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_grantee_type(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule,
+            grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_push=True,
+            can_create=True)
+
+        results = repository.findRuleGrantsForRepositoryOwner()
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_owner_and_other(self):
+        requester = self.factory.makePerson()
+        other = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=other, can_push=True, can_create=True)
+
+        results = repository.findRuleGrantsByGrantee(requester)
+        self.assertEqual([], list(results))
+
+    def test_findRuleGrantsByGrantee_owner_and_other_with_owner_grant(self):
+        requester = self.factory.makePerson()
+        other = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=other, can_push=True, can_create=True)
+        owner_grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True)
+
+        results = repository.findRuleGrantsByGrantee(requester)
+        self.assertEqual([owner_grant], list(results))
 
 
 class TestGitIdentityMixin(TestCaseWithFactory):
@@ -864,12 +989,23 @@ class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
         # Attribute modifications send mail to subscribers.
         self.assertEqual(0, len(stub.test_emails))
         repository = self.factory.makeGitRepository(name="foo")
+        subscriber = self.factory.makePerson()
+        owner_address = (
+            removeSecurityProxy(repository.owner.preferredemail).email)
+        subscriber_address = (
+            removeSecurityProxy(subscriber.preferredemail).email)
         transaction.commit()
         repository_before_modification = Snapshot(
             repository, providing=providedBy(repository))
         with person_logged_in(repository.owner):
             repository.subscribe(
                 repository.owner,
+                BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+                BranchSubscriptionDiffSize.NODIFF,
+                CodeReviewNotificationLevel.NOEMAIL,
+                repository.owner)
+            repository.subscribe(
+                subscriber,
                 BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
                 BranchSubscriptionDiffSize.NODIFF,
                 CodeReviewNotificationLevel.NOEMAIL,
@@ -882,16 +1018,31 @@ class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
         with dbuser(config.IGitRepositoryModifiedMailJobSource.dbuser):
             JobRunner.fromReady(
                 getUtility(IGitRepositoryModifiedMailJobSource)).runAll()
-        self.assertEqual(1, len(stub.test_emails))
-        message = email.message_from_string(stub.test_emails[0][2])
-        body = message.get_payload(decode=True)
+        bodies_by_recipient = {}
+        for from_addr, to_addrs, message in stub.test_emails:
+            body = email.message_from_string(message).get_payload(decode=True)
+            for to_addr in to_addrs:
+                bodies_by_recipient[to_addr] = body
+        # Both the owner and the unprivileged subscriber receive email.
+        self.assertContentEqual(
+            [owner_address, subscriber_address], bodies_by_recipient.keys())
+        # The owner receives a message including details of permission
+        # changes.
         self.assertEqual(
             "    Name: foo => bar\n"
             "    Git identity: lp:~{person}/{project}/+git/foo => "
             "lp:~{person}/{project}/+git/bar\n"
             "    Added protected ref: refs/heads/stable/*".format(
                 person=repository.owner.name, project=repository.target.name),
-            body.split("\n\n--\n")[0])
+            bodies_by_recipient[owner_address].split("\n\n--\n")[0])
+        # The unprivileged subscriber receives a message omitting details of
+        # permission changes.
+        self.assertEqual(
+            "    Name: foo => bar\n"
+            "    Git identity: lp:~{person}/{project}/+git/foo => "
+            "lp:~{person}/{project}/+git/bar".format(
+                person=repository.owner.name, project=repository.target.name),
+            bodies_by_recipient[subscriber_address].split("\n\n--\n")[0])
 
     # XXX cjwatson 2015-02-04: This will need to be expanded once Launchpad
     # actually notices any interesting kind of repository modifications.
@@ -1313,7 +1464,6 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         author = self.factory.makePerson()
         with person_logged_in(author):
             author_email = author.preferredemail.email
-        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         author_date = datetime(2015, 1, 1, tzinfo=pytz.UTC)
         committer_date = datetime(2015, 1, 2, tzinfo=pytz.UTC)
         hosting_fixture = self.useFixture(GitHostingFixture(commits=[
@@ -1323,12 +1473,12 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 "author": {
                     "name": author.displayname,
                     "email": author_email,
-                    "time": int((author_date - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(author_date)),
                     },
                 "committer": {
                     "name": "New Person",
                     "email": "new-person@example.org",
-                    "time": int((committer_date - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(committer_date)),
                     },
                 "parents": [],
                 "tree": unicode(hashlib.sha1("").hexdigest()),
@@ -3382,7 +3532,7 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
                 "grants": MatchesSetwise(
                     MatchesDict({
                         "grantee_type": Equals("Repository owner"),
-                        "grantee": Is(None),
+                        "grantee_link": Is(None),
                         "can_create": Is(True),
                         "can_push": Is(False),
                         "can_force_push": Is(True),
@@ -3394,7 +3544,7 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
                 "grants": MatchesSetwise(*(
                     MatchesDict({
                         "grantee_type": Equals("Person"),
-                        "grantee": Equals(
+                        "grantee_link": Equals(
                             webservice.getAbsoluteUrl(grantee_url)),
                         "can_create": Is(False),
                         "can_push": Is(True),
@@ -3432,7 +3582,7 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
                     "grants": [
                         {
                             "grantee_type": "Person",
-                            "grantee": grantee_url,
+                            "grantee_link": grantee_url,
                             "can_push": True,
                             },
                         ],

@@ -9,7 +9,6 @@ __all__ = [
     'GitRefRemote',
     ]
 
-from datetime import datetime
 from functools import partial
 import json
 import re
@@ -83,6 +82,7 @@ from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
 from lp.services.timeout import urlfetch
+from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.interfaces import ILaunchBag
 
 
@@ -349,19 +349,18 @@ class GitRefMixin:
             else:
                 # Fall back to synthesising something reasonable based on
                 # information in our own database.
-                epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
                 log = [{
                     "sha1": self.commit_sha1,
                     "message": self.commit_message,
                     "author": None if self.author is None else {
                         "name": self.author.name_without_email,
                         "email": self.author.email,
-                        "time": (self.author_date - epoch).total_seconds(),
+                        "time": seconds_since_epoch(self.author_date),
                         },
                     "committer": None if self.committer is None else {
                         "name": self.committer.name_without_email,
                         "email": self.committer.email,
-                        "time": (self.committer_date - epoch).total_seconds(),
+                        "time": seconds_since_epoch(self.committer_date),
                         },
                     }]
         return log

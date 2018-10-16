@@ -1057,7 +1057,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             # Grant visibility to people who own Git repositories that grant
             # some kind of write access to the private team.
             owned_repositories = IGitCollection(user.person)
-            grants = owned_repositories.getGrantsForGrantee(self.obj)
+            grants = owned_repositories.getRuleGrantsForGrantee(self.obj)
             if not grants.is_empty():
                 return True
 
@@ -2491,6 +2491,15 @@ class PreviewDiffView(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(PreviewDiffView, self).__init__(obj, obj.branch_merge_proposal)
+
+
+class CodeReviewVoteReferenceView(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ICodeReviewVoteReference
+
+    def __init__(self, obj):
+        super(CodeReviewVoteReferenceView, self).__init__(
+            obj, obj.branch_merge_proposal)
 
 
 class CodeReviewVoteReferenceEdit(DelegatedAuthorization):

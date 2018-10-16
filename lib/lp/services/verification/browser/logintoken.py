@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -18,6 +18,7 @@ __all__ = [
 import urllib
 
 from zope.component import getUtility
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     alsoProvides,
@@ -29,7 +30,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -176,11 +176,12 @@ class ClaimTeamView(
         'teamowner', 'display_name', 'description', 'membership_policy',
         'defaultmembershipperiod', 'renewal_policy', 'defaultrenewalperiod']
     label = 'Claim Launchpad team'
-    custom_widget('description', TextAreaWidget, height=10, width=30)
-    custom_widget(
-        'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
-    custom_widget(
-        'membership_policy', LaunchpadRadioWidget, orientation='vertical')
+    custom_widget_description = CustomWidgetFactory(
+        TextAreaWidget, height=10, width=30)
+    custom_widget_renewal_policy = CustomWidgetFactory(
+        LaunchpadRadioWidget, orientation='vertical')
+    custom_widget_membership_policy = CustomWidgetFactory(
+        LaunchpadRadioWidget, orientation='vertical')
 
     expected_token_types = (LoginTokenType.TEAMCLAIM,)
 

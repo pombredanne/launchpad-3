@@ -20,6 +20,7 @@ from pymacaroons import Macaroon
 import pytz
 from testtools.matchers import (
     Equals,
+    Is,
     MatchesDict,
     MatchesStructure,
     )
@@ -98,6 +99,31 @@ class TestSnapBuild(TestCaseWithFactory):
         # SnapBuild implements IPackageBuild and ISnapBuild.
         self.assertProvides(self.build, IPackageBuild)
         self.assertProvides(self.build, ISnapBuild)
+
+    def test_title(self):
+        # SnapBuild has an informative title.
+        das = self.build.distro_arch_series
+        self.assertIsNone(self.build.snap.store_name)
+        self.assertEqual(
+            "%s build of %s snap package in %s %s" % (
+                das.architecturetag, self.build.snap.name,
+                das.distroseries.distribution.name,
+                das.distroseries.getSuite(self.build.pocket)),
+            self.build.title)
+        self.build.snap.store_name = self.build.snap.name
+        self.assertEqual(
+            "%s build of %s snap package in %s %s" % (
+                das.architecturetag, self.build.snap.name,
+                das.distroseries.distribution.name,
+                das.distroseries.getSuite(self.build.pocket)),
+            self.build.title)
+        self.build.snap.store_name = self.factory.getUniqueUnicode()
+        self.assertEqual(
+            "%s build of %s snap package (%s) in %s %s" % (
+                das.architecturetag, self.build.snap.name,
+                self.build.snap.store_name, das.distroseries.distribution.name,
+                das.distroseries.getSuite(self.build.pocket)),
+            self.build.title)
 
     def test_queueBuild(self):
         # SnapBuild can create the queue entry for itself.
@@ -241,6 +267,7 @@ class TestSnapBuild(TestCaseWithFactory):
             "action": Equals("status-changed"),
             "snap": Equals(
                 canonical_url(self.build.snap, force_local_path=True)),
+            "build_request": Is(None),
             "status": Equals("Successfully built"),
             "store_upload_status": Equals("Unscheduled"),
             }
@@ -428,6 +455,32 @@ class TestSnapBuild(TestCaseWithFactory):
             SnapBuildStoreUploadStatus.FAILEDTORELEASE,
             build.store_upload_status)
 
+    def test_store_upload_error_messages_no_job(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        self.assertEqual([], build.store_upload_error_messages)
+
+    def test_store_upload_error_messages_job_no_error(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        getUtility(ISnapStoreUploadJobSource).create(build)
+        self.assertEqual([], build.store_upload_error_messages)
+
+    def test_store_upload_error_messages_job_error_messages(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        removeSecurityProxy(job).error_messages = [
+            {"message": "Scan failed.", "link": "link1"},
+            ]
+        self.assertEqual(
+            [{"message": "Scan failed.", "link": "link1"}],
+            build.store_upload_error_messages)
+
+    def test_store_upload_error_messages_job_error_message(self):
+        build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)
+        job = getUtility(ISnapStoreUploadJobSource).create(build)
+        removeSecurityProxy(job).error_message = "Boom"
+        self.assertEqual(
+            [{"message": "Boom"}], build.store_upload_error_messages)
+
     def test_scheduleStoreUpload(self):
         # A build not previously uploaded to the store can be uploaded
         # manually.
@@ -516,6 +569,7 @@ class TestSnapBuild(TestCaseWithFactory):
             "action": Equals("status-changed"),
             "snap": Equals(
                 canonical_url(self.build.snap, force_local_path=True)),
+            "build_request": Is(None),
             "status": Equals("Successfully built"),
             "store_upload_status": Equals("Pending"),
             }

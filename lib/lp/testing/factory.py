@@ -4753,6 +4753,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(snap).flush()
         return snap
 
+    def makeSnapBuildRequest(self, snap=None, requester=None, archive=None,
+                             pocket=PackagePublishingPocket.UPDATES,
+                             channels=None):
+        """Make a new SnapBuildRequest."""
+        if snap is None:
+            snap = self.makeSnap()
+        if requester is None:
+            requester = snap.owner.teamowner
+        if archive is None:
+            archive = snap.distro_series.main_archive
+        return snap.requestBuilds(
+            requester, archive, pocket, channels=channels)
+
     def makeSnapBuild(self, requester=None, registrant=None, snap=None,
                       archive=None, distroarchseries=None, pocket=None,
                       channels=None, date_created=DEFAULT,

@@ -49,6 +49,7 @@ from lp.services.config import config
 from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     admin_logged_in,
@@ -141,7 +142,6 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         with admin_logged_in():
             self.author_emails = [
                 author.preferredemail.email for author in self.authors]
-        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         self.dates = [
             datetime(2015, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             datetime(2015, 1, 2, 0, 0, 0, tzinfo=pytz.UTC),
@@ -155,12 +155,12 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 "author": {
                     "name": self.authors[0].display_name,
                     "email": self.author_emails[0],
-                    "time": int((self.dates[1] - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(self.dates[1])),
                     },
                 "committer": {
                     "name": self.authors[1].display_name,
                     "email": self.author_emails[1],
-                    "time": int((self.dates[1] - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(self.dates[1])),
                     },
                 "parents": [self.sha1_root],
                 "tree": unicode(hashlib.sha1("").hexdigest()),
@@ -171,12 +171,12 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 "author": {
                     "name": self.authors[1].display_name,
                     "email": self.author_emails[1],
-                    "time": int((self.dates[0] - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(self.dates[0])),
                     },
                 "committer": {
                     "name": self.authors[0].display_name,
                     "email": self.author_emails[0],
-                    "time": int((self.dates[0] - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(self.dates[0])),
                     },
                 "parents": [],
                 "tree": unicode(hashlib.sha1("").hexdigest()),
@@ -814,14 +814,14 @@ class TestGitRefWebservice(TestCaseWithFactory):
         self.assertThat(json.loads(response.body), MatchesSetwise(
             MatchesDict({
                 "grantee_type": Equals("Repository owner"),
-                "grantee": Is(None),
+                "grantee_link": Is(None),
                 "can_create": Is(True),
                 "can_push": Is(False),
                 "can_force_push": Is(True),
                 }),
             MatchesDict({
                 "grantee_type": Equals("Person"),
-                "grantee": Equals(webservice.getAbsoluteUrl(grantee_url)),
+                "grantee_link": Equals(webservice.getAbsoluteUrl(grantee_url)),
                 "can_create": Is(False),
                 "can_push": Is(True),
                 "can_force_push": Is(False),
@@ -847,7 +847,7 @@ class TestGitRefWebservice(TestCaseWithFactory):
                     },
                 {
                     "grantee_type": "Person",
-                    "grantee": grantee_url,
+                    "grantee_link": grantee_url,
                     "can_push": True,
                     },
                 ])

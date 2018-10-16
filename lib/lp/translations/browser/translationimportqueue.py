@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for `ITranslationImportQueue`."""
@@ -27,7 +27,6 @@ from zope.schema.vocabulary import (
 
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
@@ -113,8 +112,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         else:
             return IEditTranslationImportQueueEntry
 
-    custom_widget(
-        'sourcepackagename',
+    custom_widget_sourcepackagename = (
         TranslationImportQueueEntrySourcePackageNameWidget)
 
     max_series_to_display = 3

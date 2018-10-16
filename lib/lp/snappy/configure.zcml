@@ -63,6 +63,10 @@
     </class>
     <subscriber
         for="lp.snappy.interfaces.snapbuild.ISnapBuild
+             lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        handler="lp.snappy.subscribers.snapbuild.snap_build_created" />
+    <subscriber
+        for="lp.snappy.interfaces.snapbuild.ISnapBuild
              lp.snappy.interfaces.snapbuild.ISnapBuildStatusChangedEvent"
         handler="lp.snappy.subscribers.snapbuild.snap_build_status_changed" />
 

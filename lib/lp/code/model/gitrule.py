@@ -19,7 +19,10 @@ from collections import (
 from lazr.enum import DBItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interfaces import IJSONPublishable
+from lazr.restful.interfaces import (
+    IFieldMarshaller,
+    IJSONPublishable,
+    )
 from lazr.restful.utils import get_current_browser_request
 import pytz
 from storm.locals import (
@@ -32,6 +35,7 @@ from storm.locals import (
     )
 from zope.component import (
     adapter,
+    getMultiAdapter,
     getUtility,
     )
 from zope.event import notify
@@ -65,11 +69,11 @@ from lp.services.database.constants import (
     )
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.stormbase import StormBase
+from lp.services.fields import InlineObject
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
-from lp.services.webapp.publisher import canonical_url
 
 
 def git_rule_modified(rule, event):
@@ -121,7 +125,8 @@ class GitRule(StormBase):
         get_property_cache(self).grants = []
 
     def __repr__(self):
-        return "<GitRule '%s'> for %r" % (self.ref_pattern, self.repository)
+        return "<GitRule '%s' for %s>" % (
+            self.ref_pattern, self.repository.unique_name)
 
     @property
     def is_exact(self):
@@ -193,16 +198,20 @@ class GitRule(StormBase):
                     new_grant.grantee
                     if new_grant.grantee_type == GitGranteeType.PERSON
                     else new_grant.grantee_type)
-                grant = self.addGrant(new_grantee, user)
-            grant_before_modification = Snapshot(
-                grant, providing=providedBy(grant))
-            edited_fields = []
-            for field in ("can_create", "can_push", "can_force_push"):
-                if getattr(grant, field) != getattr(new_grant, field):
-                    setattr(grant, field, getattr(new_grant, field))
-                    edited_fields.append(field)
-            notify(ObjectModifiedEvent(
-                grant, grant_before_modification, edited_fields))
+                grant = self.addGrant(
+                    new_grantee, user, can_create=new_grant.can_create,
+                    can_push=new_grant.can_push,
+                    can_force_push=new_grant.can_force_push)
+            else:
+                grant_before_modification = Snapshot(
+                    grant, providing=providedBy(grant))
+                edited_fields = []
+                for field in ("can_create", "can_push", "can_force_push"):
+                    if getattr(grant, field) != getattr(new_grant, field):
+                        setattr(grant, field, getattr(new_grant, field))
+                        edited_fields.append(field)
+                notify(ObjectModifiedEvent(
+                    grant, grant_before_modification, edited_fields))
 
     @staticmethod
     def preloadGrantsForRules(rules):
@@ -308,23 +317,18 @@ class GitRuleGrant(StormBase):
             grantee_name = "~%s" % self.grantee.name
         else:
             grantee_name = self.grantee_type.title.lower()
-        return "<GitRuleGrant [%s] to %s> for %r" % (
-            ", ".join(permissions), grantee_name, self.rule)
+        return "<GitRuleGrant [%s] to %s for %s:%s>" % (
+            ", ".join(permissions), grantee_name, self.repository.unique_name,
+            self.rule.ref_pattern)
 
     def toDataForJSON(self, media_type):
         """See `IJSONPublishable`."""
         if media_type != "application/json":
             raise ValueError("Unhandled media type %s" % media_type)
         request = get_current_browser_request()
-        return {
-            "grantee_type": self.grantee_type,
-            "grantee": (
-                canonical_url(self.grantee, request=request)
-                if self.grantee is not None else None),
-            "can_create": self.can_create,
-            "can_push": self.can_push,
-            "can_force_push": self.can_force_push,
-            }
+        field = InlineObject(schema=IGitNascentRuleGrant).bind(self)
+        marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+        return marshaller.unmarshall(None, self)
 
     def destroySelf(self, user=None):
         """See `IGitRuleGrant`."""

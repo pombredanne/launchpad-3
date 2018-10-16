@@ -54,6 +54,7 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.runner import JobRunner
+from lp.services.utils import seconds_since_epoch
 from lp.services.webapp import canonical_url
 from lp.testing import (
     person_logged_in,
@@ -108,7 +109,6 @@ class TestGitRefScanJob(TestCaseWithFactory):
 
     @staticmethod
     def makeFakeCommits(author, author_date_gen, paths):
-        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         dates = {path: next(author_date_gen) for path in paths}
         return [{
             "sha1": unicode(hashlib.sha1(path).hexdigest()),
@@ -116,12 +116,12 @@ class TestGitRefScanJob(TestCaseWithFactory):
             "author": {
                 "name": author.displayname,
                 "email": author.preferredemail.email,
-                "time": int((dates[path] - epoch).total_seconds()),
+                "time": int(seconds_since_epoch(dates[path])),
                 },
             "committer": {
                 "name": author.displayname,
                 "email": author.preferredemail.email,
-                "time": int((dates[path] - epoch).total_seconds()),
+                "time": int(seconds_since_epoch(dates[path])),
                 },
             "parents": [],
             "tree": unicode(hashlib.sha1("").hexdigest()),
@@ -354,12 +354,16 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def assertDeltaDescriptionEqual(self, expected, snapshot, repository):
+    def assertDeltaDescriptionEqual(self, expected, expected_for_editors,
+                                    snapshot, repository):
         repository_delta = GitRepositoryDelta.construct(
             snapshot, repository, repository.owner)
+        delta, delta_for_editors = describe_repository_delta(repository_delta)
         self.assertEqual(
-            "\n".join("    %s" % line for line in expected),
-            describe_repository_delta(repository_delta))
+            "\n".join("    %s" % line for line in expected), delta)
+        self.assertEqual(
+            "\n".join("    %s" % line for line in expected_for_editors),
+            delta_for_editors)
 
     def test_change_basic_properties(self):
         repository = self.factory.makeGitRepository(name="foo")
@@ -373,7 +377,8 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
             "lp:~{person}/{project}/+git/bar".format(
                 person=repository.owner.name, project=repository.target.name),
             ]
-        self.assertDeltaDescriptionEqual(expected, snapshot, repository)
+        self.assertDeltaDescriptionEqual(
+            expected, expected, snapshot, repository)
 
     def test_add_rule(self):
         repository = self.factory.makeGitRepository()
@@ -382,7 +387,7 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
         with person_logged_in(repository.owner):
             repository.addRule("refs/heads/*", repository.owner)
         self.assertDeltaDescriptionEqual(
-            ["Added protected ref: refs/heads/*"], snapshot, repository)
+            [], ["Added protected ref: refs/heads/*"], snapshot, repository)
 
     def test_change_rule(self):
         repository = self.factory.makeGitRepository()
@@ -395,7 +400,7 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
             rule.ref_pattern = "refs/heads/bar"
             notify(ObjectModifiedEvent(rule, rule_snapshot, ["ref_pattern"]))
         self.assertDeltaDescriptionEqual(
-            ["Changed protected ref: refs/heads/foo => refs/heads/bar"],
+            [], ["Changed protected ref: refs/heads/foo => refs/heads/bar"],
             snapshot, repository)
 
     def test_remove_rule(self):
@@ -407,7 +412,7 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
         with person_logged_in(repository.owner):
             rule.destroySelf(repository.owner)
         self.assertDeltaDescriptionEqual(
-            ["Removed protected ref: refs/heads/*"], snapshot, repository)
+            [], ["Removed protected ref: refs/heads/*"], snapshot, repository)
 
     def test_move_rule(self):
         repository = self.factory.makeGitRepository()
@@ -420,7 +425,7 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
         with person_logged_in(repository.owner):
             repository.moveRule(rule, 1, repository.owner)
         self.assertDeltaDescriptionEqual(
-            ["Moved rule for protected ref refs/heads/*: position 0 => 1"],
+            [], ["Moved rule for protected ref refs/heads/*: position 0 => 1"],
             snapshot, repository)
 
     def test_add_grant(self):
@@ -434,6 +439,7 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
                 GitGranteeType.REPOSITORY_OWNER, repository.owner,
                 can_create=True, can_push=True, can_force_push=True)
         self.assertDeltaDescriptionEqual(
+            [],
             ["Added access for repository owner to refs/heads/*: "
              "create, push, and force-push"],
             snapshot, repository)
@@ -450,6 +456,7 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
             grant.can_push = True
             notify(ObjectModifiedEvent(grant, grant_snapshot, ["can_push"]))
         self.assertDeltaDescriptionEqual(
+            [],
             ["Changed access for ~{grantee} to refs/heads/*: "
              "create => create and push".format(grantee=grant.grantee.name)],
             snapshot, repository)
@@ -464,6 +471,7 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
         with person_logged_in(repository.owner):
             grant.destroySelf(repository.owner)
         self.assertDeltaDescriptionEqual(
+            [],
             ["Removed access for repository owner to refs/heads/*: push"],
             snapshot, repository)
 

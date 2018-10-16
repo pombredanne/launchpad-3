@@ -8,7 +8,6 @@ __metaclass__ = type
 
 __all__ = [
     'action',
-    'custom_widget',
     'has_structured_doc',
     'LaunchpadEditFormView',
     'LaunchpadFormView',
@@ -41,7 +40,6 @@ from zope.interface import (
     implementer,
     providedBy,
     )
-from zope.interface.advice import addClassAdvisor
 from zope.traversing.interfaces import (
     ITraversable,
     TraversalError,
@@ -80,8 +78,6 @@ class LaunchpadFormView(LaunchpadView):
     schema = None
     # Subset of fields to use
     field_names = None
-    # Dictionary mapping field names to custom widgets
-    custom_widgets = {}
 
     # The next URL to redirect to on successful form submission
     next_url = None
@@ -205,8 +201,6 @@ class LaunchpadFormView(LaunchpadView):
             if field.custom_widget is None:
                 widget = getattr(
                     self, 'custom_widget_%s' % field.__name__, None)
-                if widget is None:
-                    widget = self.custom_widgets.get(field.__name__)
                 if widget is not None:
                     if IWidgetFactory.providedBy(widget):
                         field.custom_widget = widget
@@ -486,26 +480,6 @@ class LaunchpadEditFormView(LaunchpadFormView):
             notify(ObjectModifiedEvent(
                 context, context_before_modification, field_names))
         return was_changed
-
-
-class custom_widget:
-    """A class advisor for overriding the default widget for a field."""
-
-    def __init__(self, field_name, widget, *args, **kwargs):
-        self.field_name = field_name
-        if widget is None:
-            self.widget = None
-        else:
-            self.widget = CustomWidgetFactory(widget, *args, **kwargs)
-        addClassAdvisor(self.advise)
-
-    def advise(self, cls):
-        if cls.custom_widgets is None:
-            cls.custom_widgets = {}
-        else:
-            cls.custom_widgets = dict(cls.custom_widgets)
-        cls.custom_widgets[self.field_name] = self.widget
-        return cls
 
 
 def safe_action(action):

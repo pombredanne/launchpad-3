@@ -129,9 +129,14 @@ class TestSnapBuildView(TestCaseWithFactory):
         self.assertThat(build_view(), soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 "store upload status", "li",
-                attrs={"id": "store-upload-status"},
-                text=re.compile(
-                    r"^\s*Store upload failed:\s+Scan failed.\s*$"))))
+                attrs={"id": "store-upload-status"}),
+            soupmatchers.Within(
+                soupmatchers.Tag(
+                    "store upload error messages", "ul",
+                    attrs={"id": "store-upload-error-messages"}),
+                soupmatchers.Tag(
+                    "store upload error message", "li",
+                    text=re.compile(r"^\s*Scan failed.\s*$")))))
 
     def test_store_upload_status_failed_with_extended_error_message(self):
         build = self.factory.makeSnapBuild(status=BuildStatus.FULLYBUILT)

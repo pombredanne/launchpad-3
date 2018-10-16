@@ -23,6 +23,7 @@ from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.tests.helpers import GitHostingFixture
 from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.job.runner import JobRunner
+from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
     admin_logged_in,
@@ -145,7 +146,6 @@ class TestGitRefView(BrowserTestCase):
         authors = [self.factory.makePerson() for _ in range(5)]
         with admin_logged_in():
             author_emails = [author.preferredemail.email for author in authors]
-        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         dates = [
             datetime(2015, 1, day + 1, tzinfo=pytz.UTC) for day in range(5)]
         return [
@@ -155,12 +155,12 @@ class TestGitRefView(BrowserTestCase):
                 "author": {
                     "name": authors[i].display_name,
                     "email": author_emails[i],
-                    "time": int((dates[i] - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(dates[i])),
                     },
                 "committer": {
                     "name": authors[i].display_name,
                     "email": author_emails[i],
-                    "time": int((dates[i] - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(dates[i])),
                     },
                 "parents": [unicode(hashlib.sha1(str(i - 1)).hexdigest())],
                 "tree": unicode(hashlib.sha1("").hexdigest()),
@@ -295,7 +295,7 @@ class TestGitRefView(BrowserTestCase):
         view = create_view(ref, '+index')
         with StormStatementRecorder() as recorder:
             view.landing_candidates
-        self.assertThat(recorder, HasQueryCount(Equals(11)))
+        self.assertThat(recorder, HasQueryCount(Equals(12)))
 
     def test_query_count_landing_targets(self):
         project = self.factory.makeProduct()
@@ -311,4 +311,4 @@ class TestGitRefView(BrowserTestCase):
         view = create_view(ref, '+index')
         with StormStatementRecorder() as recorder:
             view.landing_targets
-        self.assertThat(recorder, HasQueryCount(Equals(11)))
+        self.assertThat(recorder, HasQueryCount(Equals(12)))

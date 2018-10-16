@@ -395,7 +395,10 @@ class IGitRefEdit(Interface):
     @export_read_operation()
     @operation_for_version("devel")
     def getGrants():
-        """Get the access grants for this reference."""
+        """Get the access grants specific to this reference.
+
+        Other grants may apply via wildcard rules.
+        """
 
     @operation_parameters(
         grants=List(
@@ -407,7 +410,10 @@ class IGitRefEdit(Interface):
     @export_write_operation()
     @operation_for_version("devel")
     def setGrants(grants, user):
-        """Set the access grants for this reference."""
+        """Set the access grants specific to this reference.
+
+        Other grants may apply via wildcard rules.
+        """
 
 
 class IGitRef(IGitRefView, IGitRefEdit):

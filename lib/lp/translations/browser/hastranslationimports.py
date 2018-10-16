@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser view for IHasTranslationImports."""
@@ -16,6 +16,7 @@ import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import DropdownWidget
 from zope.interface import implementer
 from zope.schema import Choice
@@ -28,7 +29,6 @@ from zope.schema.vocabulary import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     safe_action,
     )
@@ -55,11 +55,14 @@ class HasTranslationImportsView(LaunchpadFormView):
     schema = IHasTranslationImports
     field_names = []
 
-    custom_widget('filter_target', DropdownWidget, cssClass='inlined-widget')
-    custom_widget('filter_status', DropdownWidget, cssClass='inlined-widget')
-    custom_widget(
-        'filter_extension', DropdownWidget, cssClass='inlined-widget')
-    custom_widget('status', DropdownWidget, cssClass='inlined-widget')
+    custom_widget_filter_target = CustomWidgetFactory(
+        DropdownWidget, cssClass='inlined-widget')
+    custom_widget_filter_status = CustomWidgetFactory(
+        DropdownWidget, cssClass='inlined-widget')
+    custom_widget_filter_extension = CustomWidgetFactory(
+        DropdownWidget, cssClass='inlined-widget')
+    custom_widget_status = CustomWidgetFactory(
+        DropdownWidget, cssClass='inlined-widget')
 
     translation_import_queue_macros = ViewPageTemplateFile(
         '../templates/translation-import-queue-macros.pt')
@@ -88,7 +91,7 @@ class HasTranslationImportsView(LaunchpadFormView):
                 __name__=name,
                 source=source,
                 title=_(title)),
-            custom_widget=self.custom_widgets[name],
+            custom_widget=getattr(self, 'custom_widget_%s' % name),
             render_context=self.render_context)
 
     def createFilterStatusField(self):
@@ -132,7 +135,7 @@ class HasTranslationImportsView(LaunchpadFormView):
                 __name__=name,
                 source=EntryImportStatusVocabularyFactory(entry, self.user),
                 title=_('Select import status')),
-            custom_widget=self.custom_widgets['status'],
+            custom_widget=self.custom_widget_status,
             render_context=self.render_context)
 
     def setUpFields(self):

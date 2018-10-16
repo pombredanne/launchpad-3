@@ -26,6 +26,10 @@ import pytz
 import responses
 import soupmatchers
 from testtools.matchers import (
+    AfterPreprocessing,
+    Equals,
+    Is,
+    MatchesListwise,
     MatchesSetwise,
     MatchesStructure,
     )
@@ -33,6 +37,7 @@ import transaction
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -52,6 +57,8 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.propertycache import get_property_cache
 from lp.services.webapp import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.snappy.browser.snap import (
@@ -64,6 +71,7 @@ from lp.snappy.interfaces.snap import (
     ISnapSet,
     SNAP_PRIVATE_FEATURE_FLAG,
     SNAP_TESTING_FLAGS,
+    SnapBuildRequestStatus,
     SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
@@ -1339,7 +1347,7 @@ class TestSnapView(BaseTestSnapView):
             "This snap package has not been built yet.",
             self.getMainText(snap))
 
-    def test_index_pending(self):
+    def test_index_pending_build(self):
         # A pending build is listed as such.
         build = self.makeBuild()
         build.queueBuild()
@@ -1349,6 +1357,38 @@ class TestSnapView(BaseTestSnapView):
             Needs building in .* \(estimated\) i386
             Primary Archive for Ubuntu Linux
             """, self.getMainText(build.snap))
+
+    def test_index_pending_build_request(self):
+        # A pending build request is listed as such.
+        snap = self.makeSnap()
+        with person_logged_in(snap.owner):
+            snap.requestBuilds(
+                snap.owner, snap.distro_series.main_archive,
+                PackagePublishingPocket.UPDATES)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Latest builds
+            Status When complete Architecture Archive
+            Pending build request
+            Primary Archive for Ubuntu Linux
+            """, self.getMainText(snap))
+
+    def test_index_failed_build_request(self):
+        # A failed build request is listed as such, with its error message.
+        snap = self.makeSnap()
+        with person_logged_in(snap.owner):
+            request = snap.requestBuilds(
+                snap.owner, snap.distro_series.main_archive,
+                PackagePublishingPocket.UPDATES)
+        job = removeSecurityProxy(removeSecurityProxy(request)._job)
+        job.job._status = JobStatus.FAILED
+        job.job.date_finished = datetime.now(pytz.UTC) - timedelta(hours=1)
+        job.error_message = "Boom"
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            Latest builds
+            Status When complete Architecture Archive
+            Failed build request 1 hour ago \(Boom\)
+            Primary Archive for Ubuntu Linux
+            """, self.getMainText(snap))
 
     def test_index_store_upload(self):
         # If the snap package is to be automatically uploaded to the store,
@@ -1377,8 +1417,8 @@ class TestSnapView(BaseTestSnapView):
         build.updateStatus(
             status, date_finished=build.date_started + timedelta(minutes=30))
 
-    def test_builds(self):
-        # SnapView.builds produces reasonable results.
+    def test_builds_and_requests(self):
+        # SnapView.builds_and_requests produces reasonable results.
         snap = self.makeSnap()
         # Create oldest builds first so that they sort properly by id.
         date_gen = time_counter(
@@ -1387,16 +1427,67 @@ class TestSnapView(BaseTestSnapView):
             self.makeBuild(snap=snap, date_created=next(date_gen))
             for i in range(11)]
         view = SnapView(snap, None)
-        self.assertEqual(list(reversed(builds)), view.builds)
+        self.assertEqual(list(reversed(builds)), view.builds_and_requests)
         self.setStatus(builds[10], BuildStatus.FULLYBUILT)
         self.setStatus(builds[9], BuildStatus.FAILEDTOBUILD)
+        del get_property_cache(view).builds_and_requests
         # When there are >= 9 pending builds, only the most recent of any
         # completed builds is returned.
         self.assertEqual(
-            list(reversed(builds[:9])) + [builds[10]], view.builds)
+            list(reversed(builds[:9])) + [builds[10]],
+            view.builds_and_requests)
         for build in builds[:9]:
             self.setStatus(build, BuildStatus.FULLYBUILT)
-        self.assertEqual(list(reversed(builds[1:])), view.builds)
+        del get_property_cache(view).builds_and_requests
+        self.assertEqual(list(reversed(builds[1:])), view.builds_and_requests)
+
+    def test_builds_and_requests_shows_build_requests(self):
+        # SnapView.builds_and_requests interleaves build requests with
+        # builds.
+        snap = self.makeSnap()
+        date_gen = time_counter(
+            datetime(2000, 1, 1, tzinfo=pytz.UTC), timedelta(days=1))
+        builds = [
+            self.makeBuild(snap=snap, date_created=next(date_gen))
+            for i in range(3)]
+        self.setStatus(builds[2], BuildStatus.FULLYBUILT)
+        with person_logged_in(snap.owner):
+            request = snap.requestBuilds(
+                snap.owner, snap.distro_series.main_archive,
+                PackagePublishingPocket.UPDATES)
+        job = removeSecurityProxy(removeSecurityProxy(request)._job)
+        job.job.date_created = next(date_gen)
+        view = SnapView(snap, None)
+        # The pending build request is interleaved in date order with
+        # pending builds, and these are followed by completed builds.
+        self.assertThat(view.builds_and_requests, MatchesListwise([
+            MatchesStructure.byEquality(id=request.id),
+            Equals(builds[1]),
+            Equals(builds[0]),
+            Equals(builds[2]),
+            ]))
+        transaction.commit()
+        builds.append(self.makeBuild(snap=snap))
+        del get_property_cache(view).builds_and_requests
+        self.assertThat(view.builds_and_requests, MatchesListwise([
+            Equals(builds[3]),
+            MatchesStructure.byEquality(id=request.id),
+            Equals(builds[1]),
+            Equals(builds[0]),
+            Equals(builds[2]),
+            ]))
+        # If we pretend that the job failed, it is still listed, but after
+        # any pending builds.
+        job.job._status = JobStatus.FAILED
+        job.job.date_finished = job.date_created + timedelta(minutes=30)
+        del get_property_cache(view).builds_and_requests
+        self.assertThat(view.builds_and_requests, MatchesListwise([
+            Equals(builds[3]),
+            Equals(builds[1]),
+            Equals(builds[0]),
+            MatchesStructure.byEquality(id=request.id),
+            Equals(builds[2]),
+            ]))
 
     def test_store_channels_empty(self):
         snap = self.factory.makeSnap()
@@ -1443,6 +1534,9 @@ class TestSnapRequestBuildsView(BaseTestSnapView):
             Architectures:
             amd64
             i386
+            If you do not explicitly select any architectures, then the snap
+            package will be built for all architectures allowed by its
+            configuration.
             Pocket:
             Release
             Security
@@ -1462,12 +1556,13 @@ class TestSnapRequestBuildsView(BaseTestSnapView):
         self.assertRaises(
             Unauthorized, self.getViewBrowser, self.snap, "+request-builds")
 
-    def test_request_builds_action(self):
-        # Requesting a build creates pending builds.
+    def test_request_builds_with_architectures_action(self):
+        # Requesting a build with architectures selected creates pending
+        # builds.
         browser = self.getViewBrowser(
             self.snap, "+request-builds", user=self.person)
-        self.assertTrue(browser.getControl("amd64").selected)
-        self.assertTrue(browser.getControl("i386").selected)
+        browser.getControl("amd64").selected = True
+        browser.getControl("i386").selected = True
         browser.getControl("Request builds").click()
 
         login_person(self.person)
@@ -1483,44 +1578,74 @@ class TestSnapRequestBuildsView(BaseTestSnapView):
         self.assertContentEqual(
             [2510], set(build.buildqueue_record.lastscore for build in builds))
 
-    def test_request_builds_ppa(self):
-        # Selecting a different archive creates builds in that archive.
+    def test_request_builds_with_architectures_ppa(self):
+        # Selecting a different archive with architectures selected creates
+        # builds in that archive.
         ppa = self.factory.makeArchive(
             distribution=self.ubuntu, owner=self.person, name="snap-ppa")
         browser = self.getViewBrowser(
             self.snap, "+request-builds", user=self.person)
         browser.getControl("PPA").click()
         browser.getControl(name="field.archive.ppa").value = ppa.reference
-        self.assertTrue(browser.getControl("amd64").selected)
-        browser.getControl("i386").selected = False
+        browser.getControl("amd64").selected = True
+        self.assertFalse(browser.getControl("i386").selected)
         browser.getControl("Request builds").click()
 
         login_person(self.person)
         builds = self.snap.pending_builds
         self.assertEqual([ppa], [build.archive for build in builds])
 
-    def test_request_builds_no_architectures(self):
-        # Selecting no architectures causes a validation failure.
-        browser = self.getViewBrowser(
-            self.snap, "+request-builds", user=self.person)
-        browser.getControl("amd64").selected = False
-        browser.getControl("i386").selected = False
-        browser.getControl("Request builds").click()
-        self.assertIn(
-            "You need to select at least one architecture.",
-            extract_text(find_main_content(browser.contents)))
-
-    def test_request_builds_rejects_duplicate(self):
-        # A duplicate build request causes a notification.
+    def test_request_builds_with_architectures_rejects_duplicate(self):
+        # A duplicate build request with architectures selected causes a
+        # notification.
         self.snap.requestBuild(
             self.person, self.ubuntu.main_archive, self.distroseries["amd64"],
             PackagePublishingPocket.UPDATES)
         browser = self.getViewBrowser(
             self.snap, "+request-builds", user=self.person)
-        self.assertTrue(browser.getControl("amd64").selected)
-        self.assertTrue(browser.getControl("i386").selected)
+        browser.getControl("amd64").selected = True
+        browser.getControl("i386").selected = True
         browser.getControl("Request builds").click()
         main_text = extract_text(find_main_content(browser.contents))
         self.assertIn("1 new build has been queued.", main_text)
         self.assertIn(
             "An identical build is already pending for amd64.", main_text)
+
+    def test_request_builds_no_architectures_action(self):
+        # Requesting a build with no architectures selected creates a
+        # pending build request.
+        browser = self.getViewBrowser(
+            self.snap, "+request-builds", user=self.person)
+        self.assertFalse(browser.getControl("amd64").selected)
+        self.assertFalse(browser.getControl("i386").selected)
+        browser.getControl("Request builds").click()
+
+        login_person(self.person)
+        [request] = self.snap.pending_build_requests
+        self.assertThat(removeSecurityProxy(request), MatchesStructure(
+            snap=Equals(self.snap),
+            status=Equals(SnapBuildRequestStatus.PENDING),
+            error_message=Is(None),
+            builds=AfterPreprocessing(list, Equals([])),
+            archive=Equals(self.ubuntu.main_archive),
+            _job=MatchesStructure(
+                requester=Equals(self.person),
+                pocket=Equals(PackagePublishingPocket.UPDATES),
+                channels=Is(None))))
+
+    def test_request_builds_no_architectures_ppa(self):
+        # Selecting a different archive with no architectures selected
+        # creates a build request targeting that archive.
+        ppa = self.factory.makeArchive(
+            distribution=self.ubuntu, owner=self.person, name="snap-ppa")
+        browser = self.getViewBrowser(
+            self.snap, "+request-builds", user=self.person)
+        browser.getControl("PPA").click()
+        browser.getControl(name="field.archive.ppa").value = ppa.reference
+        self.assertFalse(browser.getControl("amd64").selected)
+        self.assertFalse(browser.getControl("i386").selected)
+        browser.getControl("Request builds").click()
+
+        login_person(self.person)
+        [request] = self.snap.pending_build_requests
+        self.assertEqual(ppa, request.archive)
