@@ -54,6 +54,7 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.runner import JobRunner
+from lp.services.utils import seconds_since_epoch
 from lp.services.webapp import canonical_url
 from lp.testing import (
     person_logged_in,
@@ -108,7 +109,6 @@ class TestGitRefScanJob(TestCaseWithFactory):
 
     @staticmethod
     def makeFakeCommits(author, author_date_gen, paths):
-        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         dates = {path: next(author_date_gen) for path in paths}
         return [{
             "sha1": unicode(hashlib.sha1(path).hexdigest()),
@@ -116,12 +116,12 @@ class TestGitRefScanJob(TestCaseWithFactory):
             "author": {
                 "name": author.displayname,
                 "email": author.preferredemail.email,
-                "time": int((dates[path] - epoch).total_seconds()),
+                "time": int(seconds_since_epoch(dates[path])),
                 },
             "committer": {
                 "name": author.displayname,
                 "email": author.preferredemail.email,
-                "time": int((dates[path] - epoch).total_seconds()),
+                "time": int(seconds_since_epoch(dates[path])),
                 },
             "parents": [],
             "tree": unicode(hashlib.sha1("").hexdigest()),

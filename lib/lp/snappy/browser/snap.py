@@ -25,6 +25,7 @@ from lazr.restful.interface import (
     )
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
+from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import Interface
 from zope.schema import (
     Choice,
@@ -35,7 +36,6 @@ from zope.schema import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     render_radio_widget_part,
@@ -43,7 +43,6 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
-from lp.app.errors import NotFoundError
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
@@ -57,7 +56,9 @@ from lp.registry.enums import VCSType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features import getFeatureFlag
 from lp.services.helpers import english_list
+from lp.services.propertycache import cachedproperty
 from lp.services.scripts import log
+from lp.services.utils import seconds_since_epoch
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -86,6 +87,7 @@ from lp.snappy.interfaces.snap import (
     CannotParseSnapcraftYaml,
     ISnap,
     ISnapSet,
+    MissingSnapcraftYaml,
     NoSuchSnap,
     SNAP_PRIVATE_FEATURE_FLAG,
     SnapBuildAlreadyPending,
@@ -178,9 +180,9 @@ class SnapContextMenu(ContextMenu):
 class SnapView(LaunchpadView):
     """Default view of a Snap."""
 
-    @property
-    def builds(self):
-        return builds_for_snap(self.context)
+    @cachedproperty
+    def builds_and_requests(self):
+        return builds_and_requests_for_snap(self.context)
 
     @property
     def person_picker(self):
@@ -209,23 +211,47 @@ class SnapView(LaunchpadView):
         return ', '.join(self.context.store_channels)
 
 
-def builds_for_snap(snap):
-    """A list of interesting builds.
+def builds_and_requests_for_snap(snap):
+    """A list of interesting builds and build requests.
 
-    All pending builds are shown, as well as 1-10 recent builds.  Recent
-    builds are ordered by date finished (if completed) or date_started (if
-    date finished is not set due to an error building or other circumstance
-    which resulted in the build not being completed).  This allows started
-    but unfinished builds to show up in the view but be discarded as more
-    recent builds become available.
+    All pending builds and pending build requests are shown, as well as up
+    to 10 recent builds and recent failed build requests.  Pending items are
+    ordered by the date they were created; recent items are ordered by the
+    date they finished (if available) or the date they started (if the date
+    they finished is not set due to an error).  This allows started but
+    unfinished builds to show up in the view but be discarded as more recent
+    builds become available.
 
     Builds that the user does not have permission to see are excluded (by
     the model code).
     """
-    builds = list(snap.pending_builds)
-    if len(builds) < 10:
-        builds.extend(snap.completed_builds[:10 - len(builds)])
-    return builds
+    # We need to interleave items of different types, so SQL can't do all
+    # the sorting for us.
+    def make_sort_key(*date_attrs):
+        def _sort_key(item):
+            for date_attr in date_attrs:
+                if getattr(item, date_attr, None) is not None:
+                    return -seconds_since_epoch(getattr(item, date_attr))
+            return 0
+
+        return _sort_key
+
+    items = sorted(
+        list(snap.pending_builds) + list(snap.pending_build_requests),
+        key=make_sort_key("date_created", "date_requested"))
+    if len(items) < 10:
+        # We need to interleave two unbounded result sets, but we only need
+        # enough items from them to make the total count up to 10.  It's
+        # simplest to just fetch the upper bound from each set and do our
+        # own sorting.
+        recent_items = sorted(
+            list(snap.completed_builds[:10 - len(items)]) +
+            list(snap.failed_build_requests[:10 - len(items)]),
+            key=make_sort_key(
+                "date_finished", "date_started",
+                "date_created", "date_requested"))
+        items.extend(recent_items[:10 - len(items)])
+    return items
 
 
 def new_builds_notification_text(builds, already_pending=None):
@@ -257,15 +283,20 @@ class SnapRequestBuildsView(LaunchpadFormView):
         archive = Reference(IArchive, title=u'Source archive', required=True)
         distro_arch_series = List(
             Choice(vocabulary='SnapDistroArchSeries'),
-            title=u'Architectures', required=True)
+            title=u'Architectures', required=True,
+            description=(
+                u'If you do not explicitly select any architectures, then '
+                u'the snap package will be built for all architectures '
+                u'allowed by its configuration.'))
         pocket = Choice(
             title=u'Pocket', vocabulary=PackagePublishingPocket, required=True,
-            description=u'The package stream within the source distribution '
-                'series to use when building the snap package.')
+            description=(
+                u'The package stream within the source distribution series '
+                u'to use when building the snap package.'))
 
-    custom_widget('archive', SnapArchiveWidget)
-    custom_widget('distro_arch_series', LabeledMultiCheckBoxWidget)
-    custom_widget('pocket', LaunchpadDropdownWidget)
+    custom_widget_archive = SnapArchiveWidget
+    custom_widget_distro_arch_series = LabeledMultiCheckBoxWidget
+    custom_widget_pocket = LaunchpadDropdownWidget
 
     help_links = {
         "pocket": u"/+help-snappy/snap-build-pocket.html",
@@ -280,17 +311,9 @@ class SnapRequestBuildsView(LaunchpadFormView):
         """See `LaunchpadFormView`."""
         return {
             'archive': self.context.distro_series.main_archive,
-            'distro_arch_series': self.context.getAllowedArchitectures(),
+            'distro_arch_series': [],
             'pocket': PackagePublishingPocket.UPDATES,
             }
-
-    def validate(self, data):
-        """See `LaunchpadFormView`."""
-        arches = data.get('distro_arch_series', [])
-        if not arches:
-            self.setFieldError(
-                'distro_arch_series',
-                "You need to select at least one architecture.")
 
     def requestBuild(self, data):
         """User action for requesting a number of builds.
@@ -318,12 +341,18 @@ class SnapRequestBuildsView(LaunchpadFormView):
 
     @action('Request builds', name='request')
     def request_action(self, action, data):
-        builds, informational = self.requestBuild(data)
+        if data['distro_arch_series']:
+            builds, informational = self.requestBuild(data)
+            already_pending = informational.get('already_pending')
+            notification_text = new_builds_notification_text(
+                builds, already_pending)
+            self.request.response.addNotification(notification_text)
+        else:
+            self.context.requestBuilds(
+                self.user, data['archive'], data['pocket'])
+            self.request.response.addNotification(
+                _('Builds will be dispatched soon.'))
         self.next_url = self.cancel_url
-        already_pending = informational.get('already_pending')
-        notification_text = new_builds_notification_text(
-            builds, already_pending)
-        self.request.response.addNotification(notification_text)
 
 
 class ISnapEditSchema(Interface):
@@ -400,11 +429,11 @@ class SnapAddView(
         'store_name',
         'store_channels',
         ]
-    custom_widget('store_distro_series', LaunchpadRadioWidget)
-    custom_widget('auto_build_archive', SnapArchiveWidget)
-    custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
-    custom_widget('auto_build_channels', SnapBuildChannelsWidget)
-    custom_widget('store_channels', StoreChannelsWidget)
+    custom_widget_store_distro_series = LaunchpadRadioWidget
+    custom_widget_auto_build_archive = SnapArchiveWidget
+    custom_widget_auto_build_pocket = LaunchpadDropdownWidget
+    custom_widget_auto_build_channels = SnapBuildChannelsWidget
+    custom_widget_store_channels = StoreChannelsWidget
 
     help_links = {
         "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",
@@ -447,7 +476,7 @@ class SnapAddView(
             try:
                 snapcraft_data = getUtility(ISnapSet).getSnapcraftYaml(
                     self.context, logger=log)
-            except (NotFoundError, CannotFetchSnapcraftYaml,
+            except (MissingSnapcraftYaml, CannotFetchSnapcraftYaml,
                     CannotParseSnapcraftYaml):
                 pass
             else:
@@ -696,13 +725,14 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
         'store_name',
         'store_channels',
         ]
-    custom_widget('store_distro_series', LaunchpadRadioWidget)
-    custom_widget('vcs', LaunchpadRadioWidget)
-    custom_widget('git_ref', GitRefWidget, allow_external=True)
-    custom_widget('auto_build_archive', SnapArchiveWidget)
-    custom_widget('auto_build_pocket', LaunchpadDropdownWidget)
-    custom_widget('auto_build_channels', SnapBuildChannelsWidget)
-    custom_widget('store_channels', StoreChannelsWidget)
+    custom_widget_store_distro_series = LaunchpadRadioWidget
+    custom_widget_vcs = LaunchpadRadioWidget
+    custom_widget_git_ref = CustomWidgetFactory(
+        GitRefWidget, allow_external=True)
+    custom_widget_auto_build_archive = SnapArchiveWidget
+    custom_widget_auto_build_pocket = LaunchpadDropdownWidget
+    custom_widget_auto_build_channels = SnapBuildChannelsWidget
+    custom_widget_store_channels = StoreChannelsWidget
 
     help_links = {
         "auto_build_pocket": u"/+help-snappy/snap-build-pocket.html",

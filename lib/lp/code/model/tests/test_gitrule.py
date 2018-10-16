@@ -64,7 +64,8 @@ class TestGitRule(TestCaseWithFactory):
         repository = self.factory.makeGitRepository()
         rule = self.factory.makeGitRule(repository=repository)
         self.assertEqual(
-            "<GitRule 'refs/heads/*'> for %r" % repository, repr(rule))
+            "<GitRule 'refs/heads/*' for %s>" % repository.unique_name,
+            repr(rule))
 
     def test_is_exact(self):
         repository = self.factory.makeGitRepository()
@@ -288,7 +289,8 @@ class TestGitRuleGrant(TestCaseWithFactory):
             rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
             can_create=True, can_push=True)
         self.assertEqual(
-            "<GitRuleGrant [create, push] to repository owner> for %r" % rule,
+            "<GitRuleGrant [create, push] to repository owner for %s:%s>" % (
+                rule.repository.unique_name, rule.ref_pattern),
             repr(grant))
 
     def test_repr_person(self):
@@ -297,7 +299,8 @@ class TestGitRuleGrant(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=grantee, can_push=True)
         self.assertEqual(
-            "<GitRuleGrant [push] to ~%s> for %r" % (grantee.name, rule),
+            "<GitRuleGrant [push] to ~%s for %s:%s>" % (
+                grantee.name, rule.repository.unique_name, rule.ref_pattern),
             repr(grant))
 
     def test_activity_grant_added(self):

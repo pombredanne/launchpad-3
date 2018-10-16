@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -25,7 +25,6 @@ from zope.publisher.browser import FileUpload
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     ReturnToReferrerMixin,
@@ -486,8 +485,7 @@ class ProductSeriesTranslationsSettingsView(ReturnToReferrerMixin,
     page_title = "Settings"
 
     field_names = ['translations_autoimport_mode']
-    settings_widget = custom_widget('translations_autoimport_mode',
-                  SettingsRadioWidget)
+    custom_widget_translations_autoimport_mode = SettingsRadioWidget
 
     @action(u"Save settings", name="save_settings")
     def change_settings_action(self, action, data):

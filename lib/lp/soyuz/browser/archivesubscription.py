@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views related to archive subscriptions."""
@@ -33,7 +33,6 @@ from zope.schema import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -130,10 +129,10 @@ class ArchiveSubscribersView(LaunchpadFormView):
 
     schema = IArchiveSubscriberUI
     field_names = ['subscriber', 'date_expires', 'description']
-    custom_widget('description', TextWidget, displayWidth=40)
-    custom_widget('date_expires', CustomWidgetFactory(DateWidget))
-    custom_widget('subscriber', PersonPickerWidget,
-        header="Select the subscriber")
+    custom_widget_description = CustomWidgetFactory(TextWidget, displayWidth=40)
+    custom_widget_date_expires = DateWidget
+    custom_widget_subscriber = CustomWidgetFactory(
+        PersonPickerWidget, header="Select the subscriber")
 
     @property
     def label(self):
@@ -245,8 +244,9 @@ class ArchiveSubscriptionEditView(LaunchpadEditFormView):
 
     schema = IArchiveSubscriberUI
     field_names = ['date_expires', 'description']
-    custom_widget('description', TextWidget, displayWidth=40)
-    custom_widget('date_expires', CustomWidgetFactory(DateWidget))
+    custom_widget_description = CustomWidgetFactory(
+        TextWidget, displayWidth=40)
+    custom_widget_date_expires = DateWidget
 
     @property
     def label(self):

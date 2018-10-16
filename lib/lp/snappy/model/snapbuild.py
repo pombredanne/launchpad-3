@@ -128,6 +128,8 @@ class SnapBuild(PackageBuildMixin, Storm):
     build_farm_job_id = Int(name='build_farm_job', allow_none=False)
     build_farm_job = Reference(build_farm_job_id, 'BuildFarmJob.id')
 
+    build_request_id = Int(name='build_request', allow_none=True)
+
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
 
@@ -175,7 +177,7 @@ class SnapBuild(PackageBuildMixin, Storm):
 
     def __init__(self, build_farm_job, requester, snap, archive,
                  distro_arch_series, pocket, channels, processor, virtualized,
-                 date_created):
+                 date_created, build_request=None):
         """Construct a `SnapBuild`."""
         super(SnapBuild, self).__init__()
         self.build_farm_job = build_farm_job
@@ -188,7 +190,15 @@ class SnapBuild(PackageBuildMixin, Storm):
         self.processor = processor
         self.virtualized = virtualized
         self.date_created = date_created
+        if build_request is not None:
+            self.build_request_id = build_request.id
         self.status = BuildStatus.NEEDSBUILD
+
+    @property
+    def build_request(self):
+        """See `ISnapBuild`."""
+        if self.build_request_id is not None:
+            return self.snap.getBuildRequest(self.build_request_id)
 
     @property
     def is_private(self):
@@ -202,9 +212,13 @@ class SnapBuild(PackageBuildMixin, Storm):
     @property
     def title(self):
         das = self.distro_arch_series
-        name = self.snap.name
-        return "%s build of %s snap package in %s %s" % (
-            das.architecturetag, name, das.distroseries.distribution.name,
+        snap_title = "%s snap package" % self.snap.name
+        if (self.snap.store_name is not None and
+                self.snap.store_name != self.snap.name):
+            snap_title += " (%s)" % self.snap.store_name
+        return "%s build of %s in %s %s" % (
+            das.architecturetag, snap_title,
+            das.distroseries.distribution.name,
             das.distroseries.getSuite(self.pocket))
 
     @property
@@ -463,7 +477,12 @@ class SnapBuild(PackageBuildMixin, Storm):
     @property
     def store_upload_error_messages(self):
         job = self.last_store_upload_job
-        return job and job.error_messages or []
+        if job:
+            if job.error_messages:
+                return job.error_messages
+            elif job.error_message:
+                return [{"message": job.error_message}]
+        return []
 
     def scheduleStoreUpload(self):
         """See `ISnapBuild`."""
@@ -488,7 +507,7 @@ class SnapBuild(PackageBuildMixin, Storm):
 class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
 
     def new(self, requester, snap, archive, distro_arch_series, pocket,
-            channels=None, date_created=DEFAULT):
+            channels=None, date_created=DEFAULT, build_request=None):
         """See `ISnapBuildSet`."""
         store = IMasterStore(SnapBuild)
         build_farm_job = getUtility(IBuildFarmJobSource).new(
@@ -499,7 +518,7 @@ class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
             pocket, channels, distro_arch_series.processor,
             not distro_arch_series.processor.supports_nonvirtualized
             or snap.require_virtualized or archive.require_virtualized,
-            date_created)
+            date_created, build_request=build_request)
         store.add(snapbuild)
         return snapbuild
 
