@@ -1057,7 +1057,7 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             # Grant visibility to people who own Git repositories that grant
             # some kind of write access to the private team.
             owned_repositories = IGitCollection(user.person)
-            grants = owned_repositories.getGrantsForGrantee(self.obj)
+            grants = owned_repositories.getRuleGrantsForGrantee(self.obj)
             if not grants.is_empty():
                 return True
 

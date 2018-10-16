@@ -409,7 +409,7 @@ class GenericGitCollection:
         proposals.order_by(Desc(CodeReviewComment.vote))
         return proposals
 
-    def getGrantsForGrantee(self, grantee):
+    def getRuleGrantsForGrantee(self, grantee):
         """See `IGitCollection`."""
         expressions = [
             GitRuleGrant.grantee == grantee,

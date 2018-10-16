@@ -116,7 +116,7 @@ class IGitCollection(Interface):
             states are returned.
         """
 
-    def getGrantsForGrantee(grantee):
+    def getRuleGrantsForGrantee(grantee):
         """Return a result set of access grants to the given grantee.
 
         :param grantee: An `IPerson`.
