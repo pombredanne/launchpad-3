@@ -139,10 +139,10 @@ class GitRule(StormBase):
         """See `IJSONPublishable`."""
         if media_type != "application/json":
             raise ValueError("Unhandled media type %s" % media_type)
-        return {
-            "ref_pattern": self.ref_pattern,
-            "grants": self.grants,
-            }
+        request = get_current_browser_request()
+        field = InlineObject(schema=IGitNascentRule).bind(self)
+        marshaller = getMultiAdapter((field, request), IFieldMarshaller)
+        return marshaller.unmarshall(None, self)
 
     @cachedproperty
     def grants(self):
