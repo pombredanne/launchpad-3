@@ -373,10 +373,6 @@ class GitAPI(LaunchpadXMLRPCView):
                      'permissions': ['create', 'push'],
                     })
                 continue
-            # If we otherwise don't have any matching grants,
-            # we can ignore this rule
-            if not matching_grants:
-                continue
 
             # Permissions are a union of all the applicable grants
             union_permissions = set()
@@ -397,14 +393,16 @@ class GitAPI(LaunchpadXMLRPCView):
                  'permissions': sorted_permissions,
                 })
 
-        # The last rule for a repository owner is a default permission
-        # for everything. This is overridden by any matching rules previously
-        # in the list
+        # The last rule is a default wildcard. The repository owner gets
+        # permissions to everything, whereas other people get no permissions.
         if is_owner:
-            result.append(
-                {'ref_pattern': '*',
-                 'permissions': ['create', 'push', 'force_push'],
-                })
+            default_permissions = ['create', 'push', 'force_push']
+        else:
+            default_permissions = []
+        result.append(
+            {'ref_pattern': '*',
+             'permissions': default_permissions,
+            })
 
         return result
 
