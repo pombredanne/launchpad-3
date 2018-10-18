@@ -463,9 +463,7 @@ class GitAPI(LaunchpadXMLRPCView):
                         continue
                     permissions = self._buildPermissions(grant)
                     union_permissions.update(permissions)
-                    seen_grantees.append(
-                        (grant.grantee, grant.grantee_type)
-                    )
+                    seen_grantees.append((grant.grantee, grant.grantee_type))
 
                 owner_grantees = any(x[1] == GitGranteeType.REPOSITORY_OWNER
                                      for x in seen_grantees)
