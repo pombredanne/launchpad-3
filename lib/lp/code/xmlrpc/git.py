@@ -25,7 +25,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
-from lp.code.enums import GitRepositoryType
+from lp.code.enums import (
+    GitGranteeType,
+    GitRepositoryType,
+    )
 from lp.code.errors import (
     GitRepositoryCreationException,
     GitRepositoryCreationFault,
@@ -448,11 +451,12 @@ class GitAPI(LaunchpadXMLRPCView):
                 result[ref] = ['create', 'push', 'force_push']
                 continue
             seen_grantees = []
-            owner_grant = False
             union_permissions = set()
             for rule in matching_rules:
                 grants = rule.findRuleGrantsByGrantee(requester)
-                owner_grants = rule.findRuleGrantsForRepositoryOwner()
+                if is_owner:
+                    owner_grants = rule.findRuleGrantsForRepositoryOwner()
+                    grants = grants.union(owner_grants)
 
                 for grant in grants:
                     if (grant.grantee, grant.grantee_type) in seen_grantees:
@@ -463,19 +467,10 @@ class GitAPI(LaunchpadXMLRPCView):
                         (grant.grantee, grant.grantee_type)
                     )
 
-                if is_owner:
-                    for grant in owner_grants:
-                        grantee_check = (grant.grantee, grant.grantee_type)
-                        if grantee_check in seen_grantees:
-                            continue
-                        permissions = self._buildPermissions(grant)
-                        union_permissions.update(permissions)
-                        seen_grantees.append(
-                            (grant.grantee, grant.grantee_type)
-                        )
-                        owner_grant = True
-                    if not owner_grant:
-                        union_permissions.update(['create', 'push'])
+                owner_grantees = any(x[1] == GitGranteeType.REPOSITORY_OWNER
+                                     for x in seen_grantees)
+                if is_owner and not owner_grantees:
+                    union_permissions.update(['create', 'push'])
 
             sorted_permissions = self._sortPermissions(union_permissions)
             result[ref] = sorted_permissions
