@@ -72,6 +72,7 @@ from lp.app.interfaces.launchpad import (
 from lp.app.interfaces.services import IService
 from lp.code.enums import (
     BranchMergeProposalStatus,
+    GitGranteeType,
     GitObjectType,
     GitRepositoryType,
     )
@@ -1192,6 +1193,20 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         """See `IGitRepository`."""
         return Store.of(self).find(
             GitRuleGrant, GitRuleGrant.repository_id == self.id)
+
+    def findRuleGrantsByGrantee(self, grantee):
+        """See `IGitRepository`."""
+        clauses = [
+            GitRuleGrant.grantee_type == GitGranteeType.PERSON,
+            TeamParticipation.person == grantee,
+            GitRuleGrant.grantee == TeamParticipation.teamID
+            ]
+        return self.grants.find(*clauses).config(distinct=True)
+
+    def findRuleGrantsForRepositoryOwner(self):
+        """See `IGitRepository`."""
+        return self.grants.find(
+            GitRuleGrant.grantee_type == GitGranteeType.REPOSITORY_OWNER)
 
     def getActivity(self, changed_after=None):
         """See `IGitRepository`."""

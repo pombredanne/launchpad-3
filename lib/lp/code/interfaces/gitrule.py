@@ -71,16 +71,6 @@ class IGitRuleView(Interface):
 
     grants = Attribute("The access grants for this rule.")
 
-    def findRuleGrantsByGrantee(grantee):
-        """Find the grants for a grantee applied to this repository.
-
-        :param grantee: The Person affected
-        """
-
-    def findRuleGrantsForRepositoryOwner():
-        """Find the grants of type REPOSITORY_OWNER applied to this repository.
-        """
-
 
 class IGitRuleEditableAttributes(Interface):
     """`IGitRule` attributes that can be edited.

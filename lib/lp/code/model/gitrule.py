@@ -54,7 +54,6 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
-from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.constants import (
     DEFAULT,
     UTC_NOW,
@@ -127,20 +126,6 @@ class GitRule(StormBase):
         """See `IGitRule`."""
         return Store.of(self).find(
             GitRuleGrant, GitRuleGrant.rule_id == self.id)
-
-    def findRuleGrantsByGrantee(self, grantee):
-        """See `IGitRule`."""
-        clauses = [
-            GitRuleGrant.grantee_type == GitGranteeType.PERSON,
-            TeamParticipation.person == grantee,
-            GitRuleGrant.grantee == TeamParticipation.teamID
-            ]
-        return self.grants.find(*clauses).config(distinct=True)
-
-    def findRuleGrantsForRepositoryOwner(self):
-        """See `IGitRule`."""
-        return self.grants.find(
-            GitRuleGrant.grantee_type == GitGranteeType.REPOSITORY_OWNER)
 
     def addGrant(self, grantee, grantor, can_create=False, can_push=False,
                  can_force_push=False):

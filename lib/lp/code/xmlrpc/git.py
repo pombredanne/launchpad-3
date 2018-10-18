@@ -8,6 +8,7 @@ __all__ = [
     'GitAPI',
     ]
 
+from collections import defaultdict
 import re
 import sys
 
@@ -432,7 +433,6 @@ class GitAPI(LaunchpadXMLRPCView):
 
     def _find_matching_rules(self, repository, ref_path):
         """Find all matching rules for a given ref path"""
-
         matching_rules = []
         for rule in repository.rules:
             regex = self.make_regex(rule.ref_pattern)
@@ -445,6 +445,15 @@ class GitAPI(LaunchpadXMLRPCView):
             getUtility(IGitLookup).getByHostingPath(translated_path))
         is_owner = requester.inTeam(repository.owner)
         result = {}
+
+        grants_for_user = defaultdict(list)
+        grants = repository.findRuleGrantsByGrantee(requester)
+        if is_owner:
+            owner_grants = repository.findRuleGrantsForRepositoryOwner()
+            grants = grants.union(owner_grants)
+        for grant in grants:
+            grants_for_user[grant.rule].append(grant)
+
         for ref in ref_paths:
             matching_rules = self._find_matching_rules(repository, ref)
             if is_owner and not matching_rules:
@@ -453,11 +462,7 @@ class GitAPI(LaunchpadXMLRPCView):
             seen_grantees = set()
             union_permissions = set()
             for rule in matching_rules:
-                grants = rule.findRuleGrantsByGrantee(requester)
-                if is_owner:
-                    owner_grants = rule.findRuleGrantsForRepositoryOwner()
-                    grants = grants.union(owner_grants)
-
+                grants = grants_for_user.get(rule, [])
                 for grant in grants:
                     if (grant.grantee, grant.grantee_type) in seen_grantees:
                         continue
