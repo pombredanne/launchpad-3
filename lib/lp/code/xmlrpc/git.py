@@ -450,7 +450,7 @@ class GitAPI(LaunchpadXMLRPCView):
             if is_owner and not matching_rules:
                 result[ref] = ['create', 'push', 'force_push']
                 continue
-            seen_grantees = []
+            seen_grantees = set()
             union_permissions = set()
             for rule in matching_rules:
                 grants = rule.findRuleGrantsByGrantee(requester)
@@ -463,11 +463,10 @@ class GitAPI(LaunchpadXMLRPCView):
                         continue
                     permissions = self._buildPermissions(grant)
                     union_permissions.update(permissions)
-                    seen_grantees.append((grant.grantee, grant.grantee_type))
+                    seen_grantees.update([(grant.grantee, grant.grantee_type)])
 
-            owner_grantees = any(x[1] == GitGranteeType.REPOSITORY_OWNER
-                                    for x in seen_grantees)
-            if is_owner and not owner_grantees:
+            owner_type = (None, GitGranteeType.REPOSITORY_OWNER)
+            if is_owner and owner_type not in seen_grantees:
                 union_permissions.update(['create', 'push'])
 
             sorted_permissions = self._sortPermissions(union_permissions)
