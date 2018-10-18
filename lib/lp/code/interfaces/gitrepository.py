@@ -748,16 +748,6 @@ class IGitRepositoryEdit(IWebhookTarget):
         :param user: The `IPerson` who is moving the rule.
         """
 
-    def findRuleGrantsByGrantee(grantee):
-        """Find the grants for a grantee applied to this repository.
-
-        :param grantee: The Person affected
-        """
-
-    def findRuleGrantsForRepositoryOwner():
-        """Find the grants of type REPOSITORY_OWNER applied to this repository.
-        """
-
     @export_read_operation()
     @operation_for_version("devel")
     def canBeDeleted():

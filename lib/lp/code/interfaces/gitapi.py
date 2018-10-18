@@ -73,3 +73,10 @@ class IGitAPI(Interface):
 
         :returns: A list of rules for the user in the specified repository
         """
+
+    def checkRefPermissions(self, repository, ref_paths, user):
+        """Return a list of ref rules for a `user` in a `repository` that
+        match the input refs.
+
+        :returns: A list of rules for the user in the specified repository
+        """

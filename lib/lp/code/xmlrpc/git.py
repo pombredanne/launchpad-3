@@ -8,6 +8,7 @@ __all__ = [
     'GitAPI',
     ]
 
+import re
 import sys
 
 from pymacaroons import Macaroon
@@ -414,3 +415,78 @@ class GitAPI(LaunchpadXMLRPCView):
             self._listRefRules,
             translated_path,
             )
+
+    def make_regex(self, pattern):
+        return re.compile(self.glob_to_re(pattern.rstrip(b'\n')))
+
+    def glob_to_re(self, s):
+        """Convert a glob to a regular expression.
+
+        The only wildcard supported is "*", to match any path segment.
+        """
+        return b'^%s\Z' % (
+            b''.join(b'.*' if c == b'*' else re.escape(c) for c in s))
+
+    def _find_matching_rules(self, repository, ref_path):
+        """Find all matching rules for a given ref path"""
+
+        matching_rules = []
+        for rule in repository.rules:
+            regex = self.make_regex(rule.ref_pattern)
+            if regex.match(ref_path):
+                matching_rules.append(rule)
+        return matching_rules
+
+    def _checkRefPermissions(self, requester, translated_path, ref_paths):
+        repository = removeSecurityProxy(
+            getUtility(IGitLookup).getByHostingPath(translated_path))
+        is_owner = requester.inTeam(repository.owner)
+        result = {}
+        for ref in ref_paths:
+            matching_rules = self._find_matching_rules(repository, ref)
+            if is_owner and not matching_rules:
+                result[ref] = ['create', 'push', 'force_push']
+                continue
+            seen_grantees = []
+            owner_grant = False
+            union_permissions = set()
+            for rule in matching_rules:
+                grants = rule.findRuleGrantsByGrantee(requester)
+                owner_grants = rule.findRuleGrantsForRepositoryOwner()
+
+                for grant in grants:
+                    if (grant.grantee, grant.grantee_type) in seen_grantees:
+                        continue
+                    permissions = self._buildPermissions(grant)
+                    union_permissions.update(permissions)
+                    seen_grantees.append(
+                        (grant.grantee, grant.grantee_type)
+                    )
+
+                if is_owner:
+                    for grant in owner_grants:
+                        grantee_check = (grant.grantee, grant.grantee_type)
+                        if grantee_check in seen_grantees:
+                            continue
+                        permissions = self._buildPermissions(grant)
+                        union_permissions.update(permissions)
+                        seen_grantees.append(
+                            (grant.grantee, grant.grantee_type)
+                        )
+                        owner_grant = True
+                    if not owner_grant:
+                        union_permissions.update(['create', 'push'])
+
+            sorted_permissions = self._sortPermissions(union_permissions)
+            result[ref] = sorted_permissions
+        return result
+
+    def checkRefPermissions(self, translated_path, ref_paths, auth_params):
+        """ See `IGitAPI`"""
+        requester_id = auth_params.get("uid")
+        return run_with_login(
+            requester_id,
+            self._checkRefPermissions,
+            translated_path,
+            ref_paths
+        )

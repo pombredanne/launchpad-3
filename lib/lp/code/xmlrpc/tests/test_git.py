@@ -669,7 +669,7 @@ class TestGitAPIMixin:
                 }),
             ]))
 
-    def test_listRefRules_grantee_example_one(self):
+    def _make_example_repository(self):
         user_a = self.factory.makePerson()
         user_b = self.factory.makePerson()
         user_c = self.factory.makePerson()
@@ -684,6 +684,10 @@ class TestGitAPIMixin:
         self.factory.makeGitRuleGrant(
             rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
             can_force_push=True)
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/protected')
+        self.factory.makeGitRuleGrant(rule=rule, grantee=stable_team)
 
         rule = self.factory.makeGitRule(
             repository, ref_pattern=u'refs/heads/archived/*')
@@ -710,247 +714,106 @@ class TestGitAPIMixin:
         self.factory.makeGitRuleGrant(
             rule=rule, grantee=stable_team, can_create=True)
 
-        results = self.git_api.listRefRules(
+        return user_a, user_b, user_c, stable_team, next_team, repository
+
+    def test_listRefRules_grantee_example_one(self):
+        test_ref_paths = [
+            'refs/heads/stable/next', 'refs/heads/stable/protected',
+            'refs/heads/stable/foo', 'refs/heads/archived/foo',
+            'refs/heads/foo/next', 'refs/heads/unprotected',
+            'refs/tags/1.0',
+        ]
+        #test_ref_paths = ['refs/heads/stable/next']
+        user_a, _, _, _, _, repository = self._make_example_repository()
+
+        results = self.git_api.checkRefPermissions(
             repository.getInternalPath(),
+            test_ref_paths,
             {'uid': user_a.id})
 
-        self.assertThat(results, MatchesListwise([
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/stable/next'),
-                 'permissions': Equals(['push', 'force_push']),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/archived/*'),
-                 'permissions': Equals([]),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/stable/*'),
-                 'permissions': Equals(['create', 'push']),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/*/next'),
-                 'permissions': Equals(['create', 'push']),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/tags/*'),
-                 'permissions': Equals(['create']),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('*'),
-                 'permissions': Equals(['create', 'push', 'force_push']),
-                }),
-            ]))
+        self.assertThat(results, MatchesDict({
+            'refs/heads/stable/next': Equals(['push', 'force_push']),
+            'refs/heads/stable/protected': Equals(['create', 'push']),
+            'refs/heads/stable/foo': Equals(['create', 'push']),
+            'refs/heads/archived/foo': Equals([]),
+            'refs/heads/foo/next': Equals(['create', 'push']),
+            'refs/heads/unprotected': Equals(['create', 'push', 'force_push']),
+            'refs/tags/1.0': Equals(['create']),
+        }))
 
     def test_listRefRules_grantee_example_two(self):
-        user_a = self.factory.makePerson()
-        user_b = self.factory.makePerson()
-        user_c = self.factory.makePerson()
-        stable_team = self.factory.makeTeam(members=[user_a, user_b])
-        next_team = self.factory.makeTeam(members=[user_b, user_c])
 
-        repository = removeSecurityProxy(
-            self.factory.makeGitRepository(owner=user_a))
+        test_ref_paths = [
+            'refs/heads/stable/next', 'refs/heads/stable/protected',
+            'refs/heads/stable/foo', 'refs/heads/archived/foo',
+            'refs/heads/foo/next', 'refs/heads/unprotected',
+            'refs/tags/1.0',
+        ]
+        _, user_b, _, _, _, repository = self._make_example_repository()
 
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/heads/stable/next')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_a, can_force_push=True)
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/heads/archived/*')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_a)
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_b, can_create=True)
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/heads/stable/*')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=stable_team, can_push=True)
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/heads/*/next')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=next_team, can_force_push=True)
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/tags/*')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_a, can_create=True)
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=stable_team, can_create=True)
-
-        results = self.git_api.listRefRules(
+        results = self.git_api.checkRefPermissions(
             repository.getInternalPath(),
+            test_ref_paths,
             {'uid': user_b.id})
 
-        self.assertThat(results, MatchesListwise([
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/stable/next'),
-                 'permissions': Equals([]),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/archived/*'),
-                 'permissions': Equals(['create']),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/stable/*'),
-                 'permissions': Equals(['push']),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/*/next'),
-                 'permissions': Equals(['push', 'force_push']),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/tags/*'),
-                 'permissions': Equals(['create']),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('*'),
-                 'permissions': Equals([]),
-                }),
-            ]))
+        self.assertThat(results, MatchesDict({
+            'refs/heads/stable/next': Equals(['push', 'force_push']),
+            'refs/heads/stable/protected': Equals([]),
+            'refs/heads/stable/foo': Equals(['push']),
+            'refs/heads/archived/foo': Equals(['create']),
+            'refs/heads/foo/next': Equals(['push', 'force_push']),
+            'refs/heads/unprotected': Equals([]),
+            'refs/tags/1.0': Equals(['create']),
+        }))
 
     def test_listRefRules_grantee_example_three(self):
-        user_a = self.factory.makePerson()
-        user_b = self.factory.makePerson()
-        user_c = self.factory.makePerson()
-        stable_team = self.factory.makeTeam(members=[user_a, user_b])
-        next_team = self.factory.makeTeam(members=[user_b, user_c])
+        test_ref_paths = [
+            'refs/heads/stable/next', 'refs/heads/stable/protected',
+            'refs/heads/stable/foo', 'refs/heads/archived/foo',
+            'refs/heads/foo/next', 'refs/heads/unprotected',
+            'refs/tags/1.0',
+        ]
+        _, _, user_c, _, _, repository = self._make_example_repository()
 
-        repository = removeSecurityProxy(
-            self.factory.makeGitRepository(owner=user_a))
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/heads/stable/next')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_a, can_force_push=True)
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/heads/archived/*')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_a)
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_b, can_create=True)
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/heads/stable/*')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=stable_team, can_push=True)
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/heads/*/next')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=next_team, can_force_push=True)
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/tags/*')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_a, can_create=True)
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=stable_team, can_create=True)
-
-        results = self.git_api.listRefRules(
+        results = self.git_api.checkRefPermissions(
             repository.getInternalPath(),
+            test_ref_paths,
             {'uid': user_c.id})
 
-        self.assertThat(results, MatchesListwise([
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/stable/next'),
-                 'permissions': Equals([]),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/archived/*'),
-                 'permissions': Equals([]),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/stable/*'),
-                 'permissions': Equals([]),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/*/next'),
-                 'permissions': Equals(['push', 'force_push']),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/tags/*'),
-                 'permissions': Equals([]),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('*'),
-                 'permissions': Equals([]),
-                }),
-            ]))
+        self.assertThat(results, MatchesDict({
+            'refs/heads/stable/next': Equals(['push', 'force_push']),
+            'refs/heads/stable/protected': Equals([]),
+            'refs/heads/stable/foo': Equals([]),
+            'refs/heads/archived/foo': Equals([]),
+            'refs/heads/foo/next': Equals(['push', 'force_push']),
+            'refs/heads/unprotected': Equals([]),
+            'refs/tags/1.0': Equals([]),
+        }))
 
     def test_listRefRules_grantee_example_four(self):
-        user_a = self.factory.makePerson()
-        user_b = self.factory.makePerson()
-        user_c = self.factory.makePerson()
         user_d = self.factory.makePerson()
-        stable_team = self.factory.makeTeam(members=[user_a, user_b])
-        next_team = self.factory.makeTeam(members=[user_b, user_c])
+        test_ref_paths = [
+            'refs/heads/stable/next', 'refs/heads/stable/protected',
+            'refs/heads/stable/foo', 'refs/heads/archived/foo',
+            'refs/heads/foo/next', 'refs/heads/unprotected',
+            'refs/tags/1.0',
+        ]
+        _, _, user_c, _, _, repository = self._make_example_repository()
 
-        repository = removeSecurityProxy(
-            self.factory.makeGitRepository(owner=user_a))
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/heads/stable/next')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_a, can_force_push=True)
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/heads/archived/*')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_a)
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_b, can_create=True)
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/heads/stable/*')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=stable_team, can_push=True)
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/heads/*/next')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=next_team, can_force_push=True)
-
-        rule = self.factory.makeGitRule(
-            repository, ref_pattern=u'refs/tags/*')
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=user_a, can_create=True)
-        self.factory.makeGitRuleGrant(
-            rule=rule, grantee=stable_team, can_create=True)
-
-        results = self.git_api.listRefRules(
+        results = self.git_api.checkRefPermissions(
             repository.getInternalPath(),
+            test_ref_paths,
             {'uid': user_d.id})
 
-        self.assertThat(results, MatchesListwise([
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/stable/next'),
-                 'permissions': Equals([]),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/archived/*'),
-                 'permissions': Equals([]),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/stable/*'),
-                 'permissions': Equals([]),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/heads/*/next'),
-                 'permissions': Equals([]),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('refs/tags/*'),
-                 'permissions': Equals([]),
-                }),
-            MatchesDict(
-                {'ref_pattern': Equals('*'),
-                 'permissions': Equals([]),
-                }),
-            ]))
+        self.assertThat(results, MatchesDict({
+            'refs/heads/stable/next': Equals([]),
+            'refs/heads/stable/protected': Equals([]),
+            'refs/heads/stable/foo': Equals([]),
+            'refs/heads/archived/foo': Equals([]),
+            'refs/heads/foo/next': Equals([]),
+            'refs/heads/unprotected': Equals([]),
+            'refs/tags/1.0': Equals([]),
+        }))
 
 
 class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
