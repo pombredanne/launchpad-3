@@ -465,10 +465,10 @@ class GitAPI(LaunchpadXMLRPCView):
                     union_permissions.update(permissions)
                     seen_grantees.append((grant.grantee, grant.grantee_type))
 
-                owner_grantees = any(x[1] == GitGranteeType.REPOSITORY_OWNER
-                                     for x in seen_grantees)
-                if is_owner and not owner_grantees:
-                    union_permissions.update(['create', 'push'])
+            owner_grantees = any(x[1] == GitGranteeType.REPOSITORY_OWNER
+                                    for x in seen_grantees)
+            if is_owner and not owner_grantees:
+                union_permissions.update(['create', 'push'])
 
             sorted_permissions = self._sortPermissions(union_permissions)
             result[ref] = sorted_permissions
