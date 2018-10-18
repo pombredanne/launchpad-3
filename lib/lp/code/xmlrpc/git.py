@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from collections import defaultdict
-import re
+from fnmatch import fnmatch
 import sys
 
 from pymacaroons import Macaroon
@@ -420,23 +420,11 @@ class GitAPI(LaunchpadXMLRPCView):
             translated_path,
             )
 
-    def make_regex(self, pattern):
-        return re.compile(self.glob_to_re(pattern.rstrip(b'\n')))
-
-    def glob_to_re(self, s):
-        """Convert a glob to a regular expression.
-
-        The only wildcard supported is "*", to match any path segment.
-        """
-        return b'^%s\Z' % (
-            b''.join(b'.*' if c == b'*' else re.escape(c) for c in s))
-
     def _find_matching_rules(self, repository, ref_path):
         """Find all matching rules for a given ref path"""
         matching_rules = []
         for rule in repository.rules:
-            regex = self.make_regex(rule.ref_pattern)
-            if regex.match(ref_path):
+            if fnmatch(ref_path, rule.ref_pattern):
                 matching_rules.append(rule)
         return matching_rules
 
