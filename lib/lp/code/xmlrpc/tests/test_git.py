@@ -284,6 +284,10 @@ class TestGitAPIMixin:
                 'ref_pattern': Equals('refs/heads/*'),
                 'permissions': Equals(['create', 'push']),
                 }),
+            MatchesDict({
+                'ref_pattern': Equals('*'),
+                'permissions': Equals([]),
+                }),
             ]))
 
     def test_listRefRules_with_other_grants(self):
@@ -306,7 +310,11 @@ class TestGitAPIMixin:
             MatchesDict({
                 'ref_pattern': Equals('refs/heads/*'),
                 'permissions': Equals(['push']),
-                })
+                }),
+            MatchesDict({
+                'ref_pattern': Equals('*'),
+                'permissions': Equals([]),
+                }),
             ]))
 
     def test_listRefRules_owner_has_default(self):
@@ -419,7 +427,16 @@ class TestGitAPIMixin:
         results = self.git_api.listRefRules(
             repository.getInternalPath(),
             {'uid': requester.id})
-        self.assertEqual(0, len(results))
+        self.assertThat(results, MatchesListwise([
+            MatchesDict({
+                'ref_pattern': Equals('refs/heads/*'),
+                'permissions': Equals([]),
+                }),
+            MatchesDict({
+                'ref_pattern': Equals('*'),
+                'permissions': Equals([]),
+                }),
+            ]))
 
     def test_listRefRules_owner_has_default_with_other_grant(self):
         owner = self.factory.makePerson()
@@ -434,7 +451,6 @@ class TestGitAPIMixin:
         results = self.git_api.listRefRules(
             repository.getInternalPath(),
             {'uid': owner.id})
-        self.assertEqual(len(results), 2)
         # Default grant should be last in pattern
         self.assertThat(results, MatchesListwise([
             MatchesDict({
@@ -770,6 +786,10 @@ class TestGitAPIMixin:
 
         self.assertThat(results, MatchesListwise([
             MatchesDict(
+                {'ref_pattern': Equals('refs/heads/stable/next'),
+                 'permissions': Equals([]),
+                }),
+            MatchesDict(
                 {'ref_pattern': Equals('refs/heads/archived/*'),
                  'permissions': Equals(['create']),
                 }),
@@ -784,6 +804,10 @@ class TestGitAPIMixin:
             MatchesDict(
                 {'ref_pattern': Equals('refs/tags/*'),
                  'permissions': Equals(['create']),
+                }),
+            MatchesDict(
+                {'ref_pattern': Equals('*'),
+                 'permissions': Equals([]),
                 }),
             ]))
 
@@ -832,8 +856,99 @@ class TestGitAPIMixin:
 
         self.assertThat(results, MatchesListwise([
             MatchesDict(
+                {'ref_pattern': Equals('refs/heads/stable/next'),
+                 'permissions': Equals([]),
+                }),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/archived/*'),
+                 'permissions': Equals([]),
+                }),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/stable/*'),
+                 'permissions': Equals([]),
+                }),
+            MatchesDict(
                 {'ref_pattern': Equals('refs/heads/*/next'),
                  'permissions': Equals(['push', 'force_push']),
+                }),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/tags/*'),
+                 'permissions': Equals([]),
+                }),
+            MatchesDict(
+                {'ref_pattern': Equals('*'),
+                 'permissions': Equals([]),
+                }),
+            ]))
+
+    def test_listRefRules_grantee_example_four(self):
+        user_a = self.factory.makePerson()
+        user_b = self.factory.makePerson()
+        user_c = self.factory.makePerson()
+        user_d = self.factory.makePerson()
+        stable_team = self.factory.makeTeam(members=[user_a, user_b])
+        next_team = self.factory.makeTeam(members=[user_b, user_c])
+
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=user_a))
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/next')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=user_a, can_force_push=True)
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/archived/*')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=user_a)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=user_b, can_create=True)
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/*')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=stable_team, can_push=True)
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/*/next')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=next_team, can_force_push=True)
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/tags/*')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=user_a, can_create=True)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=stable_team, can_create=True)
+
+        results = self.git_api.listRefRules(
+            repository.getInternalPath(),
+            {'uid': user_d.id})
+
+        self.assertThat(results, MatchesListwise([
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/stable/next'),
+                 'permissions': Equals([]),
+                }),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/archived/*'),
+                 'permissions': Equals([]),
+                }),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/stable/*'),
+                 'permissions': Equals([]),
+                }),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/heads/*/next'),
+                 'permissions': Equals([]),
+                }),
+            MatchesDict(
+                {'ref_pattern': Equals('refs/tags/*'),
+                 'permissions': Equals([]),
+                }),
+            MatchesDict(
+                {'ref_pattern': Equals('*'),
+                 'permissions': Equals([]),
                 }),
             ]))
 
