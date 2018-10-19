@@ -10,12 +10,8 @@ source `dirname $0`/cron.base-ppa
 
 LPCURRENT=`dirname $0`/../..
 
-# Publish Ubuntu PPAs.
-$LPCURRENT/scripts/process-accepted.py -v --ppa -d ubuntu
-$LPCURRENT/scripts/publish-distro.py -v --ppa -d ubuntu
-$LPCURRENT/scripts/publish-distro.py -v --private-ppa -d ubuntu
-
-# Publish PPAs for other distros.
-$LPCURRENT/scripts/process-accepted.py -v --ppa --all-derived
-$LPCURRENT/scripts/publish-distro.py -v --ppa --all-derived
-$LPCURRENT/scripts/publish-distro.py -v --private-ppa --all-derived
+for DISTRO_ARG in "$@"; do
+  $LPCURRENT/scripts/process-accepted.py -v --ppa $DISTRO_ARG
+  $LPCURRENT/scripts/publish-distro.py -v --ppa $DISTRO_ARG
+  $LPCURRENT/scripts/publish-distro.py -v --private-ppa $DISTRO_ARG
+done
