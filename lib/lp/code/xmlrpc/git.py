@@ -355,7 +355,7 @@ class GitAPI(LaunchpadXMLRPCView):
             permissions.add('force_push')
         return permissions
 
-    def _find_matching_rules(self, repository, ref_path):
+    def _findMatchingRules(self, repository, ref_path):
         """Find all matching rules for a given ref path"""
         matching_rules = []
         for rule in repository.rules:
@@ -378,20 +378,19 @@ class GitAPI(LaunchpadXMLRPCView):
             grants_for_user[grant.rule].append(grant)
 
         for ref in ref_paths:
-            matching_rules = self._find_matching_rules(repository, ref)
+            matching_rules = self._findMatchingRules(repository, ref)
             if is_owner and not matching_rules:
                 result[ref] = ['create', 'push', 'force_push']
                 continue
             seen_grantees = set()
             union_permissions = set()
             for rule in matching_rules:
-                grants = grants_for_user.get(rule, [])
-                for grant in grants:
+                for grant in grants_for_user[rule]:
                     if (grant.grantee, grant.grantee_type) in seen_grantees:
                         continue
                     permissions = self._buildPermissions(grant)
                     union_permissions.update(permissions)
-                    seen_grantees.update([(grant.grantee, grant.grantee_type)])
+                    seen_grantees.add((grant.grantee, grant.grantee_type))
 
             owner_type = (None, GitGranteeType.REPOSITORY_OWNER)
             if is_owner and owner_type not in seen_grantees:
