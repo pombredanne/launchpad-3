@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of the XML-RPC APIs for Git."""
@@ -8,6 +8,8 @@ __all__ = [
     'GitAPI',
     ]
 
+from collections import defaultdict
+from fnmatch import fnmatch
 import sys
 
 from pymacaroons import Macaroon
@@ -24,7 +26,11 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
-from lp.code.enums import GitRepositoryType
+from lp.code.enums import (
+    GitGranteeType,
+    GitPermissionType,
+    GitRepositoryType,
+    )
 from lp.code.errors import (
     GitRepositoryCreationException,
     GitRepositoryCreationFault,
@@ -326,93 +332,76 @@ class GitAPI(LaunchpadXMLRPCView):
             # Only macaroons are supported for password authentication.
             return faults.Unauthorized()
 
-    def _sortPermissions(self, set_of_permissions):
-        """Sort an iterable of permission strings for consistency"""
+    def _renderPermissions(self, set_of_permissions):
+        """Render a set of permission strings for XML-RPC output."""
         permissions = []
-        if 'create' in set_of_permissions:
+        if GitPermissionType.CAN_CREATE in set_of_permissions:
             permissions.append('create')
-        if 'push' in set_of_permissions:
+        if GitPermissionType.CAN_PUSH in set_of_permissions:
             permissions.append('push')
-        if 'force_push' in set_of_permissions:
+        if GitPermissionType.CAN_FORCE_PUSH in set_of_permissions:
             permissions.append('force_push')
         return permissions
 
     def _buildPermissions(self, grant):
         """Build a set of the available permissions from a GitRuleGrant"""
-        permissions = set()
-        if grant.can_create:
-            permissions.add('create')
-        if grant.can_push:
-            permissions.add('push')
-        if grant.can_force_push:
-            # can_force_push implies can_push.
-            permissions.add('push')
-            permissions.add('force_push')
+        permissions = set(grant.permissions)
+        if GitPermissionType.CAN_FORCE_PUSH in permissions:
+            # Permission to force-push implies permission to push.
+            permissions.add(GitPermissionType.CAN_PUSH)
         return permissions
 
-    def _listRefRules(self, requester, translated_path):
+    def _findMatchingRules(self, repository, ref_path):
+        """Find all matching rules for a given ref path"""
+        matching_rules = []
+        for rule in repository.rules:
+            if fnmatch(ref_path, rule.ref_pattern):
+                matching_rules.append(rule)
+        return matching_rules
+
+    def _checkRefPermissions(self, requester, translated_path, ref_paths):
         repository = removeSecurityProxy(
             getUtility(IGitLookup).getByHostingPath(translated_path))
         is_owner = requester.inTeam(repository.owner)
+        result = {}
+
+        grants_for_user = defaultdict(list)
         grants = repository.findRuleGrantsByGrantee(requester)
-        # If the user is the owner, get the grants for REPOSITORY_OWNER
-        # and add them to our available grants to match against
         if is_owner:
             owner_grants = repository.findRuleGrantsForRepositoryOwner()
             grants = grants.union(owner_grants)
-        result = []
+        for grant in grants:
+            grants_for_user[grant.rule].append(grant)
 
-        for rule in repository.rules:
-            # Do we have any grants for this rule, for this user?
-            matching_grants = [x for x in grants if x.rule == rule]
-            # If we don't have any grants, but the user is the owner,
-            # they get a default grant to the ref specified by the rule.
-            if is_owner and not matching_grants:
-                result.append(
-                    {'ref_pattern': rule.ref_pattern,
-                     'permissions': ['create', 'push'],
-                    })
+        for ref in ref_paths:
+            matching_rules = self._findMatchingRules(repository, ref)
+            if is_owner and not matching_rules:
+                result[ref] = ['create', 'push', 'force_push']
                 continue
-            # If we otherwise don't have any matching grants,
-            # we can ignore this rule
-            if not matching_grants:
-                continue
-
-            # Permissions are a union of all the applicable grants
+            seen_grantees = set()
             union_permissions = set()
-            for grant in matching_grants:
-                permissions = self._buildPermissions(grant)
-                union_permissions.update(permissions)
+            for rule in matching_rules:
+                for grant in grants_for_user[rule]:
+                    if (grant.grantee, grant.grantee_type) in seen_grantees:
+                        continue
+                    permissions = self._buildPermissions(grant)
+                    union_permissions.update(permissions)
+                    seen_grantees.add((grant.grantee, grant.grantee_type))
 
-            # If the user is the repository owner, they essentially have
-            # the equivalent of a default team grant, but only
-            # if there is no explicit grant to them otherwise specified
-            if is_owner and not any(g for g in owner_grants if g.rule == rule):
-                union_permissions.update(['create', 'push'])
+            owner_type = (None, GitGranteeType.REPOSITORY_OWNER)
+            if is_owner and owner_type not in seen_grantees:
+                union_permissions.update(
+                    [GitPermissionType.CAN_CREATE, GitPermissionType.CAN_PUSH])
 
-            # Sort the permissions from the set for consistency
-            sorted_permissions = self._sortPermissions(union_permissions)
-            result.append(
-                {'ref_pattern': rule.ref_pattern,
-                 'permissions': sorted_permissions,
-                })
-
-        # The last rule for a repository owner is a default permission
-        # for everything. This is overridden by any matching rules previously
-        # in the list
-        if is_owner:
-            result.append(
-                {'ref_pattern': '*',
-                 'permissions': ['create', 'push', 'force_push'],
-                })
-
+            result[ref] = self._renderPermissions(union_permissions)
         return result
 
-    def listRefRules(self, translated_path, auth_params):
-        """See `IGitAPI`"""
+    def checkRefPermissions(self, translated_path, ref_paths, auth_params):
+        """ See `IGitAPI`"""
         requester_id = auth_params.get("uid")
         return run_with_login(
             requester_id,
-            self._listRefRules,
+            self._checkRefPermissions,
             translated_path,
-            )
+            ref_paths
+        )
