@@ -22,12 +22,16 @@ from zope.schema import (
     Bool,
     Choice,
     Datetime,
+    FrozenSet,
     Int,
     TextLine,
     )
 
 from lp import _
-from lp.code.enums import GitGranteeType
+from lp.code.enums import (
+    GitGranteeType,
+    GitPermissionType,
+    )
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.services.fields import (
     PersonChoice,
@@ -172,6 +176,11 @@ class IGitRuleGrantEditableAttributes(Interface):
     can_force_push = Bool(
         title=_("Can force-push"), required=True, readonly=False,
         description=_("Whether force-pushing references is allowed."))
+
+    permissions = FrozenSet(
+        title=_("Permissions"), required=True, readonly=False,
+        value_type=Choice(vocabulary=GitPermissionType),
+        description=_("The permissions granted by this grant."))
 
 
 class IGitRuleGrantEdit(Interface):

@@ -42,7 +42,10 @@ from zope.interface import (
     )
 from zope.security.proxy import removeSecurityProxy
 
-from lp.code.enums import GitGranteeType
+from lp.code.enums import (
+    GitGranteeType,
+    GitPermissionType,
+    )
 from lp.code.interfaces.gitactivity import IGitActivitySet
 from lp.code.interfaces.gitrule import (
     IGitNascentRuleGrant,
@@ -128,8 +131,17 @@ class GitRule(StormBase):
             GitRuleGrant, GitRuleGrant.rule_id == self.id)
 
     def addGrant(self, grantee, grantor, can_create=False, can_push=False,
-                 can_force_push=False):
+                 can_force_push=False, permissions=None):
         """See `IGitRule`."""
+        if permissions is not None:
+            if can_create or can_push or can_force_push:
+                raise AssertionError(
+                    "GitRule.addGrant takes either "
+                    "can_create/can_push/can_force_push or permissions, not "
+                    "both")
+            can_create = GitPermissionType.CAN_CREATE in permissions
+            can_push = GitPermissionType.CAN_PUSH in permissions
+            can_force_push = GitPermissionType.CAN_FORCE_PUSH in permissions
         grant = GitRuleGrant(
             rule=self, grantee=grantee, can_create=can_create,
             can_push=can_push, can_force_push=can_force_push, grantor=grantor,
@@ -285,6 +297,23 @@ class GitRuleGrant(StormBase):
         return "<GitRuleGrant [%s] to %s for %s:%s>" % (
             ", ".join(permissions), grantee_name, self.repository.unique_name,
             self.rule.ref_pattern)
+
+    @property
+    def permissions(self):
+        permissions = set()
+        if self.can_create:
+            permissions.add(GitPermissionType.CAN_CREATE)
+        if self.can_push:
+            permissions.add(GitPermissionType.CAN_PUSH)
+        if self.can_force_push:
+            permissions.add(GitPermissionType.CAN_FORCE_PUSH)
+        return frozenset(permissions)
+
+    @permissions.setter
+    def permissions(self, value):
+        self.can_create = GitPermissionType.CAN_CREATE in value
+        self.can_push = GitPermissionType.CAN_PUSH in value
+        self.can_force_push = GitPermissionType.CAN_FORCE_PUSH in value
 
     def toDataForJSON(self, media_type):
         """See `IJSONPublishable`."""
