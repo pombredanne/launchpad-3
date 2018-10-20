@@ -24,6 +24,7 @@ __all__ = [
     'GitActivityType',
     'GitGranteeType',
     'GitObjectType',
+    'GitPermissionType',
     'GitRepositoryType',
     'NON_CVS_RCS_TYPES',
     'RevisionControlSystems',
@@ -216,6 +217,19 @@ class GitActivityType(DBEnumeratedType):
     GRANT_CHANGED = DBItem(12, "Changed access grant")
 
     GRANT_REMOVED = DBItem(13, "Removed access grant")
+
+
+class GitPermissionType(EnumeratedType):
+    """Git Permission Type
+
+    A kind of permission that can be granted on part of a Git repository.
+    """
+
+    CAN_CREATE = Item("Can create")
+
+    CAN_PUSH = Item("Can push")
+
+    CAN_FORCE_PUSH = Item("Can force-push")
 
 
 class BranchLifecycleStatusFilter(EnumeratedType):

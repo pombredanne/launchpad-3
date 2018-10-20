@@ -26,6 +26,7 @@ from zope.security.proxy import removeSecurityProxy
 from lp.code.enums import (
     GitActivityType,
     GitGranteeType,
+    GitPermissionType,
     )
 from lp.code.interfaces.gitrule import (
     IGitNascentRuleGrant,
@@ -125,6 +126,47 @@ class TestGitRule(TestCaseWithFactory):
                 can_create=Is(False),
                 can_push=Is(False),
                 can_force_push=Is(True))))
+
+    def test_addGrant_refuses_inconsistent_permissions(self):
+        rule = self.factory.makeGitRule()
+        with person_logged_in(rule.repository.owner):
+            self.assertRaises(
+                AssertionError, rule.addGrant,
+                GitGranteeType.REPOSITORY_OWNER, rule.repository.owner,
+                can_create=True, can_push=True,
+                permissions={GitPermissionType.CAN_CREATE})
+
+    def test_addGrant_broken_down_permissions(self):
+        rule = self.factory.makeGitRule()
+        with person_logged_in(rule.repository.owner):
+            grant = rule.addGrant(
+                GitGranteeType.REPOSITORY_OWNER, rule.repository.owner,
+                can_create=True, can_push=True)
+        self.assertThat(grant, MatchesStructure(
+            rule=Equals(rule),
+            grantee_type=Equals(GitGranteeType.REPOSITORY_OWNER),
+            grantee=Is(None),
+            grantor=Equals(rule.repository.owner),
+            can_create=Is(True),
+            can_push=Is(True),
+            can_force_push=Is(False)))
+
+    def test_addGrant_combined_permissions(self):
+        rule = self.factory.makeGitRule()
+        with person_logged_in(rule.repository.owner):
+            grant = rule.addGrant(
+                GitGranteeType.REPOSITORY_OWNER, rule.repository.owner,
+                permissions={
+                    GitPermissionType.CAN_CREATE, GitPermissionType.CAN_PUSH,
+                    })
+        self.assertThat(grant, MatchesStructure(
+            rule=Equals(rule),
+            grantee_type=Equals(GitGranteeType.REPOSITORY_OWNER),
+            grantee=Is(None),
+            grantor=Equals(rule.repository.owner),
+            can_create=Is(True),
+            can_push=Is(True),
+            can_force_push=Is(False)))
 
     def test__validateGrants_ok(self):
         rule = self.factory.makeGitRule()
@@ -603,6 +645,19 @@ class TestGitRuleGrant(TestCaseWithFactory):
             "<GitRuleGrant [push] to ~%s for %s:%s>" % (
                 grantee.name, rule.repository.unique_name, rule.ref_pattern),
             repr(grant))
+
+    def test_permissions(self):
+        grant = self.factory.makeGitRuleGrant(can_push=True)
+        self.assertEqual(
+            frozenset({GitPermissionType.CAN_PUSH}), grant.permissions)
+        new_permissions = {
+            GitPermissionType.CAN_CREATE, GitPermissionType.CAN_FORCE_PUSH}
+        with person_logged_in(grant.repository.owner):
+            grant.permissions = new_permissions
+        self.assertEqual(frozenset(new_permissions), grant.permissions)
+        self.assertTrue(grant.can_create)
+        self.assertFalse(grant.can_push)
+        self.assertTrue(grant.can_force_push)
 
     def test_activity_grant_added(self):
         owner = self.factory.makeTeam()

@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of the XML-RPC APIs for Git."""
@@ -28,6 +28,7 @@ from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
     GitGranteeType,
+    GitPermissionType,
     GitRepositoryType,
     )
 from lp.code.errors import (
@@ -331,28 +332,23 @@ class GitAPI(LaunchpadXMLRPCView):
             # Only macaroons are supported for password authentication.
             return faults.Unauthorized()
 
-    def _sortPermissions(self, set_of_permissions):
-        """Sort an iterable of permission strings for consistency"""
+    def _renderPermissions(self, set_of_permissions):
+        """Render a set of permission strings for XML-RPC output."""
         permissions = []
-        if 'create' in set_of_permissions:
+        if GitPermissionType.CAN_CREATE in set_of_permissions:
             permissions.append('create')
-        if 'push' in set_of_permissions:
+        if GitPermissionType.CAN_PUSH in set_of_permissions:
             permissions.append('push')
-        if 'force_push' in set_of_permissions:
+        if GitPermissionType.CAN_FORCE_PUSH in set_of_permissions:
             permissions.append('force_push')
         return permissions
 
     def _buildPermissions(self, grant):
         """Build a set of the available permissions from a GitRuleGrant"""
-        permissions = set()
-        if grant.can_create:
-            permissions.add('create')
-        if grant.can_push:
-            permissions.add('push')
-        if grant.can_force_push:
-            # can_force_push implies can_push.
-            permissions.add('push')
-            permissions.add('force_push')
+        permissions = set(grant.permissions)
+        if GitPermissionType.CAN_FORCE_PUSH in permissions:
+            # Permission to force-push implies permission to push.
+            permissions.add(GitPermissionType.CAN_PUSH)
         return permissions
 
     def _findMatchingRules(self, repository, ref_path):
@@ -394,10 +390,10 @@ class GitAPI(LaunchpadXMLRPCView):
 
             owner_type = (None, GitGranteeType.REPOSITORY_OWNER)
             if is_owner and owner_type not in seen_grantees:
-                union_permissions.update(['create', 'push'])
+                union_permissions.update(
+                    [GitPermissionType.CAN_CREATE, GitPermissionType.CAN_PUSH])
 
-            sorted_permissions = self._sortPermissions(union_permissions)
-            result[ref] = sorted_permissions
+            result[ref] = self._renderPermissions(union_permissions)
         return result
 
     def checkRefPermissions(self, translated_path, ref_paths, auth_params):
