@@ -25,11 +25,9 @@ __all__ = [
     'IReviewRequestedEmailJobSource',
     'IUpdatePreviewDiffJob',
     'IUpdatePreviewDiffJobSource',
-    'notify_modified',
     ]
 
 
-from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -49,7 +47,6 @@ from lazr.restful.fields import (
     Reference,
     ReferenceChoice,
     )
-from zope.event import notify
 from zope.interface import (
     Attribute,
     Interface,
@@ -954,22 +951,3 @@ class IMergeProposalUpdatedEmailJobSource(Interface):
         :param delta_text: The text representation of the changed fields.
         :param editor: The person who did the editing.
         """
-
-
-# XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
-# should be moved there.
-
-def notify_modified(proposal, func, *args, **kwargs):
-    """Call func, then notify about the changes it made.
-
-    :param proposal: the merge proposal to notify about.
-    :param func: The callable that will modify the merge proposal.
-    :param args: Additional arguments for the method.
-    :param kwargs: Keyword arguments for the method.
-    :return: The return value of the method.
-    """
-    from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
-    snapshot = BranchMergeProposalNoPreviewDiffDelta.snapshot(proposal)
-    result = func(*args, **kwargs)
-    notify(ObjectModifiedEvent(proposal, snapshot, []))
-    return result
