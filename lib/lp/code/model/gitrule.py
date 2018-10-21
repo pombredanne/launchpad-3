@@ -14,8 +14,6 @@ __all__ = [
 from collections import OrderedDict
 
 from lazr.enum import DBItem
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interfaces import (
     IFieldMarshaller,
     IJSONPublishable,
@@ -35,11 +33,7 @@ from zope.component import (
     getMultiAdapter,
     getUtility,
     )
-from zope.event import notify
-from zope.interface import (
-    implementer,
-    providedBy,
-    )
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import (
@@ -64,6 +58,7 @@ from lp.services.database.constants import (
 from lp.services.database.enumcol import DBEnum
 from lp.services.database.stormbase import StormBase
 from lp.services.fields import InlineObject
+from lp.services.webapp.snapshot import notify_modified
 
 
 def git_rule_modified(rule, event):
@@ -191,15 +186,12 @@ class GitRule(StormBase):
                     can_push=new_grant.can_push,
                     can_force_push=new_grant.can_force_push)
             else:
-                grant_before_modification = Snapshot(
-                    grant, providing=providedBy(grant))
                 edited_fields = []
-                for field in ("can_create", "can_push", "can_force_push"):
-                    if getattr(grant, field) != getattr(new_grant, field):
-                        setattr(grant, field, getattr(new_grant, field))
-                        edited_fields.append(field)
-                notify(ObjectModifiedEvent(
-                    grant, grant_before_modification, edited_fields))
+                with notify_modified(grant, edited_fields):
+                    for field in ("can_create", "can_push", "can_force_push"):
+                        if getattr(grant, field) != getattr(new_grant, field):
+                            setattr(grant, field, getattr(new_grant, field))
+                            edited_fields.append(field)
 
     def destroySelf(self, user):
         """See `IGitRule`."""
