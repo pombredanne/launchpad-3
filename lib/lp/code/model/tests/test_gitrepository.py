@@ -325,8 +325,10 @@ class TestGitRepository(TestCaseWithFactory):
             grantee=GitGranteeType.REPOSITORY_OWNER,
             can_push=True,
             can_create=True)
+        self.factory.makeGitRuleGrant(rule=rule)
 
-        results = repository.findRuleGrantsForRepositoryOwner()
+        results = repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER)
         self.assertEqual([grant], list(results))
 
     def test_findRuleGrantsByGrantee_owner_and_other(self):
@@ -2380,6 +2382,20 @@ class TestGitRepositoryRules(TestCaseWithFactory):
                 repository=repository,
                 ref_pattern="refs/heads/stable/*"),
             ]))
+
+    def test_getRule(self):
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRefs(
+            repository=repository, paths=["refs/heads/master"])
+        other_repository = self.factory.makeGitRepository()
+        master_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/master")
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        self.factory.makeGitRule(
+            repository=other_repository, ref_pattern="refs/heads/master")
+        self.assertEqual(master_rule, repository.getRule("refs/heads/master"))
+        self.assertIsNone(repository.getRule("refs/heads/other"))
 
     def test_addRule_append(self):
         repository = self.factory.makeGitRepository()

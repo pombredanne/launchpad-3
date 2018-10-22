@@ -623,6 +623,13 @@ class IGitRepositoryView(IHasRecipes):
         :return: The diff as a binary string.
         """
 
+    def getRule(ref_pattern):
+        """Get the access rule for this repository with a given pattern.
+
+        :param ref_pattern: The reference pattern that the rule should have.
+        :return: An `IGitRule`, or None.
+        """
+
     def getActivity(changed_after=None):
         """Get activity log entries for this repository.
 
@@ -752,11 +759,9 @@ class IGitRepositoryEdit(IWebhookTarget):
     def findRuleGrantsByGrantee(grantee):
         """Find the grants for a grantee applied to this repository.
 
-        :param grantee: The Person affected
-        """
-
-    def findRuleGrantsForRepositoryOwner():
-        """Find the grants of type REPOSITORY_OWNER applied to this repository.
+        :param grantee: The `IPerson` to search for, or an item of
+            `GitGranteeType` other than `GitGranteeType.PERSON` to search
+            for some other kind of entity.
         """
 
     @export_read_operation()

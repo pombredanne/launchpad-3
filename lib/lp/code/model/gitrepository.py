@@ -21,6 +21,7 @@ from operator import attrgetter
 from urllib import quote_plus
 
 from bzrlib import urlutils
+from lazr.enum import DBItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
@@ -1161,6 +1162,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             if rule.position != position:
                 removeSecurityProxy(rule).position = position
 
+    def getRule(self, ref_pattern):
+        """See `IGitRepository`."""
+        return self.rules.find(GitRule.ref_pattern == ref_pattern).one()
+
     def addRule(self, ref_pattern, creator, position=None):
         """See `IGitRepository`."""
         rules = list(self.rules)
@@ -1202,17 +1207,19 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
     def findRuleGrantsByGrantee(self, grantee):
         """See `IGitRepository`."""
-        clauses = [
-            GitRuleGrant.grantee_type == GitGranteeType.PERSON,
-            TeamParticipation.person == grantee,
-            GitRuleGrant.grantee == TeamParticipation.teamID
-            ]
+        if isinstance(grantee, DBItem) and grantee.enum == GitGranteeType:
+            if grantee == GitGranteeType.PERSON:
+                raise ValueError(
+                    "grantee may not be GitGranteeType.PERSON; pass a person "
+                    "object instead")
+            clauses = [GitRuleGrant.grantee_type == grantee]
+        else:
+            clauses = [
+                GitRuleGrant.grantee_type == GitGranteeType.PERSON,
+                TeamParticipation.person == grantee,
+                GitRuleGrant.grantee == TeamParticipation.teamID
+                ]
         return self.grants.find(*clauses).config(distinct=True)
-
-    def findRuleGrantsForRepositoryOwner(self):
-        """See `IGitRepository`."""
-        return self.grants.find(
-            GitRuleGrant.grantee_type == GitGranteeType.REPOSITORY_OWNER)
 
     def getRules(self):
         """See `IGitRepository`."""
