@@ -20,6 +20,7 @@ from operator import attrgetter
 from urllib import quote_plus
 
 from bzrlib import urlutils
+from lazr.enum import DBItem
 import pytz
 from storm.databases.postgres import Returning
 from storm.expr import (
@@ -1196,17 +1197,19 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
     def findRuleGrantsByGrantee(self, grantee):
         """See `IGitRepository`."""
-        clauses = [
-            GitRuleGrant.grantee_type == GitGranteeType.PERSON,
-            TeamParticipation.person == grantee,
-            GitRuleGrant.grantee == TeamParticipation.teamID
-            ]
+        if isinstance(grantee, DBItem) and grantee.enum == GitGranteeType:
+            if grantee == GitGranteeType.PERSON:
+                raise ValueError(
+                    "grantee may not be GitGranteeType.PERSON; pass a person "
+                    "object instead")
+            clauses = [GitRuleGrant.grantee_type == grantee]
+        else:
+            clauses = [
+                GitRuleGrant.grantee_type == GitGranteeType.PERSON,
+                TeamParticipation.person == grantee,
+                GitRuleGrant.grantee == TeamParticipation.teamID
+                ]
         return self.grants.find(*clauses).config(distinct=True)
-
-    def findRuleGrantsForRepositoryOwner(self):
-        """See `IGitRepository`."""
-        return self.grants.find(
-            GitRuleGrant.grantee_type == GitGranteeType.REPOSITORY_OWNER)
 
     def getActivity(self, changed_after=None):
         """See `IGitRepository`."""
