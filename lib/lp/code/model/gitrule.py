@@ -48,6 +48,7 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.gitactivity import IGitActivitySet
 from lp.code.interfaces.gitrule import (
+    describe_git_permissions,
     IGitNascentRuleGrant,
     IGitRule,
     IGitRuleGrant,
@@ -283,20 +284,13 @@ class GitRuleGrant(StormBase):
         self.date_last_modified = date_created
 
     def __repr__(self):
-        permissions = []
-        if self.can_create:
-            permissions.append("create")
-        if self.can_push:
-            permissions.append("push")
-        if self.can_force_push:
-            permissions.append("force-push")
         if self.grantee_type == GitGranteeType.PERSON:
             grantee_name = "~%s" % self.grantee.name
         else:
             grantee_name = self.grantee_type.title.lower()
         return "<GitRuleGrant [%s] to %s for %s:%s>" % (
-            ", ".join(permissions), grantee_name, self.repository.unique_name,
-            self.rule.ref_pattern)
+            ", ".join(describe_git_permissions(self.permissions)),
+            grantee_name, self.repository.unique_name, self.rule.ref_pattern)
 
     @property
     def permissions(self):
