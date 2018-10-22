@@ -317,8 +317,10 @@ class TestGitRepository(TestCaseWithFactory):
             grantee=GitGranteeType.REPOSITORY_OWNER,
             can_push=True,
             can_create=True)
+        self.factory.makeGitRuleGrant(rule=rule)
 
-        results = repository.findRuleGrantsForRepositoryOwner()
+        results = repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER)
         self.assertEqual([grant], list(results))
 
     def test_findRuleGrantsByGrantee_owner_and_other(self):
@@ -365,16 +367,17 @@ class TestGitRepository(TestCaseWithFactory):
             requester, ref_pattern=ref.path)
         self.assertEqual([exact_grant], list(results))
 
-    def test_findRuleGrantsForRepositoryOwner_missing(self):
+    def test_findRuleGrantsByGrantee_no_owner_grant(self):
         repository = removeSecurityProxy(self.factory.makeGitRepository())
 
         rule = self.factory.makeGitRule(repository=repository)
         self.factory.makeGitRuleGrant(rule=rule)
 
-        results = repository.findRuleGrantsForRepositoryOwner()
+        results = repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER)
         self.assertEqual([], list(results))
 
-    def test_findRuleGrantsForRepositoryOwner_exists(self):
+    def test_findRuleGrantsByGrantee_owner_grant(self):
         repository = removeSecurityProxy(self.factory.makeGitRepository())
 
         rule = self.factory.makeGitRule(repository=repository)
@@ -382,10 +385,11 @@ class TestGitRepository(TestCaseWithFactory):
             rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER)
         self.factory.makeGitRuleGrant(rule=rule)
 
-        results = repository.findRuleGrantsForRepositoryOwner()
+        results = repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER)
         self.assertEqual([grant], list(results))
 
-    def test_findRuleGrantsForRepositoryOwner_ref_pattern(self):
+    def test_findRuleGrantsByGrantee_owner_ref_pattern(self):
         repository = removeSecurityProxy(self.factory.makeGitRepository())
         [ref] = self.factory.makeGitRefs(repository=repository)
 
@@ -396,8 +400,8 @@ class TestGitRepository(TestCaseWithFactory):
             repository=repository, ref_pattern="refs/heads/*",
             grantee=GitGranteeType.REPOSITORY_OWNER)
 
-        results = ref.repository.findRuleGrantsForRepositoryOwner(
-            ref_pattern=ref.path)
+        results = ref.repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER, ref_pattern=ref.path)
         self.assertEqual([exact_grant], list(results))
 
 

@@ -168,7 +168,8 @@ class GitGranteeWidget(GitGranteeWidgetBase, InputWidget):
             ref_pattern = None
         if (show_options["repository_owner"] and
             repository is not None and ref_pattern is not None and
-            not repository.findRuleGrantsForRepositoryOwner(
+            not repository.findRuleGrantsByGrantee(
+                GitGranteeType.REPOSITORY_OWNER,
                 ref_pattern=ref_pattern).is_empty()):
             show_options["repository_owner"] = False
         return show_options

@@ -20,6 +20,7 @@ from operator import attrgetter
 from urllib import quote_plus
 
 from bzrlib import urlutils
+from lazr.enum import DBItem
 import pytz
 from storm.databases.postgres import Returning
 from storm.expr import (
@@ -1196,22 +1197,18 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
     def findRuleGrantsByGrantee(self, grantee, ref_pattern=None):
         """See `IGitRepository`."""
-        clauses = [
-            GitRuleGrant.grantee_type == GitGranteeType.PERSON,
-            TeamParticipation.person == grantee,
-            GitRuleGrant.grantee == TeamParticipation.teamID
-            ]
-        if ref_pattern is not None:
-            clauses.extend([
-                GitRuleGrant.rule_id == GitRule.id,
-                GitRule.ref_pattern == ref_pattern,
-                ])
-        return self.grants.find(*clauses).config(distinct=True)
-
-    def findRuleGrantsForRepositoryOwner(self, ref_pattern=None):
-        """See `IGitRepository`."""
-        clauses = [
-            GitRuleGrant.grantee_type == GitGranteeType.REPOSITORY_OWNER]
+        if isinstance(grantee, DBItem) and grantee.enum == GitGranteeType:
+            if grantee == GitGranteeType.PERSON:
+                raise ValueError(
+                    "grantee may not be GitGranteeType.PERSON; pass a person "
+                    "object instead")
+            clauses = [GitRuleGrant.grantee_type == grantee]
+        else:
+            clauses = [
+                GitRuleGrant.grantee_type == GitGranteeType.PERSON,
+                TeamParticipation.person == grantee,
+                GitRuleGrant.grantee == TeamParticipation.teamID
+                ]
         if ref_pattern is not None:
             clauses.extend([
                 GitRuleGrant.rule_id == GitRule.id,
