@@ -2375,6 +2375,20 @@ class TestGitRepositoryRules(TestCaseWithFactory):
                 ref_pattern="refs/heads/stable/*"),
             ]))
 
+    def test_getRule(self):
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRefs(
+            repository=repository, paths=["refs/heads/master"])
+        other_repository = self.factory.makeGitRepository()
+        master_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/master")
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        self.factory.makeGitRule(
+            repository=other_repository, ref_pattern="refs/heads/master")
+        self.assertEqual(master_rule, repository.getRule("refs/heads/master"))
+        self.assertIsNone(repository.getRule("refs/heads/other"))
+
     def test_addRule_append(self):
         repository = self.factory.makeGitRepository()
         initial_rule = self.factory.makeGitRule(
