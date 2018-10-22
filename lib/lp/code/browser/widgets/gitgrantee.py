@@ -160,7 +160,6 @@ class GitGranteeWidget(GitGranteeWidgetBase, InputWidget):
         show_options = super(GitGranteeWidget, self).show_options
         # Hide options that indicate unique grantee_types (e.g.
         # repository_owner) if they already exist in the context.
-        # XXX untested
         if IGitRef.providedBy(self.context.context):
             repository = self.context.context.repository
             ref_pattern = self.context.context.path

@@ -38,9 +38,9 @@ class TestGitGranteeWidgetBase:
 
     def setUp(self):
         super(TestGitGranteeWidgetBase, self).setUp()
-        field = GitGranteeField(__name__="grantee")
-        request = LaunchpadTestRequest()
-        self.widget = self.widget_factory(field, request)
+        self.field = GitGranteeField(__name__="grantee")
+        self.request = LaunchpadTestRequest()
+        self.widget = self.widget_factory(self.field, self.request)
 
     def test_implements(self):
         self.assertTrue(verifyObject(IBrowserWidget, self.widget))
@@ -182,6 +182,29 @@ class TestGitGranteeWidget(TestGitGranteeWidgetBase, TestCaseWithFactory):
     def setUp(self):
         super(TestGitGranteeWidget, self).setUp()
         self.person = self.factory.makePerson()
+
+    def test_show_options_repository_owner_grant_already_exists(self):
+        # If the context is an `IGitRef` that already has a repository owner
+        # grant, the input widget doesn't offer that option.
+        [ref] = self.factory.makeGitRefs()
+        self.factory.makeGitRuleGrant(
+            repository=ref.repository, ref_pattern=ref.path,
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+        field = self.field.bind(ref)
+        widget = self.widget_factory(field, self.request)
+        self.assertEqual(
+            {"repository_owner": False, "person": True}, widget.show_options)
+
+    def test_show_options_repository_owner_grant_does_not_exist(self):
+        # If the context is an `IGitRef` that doesn't have a repository
+        # owner grant, the input widget offers that option.
+        [ref] = self.factory.makeGitRefs()
+        self.factory.makeGitRuleGrant(
+            repository=ref.repository, ref_pattern=ref.path)
+        field = self.field.bind(ref)
+        widget = self.widget_factory(field, self.request)
+        self.assertEqual(
+            {"repository_owner": True, "person": True}, widget.show_options)
 
     @property
     def form(self):
