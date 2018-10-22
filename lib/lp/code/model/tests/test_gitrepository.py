@@ -317,8 +317,10 @@ class TestGitRepository(TestCaseWithFactory):
             grantee=GitGranteeType.REPOSITORY_OWNER,
             can_push=True,
             can_create=True)
+        self.factory.makeGitRuleGrant(rule=rule)
 
-        results = repository.findRuleGrantsForRepositoryOwner()
+        results = repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER)
         self.assertEqual([grant], list(results))
 
     def test_findRuleGrantsByGrantee_owner_and_other(self):
