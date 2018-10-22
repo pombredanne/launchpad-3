@@ -368,7 +368,8 @@ class GitAPI(LaunchpadXMLRPCView):
         grants_for_user = defaultdict(list)
         grants = repository.findRuleGrantsByGrantee(requester)
         if is_owner:
-            owner_grants = repository.findRuleGrantsForRepositoryOwner()
+            owner_grants = repository.findRuleGrantsByGrantee(
+                GitGranteeType.REPOSITORY_OWNER)
             grants = grants.union(owner_grants)
         for grant in grants:
             grants_for_user[grant.rule].append(grant)
