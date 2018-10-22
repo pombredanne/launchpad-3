@@ -1156,6 +1156,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             if rule.position != position:
                 removeSecurityProxy(rule).position = position
 
+    def getRule(self, ref_pattern):
+        """See `IGitRepository`."""
+        return self.rules.find(GitRule.ref_pattern == ref_pattern).one()
+
     def addRule(self, ref_pattern, creator, position=None):
         """See `IGitRepository`."""
         rules = list(self.rules)

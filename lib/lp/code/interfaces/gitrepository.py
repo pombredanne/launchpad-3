@@ -622,6 +622,13 @@ class IGitRepositoryView(IHasRecipes):
         :return: The diff as a binary string.
         """
 
+    def getRule(ref_pattern):
+        """Get the access rule for this repository with a given pattern.
+
+        :param ref_pattern: The reference pattern that the rule should have.
+        :return: An `IGitRule`, or None.
+        """
+
     def getActivity(changed_after=None):
         """Get activity log entries for this repository.
 
