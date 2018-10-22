@@ -349,6 +349,57 @@ class TestGitRepository(TestCaseWithFactory):
         results = repository.findRuleGrantsByGrantee(requester)
         self.assertEqual([owner_grant], list(results))
 
+    def test_findRuleGrantsByGrantee_ref_pattern(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+        [ref] = self.factory.makeGitRefs(repository=repository)
+
+        exact_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=ref.path, grantee=requester)
+        self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=requester)
+
+        results = repository.findRuleGrantsByGrantee(
+            requester, ref_pattern=ref.path)
+        self.assertEqual([exact_grant], list(results))
+
+    def test_findRuleGrantsForRepositoryOwner_missing(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+
+        rule = self.factory.makeGitRule(repository=repository)
+        self.factory.makeGitRuleGrant(rule=rule)
+
+        results = repository.findRuleGrantsForRepositoryOwner()
+        self.assertEqual([], list(results))
+
+    def test_findRuleGrantsForRepositoryOwner_exists(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+
+        rule = self.factory.makeGitRule(repository=repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER)
+        self.factory.makeGitRuleGrant(rule=rule)
+
+        results = repository.findRuleGrantsForRepositoryOwner()
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsForRepositoryOwner_ref_pattern(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+        [ref] = self.factory.makeGitRefs(repository=repository)
+
+        exact_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=ref.path,
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+        self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+
+        results = ref.repository.findRuleGrantsForRepositoryOwner(
+            ref_pattern=ref.path)
+        self.assertEqual([exact_grant], list(results))
+
 
 class TestGitIdentityMixin(TestCaseWithFactory):
     """Test the defaults and identities provided by GitIdentityMixin."""

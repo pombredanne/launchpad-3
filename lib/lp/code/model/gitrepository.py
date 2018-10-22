@@ -1194,19 +1194,30 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         return Store.of(self).find(
             GitRuleGrant, GitRuleGrant.repository_id == self.id)
 
-    def findRuleGrantsByGrantee(self, grantee):
+    def findRuleGrantsByGrantee(self, grantee, ref_pattern=None):
         """See `IGitRepository`."""
         clauses = [
             GitRuleGrant.grantee_type == GitGranteeType.PERSON,
             TeamParticipation.person == grantee,
             GitRuleGrant.grantee == TeamParticipation.teamID
             ]
+        if ref_pattern is not None:
+            clauses.extend([
+                GitRuleGrant.rule_id == GitRule.id,
+                GitRule.ref_pattern == ref_pattern,
+                ])
         return self.grants.find(*clauses).config(distinct=True)
 
-    def findRuleGrantsForRepositoryOwner(self):
+    def findRuleGrantsForRepositoryOwner(self, ref_pattern=None):
         """See `IGitRepository`."""
-        return self.grants.find(
-            GitRuleGrant.grantee_type == GitGranteeType.REPOSITORY_OWNER)
+        clauses = [
+            GitRuleGrant.grantee_type == GitGranteeType.REPOSITORY_OWNER]
+        if ref_pattern is not None:
+            clauses.extend([
+                GitRuleGrant.rule_id == GitRule.id,
+                GitRule.ref_pattern == ref_pattern,
+                ])
+        return self.grants.find(*clauses).config(distinct=True)
 
     def getActivity(self, changed_after=None):
         """See `IGitRepository`."""
