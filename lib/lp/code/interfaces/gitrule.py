@@ -7,6 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
+    'describe_git_permissions',
     'IGitNascentRuleGrant',
     'IGitRule',
     'IGitRuleGrant',
@@ -218,3 +219,20 @@ class IGitNascentRuleGrant(Interface):
 
     can_force_push = copy_field(
         IGitRuleGrant["can_force_push"], required=False, default=False)
+
+
+def describe_git_permissions(permissions, verbose=False):
+    """Return human-readable descriptions of a set of Git access permissions.
+
+    :param permissions: A collection of `GitPermissionType`.
+    :return: A list of human-readable descriptions of the input permissions,
+        in a conventional order.
+    """
+    names = []
+    if GitPermissionType.CAN_CREATE in permissions:
+        names.append("create")
+    if GitPermissionType.CAN_PUSH in permissions:
+        names.append("push")
+    if GitPermissionType.CAN_FORCE_PUSH in permissions:
+        names.append("force-push")
+    return names

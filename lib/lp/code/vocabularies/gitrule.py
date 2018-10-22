@@ -19,6 +19,7 @@ from lp import _
 from lp.code.enums import GitPermissionType
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrule import (
+    describe_git_permissions,
     IGitRule,
     IGitRuleGrant,
     )
@@ -100,13 +101,7 @@ class GitPermissionsVocabulary(SimpleVocabulary):
             if grant_permissions not in (term.value for term in terms):
                 # Supplement the vocabulary with any atypical permissions
                 # used by this grant.
-                names = []
-                if GitPermissionType.CAN_CREATE in grant_permissions:
-                    names.append("create")
-                if GitPermissionType.CAN_PUSH in grant_permissions:
-                    names.append("push")
-                if GitPermissionType.CAN_FORCE_PUSH in grant_permissions:
-                    names.append("force-push")
+                names = describe_git_permissions(grant_permissions)
                 terms.append(SimpleTerm(
                     grant_permissions,
                     "custom", "Custom permissions: %s" % ", ".join(names)))
