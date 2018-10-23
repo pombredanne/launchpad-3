@@ -279,6 +279,20 @@ class TestGitAPIMixin:
         self.assertTranslates(
             other_person, path, repository, True, private=False)
 
+    def test_translatePath_grant_but_no_access(self):
+        requester = self.factory.makePerson()
+        grant_person = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=requester)
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/next')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=grant_person,
+            can_force_push=True)
+        path = u"/%s" % repository.unique_name
+        self.assertTranslates(
+            other_person, path, repository, False, private=False)
+
     def test_translatePath_grant_to_other_private(self):
         requester = self.factory.makePerson()
         other_person = self.factory.makePerson()
