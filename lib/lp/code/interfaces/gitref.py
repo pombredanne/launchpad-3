@@ -11,6 +11,8 @@ __all__ = [
     'IGitRefRemoteSet',
     ]
 
+from textwrap import dedent
+
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
@@ -405,7 +407,23 @@ class IGitRefEdit(Interface):
             title=_("Grants"),
             # Really IGitNascentRuleGrant, patched in
             # _schema_circular_imports.py.
-            value_type=InlineObject(schema=Interface)))
+            value_type=InlineObject(schema=Interface),
+            description=_(dedent("""\
+                The new list of grants for this reference.  For example::
+
+                    [
+                        {
+                            "grantee_type": "Repository owner",
+                            "can_create": true,
+                            "can_push": true,
+                            "can_force_push": true
+                        },
+                        {
+                            "grantee_type": "Person",
+                            "grantee_link": "/~example-person",
+                            "can_push": true
+                        }
+                    ]"""))))
     @call_with(user=REQUEST_USER)
     @export_write_operation()
     @operation_for_version("devel")

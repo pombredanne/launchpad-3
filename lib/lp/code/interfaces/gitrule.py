@@ -8,6 +8,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 __all__ = [
     'describe_git_permissions',
+    'IGitNascentRule',
     'IGitNascentRuleGrant',
     'IGitRule',
     'IGitRuleGrant',
@@ -25,6 +26,7 @@ from zope.schema import (
     Datetime,
     FrozenSet,
     Int,
+    List,
     TextLine,
     )
 
@@ -35,6 +37,7 @@ from lp.code.enums import (
     )
 from lp.code.interfaces.gitrepository import IGitRepository
 from lp.services.fields import (
+    InlineObject,
     PersonChoice,
     PublicPersonChoice,
     )
@@ -108,7 +111,11 @@ class IGitRuleEdit(Interface):
         """
 
     def setGrants(grants, user):
-        """Set the access grants for this rule."""
+        """Set the access grants for this rule.
+
+        :param grants: A sequence of `IGitNascentRuleGrant`.
+        :param user: The `IPerson` who is granting permission.
+        """
 
     def destroySelf(user):
         """Delete this rule.
@@ -219,6 +226,18 @@ class IGitNascentRuleGrant(Interface):
 
     can_force_push = copy_field(
         IGitRuleGrant["can_force_push"], required=False, default=False)
+
+
+class IGitNascentRule(Interface):
+    """An access rule in the process of being created.
+
+    This represents parameters for a rule that have been deserialised from a
+    webservice request, but that have not yet been attached to a repository.
+    """
+
+    ref_pattern = copy_field(IGitRule["ref_pattern"])
+
+    grants = List(value_type=InlineObject(schema=IGitNascentRuleGrant))
 
 
 def describe_git_permissions(permissions, verbose=False):
