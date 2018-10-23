@@ -38,7 +38,10 @@ class TestGitGranteeWidgetBase:
 
     def setUp(self):
         super(TestGitGranteeWidgetBase, self).setUp()
-        self.field = GitGranteeField(__name__="grantee")
+        [self.ref] = self.factory.makeGitRefs()
+        self.rule = self.factory.makeGitRule(
+            repository=self.ref.repository, ref_pattern=self.ref.path)
+        self.field = GitGranteeField(__name__="grantee", rule=self.rule)
         self.request = LaunchpadTestRequest()
         self.widget = self.widget_factory(self.field, self.request)
 
@@ -183,39 +186,22 @@ class TestGitGranteeWidget(TestGitGranteeWidgetBase, TestCaseWithFactory):
         super(TestGitGranteeWidget, self).setUp()
         self.person = self.factory.makePerson()
 
-    def test_show_options_ref_repository_owner_grant_already_exists(self):
-        # If the context is an `IGitRef` that already has a repository owner
-        # grant, the input widget doesn't offer that option.
-        [ref] = self.factory.makeGitRefs()
+    def test_show_options_repository_owner_grant_already_exists(self):
+        # If the rule already has a repository owner grant, the input widget
+        # doesn't offer that option.
         self.factory.makeGitRuleGrant(
-            repository=ref.repository, ref_pattern=ref.path,
-            grantee=GitGranteeType.REPOSITORY_OWNER)
-        field = self.field.bind(ref)
-        widget = self.widget_factory(field, self.request)
+            rule=self.rule, grantee=GitGranteeType.REPOSITORY_OWNER)
         self.assertEqual(
-            {"repository_owner": False, "person": True}, widget.show_options)
+            {"repository_owner": False, "person": True},
+            self.widget.show_options)
 
-    def test_show_options_ref_repository_owner_grant_does_not_exist(self):
-        # If the context is an `IGitRef` that doesn't have a repository
-        # owner grant, the input widget offers that option.
-        [ref] = self.factory.makeGitRefs()
-        self.factory.makeGitRuleGrant(
-            repository=ref.repository, ref_pattern=ref.path)
-        field = self.field.bind(ref)
-        widget = self.widget_factory(field, self.request)
+    def test_show_options_repository_owner_grant_does_not_exist(self):
+        # If the rule doesn't have a repository owner grant, the input
+        # widget offers that option.
+        self.factory.makeGitRuleGrant(rule=self.rule)
         self.assertEqual(
-            {"repository_owner": True, "person": True}, widget.show_options)
-
-    def test_show_options_repository_ignores_existing_grants(self):
-        # If the context is an `IGitRepository`, the input widget ignores
-        # any existing grants.
-        repository = self.factory.makeGitRepository()
-        self.factory.makeGitRuleGrant(
-            repository=repository, grantee=GitGranteeType.REPOSITORY_OWNER)
-        field = self.field.bind(repository)
-        widget = self.widget_factory(field, self.request)
-        self.assertEqual(
-            {"repository_owner": True, "person": True}, widget.show_options)
+            {"repository_owner": True, "person": True},
+            self.widget.show_options)
 
     @property
     def form(self):

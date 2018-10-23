@@ -11,6 +11,7 @@ __all__ = [
     ]
 
 from lazr.enum import DBItem
+from lazr.restful.fields import Reference
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.formlib.interfaces import (
     ConversionError,
@@ -37,11 +38,12 @@ from zope.schema.interfaces import IField
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import isinstance as zope_isinstance
 
+from lp import _
 from lp.app.errors import UnexpectedFormData
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.code.enums import GitGranteeType
-from lp.code.interfaces.gitref import IGitRef
+from lp.code.interfaces.gitrule import IGitRule
 from lp.registry.interfaces.person import IPerson
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
@@ -52,10 +54,18 @@ from lp.services.webapp.interfaces import (
 class IGitGranteeField(IField):
     """An interface for a Git access grantee field."""
 
+    rule = Reference(
+        title=_("Rule"), required=True, readonly=True, schema=IGitRule,
+        description=_("The rule that this grantee is for."))
+
 
 @implementer(IGitGranteeField)
 class GitGranteeField(Field):
     """A field that holds a Git access grantee."""
+
+    def __init__(self, rule, *args, **kwargs):
+        super(GitGranteeField, self).__init__(*args, **kwargs)
+        self.rule = rule
 
     def constraint(self, value):
         """See `IField`."""
@@ -159,18 +169,12 @@ class GitGranteeWidget(GitGranteeWidgetBase, InputWidget):
     def show_options(self):
         show_options = super(GitGranteeWidget, self).show_options
         # Hide options that indicate unique grantee_types (e.g.
-        # repository_owner) if they already exist in the context.
-        if IGitRef.providedBy(self.context.context):
-            repository = self.context.context.repository
-            ref_pattern = self.context.context.path
-        else:
-            repository = None
-            ref_pattern = None
+        # repository_owner) if they already exist for the context rule.
         if (show_options["repository_owner"] and
-            repository is not None and ref_pattern is not None and
-            not repository.findRuleGrantsByGrantee(
+            not self.context.rule.repository.findRuleGrantsByGrantee(
                 GitGranteeType.REPOSITORY_OWNER,
-                ref_pattern=ref_pattern).is_empty()):
+                ref_pattern=self.context.rule.ref_pattern,
+                exact_grantee=True).is_empty()):
             show_options["repository_owner"] = False
         return show_options
 
