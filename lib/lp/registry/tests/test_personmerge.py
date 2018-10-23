@@ -504,10 +504,12 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
         grant = self.factory.makeGitRuleGrant(rule=rule)
         self._do_premerge(grant.grantee, person)
 
-        self.assertEqual(grant.grantee, rule.grants.one().grantee)
+        self.assertEqual(1, len(rule.grants))
+        self.assertEqual(grant.grantee, rule.grants[0].grantee)
         with person_logged_in(person):
             self._do_merge(grant.grantee, person)
-        self.assertEqual(person, rule.grants.one().grantee)
+        self.assertEqual(1, len(rule.grants))
+        self.assertEqual(person, rule.grants[0].grantee)
 
     def test_merge_conflicting_gitrulegrants(self):
         # Conflicting GitRuleGrants have their permissions merged.
@@ -538,31 +540,28 @@ class TestMergePeople(TestCaseWithFactory, KarmaTestMixin):
         # Only two grants for the rule exist: the retained person's, with
         # the union of permissions from the duplicate and target grants, and
         # the grant to an unrelated person.
-        self.assertThat(
-            list(rule.grants),
-            MatchesSetwise(
-                MatchesStructure.byEquality(
-                    rule=rule,
-                    grantee=person,
-                    date_created=person_grant_date,
-                    can_create=True,
-                    can_push=True,
-                    can_force_push=False),
-                MatchesStructure.byEquality(
-                    rule=rule,
-                    grantee=other_person,
-                    can_create=False,
-                    can_push=True,
-                    can_force_push=False)))
+        self.assertThat(rule.grants, MatchesSetwise(
+            MatchesStructure.byEquality(
+                rule=rule,
+                grantee=person,
+                date_created=person_grant_date,
+                can_create=True,
+                can_push=True,
+                can_force_push=False),
+            MatchesStructure.byEquality(
+                rule=rule,
+                grantee=other_person,
+                can_create=False,
+                can_push=True,
+                can_force_push=False)))
         # A grant for another rule is untouched.
-        self.assertThat(
-            other_rule.grants.one(),
+        self.assertThat(other_rule.grants, MatchesSetwise(
             MatchesStructure.byEquality(
                 rule=other_rule,
                 grantee=other_person,
                 can_create=False,
                 can_push=False,
-                can_force_push=True))
+                can_force_push=True)))
 
     def test_mergeAsync(self):
         # mergeAsync() creates a new `PersonMergeJob`.

@@ -942,6 +942,7 @@
         permission="launchpad.Edit"
         interface="lp.code.interfaces.gitrule.IGitRuleEdit"
         set_schema="lp.code.interfaces.gitrule.IGitRuleEditableAttributes" />
+    <allow interface="lazr.restful.interfaces.IJSONPublishable" />
   </class>
   <subscriber
       for="lp.code.interfaces.gitrule.IGitRule zope.lifecycleevent.interfaces.IObjectModifiedEvent"
@@ -960,9 +961,13 @@
   <subscriber
       for="lp.code.interfaces.gitrule.IGitRuleGrant zope.lifecycleevent.interfaces.IObjectModifiedEvent"
       handler="lp.code.model.gitrule.git_rule_grant_modified"/>
+  <class class="lp.code.model.gitrule.GitNascentRule">
+    <allow interface="lp.code.interfaces.gitrule.IGitNascentRule" />
+  </class>
   <class class="lp.code.model.gitrule.GitNascentRuleGrant">
     <allow interface="lp.code.interfaces.gitrule.IGitNascentRuleGrant" />
   </class>
+  <adapter factory="lp.code.model.gitrule.nascent_rule_from_dict" />
   <adapter factory="lp.code.model.gitrule.nascent_rule_grant_from_dict" />
 
   <!-- GitActivity -->
