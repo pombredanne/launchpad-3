@@ -266,6 +266,48 @@ class TestGitAPIMixin:
         self.assertEqual(
             initial_count, getUtility(IAllGitRepositories).count())
 
+    def test_translatePath_grant_to_other(self):
+        requester = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=requester)
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/next')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=other_person,
+            can_force_push=True)
+        path = u"/%s" % repository.unique_name
+        self.assertTranslates(
+            other_person, path, repository, True, private=False)
+
+    def test_translatePath_grant_but_no_access(self):
+        requester = self.factory.makePerson()
+        grant_person = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=requester)
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/next')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=grant_person,
+            can_force_push=True)
+        path = u"/%s" % repository.unique_name
+        self.assertTranslates(
+            other_person, path, repository, False, private=False)
+
+    def test_translatePath_grant_to_other_private(self):
+        requester = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                owner=requester, information_type=InformationType.USERDATA))
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/next')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=other_person,
+            can_force_push=True)
+        path = u"/%s" % repository.unique_name
+        self.assertGitRepositoryNotFound(
+            other_person, path, can_authenticate=True)
+
     def _make_scenario_one_repository(self):
         user_a = self.factory.makePerson()
         user_b = self.factory.makePerson()

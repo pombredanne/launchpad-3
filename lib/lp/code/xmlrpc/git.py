@@ -103,7 +103,7 @@ class GitAPI(LaunchpadXMLRPCView):
         else:
             return issuer.checkMacaroonIssuer(macaroon)
 
-    def _performLookup(self, path, auth_params):
+    def _performLookup(self, requester, path, auth_params):
         repository, extra_path = getUtility(IGitLookup).getByPath(path)
         if repository is None:
             return None
@@ -127,6 +127,13 @@ class GitAPI(LaunchpadXMLRPCView):
             writable = (
                 repository.repository_type == GitRepositoryType.HOSTED and
                 check_permission("launchpad.Edit", repository))
+            # If we have any grants to this user, they are declared to have
+            # write access at this point. `_checkRefPermissions` will
+            # sort out access to individual refs at a later point in the push.
+            if not writable:
+                grants = naked_repository.findRuleGrantsByGrantee(requester)
+                if not grants.is_empty():
+                    writable = True
             private = repository.private
         return {
             "path": hosting_path,
@@ -282,11 +289,11 @@ class GitAPI(LaunchpadXMLRPCView):
         if requester == LAUNCHPAD_ANONYMOUS:
             requester = None
         try:
-            result = self._performLookup(path, auth_params)
+            result = self._performLookup(requester, path, auth_params)
             if (result is None and requester is not None and
                 permission == "write"):
                 self._createRepository(requester, path)
-                result = self._performLookup(path, auth_params)
+                result = self._performLookup(requester, path, auth_params)
             if result is None:
                 raise faults.GitRepositoryNotFound(path)
             if permission != "read" and not result["writable"]:
