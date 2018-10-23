@@ -108,7 +108,11 @@ class IGitRuleEdit(Interface):
         """
 
     def setGrants(grants, user):
-        """Set the access grants for this rule."""
+        """Set the access grants for this rule.
+
+        :param grants: A sequence of `IGitNascentRuleGrant`.
+        :param user: The `IPerson` who is granting permission.
+        """
 
     def destroySelf(user):
         """Delete this rule.
