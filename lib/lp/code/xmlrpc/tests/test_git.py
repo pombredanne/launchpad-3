@@ -893,7 +893,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
             removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
         path = u"/%s" % code_imports[0].git_repository.unique_name
         self.assertPermissionDenied(
-            None, path, permission="write", macaroon_raw=macaroons[0])
+            None, path, permission="write",
+            macaroon_raw=macaroons[0].serialize())
         with celebrity_logged_in("vcs_imports"):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertTranslates(
@@ -931,7 +932,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
             removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
         path = u"/%s" % code_imports[0].git_repository.unique_name
         self.assertPermissionDenied(
-            None, path, permission="write", macaroon_raw=macaroons[0])
+            None, path, permission="write",
+            macaroon_raw=macaroons[0].serialize())
         with celebrity_logged_in("vcs_imports"):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertTranslates(
