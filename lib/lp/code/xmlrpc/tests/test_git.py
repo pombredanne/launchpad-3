@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal Git API."""
@@ -8,7 +8,6 @@ __metaclass__ = type
 from pymacaroons import Macaroon
 from testtools.matchers import (
     Equals,
-    MatchesListwise,
     MatchesDict,
     )
 from zope.component import getUtility
@@ -186,6 +185,20 @@ class TestGitAPIMixin:
         self.assertEqual(
             {"clone_from": cloned_from.getInternalPath()},
             self.hosting_fixture.create.extract_kwargs()[0])
+
+    def assertHasRefPermissions(self, requester, repository, ref_paths,
+                                permissions, macaroon_raw=None):
+        if requester is not None:
+            requester = requester.id
+        auth_params = {"uid": requester}
+        if macaroon_raw is not None:
+            auth_params["macaroon"] = macaroon_raw
+        translated_path = removeSecurityProxy(repository).getInternalPath()
+        results = self.git_api.checkRefPermissions(
+            translated_path, ref_paths, auth_params)
+        self.assertThat(results, MatchesDict({
+            ref_path: Equals(ref_permissions)
+            for ref_path, ref_permissions in permissions.items()}))
 
     def test_translatePath_private_repository(self):
         requester = self.factory.makePerson()
@@ -1004,6 +1017,89 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         self.assertIsInstance(
             self.git_api.authenticateWithPassword("", "nonsense"),
             faults.Unauthorized)
+
+    def test_checkRefPermissions_code_import(self):
+        # A code import worker with a suitable macaroon has repository owner
+        # privileges on a repository associated with a running code import
+        # job.
+        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        code_imports = [
+            self.factory.makeCodeImport(
+                target_rcs_type=TargetRevisionControlSystems.GIT)
+            for _ in range(2)]
+        with celebrity_logged_in("vcs_imports"):
+            jobs = [
+                self.factory.makeCodeImportJob(code_import=code_import)
+                for code_import in code_imports]
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroons = [
+            removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
+        repository = code_imports[0].git_repository
+        ref_path = "refs/heads/master"
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[0].serialize())
+        with celebrity_logged_in("vcs_imports"):
+            getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
+        self.assertHasRefPermissions(
+            None, repository, [ref_path],
+            {ref_path: ["create", "push", "force_push"]},
+            macaroon_raw=macaroons[0].serialize())
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[1].serialize())
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw=Macaroon(
+                location=config.vhost.mainsite.hostname, identifier="another",
+                key="another-secret").serialize())
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw="nonsense")
+
+    def test_checkRefPermissions_private_code_import(self):
+        # A code import worker with a suitable macaroon has repository owner
+        # privileges on a repository associated with a running private code
+        # import job.
+        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        code_imports = [
+            self.factory.makeCodeImport(
+                target_rcs_type=TargetRevisionControlSystems.GIT)
+            for _ in range(2)]
+        private_repository = code_imports[0].git_repository
+        removeSecurityProxy(private_repository).transitionToInformationType(
+            InformationType.PRIVATESECURITY, private_repository.owner)
+        with celebrity_logged_in("vcs_imports"):
+            jobs = [
+                self.factory.makeCodeImportJob(code_import=code_import)
+                for code_import in code_imports]
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroons = [
+            removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
+        repository = code_imports[0].git_repository
+        ref_path = "refs/heads/master"
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[0])
+        with celebrity_logged_in("vcs_imports"):
+            getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
+        self.assertHasRefPermissions(
+            None, repository, [ref_path],
+            {ref_path: ["create", "push", "force_push"]},
+            macaroon_raw=macaroons[0].serialize())
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[1].serialize())
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw=Macaroon(
+                location=config.vhost.mainsite.hostname, identifier="another",
+                key="another-secret").serialize())
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw="nonsense")
 
 
 class TestGitAPISecurity(TestGitAPIMixin, TestCaseWithFactory):
