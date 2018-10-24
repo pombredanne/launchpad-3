@@ -366,18 +366,35 @@ class GitAPI(LaunchpadXMLRPCView):
                 matching_rules.append(rule)
         return matching_rules
 
-    def _checkRefPermissions(self, requester, translated_path, ref_paths):
+    def _checkRefPermissions(self, requester, translated_path, ref_paths,
+                             auth_params):
+        if requester == LAUNCHPAD_ANONYMOUS:
+            requester = None
         repository = removeSecurityProxy(
             getUtility(IGitLookup).getByHostingPath(translated_path))
-        is_owner = requester.inTeam(repository.owner)
         result = {}
 
         grants_for_user = defaultdict(list)
-        grants = repository.findRuleGrantsByGrantee(requester)
-        if is_owner:
-            owner_grants = repository.findRuleGrantsByGrantee(
+        macaroon_raw = auth_params.get("macaroon")
+        if (macaroon_raw is not None and
+                self._verifyMacaroon(macaroon_raw, repository)):
+            # The authentication parameters grant access as an anonymous
+            # repository owner.
+            # For the time being, this only works for code imports.
+            assert repository.repository_type == GitRepositoryType.IMPORTED
+            is_owner = True
+            grants = repository.findRuleGrantsByGrantee(
                 GitGranteeType.REPOSITORY_OWNER)
-            grants = grants.union(owner_grants)
+        elif requester is None:
+            is_owner = False
+            grants = []
+        else:
+            is_owner = requester.inTeam(repository.owner)
+            grants = repository.findRuleGrantsByGrantee(requester)
+            if is_owner:
+                owner_grants = repository.findRuleGrantsByGrantee(
+                    GitGranteeType.REPOSITORY_OWNER)
+                grants = grants.union(owner_grants)
         for grant in grants:
             grants_for_user[grant.rule].append(grant)
 
@@ -407,9 +424,11 @@ class GitAPI(LaunchpadXMLRPCView):
     def checkRefPermissions(self, translated_path, ref_paths, auth_params):
         """ See `IGitAPI`"""
         requester_id = auth_params.get("uid")
+        if requester_id is None:
+            requester_id = LAUNCHPAD_ANONYMOUS
         return run_with_login(
             requester_id,
             self._checkRefPermissions,
             translated_path,
-            ref_paths
-        )
+            ref_paths,
+            auth_params)
