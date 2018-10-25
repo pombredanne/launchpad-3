@@ -702,6 +702,25 @@ def _fetch_blob_from_github(repository_url, ref_path, filename):
     return response.content
 
 
+def _fetch_blob_from_launchpad(repository_url, ref_path, filename):
+    repo_path = urlsplit(repository_url).path.strip("/")
+    try:
+        response = urlfetch(
+            "https://git.launchpad.net/%s/plain/%s" % (
+                repo_path, quote(filename)),
+            params={"h": ref_path})
+    except requests.RequestException as e:
+        if (e.response is not None and
+                e.response.status_code == requests.codes.NOT_FOUND):
+            raise GitRepositoryBlobNotFound(
+                repository_url, filename, rev=ref_path)
+        else:
+            raise GitRepositoryScanFault(
+                "Failed to get file from Git repository at %s: %s" %
+                (repository_url, str(e)))
+    return response.content
+
+
 @implementer(IGitRef)
 @provider(IGitRefRemoteSet)
 class GitRefRemote(GitRefMixin):
@@ -800,17 +819,29 @@ class GitRefRemote(GitRefMixin):
         # dispatch a build job or a code import or something like that to do
         # so.  For now, we just special-case some providers where we know
         # how to fetch a blob on its own.
-        repository = getUtility(IGitLookup).getByUrl(self.repository_url)
-        if repository is not None:
-            # This is one of our own repositories.  Doing this by URL seems
-            # gratuitously complex, but apparently we already have some
-            # examples of this on production.
-            return repository.getBlob(filename, rev=self.path)
         url = urlsplit(self.repository_url)
         if (url.hostname == "github.com" and
                 len(url.path.strip("/").split("/")) == 2):
             return _fetch_blob_from_github(
                 self.repository_url, self.path, filename)
+        if (url.hostname == "git.launchpad.net" and
+                config.vhost.mainsite.hostname != "launchpad.net"):
+            # Even if this isn't launchpad.net, we can still retrieve files
+            # from git.launchpad.net by URL, as a QA convenience.  (We check
+            # config.vhost.mainsite.hostname rather than
+            # config.codehosting.git_*_root because the dogfood instance
+            # points git_*_root to git.launchpad.net but doesn't share the
+            # production database.)
+            return _fetch_blob_from_launchpad(
+                self.repository_url, self.path, filename)
+        codehosting_host = urlsplit(config.codehosting.git_anon_root).hostname
+        if url.hostname == codehosting_host:
+            repository = getUtility(IGitLookup).getByUrl(self.repository_url)
+            if repository is not None:
+                # This is one of our own repositories.  Doing this by URL
+                # seems gratuitously complex, but apparently we already have
+                # some examples of this on production.
+                return repository.getBlob(filename, rev=self.path)
         raise GitRepositoryBlobUnsupportedRemote(self.repository_url)
 
     @property
