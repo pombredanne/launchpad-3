@@ -875,3 +875,30 @@ class TestGitRefWebservice(TestCaseWithFactory):
                             can_push=Is(True),
                             can_force_push=Is(False)))),
                 ]))
+
+    def test_checkPermissions(self):
+        [ref] = self.factory.makeGitRefs()
+        owner = ref.owner
+        grantees = [self.factory.makePerson() for _ in range(2)]
+        self.factory.makeGitRuleGrant(
+            repository=ref.repository, ref_pattern=ref.path,
+            grantee=grantees[0], can_create=True)
+        self.factory.makeGitRuleGrant(
+            repository=ref.repository, ref_pattern="*",
+            grantee=grantees[1], can_force_push=True)
+        with person_logged_in(owner):
+            ref_url = api_url(ref)
+            owner_url = api_url(owner)
+            grantee_urls = [api_url(grantee) for grantee in grantees]
+        webservice = webservice_for_person(
+            owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_get(
+            ref_url, "checkPermissions", person=owner_url)
+        self.assertEqual(["create", "push"], json.loads(response.body))
+        response = webservice.named_get(
+            ref_url, "checkPermissions", person=grantee_urls[0])
+        self.assertEqual(["create"], json.loads(response.body))
+        response = webservice.named_get(
+            ref_url, "checkPermissions", person=grantee_urls[1])
+        self.assertEqual(["push", "force-push"], json.loads(response.body))

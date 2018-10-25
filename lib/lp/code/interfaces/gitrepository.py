@@ -25,6 +25,7 @@ from lazr.restful.declarations import (
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_destructor_operation,
+    export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
@@ -808,6 +809,35 @@ class IGitRepositoryEdit(IWebhookTarget):
     @operation_for_version("devel")
     def setRules(rules, user):
         """Set the access rules for this repository."""
+
+    def checkRefPermissions(person, ref_paths):
+        """Check a person's permissions on some references in this repository.
+
+        :param person: An `IPerson` to check, or
+            `GitGranteeType.REPOSITORY_OWNER` to check an anonymous
+            repository owner.
+        :param ref_paths: An iterable of reference paths.
+        :return: A dict mapping reference paths to sets of
+            `GitPermissionType`, corresponding to the requested person's
+            effective permissions on each of the requested references.
+        """
+
+    @operation_parameters(
+        person=Reference(title=_("Person to check"), schema=IPerson),
+        paths=List(title=_("Reference paths"), value_type=TextLine()))
+    @export_operation_as("checkRefPermissions")
+    @export_read_operation()
+    @operation_for_version("devel")
+    def api_checkRefPermissions(person, paths):
+        """Check a person's permissions on some references in this repository.
+
+        :param person: An `IPerson` to check.
+        :param paths: An iterable of reference paths.
+        :return: A dict mapping reference paths to lists of zero or more of
+            "create", "push", and "force-push", indicating the requested
+            person's effective permissions on each of the requested
+            references.
+        """
 
     @export_read_operation()
     @operation_for_version("devel")
