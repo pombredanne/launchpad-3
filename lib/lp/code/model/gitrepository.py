@@ -9,6 +9,7 @@ __all__ = [
     'parse_git_commits',
     ]
 
+from collections import OrderedDict
 from datetime import datetime
 import email
 from functools import partial
@@ -21,6 +22,8 @@ from urllib import quote_plus
 
 from bzrlib import urlutils
 from lazr.enum import DBItem
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from storm.databases.postgres import Returning
 from storm.expr import (
@@ -48,7 +51,10 @@ from storm.locals import (
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implementer
+from zope.interface import (
+    implementer,
+    providedBy,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     ProxyFactory,
@@ -1156,6 +1162,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             if rule.position != position:
                 removeSecurityProxy(rule).position = position
 
+    def getRule(self, ref_pattern):
+        """See `IGitRepository`."""
+        return self.rules.find(GitRule.ref_pattern == ref_pattern).one()
+
     def addRule(self, ref_pattern, creator, position=None):
         """See `IGitRepository`."""
         rules = list(self.rules)
@@ -1221,6 +1231,64 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 GitRule.ref_pattern == ref_pattern,
                 ])
         return self.grants.find(*clauses).config(distinct=True)
+
+    def getRules(self):
+        """See `IGitRepository`."""
+        rules = list(self.rules)
+        GitRule.preloadGrantsForRules(rules)
+        return rules
+
+    @staticmethod
+    def _validateRules(rules):
+        """Validate a new iterable of access rules."""
+        patterns = set()
+        for rule in rules:
+            if rule.ref_pattern in patterns:
+                raise ValueError(
+                    "New rules may not contain duplicate ref patterns "
+                    "(e.g. %s)" % rule.ref_pattern)
+            patterns.add(rule.ref_pattern)
+
+    def setRules(self, rules, user):
+        """See `IGitRepository`."""
+        self._validateRules(rules)
+        existing_rules = {rule.ref_pattern: rule for rule in self.rules}
+        new_rules = OrderedDict((rule.ref_pattern, rule) for rule in rules)
+        GitRule.preloadGrantsForRules(existing_rules.values())
+
+        # Remove old rules first so that we don't generate unnecessary move
+        # events.
+        for ref_pattern, rule in existing_rules.items():
+            if ref_pattern not in new_rules:
+                rule.destroySelf(user)
+
+        # Do our best to match up the new rules and grants to any existing
+        # ones, in order to preserve creator and date-created information.
+        # XXX cjwatson 2018-09-11: We could optimise this to create the new
+        # rules in bulk, but it probably isn't worth the extra complexity.
+        for position, (ref_pattern, new_rule) in enumerate(new_rules.items()):
+            rule = existing_rules.get(ref_pattern)
+            if rule is None:
+                rule = self.addRule(
+                    new_rule.ref_pattern, user, position=position)
+            else:
+                rule_before_modification = Snapshot(
+                    rule, providing=providedBy(rule))
+                self.moveRule(rule, position, user)
+                if rule.position != rule_before_modification.position:
+                    notify(ObjectModifiedEvent(
+                        rule, rule_before_modification, ["position"]))
+            rule.setGrants(new_rule.grants, user)
+
+        # The individual moves and adds above should have resulted in
+        # correct rule ordering, but check this.
+        requested_rule_order = list(new_rules)
+        observed_rule_order = [rule.ref_pattern for rule in self.rules]
+        if requested_rule_order != observed_rule_order:
+            raise AssertionError(
+                "setRules failed to establish requested rule order %s "
+                "(got %s instead)" %
+                (requested_rule_order, observed_rule_order))
 
     def getActivity(self, changed_after=None):
         """See `IGitRepository`."""

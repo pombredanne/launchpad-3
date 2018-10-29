@@ -22,7 +22,10 @@ from storm.exceptions import LostObjectError
 from storm.store import Store
 from testtools.matchers import (
     EndsWith,
+    Equals,
+    Is,
     LessThan,
+    MatchesDict,
     MatchesListwise,
     MatchesSetwise,
     MatchesStructure,
@@ -80,6 +83,10 @@ from lp.code.interfaces.gitrepository import (
     IGitRepositorySet,
     IGitRepositoryView,
     )
+from lp.code.interfaces.gitrule import (
+    IGitNascentRule,
+    IGitNascentRuleGrant,
+    )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchmergeproposaljob import (
@@ -122,6 +129,7 @@ from lp.registry.tests.test_accesspolicy import get_policies_for_artifact
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
+from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import JobRunner
@@ -2485,6 +2493,20 @@ class TestGitRepositoryRules(TestCaseWithFactory):
                 ref_pattern="refs/heads/stable/*"),
             ]))
 
+    def test_getRule(self):
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRefs(
+            repository=repository, paths=["refs/heads/master"])
+        other_repository = self.factory.makeGitRepository()
+        master_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/master")
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        self.factory.makeGitRule(
+            repository=other_repository, ref_pattern="refs/heads/master")
+        self.assertEqual(master_rule, repository.getRule("refs/heads/master"))
+        self.assertIsNone(repository.getRule("refs/heads/other"))
+
     def test_addRule_append(self):
         repository = self.factory.makeGitRepository()
         initial_rule = self.factory.makeGitRule(
@@ -2577,6 +2599,262 @@ class TestGitRepositoryRules(TestCaseWithFactory):
         self.factory.makeGitRuleGrant(
             rule=other_rule, grantee=self.factory.makePerson())
         self.assertContentEqual(grants, repository.grants)
+
+    def test_getRules_query_count(self):
+        repository = self.factory.makeGitRepository()
+        owner = repository.owner
+
+        def create_rule_and_grants():
+            with person_logged_in(owner):
+                rule = self.factory.makeGitRule(
+                    repository=repository,
+                    ref_pattern=self.factory.getUniqueUnicode(
+                        prefix="refs/heads/"))
+                for i in range(2):
+                    self.factory.makeGitRuleGrant(rule=rule)
+
+        def get_rules():
+            with person_logged_in(owner):
+                return repository.getRules()
+
+        recorder1, recorder2 = record_two_runs(
+            get_rules, create_rule_and_grants, 2)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
+    def test__validateRules_ok(self):
+        repository = self.factory.makeGitRepository()
+        rules = [
+            IGitNascentRule({
+                "ref_pattern": "refs/heads/*",
+                "grants": [],
+                }),
+            IGitNascentRule({
+                "ref_pattern": "refs/heads/stable/*",
+                "grants": [],
+                }),
+            ]
+        removeSecurityProxy(repository)._validateRules(rules)
+
+    def test__validateRules_duplicate_ref_pattern(self):
+        repository = self.factory.makeGitRepository()
+        rules = [
+            IGitNascentRule({
+                "ref_pattern": "refs/heads/*",
+                "grants": [],
+                }),
+            IGitNascentRule({
+                "ref_pattern": "refs/heads/*",
+                "grants": [],
+                }),
+            ]
+        self.assertRaisesWithContent(
+            ValueError,
+            "New rules may not contain duplicate ref patterns "
+            "(e.g. refs/heads/*)",
+            removeSecurityProxy(repository)._validateRules, rules)
+
+    def test_setRules_add(self):
+        owner = self.factory.makeTeam()
+        member = self.factory.makePerson(member_of=[owner])
+        repository = self.factory.makeGitRepository(owner=owner)
+        grantee = self.factory.makePerson()
+        with person_logged_in(member):
+            repository.setRules([
+                IGitNascentRule({
+                    "ref_pattern": "refs/heads/stable/*",
+                    "grants": [
+                        IGitNascentRuleGrant({
+                            "grantee_type": GitGranteeType.REPOSITORY_OWNER,
+                            "can_create": True,
+                            "can_force_push": True,
+                            }),
+                        ],
+                    }),
+                IGitNascentRule({
+                    "ref_pattern": "refs/heads/*",
+                    "grants": [
+                        IGitNascentRuleGrant({
+                            "grantee_type": GitGranteeType.PERSON,
+                            "grantee": grantee,
+                            "can_push": True,
+                            }),
+                        ],
+                    }),
+                ], member)
+        self.assertThat(list(repository.rules), MatchesListwise([
+            MatchesStructure(
+                repository=Equals(repository),
+                ref_pattern=Equals("refs/heads/stable/*"),
+                creator=Equals(member),
+                grants=MatchesSetwise(
+                    MatchesStructure(
+                        grantor=Equals(member),
+                        grantee_type=Equals(GitGranteeType.REPOSITORY_OWNER),
+                        grantee=Is(None),
+                        can_create=Is(True),
+                        can_push=Is(False),
+                        can_force_push=Is(True)))),
+            MatchesStructure(
+                repository=Equals(repository),
+                ref_pattern=Equals("refs/heads/*"),
+                creator=Equals(member),
+                grants=MatchesSetwise(
+                    MatchesStructure(
+                        grantor=Equals(member),
+                        grantee_type=Equals(GitGranteeType.PERSON),
+                        grantee=Equals(grantee),
+                        can_create=Is(False),
+                        can_push=Is(True),
+                        can_force_push=Is(False)))),
+            ]))
+
+    def test_setRules_move(self):
+        owner = self.factory.makeTeam()
+        members = [
+            self.factory.makePerson(member_of=[owner]) for _ in range(2)]
+        repository = self.factory.makeGitRepository(owner=owner)
+        for ref_pattern in (
+                "refs/heads/stable/*", "refs/heads/*/next", "refs/heads/*"):
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern=ref_pattern,
+                creator=members[0])
+        date_created = get_transaction_timestamp(Store.of(repository))
+        with person_logged_in(members[1]):
+            repository.setRules([
+                IGitNascentRule({
+                    "ref_pattern": "refs/heads/*/next",
+                    "grants": [],
+                    }),
+                IGitNascentRule({
+                    "ref_pattern": "refs/heads/stable/*",
+                    "grants": [],
+                    }),
+                IGitNascentRule({
+                    "ref_pattern": "refs/heads/*",
+                    "grants": [],
+                    }),
+                ], members[1])
+            date_modified = get_transaction_timestamp(Store.of(repository))
+        self.assertThat(list(repository.rules), MatchesListwise([
+            MatchesStructure(
+                repository=Equals(repository),
+                ref_pattern=Equals("refs/heads/*/next"),
+                creator=Equals(members[0]),
+                date_created=Equals(date_created),
+                date_last_modified=Equals(date_modified)),
+            MatchesStructure(
+                repository=Equals(repository),
+                ref_pattern=Equals("refs/heads/stable/*"),
+                creator=Equals(members[0]),
+                date_created=Equals(date_created),
+                date_last_modified=Equals(date_created)),
+            MatchesStructure(
+                repository=Equals(repository),
+                ref_pattern=Equals("refs/heads/*"),
+                creator=Equals(members[0]),
+                date_created=Equals(date_created),
+                date_last_modified=Equals(date_created)),
+            ]))
+
+    def test_setRules_modify_grants(self):
+        owner = self.factory.makeTeam()
+        members = [
+            self.factory.makePerson(member_of=[owner]) for _ in range(2)]
+        repository = self.factory.makeGitRepository(owner=owner)
+        stable_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*",
+            creator=members[0])
+        grantee = self.factory.makePerson()
+        self.factory.makeGitRuleGrant(
+            rule=stable_rule, grantee=grantee, grantor=members[0],
+            can_push=True)
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*",
+            creator=members[0])
+        date_created = get_transaction_timestamp(Store.of(repository))
+        transaction.commit()
+        with person_logged_in(members[1]):
+            repository.setRules([
+                IGitNascentRule({
+                    "ref_pattern": "refs/heads/stable/*",
+                    "grants": [
+                        IGitNascentRuleGrant({
+                            "grantee_type": GitGranteeType.REPOSITORY_OWNER,
+                            "can_create": True,
+                            }),
+                        IGitNascentRuleGrant({
+                            "grantee_type": GitGranteeType.PERSON,
+                            "grantee": grantee,
+                            "can_push": True,
+                            "can_force_push": True,
+                            }),
+                        ],
+                    }),
+                IGitNascentRule({
+                    "ref_pattern": "refs/heads/*",
+                    "grants": [],
+                    }),
+                ], members[1])
+            date_modified = get_transaction_timestamp(
+                Store.of(repository))
+        self.assertThat(list(repository.rules), MatchesListwise([
+            MatchesStructure(
+                repository=Equals(repository),
+                ref_pattern=Equals("refs/heads/stable/*"),
+                creator=Equals(members[0]),
+                date_created=Equals(date_created),
+                date_last_modified=Equals(date_created),
+                grants=MatchesSetwise(
+                    MatchesStructure(
+                        grantor=Equals(members[1]),
+                        grantee_type=Equals(GitGranteeType.REPOSITORY_OWNER),
+                        grantee=Is(None),
+                        can_create=Is(True),
+                        can_push=Is(False),
+                        can_force_push=Is(False),
+                        date_created=Equals(date_modified),
+                        date_last_modified=Equals(date_modified)),
+                    MatchesStructure(
+                        grantor=Equals(members[0]),
+                        grantee_type=Equals(GitGranteeType.PERSON),
+                        grantee=Equals(grantee),
+                        can_create=Is(False),
+                        can_push=Is(True),
+                        can_force_push=Is(True),
+                        date_created=Equals(date_created),
+                        date_last_modified=Equals(date_modified)))),
+            MatchesStructure(
+                repository=Equals(repository),
+                ref_pattern=Equals("refs/heads/*"),
+                creator=Equals(members[0]),
+                date_created=Equals(date_created),
+                date_last_modified=Equals(date_created),
+                grants=MatchesSetwise()),
+            ]))
+
+    def test_setRules_remove(self):
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*")
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        date_created = get_transaction_timestamp(Store.of(repository))
+        transaction.commit()
+        with person_logged_in(repository.owner):
+            repository.setRules([
+                IGitNascentRule({
+                    "ref_pattern": "refs/heads/*",
+                    "grants": [],
+                    }),
+                ], repository.owner)
+        self.assertThat(list(repository.rules), MatchesListwise([
+            MatchesStructure(
+                repository=Equals(repository),
+                ref_pattern=Equals("refs/heads/*"),
+                date_created=Equals(date_created),
+                date_last_modified=Equals(date_created),
+                grants=MatchesSetwise()),
+            ]))
 
 
 class TestGitRepositorySet(TestCaseWithFactory):
@@ -3351,3 +3629,117 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
         self.assertEqual(1, len(dependent_landings["entries"]))
         self.assertThat(
             dependent_landings["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_getRules(self):
+        repository = self.factory.makeGitRepository()
+        rules = [
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern="refs/heads/stable/*"),
+            self.factory.makeGitRule(
+                repository=repository, ref_pattern="refs/heads/*"),
+            ]
+        self.factory.makeGitRuleGrant(
+            rule=rules[0], grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_create=True, can_force_push=True)
+        grantees = [self.factory.makePerson() for _ in range(2)]
+        for grantee in grantees:
+            self.factory.makeGitRuleGrant(
+                rule=rules[1], grantee=grantee, can_push=True)
+        with person_logged_in(repository.owner):
+            repository_url = api_url(repository)
+            grantee_urls = [api_url(grantee) for grantee in grantees]
+        webservice = webservice_for_person(
+            repository.owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_get(repository_url, "getRules")
+        self.assertThat(json.loads(response.body), MatchesListwise([
+            MatchesDict({
+                "ref_pattern": Equals("refs/heads/stable/*"),
+                "grants": MatchesSetwise(
+                    MatchesDict({
+                        "grantee_type": Equals("Repository owner"),
+                        "grantee_link": Is(None),
+                        "can_create": Is(True),
+                        "can_push": Is(False),
+                        "can_force_push": Is(True),
+                        }),
+                    ),
+                }),
+            MatchesDict({
+                "ref_pattern": Equals("refs/heads/*"),
+                "grants": MatchesSetwise(*(
+                    MatchesDict({
+                        "grantee_type": Equals("Person"),
+                        "grantee_link": Equals(
+                            webservice.getAbsoluteUrl(grantee_url)),
+                        "can_create": Is(False),
+                        "can_push": Is(True),
+                        "can_force_push": Is(False),
+                        })
+                    for grantee_url in grantee_urls)),
+                }),
+            ]))
+
+    def test_setRules(self):
+        repository = self.factory.makeGitRepository()
+        owner = repository.owner
+        grantee = self.factory.makePerson()
+        with person_logged_in(owner):
+            repository_url = api_url(repository)
+            grantee_url = api_url(grantee)
+        webservice = webservice_for_person(
+            owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_post(
+            repository_url, "setRules",
+            rules=[
+                {
+                    "ref_pattern": "refs/heads/stable/*",
+                    "grants": [
+                        {
+                            "grantee_type": "Repository owner",
+                            "can_create": True,
+                            "can_force_push": True,
+                            },
+                        ],
+                    },
+                {
+                    "ref_pattern": "refs/heads/*",
+                    "grants": [
+                        {
+                            "grantee_type": "Person",
+                            "grantee_link": grantee_url,
+                            "can_push": True,
+                            },
+                        ],
+                    },
+                ])
+        self.assertEqual(200, response.status)
+        with person_logged_in(owner):
+            self.assertThat(list(repository.rules), MatchesListwise([
+                MatchesStructure(
+                    repository=Equals(repository),
+                    ref_pattern=Equals("refs/heads/stable/*"),
+                    creator=Equals(owner),
+                    grants=MatchesSetwise(
+                        MatchesStructure(
+                            grantor=Equals(owner),
+                            grantee_type=Equals(
+                                GitGranteeType.REPOSITORY_OWNER),
+                            grantee=Is(None),
+                            can_create=Is(True),
+                            can_push=Is(False),
+                            can_force_push=Is(True)))),
+                MatchesStructure(
+                    repository=Equals(repository),
+                    ref_pattern=Equals("refs/heads/*"),
+                    creator=Equals(owner),
+                    grants=MatchesSetwise(
+                        MatchesStructure(
+                            grantor=Equals(owner),
+                            grantee_type=Equals(GitGranteeType.PERSON),
+                            grantee=Equals(grantee),
+                            can_create=Is(False),
+                            can_push=Is(True),
+                            can_force_push=Is(False)))),
+                ]))
