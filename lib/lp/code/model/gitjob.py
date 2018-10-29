@@ -33,7 +33,10 @@ from zope.interface import (
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NotFoundError
-from lp.code.enums import GitActivityType
+from lp.code.enums import (
+    GitActivityType,
+    GitPermissionType,
+    )
 from lp.code.interfaces.githosting import IGitHostingClient
 from lp.code.interfaces.gitjob import (
     IGitJob,
@@ -44,6 +47,7 @@ from lp.code.interfaces.gitjob import (
     IReclaimGitRepositorySpaceJob,
     IReclaimGitRepositorySpaceJobSource,
     )
+from lp.code.interfaces.gitrule import describe_git_permissions
 from lp.code.mail.branch import BranchMailer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.config import config
@@ -319,15 +323,20 @@ activity_descriptions = {
     }
 
 
+_activity_permissions = {
+    "can_create": GitPermissionType.CAN_CREATE,
+    "can_push": GitPermissionType.CAN_PUSH,
+    "can_force_push": GitPermissionType.CAN_FORCE_PUSH,
+    }
+
+
 def describe_grants(activity_value):
-    output = []
     if activity_value is not None:
-        if activity_value.get("can_create"):
-            output.append("create")
-        if activity_value.get("can_push"):
-            output.append("push")
-        if activity_value.get("can_force_push"):
-            output.append("force-push")
+        output = describe_git_permissions({
+            permission for attr, permission in _activity_permissions.items()
+            if activity_value.get(attr)})
+    else:
+        output = []
     return english_list(output)
 
 

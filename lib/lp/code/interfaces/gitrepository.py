@@ -16,6 +16,7 @@ __all__ = [
     ]
 
 import re
+from textwrap import dedent
 
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
@@ -78,6 +79,7 @@ from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IPersonRoles
 from lp.services.fields import (
+    InlineObject,
     PersonChoice,
     PublicPersonChoice,
     )
@@ -622,6 +624,13 @@ class IGitRepositoryView(IHasRecipes):
         :return: The diff as a binary string.
         """
 
+    def getRule(ref_pattern):
+        """Get the access rule for this repository with a given pattern.
+
+        :param ref_pattern: The reference pattern that the rule should have.
+        :return: An `IGitRule`, or None.
+        """
+
     def getActivity(changed_after=None):
         """Get activity log entries for this repository.
 
@@ -751,12 +760,54 @@ class IGitRepositoryEdit(IWebhookTarget):
     def findRuleGrantsByGrantee(grantee):
         """Find the grants for a grantee applied to this repository.
 
-        :param grantee: The Person affected
+        :param grantee: The `IPerson` to search for, or an item of
+            `GitGranteeType` other than `GitGranteeType.PERSON` to search
+            for some other kind of entity.
         """
 
-    def findRuleGrantsForRepositoryOwner():
-        """Find the grants of type REPOSITORY_OWNER applied to this repository.
-        """
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getRules():
+        """Get the access rules for this repository."""
+
+    @operation_parameters(
+        rules=List(
+            title=_("Rules"),
+            # Really IGitNascentRule, patched in
+            # _schema_circular_imports.py.
+            value_type=InlineObject(schema=Interface),
+            description=_(dedent("""\
+                The new list of rules for this repository.  For example::
+
+                    [
+                        {
+                            "ref_pattern": "refs/heads/*",
+                            "grants": [
+                                {
+                                    "grantee_type": "Repository owner",
+                                    "can_create": true,
+                                    "can_push": true,
+                                    "can_force_push": true
+                                }
+                            ]
+                        },
+                        {
+                            "ref_pattern": "refs/heads/stable/*",
+                            "grants": [
+                                {
+                                    "grantee_type": "Person",
+                                    "grantee_link": "/~example-stable-team",
+                                    "can_create": true,
+                                    "can_push": true
+                                }
+                            ]
+                        }
+                    ]"""))))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setRules(rules, user):
+        """Set the access rules for this repository."""
 
     @export_read_operation()
     @operation_for_version("devel")

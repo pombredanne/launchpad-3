@@ -434,9 +434,7 @@ class GitRefMixin:
 
     def setGrants(self, grants, user):
         """See `IGitRef`."""
-        rule = Store.of(self).find(
-            GitRule, GitRule.repository_id == self.repository_id,
-            GitRule.ref_pattern == self.path).one()
+        rule = self.repository.getRule(self.path)
         if rule is None:
             # We don't need to worry about position, since this is an
             # exact-match rule and therefore has a canonical position.
