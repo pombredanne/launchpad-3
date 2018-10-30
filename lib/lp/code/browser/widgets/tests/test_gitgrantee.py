@@ -24,6 +24,7 @@ from lp.code.enums import GitGranteeType
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.webapp.escaping import html_escape
+from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
     TestCaseWithFactory,
@@ -146,7 +147,7 @@ class TestGitGranteeWidgetBase:
         person = self.factory.makePerson()
         self.widget.setRenderedValue(person)
         self.assertEqual("person", self.widget.default_option)
-        self.assertEqual(person, self.widget.person_widget._getCurrentValue())
+        self.assertEqual(person, self.widget.person_widget._data)
 
     def test_call(self):
         # The __call__ method sets up the widgets and the options.
@@ -168,6 +169,19 @@ class TestGitGranteeDisplayWidget(
     expected_widget_interface = IDisplayWidget
     expected_disabled_attr = 'disabled="disabled" '
     expected_ids = ["field.grantee.option.person"]
+
+    def test_setRenderedValue_person_display_widget(self):
+        # If the widget's render state is "person", a customised display
+        # widget is used.
+        self.widget.setUpSubWidgets()
+        person = self.factory.makePerson()
+        self.widget.setRenderedValue(person)
+        person_url = canonical_url(person)
+        self.assertEqual(
+            '<a href="%s">'
+            '<img style="padding-bottom: 2px" alt="" src="/@@/person" /> '
+            '%s</a>' % (person_url, html_escape(person.display_name)),
+            self.widget.person_widget())
 
 
 class TestGitGranteeWidget(TestGitGranteeWidgetBase, TestCaseWithFactory):

@@ -45,10 +45,12 @@ from lp.app.widgets.popup import PersonPickerWidget
 from lp.code.enums import GitGranteeType
 from lp.code.interfaces.gitrule import IGitRule
 from lp.registry.interfaces.person import IPerson
+from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IMultiLineWidgetLayout,
     )
+from lp.services.webapp.publisher import canonical_url
 
 
 class IGitGranteeField(IField):
@@ -76,6 +78,26 @@ class GitGranteeField(Field):
                 None, "ValidPersonOrTeam")
 
 
+@implementer(IDisplayWidget)
+class GitGranteePersonDisplayWidget(BrowserWidget):
+
+    def __init__(self, context, vocabulary, request):
+        super(GitGranteePersonDisplayWidget, self).__init__(context, request)
+
+    def __call__(self):
+        if self._renderedValueSet():
+            grantee = self._data
+            person_img = renderElement(
+                "img", style="padding-bottom: 2px", src="/@@/person", alt="")
+            return renderElement(
+                "a", href=canonical_url(grantee),
+                contents="%s %s" % (
+                    person_img,
+                    structured("%s", grantee.display_name).escapedtext))
+        else:
+            return ""
+
+
 @implementer(IMultiLineWidgetLayout)
 class GitGranteeWidgetBase(BrowserWidget):
 
@@ -91,7 +113,10 @@ class GitGranteeWidgetBase(BrowserWidget):
                 __name__="person", title=u"Person",
                 required=False, vocabulary="ValidPersonOrTeam"),
             ]
-        if not self._read_only:
+        if self._read_only:
+            self.person_widget = CustomWidgetFactory(
+                GitGranteePersonDisplayWidget)
+        else:
             self.person_widget = CustomWidgetFactory(
                 PersonPickerWidget,
                 # XXX cjwatson 2018-10-18: This is a little unfortunate, but
