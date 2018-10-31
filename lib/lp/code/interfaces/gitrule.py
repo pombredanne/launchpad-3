@@ -158,6 +158,10 @@ class IGitRuleGrantView(Interface):
         vocabulary="ValidPersonOrTeam",
         description=_("The person being granted access."))
 
+    combined_grantee = Attribute(
+        "The overall grantee of this grant: either a `GitGranteeType` (other "
+        "than `PERSON`) or an `IPerson`.")
+
     date_created = Datetime(
         title=_("Date created"), required=True, readonly=True,
         description=_("The time when this grant was created."))

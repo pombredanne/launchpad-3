@@ -1,0 +1,192 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+<body>
+
+  <metal:macros fill-slot="bogus">
+    <metal:macro define-macro="rule-rows">
+      <tal:rule repeat="rule rules">
+        <tal:rule_widgets
+            define="rule_widgets python:view.getRuleWidgets(rule)">
+          <tr class="git-rule">
+            <td tal:define="widget nocall:rule_widgets/position">
+              <metal:block use-macro="context/@@launchpad_form/widget_div" />
+            </td>
+            <td tal:define="widget nocall:rule_widgets/pattern" colspan="2">
+              <metal:block use-macro="context/@@launchpad_form/widget_div" />
+            </td>
+            <td tal:define="widget nocall:rule_widgets/delete">
+              <metal:block use-macro="context/@@launchpad_form/widget_div" />
+            </td>
+          </tr>
+          <tr class="git-rule-grant"
+              tal:repeat="grant_widgets rule_widgets/grants">
+            <td></td>
+            <td tal:define="widget nocall:grant_widgets/grantee">
+              <metal:block use-macro="context/@@launchpad_form/widget_div" />
+            </td>
+            <td tal:define="widget nocall:grant_widgets/permissions">
+              <metal:block use-macro="context/@@launchpad_form/widget_div" />
+            </td>
+            <td tal:define="widget nocall:grant_widgets/delete">
+              <metal:block use-macro="context/@@launchpad_form/widget_div" />
+            </td>
+          </tr>
+          <tr class="git-new-rule-grant"
+              tal:define="new_grant_widgets rule_widgets/new_grant">
+            <td></td>
+            <td tal:define="widget nocall:new_grant_widgets/grantee">
+              <metal:block use-macro="context/@@launchpad_form/widget_div" />
+            </td>
+            <td tal:define="widget nocall:new_grant_widgets/permissions">
+              <metal:block use-macro="context/@@launchpad_form/widget_div" />
+            </td>
+            <td></td>
+          </tr>
+        </tal:rule_widgets>
+      </tal:rule>
+      <tal:allows-new-rule condition="ref_prefix">
+        <tr class="git-new-rule"
+            tal:define="new_rule_widgets python:view.getNewRuleWidgets(ref_prefix)">
+          <td tal:define="widget nocall:new_rule_widgets/position">
+            <metal:block use-macro="context/@@launchpad_form/widget_div" />
+          </td>
+          <td tal:define="widget nocall:new_rule_widgets/pattern" colspan="2">
+            <metal:block use-macro="context/@@launchpad_form/widget_div" />
+          </td>
+          <td></td>
+        </tr>
+      </tal:allows-new-rule>
+    </metal:macro>
+  </metal:macros>
+
+  <div metal:fill-slot="main">
+    <p>
+      By default, repository owners may create, push, force-push, or delete
+      any branch or tag in their repositories, and nobody else may modify
+      them in any way.
+    </p>
+    <p>
+      If any of the rules below matches a branch or tag, then it is
+      <em>protected</em>.  By default, protecting a branch implicitly
+      prevents repository owners from force-pushing to it or deleting it,
+      while protecting a tag prevents repository owners from moving it.
+      Protecting a branch or tag also allows you to grant other permissions.
+    </p>
+    <p>
+      You may create rules that match a single branch or tag, or wildcard
+      rules that match a pattern: for example, <code>*</code> matches
+      everything, while <code>stable/*</code> matches
+      <code>stable/1.0</code> but not <code>master</code>.
+    </p>
+
+    <metal:grants-form use-macro="context/@@launchpad_form/form">
+      <div class="form" metal:fill-slot="widgets">
+        <table id="rules-table" class="listing"
+               style="max-width: 60em; margin-bottom: 1em;">
+          <thead>
+            <tr>
+              <th>Position</th>
+              <th colspan="2">Rule</th>
+              <th>Delete?</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td colspan="4">
+                <h3>Protected branches (under <code>refs/heads/</code>)</h3>
+              </td>
+            </tr>
+            <tal:branches define="rules view/branch_rules;
+                                  ref_prefix string:refs/heads/">
+              <metal:grants use-macro="template/macros/rule-rows" />
+            </tal:branches>
+
+            <tr>
+              <td colspan="4">
+                <h3>Protected tags (under <code>refs/tags/</code>)</h3>
+              </td>
+            </tr>
+            <tal:tags define="rules view/tag_rules;
+                              ref_prefix string:refs/tags/">
+              <metal:grants use-macro="template/macros/rule-rows" />
+            </tal:tags>
+
+            <tal:has-other condition="view/other_rules">
+              <tr><td colspan="4"><h3>Other protected references</h3></td></tr>
+              <tal:other define="rules view/other_rules; ref_prefix nothing">
+                <metal:grants use-macro="template/macros/rule-rows" />
+              </tal:other>
+            </tal:has-other>
+          </tbody>
+        </table>
+
+        <p class="actions">
+          <input tal:replace="structure view/save_action/render" />
+          or <a tal:attributes="href view/cancel_url">Cancel</a>
+        </p>
+      </div>
+
+      <metal:buttons fill-slot="buttons" />
+    </metal:grants-form>
+
+    <h2>Wildcards</h2>
+    <p>The special characters used in wildcard rules are:</p>
+    <table class="listing narrow-listing">
+      <thead>
+        <tr>
+          <th>Pattern</th>
+          <th>Meaning</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>*</code></td>
+          <td>matches zero or more characters</td>
+        </tr>
+        <tr>
+          <td><code>?</code></td>
+          <td>matches any single character</td>
+        </tr>
+        <tr>
+          <td><code>[chars]</code></td>
+          <td>matches any character in <em>chars</em></td>
+        </tr>
+        <tr>
+          <td><code>[!chars]</code></td>
+          <td>matches any character not in <em>chars</em></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Effective permissions</h2>
+    <p>
+      Launchpad works out the effective permissions that a user has on a
+      protected branch as follows:
+    </p>
+    <ol>
+      <li>Take all the rules that match the branch.</li>
+      <li>
+        For each matching rule, select any grants whose grantee matches the
+        user, as long as the same grantee has not already been seen in an
+        earlier matching rule.  (A user can be matched by more than one
+        grantee: for example, they might be in multiple teams.)
+      </li>
+      <li>
+        If the user is an owner of the repository and there was no previous
+        “Repository owner” grant, then add an implicit grant allowing them
+        to create or push.
+      </li>
+      <li>
+        The effective permission set is the union of the permissions granted
+        by all the selected grants.
+      </li>
+    </ol>
+  </div>
+
+</body>
+</html>

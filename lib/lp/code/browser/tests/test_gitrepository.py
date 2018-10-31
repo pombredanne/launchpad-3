@@ -7,16 +7,26 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
+import base64
 from datetime import datetime
 import doctest
+from operator import attrgetter
+import re
 from textwrap import dedent
 
 from fixtures import FakeLogger
 import pytz
+import soupmatchers
 from storm.store import Store
 from testtools.matchers import (
+    AfterPreprocessing,
     DocTestMatches,
     Equals,
+    Is,
+    MatchesDict,
+    MatchesListwise,
+    MatchesSetwise,
+    MatchesStructure,
     )
 import transaction
 from zope.component import getUtility
@@ -26,11 +36,16 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
+from lp.app.errors import UnexpectedFormData
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
+from lp.code.browser.gitrepository import encode_form_field_id
 from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
+    GitActivityType,
+    GitGranteeType,
+    GitPermissionType,
     GitRepositoryType,
     )
 from lp.code.interfaces.revision import IRevisionSet
@@ -40,7 +55,10 @@ from lp.registry.enums import (
     VCSType,
     )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
-from lp.registry.interfaces.person import PersonVisibility
+from lp.registry.interfaces.person import (
+    IPerson,
+    PersonVisibility,
+    )
 from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
@@ -1095,6 +1113,577 @@ class TestGitRepositoryDiffView(BrowserTestCase):
         self.assertEqual(
             r'attachment; filename="some-repository_\"bar_foo\".diff"',
             browser.headers["Content-Disposition"])
+
+
+class TestGitRepositoryPermissionsView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_rules_properties(self):
+        repository = self.factory.makeGitRepository()
+        heads_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        tags_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/tags/*")
+        catch_all_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="*")
+        login_person(repository.owner)
+        view = create_initialized_view(repository, name="+permissions")
+        self.assertEqual([heads_rule], view.branch_rules)
+        self.assertEqual([tags_rule], view.tag_rules)
+        self.assertEqual([catch_all_rule], view.other_rules)
+
+    def test__getRuleGrants(self):
+        rule = self.factory.makeGitRule()
+        grantees = sorted(
+            [self.factory.makePerson() for _ in range(3)],
+            key=attrgetter("name"))
+        for grantee in (grantees[1], grantees[0], grantees[2]):
+            self.factory.makeGitRuleGrant(rule=rule, grantee=grantee)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER)
+        login_person(rule.repository.owner)
+        view = create_initialized_view(rule.repository, name="+permissions")
+        self.assertThat(view._getRuleGrants(rule), MatchesListwise([
+            MatchesStructure.byEquality(
+                grantee_type=GitGranteeType.REPOSITORY_OWNER),
+            MatchesStructure.byEquality(grantee=grantees[0]),
+            MatchesStructure.byEquality(grantee=grantees[1]),
+            MatchesStructure.byEquality(grantee=grantees[2]),
+            ]))
+
+    def test__parseRefPattern(self):
+        repository = self.factory.makeGitRepository()
+        login_person(repository.owner)
+        view = create_initialized_view(repository, name="+permissions")
+        self.assertEqual(
+            ("refs/heads/", "stable/*"),
+            view._parseRefPattern("refs/heads/stable/*"))
+        self.assertEqual(
+            ("refs/tags/", "1.0"), view._parseRefPattern("refs/tags/1.0"))
+        self.assertEqual(
+            ("", "refs/other/*"), view._parseRefPattern("refs/other/*"))
+        self.assertEqual(("", "*"), view._parseRefPattern("*"))
+
+    def test__getFieldName_no_grantee(self):
+        repository = self.factory.makeGitRepository()
+        login_person(repository.owner)
+        view = create_initialized_view(repository, name="+permissions")
+        encoded_ref_pattern = base64.b32encode(
+            b"refs/heads/*").replace("=", "_").decode("UTF-8")
+        self.assertEqual(
+            "field.%s" % encoded_ref_pattern,
+            view._getFieldName("field", "refs/heads/*"))
+
+    def test__getFieldName_grantee_repository_owner(self):
+        repository = self.factory.makeGitRepository()
+        login_person(repository.owner)
+        view = create_initialized_view(repository, name="+permissions")
+        encoded_ref_pattern = base64.b32encode(
+            b"refs/tags/*").replace("=", "_").decode("UTF-8")
+        self.assertEqual(
+            "field.%s._repository_owner" % encoded_ref_pattern,
+            view._getFieldName(
+                "field", "refs/tags/*",
+                grantee=GitGranteeType.REPOSITORY_OWNER))
+
+    def test__getFieldName_grantee_person(self):
+        repository = self.factory.makeGitRepository()
+        grantee = self.factory.makePerson()
+        login_person(repository.owner)
+        view = create_initialized_view(repository, name="+permissions")
+        encoded_ref_pattern = base64.b32encode(
+            b"refs/*").replace("=", "_").decode("UTF-8")
+        self.assertEqual(
+            "field.%s.%s" % (encoded_ref_pattern, grantee.id),
+            view._getFieldName("field", "refs/*", grantee=grantee))
+
+    def test__parseFieldName_too_few_components(self):
+        repository = self.factory.makeGitRepository()
+        login_person(repository.owner)
+        view = create_initialized_view(repository, name="+permissions")
+        self.assertRaises(UnexpectedFormData, view._parseFieldName, "field")
+
+    def test__parseFieldName_bad_ref_pattern(self):
+        repository = self.factory.makeGitRepository()
+        login_person(repository.owner)
+        view = create_initialized_view(repository, name="+permissions")
+        self.assertRaises(
+            UnexpectedFormData, view._parseFieldName, "field.nonsense")
+
+    def test__parseFieldName_no_grantee(self):
+        repository = self.factory.makeGitRepository()
+        login_person(repository.owner)
+        view = create_initialized_view(repository, name="+permissions")
+        encoded_ref_pattern = base64.b32encode(
+            b"refs/heads/*").replace("=", "_").decode("UTF-8")
+        self.assertEqual(
+            ("permissions", "refs/heads/*", None),
+            view._parseFieldName("permissions.%s" % encoded_ref_pattern))
+
+    def test__parseFieldName_grantee_unknown_type(self):
+        repository = self.factory.makeGitRepository()
+        login_person(repository.owner)
+        view = create_initialized_view(repository, name="+permissions")
+        encoded_ref_pattern = base64.b32encode(
+            b"refs/tags/*").replace("=", "_").decode("UTF-8")
+        self.assertRaises(
+            UnexpectedFormData, view._parseFieldName,
+            "field.%s._nonsense" % encoded_ref_pattern)
+        self.assertRaises(
+            UnexpectedFormData, view._parseFieldName,
+            "field.%s._person" % encoded_ref_pattern)
+
+    def test__parseFieldName_grantee_repository_owner(self):
+        repository = self.factory.makeGitRepository()
+        login_person(repository.owner)
+        view = create_initialized_view(repository, name="+permissions")
+        encoded_ref_pattern = base64.b32encode(
+            b"refs/tags/*").replace("=", "_").decode("UTF-8")
+        self.assertEqual(
+            ("pattern", "refs/tags/*", GitGranteeType.REPOSITORY_OWNER),
+            view._parseFieldName(
+                "pattern.%s._repository_owner" % encoded_ref_pattern))
+
+    def test__parseFieldName_grantee_unknown_person(self):
+        repository = self.factory.makeGitRepository()
+        grantee = self.factory.makePerson()
+        login_person(repository.owner)
+        view = create_initialized_view(repository, name="+permissions")
+        encoded_ref_pattern = base64.b32encode(
+            b"refs/*").replace("=", "_").decode("UTF-8")
+        self.assertRaises(
+            UnexpectedFormData, view._parseFieldName,
+            "delete.%s.%s" % (encoded_ref_pattern, grantee.id * 2))
+
+    def test__parseFieldName_grantee_person(self):
+        repository = self.factory.makeGitRepository()
+        grantee = self.factory.makePerson()
+        login_person(repository.owner)
+        view = create_initialized_view(repository, name="+permissions")
+        encoded_ref_pattern = base64.b32encode(
+            b"refs/*").replace("=", "_").decode("UTF-8")
+        self.assertEqual(
+            ("delete", "refs/*", grantee),
+            view._parseFieldName(
+                "delete.%s.%s" % (encoded_ref_pattern, grantee.id)))
+
+    def test__getPermissionsTerm_standard(self):
+        grant = self.factory.makeGitRuleGrant(
+            ref_pattern="refs/heads/*", can_create=True, can_push=True)
+        login_person(grant.repository.owner)
+        view = create_initialized_view(grant.repository, name="+permissions")
+        self.assertThat(
+            view._getPermissionsTerm(grant), MatchesStructure.byEquality(
+                value={
+                    GitPermissionType.CAN_CREATE, GitPermissionType.CAN_PUSH},
+                token="can_push",
+                title="Can push"))
+
+    def test__getPermissionsTerm_custom(self):
+        grant = self.factory.makeGitRuleGrant(
+            ref_pattern="refs/heads/*", can_force_push=True)
+        login_person(grant.repository.owner)
+        view = create_initialized_view(grant.repository, name="+permissions")
+        self.assertThat(
+            view._getPermissionsTerm(grant), MatchesStructure.byEquality(
+                value={GitPermissionType.CAN_FORCE_PUSH},
+                token="custom",
+                title="Custom permissions: force-push"))
+
+    def _matchesCells(self, row_tag, cell_matchers):
+        return AfterPreprocessing(
+            str, soupmatchers.HTMLContains(*(
+                soupmatchers.Within(row_tag, cell_matcher)
+                for cell_matcher in cell_matchers)))
+
+    def _matchesRule(self, position, pattern, short_pattern):
+        rule_tag = soupmatchers.Tag(
+            "rule row", "tr", attrs={"class": "git-rule"})
+        suffix = "." + encode_form_field_id(pattern)
+        position_field_name = "field.position" + suffix
+        pattern_field_name = "field.pattern" + suffix
+        delete_field_name = "field.delete" + suffix
+        return self._matchesCells(rule_tag, [
+            soupmatchers.Within(
+                soupmatchers.Tag("position cell", "td"),
+                soupmatchers.Tag(
+                    "position widget", "input",
+                    attrs={"name": position_field_name, "value": position})),
+            soupmatchers.Within(
+                soupmatchers.Tag("pattern cell", "td"),
+                soupmatchers.Tag(
+                    "pattern widget", "input",
+                    attrs={
+                        "name": pattern_field_name,
+                        "value": short_pattern,
+                        })),
+            soupmatchers.Within(
+                soupmatchers.Tag("delete cell", "td"),
+                soupmatchers.Tag(
+                    "delete widget", "input",
+                    attrs={"name": delete_field_name})),
+            ])
+
+    def _matchesNewRule(self, ref_prefix):
+        new_rule_tag = soupmatchers.Tag(
+            "new rule row", "tr", attrs={"class": "git-new-rule"})
+        suffix = "." + encode_form_field_id(ref_prefix)
+        new_position_field_name = "field.new-position" + suffix
+        new_pattern_field_name = "field.new-pattern" + suffix
+        return self._matchesCells(new_rule_tag, [
+            soupmatchers.Within(
+                soupmatchers.Tag("position cell", "td"),
+                soupmatchers.Tag(
+                    "position widget", "input",
+                    attrs={"name": new_position_field_name, "value": ""})),
+            soupmatchers.Within(
+                soupmatchers.Tag("pattern cell", "td"),
+                soupmatchers.Tag(
+                    "pattern widget", "input",
+                    attrs={"name": new_pattern_field_name, "value": ""})),
+            ])
+
+    def _matchesRuleGrant(self, pattern, grantee, permissions_token,
+                          permissions_title):
+        rule_grant_tag = soupmatchers.Tag(
+            "rule grant row", "tr", attrs={"class": "git-rule-grant"})
+        suffix = "." + encode_form_field_id(pattern)
+        if IPerson.providedBy(grantee):
+            suffix += "." + str(grantee.id)
+            grantee_widget_matcher = soupmatchers.Tag(
+                "grantee widget", "a", attrs={"href": canonical_url(grantee)},
+                text=" " + grantee.display_name)
+        else:
+            suffix += "._" + grantee.name.lower()
+            grantee_widget_matcher = soupmatchers.Tag(
+                "grantee widget", "label",
+                text=re.compile(re.escape(grantee.title)))
+        permissions_field_name = "field.permissions" + suffix
+        delete_field_name = "field.delete" + suffix
+        return self._matchesCells(rule_grant_tag, [
+            soupmatchers.Within(
+                soupmatchers.Tag("grantee cell", "td"),
+                grantee_widget_matcher),
+            soupmatchers.Within(
+                soupmatchers.Tag("permissions cell", "td"),
+                soupmatchers.Within(
+                    soupmatchers.Tag(
+                        "permissions widget", "select",
+                        attrs={"name": permissions_field_name}),
+                    soupmatchers.Tag(
+                        "selected permissions option", "option",
+                        attrs={
+                            "selected": "selected",
+                            "value": permissions_token,
+                            },
+                        text=permissions_title))),
+            soupmatchers.Within(
+                soupmatchers.Tag("delete cell", "td"),
+                soupmatchers.Tag(
+                    "delete widget", "input",
+                    attrs={"name": delete_field_name})),
+            ])
+
+    def _matchesNewRuleGrant(self, pattern, permissions_token):
+        rule_grant_tag = soupmatchers.Tag(
+            "rule grant row", "tr", attrs={"class": "git-new-rule-grant"})
+        suffix = "." + encode_form_field_id(pattern)
+        grantee_field_name = "field.grantee" + suffix
+        permissions_field_name = "field.permissions" + suffix
+        return self._matchesCells(rule_grant_tag, [
+            soupmatchers.Within(
+                soupmatchers.Tag("grantee cell", "td"),
+                soupmatchers.Tag(
+                    "grantee widget", "input",
+                    attrs={"name": grantee_field_name})),
+            soupmatchers.Within(
+                soupmatchers.Tag("permissions cell", "td"),
+                soupmatchers.Within(
+                    soupmatchers.Tag(
+                        "permissions widget", "select",
+                        attrs={"name": permissions_field_name}),
+                    soupmatchers.Tag(
+                        "selected permissions option", "option",
+                        attrs={
+                            "selected": "selected",
+                            "value": permissions_token,
+                            }))),
+            ])
+
+    def test_rules_table(self):
+        repository = self.factory.makeGitRepository()
+        heads_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*")
+        heads_grantee_1 = self.factory.makePerson(
+            name=self.factory.getUniqueString("person-name-a"))
+        heads_grantee_2 = self.factory.makePerson(
+            name=self.factory.getUniqueString("person-name-b"))
+        self.factory.makeGitRuleGrant(
+            rule=heads_rule, grantee=heads_grantee_1, can_push=True)
+        self.factory.makeGitRuleGrant(
+            rule=heads_rule, grantee=heads_grantee_2, can_force_push=True)
+        tags_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/tags/*")
+        self.factory.makeGitRuleGrant(
+            rule=tags_rule, grantee=GitGranteeType.REPOSITORY_OWNER)
+        login_person(repository.owner)
+        view = create_initialized_view(
+            repository, name="+permissions", principal=repository.owner)
+        rules_table = find_tag_by_id(view(), "rules-table")
+        rows = rules_table.findAll("tr", {"class": True})
+        self.assertThat(rows, MatchesListwise([
+            self._matchesRule("1", "refs/heads/stable/*", "stable/*"),
+            self._matchesRuleGrant(
+                "refs/heads/stable/*", heads_grantee_1, "can_push_existing",
+                "Can push if the branch already exists"),
+            self._matchesRuleGrant(
+                "refs/heads/stable/*", heads_grantee_2, "custom",
+                "Custom permissions: force-push"),
+            self._matchesNewRuleGrant("refs/heads/stable/*", "can_push"),
+            self._matchesNewRule("refs/heads/"),
+            self._matchesRule("2", "refs/tags/*", "*"),
+            self._matchesRuleGrant(
+                "refs/tags/*", GitGranteeType.REPOSITORY_OWNER,
+                "cannot_create", "Cannot create"),
+            self._matchesNewRuleGrant("refs/tags/*", "can_create"),
+            self._matchesNewRule("refs/tags/"),
+            ]))
+
+    def assertHasRules(self, repository, ref_patterns):
+        self.assertThat(list(repository.rules), MatchesListwise([
+            MatchesStructure.byEquality(ref_pattern=ref_pattern)
+            for ref_pattern in ref_patterns
+            ]))
+
+    def assertHasSavedNotification(self, view, repository):
+        self.assertThat(view.request.response.notifications, MatchesListwise([
+            MatchesStructure.byEquality(
+                message="Saved permissions for %s" % repository.identity),
+            ]))
+
+    def test_save_add_rules(self):
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*")
+        removeSecurityProxy(repository.getActivity()).remove()
+        login_person(repository.owner)
+        encoded_heads_prefix = encode_form_field_id("refs/heads/")
+        encoded_tags_prefix = encode_form_field_id("refs/tags/")
+        form = {
+            "field.new-pattern." + encoded_heads_prefix: "*",
+            "field.new-pattern." + encoded_tags_prefix: "1.0",
+            "field.actions.save": "Save",
+            }
+        view = create_initialized_view(
+            repository, name="+permissions", form=form,
+            principal=repository.owner)
+        self.assertHasRules(
+            repository,
+            ["refs/tags/1.0", "refs/heads/stable/*", "refs/heads/*"])
+        self.assertThat(list(repository.getActivity()), MatchesListwise([
+            # Adding a tag rule automatically adds a repository owner grant.
+            MatchesStructure(
+                changer=Equals(repository.owner),
+                changee=Is(None),
+                what_changed=Equals(GitActivityType.GRANT_ADDED),
+                new_value=MatchesDict({
+                    "changee_type": Equals("Repository owner"),
+                    "ref_pattern": Equals("refs/tags/1.0"),
+                    "can_create": Is(True),
+                    "can_push": Is(False),
+                    "can_force_push": Is(False),
+                    })),
+            MatchesStructure(
+                changer=Equals(repository.owner),
+                what_changed=Equals(GitActivityType.RULE_ADDED),
+                new_value=MatchesDict({
+                    "ref_pattern": Equals("refs/tags/1.0"),
+                    "position": Equals(0),
+                    })),
+            MatchesStructure(
+                changer=Equals(repository.owner),
+                what_changed=Equals(GitActivityType.RULE_ADDED),
+                new_value=MatchesDict({
+                    "ref_pattern": Equals("refs/heads/*"),
+                    # Initially inserted at 1, although refs/tags/1.0 was
+                    # later inserted before it.
+                    "position": Equals(1),
+                    })),
+            ]))
+        self.assertHasSavedNotification(view, repository)
+
+    def test_save_move_rule(self):
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*")
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*/next")
+        encoded_patterns = [
+            encode_form_field_id(rule.ref_pattern)
+            for rule in repository.rules]
+        removeSecurityProxy(repository.getActivity()).remove()
+        login_person(repository.owner)
+        # Positions are 1-based in the UI.
+        form = {
+            "field.position." + encoded_patterns[0]: "2",
+            "field.pattern." + encoded_patterns[0]: "stable/*",
+            "field.position." + encoded_patterns[1]: "1",
+            "field.pattern." + encoded_patterns[1]: "*/more-next",
+            "field.actions.save": "Save",
+            }
+        view = create_initialized_view(
+            repository, name="+permissions", form=form,
+            principal=repository.owner)
+        self.assertHasRules(
+            repository, ["refs/heads/*/more-next", "refs/heads/stable/*"])
+        self.assertThat(list(repository.getActivity()), MatchesListwise([
+            MatchesStructure(
+                changer=Equals(repository.owner),
+                what_changed=Equals(GitActivityType.RULE_CHANGED),
+                old_value=MatchesDict({
+                    "ref_pattern": Equals("refs/heads/*/next"),
+                    "position": Equals(0),
+                    }),
+                new_value=MatchesDict({
+                    "ref_pattern": Equals("refs/heads/*/more-next"),
+                    "position": Equals(0),
+                    })),
+            # Only one rule is recorded as moving; the other is already in
+            # its new position by the time it's processed.
+            MatchesStructure(
+                changer=Equals(repository.owner),
+                what_changed=Equals(GitActivityType.RULE_MOVED),
+                old_value=MatchesDict({
+                    "ref_pattern": Equals("refs/heads/stable/*"),
+                    "position": Equals(0),
+                    }),
+                new_value=MatchesDict({
+                    "ref_pattern": Equals("refs/heads/stable/*"),
+                    "position": Equals(1),
+                    })),
+            ]))
+        self.assertHasSavedNotification(view, repository)
+
+    def test_save_change_grants(self):
+        repository = self.factory.makeGitRepository()
+        stable_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*")
+        next_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*/next")
+        grantees = [self.factory.makePerson() for _ in range(3)]
+        self.factory.makeGitRuleGrant(
+            rule=stable_rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_create=True)
+        self.factory.makeGitRuleGrant(
+            rule=stable_rule,
+            grantee=grantees[0], can_create=True, can_push=True)
+        self.factory.makeGitRuleGrant(
+            rule=next_rule, grantee=grantees[1],
+            can_create=True, can_push=True, can_force_push=True)
+        encoded_patterns = [
+            encode_form_field_id(rule.ref_pattern)
+            for rule in repository.rules]
+        removeSecurityProxy(repository.getActivity()).remove()
+        login_person(repository.owner)
+        form = {
+            "field.permissions.%s._repository_owner" % encoded_patterns[0]: (
+                "can_push"),
+            "field.permissions.%s.%s" % (
+                encoded_patterns[0], grantees[0].id): "can_push",
+            "field.delete.%s.%s" % (encoded_patterns[0], grantees[0].id): "on",
+            "field.grantee.%s" % encoded_patterns[1]: "person",
+            "field.grantee.%s.person" % encoded_patterns[1]: grantees[2].name,
+            "field.permissions.%s" % encoded_patterns[1]: "can_push_existing",
+            "field.actions.save": "Save",
+            }
+        view = create_initialized_view(
+            repository, name="+permissions", form=form,
+            principal=repository.owner)
+        self.assertHasRules(
+            repository, ["refs/heads/stable/*", "refs/heads/*/next"])
+        self.assertThat(stable_rule.grants, MatchesSetwise(
+            MatchesStructure.byEquality(
+                grantee_type=GitGranteeType.REPOSITORY_OWNER,
+                can_create=True, can_push=True, can_force_push=False)))
+        self.assertThat(next_rule.grants, MatchesSetwise(
+            MatchesStructure.byEquality(
+                grantee=grantees[1],
+                can_create=True, can_push=True, can_force_push=True),
+            MatchesStructure.byEquality(
+                grantee=grantees[2],
+                can_create=False, can_push=True, can_force_push=False)))
+        self.assertThat(repository.getActivity(), MatchesSetwise(
+            MatchesStructure(
+                changer=Equals(repository.owner),
+                changee=Is(None),
+                what_changed=Equals(GitActivityType.GRANT_CHANGED),
+                old_value=Equals({
+                    "changee_type": "Repository owner",
+                    "ref_pattern": "refs/heads/stable/*",
+                    "can_create": True,
+                    "can_push": False,
+                    "can_force_push": False,
+                    }),
+                new_value=Equals({
+                    "changee_type": "Repository owner",
+                    "ref_pattern": "refs/heads/stable/*",
+                    "can_create": True,
+                    "can_push": True,
+                    "can_force_push": False,
+                    })),
+            MatchesStructure(
+                changer=Equals(repository.owner),
+                changee=Equals(grantees[0]),
+                what_changed=Equals(GitActivityType.GRANT_REMOVED),
+                old_value=Equals({
+                    "changee_type": "Person",
+                    "ref_pattern": "refs/heads/stable/*",
+                    "can_create": True,
+                    "can_push": True,
+                    "can_force_push": False,
+                    })),
+            MatchesStructure(
+                changer=Equals(repository.owner),
+                changee=Equals(grantees[2]),
+                what_changed=Equals(GitActivityType.GRANT_ADDED),
+                new_value=Equals({
+                    "changee_type": "Person",
+                    "ref_pattern": "refs/heads/*/next",
+                    "can_create": False,
+                    "can_push": True,
+                    "can_force_push": False,
+                    }))))
+        self.assertHasSavedNotification(view, repository)
+
+    def test_save_delete_rule(self):
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*")
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        removeSecurityProxy(repository.getActivity()).remove()
+        login_person(repository.owner)
+        encoded_pattern = encode_form_field_id("refs/heads/*")
+        form = {
+            "field.pattern." + encoded_pattern: "*",
+            "field.delete." + encoded_pattern: "on",
+            "field.actions.save": "Save",
+            }
+        view = create_initialized_view(
+            repository, name="+permissions", form=form,
+            principal=repository.owner)
+        self.assertHasRules(repository, ["refs/heads/stable/*"])
+        self.assertThat(list(repository.getActivity()), MatchesListwise([
+            MatchesStructure(
+                changer=Equals(repository.owner),
+                what_changed=Equals(GitActivityType.RULE_REMOVED),
+                old_value=MatchesDict({
+                    "ref_pattern": Equals("refs/heads/*"),
+                    "position": Equals(1),
+                    })),
+            ]))
+        self.assertHasSavedNotification(view, repository)
 
 
 class TestGitRepositoryDeletionView(BrowserTestCase):
