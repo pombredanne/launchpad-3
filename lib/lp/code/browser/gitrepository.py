@@ -234,7 +234,7 @@ class GitRepositoryEditMenu(NavigationMenu):
     usedfor = IGitRepository
     facet = "branches"
     title = "Edit Git repository"
-    links = ["edit", "reviewer", "webhooks", "delete"]
+    links = ["edit", "reviewer", "permissions", "webhooks", "delete"]
 
     @enabled_with_permission("launchpad.Edit")
     def edit(self):
@@ -245,6 +245,11 @@ class GitRepositoryEditMenu(NavigationMenu):
     def reviewer(self):
         text = "Set repository reviewer"
         return Link("+reviewer", text, icon="edit")
+
+    @enabled_with_permission("launchpad.Edit")
+    def permissions(self):
+        text = "Manage permissions"
+        return Link("+permissions", text, icon="edit")
 
     @enabled_with_permission("launchpad.Edit")
     def webhooks(self):
