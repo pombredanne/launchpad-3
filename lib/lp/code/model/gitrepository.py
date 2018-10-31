@@ -1204,7 +1204,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         return Store.of(self).find(
             GitRuleGrant, GitRuleGrant.repository_id == self.id)
 
-    def findRuleGrantsByGrantee(self, grantee):
+    def findRuleGrantsByGrantee(self, grantee, exact_grantee=False,
+                                ref_pattern=None):
         """See `IGitRepository`."""
         if isinstance(grantee, DBItem) and grantee.enum == GitGranteeType:
             if grantee == GitGranteeType.PERSON:
@@ -1212,12 +1213,22 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                     "grantee may not be GitGranteeType.PERSON; pass a person "
                     "object instead")
             clauses = [GitRuleGrant.grantee_type == grantee]
+        elif exact_grantee:
+            clauses = [
+                GitRuleGrant.grantee_type == GitGranteeType.PERSON,
+                GitRuleGrant.grantee == grantee,
+                ]
         else:
             clauses = [
                 GitRuleGrant.grantee_type == GitGranteeType.PERSON,
                 TeamParticipation.person == grantee,
                 GitRuleGrant.grantee == TeamParticipation.teamID
                 ]
+        if ref_pattern is not None:
+            clauses.extend([
+                GitRuleGrant.rule_id == GitRule.id,
+                GitRule.ref_pattern == ref_pattern,
+                ])
         return self.grants.find(*clauses).config(distinct=True)
 
     def getRules(self):
