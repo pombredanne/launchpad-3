@@ -1513,6 +1513,28 @@ class TestGitRepositoryPermissionsView(BrowserTestCase):
             ]))
         self.assertHasSavedNotification(view, repository)
 
+    def test_save_add_duplicate_rule(self):
+        repository = self.factory.makeGitRepository()
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/stable/*")
+        transaction.commit()
+        login_person(repository.owner)
+        encoded_heads_prefix = encode_form_field_id("refs/heads/")
+        form = {
+            "field.new-pattern." + encoded_heads_prefix: "stable/*",
+            "field.actions.save": "Save",
+            }
+        view = create_initialized_view(
+            repository, name="+permissions", form=form,
+            principal=repository.owner)
+        self.assertThat(view.errors, MatchesListwise([
+            MatchesStructure(
+                field_name=Equals("new-pattern." + encoded_heads_prefix),
+                errors=MatchesStructure.byEquality(
+                    args=("stable/* is already in use by another rule",))),
+            ]))
+        self.assertHasRules(repository, ["refs/heads/stable/*"])
+
     def test_save_move_rule(self):
         repository = self.factory.makeGitRepository()
         self.factory.makeGitRule(
