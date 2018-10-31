@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A set of functions related to the ability to parse the XML CVE database,
@@ -8,11 +8,11 @@ CVE's are fully registered in Launchpad."""
 __metaclass__ = type
 
 import gzip
-import StringIO
+import io
 import time
-import urllib2
 import xml.etree.cElementTree as cElementTree
 
+import requests
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implementer
@@ -30,6 +30,10 @@ from lp.services.looptuner import (
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
+    )
+from lp.services.timeout import (
+    override_timeout,
+    urlfetch,
     )
 
 
@@ -194,7 +198,7 @@ class CVEUpdater(LaunchpadCronScript):
         self.parser.add_option(
             "-u", "--cveurl", dest="cveurl",
             default=config.cveupdater.cve_db_url,
-            help="The URL for the gzipped XML CVE database.")
+            help="The URL for the XML CVE database.")
 
     def main(self):
         self.logger.info('Initializing...')
@@ -205,21 +209,8 @@ class CVEUpdater(LaunchpadCronScript):
                 raise LaunchpadScriptFailure(
                     'Unable to open CVE database in %s'
                     % self.options.cvefile)
-
         elif self.options.cveurl is not None:
-            self.logger.info("Downloading CVE database from %s..." %
-                             self.options.cveurl)
-            try:
-                url = urllib2.urlopen(self.options.cveurl)
-            except (urllib2.HTTPError, urllib2.URLError):
-                raise LaunchpadScriptFailure(
-                    'Unable to connect for CVE database %s'
-                    % self.options.cveurl)
-
-            cve_db_gz = url.read()
-            self.logger.info("%d bytes downloaded." % len(cve_db_gz))
-            cve_db = gzip.GzipFile(
-                fileobj=StringIO.StringIO(cve_db_gz)).read()
+            cve_db = self.fetchCVEURL(self.options.cveurl)
         else:
             raise LaunchpadScriptFailure('No CVE database file or URL given.')
 
@@ -230,6 +221,27 @@ class CVEUpdater(LaunchpadCronScript):
         finish_time = time.time()
         self.logger.info('%d seconds to update database.'
                 % (finish_time - start_time))
+
+    def fetchCVEURL(self, url):
+        """Fetch CVE data from a URL, decompressing if necessary."""
+        self.logger.info("Downloading CVE database from %s..." % url)
+        try:
+            with override_timeout(config.cveupdater.timeout):
+                # Command-line options are trusted, so allow file://
+                # URLs to ease testing.
+                response = urlfetch(url, use_proxy=True, allow_file=True)
+        except requests.RequestException:
+            raise LaunchpadScriptFailure(
+                'Unable to connect for CVE database %s' % url)
+
+        cve_db = response.content
+        self.logger.info("%d bytes downloaded." % len(cve_db))
+        # requests will normally decompress this automatically, but that
+        # might not be the case if we're given a file:// URL to a gzipped
+        # file.
+        if cve_db[:2] == b'\037\213':  # gzip magic
+            cve_db = gzip.GzipFile(fileobj=io.BytesIO(cve_db)).read()
+        return cve_db
 
     def processCVEXML(self, cve_xml):
         """Process the CVE XML file.

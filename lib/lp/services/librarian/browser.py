@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser file for LibraryFileAlias."""
@@ -125,6 +125,13 @@ class ProxiedLibraryFileAlias:
         self.parent = parent
 
     @property
+    def request(self):
+        request = get_current_browser_request()
+        if WebServiceLayer.providedBy(request):
+            request = IWebBrowserOriginatingRequest(request)
+        return request
+
+    @property
     def http_url(self):
         """Return the webapp URL for the context `LibraryFileAlias`.
 
@@ -137,11 +144,7 @@ class ProxiedLibraryFileAlias:
         if self.context.deleted:
             return None
 
-        request = get_current_browser_request()
-        if WebServiceLayer.providedBy(request):
-            request = IWebBrowserOriginatingRequest(request)
-
-        parent_url = canonical_url(self.parent, request=request)
+        parent_url = canonical_url(self.parent, request=self.request)
         traversal_url = urlappend(parent_url, '+files')
         url = urlappend(
             traversal_url,

@@ -13,6 +13,7 @@ from StringIO import StringIO
 import tempfile
 
 import pytz
+import scandir
 from storm.store import Store
 from testtools.matchers import Equals
 import transaction
@@ -494,7 +495,7 @@ class SoyuzTestPublisher:
 
     def _findChangesFile(self, top, name_fragment):
         """File with given name fragment in directory tree starting at top."""
-        for root, dirs, files in os.walk(top, topdown=False):
+        for root, dirs, files in scandir.walk(top, topdown=False):
             for name in files:
                 if (name.endswith('.changes') and
                     name.find(name_fragment) > -1):

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person/team merger implementation."""
@@ -138,6 +138,42 @@ def _mergeAccessPolicyGrant(cur, from_id, to_id):
     # and delete those left over.
     cur.execute('''
         DELETE FROM AccessPolicyGrant WHERE grantee = %(from_id)d
+        ''' % vars())
+
+
+def _mergeGitRuleGrant(cur, from_id, to_id):
+    # Transfer GitRuleGrants that only exist on from_person.
+    cur.execute('''
+        UPDATE GitRuleGrant
+        SET grantee=%(to_id)d
+        WHERE
+            grantee = %(from_id)d
+            AND rule NOT IN (
+                SELECT rule
+                FROM GitRuleGrant
+                WHERE grantee = %(to_id)d
+                )
+        ''' % vars())
+    # Merge permissions on GitRuleGrants that exist on both from_person and
+    # to_person.  When multiple grants match a user we take the union of the
+    # permissions they confer, so it's safe to do that here too.
+    cur.execute('''
+        UPDATE GitRuleGrant
+        SET
+            can_create = GitRuleGrant.can_create OR other.can_create,
+            can_push = GitRuleGrant.can_push OR other.can_push,
+            can_force_push =
+                GitRuleGrant.can_force_push OR other.can_force_push
+        FROM GitRuleGrant AS other
+        WHERE
+            GitRuleGrant.grantee = %(to_id)d
+            AND other.grantee = %(from_id)d
+            AND GitRuleGrant.rule = other.rule
+        ''' % vars())
+    # Delete the remaining GitRuleGrants for from_person, which have now all
+    # been either transferred or merged.
+    cur.execute('''
+        DELETE FROM GitRuleGrant WHERE grantee = %(from_id)d
         ''' % vars())
 
 
@@ -732,6 +768,10 @@ def merge_people(from_person, to_person, reviewer, delete=False):
         ('latestpersonsourcepackagereleasecache', 'maintainer'),
         # Obsolete table.
         ('branchmergequeue', 'owner'),
+        # This needs handling before we deploy the Git permissions model
+        # code, but can be ignored for the purpose of deploying the database
+        # tables.
+        ('gitrulegrant', 'grantee'),
         ]
 
     references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -771,8 +811,10 @@ def merge_people(from_person, to_person, reviewer, delete=False):
 
     _mergeAccessArtifactGrant(cur, from_id, to_id)
     _mergeAccessPolicyGrant(cur, from_id, to_id)
+    _mergeGitRuleGrant(cur, from_id, to_id)
     skip.append(('accessartifactgrant', 'grantee'))
     skip.append(('accesspolicygrant', 'grantee'))
+    skip.append(('gitrulegrant', 'grantee'))
 
     # Update the Branches that will not conflict, and fudge the names of
     # ones that *do* conflict.

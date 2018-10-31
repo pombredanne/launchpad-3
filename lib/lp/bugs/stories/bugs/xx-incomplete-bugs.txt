@@ -9,8 +9,8 @@ No Privileges Person opens a bug and sets its status to 'Incomplete'.
     ...     'http://bugs.launchpad.dev/jokosher/+bug/11/+editstatus')
     >>> user_browser.getControl('Status').value = ['Incomplete']
     >>> user_browser.getControl('Save Changes').click()
-    >>> print extract_text(
-    ...     find_tags_by_class(user_browser.contents, 'statusINCOMPLETE')[0])
+    >>> print(extract_text(
+    ...     find_tags_by_class(user_browser.contents, 'statusINCOMPLETE')[0]))
     Incomplete
 
 No Privileges Person can now search for the bug using the advanced
@@ -40,8 +40,8 @@ supplied are 'Incomplete (with response)'.
 The bug No Privileges Person examined earlier does not have any new
 information, so they do not see it in the list.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'bugs-table-listing'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'bugs-table-listing')))
     No results for search
 
 No Privileges Person can supply new information by posting a new
@@ -91,8 +91,8 @@ Jokosher uses Launchpad to track bugs, so a notice is displayed
 stating that the bug report will be marked for expiration.
 
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bug/11')
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'can-expire'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'can-expire')))
     This bug report will be marked for expiration in 59 days if no further
     activity occurs.
     (find out why)
@@ -121,8 +121,8 @@ date. We alter the date_last_updated field of bug 11 to demonstrate this.
     >>> logout()
 
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bug/11')
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'can-expire'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'can-expire')))
     This bug report was marked for expiration 1 days ago.
     (find out why)
 
@@ -153,7 +153,7 @@ The link is to the expirable bugs page. No Privileges Person can see
 the bug they set to Incomplete previously.
 
     >>> expirable_bugs_link.click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Expirable bugs : Bugs : Jokosher
 
     >>> contents = find_main_content(user_browser.contents)
@@ -171,7 +171,7 @@ This specialized list does not include the search form. So there is no
     >>> user_browser.getControl('Search', index=0).type
     Traceback (most recent call last):
     ...
-    LookupError: label 'Search'
+    LookupError: label u'Search'
 
 The 'Report a bug' link is also not present.
 
@@ -201,7 +201,7 @@ Jokosher's bug page.
     >>> user_browser.getLink('Make Jokosher use autoaudiosink').click()
     >>> user_browser.getControl('Status').value = ['Confirmed']
     >>> user_browser.getControl('Save Changes', index=0).click()
-    >>> print find_tag_by_id(user_browser.contents, 'can-expire')
+    >>> print(find_tag_by_id(user_browser.contents, 'can-expire'))
     None
 
     >>> user_browser.getLink('Bugs').click()
@@ -231,14 +231,14 @@ it is by default.  So we set the bug back to NEW.
     ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/8')
     >>> user_browser.getControl('Status').value = ['Incomplete']
     >>> user_browser.getControl('Save Changes', index=0).click()
-    >>> print find_tag_by_id(user_browser.contents, 'can-expire')
+    >>> print(find_tag_by_id(user_browser.contents, 'can-expire'))
     None
 
 If No Privileges Person hacks the URL to see a listing of Debian's
 expirable bugs they read that Debian does not use bug expiration.
 
     >>> user_browser.open('http://bugs.launchpad.dev/debian/+expirable-bugs')
-    >>> print extract_text(find_main_content(user_browser.contents).p)
+    >>> print(extract_text(find_main_content(user_browser.contents).p))
     This project has not enabled bug expiration. No bugs can expire.
     Project administrator's may choose to enable bug expiration by
     updating the project's details. See Bugs/Expiry.
@@ -273,7 +273,7 @@ A default search turns that bug up as well.
 
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher')
     >>> user_browser.getControl('Search', index=0).click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://bugs.launchpad.dev/jokosher/+bugs?...&field.status%3Alist=INCOMPLETE_WITH_RESPONSE&field.status%3Alist=INCOMPLETE_WITHOUT_RESPONSE...
     >>> ('<a href="http://bugs.launchpad.dev/jokosher/+bug/11" class="bugtitle">' in
     ...     str(find_tag_by_id(user_browser.contents, 'bugs-table-listing')))

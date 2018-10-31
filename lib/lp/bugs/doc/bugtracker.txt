@@ -20,8 +20,8 @@ and an external bug, see bugwatch.txt.
     ...         key=lambda watch: (watch.remotebug, watch.bug.id))
     ...
     ...     for bug_watch in watches:
-    ...         print "Remote bug: %s LP bug: %s" % (
-    ...             bug_watch.remotebug, bug_watch.bug.id)
+    ...         print("Remote bug: %s LP bug: %s" % (
+    ...             bug_watch.remotebug, bug_watch.bug.id))
 
 We must be an admin to modify bug watches later on.
 
@@ -32,25 +32,25 @@ updated. A bug watch is considered to be needing an update when its
 next_check time is in the past.
 
     >>> bug_watches = mozilla_bugzilla.watches
-    >>> print bug_watches.count()
+    >>> print(bug_watches.count())
     4
 
-    >>> print bug_watches[0].remotebug, bug_watches[0].bug.id
+    >>> print(bug_watches[0].remotebug, bug_watches[0].bug.id)
     2000 1
     >>> bug_watches[0].next_check = now - timedelta(hours=1)
 
-    >>> print bug_watches[1].remotebug, bug_watches[1].bug.id
+    >>> print(bug_watches[1].remotebug, bug_watches[1].bug.id)
     123543 1
     >>> bug_watches[1].lastchecked = now - timedelta(hours=12)
 
 Note that bugtracker.watches may produce multiple watches for the same
 remote bug.
 
-    >>> print bug_watches[2].remotebug, bug_watches[2].bug.id
+    >>> print(bug_watches[2].remotebug, bug_watches[2].bug.id)
     42 1
     >>> bug_watches[2].next_check = now - timedelta(hours=36)
 
-    >>> print bug_watches[3].remotebug, bug_watches[3].bug.id
+    >>> print(bug_watches[3].remotebug, bug_watches[3].bug.id)
     42 2
     >>> bug_watches[3].next_check = now - timedelta(days=1)
 
@@ -74,7 +74,7 @@ this.
     >>> message = factory.makeMessage(
     ...     'Unpushed comment', '... is unpushed')
 
-    >>> print bug_watches[1].remotebug
+    >>> print(bug_watches[1].remotebug)
     123543
 
     >>> bug_message = bug_watches[1].addComment(None, message)
@@ -268,7 +268,7 @@ Pillars for bugtrackers
     >>> trackers = list(bugtracker_set)
     >>> pillars = bugtracker_set.getPillarsForBugtrackers(trackers)
     >>> for t in pillars:
-    ...     print t.name, [p.name for p in pillars[t]]
+    ...     print(t.name, [p.name for p in pillars[t]])
     gnome-bugzilla [u'gnome-terminal', u'gnome']
 
 
@@ -280,9 +280,9 @@ bug messages which have been imported for a given bug tracker.
 
     >>> def print_bug_messages(bug_messages):
     ...     for bug_message in bug_messages:
-    ...         print '* bug: %d' % bug_message.bug.id
-    ...         print '- remote bug: %s' % bug_message.bugwatch.remotebug
-    ...         print '- message subject: %s' % bug_message.message.subject
+    ...         print('* bug: %d' % bug_message.bug.id)
+    ...         print('- remote bug: %s' % bug_message.bugwatch.remotebug)
+    ...         print('- message subject: %s' % bug_message.message.subject)
 
 The Mozilla Bugzilla has only one imported bug message.
 
@@ -330,7 +330,7 @@ searching bugs.
 
     >>> def print_links(links_dict):
     ...     for key in sorted(links_dict):
-    ...         print "%s: %s" % (key, links_dict[key])
+    ...         print("%s: %s" % (key, links_dict[key]))
 
     >>> links = mozilla_bugzilla.getBugFilingAndSearchLinks(
     ...     remote_product='testproduct', summary="Foo", description="Bar")
@@ -506,13 +506,13 @@ being passed a remote product.
 Our example Trac bug tracker's `multi_product` property will be False,
 since it only tracks one product at a time.
 
-    >>> print example_trac.multi_product
+    >>> print(example_trac.multi_product)
     False
 
 However, Bugzilla instances require remote products in order to be able
 to return a bug filing URL.
 
-    >>> print mozilla_bugzilla.multi_product
+    >>> print(mozilla_bugzilla.multi_product)
     True
 
 There is a test in database/tests/test_bugtracker.py that checks that

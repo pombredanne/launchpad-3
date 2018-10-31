@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/code modules."""
@@ -21,7 +21,10 @@ __all__ = [
     'CodeImportReviewStatus',
     'CodeReviewNotificationLevel',
     'CodeReviewVote',
+    'GitActivityType',
+    'GitGranteeType',
     'GitObjectType',
+    'GitPermissionType',
     'GitRepositoryType',
     'NON_CVS_RCS_TYPES',
     'RevisionControlSystems',
@@ -173,6 +176,60 @@ class GitObjectType(DBEnumeratedType):
 
         An annotated tag object.
         """)
+
+
+class GitGranteeType(DBEnumeratedType):
+    """Git Grantee Type
+
+    Access grants for Git repositories can be made to various kinds of
+    grantees.
+    """
+
+    REPOSITORY_OWNER = DBItem(1, """
+        Repository owner
+
+        A grant to the owner of the associated repository.
+        """)
+
+    PERSON = DBItem(2, """
+        Person
+
+        A grant to a particular person or team.
+        """)
+
+
+class GitActivityType(DBEnumeratedType):
+    """Git Activity Type
+
+    Various kinds of change can be recorded for a Git repository.
+    """
+
+    RULE_ADDED = DBItem(1, "Added access rule")
+
+    RULE_CHANGED = DBItem(2, "Changed access rule")
+
+    RULE_REMOVED = DBItem(3, "Removed access rule")
+
+    RULE_MOVED = DBItem(4, "Moved access rule")
+
+    GRANT_ADDED = DBItem(11, "Added access grant")
+
+    GRANT_CHANGED = DBItem(12, "Changed access grant")
+
+    GRANT_REMOVED = DBItem(13, "Removed access grant")
+
+
+class GitPermissionType(EnumeratedType):
+    """Git Permission Type
+
+    A kind of permission that can be granted on part of a Git repository.
+    """
+
+    CAN_CREATE = Item("Can create")
+
+    CAN_PUSH = Item("Can push")
+
+    CAN_FORCE_PUSH = Item("Can force-push")
 
 
 class BranchLifecycleStatusFilter(EnumeratedType):

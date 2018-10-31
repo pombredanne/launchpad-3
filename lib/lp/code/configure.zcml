@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -538,6 +538,13 @@
     <allow interface="lp.code.interfaces.branchrevision.IBranchRevision"/>
   </class>
 
+  <!-- Branch hosting -->
+  <securedutility
+      class="lp.code.model.branchhosting.BranchHostingClient"
+      provides="lp.code.interfaces.branchhosting.IBranchHostingClient">
+    <allow interface="lp.code.interfaces.branchhosting.IBranchHostingClient" />
+  </securedutility>
+
   <!-- CodeReviewComment -->
 
   <class class="lp.code.model.codereviewcomment.CodeReviewComment">
@@ -889,27 +896,91 @@
   <class class="lp.code.model.gitref.GitRef">
     <require
         permission="launchpad.View"
-        interface="lp.code.interfaces.gitref.IGitRef" />
+        interface="lp.code.interfaces.gitref.IGitRefView" />
+    <require
+        permission="launchpad.Edit"
+        interface="lp.code.interfaces.gitref.IGitRefEdit" />
   </class>
   <class class="lp.code.model.gitref.GitRefDefault">
     <require
         permission="launchpad.View"
-        interface="lp.code.interfaces.gitref.IGitRef" />
+        interface="lp.code.interfaces.gitref.IGitRefView" />
+    <require
+        permission="launchpad.Edit"
+        interface="lp.code.interfaces.gitref.IGitRefEdit" />
   </class>
   <class class="lp.code.model.gitref.GitRefFrozen">
     <require
         permission="launchpad.View"
-        interface="lp.code.interfaces.gitref.IGitRef" />
+        interface="lp.code.interfaces.gitref.IGitRefView" />
+    <require
+        permission="launchpad.Edit"
+        interface="lp.code.interfaces.gitref.IGitRefEdit" />
   </class>
   <class class="lp.code.model.gitref.GitRefRemote">
     <require
         permission="launchpad.View"
-        interface="lp.code.interfaces.gitref.IGitRef" />
+        interface="lp.code.interfaces.gitref.IGitRefView" />
+    <require
+        permission="launchpad.Edit"
+        interface="lp.code.interfaces.gitref.IGitRefEdit" />
   </class>
   <securedutility
       component="lp.code.model.gitref.GitRefRemote"
       provides="lp.code.interfaces.gitref.IGitRefRemoteSet">
     <allow interface="lp.code.interfaces.gitref.IGitRefRemoteSet" />
+  </securedutility>
+
+  <!-- Git repository access rules -->
+
+  <class class="lp.code.model.gitrule.GitRule">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitrule.IGitRuleView
+                   lp.code.interfaces.gitrule.IGitRuleEditableAttributes" />
+    <require
+        permission="launchpad.Edit"
+        interface="lp.code.interfaces.gitrule.IGitRuleEdit"
+        set_schema="lp.code.interfaces.gitrule.IGitRuleEditableAttributes" />
+    <allow interface="lazr.restful.interfaces.IJSONPublishable" />
+  </class>
+  <subscriber
+      for="lp.code.interfaces.gitrule.IGitRule zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+      handler="lp.code.model.gitrule.git_rule_modified"/>
+  <class class="lp.code.model.gitrule.GitRuleGrant">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitrule.IGitRuleGrantView
+                   lp.code.interfaces.gitrule.IGitRuleGrantEditableAttributes" />
+    <require
+        permission="launchpad.Edit"
+        interface="lp.code.interfaces.gitrule.IGitRuleGrantEdit"
+        set_schema="lp.code.interfaces.gitrule.IGitRuleGrantEditableAttributes" />
+    <allow interface="lazr.restful.interfaces.IJSONPublishable" />
+  </class>
+  <subscriber
+      for="lp.code.interfaces.gitrule.IGitRuleGrant zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+      handler="lp.code.model.gitrule.git_rule_grant_modified"/>
+  <class class="lp.code.model.gitrule.GitNascentRule">
+    <allow interface="lp.code.interfaces.gitrule.IGitNascentRule" />
+  </class>
+  <class class="lp.code.model.gitrule.GitNascentRuleGrant">
+    <allow interface="lp.code.interfaces.gitrule.IGitNascentRuleGrant" />
+  </class>
+  <adapter factory="lp.code.model.gitrule.nascent_rule_from_dict" />
+  <adapter factory="lp.code.model.gitrule.nascent_rule_grant_from_dict" />
+
+  <!-- GitActivity -->
+
+  <class class="lp.code.model.gitactivity.GitActivity">
+    <require
+        permission="launchpad.View"
+        interface="lp.code.interfaces.gitactivity.IGitActivity" />
+  </class>
+  <securedutility
+      class="lp.code.model.gitactivity.GitActivitySet"
+      provides="lp.code.interfaces.gitactivity.IGitActivitySet">
+    <allow interface="lp.code.interfaces.gitactivity.IGitActivitySet" />
   </securedutility>
 
   <!-- GitCollection -->

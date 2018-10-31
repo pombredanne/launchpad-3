@@ -16,10 +16,10 @@ text into it by calling the selectWidget Javascript function.
 
     >>> browser.open('http://launchpad.dev/firefox/+bugs?advanced=1')
     >>> assignee_widget = find_tag_by_id(browser.contents, 'field.assignee')
-    >>> print assignee_widget['onkeypress']
+    >>> print(assignee_widget['onkeypress'])
     selectWidget('assignee_option', event)
 
-    >>> print find_tag_by_id(browser.contents, 'assignee_option')
+    >>> print(find_tag_by_id(browser.contents, 'assignee_option'))
     <input...type="radio"...>
 
 
@@ -120,7 +120,7 @@ displayed.
     >>> anon_browser.getControl('Commenter').value = 'non-existent'
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
-    ...     print message.renderContents()
+    ...     print(message.renderContents())
     There&#x27;s no person with the name or email address &#x27;non-existent&#x27;.
 
 Entering an existing person shows all bugs that person has commented on.
@@ -177,7 +177,7 @@ displayed:
     >>> anon_browser.getControl('Subscriber').value = 'non-existent'
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
-    ...     print message.renderContents()
+    ...     print(message.renderContents())
     There&#x27;s no person with the name or email address &#x27;non-existent&#x27;.
 
 Entering an existing person shows all bugs for packages or products that
@@ -187,7 +187,7 @@ isn't subscribed to any bugs. In this case, no bugs are found:
     >>> subscriber = 'no-priv@canonical.com'
     >>> anon_browser.getControl('Subscriber').value = subscriber
     >>> anon_browser.getControl('Search', index=0).click()
-    >>> print extract_text(find_main_content(anon_browser.contents))
+    >>> print(extract_text(find_main_content(anon_browser.contents)))
     Advanced search
     ...
     No results for search
@@ -199,7 +199,7 @@ product:
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://bugs.launchpad.dev/firefox/')
     >>> browser.getLink('Report a bug').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> print(extract_text(find_main_content(browser.contents)))
     Report a bug...
 
     >>> report_bug_url = browser.url
@@ -228,7 +228,7 @@ Next we'll subscribe our user to the first bug we've just registered:
 
     >>> browser.open(bug_1_url)
     >>> browser.getLink('Subscribe someone else').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> print(extract_text(find_main_content(browser.contents)))
     Subscribe someone else to bug #...
 
     >>> browser.getControl('Person').value = subscriber
@@ -244,14 +244,14 @@ we'll find our first bug within the results:
     >>> anon_browser.getControl('Search', index=0).click()
     >>> from lp.bugs.tests.bug import extract_bugtasks
     >>> for bugtask in extract_bugtasks(anon_browser.contents):
-    ...     print 'Task:' + bugtask
+    ...     print('Task:' + bugtask)
     Task:...Test Bug 1...Undecided...New
 
 Next we'll subscribe our user to the second bug we've just registered:
 
     >>> browser.open(bug_2_url)
     >>> browser.getLink('Subscribe someone else').click()
-    >>> print extract_text(find_main_content(browser.contents))
+    >>> print(extract_text(find_main_content(browser.contents)))
     Subscribe someone else to bug #...
 
     >>> browser.getControl('Person').value = subscriber
@@ -266,7 +266,7 @@ to, we'll find both of our bugs within the results:
     >>> anon_browser.getControl('Subscriber').value = subscriber
     >>> anon_browser.getControl('Search', index=0).click()
     >>> for bugtask in extract_bugtasks(anon_browser.contents):
-    ...     print 'Task:' + bugtask
+    ...     print('Task:' + bugtask)
     Task:...Test Bug 1...Undecided...New
     Task:...Test Bug 2...Undecided...New
 

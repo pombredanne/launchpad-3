@@ -1,4 +1,4 @@
-<!-- Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -42,6 +42,13 @@
         <allow interface="lp.snappy.interfaces.snap.ISnapSet" />
     </securedutility>
 
+    <!-- SnapBuildRequest -->
+    <class class="lp.snappy.model.snap.SnapBuildRequest">
+        <require
+            permission="launchpad.View"
+            interface="lp.snappy.interfaces.snap.ISnapBuildRequest" />
+    </class>
+
     <!-- SnapBuild -->
     <class class="lp.snappy.model.snapbuild.SnapBuild">
         <require
@@ -54,6 +61,10 @@
             permission="launchpad.Admin"
             interface="lp.snappy.interfaces.snapbuild.ISnapBuildAdmin" />
     </class>
+    <subscriber
+        for="lp.snappy.interfaces.snapbuild.ISnapBuild
+             lazr.lifecycle.interfaces.IObjectCreatedEvent"
+        handler="lp.snappy.subscribers.snapbuild.snap_build_created" />
     <subscriber
         for="lp.snappy.interfaces.snapbuild.ISnapBuild
              lp.snappy.interfaces.snapbuild.ISnapBuildStatusChangedEvent"
@@ -127,6 +138,18 @@
     </securedutility>
 
     <!-- Snap-related jobs -->
+    <class class="lp.snappy.model.snapjob.SnapJob">
+        <allow interface="lp.snappy.interfaces.snapjob.ISnapJob" />
+    </class>
+    <securedutility
+        component="lp.snappy.model.snapjob.SnapRequestBuildsJob"
+        provides="lp.snappy.interfaces.snapjob.ISnapRequestBuildsJobSource">
+        <allow interface="lp.snappy.interfaces.snapjob.ISnapRequestBuildsJobSource" />
+    </securedutility>
+    <class class="lp.snappy.model.snapjob.SnapRequestBuildsJob">
+        <allow interface="lp.snappy.interfaces.snapjob.ISnapJob" />
+        <allow interface="lp.snappy.interfaces.snapjob.ISnapRequestBuildsJob" />
+    </class>
     <class class="lp.snappy.model.snapbuildjob.SnapBuildJob">
         <allow interface="lp.snappy.interfaces.snapbuildjob.ISnapBuildJob" />
     </class>

@@ -32,7 +32,7 @@ methods as well.
     ...     """A custom build behaviour for building blah."""
     ...
     ...     def dispatchBuildToSlave(self, logger):
-    ...         print "Did something special to dispatch MySpecialBuild."
+    ...         print("Did something special to dispatch MySpecialBuild.")
 
 For this documentation, we'll also need a dummy new build farm job.
 

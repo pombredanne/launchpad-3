@@ -33,7 +33,7 @@ DistributionSourcePackageCache table, including:
     10
 
     >>> for name in sorted([cache.name for cache in ubuntu_caches]):
-    ...              print name
+    ...     print(name)
     alsa-utils
     cnews
     commercialpackage
@@ -67,7 +67,7 @@ table, including:
     5
 
     >>> for name in sorted([cache.name for cache in warty_caches]):
-    ...              print name
+    ...     print(name)
     at
     foobar
     linux-2.6.12
@@ -168,7 +168,7 @@ We can invoke the cache updater directly on IDistroSeries:
     DEBUG Considering sources linux-source-2.6.15, mozilla-firefox, netapplet
     ...
 
-    >>> print updates
+    >>> print(updates)
     10
 
 Now we see that the 'cdrkit' source is part of the caches and can be
@@ -250,7 +250,7 @@ We can invoke the cache updater directly on IDistroSeries:
     DEBUG Considering binaries mozilla-firefox, mozilla-firefox-data, pmount
     DEBUG Committing
 
-    >>> print updates
+    >>> print(updates)
     6
 
 Transaction behaves exactly the same as for Source Caches, except that
@@ -285,15 +285,15 @@ We will use Celso's PPA.
 With empty cache contents in Archive table we can't even find a PPA by
 owner name.
 
-    >>> print ubuntu.searchPPAs(text=u'cprov').count()
+    >>> print(ubuntu.searchPPAs(text=u'cprov').count())
     0
 
 Sampledata contains stub counters.
 
-    >>> print cprov.archive.sources_cached
+    >>> print(cprov.archive.sources_cached)
     3
 
-    >>> print cprov.archive.binaries_cached
+    >>> print(cprov.archive.binaries_cached)
     3
 
 We have to issue 'updateArchiveCache' to include the owner 'name' and
@@ -304,13 +304,13 @@ We have to issue 'updateArchiveCache' to include the owner 'name' and
 Now Celso's PPA can be found via searches and the package counters got
 reset, reflecting that nothing is cached in the database yet.
 
-    >>> print ubuntu.searchPPAs(text=u'cprov')[0].displayname
+    >>> print(ubuntu.searchPPAs(text=u'cprov')[0].displayname)
     PPA for Celso Providelo
 
-    >>> print cprov.archive.sources_cached
+    >>> print(cprov.archive.sources_cached)
     0
 
-    >>> print cprov.archive.binaries_cached
+    >>> print(cprov.archive.binaries_cached)
     0
 
 The sampledata contains no package caches, so attempts to find 'pmount'
@@ -348,28 +348,28 @@ same queries work, pointing to Celso's PPA.
     >>> cprov.archive.sources_cached == source_updates
     True
 
-    >>> print cprov.archive.sources_cached
+    >>> print(cprov.archive.sources_cached)
     3
 
     >>> cprov.archive.binaries_cached == binary_updates
     True
 
-    >>> print cprov.archive.binaries_cached
+    >>> print(cprov.archive.binaries_cached)
     2
 
-    >>> print ubuntu.searchPPAs(text=u'cprov')[0].displayname
+    >>> print(ubuntu.searchPPAs(text=u'cprov')[0].displayname)
     PPA for Celso Providelo
 
-    >>> print ubuntu.searchPPAs(text=u'pmount')[0].displayname
+    >>> print(ubuntu.searchPPAs(text=u'pmount')[0].displayname)
     PPA for Celso Providelo
 
-    >>> print ubuntu.searchPPAs(text=u'firefox')[0].displayname
+    >>> print(ubuntu.searchPPAs(text=u'firefox')[0].displayname)
     PPA for Celso Providelo
 
-    >>> print ubuntu.searchPPAs(text=u'warty')[0].displayname
+    >>> print(ubuntu.searchPPAs(text=u'warty')[0].displayname)
     PPA for Celso Providelo
 
-    >>> print ubuntu.searchPPAs(text=u'shortdesc')[0].displayname
+    >>> print(ubuntu.searchPPAs(text=u'shortdesc')[0].displayname)
     PPA for Celso Providelo
 
 The method which populates the archive caches also cleans the texts up
@@ -401,13 +401,13 @@ information will be available, no packages information will be cached.
 
     >>> cprov.archive.updateArchiveCache()
 
-    >>> print cprov.archive.sources_cached
+    >>> print(cprov.archive.sources_cached)
     0
 
-    >>> print cprov.archive.binaries_cached
+    >>> print(cprov.archive.binaries_cached)
     0
 
-    >>> print cprov.archive.package_description_cache
+    >>> print(cprov.archive.package_description_cache)
     celso providelo cprov
 
 We insert a new source cache with texts containing punctuation and
@@ -435,13 +435,13 @@ Let's update the archive cache and see how it goes.
 Only one source cached and the 'package_description_cache' only contains
 unique and lowercase words free of any punctuation.
 
-    >>> print cprov.archive.sources_cached
+    >>> print(cprov.archive.sources_cached)
     1
 
-    >>> print cprov.archive.binaries_cached
+    >>> print(cprov.archive.binaries_cached)
     0
 
-    >>> print cprov.archive.package_description_cache
+    >>> print(cprov.archive.package_description_cache)
     ding providelo celso cdrkit cdrkit-bin dong ubuntu cdrkit-extra cprov
 
 Let's remove the unclean cache and update Celso's PPA cache, so
@@ -484,7 +484,7 @@ Updating the cache adds missing entries to the cache.
     ...     commit_chunk=3)
     DEBUG Considering sources unique-from-factory-...
     ...
-    >>> print updates
+    >>> print(updates)
     1
     >>> ubuntu.searchSourcePackages(branch.sourcepackagename.name).count()
     1
@@ -552,8 +552,8 @@ Let's create one source with a single binary in PENDING status.
     ...      binaryname="pending-binary", pub_source=pending_source,
     ...      status=PackagePublishingStatus.PENDING)
 
-    >>> print len(
-    ...      set(pub.binarypackagerelease.name for pub in pending_binaries))
+    >>> print(len(
+    ...      set(pub.binarypackagerelease.name for pub in pending_binaries)))
     1
 
 And one source with a single binary in PUBLISHED status.
@@ -566,8 +566,8 @@ And one source with a single binary in PUBLISHED status.
     ...      binaryname="published-binary", pub_source=published_source,
     ...      status=PackagePublishingStatus.PUBLISHED)
 
-    >>> print len(
-    ...      set(pub.binarypackagerelease.name for pub in published_binaries))
+    >>> print(len(set(
+    ...     pub.binarypackagerelease.name for pub in published_binaries)))
     1
 
     >>> switch_dbuser(test_dbuser)
@@ -593,8 +593,8 @@ Let's create one source with a single binary in DELETED status.
     ...      binaryname="pending-binary", pub_source=deleted_source,
     ...      status=PackagePublishingStatus.DELETED)
 
-    >>> print len(
-    ...      set(pub.binarypackagerelease.name for pub in deleted_binaries))
+    >>> print(len(
+    ...      set(pub.binarypackagerelease.name for pub in deleted_binaries)))
     1
 
     >>> switch_dbuser(test_dbuser)
@@ -649,10 +649,10 @@ The DistroSeriesBinaryPackage.
     >>> foobar_binary.cache == primary_cache
     True
 
-    >>> print foobar_binary.summary
+    >>> print(foobar_binary.summary)
     main foobar
 
-    >>> print foobar_binary.description
+    >>> print(foobar_binary.description)
     main foobar description
 
 The DistroArchSeriesBinaryPackage.
@@ -663,10 +663,10 @@ The DistroArchSeriesBinaryPackage.
     >>> foobar_arch_binary.cache == primary_cache
     True
 
-    >>> print foobar_arch_binary.summary
+    >>> print(foobar_arch_binary.summary)
     main foobar
 
-    >>> print foobar_arch_binary.description
+    >>> print(foobar_arch_binary.description)
     main foobar description
 
 This lookup mechanism will continue to work even after we have added a
@@ -737,14 +737,14 @@ First, we rebuild and examinate the caches for Celso's PPA.
     ...          archive=archive)
     ...      binary_caches = DistroSeriesPackageCache.selectBy(
     ...          archive=archive)
-    ...      print '%d sources cached [%d]' % (
-    ...          archive.sources_cached, source_caches.count())
-    ...      print '%d binaries cached [%d]' % (
-    ...          archive.binaries_cached, binary_caches.count())
+    ...      print('%d sources cached [%d]' % (
+    ...          archive.sources_cached, source_caches.count()))
+    ...      print('%d binaries cached [%d]' % (
+    ...          archive.binaries_cached, binary_caches.count()))
     >>> def print_search_results(text, user=None):
     ...      with lp_dbuser():
     ...          for ppa in ubuntu.searchPPAs(text, user=user):
-    ...              print ppa.displayname
+    ...              print(ppa.displayname)
 
     >>> rebuild_caches(cprov.archive)
 

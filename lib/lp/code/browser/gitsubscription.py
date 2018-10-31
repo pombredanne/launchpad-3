@@ -1,4 +1,4 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -42,18 +42,18 @@ class GitRepositoryPortletSubscribersContent(LaunchpadView):
         # Cache permissions so private subscribers can be rendered.
         # The security adaptor will do the job also but we don't want or
         # need the expense of running several complex SQL queries.
-        person_ids = [sub.person_id for sub in self.context.subscriptions]
+        subscriptions = list(self.context.subscriptions)
+        person_ids = [sub.person_id for sub in subscriptions]
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             person_ids, need_validity=True))
         if self.user is not None:
             subscribers = [
-                subscription.person
-                for subscription in self.context.subscriptions]
+                subscription.person for subscription in subscriptions]
             precache_permission_for_objects(
                 self.request, "launchpad.LimitedView", subscribers)
 
         visible_subscriptions = [
-            subscription for subscription in self.context.subscriptions
+            subscription for subscription in subscriptions
             if check_permission("launchpad.LimitedView", subscription.person)]
         return sorted(
             visible_subscriptions,

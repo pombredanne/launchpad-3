@@ -60,14 +60,14 @@ the +filebug process.
 The inline_filebug_form_url property returns the URL of the inline
 filebug form so that it may be loaded asynchronously.
 
-    >>> print filebug_view.inline_filebug_form_url
+    >>> print(filebug_view.inline_filebug_form_url)
     http://launchpad.dev/firefox/+filebug-inline-form
 
 Similarly, the duplicate_search_url property returns the base URL for
 the duplicate search view, which can be used to load the list of
 possible duplicates for a bug asynchronously.
 
-    >>> print filebug_view.duplicate_search_url
+    >>> print(filebug_view.duplicate_search_url)
     http://launchpad.dev/firefox/+filebug-show-similar
 
 
@@ -95,7 +95,7 @@ directly.
     u'Test description.'
 
     >>> for tag in filebug_view.added_bug.tags:
-    ...     print tag
+    ...     print(tag)
     bar
     foo
 
@@ -150,7 +150,7 @@ radio group.
     True
 
     >>> for field in sorted(supervisor_fields - normal_fields):
-    ...     print field
+    ...     print(field)
     assignee
     importance
     information_type
@@ -169,20 +169,20 @@ Bugs can be filed with settings for all these extra fields.
     ...     title=u'Extra Fields Bug', comment=u'Test description.',
     ...     assignee=owner, importance=BugTaskImportance.HIGH,
     ...     milestone=milestone, status=BugTaskStatus.TRIAGED)
-    >>> print filebug_view.validate(bug_data)
+    >>> print(filebug_view.validate(bug_data))
     None
 
     >>> filebug_view.submit_bug_action.success(bug_data)
     >>> [added_bugtask] = filebug_view.added_bug.bugtasks
 
-    >>> print added_bugtask.status.title
+    >>> print(added_bugtask.status.title)
     Triaged
 
-    >>> print added_bugtask.importance.title
+    >>> print(added_bugtask.importance.title)
     High
 
-    >>> print added_bugtask.assignee.name
+    >>> print(added_bugtask.assignee.name)
     bug-superdude
 
-    >>> print added_bugtask.milestone.name
+    >>> print(added_bugtask.milestone.name)
     bug-superdude-milestone

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specific models for uploaded files"""
@@ -554,7 +554,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         try:
             deb_file = apt_inst.DebFile(self.filepath)
             control_file = deb_file.control.extractdata("control")
-            control_lines = apt_pkg.TagSection(control_file)
+            control_lines = apt_pkg.TagSection(control_file, bytes=True)
         except (SystemExit, KeyboardInterrupt):
             raise
         except:

@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Remove personal details of a user from the database, leaving a stub."""
@@ -121,11 +121,11 @@ def close_account(con, log, username):
 
     # Remove rows from tables in simple cases in the given order
     removals = [
-        # Trash their email addresses. Unsociable privacy nut jobs who request
-        # account removal would be pissed if they reregistered with their old
-        # email address and this resurrected their deleted account, as the
-        # email address is probably the piece of data we store that they where
-        # most concerned with being removed from our systems.
+        # Trash their email addresses. People who request complete account
+        # removal would be unhappy if they reregistered with their old email
+        # address and this resurrected their deleted account, as the email
+        # address is probably the piece of data we store that they were most
+        # concerned with being removed from our systems.
         ('EmailAddress', 'person'),
 
         # Trash their codes of conduct and GPG keys
@@ -134,6 +134,7 @@ def close_account(con, log, username):
 
         # Subscriptions
         ('BranchSubscription', 'person'),
+        ('GitSubscription', 'person'),
         ('BugSubscription', 'person'),
         ('QuestionSubscription', 'person'),
         ('SpecificationSubscription', 'person'),
@@ -161,6 +162,9 @@ def close_account(con, log, username):
 
         # Pending items in queues
         ('POExportRequest', 'person'),
+
+        # Access grants
+        ('GitRuleGrant', 'grantee'),
         ]
     for table, person_id_column in removals:
         table_notification(table)

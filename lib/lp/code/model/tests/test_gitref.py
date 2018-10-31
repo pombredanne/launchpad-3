@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git references."""
@@ -14,25 +14,42 @@ from datetime import (
 import hashlib
 import json
 
+from bzrlib import urlutils
 import pytz
+import responses
+from storm.store import Store
 from testtools.matchers import (
     ContainsDict,
     EndsWith,
     Equals,
     Is,
     LessThan,
+    MatchesDict,
     MatchesListwise,
+    MatchesSetwise,
     MatchesStructure,
     )
+import transaction
 from zope.component import getUtility
 
 from lp.app.enums import InformationType
 from lp.app.interfaces.informationtype import IInformationType
 from lp.app.interfaces.launchpad import IPrivacy
-from lp.code.errors import InvalidBranchMergeProposal
+from lp.code.enums import GitGranteeType
+from lp.code.errors import (
+    GitRepositoryBlobNotFound,
+    GitRepositoryBlobUnsupportedRemote,
+    GitRepositoryScanFault,
+    InvalidBranchMergeProposal,
+    )
+from lp.code.interfaces.gitrepository import IGitRepositorySet
+from lp.code.interfaces.gitrule import IGitNascentRuleGrant
 from lp.code.tests.helpers import GitHostingFixture
+from lp.services.config import config
+from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.services.features.testing import FeatureFixture
 from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.testing import (
     admin_logged_in,
@@ -62,6 +79,27 @@ class TestGitRef(TestCaseWithFactory):
         self.assertEqual(
             ["%s:master" % repo_path, "%s:people/foo/bar" % repo_path],
             [ref.display_name for ref in (master, personal)])
+
+    def test_codebrowse_url(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/name"])
+        expected_url = "%s?h=name" % urlutils.join(
+            config.codehosting.git_browse_root, ref.repository.shortened_path)
+        self.assertEqual(expected_url, ref.getCodebrowseUrl())
+
+    def test_codebrowse_url_for_default(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/name"])
+        with person_logged_in(ref.repository.target.owner):
+            getUtility(IGitRepositorySet).setDefaultRepository(
+                ref.repository.target, ref.repository)
+        expected_url = "%s?h=name" % urlutils.join(
+            config.codehosting.git_browse_root, ref.repository.shortened_path)
+        self.assertEqual(expected_url, ref.getCodebrowseUrl())
+
+    def test_codebrowse_url_non_ascii(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/\N{ANCHOR}"])
+        expected_url = "%s?h=%%E2%%9A%%93" % urlutils.join(
+            config.codehosting.git_browse_root, ref.repository.shortened_path)
+        self.assertEqual(expected_url, ref.getCodebrowseUrl())
 
     def test_getMergeProposals(self):
         [target_ref] = self.factory.makeGitRefs()
@@ -104,7 +142,6 @@ class TestGitRefGetCommits(TestCaseWithFactory):
         with admin_logged_in():
             self.author_emails = [
                 author.preferredemail.email for author in self.authors]
-        epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
         self.dates = [
             datetime(2015, 1, 1, 0, 0, 0, tzinfo=pytz.UTC),
             datetime(2015, 1, 2, 0, 0, 0, tzinfo=pytz.UTC),
@@ -118,12 +155,12 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 "author": {
                     "name": self.authors[0].display_name,
                     "email": self.author_emails[0],
-                    "time": int((self.dates[1] - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(self.dates[1])),
                     },
                 "committer": {
                     "name": self.authors[1].display_name,
                     "email": self.author_emails[1],
-                    "time": int((self.dates[1] - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(self.dates[1])),
                     },
                 "parents": [self.sha1_root],
                 "tree": unicode(hashlib.sha1("").hexdigest()),
@@ -134,12 +171,12 @@ class TestGitRefGetCommits(TestCaseWithFactory):
                 "author": {
                     "name": self.authors[1].display_name,
                     "email": self.author_emails[1],
-                    "time": int((self.dates[0] - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(self.dates[0])),
                     },
                 "committer": {
                     "name": self.authors[0].display_name,
                     "email": self.author_emails[0],
-                    "time": int((self.dates[0] - epoch).total_seconds()),
+                    "time": int(seconds_since_epoch(self.dates[0])),
                     },
                 "parents": [],
                 "tree": unicode(hashlib.sha1("").hexdigest()),
@@ -271,6 +308,106 @@ class TestGitRefGetCommits(TestCaseWithFactory):
             ]))
 
 
+class TestGitRefGetBlob(TestCaseWithFactory):
+    """Tests for retrieving blobs from a Git reference."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_local(self):
+        [ref] = self.factory.makeGitRefs()
+        hosting_fixture = self.useFixture(GitHostingFixture(blob=b"foo"))
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+        self.assertEqual(
+            [((ref.repository.getInternalPath(), "dir/file"),
+              {"rev": ref.path})],
+            hosting_fixture.getBlob.calls)
+
+    def test_local_by_url(self):
+        # It's possible (though not encouraged) to retrieve files from
+        # self-hosted repositories by URL.
+        [ref] = self.factory.makeGitRefs()
+        hosting_fixture = self.useFixture(GitHostingFixture(blob=b"foo"))
+        https_ref = self.factory.makeGitRefRemote(
+            repository_url=ref.repository.git_https_url, path=ref.path)
+        anon_ref = self.factory.makeGitRefRemote(
+            repository_url=urlutils.join(
+                config.codehosting.git_anon_root,
+                ref.repository.shortened_path),
+            path=ref.path)
+        self.assertEqual(b"foo", https_ref.getBlob("dir/file"))
+        self.assertEqual(b"foo", anon_ref.getBlob("dir/file"))
+        internal_path = ref.repository.getInternalPath()
+        expected_calls = [
+            ((internal_path, "dir/file"), {"rev": ref.path}),
+            ((internal_path, "dir/file"), {"rev": ref.path}),
+            ]
+        self.assertEqual(expected_calls, hosting_fixture.getBlob.calls)
+
+    @responses.activate
+    def test_remote_github_branch(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name",
+            path="refs/heads/path")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/path/dir/file",
+            body=b"foo")
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+
+    @responses.activate
+    def test_remote_github_tag(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name",
+            path="refs/tags/1.0")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/1.0/dir/file",
+            body=b"foo")
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+
+    @responses.activate
+    def test_remote_github_HEAD(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name", path="HEAD")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/HEAD/dir/file",
+            body=b"foo")
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+
+    @responses.activate
+    def test_remote_github_404(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name", path="HEAD")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/HEAD/dir/file",
+            status=404)
+        self.assertRaises(GitRepositoryBlobNotFound, ref.getBlob, "dir/file")
+
+    @responses.activate
+    def test_remote_github_error(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name", path="HEAD")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/HEAD/dir/file",
+            status=500)
+        self.assertRaises(GitRepositoryScanFault, ref.getBlob, "dir/file")
+
+    def test_remote_github_bad_repository_path(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name/extra")
+        self.assertRaises(
+            GitRepositoryBlobUnsupportedRemote, ref.getBlob, "dir/file")
+
+    def test_remote_unknown_host(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://example.com/foo")
+        self.assertRaises(
+            GitRepositoryBlobUnsupportedRemote, ref.getBlob, "dir/file")
+
+
 class TestGitRefCreateMergeProposal(TestCaseWithFactory):
     """Exercise all the code paths for creating a merge proposal."""
 
@@ -301,13 +438,24 @@ class TestGitRefCreateMergeProposal(TestCaseWithFactory):
         else:
             self.assertEqual(review_type, vote.review_type)
 
-    def test_personal_source(self):
-        """Personal repositories cannot be used as a source for MPs."""
+    def test_personal_source_project_target(self):
+        """Personal repositories cannot be used as a source for MPs to
+        project repositories.
+        """
         self.source.repository.setTarget(
             target=self.source.owner, user=self.source.owner)
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target)
+
+    def test_personal_source_personal_target(self):
+        """A branch in a personal repository can be used as a source for MPs
+        to another branch in the same personal repository.
+        """
+        self.target.repository.setTarget(
+            target=self.target.owner, user=self.target.owner)
+        [source] = self.factory.makeGitRefs(repository=self.target.repository)
+        source.addLandingTarget(self.user, self.target)
 
     def test_target_repository_same_target(self):
         """The target repository's target must match that of the source."""
@@ -429,6 +577,106 @@ class TestGitRefCreateMergeProposal(TestCaseWithFactory):
         self.assertEqual({(person1, "review1"), (person2, "review2")}, votes)
 
 
+class TestGitRefGrants(TestCaseWithFactory):
+    """Test handling of access grants for refs.
+
+    Most of the hard work here is done by GitRule, but we ensure that
+    getting and setting grants via GitRef operates only on the appropriate
+    exact-match rule.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getGrants(self):
+        repository = self.factory.makeGitRepository()
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern=ref.path)
+        grants = [
+            self.factory.makeGitRuleGrant(
+                rule=rule, can_create=True, can_force_push=True),
+            self.factory.makeGitRuleGrant(rule=rule, can_push=True),
+            ]
+        wildcard_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        self.factory.makeGitRuleGrant(rule=wildcard_rule)
+        self.assertThat(ref.getGrants(), MatchesSetwise(
+            MatchesStructure(
+                rule=Equals(rule),
+                grantee_type=Equals(GitGranteeType.PERSON),
+                grantee=Equals(grants[0].grantee),
+                can_create=Is(True),
+                can_push=Is(False),
+                can_force_push=Is(True)),
+            MatchesStructure(
+                rule=Equals(rule),
+                grantee_type=Equals(GitGranteeType.PERSON),
+                grantee=Equals(grants[1].grantee),
+                can_create=Is(False),
+                can_push=Is(True),
+                can_force_push=Is(False))))
+
+    def test_setGrants_no_matching_rule(self):
+        repository = self.factory.makeGitRepository()
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/*")
+        other_repository = self.factory.makeGitRepository()
+        self.factory.makeGitRule(
+            repository=other_repository, ref_pattern=ref.path)
+        with person_logged_in(repository.owner):
+            ref.setGrants([
+                IGitNascentRuleGrant({
+                    "grantee_type": GitGranteeType.REPOSITORY_OWNER,
+                    "can_force_push": True,
+                    }),
+                ], repository.owner)
+        self.assertThat(list(repository.rules), MatchesListwise([
+            MatchesStructure(
+                repository=Equals(repository),
+                ref_pattern=Equals(ref.path),
+                grants=MatchesSetwise(
+                    MatchesStructure(
+                        grantee_type=Equals(GitGranteeType.REPOSITORY_OWNER),
+                        grantee=Is(None),
+                        can_create=Is(False),
+                        can_push=Is(False),
+                        can_force_push=Is(True)))),
+            MatchesStructure(
+                repository=Equals(repository),
+                ref_pattern=Equals("refs/heads/*"),
+                grants=MatchesSetwise()),
+            ]))
+
+    def test_setGrants_matching_rule(self):
+        repository = self.factory.makeGitRepository()
+        [ref] = self.factory.makeGitRefs(repository=repository)
+        rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern=ref.path)
+        date_created = get_transaction_timestamp(Store.of(rule))
+        transaction.commit()
+        with person_logged_in(repository.owner):
+            ref.setGrants([
+                IGitNascentRuleGrant({
+                    "grantee_type": GitGranteeType.REPOSITORY_OWNER,
+                    "can_force_push": True,
+                    }),
+                ], repository.owner)
+        self.assertThat(list(repository.rules), MatchesListwise([
+            MatchesStructure(
+                repository=Equals(repository),
+                ref_pattern=Equals(ref.path),
+                date_created=Equals(date_created),
+                grants=MatchesSetwise(
+                    MatchesStructure(
+                        grantee_type=Equals(GitGranteeType.REPOSITORY_OWNER),
+                        grantee=Is(None),
+                        can_create=Is(False),
+                        can_push=Is(False),
+                        can_force_push=Is(True)))),
+            ]))
+
+
 class TestGitRefWebservice(TestCaseWithFactory):
     """Tests for the webservice."""
 
@@ -545,3 +793,85 @@ class TestGitRefWebservice(TestCaseWithFactory):
         self.assertEqual(1, len(dependent_landings["entries"]))
         self.assertThat(
             dependent_landings["entries"][0]["self_link"], EndsWith(bmp_url))
+
+    def test_getGrants(self):
+        [ref] = self.factory.makeGitRefs()
+        rule = self.factory.makeGitRule(
+            repository=ref.repository, ref_pattern=ref.path)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_create=True, can_force_push=True)
+        grantee = self.factory.makePerson()
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=grantee, can_push=True)
+        with person_logged_in(ref.owner):
+            ref_url = api_url(ref)
+            grantee_url = api_url(grantee)
+        webservice = webservice_for_person(
+            ref.owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_get(ref_url, "getGrants")
+        self.assertThat(json.loads(response.body), MatchesSetwise(
+            MatchesDict({
+                "grantee_type": Equals("Repository owner"),
+                "grantee_link": Is(None),
+                "can_create": Is(True),
+                "can_push": Is(False),
+                "can_force_push": Is(True),
+                }),
+            MatchesDict({
+                "grantee_type": Equals("Person"),
+                "grantee_link": Equals(webservice.getAbsoluteUrl(grantee_url)),
+                "can_create": Is(False),
+                "can_push": Is(True),
+                "can_force_push": Is(False),
+                })))
+
+    def test_setGrants(self):
+        [ref] = self.factory.makeGitRefs()
+        owner = ref.owner
+        grantee = self.factory.makePerson()
+        with person_logged_in(owner):
+            ref_url = api_url(ref)
+            grantee_url = api_url(grantee)
+        webservice = webservice_for_person(
+            owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_post(
+            ref_url, "setGrants",
+            grants=[
+                {
+                    "grantee_type": "Repository owner",
+                    "can_create": True,
+                    "can_force_push": True,
+                    },
+                {
+                    "grantee_type": "Person",
+                    "grantee_link": grantee_url,
+                    "can_push": True,
+                    },
+                ])
+        self.assertEqual(200, response.status)
+        with person_logged_in(owner):
+            self.assertThat(list(ref.repository.rules), MatchesListwise([
+                MatchesStructure(
+                    repository=Equals(ref.repository),
+                    ref_pattern=Equals(ref.path),
+                    creator=Equals(owner),
+                    grants=MatchesSetwise(
+                        MatchesStructure(
+                            grantor=Equals(owner),
+                            grantee_type=Equals(
+                                GitGranteeType.REPOSITORY_OWNER),
+                            grantee=Is(None),
+                            can_create=Is(True),
+                            can_push=Is(False),
+                            can_force_push=Is(True)),
+                        MatchesStructure(
+                            grantor=Equals(owner),
+                            grantee_type=Equals(GitGranteeType.PERSON),
+                            grantee=Equals(grantee),
+                            can_create=Is(False),
+                            can_push=Is(True),
+                            can_force_push=Is(False)))),
+                ]))

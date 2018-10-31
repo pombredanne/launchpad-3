@@ -1,12 +1,13 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
 
-from lp.scripts.utilities.js.jsbuild import ComboFile
-from lp.scripts.utilities.js.combo import combine_files
-from lp.services.config import config
+import scandir
 
+from lp.scripts.utilities.js.combo import combine_files
+from lp.scripts.utilities.js.jsbuild import ComboFile
+from lp.services.config import config
 
 # It'd probably be nice to have this script find all the CSS files we might
 # need and combine them together, but if we do that we'd certainly end up
@@ -60,7 +61,7 @@ def main():
     # every time a new component is added.
     component_dir = 'css/components'
     component_path = os.path.abspath(os.path.join(icing, component_dir))
-    for root, dirs, files in os.walk(component_path):
+    for root, dirs, files in scandir.walk(component_path):
         for file in files:
             if file.endswith('.css'):
                 names.append('%s/%s' % (component_dir, file))

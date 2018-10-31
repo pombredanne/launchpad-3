@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository interfaces."""
@@ -16,6 +16,7 @@ __all__ = [
     ]
 
 import re
+from textwrap import dedent
 
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
@@ -58,6 +59,7 @@ from lp import _
 from lp.app.enums import InformationType
 from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
+    BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
@@ -77,6 +79,7 @@ from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IPersonRoles
 from lp.services.fields import (
+    InlineObject,
     PersonChoice,
     PublicPersonChoice,
     )
@@ -264,6 +267,10 @@ class IGitRepositoryView(IHasRecipes):
         title=_("The associated CodeImport, if any."),
         # Really ICodeImport, patched in _schema_circular_imports.py.
         schema=Interface))
+
+    rules = Attribute("The access rules for this repository.")
+
+    grants = Attribute("The access grants for this repository.")
 
     @operation_parameters(
         path=TextLine(title=_("A string to look up as a path.")))
@@ -531,6 +538,21 @@ class IGitRepositoryView(IHasRecipes):
         Source and prerequisite repositories are preloaded.
         """
 
+    @operation_parameters(
+        status=List(
+            title=_("A list of merge proposal statuses to filter by."),
+            value_type=Choice(vocabulary=BranchMergeProposalStatus)),
+        merged_revision_ids=List(TextLine(
+            title=_('The target revision ID of the merge.'))))
+    @call_with(visible_by_user=REQUEST_USER)
+    # Really IBranchMergeProposal, patched in _schema_circular_imports.py.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getMergeProposals(status=None, visible_by_user=None,
+                          merged_revision_ids=None, eager_load=False):
+        """Return matching BranchMergeProposals."""
+
     def getMergeProposalByID(id):
         """Return this repository's merge proposal with this id, or None."""
 
@@ -600,6 +622,21 @@ class IGitRepositoryView(IHasRecipes):
         :param old: The OID of the old commit.
         :param new: The OID of the new commit.
         :return: The diff as a binary string.
+        """
+
+    def getRule(ref_pattern):
+        """Get the access rule for this repository with a given pattern.
+
+        :param ref_pattern: The reference pattern that the rule should have.
+        :return: An `IGitRule`, or None.
+        """
+
+    def getActivity(changed_after=None):
+        """Get activity log entries for this repository.
+
+        :param changed_after: If supplied, only return entries for changes
+            made after this date.
+        :return: A `ResultSet` of `IGitActivity`.
         """
 
 
@@ -698,6 +735,79 @@ class IGitRepositoryEdit(IWebhookTarget):
 
         This may be helpful in cases where a previous scan crashed.
         """
+
+    def addRule(ref_pattern, creator, position=None):
+        """Add an access rule to this repository.
+
+        :param ref_pattern: The reference pattern that the new rule should
+            match.
+        :param creator: The `IPerson` who is adding the rule.
+        :param position: The list position at which to insert the rule, or
+            None to append it.
+        """
+
+    def moveRule(rule, position, user):
+        """Move a rule to a new position in its repository's rule order.
+
+        :param rule: The `IGitRule` to move.
+        :param position: The new position.  For example, 0 puts the rule at
+            the start, while `len(repository.rules)` puts the rule at the
+            end.  If the new position is before the end of the list, then
+            other rules are shifted to later positions to make room.
+        :param user: The `IPerson` who is moving the rule.
+        """
+
+    def findRuleGrantsByGrantee(grantee):
+        """Find the grants for a grantee applied to this repository.
+
+        :param grantee: The `IPerson` to search for, or an item of
+            `GitGranteeType` other than `GitGranteeType.PERSON` to search
+            for some other kind of entity.
+        """
+
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getRules():
+        """Get the access rules for this repository."""
+
+    @operation_parameters(
+        rules=List(
+            title=_("Rules"),
+            # Really IGitNascentRule, patched in
+            # _schema_circular_imports.py.
+            value_type=InlineObject(schema=Interface),
+            description=_(dedent("""\
+                The new list of rules for this repository.  For example::
+
+                    [
+                        {
+                            "ref_pattern": "refs/heads/*",
+                            "grants": [
+                                {
+                                    "grantee_type": "Repository owner",
+                                    "can_create": true,
+                                    "can_push": true,
+                                    "can_force_push": true
+                                }
+                            ]
+                        },
+                        {
+                            "ref_pattern": "refs/heads/stable/*",
+                            "grants": [
+                                {
+                                    "grantee_type": "Person",
+                                    "grantee_link": "/~example-stable-team",
+                                    "can_create": true,
+                                    "can_push": true
+                                }
+                            ]
+                        }
+                    ]"""))))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setRules(rules, user):
+        """Set the access rules for this repository."""
 
     @export_read_operation()
     @operation_for_version("devel")

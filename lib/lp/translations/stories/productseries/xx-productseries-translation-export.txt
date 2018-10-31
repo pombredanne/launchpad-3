@@ -13,7 +13,7 @@ productseries' translations page.
 
     >>> user_browser.open('http://translations.launchpad.dev/evolution/trunk/')
     >>> user_browser.getLink('download').click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://translations.launchpad.dev/evolution/trunk/+export
 
 Another way of getting there is by going to the product's +translate page.
@@ -23,7 +23,7 @@ offer a download link for that series.
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/evolution/+translations')
     >>> user_browser.getLink('download').click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://translations.launchpad.dev/evolution/trunk/+export
 
 
@@ -44,7 +44,7 @@ not available to anonymous visitors.
 The logged-in user sees a page that lets them select an export format, and
 request the download.
 
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Download : Series trunk : Translations...
 
 
@@ -63,7 +63,7 @@ The most usual and most well-supported format is PO.
     >>> user_browser.getControl('Format:').value = ['PO']
     >>> user_browser.getControl('Request Download').click()
 
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://translations.launchpad.dev/evolution/trunk
 
     >>> print_feedback_messages(user_browser.contents)
@@ -74,7 +74,7 @@ An alternative is MO.
     >>> user_browser.getLink('download').click()
     >>> user_browser.getControl('Format:').value = ['PO']
     >>> user_browser.getControl('Request Download').click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://translations.launchpad.dev/evolution/trunk
 
     >>> print_feedback_messages(user_browser.contents)
@@ -98,4 +98,3 @@ link for "Download translations" is hidden.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
-

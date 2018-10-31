@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IGitCollection`."""
@@ -49,6 +49,7 @@ from lp.code.model.gitrepository import (
     get_git_repository_privacy_filter,
     GitRepository,
     )
+from lp.code.model.gitrule import GitRuleGrant
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import EXCLUSIVE_TEAM_POLICY
 from lp.registry.model.distribution import Distribution
@@ -407,6 +408,19 @@ class GenericGitCollection:
         # now.
         proposals.order_by(Desc(CodeReviewComment.vote))
         return proposals
+
+    def getRuleGrantsForGrantee(self, grantee):
+        """See `IGitCollection`."""
+        expressions = [
+            GitRuleGrant.grantee == grantee,
+            GitRuleGrant.repository_id.is_in(self._getRepositorySelect()),
+            ]
+        visibility = self._getRepositoryVisibilityExpression()
+        if visibility:
+            expressions.append(
+                GitRuleGrant.repository_id.is_in(
+                    Select(GitRepository.id, visibility)))
+        return self.store.find(GitRuleGrant, *expressions)
 
     def getTeamsWithRepositories(self, person):
         """See `IGitCollection`."""

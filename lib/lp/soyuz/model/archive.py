@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table Archive."""
@@ -33,6 +33,7 @@ from storm.expr import (
     Or,
     Select,
     Sum,
+    Union,
     )
 from storm.properties import (
     Int,
@@ -40,7 +41,10 @@ from storm.properties import (
     Unicode,
     )
 from storm.references import Reference
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import (
     getAdapter,
     getUtility,
@@ -116,6 +120,7 @@ from lp.services.database.sqlbase import (
     )
 from lp.services.database.stormexpr import BulkUpdate
 from lp.services.features import getFeatureFlag
+from lp.services.gpg.interfaces import IGPGHandler
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.model import (
     LibraryFileAlias,
@@ -404,6 +409,19 @@ class Archive(SQLBase):
         if self.signing_key_fingerprint is not None:
             return getUtility(IGPGKeySet).getByFingerprint(
                 self.signing_key_fingerprint)
+
+    def getSigningKeyData(self):
+        """See `IArchive`."""
+        if self.signing_key_fingerprint is not None:
+            # This may raise GPGKeyNotFoundError, which we allow to
+            # propagate as an HTTP error.
+            key_data = getUtility(IGPGHandler).retrieveKey(
+                self.signing_key_fingerprint).export()
+            # Ideally we'd just return a byte string, but lazr.restful
+            # really wants methods to return something that can be
+            # serialised as JSON, so instead rely on ASCII-armouring
+            # producing something that we can decode as text.
+            return key_data.decode('UTF-8')
 
     @property
     def is_ppa(self):
@@ -1688,6 +1706,29 @@ class Archive(SQLBase):
 
         return archive_file
 
+    def getSourceFileByName(self, name, version, filename):
+        """See `IArchive`."""
+        result = IStore(LibraryFileAlias).find(
+            LibraryFileAlias,
+            SourcePackagePublishingHistory.archive == self,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                SourcePackageRelease.id,
+            SourcePackageRelease.sourcepackagename == SourcePackageName.id,
+            SourcePackageName.name == name,
+            SourcePackageRelease.version == version,
+            SourcePackageRelease.id ==
+                SourcePackageReleaseFile.sourcepackagereleaseID,
+            SourcePackageReleaseFile.libraryfileID == LibraryFileAlias.id,
+            LibraryFileAlias.filename == filename,
+            LibraryFileAlias.content != None)
+        result = result.config(distinct=True).order_by(LibraryFileAlias.id)
+        # Unlike `getFileByName`, we are guaranteed at most one match even
+        # for files in imported archives.
+        archive_file = result.one()
+        if archive_file is None:
+            raise NotFoundError(filename)
+        return archive_file
+
     def getBinaryPackageRelease(self, name, version, archtag):
         """See `IArchive`."""
         from lp.soyuz.model.distroarchseries import DistroArchSeries
@@ -2724,35 +2765,54 @@ class ArchiveSet:
                     SourcePackagePublishingHistory.archive == Archive.id)
         return store.find(Archive, *clause).order_by(Archive.id).first()
 
+    def _getPPAsForUserClause(self, user):
+        """Base clause for getPPAsForUser and getPPADistributionsForUser."""
+        direct_membership = Select(
+            Archive.id,
+            where=And(
+                Archive._enabled == True,
+                Archive.purpose == ArchivePurpose.PPA,
+                TeamParticipation.team == Archive.ownerID,
+                TeamParticipation.person == user,
+                ))
+        third_party_upload_acl = Select(
+            Archive.id,
+            where=And(
+                Archive.purpose == ArchivePurpose.PPA,
+                ArchivePermission.archiveID == Archive.id,
+                TeamParticipation.person == user,
+                TeamParticipation.team == ArchivePermission.personID,
+                ))
+        return Archive.id.is_in(
+            Union(direct_membership, third_party_upload_acl))
+
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
         from lp.registry.model.person import Person
-        # If there's no user logged in, then there's no archives.
+        # If there's no user logged in, then there are no archives.
         if user is None:
-            return []
+            return EmptyResultSet()
         store = Store.of(user)
-        direct_membership = store.find(
-            Archive,
-            Archive._enabled == True,
-            Archive.purpose == ArchivePurpose.PPA,
-            TeamParticipation.team == Archive.ownerID,
-            TeamParticipation.person == user,
-            )
-        third_party_upload_acl = store.find(
-            Archive,
-            Archive.purpose == ArchivePurpose.PPA,
-            ArchivePermission.archiveID == Archive.id,
-            TeamParticipation.person == user,
-            TeamParticipation.team == ArchivePermission.personID,
-            )
-
-        result = direct_membership.union(third_party_upload_acl)
+        result = store.find(Archive, self._getPPAsForUserClause(user))
         result.order_by(Archive.displayname)
 
         def preload_owners(rows):
             load_related(Person, rows, ['ownerID'])
 
         return DecoratedResultSet(result, pre_iter_hook=preload_owners)
+
+    def getPPADistributionsForUser(self, user):
+        """See `IArchiveSet`."""
+        from lp.registry.model.distribution import Distribution
+        # If there's no user logged in, then there are no archives.
+        if user is None:
+            return EmptyResultSet()
+        store = Store.of(user)
+        result = store.find(
+            Distribution,
+            Distribution.id == Archive.distributionID,
+            self._getPPAsForUserClause(user))
+        return result.config(distinct=True)
 
     def getPPAsPendingSigningKey(self):
         """See `IArchiveSet`."""

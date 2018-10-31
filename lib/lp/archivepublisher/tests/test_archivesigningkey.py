@@ -129,7 +129,8 @@ class TestSignableArchiveWithRunParts(RunPartsMixin, TestCaseWithFactory):
 
         signer = ISignableArchive(self.archive)
         self.assertTrue(signer.can_sign)
-        signer.signRepository(self.suite)
+        self.assertContentEqual(
+            ["Release.gpg", "InRelease"], signer.signRepository(self.suite))
 
         self.assertThat(
             os.path.join(suite_dir, "Release.gpg"),
@@ -154,7 +155,9 @@ class TestSignableArchiveWithRunParts(RunPartsMixin, TestCaseWithFactory):
         signer = ISignableArchive(self.archive)
         self.assertTrue(signer.can_sign)
         self.assertRaises(AssertionError, signer.signRepository, self.suite)
-        signer.signRepository(self.suite, pubconf=pubconf)
+        self.assertContentEqual(
+            ["Release.gpg", "InRelease"],
+            signer.signRepository(self.suite, pubconf=pubconf))
 
         self.assertThat(
             os.path.join(suite_dir, "Release.gpg"),

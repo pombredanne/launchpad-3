@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for code testing live here."""
@@ -8,6 +8,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 __all__ = [
     'add_revision_to_branch',
+    'BranchHostingFixture',
     'get_non_existant_source_package_branch_unique_name',
     'GitHostingFixture',
     'make_erics_fooix_project',
@@ -35,6 +36,7 @@ from zope.security.proxy import (
     )
 
 from lp.app.enums import InformationType
+from lp.code.interfaces.branchhosting import IBranchHostingClient
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )
@@ -47,6 +49,7 @@ from lp.code.model.seriessourcepackagebranch import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.database.sqlbase import cursor
+from lp.services.propertycache import get_property_cache
 from lp.services.memcache.testing import MemcacheFixture
 from lp.testing import (
     run_with_login,
@@ -273,6 +276,7 @@ def make_merge_proposal_without_reviewers(factory, **kwargs):
     proposal = factory.makeBranchMergeProposal(**kwargs)
     for vote in proposal.votes:
         removeSecurityProxy(vote).destroySelf()
+    del get_property_cache(proposal).votes
     return proposal
 
 
@@ -299,6 +303,38 @@ def remove_all_sample_data_branches():
     c.execute('delete from codeimportjob')
     c.execute('delete from codeimport')
     c.execute('delete from branch')
+
+
+class BranchHostingFixture(fixtures.Fixture):
+    """A fixture that temporarily registers a fake Bazaar hosting client."""
+
+    def __init__(self, diff=None, inventory=None, file_list=None, blob=None,
+                 disable_memcache=True):
+        self.create = FakeMethod()
+        self.getDiff = FakeMethod(result=diff or {})
+        if inventory is None:
+            if file_list is not None:
+                # Simple common case.
+                inventory = {
+                    "filelist": [
+                        {"filename": filename, "file_id": file_id}
+                        for filename, file_id in file_list.items()],
+                    }
+            else:
+                inventory = {"filelist": []}
+        self.getInventory = FakeMethod(result=inventory)
+        self.getBlob = FakeMethod(result=blob)
+        self.disable_memcache = disable_memcache
+
+    def _setUp(self):
+        self.useFixture(ZopeUtilityFixture(self, IBranchHostingClient))
+        if self.disable_memcache:
+            # Most tests that involve Branch.getBlob don't want to cache the
+            # result: doing so requires more time-consuming test setup and
+            # makes it awkward to repeat the same call with different
+            # responses.  For convenience, we make it easy to disable that
+            # here.
+            self.memcache_fixture = self.useFixture(MemcacheFixture())
 
 
 class GitHostingFixture(fixtures.Fixture):

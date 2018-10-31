@@ -401,7 +401,7 @@ file contents, and a clearsigned InRelease file.
     >>> release_file.write('This is a fake release file.')
     >>> release_file.close()
 
-    >>> archive_signing_key.signRepository(test_suite)
+    >>> _ = archive_signing_key.signRepository(test_suite)
 
     >>> print open(release_path + '.gpg').read()
     -----BEGIN PGP SIGNATURE-----

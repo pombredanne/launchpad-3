@@ -85,12 +85,12 @@ Branch merge proposals can be created through the API.
 
 If we try and create the merge proposal again, we should get a ValueError.
 
-    >>> print registrant_webservice.named_post(
+    >>> print(registrant_webservice.named_post(
     ...     source_url, 'createMergeProposal', target_branch=target_url,
     ...     prerequisite_branch=prerequisite_url,
     ...     initial_comment='Merge\nit!', needs_review=True,
     ...     commit_message='It was merged!\n', reviewers=[reviewer_url],
-    ...     review_types=['green'])
+    ...     review_types=['green']))
     HTTP/1.1 400 Bad Request
     ...
     There is already a branch merge proposal registered for branch
@@ -192,7 +192,7 @@ The comments on a branch merge proposal are exposed through the API.
 
     >>> all_comments = webservice.get(
     ...     merge_proposal['all_comments_collection_link']).jsonBody()
-    >>> print len(all_comments['entries'])
+    >>> print(len(all_comments['entries']))
     2
     >>> pprint_entry(all_comments['entries'][0])
     as_quoted_email: u'> This is great work'
@@ -233,7 +233,7 @@ The votes on a branch merge proposal can be checked through the API.
 
     >>> votes = webservice.get(
     ...     merge_proposal['votes_collection_link']).jsonBody()['entries']
-    >>> print len(votes)
+    >>> print(len(votes))
     2
     >>> pprint_entry(votes[0])
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
@@ -260,7 +260,7 @@ A review can be requested of the person 'target'.
     >>> reviewer = reviewer_webservice.named_post(
     ...     merge_proposal['self_link'], 'nominateReviewer',
     ...     reviewer=person['self_link'], review_type='code')
-    >>> print reviewer
+    >>> print(reviewer)
     HTTP/1.1 200 Ok ...
     >>> reviewer_entry = reviewer.jsonBody()
     >>> pprint_entry(reviewer_entry)
@@ -275,7 +275,7 @@ A review can be requested of the person 'target'.
     self_link: u'http://.../~source/fooix/fix-it/+merge/.../+review/...'
 
     >>> vote = reviewer_webservice.get(reviewer_entry['self_link'])
-    >>> print vote
+    >>> print(vote)
     HTTP/1.1 200 Ok ...
 
 Now the code review should be made.
@@ -305,13 +305,13 @@ proposal status to "Approved" as well.
 
     >>> _unused = reviewer_webservice.named_post(
     ...     merge_proposal['self_link'], 'setStatus',
-    ...     status=u'Approved', revid=u'25')
+    ...     status=u'Approved', revid='25')
     >>> merge_proposal = reviewer_webservice.get(
     ...     merge_proposal['self_link']).jsonBody()
 
-    >>> print merge_proposal['queue_status']
+    >>> print(merge_proposal['queue_status'])
     Approved
-    >>> print merge_proposal['reviewed_revid']
+    >>> print(merge_proposal['reviewed_revid'])
     25
 
 However, there may have been breakage in the branch, and we need to revert back
@@ -323,9 +323,9 @@ to "Work In Progress" and not specify the revision_id.
     >>> merge_proposal = reviewer_webservice.get(
     ...     merge_proposal['self_link']).jsonBody()
 
-    >>> print merge_proposal['queue_status']
+    >>> print(merge_proposal['queue_status'])
     Work in progress
-    >>> print merge_proposal['reviewed_revid']
+    >>> print(merge_proposal['reviewed_revid'])
     None
 
 == Getting a Project's Pending Merge Proposals ==
@@ -334,8 +334,7 @@ It is possible to view all of a project's merge proposals or filter the
 proposals by their status.
 
     >>> def print_proposal(proposal):
-    ...     print proposal['self_link'] + ' - ' + \
-    ...         proposal['queue_status']
+    ...     print(proposal['self_link'] + ' - ' + proposal['queue_status'])
 
 
     >>> proposals = webservice.named_get(

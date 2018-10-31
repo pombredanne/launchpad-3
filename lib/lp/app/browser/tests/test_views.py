@@ -14,7 +14,6 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.testing import build_test_suite
 from lp.testing.layers import (
     BingLaunchpadFunctionalLayer,
-    GoogleLaunchpadFunctionalLayer,
     PageTestLayer,
     )
 from lp.testing.systemdocs import (
@@ -26,7 +25,6 @@ from lp.testing.systemdocs import (
 
 here = os.path.dirname(os.path.realpath(__file__))
 bing_flag = FeatureFixture({'sitesearch.engine.name': 'bing'})
-google_flag = FeatureFixture({'sitesearch.engine.name': 'google'})
 
 
 def setUp_bing(test):
@@ -34,18 +32,8 @@ def setUp_bing(test):
     bing_flag.setUp()
 
 
-def setUp_google(test):
-    setUp(test)
-    google_flag.setUp()
-
-
 def tearDown_bing(test):
     bing_flag.cleanUp()
-    tearDown(test)
-
-
-def tearDown_google(test):
-    google_flag.cleanUp()
     tearDown(test)
 
 
@@ -58,12 +46,6 @@ special = {
         id_extensions=['launchpad-search-pages.txt(Bing)'],
         setUp=setUp_bing, tearDown=tearDown_bing,
         layer=BingLaunchpadFunctionalLayer,
-        stdout_logging_level=logging.WARNING),
-    'launchpad-search-pages.txt(Google)': LayeredDocFileSuite(
-        '../doc/launchpad-search-pages.txt',
-        id_extensions=['launchpad-search-pages.txt(Google)'],
-        setUp=setUp_google, tearDown=tearDown_google,
-        layer=GoogleLaunchpadFunctionalLayer,
         stdout_logging_level=logging.WARNING),
     # Run these doctests again with the default search engine.
     'launchpad-search-pages.txt': LayeredDocFileSuite(

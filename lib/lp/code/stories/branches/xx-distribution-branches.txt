@@ -36,5 +36,5 @@ Going to this page shows us a listing ordered by most recently changed first.
     lp://dev/~eric/mint/old/twisted/old      Development ...
     ...
     >>> ordering_control = browser.getControl(name='field.sort_by')
-    >>> print ordering_control.displayValue
+    >>> print(ordering_control.displayValue)
     ['most recently changed first']

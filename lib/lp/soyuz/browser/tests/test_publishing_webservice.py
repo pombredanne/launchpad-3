@@ -9,6 +9,7 @@ from functools import partial
 
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.soyuz.adapters.proxiedsourcefiles import ProxiedSourceLibraryFileAlias
 from lp.testing import (
     api_url,
     login_person,
@@ -47,8 +48,7 @@ class SourcePackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
         with person_logged_in(person):
             sprf = spph.sourcepackagerelease.files[0]
             expected_urls = [
-                ProxiedLibraryFileAlias(
-                    sprf.libraryfile, spph.archive).http_url]
+                ProxiedSourceLibraryFileAlias(sprf.libraryfile, spph).http_url]
         self.assertEqual(expected_urls, urls)
 
     def test_sourceFileUrls_include_meta(self):
@@ -75,8 +75,8 @@ class SourcePackagePublishingHistoryWebserviceTests(TestCaseWithFactory):
         info = response.jsonBody()
         with person_logged_in(person):
             expected_info = [{
-                "url": ProxiedLibraryFileAlias(
-                    sprf.libraryfile, spph.archive).http_url,
+                "url": ProxiedSourceLibraryFileAlias(
+                    sprf.libraryfile, spph).http_url,
                 "size": sprf.libraryfile.content.filesize,
                 "sha256": sprf.libraryfile.content.sha256,
                 } for sprf in spph.sourcepackagerelease.files]

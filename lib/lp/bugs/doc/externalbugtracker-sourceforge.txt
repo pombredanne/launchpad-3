@@ -78,14 +78,14 @@ Calling initializeRemoteBugDB() on our SourceForge instance and passing
 it a set of remote bug IDs will fetch those bug IDs from the server and
 file them in a local variable for later use.
 
-We use a test-oriented implementation for the purposes of these tests,
-which overrides ExternalBugTracker.urlopen() so that we don't have to
-rely on a working network connection.
+We use a test-oriented implementation for the purposes of these tests, which
+avoids relying on a working network connection.
 
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestSourceForge, print_bugwatches)
     >>> sourceforge = TestSourceForge('http://example.com/')
-    >>> sourceforge.initializeRemoteBugDB([1722250])
+    >>> with sourceforge.responses():
+    ...     sourceforge.initializeRemoteBugDB([1722250])
     >>> sorted(sourceforge.bugs.keys())
     [1722250]
 
@@ -93,7 +93,8 @@ If a remote bug doesn't define the requisite data, an error will be
 raised. We use a special sample bug, bug 0, which defines no status or
 resolution, to demonstrate this:
 
-    >>> sourceforge.initializeRemoteBugDB([0])
+    >>> with sourceforge.responses():
+    ...     sourceforge.initializeRemoteBugDB([0])
     Traceback (most recent call last):
       ...
     UnparsableBugData: Remote bug 0 does not define a status.
@@ -102,7 +103,8 @@ Some SourceForge bugs are marked private. Although we can't import a
 status from them, we don't raise an error when trying to initialize the
 remote bug database. Sample bug 99 is private.
 
-    >>> sourceforge.initializeRemoteBugDB([99])
+    >>> with sourceforge.responses():
+    ...     sourceforge.initializeRemoteBugDB([99])
     >>> sorted(sourceforge.bugs.keys())
     [99]
 
@@ -118,7 +120,7 @@ method which can be used to find error messages.
     >>> page_data = open(
     ...     'lib/lp/bugs/tests/testfiles/'
     ...     'sourceforge-sample-bug-99.html')
-    >>> print sourceforge._extractErrorMessage(page_data)
+    >>> print(sourceforge._extractErrorMessage(page_data))
     Artifact: This Artifact Has Been Made Private. Only Group Members
     Can View Private ArtifactTypes.
 
@@ -168,8 +170,9 @@ remote status for, the bug watch that we have created.
     >>> bug_watch_updater = CheckwatchesMaster(
     ...     txn, logger=FakeLogger())
     >>> sourceforge = TestSourceForge(example_bug_tracker.baseurl)
-    >>> bug_watch_updater.updateBugWatches(
-    ...     sourceforge, example_bug_tracker.watches)
+    >>> with sourceforge.responses():
+    ...     bug_watch_updater.updateBugWatches(
+    ...         sourceforge, example_bug_tracker.watches)
     INFO Updating 1 watches for 1 bugs on http://bugs.some.where
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: Open:None
@@ -209,29 +212,30 @@ been checked.
 
     >>> transaction.commit()
 
-    >>> sourceforge.trace_calls = True
-    >>> bug_watch_updater.updateBugWatches(
-    ...     sourceforge, sorted(example_bug_tracker.watches))
+    >>> with sourceforge.responses(trace_calls=True):
+    ...     bug_watch_updater.updateBugWatches(
+    ...         sourceforge, sorted(example_bug_tracker.watches))
     INFO Updating 1 watches for 1 bugs on http://bugs.some.where
-    CALLED _getPage(u'support/tracker.php?aid=1722251')
+    GET http://bugs.some.where/support/tracker.php?aid=1722251
 
 For the sake of this test we can set the bug tracker's batch_size to
 None so that it will process all the updates at once:
 
     >>> sourceforge.batch_size = None
-    >>> bug_watch_updater.updateBugWatches(
-    ...     sourceforge, example_bug_tracker.watches)
+    >>> with sourceforge.responses(trace_calls=True):
+    ...     bug_watch_updater.updateBugWatches(
+    ...         sourceforge, example_bug_tracker.watches)
     INFO Updating 10 watches for 10 bugs on http://bugs.some.where
-    CALLED _getPage(u'support/tracker.php?aid=1722250')
-    CALLED _getPage(u'support/tracker.php?aid=1722251')
-    CALLED _getPage(u'support/tracker.php?aid=1722252')
-    CALLED _getPage(u'support/tracker.php?aid=1722253')
-    CALLED _getPage(u'support/tracker.php?aid=1722254')
-    CALLED _getPage(u'support/tracker.php?aid=1722255')
-    CALLED _getPage(u'support/tracker.php?aid=1722256')
-    CALLED _getPage(u'support/tracker.php?aid=1722257')
-    CALLED _getPage(u'support/tracker.php?aid=1722258')
-    CALLED _getPage(u'support/tracker.php?aid=1722259')
+    GET http://bugs.some.where/support/tracker.php?aid=1722250
+    GET http://bugs.some.where/support/tracker.php?aid=1722251
+    GET http://bugs.some.where/support/tracker.php?aid=1722252
+    GET http://bugs.some.where/support/tracker.php?aid=1722253
+    GET http://bugs.some.where/support/tracker.php?aid=1722254
+    GET http://bugs.some.where/support/tracker.php?aid=1722255
+    GET http://bugs.some.where/support/tracker.php?aid=1722256
+    GET http://bugs.some.where/support/tracker.php?aid=1722257
+    GET http://bugs.some.where/support/tracker.php?aid=1722258
+    GET http://bugs.some.where/support/tracker.php?aid=1722259
 
 The bug statuses have now been imported from the Example.com bug
 tracker, so the bug watches should now have valid Launchpad bug
@@ -262,13 +266,13 @@ us to pinpoint the specific SourceForge tracker to which the bug
 belongs. The remote product is returned by getRemoteProduct() as an
 ampersand-separated string.
 
-    >>> print sourceforge.getRemoteProduct('1722250')
+    >>> print(sourceforge.getRemoteProduct('1722250'))
     155120&794532
 
 If you try to get the remote product of a bug that doesn't exist you'll
 get a BugNotFound error.
 
-    >>> print sourceforge.getRemoteProduct(999999999)
+    >>> print(sourceforge.getRemoteProduct(999999999))
     Traceback (most recent call last):
       ...
     BugNotFound: 999999999
@@ -276,7 +280,9 @@ get a BugNotFound error.
 If SourceForge can't find the group_id and atid for the bug (for example
 if the bug is private), getRemoteProduct() will return None.
 
-    >>> sourceforge.trace_calls = False
-    >>> sourceforge.initializeRemoteBugDB([99])
-    >>> print sourceforge.getRemoteProduct(99)
+    >>> transaction.commit()
+
+    >>> with sourceforge.responses():
+    ...     sourceforge.initializeRemoteBugDB([99])
+    >>> print(sourceforge.getRemoteProduct(99))
     None

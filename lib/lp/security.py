@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -81,11 +81,16 @@ from lp.code.interfaces.codereviewcomment import (
     )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
+from lp.code.interfaces.gitactivity import IGitActivity
 from lp.code.interfaces.gitcollection import IGitCollection
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import (
     IGitRepository,
     user_has_special_git_repository_access,
+    )
+from lp.code.interfaces.gitrule import (
+    IGitRule,
+    IGitRuleGrant,
     )
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
@@ -192,7 +197,10 @@ from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
     )
-from lp.snappy.interfaces.snap import ISnap
+from lp.snappy.interfaces.snap import (
+    ISnap,
+    ISnapBuildRequest,
+    )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.snappy.interfaces.snappyseries import (
     ISnappySeries,
@@ -1044,6 +1052,13 @@ class PublicOrPrivateTeamsExistence(AuthorizationBase):
             # by the private team.
             team_repositories = IGitCollection(self.obj)
             if not team_repositories.visibleByUser(user.person).is_empty():
+                return True
+
+            # Grant visibility to people who own Git repositories that grant
+            # some kind of write access to the private team.
+            owned_repositories = IGitCollection(user.person)
+            grants = owned_repositories.getRuleGrantsForGrantee(self.obj)
+            if not grants.is_empty():
                 return True
 
             # Grant visibility to users in a team that has the private team as
@@ -2340,6 +2355,51 @@ class EditGitRef(DelegatedAuthorization):
         super(EditGitRef, self).__init__(obj, obj.repository)
 
 
+class ViewGitRule(DelegatedAuthorization):
+    """Anyone who can see a Git repository can see its access rules."""
+    permission = 'launchpad.View'
+    usedfor = IGitRule
+
+    def __init__(self, obj):
+        super(ViewGitRule, self).__init__(obj, obj.repository)
+
+
+class EditGitRule(DelegatedAuthorization):
+    """Anyone who can edit a Git repository can edit its access rules."""
+    permission = 'launchpad.Edit'
+    usedfor = IGitRule
+
+    def __init__(self, obj):
+        super(EditGitRule, self).__init__(obj, obj.repository)
+
+
+class ViewGitRuleGrant(DelegatedAuthorization):
+    """Anyone who can see a Git repository can see its access grants."""
+    permission = 'launchpad.View'
+    usedfor = IGitRuleGrant
+
+    def __init__(self, obj):
+        super(ViewGitRuleGrant, self).__init__(obj, obj.repository)
+
+
+class EditGitRuleGrant(DelegatedAuthorization):
+    """Anyone who can edit a Git repository can edit its access grants."""
+    permission = 'launchpad.Edit'
+    usedfor = IGitRuleGrant
+
+    def __init__(self, obj):
+        super(EditGitRuleGrant, self).__init__(obj, obj.repository)
+
+
+class ViewGitActivity(DelegatedAuthorization):
+    """Anyone who can see a Git repository can see its activity logs."""
+    permission = 'launchpad.View'
+    usedfor = IGitActivity
+
+    def __init__(self, obj):
+        super(ViewGitActivity, self).__init__(obj, obj.repository)
+
+
 class AdminDistroSeriesTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
@@ -2431,6 +2491,15 @@ class PreviewDiffView(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(PreviewDiffView, self).__init__(obj, obj.branch_merge_proposal)
+
+
+class CodeReviewVoteReferenceView(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ICodeReviewVoteReference
+
+    def __init__(self, obj):
+        super(CodeReviewVoteReferenceView, self).__init__(
+            obj, obj.branch_merge_proposal)
 
 
 class CodeReviewVoteReferenceEdit(DelegatedAuthorization):
@@ -3220,6 +3289,15 @@ class AdminSnap(AuthorizationBase):
         return (
             user.in_ppa_self_admins
             and EditSnap(self.obj).checkAuthenticated(user))
+
+
+class ViewSnapBuildRequest(DelegatedAuthorization):
+    permission = 'launchpad.View'
+    usedfor = ISnapBuildRequest
+
+    def __init__(self, obj):
+        super(ViewSnapBuildRequest, self).__init__(
+            obj, obj.snap, 'launchpad.View')
 
 
 class ViewSnapBuild(DelegatedAuthorization):

@@ -9,9 +9,9 @@ The number of the comment in the bug's message list is zero
 indexed.  To hide the third comment in the list of comments
 for bug 11:
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     '/bugs/11', 'setCommentVisibility',
-    ...     comment_number=2, visible=False)
+    ...     comment_number=2, visible=False))
     HTTP/1.1 200 Ok
     ...
 
@@ -34,9 +34,9 @@ not access in the Bug.messages array.
 Since the array order is the same, the message can be marked
 visible again.
 
-    >>> print webservice.named_post(
+    >>> print(webservice.named_post(
     ...     '/bugs/11', 'setCommentVisibility',
-    ...     comment_number=2, visible=True)
+    ...     comment_number=2, visible=True))
     HTTP/1.1 200 Ok
     ...
 
@@ -53,8 +53,8 @@ And indeed, the comment is visible again.
 This method can only be accessed by Launchpad admins.  (In the example
 above, the default "webservice" uses an admin account.)
 
-    >>> print user_webservice.named_post(
+    >>> print(user_webservice.named_post(
     ...     '/bugs/11', 'setCommentVisibility',
-    ...     comment_number=1, visible=False)
+    ...     comment_number=1, visible=False))
     HTTP/1.1 401 Unauthorized
     ...

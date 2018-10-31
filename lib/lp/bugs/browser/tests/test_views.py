@@ -44,8 +44,9 @@ def test_suite():
         path = filename
         layer = special_test_layer.get(path, DatabaseFunctionalLayer)
         one_test = LayeredDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown, layer=layer,
-            stdout_logging_level=logging.WARNING)
+            path,
+            setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
+            layer=layer, stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)
 
     return suite

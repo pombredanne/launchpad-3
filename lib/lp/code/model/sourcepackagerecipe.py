@@ -184,8 +184,9 @@ class SourcePackageRecipe(Storm):
             owner_ids, need_validity=True))
 
     def setRecipeText(self, recipe_text):
-        parsed = getUtility(IRecipeBranchSource).getParsedRecipe(recipe_text)
-        self._recipe_data.setRecipe(parsed)
+        parsed, recipe_branch_type = (
+            getUtility(IRecipeBranchSource).getParsedRecipe(recipe_text))
+        self._recipe_data.setRecipe(parsed, recipe_branch_type)
 
     def getRecipeText(self, validate=False):
         """See `ISourcePackageRecipe`."""
@@ -215,9 +216,9 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
-        builder_recipe = getUtility(IRecipeBranchSource).getParsedRecipe(
-            recipe)
-        SourcePackageRecipeData(builder_recipe, sprecipe)
+        builder_recipe, recipe_branch_type = (
+            getUtility(IRecipeBranchSource).getParsedRecipe(recipe))
+        SourcePackageRecipeData(builder_recipe, recipe_branch_type, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
         sprecipe.name = name
@@ -395,11 +396,13 @@ class SourcePackageRecipe(Storm):
         """Return the median duration of builds of this recipe."""
         store = IStore(self)
         result = store.find(
-            SourcePackageRecipeBuild,
+            (SourcePackageRecipeBuild.date_started,
+             SourcePackageRecipeBuild.date_finished),
             SourcePackageRecipeBuild.recipe == self.id,
+            SourcePackageRecipeBuild.status == BuildStatus.FULLYBUILT,
             SourcePackageRecipeBuild.date_finished != None)
-        durations = [
-            build.date_finished - build.date_started for build in result]
+        result.order_by(Desc(SourcePackageRecipeBuild.date_finished))
+        durations = [row[1] - row[0] for row in result[:9]]
         if len(durations) == 0:
             return None
         durations.sort(reverse=True)

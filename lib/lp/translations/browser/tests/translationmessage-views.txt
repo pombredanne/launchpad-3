@@ -37,7 +37,7 @@ without the plural form information.
 
 Here we can see that it's lacking that information.
 
-    >>> print translationmessage_page_view.context.language.pluralforms
+    >>> print(translationmessage_page_view.context.language.pluralforms)
     None
 
 And the view class detects it correctly.
@@ -61,7 +61,7 @@ dummy ones.
 
 We have the plural form information for this language.
 
-    >>> print translationmessage_page_view.context.language.pluralforms
+    >>> print(translationmessage_page_view.context.language.pluralforms)
     2
 
 And thus, the view class should know that it doesn't lacks the plural forms
@@ -118,7 +118,7 @@ Which is the one we wanted.
 As we didn't submit the form, the getSubmittedTranslation method will
 return None.
 
-    >>> print subview.getSubmittedTranslation(0)
+    >>> print(subview.getSubmittedTranslation(0))
     None
 
 If we request a plural form that is not valid, we get an AssertionError.
@@ -287,10 +287,10 @@ We do the submission with that lock_timestamp.
     >>> translationmessage_page_view.initialize()
     >>> for notification in (
     ...     translationmessage_page_view.request.notifications):
-    ...     print notification.message
+    ...     print(notification.message)
     There is an error in the translation you provided. Please correct it
     before continuing.
-    >>> print translationmessage_page_view.error
+    >>> print(translationmessage_page_view.error)
     This translation has changed since you last saw it.  To avoid
     accidentally reverting work done by others, we added your
     translations as suggestions.  Please review the current values.
@@ -424,7 +424,7 @@ Spanish plural form.
 Which produces no suggestions, because Japanese only has one form but
 Spanish has two.
 
-    >>> print suggestions.submissions
+    >>> print(suggestions.submissions)
     []
 
 However, when we use the first plural form, which exists in both
@@ -444,7 +444,7 @@ languages...
     >>> submission = suggestions.submissions[0]
     >>> for attr in sorted(dir(submission)):
     ...     if not attr.startswith('_'):
-    ...         print "%s: %s" % (attr, getattr(submission, attr))
+    ...         print("%s: %s" % (attr, getattr(submission, attr)))
     date_created: ...
     id: ...
     is_empty: False
@@ -548,7 +548,7 @@ message).
 A shared translation is not explicitely shown, since the current one is
 the shared translation.
 
-    >>> print subview.shared_translationmessage
+    >>> print(subview.shared_translationmessage)
     None
 
 When looking at the entire POFile, diverging is not allowed.

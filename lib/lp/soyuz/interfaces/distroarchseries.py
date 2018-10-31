@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Distribution architecture series interfaces."""
@@ -185,6 +185,16 @@ class IDistroArchSeriesModerate(Interface):
 
         The SHA-1 checksum must match the chroot file.
         """
+
+    @operation_parameters(
+        # Really ILiveFSBuild, patched in _schema_circular_imports.py.
+        livefsbuild=Reference(
+            Interface, title=_("Live filesystem build"), required=True),
+        filename=TextLine(title=_("Filename"), required=True))
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setChrootFromBuild(livefsbuild, filename):
+        """Set the chroot tarball from a live filesystem build."""
 
     @export_write_operation()
     @operation_for_version("devel")

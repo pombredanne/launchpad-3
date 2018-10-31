@@ -14,10 +14,10 @@ little point in inspecting what it does to the test database in detail.
     >>> return_code, output, error = run_script(
     ...     'utilities/soyuz-sampledata-setup.py')
 
-    >>> print return_code
+    >>> print(return_code)
     0
 
-    >>> print error
+    >>> print(error)
     INFO ...
     INFO Done.
 

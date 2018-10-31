@@ -47,10 +47,10 @@ in the sampladata.
     ...         changesfile = build.upload_changesfile
     ...         if package_upload is None or changesfile is None:
     ...            builds_missing_upload.append(builds)
-    ...     print '* %s' % archive.displayname
-    ...     print '%d of %d sources and %d of %d builds missing uploads' % (
+    ...     print('* %s' % archive.displayname)
+    ...     print('%d of %d sources and %d of %d builds missing uploads' % (
     ...        len(sources_missing_upload), len(sources),
-    ...        len(builds_missing_upload), len(builds))
+    ...        len(builds_missing_upload), len(builds)))
 
 As we can see from the results below, most of our sampledata are
 sources and builds directly imported into the system, not
@@ -110,27 +110,27 @@ tests.
 The `SourcePackageRelease` 'package_upload' and 'upload_changesfile'
 
     >>> original_source_upload = source.sourcepackagerelease.package_upload
-    >>> print original_source_upload
+    >>> print(original_source_upload)
     <PackageUpload ...>
 
     >>> source_changesfile = source.sourcepackagerelease.upload_changesfile
     >>> original_source_upload.changesfile == source_changesfile
     True
 
-    >>> print source_changesfile.filename
+    >>> print(source_changesfile.filename)
     testing_1.0_source.changes
 
 The `Build` 'package_upload' and 'upload_changesfile'
 
     >>> original_build_upload = build.package_upload
-    >>> print original_build_upload
+    >>> print(original_build_upload)
     <...PackageUpload ...>
 
     >>> build_changesfile = build.upload_changesfile
     >>> original_build_upload.changesfile == build_changesfile
     True
 
-    >>> print build_changesfile.filename
+    >>> print(build_changesfile.filename)
     testing-bin_1.0_i386.changes
 
 The `PackageUpload` lookups are not restricted to the status of the

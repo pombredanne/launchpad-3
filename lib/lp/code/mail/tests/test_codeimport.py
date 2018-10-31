@@ -1,19 +1,22 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for code import related mailings"""
 
 from email import message_from_string
+import textwrap
 
 import transaction
 
 from lp.code.enums import (
+    CodeImportReviewStatus,
     RevisionControlSystems,
     TargetRevisionControlSystems,
     )
 from lp.code.tests.helpers import GitHostingFixture
 from lp.services.mail import stub
 from lp.testing import (
+    login_celebrity,
     login_person,
     TestCaseWithFactory,
     )
@@ -146,3 +149,150 @@ class TestNewCodeImports(TestCaseWithFactory):
             '\n'
             '-- \nYou are getting this email because you are a member of the '
             'vcs-imports team.\n', msg.get_payload(decode=True))
+
+
+class TestUpdatedCodeImports(TestCaseWithFactory):
+    """Test the emails sent out for updated code imports."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertSameDetailsEmail(self, details, unique_name):
+        msg = message_from_string(stub.test_emails[0][2])
+        self.assertEqual(
+            'code-import-updated', msg['X-Launchpad-Notification-Type'])
+        self.assertEqual(unique_name, msg['X-Launchpad-Branch'])
+        self.assertEqual(
+            'Hello,\n\n'
+            'The import has been marked as failing.\n\n'
+            'This code import is from:\n'
+            '    %(details)s\n\n'
+            '-- \nhttp://code.launchpad.dev/%(unique_name)s\n'
+            'You are getting this email because you are a member of the '
+            'vcs-imports team.\n' % {
+                'details': details,
+                'unique_name': unique_name,
+                },
+            msg.get_payload(decode=True))
+
+    def assertDifferentDetailsEmail(self, old_details, new_details,
+                                    unique_name):
+        msg = message_from_string(stub.test_emails[0][2])
+        self.assertEqual(
+            'code-import-updated', msg['X-Launchpad-Notification-Type'])
+        self.assertEqual(unique_name, msg['X-Launchpad-Branch'])
+        self.assertEqual(
+            'Hello,\n\n'
+            '%(details_change_message)s\n'
+            '    %(new_details)s\n'
+            'instead of:\n'
+            '    %(old_details)s\n'
+            '\n'
+            '-- \nhttp://code.launchpad.dev/%(unique_name)s\n'
+            'You are getting this email because you are a member of the '
+            'vcs-imports team.\n' % {
+                'details_change_message': textwrap.fill(
+                    '%s is now being imported from:' % unique_name),
+                'old_details': old_details,
+                'new_details': new_details,
+                'unique_name': unique_name,
+                },
+            msg.get_payload(decode=True))
+
+    def test_cvs_to_bzr_import_same_details(self):
+        code_import = self.factory.makeProductCodeImport(
+            cvs_root=':pserver:anonymouse@cvs.example.com:/cvsroot',
+            cvs_module='a_module')
+        unique_name = code_import.target.unique_name
+        user = login_celebrity('vcs_imports')
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.FAILING}, user)
+        transaction.commit()
+        self.assertSameDetailsEmail(
+            'a_module from :pserver:anonymouse@cvs.example.com:/cvsroot',
+            unique_name)
+
+    def test_cvs_to_bzr_import_different_details(self):
+        code_import = self.factory.makeProductCodeImport(
+            cvs_root=':pserver:anonymouse@cvs.example.com:/cvsroot',
+            cvs_module='a_module')
+        unique_name = code_import.target.unique_name
+        user = login_celebrity('vcs_imports')
+        code_import.updateFromData({'cvs_module': 'another_module'}, user)
+        transaction.commit()
+        self.assertDifferentDetailsEmail(
+            'a_module from :pserver:anonymouse@cvs.example.com:/cvsroot',
+            'another_module from :pserver:anonymouse@cvs.example.com:/cvsroot',
+            unique_name)
+
+    def test_svn_to_bzr_import_same_details(self):
+        code_import = self.factory.makeProductCodeImport(
+            svn_branch_url='svn://svn.example.com/fooix/trunk')
+        unique_name = code_import.target.unique_name
+        user = login_celebrity('vcs_imports')
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.FAILING}, user)
+        transaction.commit()
+        self.assertSameDetailsEmail(
+            'svn://svn.example.com/fooix/trunk', unique_name)
+
+    def test_svn_to_bzr_import_different_details(self):
+        code_import = self.factory.makeProductCodeImport(
+            svn_branch_url='svn://svn.example.com/fooix/trunk')
+        unique_name = code_import.target.unique_name
+        user = login_celebrity('vcs_imports')
+        code_import.updateFromData(
+            {'url': 'https://svn.example.com/fooix/trunk'}, user)
+        transaction.commit()
+        self.assertDifferentDetailsEmail(
+            'svn://svn.example.com/fooix/trunk',
+            'https://svn.example.com/fooix/trunk', unique_name)
+
+    def test_git_to_bzr_import_same_details(self):
+        code_import = self.factory.makeProductCodeImport(
+            git_repo_url='git://git.example.com/fooix.git')
+        unique_name = code_import.target.unique_name
+        user = login_celebrity('vcs_imports')
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.FAILING}, user)
+        transaction.commit()
+        self.assertSameDetailsEmail(
+            'git://git.example.com/fooix.git', unique_name)
+
+    def test_git_to_bzr_import_different_details(self):
+        code_import = self.factory.makeProductCodeImport(
+            git_repo_url='git://git.example.com/fooix.git')
+        unique_name = code_import.target.unique_name
+        user = login_celebrity('vcs_imports')
+        code_import.updateFromData(
+            {'url': 'https://git.example.com/fooix.git'}, user)
+        transaction.commit()
+        self.assertDifferentDetailsEmail(
+            'git://git.example.com/fooix.git',
+            'https://git.example.com/fooix.git', unique_name)
+
+    def test_git_to_git_import_same_details(self):
+        self.useFixture(GitHostingFixture())
+        code_import = self.factory.makeProductCodeImport(
+            git_repo_url='git://git.example.com/fooix.git',
+            target_rcs_type=TargetRevisionControlSystems.GIT)
+        unique_name = code_import.target.unique_name
+        user = login_celebrity('vcs_imports')
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.FAILING}, user)
+        transaction.commit()
+        self.assertSameDetailsEmail(
+            'git://git.example.com/fooix.git', unique_name)
+
+    def test_git_to_git_import_different_details(self):
+        self.useFixture(GitHostingFixture())
+        code_import = self.factory.makeProductCodeImport(
+            git_repo_url='git://git.example.com/fooix.git',
+            target_rcs_type=TargetRevisionControlSystems.GIT)
+        unique_name = code_import.target.unique_name
+        user = login_celebrity('vcs_imports')
+        code_import.updateFromData(
+            {'url': 'https://git.example.com/fooix.git'}, user)
+        transaction.commit()
+        self.assertDifferentDetailsEmail(
+            'git://git.example.com/fooix.git',
+            'https://git.example.com/fooix.git', unique_name)

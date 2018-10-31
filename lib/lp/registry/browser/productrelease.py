@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -21,6 +21,7 @@ from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.event import notify
 from zope.formlib.form import FormFields
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import (
     TextAreaWidget,
     TextWidget,
@@ -35,7 +36,6 @@ from zope.schema.vocabulary import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -107,9 +107,11 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
     """
     schema = IProductRelease
 
-    custom_widget('datereleased', DateTimeWidget)
-    custom_widget('release_notes', TextAreaWidget, height=7, width=62)
-    custom_widget('changelog', TextAreaWidget, height=7, width=62)
+    custom_widget_datereleased = DateTimeWidget
+    custom_widget_release_notes = CustomWidgetFactory(
+        TextAreaWidget, height=7, width=62)
+    custom_widget_changelog = CustomWidgetFactory(
+        TextAreaWidget, height=7, width=62)
 
     def _prependKeepMilestoneActiveField(self):
         keep_milestone_active_checkbox = FormFields(
@@ -227,9 +229,11 @@ class ProductReleaseEditView(LaunchpadEditFormView):
         "changelog",
         ]
 
-    custom_widget('datereleased', DateTimeWidget)
-    custom_widget('release_notes', TextAreaWidget, height=7, width=62)
-    custom_widget('changelog', TextAreaWidget, height=7, width=62)
+    custom_widget_datereleased = DateTimeWidget
+    custom_widget_release_notes = CustomWidgetFactory(
+        TextAreaWidget, height=7, width=62)
+    custom_widget_changelog = CustomWidgetFactory(
+        TextAreaWidget, height=7, width=62)
 
     @property
     def label(self):
@@ -265,7 +269,8 @@ class ProductReleaseAddDownloadFileView(LaunchpadFormView):
     """A view for adding a file to an `IProductRelease`."""
     schema = IProductReleaseFileAddForm
 
-    custom_widget('description', TextWidget, displayWidth=60)
+    custom_widget_description = CustomWidgetFactory(
+        TextWidget, displayWidth=60)
 
     @property
     def label(self):

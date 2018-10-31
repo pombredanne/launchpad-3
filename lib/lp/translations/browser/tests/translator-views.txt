@@ -24,16 +24,16 @@ TranslatorAdminView
 Translator +admin view provides a nice page title and a form label.
 
     >>> view = create_initialized_view(translator, '+admin')
-    >>> print view.label
+    >>> print(view.label)
     Edit Serbian translation team in Test translators
 
-    >>> print view.page_title
+    >>> print(view.page_title)
     Edit Serbian translation team
 
 Canceling changes to the Translator takes one back to the group
 page.
 
-    >>> print view.cancel_url
+    >>> print(view.cancel_url)
     http://translations.launchpad.dev/+groups/test-translators
 
 TranslatorEditView
@@ -44,15 +44,15 @@ for a language in a TranslationGroup, and page title and form label
 describe that appropriately.
 
     >>> view = create_initialized_view(translator, '+edit')
-    >>> print view.label
+    >>> print(view.label)
     Set Serbian guidelines for Test translators
 
-    >>> print view.page_title
+    >>> print(view.page_title)
     Set Serbian guidelines
 
 Canceling changes to the guidelines takes one back to the team page.
 
-    >>> print view.cancel_url
+    >>> print(view.cancel_url)
     http://translations.launchpad.dev/~bad-translators
 
 
@@ -63,13 +63,13 @@ Translator +edit view allows one to only set translation guidelines
 for a language in a TranslationGroup.
 
     >>> view = create_initialized_view(translator, '+remove')
-    >>> print view.label
+    >>> print(view.label)
     Unset 'Bad translators' as the Serbian translator in Test translators
 
-    >>> print view.page_title
+    >>> print(view.page_title)
     Remove translation team
 
 Canceling removal of a translation team takes one back to the group page.
 
-    >>> print view.cancel_url
+    >>> print(view.cancel_url)
     http://translations.launchpad.dev/+groups/test-translators

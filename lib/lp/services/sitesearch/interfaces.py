@@ -9,7 +9,6 @@ __all__ = [
     'ISearchResult',
     'ISearchResults',
     'ISearchService',
-    'GoogleWrongGSPVersion',
     'SiteSearchResponseError',
     'active_search_service',
     ]
@@ -78,10 +77,6 @@ class ISearchResults(Interface):
 
     def __iter__():
         """Iterate over the items in the collection."""
-
-
-class GoogleWrongGSPVersion(ValueError):
-    """Raised when the content is not parsable Google Search Protocol XML."""
 
 
 class SiteSearchResponseError(ValueError):

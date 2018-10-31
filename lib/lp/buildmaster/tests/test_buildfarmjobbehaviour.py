@@ -1,7 +1,9 @@
-# Copyright 2010-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BuildFarmJobBehaviourBase."""
+
+from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
@@ -115,6 +117,20 @@ class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
         self.assertEqual(
             '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_cookie),
             upload_leaf)
+
+    def test_extraBuildArgs_virtualized(self):
+        # If the builder is virtualized, extraBuildArgs sends
+        # fast_cleanup: True.
+        behaviour = self._makeBehaviour(self._makeBuild())
+        behaviour.setBuilder(self.factory.makeBuilder(virtualized=True), None)
+        self.assertIs(True, behaviour.extraBuildArgs()["fast_cleanup"])
+
+    def test_extraBuildArgs_non_virtualized(self):
+        # If the builder is non-virtualized, extraBuildArgs sends
+        # fast_cleanup: False.
+        behaviour = self._makeBehaviour(self._makeBuild())
+        behaviour.setBuilder(self.factory.makeBuilder(virtualized=False), None)
+        self.assertIs(False, behaviour.extraBuildArgs()["fast_cleanup"])
 
 
 class TestDispatchBuildToSlave(TestCase):
@@ -290,7 +306,7 @@ class TestHandleStatusMixin:
         # directory will not be collected.
         with ExpectedException(
                 BuildDaemonError,
-                "Build returned a file named '/tmp/myfile.py'."):
+                "Build returned a file named u'/tmp/myfile.py'."):
             with dbuser(config.builddmaster.dbuser):
                 yield self.behaviour.handleStatus(
                     self.build.buildqueue_record, 'OK',
@@ -302,7 +318,7 @@ class TestHandleStatusMixin:
         # the upload directory will not be collected.
         with ExpectedException(
                 BuildDaemonError,
-                "Build returned a file named '../myfile.py'."):
+                "Build returned a file named u'../myfile.py'."):
             with dbuser(config.builddmaster.dbuser):
                 yield self.behaviour.handleStatus(
                     self.build.buildqueue_record, 'OK',
@@ -363,7 +379,7 @@ class TestHandleStatusMixin:
             self.build.updateStatus(BuildStatus.BUILDING)
             with ExpectedException(
                     BuildDaemonError,
-                    "Build returned unexpected status: 'ABORTED'"):
+                    "Build returned unexpected status: u'ABORTED'"):
                 yield self.behaviour.handleStatus(
                     self.build.buildqueue_record, "ABORTED", {})
 
@@ -391,7 +407,7 @@ class TestHandleStatusMixin:
     def test_givenback_collection(self):
         with ExpectedException(
                 BuildDaemonError,
-                "Build returned unexpected status: 'GIVENBACK'"):
+                "Build returned unexpected status: u'GIVENBACK'"):
             with dbuser(config.builddmaster.dbuser):
                 yield self.behaviour.handleStatus(
                     self.build.buildqueue_record, "GIVENBACK", {})
@@ -400,7 +416,7 @@ class TestHandleStatusMixin:
     def test_builderfail_collection(self):
         with ExpectedException(
                 BuildDaemonError,
-                "Build returned unexpected status: 'BUILDERFAIL'"):
+                "Build returned unexpected status: u'BUILDERFAIL'"):
             with dbuser(config.builddmaster.dbuser):
                 yield self.behaviour.handleStatus(
                     self.build.buildqueue_record, "BUILDERFAIL", {})
@@ -409,7 +425,7 @@ class TestHandleStatusMixin:
     def test_invalid_status_collection(self):
         with ExpectedException(
                 BuildDaemonError,
-                "Build returned unexpected status: 'BORKED'"):
+                "Build returned unexpected status: u'BORKED'"):
             with dbuser(config.builddmaster.dbuser):
                 yield self.behaviour.handleStatus(
                     self.build.buildqueue_record, "BORKED", {})

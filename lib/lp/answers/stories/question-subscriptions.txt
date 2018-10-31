@@ -13,10 +13,10 @@ sees a link to their subscribed questions.
     >>> user_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
     >>> user_browser.getLink('Subscribe').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Subscription : Question #2 ...
 
-    >>> print user_browser.getLink('your subscribed questions page')
+    >>> print(user_browser.getLink('your subscribed questions page'))
     <Link ...'http://answers.launchpad.dev/~no-priv/+subscribedquestions'>
 
     >>> user_browser.getControl('Subscribe').click()
@@ -34,11 +34,11 @@ becomes an 'Unsubscribe' link. To unsubscribe, the user follows that
 link and then click on the 'Unsubscribe' button.
 
     >>> link = user_browser.getLink('Unsubscribe').click()
-    >>> print user_browser.title
+    >>> print(user_browser.title)
     Subscription : Question #2 ...
 
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'unsubscribe'))
+    >>> print(extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'unsubscribe')))
     Unsubscribing from this question ...
 
     >>> user_browser.getControl('Unsubscribe').click()

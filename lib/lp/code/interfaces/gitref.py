@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git reference ("ref") interfaces."""
@@ -11,11 +11,14 @@ __all__ = [
     'IGitRefRemoteSet',
     ]
 
+from textwrap import dedent
+
 from lazr.restful.declarations import (
     call_with,
     export_as_webservice_entry,
     export_factory_operation,
     export_read_operation,
+    export_write_operation,
     exported,
     operation_for_version,
     operation_parameters,
@@ -50,16 +53,12 @@ from lp.code.enums import (
 from lp.code.interfaces.hasbranches import IHasMergeProposals
 from lp.code.interfaces.hasrecipes import IHasRecipes
 from lp.registry.interfaces.person import IPerson
+from lp.services.fields import InlineObject
 from lp.services.webapp.interfaces import ITableBatchNavigator
 
 
-class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
-    """A reference in a Git repository."""
-
-    # XXX cjwatson 2015-01-19 bug=760849: "beta" is a lie to get WADL
-    # generation working.  Individual attributes must set their version to
-    # "devel".
-    export_as_webservice_entry(as_of="beta")
+class IGitRefView(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
+    """IGitRef attributes that require launchpad.View permission."""
 
     repository = exported(ReferenceChoice(
         title=_("Repository"), required=True, readonly=True,
@@ -79,6 +78,8 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
     name = Attribute(
         "A shortened version of the full path to this reference, with any "
         "leading refs/heads/ removed.")
+
+    url_quoted_name = Attribute("The reference name, quoted for use in URLs.")
 
     commit_sha1 = exported(TextLine(
         title=_("Commit SHA-1"), required=True, readonly=True,
@@ -117,7 +118,7 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
 
     commit_message_first_line = TextLine(
         title=_("The first line of the commit message."),
-        required=True, readonly=True)
+        required=False, readonly=True)
 
     identity = Attribute(
         "The identity of this reference.  This will be the shortened path to "
@@ -381,6 +382,65 @@ class IGitRef(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         """Return a specific number of the latest commits in this ref."""
 
     has_commits = Attribute("Whether this reference has any commits.")
+
+    def getBlob(filename):
+        """Get a blob by file name from this reference.
+
+        :param filename: Relative path of a file in the repository.
+        :return: A binary string with the blob content.
+        """
+
+
+class IGitRefEdit(Interface):
+    """IGitRef methods that require launchpad.Edit permission."""
+
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getGrants():
+        """Get the access grants specific to this reference.
+
+        Other grants may apply via wildcard rules.
+        """
+
+    @operation_parameters(
+        grants=List(
+            title=_("Grants"),
+            # Really IGitNascentRuleGrant, patched in
+            # _schema_circular_imports.py.
+            value_type=InlineObject(schema=Interface),
+            description=_(dedent("""\
+                The new list of grants for this reference.  For example::
+
+                    [
+                        {
+                            "grantee_type": "Repository owner",
+                            "can_create": true,
+                            "can_push": true,
+                            "can_force_push": true
+                        },
+                        {
+                            "grantee_type": "Person",
+                            "grantee_link": "/~example-person",
+                            "can_push": true
+                        }
+                    ]"""))))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def setGrants(grants, user):
+        """Set the access grants specific to this reference.
+
+        Other grants may apply via wildcard rules.
+        """
+
+
+class IGitRef(IGitRefView, IGitRefEdit):
+    """A reference in a Git repository."""
+
+    # XXX cjwatson 2015-01-19 bug=760849: "beta" is a lie to get WADL
+    # generation working.  Individual attributes must set their version to
+    # "devel".
+    export_as_webservice_entry(as_of="beta")
 
 
 class IGitRefBatchNavigator(ITableBatchNavigator):

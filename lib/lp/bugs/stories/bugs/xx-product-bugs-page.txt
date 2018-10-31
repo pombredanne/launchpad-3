@@ -61,7 +61,7 @@ The link takes you to the list of the bugs fixed elsewhere:
     >>> anon_browser.url
     'http://.../+bugs?field.status_upstream=resolved_upstream'
 
-    >>> print find_main_content(anon_browser.contents)
+    >>> print(find_main_content(anon_browser.contents))
     <...
     <p>There are currently no open bugs.</p>
     ...
@@ -81,7 +81,7 @@ The link goes to the expirable bugs page, where the anonymous user can
 see which bugs will expire if they are not confirmed.
 
     >>> expirable_bugs_link.click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Expirable bugs : Bugs : Jokosher
 
 Product series may also have a link to expirable bugs. Jokosher's trunk
@@ -90,7 +90,7 @@ series has the link because Jokosher has enabled bug expiration.
     >>> anon_browser.open('http://bugs.launchpad.dev/jokosher/trunk')
     >>> expirable_bugs_link = anon_browser.getLink('Incomplete bugs')
     >>> expirable_bugs_link.click()
-    >>> print anon_browser.title
+    >>> print(anon_browser.title)
     Expirable bugs : Series trunk : Bugs : Jokosher
 
 Thunderbird has not enabled bug expiration; the anonymous user
@@ -112,7 +112,7 @@ loaded using Javascript in a separate request.
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> tags_portlet = find_tag_by_id(anon_browser.contents, 'portlet-tags')
     >>> anon_browser.getLink(id='tags-content-link').click()
-    >>> print extract_text(anon_browser.contents)
+    >>> print(extract_text(anon_browser.contents))
     Tags
     1
     layout-test

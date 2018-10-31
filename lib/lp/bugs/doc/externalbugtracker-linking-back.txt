@@ -19,13 +19,13 @@ about the bug.
     ...         self.last_launchpad_bug_id = None
     ...
     ...     def getLaunchpadBugId(self, remote_bug):
-    ...         print "Getting Launchpad id for bug %s" % remote_bug
+    ...         print("Getting Launchpad id for bug %s" % remote_bug)
     ...         return self.last_launchpad_bug_id
     ...
     ...     def setLaunchpadBugId(self, remote_bug, launchpad_bug_id,
     ...                           launchpad_bug_url):
     ...         self.last_launchpad_bug_id = launchpad_bug_id
-    ...         print "Setting Launchpad id for bug %s" % remote_bug
+    ...         print("Setting Launchpad id for bug %s" % remote_bug)
 
 The methods are called by the CheckwatchesMaster class:
 
@@ -111,8 +111,8 @@ Launchpad bug ID isn't valid, setLaunchpadBugId() to correct the error.
 
 unlinked_bug doesn't link to bug 42 on the remote bug tracker.
 
-    >>> print unlinked_bug.getBugWatch(
-    ...     bug_watch.bugtracker, bug_watch.remotebug)
+    >>> print(unlinked_bug.getBugWatch(
+    ...     bug_watch.bugtracker, bug_watch.remotebug))
     None
 
 However, the remote bug currently thinks that unlinked_bug does in

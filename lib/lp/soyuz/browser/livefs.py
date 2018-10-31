@@ -1,4 +1,4 @@
-# Copyright 2014-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """LiveFS views."""
@@ -29,7 +29,6 @@ from zope.schema import (
 
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -210,7 +209,7 @@ class LiveFSAddView(LiveFSMetadataValidatorMixin, LaunchpadFormView):
 
     schema = ILiveFSEditSchema
     field_names = ['owner', 'name', 'distro_series', 'metadata']
-    custom_widget('distro_series', LaunchpadRadioWidget)
+    custom_widget_distro_series = LaunchpadRadioWidget
 
     def initialize(self):
         """See `LaunchpadView`."""
@@ -303,7 +302,7 @@ class LiveFSEditView(LiveFSMetadataValidatorMixin, BaseLiveFSEditView):
     label = title
 
     field_names = ['owner', 'name', 'distro_series', 'metadata']
-    custom_widget('distro_series', LaunchpadRadioWidget)
+    custom_widget_distro_series = LaunchpadRadioWidget
 
     @property
     def initial_values(self):

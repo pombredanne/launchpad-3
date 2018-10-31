@@ -154,7 +154,7 @@ message is presented.
   ...     (breezy_autotest, request), name="+queue")
   >>> queue_view.setupQueueList()
   >>> queue_view.performQueueAction()
-  >>> print queue_view.error
+  >>> print(queue_view.error)
   You do not have permission to act on queue items.
 
   >>> getUtility(IPackageUploadSet).get(1).status.name
@@ -197,7 +197,7 @@ message is presented.
   ...     (breezy_autotest, request), name="+queue")
   >>> queue_view.setupQueueList()
   >>> queue_view.performQueueAction()
-  >>> print queue_view.error
+  >>> print(queue_view.error)
   You do not have permission to act on queue items.
 
   >>> target.status.name
@@ -290,7 +290,7 @@ is_new() method requires to work.
 
     >>> binary_packages = foo_upload.queue_root.builds[0].build.binarypackages
     >>> for binarypackage in binary_packages:
-    ...     print binarypackage.name, queue_view.is_new(binarypackage)
+    ...     print(binarypackage.name, queue_view.is_new(binarypackage))
     foo False
     foo-dev True
 

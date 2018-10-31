@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository views."""
@@ -26,6 +26,10 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
+from six.moves.urllib_parse import (
+    urlsplit,
+    urlunsplit,
+    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -45,7 +49,6 @@ from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -53,6 +56,9 @@ from lp.app.errors import NotFoundError
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.browser.branch import CodeEditOwnerMixin
+from lp.code.browser.branchmergeproposal import (
+    latest_proposals_for_each_branch,
+    )
 from lp.code.browser.codeimport import CodeImportTargetMixin
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.browser.widgets.gitrepositorytarget import (
@@ -97,6 +103,7 @@ from lp.services.webapp.batching import TableBatchNavigator
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
+from lp.services.webapp.publisher import DataDownloadView
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.hassnaps import HasSnapsViewMixin
 
@@ -311,6 +318,7 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
         return self.context.display_name
 
     label = page_title
+    show_merge_links = True
 
     def initialize(self):
         super(GitRepositoryView, self).initialize()
@@ -321,6 +329,14 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
         if self.user is not None:
             precache_permission_for_objects(
                 self.request, "launchpad.LimitedView", authorised_people)
+
+    @property
+    def git_ssh_url(self):
+        """The git+ssh:// URL for this repository, adjusted for this user."""
+        base_url = urlsplit(self.context.git_ssh_url)
+        url = list(base_url)
+        url[1] = "{}@{}".format(self.user.name, base_url.hostname)
+        return urlunsplit(url)
 
     @property
     def user_can_push(self):
@@ -355,6 +371,32 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
     def is_imported(self):
         """Is this an imported repository?"""
         return self.context.repository_type == GitRepositoryType.IMPORTED
+
+    @cachedproperty
+    def landing_candidates(self):
+        candidates = self.context.getPrecachedLandingCandidates(self.user)
+        return [proposal for proposal in candidates
+                if check_permission("launchpad.View", proposal)]
+
+    def _getBranchCountText(self, count):
+        """Help to show user friendly text."""
+        if count == 0:
+            return 'No branches'
+        elif count == 1:
+            return '1 branch'
+        else:
+            return '%s branches' % count
+
+    @cachedproperty
+    def landing_candidate_count_text(self):
+        return self._getBranchCountText(len(self.landing_candidates))
+
+    @cachedproperty
+    def landing_targets(self):
+        """Return a filtered list of active landing targets."""
+        targets = self.context.getPrecachedLandingTargets(
+            self.user, only_active=True)
+        return latest_proposals_for_each_branch(targets)
 
 
 class GitRepositoryEditFormView(LaunchpadEditFormView):
@@ -527,7 +569,7 @@ class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
         "default_branch",
         ]
 
-    custom_widget("information_type", LaunchpadRadioWidgetWithDescription)
+    custom_widget_information_type = LaunchpadRadioWidgetWithDescription
 
     any_owner_description = _(
         "As an administrator you are able to assign this repository to any "
@@ -638,23 +680,24 @@ class GitRepositoryEditView(CodeEditOwnerMixin, GitRepositoryEditFormView):
 
 
 @implementer(IBrowserPublisher)
-class GitRepositoryDiffView:
+class GitRepositoryDiffView(DataDownloadView):
+
+    content_type = "text/x-patch"
+    charset = "UTF-8"
 
     def __init__(self, context, request, old, new):
+        super(GitRepositoryDiffView, self).__init__(context, request)
         self.context = context
         self.request = request
         self.old = old
         self.new = new
 
-    def __call__(self):
-        content = self.context.getDiff(self.old, self.new)
-        filename = "%s_%s.diff" % (self.old, self.new)
-        self.request.response.setHeader(
-            "Content-Type", 'text/x-patch; charset="UTF-8"')
-        self.request.response.setHeader("Content-Length", str(len(content)))
-        self.request.response.setHeader(
-            "Content-Disposition", "attachment; filename=%s" % filename)
-        return content
+    @property
+    def filename(self):
+        return "%s_%s_%s.diff" % (self.context.name, self.old, self.new)
+
+    def getBody(self):
+        return self.context.getDiff(self.old, self.new)
 
     def browserDefault(self, request):
         return self, ()

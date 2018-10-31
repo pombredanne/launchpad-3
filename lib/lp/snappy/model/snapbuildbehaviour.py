@@ -12,11 +12,10 @@ __all__ = [
     ]
 
 import base64
-import json
 import time
 
+import treq
 from twisted.internet import defer
-from twisted.web.client import getPage
 from zope.component import adapter
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
@@ -30,8 +29,12 @@ from lp.buildmaster.model.buildfarmjobbehaviour import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
-from lp.services.webapp import canonical_url
-from lp.snappy.interfaces.snap import SnapBuildArchiveOwnerMismatch
+from lp.services.features import getFeatureFlag
+from lp.services.twistedsupport.treq import check_status
+from lp.snappy.interfaces.snap import (
+    SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG,
+    SnapBuildArchiveOwnerMismatch,
+    )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -43,6 +46,8 @@ from lp.soyuz.interfaces.archive import ArchiveDisabled
 @implementer(IBuildFarmJobBehaviour)
 class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `SnapBuild` jobs to slaves."""
+
+    builder_type = "snap"
 
     def getLogFileName(self):
         das = self.build.distro_arch_series
@@ -79,12 +84,13 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 "Missing chroot for %s" % build.distro_arch_series.displayname)
 
     @defer.inlineCallbacks
-    def _extraBuildArgs(self, logger=None):
+    def extraBuildArgs(self, logger=None):
         """
         Return the extra arguments required by the slave for the given build.
         """
         build = self.build
-        args = {}
+        args = yield super(SnapBuildBehaviour, self).extraBuildArgs(
+            logger=logger)
         if config.snappy.builder_proxy_host and build.snap.allow_internet:
             token = yield self._requestProxyToken()
             args["proxy_url"] = (
@@ -98,8 +104,6 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                     endpoint=config.snappy.builder_proxy_auth_api_endpoint,
                     token=token['username']))
         args["name"] = build.snap.store_name or build.snap.name
-        args["series"] = build.distro_series.name
-        args["arch_tag"] = build.distro_arch_series.architecturetag
         # XXX cjwatson 2015-08-03: Allow tools_source to be overridden at
         # some more fine-grained level.
         args["archives"], args["trusted_keys"] = (
@@ -108,13 +112,15 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
                 tools_source=config.snappy.tools_source,
                 tools_fingerprint=config.snappy.tools_fingerprint,
                 logger=logger))
-        args["archive_private"] = build.archive.private
-        args["build_url"] = canonical_url(build)
-        if build.channels is not None:
+        channels = build.channels or {}
+        if "snapcraft" not in channels:
+            channels["snapcraft"] = (
+                getFeatureFlag(SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG) or "apt")
+        if channels.get("snapcraft") != "apt":
             # We have to remove the security proxy that Zope applies to this
             # dict, since otherwise we'll be unable to serialise it to
             # XML-RPC.
-            args["channels"] = removeSecurityProxy(build.channels)
+            args["channels"] = removeSecurityProxy(channels)
         if build.snap.branch is not None:
             args["branch"] = build.snap.branch.bzr_identity
         elif build.snap.git_ref is not None:
@@ -154,24 +160,16 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
             build_id=self.build.build_cookie,
             timestamp=timestamp)
         auth_string = '{}:{}'.format(admin_username, secret).strip()
-        auth_header = 'Basic ' + base64.b64encode(auth_string)
-        data = json.dumps({'username': proxy_username})
+        auth_header = b'Basic ' + base64.b64encode(auth_string)
 
-        result = yield getPage(
-            url,
-            method='POST',
-            postdata=data,
-            headers={
-                'Authorization': auth_header,
-                'Content-Type': 'application/json'}
-            )
-        token = json.loads(result)
+        response = yield treq.post(
+            url, headers={'Authorization': auth_header},
+            json={'username': proxy_username},
+            reactor=self._slave.reactor,
+            pool=self._slave.pool)
+        response = yield check_status(response)
+        token = yield treq.json_content(response)
         defer.returnValue(token)
-
-    @defer.inlineCallbacks
-    def composeBuildRequest(self, logger):
-        args = yield self._extraBuildArgs(logger=logger)
-        defer.returnValue(("snap", self.build.distro_arch_series, {}, args))
 
     def verifySuccessfulBuild(self):
         """See `IBuildFarmJobBehaviour`."""

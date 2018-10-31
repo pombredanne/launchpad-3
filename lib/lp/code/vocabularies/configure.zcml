@@ -1,4 +1,4 @@
-<!-- Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -75,6 +75,17 @@
 
   <class class=".gitrepository.GitRepositoryRestrictedOnProductVocabulary">
     <allow interface="lp.services.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+  <securedutility
+    name="GitPermissions"
+    component=".gitrule.GitPermissionsVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory">
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class=".gitrule.GitPermissionsVocabulary">
+    <allow interface="zope.schema.interfaces.IVocabularyTokenized"/>
   </class>
 
 </configure>

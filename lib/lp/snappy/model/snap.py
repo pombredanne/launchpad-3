@@ -6,12 +6,15 @@ __all__ = [
     'Snap',
     ]
 
+from collections import OrderedDict
 from datetime import (
     datetime,
     timedelta,
     )
+from operator import attrgetter
 from urlparse import urlsplit
 
+from lazr.lifecycle.event import ObjectCreatedEvent
 from pymacaroons import Macaroon
 import pytz
 from storm.expr import (
@@ -32,17 +35,25 @@ from storm.locals import (
     Storm,
     Unicode,
     )
+import yaml
 from zope.component import (
     getAdapter,
     getUtility,
     )
+from zope.event import notify
 from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.browser.tales import (
+    ArchiveFormatterAPI,
+    DateTimeFormatterAPI,
+    )
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
-from lp.app.errors import IncompatibleArguments
+from lp.app.errors import (
+    IncompatibleArguments,
+    NotFoundError,
+    )
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -50,6 +61,13 @@ from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.processor import Processor
+from lp.code.errors import (
+    BranchFileNotFound,
+    BranchHostingFault,
+    GitRepositoryBlobNotFound,
+    GitRepositoryBlobUnsupportedRemote,
+    GitRepositoryScanFault,
+    )
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import (
     IAllBranches,
@@ -98,23 +116,35 @@ from lp.services.database.stormexpr import (
     NullsLast,
     )
 from lp.services.features import getFeatureFlag
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
     )
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+from lp.services.webapp.authorization import precache_permission_for_objects
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.publisher import canonical_url
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
+from lp.snappy.adapters.buildarch import determine_architectures_to_build
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     BadSnapSource,
     CannotAuthorizeStoreUploads,
+    CannotFetchSnapcraftYaml,
     CannotModifySnapProcessor,
+    CannotParseSnapcraftYaml,
     CannotRequestAutoBuilds,
     DuplicateSnapName,
     ISnap,
+    ISnapBuildRequest,
     ISnapSet,
+    MissingSnapcraftYaml,
     NoSourceForSnap,
     NoSuchSnap,
     SNAP_PRIVATE_FEATURE_FLAG,
@@ -122,11 +152,13 @@ from lp.snappy.interfaces.snap import (
     SnapBuildAlreadyPending,
     SnapBuildArchiveOwnerMismatch,
     SnapBuildDisallowedArchitecture,
+    SnapBuildRequestStatus,
     SnapNotOwner,
     SnapPrivacyMismatch,
     SnapPrivateFeatureDisabled,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
+from lp.snappy.interfaces.snapjob import ISnapRequestBuildsJobSource
 from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snapbuild import SnapBuild
@@ -145,6 +177,68 @@ def snap_modified(snap, event):
     events on snap packages.
     """
     removeSecurityProxy(snap).date_last_modified = UTC_NOW
+
+
+@implementer(ISnapBuildRequest)
+class SnapBuildRequest:
+    """See `ISnapBuildRequest`.
+
+    This is not directly backed by a database table; instead, it is a
+    webservice-friendly view of an asynchronous build request.
+    """
+
+    def __init__(self, snap, id):
+        self.snap = snap
+        self.id = id
+
+    @classmethod
+    def fromJob(cls, job):
+        """See `ISnapBuildRequest`."""
+        request = cls(job.snap, job.job_id)
+        get_property_cache(request)._job = job
+        return request
+
+    @cachedproperty
+    def _job(self):
+        job_source = getUtility(ISnapRequestBuildsJobSource)
+        return job_source.getBySnapAndID(self.snap, self.id)
+
+    @property
+    def date_requested(self):
+        """See `ISnapBuildRequest`."""
+        return self._job.date_created
+
+    @property
+    def date_finished(self):
+        """See `ISnapBuildRequest`."""
+        return self._job.date_finished
+
+    @property
+    def status(self):
+        """See `ISnapBuildRequest`."""
+        status_map = {
+            JobStatus.WAITING: SnapBuildRequestStatus.PENDING,
+            JobStatus.RUNNING: SnapBuildRequestStatus.PENDING,
+            JobStatus.COMPLETED: SnapBuildRequestStatus.COMPLETED,
+            JobStatus.FAILED: SnapBuildRequestStatus.FAILED,
+            JobStatus.SUSPENDED: SnapBuildRequestStatus.PENDING,
+            }
+        return status_map[self._job.job.status]
+
+    @property
+    def error_message(self):
+        """See `ISnapBuildRequest`."""
+        return self._job.error_message
+
+    @property
+    def builds(self):
+        """See `ISnapBuildRequest`."""
+        return self._job.builds
+
+    @property
+    def archive(self):
+        """See `ISnapBuildRequest`."""
+        return self._job.archive
 
 
 @implementer(ISnap, IHasOwner)
@@ -451,20 +545,24 @@ class Snap(Storm, WebhookTargetMixin):
             return False
         return True
 
-    def requestBuild(self, requester, archive, distro_arch_series, pocket,
-                     channels=None):
-        """See `ISnap`."""
+    def _checkRequestBuild(self, requester, archive):
+        """May `requester` request builds of this snap from `archive`?"""
         if not requester.inTeam(self.owner):
             raise SnapNotOwner(
                 "%s cannot create snap package builds owned by %s." %
                 (requester.displayname, self.owner.displayname))
         if not archive.enabled:
             raise ArchiveDisabled(archive.displayname)
-        if distro_arch_series not in self.getAllowedArchitectures():
-            raise SnapBuildDisallowedArchitecture(distro_arch_series)
         if archive.private and self.owner != archive.owner:
             # See rationale in `SnapBuildArchiveOwnerMismatch` docstring.
             raise SnapBuildArchiveOwnerMismatch()
+
+    def requestBuild(self, requester, archive, distro_arch_series, pocket,
+                     channels=None, build_request=None):
+        """See `ISnap`."""
+        self._checkRequestBuild(requester, archive)
+        if distro_arch_series not in self.getAllowedArchitectures():
+            raise SnapBuildDisallowedArchitecture(distro_arch_series)
 
         pending = IStore(self).find(
             SnapBuild,
@@ -479,13 +577,79 @@ class Snap(Storm, WebhookTargetMixin):
 
         build = getUtility(ISnapBuildSet).new(
             requester, self, archive, distro_arch_series, pocket,
-            channels=channels)
+            channels=channels, build_request=build_request)
         build.queueBuild()
+        notify(ObjectCreatedEvent(build, user=requester))
         return build
 
-    def requestAutoBuilds(self, allow_failures=False, logger=None):
-        """See `ISnapSet`."""
+    def requestBuilds(self, requester, archive, pocket, channels=None):
+        """See `ISnap`."""
+        self._checkRequestBuild(requester, archive)
+        job = getUtility(ISnapRequestBuildsJobSource).create(
+            self, requester, archive, pocket, channels)
+        return self.getBuildRequest(job.job_id)
+
+    def requestBuildsFromJob(self, requester, archive, pocket, channels=None,
+                             allow_failures=False, fetch_snapcraft_yaml=True,
+                             build_request=None, logger=None):
+        """See `ISnap`."""
+        try:
+            if fetch_snapcraft_yaml:
+                try:
+                    snapcraft_data = removeSecurityProxy(
+                        getUtility(ISnapSet).getSnapcraftYaml(self))
+                except CannotFetchSnapcraftYaml as e:
+                    if not e.unsupported_remote:
+                        raise
+                    # The only reason we can't fetch the file is because we
+                    # don't support fetching from this repository's host.
+                    # In this case the best thing is to fall back to
+                    # building for all supported architectures.
+                    snapcraft_data = {}
+            else:
+                snapcraft_data = {}
+            # Sort by Processor.id for determinism.  This is chosen to be
+            # the same order as in BinaryPackageBuildSet.createForSource, to
+            # minimise confusion.
+            supported_arches = OrderedDict(
+                (das.architecturetag, das) for das in sorted(
+                    self.getAllowedArchitectures(),
+                    key=attrgetter("processor.id")))
+            architectures_to_build = determine_architectures_to_build(
+                snapcraft_data, supported_arches.keys())
+        except Exception as e:
+            if not allow_failures:
+                raise
+            elif logger is not None:
+                logger.exception(" - %s/%s: %s", self.owner.name, self.name, e)
+            return []
+
         builds = []
+        for build_instance in architectures_to_build:
+            arch = build_instance.architecture
+            try:
+                build = self.requestBuild(
+                    requester, archive, supported_arches[arch], pocket,
+                    channels, build_request=build_request)
+                if logger is not None:
+                    logger.debug(
+                        " - %s/%s/%s: Build requested.",
+                        self.owner.name, self.name, arch)
+                builds.append(build)
+            except SnapBuildAlreadyPending as e:
+                pass
+            except Exception as e:
+                if not allow_failures:
+                    raise
+                elif logger is not None:
+                    logger.exception(
+                        " - %s/%s/%s: %s",
+                        self.owner.name, self.name, arch, e)
+        return builds
+
+    def requestAutoBuilds(self, allow_failures=False,
+                          fetch_snapcraft_yaml=False, logger=None):
+        """See `ISnap`."""
         if self.auto_build_archive is None:
             raise CannotRequestAutoBuilds("auto_build_archive")
         if self.auto_build_pocket is None:
@@ -495,29 +659,33 @@ class Snap(Storm, WebhookTargetMixin):
             logger.debug(
                 "Scheduling builds of snap package %s/%s",
                 self.owner.name, self.name)
-        for arch in self.getAllowedArchitectures():
-            try:
-                build = self.requestBuild(
-                    self.owner, self.auto_build_archive, arch,
-                    self.auto_build_pocket, self.auto_build_channels)
-                if logger is not None:
-                    logger.debug(
-                        " - %s/%s/%s: Build requested.",
-                        self.owner.name, self.name, arch.architecturetag)
-                builds.append(build)
-            except SnapBuildAlreadyPending as e:
-                if logger is not None:
-                    logger.warning(
-                        " - %s/%s/%s: %s",
-                        self.owner.name, self.name, arch.architecturetag, e)
-            except Exception as e:
-                if not allow_failures:
-                    raise
-                elif logger is not None:
-                    logger.exception(
-                        " - %s/%s/%s: %s",
-                        self.owner.name, self.name, arch.architecturetag, e)
-        return builds
+        return self.requestBuildsFromJob(
+            self.owner, self.auto_build_archive, self.auto_build_pocket,
+            channels=self.auto_build_channels, allow_failures=allow_failures,
+            fetch_snapcraft_yaml=fetch_snapcraft_yaml, logger=logger)
+
+    def getBuildRequest(self, job_id):
+        """See `ISnap`."""
+        return SnapBuildRequest(self, job_id)
+
+    @property
+    def pending_build_requests(self):
+        """See `ISnap`."""
+        job_source = getUtility(ISnapRequestBuildsJobSource)
+        # The returned jobs are ordered by descending ID.
+        jobs = job_source.findBySnap(
+            self, statuses=(JobStatus.WAITING, JobStatus.RUNNING))
+        return DecoratedResultSet(
+            jobs, result_decorator=SnapBuildRequest.fromJob)
+
+    @property
+    def failed_build_requests(self):
+        """See `ISnap`."""
+        job_source = getUtility(ISnapRequestBuildsJobSource)
+        # The returned jobs are ordered by descending ID.
+        jobs = job_source.findBySnap(self, statuses=(JobStatus.FAILED,))
+        return DecoratedResultSet(
+            jobs, result_decorator=SnapBuildRequest.fromJob)
 
     def _getBuilds(self, filter_term, order_by):
         """The actual query to get the builds."""
@@ -549,6 +717,10 @@ class Snap(Storm, WebhookTargetMixin):
         order_by = Desc(SnapBuild.id)
         builds = self._getBuilds(filter_term, order_by)
 
+        # The user can obviously see this snap, and Snap._getBuilds ensures
+        # that they can see the relevant archive for each build as well.
+        precache_permission_for_objects(None, "launchpad.View", builds)
+
         # Prefetch data to keep DB query count constant
         lfas = load_related(LibraryFileAlias, builds, ["log_id"])
         load_related(LibraryFileContent, lfas, ["contentID"])
@@ -572,6 +744,66 @@ class Snap(Storm, WebhookTargetMixin):
                 "build_log_url": build.log_url,
                 "build_log_size": build_log_size,
                 }
+        return result
+
+    def getBuildSummaries(self, request_ids=None, build_ids=None, user=None):
+        """See `ISnap`."""
+        all_build_ids = []
+        result = {"requests": {}, "builds": {}}
+
+        if request_ids:
+            job_source = getUtility(ISnapRequestBuildsJobSource)
+            jobs = job_source.findBySnap(self, job_ids=request_ids)
+            requests = [SnapBuildRequest.fromJob(job) for job in jobs]
+            builds_by_request = job_source.findBuildsForJobs(jobs, user=user)
+            for builds in builds_by_request.values():
+                # It's safe to remove the proxy here, because the IDs will
+                # go through Snap._getBuilds which checks visibility.  This
+                # saves an Archive query per build in the security adapter.
+                all_build_ids.extend(
+                    [removeSecurityProxy(build).id for build in builds])
+        else:
+            requests = []
+
+        if build_ids:
+            all_build_ids.extend(build_ids)
+
+        all_build_summaries = self.getBuildSummariesForSnapBuildIds(
+            all_build_ids)
+
+        for request in requests:
+            build_summaries = []
+            for build in sorted(
+                    builds_by_request[request.id], key=attrgetter("id"),
+                    reverse=True):
+                if build.id in all_build_summaries:
+                    # Include enough information for
+                    # snap.update_build_statuses.js to populate new build
+                    # rows.
+                    build_summary = {
+                        "self_link": canonical_url(
+                            build, path_only_if_possible=True),
+                        "id": build.id,
+                        "distro_arch_series_link": canonical_url(
+                            build.distro_arch_series,
+                            path_only_if_possible=True),
+                        "architecture_tag": (
+                            build.distro_arch_series.architecturetag),
+                        "archive_link": ArchiveFormatterAPI(
+                            build.archive).link(None),
+                        }
+                    build_summary.update(all_build_summaries[build.id])
+                    build_summaries.append(build_summary)
+            result["requests"][request.id] = {
+                "status": request.status.name,
+                "error_message": request.error_message,
+                "builds": build_summaries,
+                }
+
+        for build_id in (build_ids or []):
+            if build_id in all_build_summaries:
+                result["builds"][build_id] = all_build_summaries[build_id]
+
         return result
 
     @property
@@ -923,6 +1155,52 @@ class SnapSet:
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
             person_ids, need_validity=True))
 
+    def getSnapcraftYaml(self, context, logger=None):
+        """See `ISnapSet`."""
+        if ISnap.providedBy(context):
+            context = context.source
+        try:
+            paths = (
+                "snap/snapcraft.yaml",
+                "snapcraft.yaml",
+                ".snapcraft.yaml",
+                )
+            for path in paths:
+                try:
+                    blob = context.getBlob(path)
+                    break
+                except (BranchFileNotFound, GitRepositoryBlobNotFound):
+                    pass
+            else:
+                if logger is not None:
+                    logger.exception(
+                        "Cannot find snapcraft.yaml in %s",
+                        context.unique_name)
+                raise MissingSnapcraftYaml(context.unique_name)
+        except GitRepositoryBlobUnsupportedRemote as e:
+            raise CannotFetchSnapcraftYaml(str(e), unsupported_remote=True)
+        except (BranchHostingFault, GitRepositoryScanFault) as e:
+            msg = "Failed to get snap manifest from %s"
+            if logger is not None:
+                logger.exception(msg, context.unique_name)
+            raise CannotFetchSnapcraftYaml(
+                "%s: %s" % (msg % context.unique_name, e))
+
+        try:
+            snapcraft_data = yaml.safe_load(blob)
+        except Exception as e:
+            # Don't bother logging parsing errors from user-supplied YAML.
+            raise CannotParseSnapcraftYaml(
+                "Cannot parse snapcraft.yaml from %s: %s" %
+                (context.unique_name, e))
+
+        if not isinstance(snapcraft_data, dict):
+            raise CannotParseSnapcraftYaml(
+                "The top level of snapcraft.yaml from %s is not a mapping" %
+                context.unique_name)
+
+        return snapcraft_data
+
     @staticmethod
     def _findStaleSnaps():
         """See `ISnapSet`."""
@@ -956,7 +1234,7 @@ class SnapSet:
         builds = []
         for snap in snaps:
             builds.extend(snap.requestAutoBuilds(
-                allow_failures=True, logger=logger))
+                allow_failures=True, fetch_snapcraft_yaml=True, logger=logger))
         return builds
 
     def detachFromBranch(self, branch):

@@ -12,7 +12,6 @@ from lp.registry.interfaces.ssh import (
     ISSHKeySet,
     SSH_TEXT_TO_KEY_TYPE,
     SSHKeyAdditionError,
-    SSHKeyType,
     )
 from lp.testing import (
     admin_logged_in,
@@ -31,15 +30,36 @@ class TestSSHKey(TestCaseWithFactory):
     def test_getFullKeyText_for_rsa_key(self):
         person = self.factory.makePerson()
         with person_logged_in(person):
-            key = self.factory.makeSSHKey(person, SSHKeyType.RSA)
+            key = self.factory.makeSSHKey(person, "ssh-rsa")
         expected = "ssh-rsa %s %s" % (key.keytext, key.comment)
         self.assertEqual(expected, key.getFullKeyText())
 
     def test_getFullKeyText_for_dsa_key(self):
         person = self.factory.makePerson()
         with person_logged_in(person):
-            key = self.factory.makeSSHKey(person, SSHKeyType.DSA)
+            key = self.factory.makeSSHKey(person, "ssh-dss")
         expected = "ssh-dss %s %s" % (key.keytext, key.comment)
+        self.assertEqual(expected, key.getFullKeyText())
+
+    def test_getFullKeyText_for_ecdsa_nistp256_key(self):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            key = self.factory.makeSSHKey(person, "ecdsa-sha2-nistp256")
+        expected = "ecdsa-sha2-nistp256 %s %s" % (key.keytext, key.comment)
+        self.assertEqual(expected, key.getFullKeyText())
+
+    def test_getFullKeyText_for_ecdsa_nistp384_key(self):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            key = self.factory.makeSSHKey(person, "ecdsa-sha2-nistp384")
+        expected = "ecdsa-sha2-nistp384 %s %s" % (key.keytext, key.comment)
+        self.assertEqual(expected, key.getFullKeyText())
+
+    def test_getFullKeyText_for_ecdsa_nistp521_key(self):
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            key = self.factory.makeSSHKey(person, "ecdsa-sha2-nistp521")
+        expected = "ecdsa-sha2-nistp521 %s %s" % (key.keytext, key.comment)
         self.assertEqual(expected, key.getFullKeyText())
 
     def test_destroySelf_sends_notification_by_default(self):
@@ -58,7 +78,7 @@ class TestSSHKey(TestCaseWithFactory):
                     % key.comment)
             )
 
-    def test_destroySelf_notications_can_be_supressed(self):
+    def test_destroySelf_notifications_can_be_suppressed(self):
         person = self.factory.makePerson()
         with person_logged_in(person):
             key = self.factory.makeSSHKey(person, send_notification=False)
@@ -169,6 +189,21 @@ class TestSSHKeySet(TestCaseWithFactory):
             "(Incorrect padding)",
             keyset.new,
             person, 'ssh-rsa badkeytext comment'
+        )
+        self.assertRaisesWithContent(
+            SSHKeyAdditionError,
+            "Invalid SSH key data: 'ssh-rsa asdfasdf comment' "
+            "(unknown blob type: \\xc7_)",
+            keyset.new,
+            person, 'ssh-rsa asdfasdf comment'
+        )
+        self.assertRaisesWithContent(
+            SSHKeyAdditionError,
+            "Invalid SSH key data: key type 'ssh-rsa' does not match key "
+            "data type 'ssh-dss'",
+            keyset.new,
+            person,
+            'ssh-rsa ' + self.factory.makeSSHKeyText(key_type='ssh-dss')[8:]
         )
         self.assertRaisesWithContent(
             SSHKeyAdditionError,

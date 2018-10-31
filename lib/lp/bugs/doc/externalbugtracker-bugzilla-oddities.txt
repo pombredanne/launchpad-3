@@ -21,26 +21,29 @@ Mozilla's Bugzilla is an Issuezilla instance here:
     >>> txn = LaunchpadZopelessLayer.txn
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName('mozilla.org')
     >>> issuezilla = TestIssuezilla(mozilla_bugzilla.baseurl)
-    >>> issuezilla._probe_version()
+    >>> transaction.commit()
+    >>> with issuezilla.responses(post=False):
+    ...     issuezilla._probe_version()
     (2, 11)
     >>> for bug_watch in mozilla_bugzilla.watches:
-    ...     print "%s: %s %s" % (bug_watch.remotebug,
-    ...         bug_watch.remotestatus, bug_watch.remote_importance)
+    ...     print("%s: %s %s" % (bug_watch.remotebug,
+    ...         bug_watch.remotestatus, bug_watch.remote_importance))
     2000:
     123543:
     42: FUBAR BAZBAZ
     42: FUBAR BAZBAZ
     >>> transaction.commit()
     >>> bug_watch_updater = CheckwatchesMaster(txn, logger=FakeLogger())
-    >>> bug_watch_updater.updateBugWatches(
-    ...     issuezilla, mozilla_bugzilla.watches)
+    >>> with issuezilla.responses():
+    ...     bug_watch_updater.updateBugWatches(
+    ...         issuezilla, mozilla_bugzilla.watches)
     INFO Updating 4 watches for 3 bugs on https://bugzilla.mozilla.org
     INFO Didn't find bug u'42' on https://bugzilla.mozilla.org
     (local bugs: 1, 2).
 
     >>> for bug_watch in mozilla_bugzilla.watches:
-    ...     print "%s: %s %s" % (bug_watch.remotebug,
-    ...         bug_watch.remotestatus, bug_watch.remote_importance)
+    ...     print("%s: %s %s" % (bug_watch.remotebug,
+    ...         bug_watch.remotestatus, bug_watch.remote_importance))
     2000: RESOLVED FIXED LOW
     123543: ASSIGNED HIGH
     42: FUBAR BAZBAZ
@@ -58,7 +61,9 @@ Mozilla.org's using this old version. Here's the scoop:
 
   a) The version is way old:
 
-    >>> old_bugzilla._probe_version()
+    >>> transaction.commit()
+    >>> with old_bugzilla.responses(post=False):
+    ...     old_bugzilla._probe_version()
     (2, 10)
 
   b) The tags are not prefixed with the bz: namespace:
@@ -72,12 +77,13 @@ Mozilla.org's using this old version. Here's the scoop:
 We support them just fine:
 
     >>> remote_bugs = ['42', '123543']
-    >>> old_bugzilla.initializeRemoteBugDB(remote_bugs)
+    >>> with old_bugzilla.responses():
+    ...     old_bugzilla.initializeRemoteBugDB(remote_bugs)
     >>> for remote_bug in remote_bugs:
-    ...     print "%s: %s %s" % (
+    ...     print("%s: %s %s" % (
     ...         remote_bug,
     ...         old_bugzilla.getRemoteStatus(remote_bug),
-    ...         old_bugzilla.getRemoteImportance(remote_bug))
+    ...         old_bugzilla.getRemoteImportance(remote_bug)))
     42: RESOLVED FIXED LOW BLOCKER
     123543: ASSIGNED HIGH BLOCKER
 
@@ -90,14 +96,16 @@ Some Bugzillas have some weird properties that we need to cater for:
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestWeirdBugzilla)
     >>> weird_bugzilla = TestWeirdBugzilla(mozilla_bugzilla.baseurl)
-    >>> weird_bugzilla._probe_version()
+    >>> transaction.commit()
+    >>> with weird_bugzilla.responses(post=False):
+    ...     weird_bugzilla._probe_version()
     (2, 20)
 
   a) The bug status tag is <bz:status> and not <bz:bug_status>
 
     >>> bug_item_file = weird_bugzilla._readBugItemFile()
-    >>> "<bz:status>" in bug_item_file
-    True
+    >>> print(bug_item_file)
+    <li>...<bz:status>...
 
   b) The content is non-ascii:
 
@@ -109,12 +117,13 @@ Some Bugzillas have some weird properties that we need to cater for:
 Yet everything still works as expected:
 
     >>> remote_bugs = ['2000', '123543']
-    >>> weird_bugzilla.initializeRemoteBugDB(remote_bugs)
+    >>> with weird_bugzilla.responses():
+    ...     weird_bugzilla.initializeRemoteBugDB(remote_bugs)
     >>> for remote_bug in remote_bugs:
-    ...     print "%s: %s %s" % (
+    ...     print("%s: %s %s" % (
     ...         remote_bug,
     ...         weird_bugzilla.getRemoteStatus(remote_bug),
-    ...         weird_bugzilla.getRemoteImportance(remote_bug))
+    ...         weird_bugzilla.getRemoteImportance(remote_bug)))
     2000: ASSIGNED HIGH BLOCKER
     123543: RESOLVED FIXED HIGH BLOCKER
 
@@ -128,13 +137,16 @@ invalid XML:
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestBrokenBugzilla)
     >>> broken_bugzilla = TestBrokenBugzilla(mozilla_bugzilla.baseurl)
-    >>> broken_bugzilla._probe_version()
+    >>> transaction.commit()
+    >>> with broken_bugzilla.responses(post=False):
+    ...     broken_bugzilla._probe_version()
     (2, 20)
     >>> "</foobar>" in broken_bugzilla._readBugItemFile()
     True
 
     >>> remote_bugs = ['42', '2000']
-    >>> broken_bugzilla.initializeRemoteBugDB(remote_bugs)
+    >>> with broken_bugzilla.responses():
+    ...     broken_bugzilla.initializeRemoteBugDB(remote_bugs)
     Traceback (most recent call last):
     ...
     UnparsableBugData: Failed to parse XML description...
@@ -148,4 +160,6 @@ However, embedded control characters do not generate errors.
     True
 
     >>> remote_bugs = ['42', '2000']
-    >>> broken_bugzilla.initializeRemoteBugDB(remote_bugs) # no exception
+    >>> transaction.commit()
+    >>> with broken_bugzilla.responses():
+    ...     broken_bugzilla.initializeRemoteBugDB(remote_bugs) # no exception

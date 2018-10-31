@@ -69,7 +69,7 @@ import:
     ...     if details is None:
     ...         details = find_tag_by_id(
     ...             browser.contents, 'repository-import-details')
-    ...     print extract_text(details.div.div)
+    ...     print(extract_text(details.div.div))
 
     >>> import_browser.open(svn_import_location)
     >>> print_import_details(import_browser)
@@ -116,7 +116,7 @@ in the form.
     >>> def print_form_fields(browser):
     ...     tags = find_tags_by_class(browser.contents, 'textType')
     ...     for tag in tags:
-    ...         print '%s: %s' % (tag['name'], tag['value'])
+    ...         print('%s: %s' % (tag['name'], tag['value']))
 
     >>> print_form_fields(import_browser)
     field.url: svn://svn.example.com/fooix/trunk
@@ -333,7 +333,7 @@ Anonymous users cannot see this button.
     >>> anon_browser.getControl('Import Now')
     Traceback (most recent call last):
       ...
-    LookupError: label 'Import Now'
+    LookupError: label u'Import Now'
 
 If the logged in user clicks this button, the import will be scheduled
 to run ASAP and the fact that the import has been requested is

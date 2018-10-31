@@ -30,7 +30,7 @@ file stored with the result.
 
     >>> browser.open(branch_url_1)
     >>> import_results = find_tag_by_id(browser.contents, 'import-results')
-    >>> print extract_text(import_results).replace('&mdash;', '--')
+    >>> print(extract_text(import_results).replace('&mdash;', '--'))
     Import started on 2007-12-07 on odin and finished on 2007-12-07
       taking 7 hours -- see the log
     Import started on 2007-12-06 on odin and finished on 2007-12-06
@@ -53,7 +53,7 @@ is the text of the failure or success type.
     >>> # The ordering here is dependant on the order the status values
     >>> # are declared in the enumeration.
     >>> for img in import_results.findAll('img'):
-    ...     print img
+    ...     print(img)
     <img src="/@@/no" title="Unsupported feature" />
     <img src="/@@/no" title="Foreign branch invalid" />
     <img src="/@@/no" title="Internal Failure" />
@@ -65,7 +65,7 @@ is the text of the failure or success type.
     >>> browser.open(branch_url_2)
     >>> import_results = find_tag_by_id(browser.contents, 'import-results')
     >>> for img in import_results.findAll('img'):
-    ...     print img
+    ...     print(img)
     <img src="/@@/no" title="Job killed" />
     <img src="/@@/no" title="Job reclaimed" />
     <img src="/@@/no" title="Broken remote branch" />

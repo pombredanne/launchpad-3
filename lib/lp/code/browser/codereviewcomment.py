@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -13,6 +13,7 @@ __all__ = [
 from lazr.delegates import delegate_to
 from lazr.restful.interface import copy_field
 from zope.component import getUtility
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import (
     DropdownWidget,
     TextAreaWidget,
@@ -27,7 +28,6 @@ from zope.schema import Text
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
@@ -50,6 +50,7 @@ from lp.services.webapp import (
     LaunchpadView,
     Link,
     )
+from lp.services.webapp.interfaces import ILaunchBag
 
 
 class ICodeReviewDisplayComment(IComment, ICodeReviewComment):
@@ -85,10 +86,11 @@ class CodeReviewDisplayComment(MessageComment):
 
     @property
     def extra_css_class(self):
+        css_classes = (
+            super(CodeReviewDisplayComment, self).extra_css_class.split())
         if self.from_superseded:
-            return 'from-superseded'
-        else:
-            return ''
+            css_classes.append('from-superseded')
+        return ' '.join(css_classes)
 
     @cachedproperty
     def previewdiff_id(self):
@@ -120,6 +122,11 @@ class CodeReviewDisplayComment(MessageComment):
     @property
     def download_url(self):
         return canonical_url(self.comment, view_name='+download')
+
+    @cachedproperty
+    def show_spam_controls(self):
+        user = getUtility(ILaunchBag).user
+        return self.comment.userCanSetCommentVisibility(user)
 
 
 def get_message(display_comment):
@@ -221,9 +228,11 @@ class CodeReviewCommentAddView(LaunchpadFormView):
 
     schema = IEditCodeReviewComment
 
-    custom_widget('review_type', TextWidget, displayWidth=15)
-    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
-    custom_widget('vote', MyDropWidget)
+    custom_widget_review_type = CustomWidgetFactory(
+        TextWidget, displayWidth=15)
+    custom_widget_comment = CustomWidgetFactory(
+        TextAreaWidget, cssClass='comment-text')
+    custom_widget_vote = MyDropWidget
 
     page_title = 'Reply to code review comment'
 

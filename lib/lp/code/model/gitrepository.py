@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,6 +9,7 @@ __all__ = [
     'parse_git_commits',
     ]
 
+from collections import OrderedDict
 from datetime import datetime
 import email
 from functools import partial
@@ -20,6 +21,9 @@ from operator import attrgetter
 from urllib import quote_plus
 
 from bzrlib import urlutils
+from lazr.enum import DBItem
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from storm.databases.postgres import Returning
 from storm.expr import (
@@ -47,7 +51,10 @@ from storm.locals import (
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import implementer
+from zope.interface import (
+    implementer,
+    providedBy,
+    )
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     ProxyFactory,
@@ -71,6 +78,8 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.app.interfaces.services import IService
 from lp.code.enums import (
+    BranchMergeProposalStatus,
+    GitGranteeType,
     GitObjectType,
     GitRepositoryType,
     )
@@ -87,6 +96,7 @@ from lp.code.interfaces.branchmergeproposal import (
     notify_modified,
     )
 from lp.code.interfaces.codeimport import ICodeImportSet
+from lp.code.interfaces.gitactivity import IGitActivitySet
 from lp.code.interfaces.gitcollection import (
     IAllGitRepositories,
     IGitCollection,
@@ -107,9 +117,14 @@ from lp.code.interfaces.gitrepository import (
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
 from lp.code.model.branchmergeproposal import BranchMergeProposal
+from lp.code.model.gitactivity import GitActivity
 from lp.code.model.gitref import (
     GitRef,
     GitRefDefault,
+    )
+from lp.code.model.gitrule import (
+    GitRule,
+    GitRuleGrant,
     )
 from lp.code.model.gitsubscription import GitSubscription
 from lp.registry.enums import PersonVisibility
@@ -232,7 +247,7 @@ def git_repository_modified(repository, event):
     """
     if event.edited_fields:
         repository.date_last_modified = UTC_NOW
-        send_git_repository_modified_notifications(repository, event)
+    send_git_repository_modified_notifications(repository, event)
 
 
 @implementer(IGitRepository, IHasOwner, IPrivacy, IInformationType)
@@ -676,6 +691,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     def fetchRefCommits(hosting_path, refs, logger=None):
         """See `IGitRepository`."""
         oids = sorted(set(info["sha1"] for info in refs.values()))
+        if not oids:
+            return
         commits = parse_git_commits(
             getUtility(IGitHostingClient).getCommits(
                 hosting_path, oids, logger=logger))
@@ -885,10 +902,15 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             BranchMergeProposal,
             BranchMergeProposal.source_git_repository == self)
 
-    def getPrecachedLandingTargets(self, user):
-        """See `IGitRef`."""
+    def getPrecachedLandingTargets(self, user, only_active=False):
+        """See `IGitRepository`."""
+        results = self.landing_targets
+        if only_active:
+            results = self.landing_targets.find(
+                Not(BranchMergeProposal.queue_status.is_in(
+                    BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
         loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
-        return DecoratedResultSet(self.landing_targets, pre_iter_hook=loader)
+        return DecoratedResultSet(results, pre_iter_hook=loader)
 
     @property
     def _api_landing_targets(self):
@@ -913,8 +935,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
     def getPrecachedLandingCandidates(self, user):
-        """See `IGitRef`."""
-        loader = partial(BranchMergeProposal.preloadDataForBMPs, user=user)
+        """See `IGitRepository`."""
+        loader = partial(
+            BranchMergeProposal.preloadDataForBMPs,
+            user=user,
+            include_votes=True)
         return DecoratedResultSet(
             self.landing_candidates, pre_iter_hook=loader)
 
@@ -940,13 +965,28 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             Not(BranchMergeProposal.queue_status.is_in(
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)))
 
+    def getMergeProposals(self, status=None, visible_by_user=None,
+                          merged_revision_ids=None, eager_load=False):
+        """See `IGitRepository`."""
+        if not status:
+            status = (
+                BranchMergeProposalStatus.CODE_APPROVED,
+                BranchMergeProposalStatus.NEEDS_REVIEW,
+                BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        collection = getUtility(IAllGitRepositories).visibleByUser(
+            visible_by_user)
+        return collection.getMergeProposals(
+            status, target_repository=self,
+            merged_revision_ids=merged_revision_ids, eager_load=eager_load)
+
     def getMergeProposalByID(self, id):
         """See `IGitRepository`."""
         return self.landing_targets.find(BranchMergeProposal.id == id).one()
 
     def isRepositoryMergeable(self, other):
         """See `IGitRepository`."""
-        return self.namespace.areRepositoriesMergeable(other.namespace)
+        return self.namespace.areRepositoriesMergeable(self, other)
 
     @property
     def pending_updates(self):
@@ -1082,7 +1122,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     def getBlob(self, filename, rev=None):
         """See `IGitRepository`."""
         hosting_client = getUtility(IGitHostingClient)
-        return hosting_client.getBlob(self.getInternalPath(), filename, rev)
+        return hosting_client.getBlob(
+            self.getInternalPath(), filename, rev=rev)
 
     def getDiff(self, old, new):
         """See `IGitRepository`."""
@@ -1093,6 +1134,158 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
     @cachedproperty
     def code_import(self):
         return getUtility(ICodeImportSet).getByGitRepository(self)
+
+    @property
+    def rules(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(
+            GitRule, GitRule.repository == self).order_by(GitRule.position)
+
+    def _syncRulePositions(self, rules):
+        """Synchronise rule positions with their order in a provided list.
+
+        :param rules: A sequence of `IGitRule`s in the desired order.
+        """
+        # Canonicalise rule ordering: exact-match rules come first in
+        # lexicographical order, followed by wildcard rules in the requested
+        # order.  (Note that `sorted` is guaranteed to be stable.)
+        rules = sorted(
+            rules,
+            key=lambda rule: (0, rule.ref_pattern) if rule.is_exact else (1,))
+        # Ensure the correct position of all rules, which may involve more
+        # work than necessary, but is simple and tends to be
+        # self-correcting.  This works because the unique constraint on
+        # GitRule(repository, position) is deferred.
+        for position, rule in enumerate(rules):
+            if rule.repository != self:
+                raise AssertionError("%r does not belong to %r" % (rule, self))
+            if rule.position != position:
+                removeSecurityProxy(rule).position = position
+
+    def getRule(self, ref_pattern):
+        """See `IGitRepository`."""
+        return self.rules.find(GitRule.ref_pattern == ref_pattern).one()
+
+    def addRule(self, ref_pattern, creator, position=None):
+        """See `IGitRepository`."""
+        rules = list(self.rules)
+        rule = GitRule(
+            repository=self,
+            # -1 isn't a valid position, but _syncRulePositions will correct
+            # it in a moment.
+            position=position if position is not None else -1,
+            ref_pattern=ref_pattern, creator=creator, date_created=DEFAULT)
+        if position is None:
+            rules.append(rule)
+        else:
+            rules.insert(position, rule)
+        self._syncRulePositions(rules)
+        getUtility(IGitActivitySet).logRuleAdded(rule, creator)
+        return rule
+
+    def moveRule(self, rule, position, user):
+        """See `IGitRepository`."""
+        if rule.repository != self:
+            raise ValueError("%r does not belong to %r" % (rule, self))
+        if position < 0:
+            raise ValueError("Negative positions are not supported")
+        current_position = rule.position
+        if position != current_position:
+            rules = list(self.rules)
+            rules.remove(rule)
+            rules.insert(position, rule)
+            self._syncRulePositions(rules)
+            if rule.position != current_position:
+                getUtility(IGitActivitySet).logRuleMoved(
+                    rule, current_position, rule.position, user)
+
+    @property
+    def grants(self):
+        """See `IGitRepository`."""
+        return Store.of(self).find(
+            GitRuleGrant, GitRuleGrant.repository_id == self.id)
+
+    def findRuleGrantsByGrantee(self, grantee):
+        """See `IGitRepository`."""
+        if isinstance(grantee, DBItem) and grantee.enum == GitGranteeType:
+            if grantee == GitGranteeType.PERSON:
+                raise ValueError(
+                    "grantee may not be GitGranteeType.PERSON; pass a person "
+                    "object instead")
+            clauses = [GitRuleGrant.grantee_type == grantee]
+        else:
+            clauses = [
+                GitRuleGrant.grantee_type == GitGranteeType.PERSON,
+                TeamParticipation.person == grantee,
+                GitRuleGrant.grantee == TeamParticipation.teamID
+                ]
+        return self.grants.find(*clauses).config(distinct=True)
+
+    def getRules(self):
+        """See `IGitRepository`."""
+        rules = list(self.rules)
+        GitRule.preloadGrantsForRules(rules)
+        return rules
+
+    @staticmethod
+    def _validateRules(rules):
+        """Validate a new iterable of access rules."""
+        patterns = set()
+        for rule in rules:
+            if rule.ref_pattern in patterns:
+                raise ValueError(
+                    "New rules may not contain duplicate ref patterns "
+                    "(e.g. %s)" % rule.ref_pattern)
+            patterns.add(rule.ref_pattern)
+
+    def setRules(self, rules, user):
+        """See `IGitRepository`."""
+        self._validateRules(rules)
+        existing_rules = {rule.ref_pattern: rule for rule in self.rules}
+        new_rules = OrderedDict((rule.ref_pattern, rule) for rule in rules)
+        GitRule.preloadGrantsForRules(existing_rules.values())
+
+        # Remove old rules first so that we don't generate unnecessary move
+        # events.
+        for ref_pattern, rule in existing_rules.items():
+            if ref_pattern not in new_rules:
+                rule.destroySelf(user)
+
+        # Do our best to match up the new rules and grants to any existing
+        # ones, in order to preserve creator and date-created information.
+        # XXX cjwatson 2018-09-11: We could optimise this to create the new
+        # rules in bulk, but it probably isn't worth the extra complexity.
+        for position, (ref_pattern, new_rule) in enumerate(new_rules.items()):
+            rule = existing_rules.get(ref_pattern)
+            if rule is None:
+                rule = self.addRule(
+                    new_rule.ref_pattern, user, position=position)
+            else:
+                rule_before_modification = Snapshot(
+                    rule, providing=providedBy(rule))
+                self.moveRule(rule, position, user)
+                if rule.position != rule_before_modification.position:
+                    notify(ObjectModifiedEvent(
+                        rule, rule_before_modification, ["position"]))
+            rule.setGrants(new_rule.grants, user)
+
+        # The individual moves and adds above should have resulted in
+        # correct rule ordering, but check this.
+        requested_rule_order = list(new_rules)
+        observed_rule_order = [rule.ref_pattern for rule in self.rules]
+        if requested_rule_order != observed_rule_order:
+            raise AssertionError(
+                "setRules failed to establish requested rule order %s "
+                "(got %s instead)" %
+                (requested_rule_order, observed_rule_order))
+
+    def getActivity(self, changed_after=None):
+        """See `IGitRepository`."""
+        clauses = [GitActivity.repository_id == self.id]
+        if changed_after is not None:
+            clauses.append(GitActivity.date_changed > changed_after)
+        return Store.of(self).find(GitActivity, *clauses).order_by(
+            Desc(GitActivity.date_changed), Desc(GitActivity.id))
 
     def canBeDeleted(self):
         """See `IGitRepository`."""
@@ -1225,6 +1418,12 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         self._deleteRepositorySubscriptions()
         self._deleteJobs()
         getUtility(IWebhookSet).delete(self.webhooks)
+        self.getActivity().remove()
+        # We intentionally skip the usual destructors; the only other useful
+        # thing they do is to log the removal activity, and we remove the
+        # activity logs for removed repositories anyway.
+        self.grants.remove()
+        self.rules.remove()
 
         # Now destroy the repository.
         repository_name = self.unique_name

@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal Git API."""
@@ -6,11 +6,16 @@
 __metaclass__ = type
 
 from pymacaroons import Macaroon
+from testtools.matchers import (
+    Equals,
+    MatchesDict,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
 from lp.code.enums import (
+    GitGranteeType,
     GitRepositoryType,
     TargetRevisionControlSystems,
     )
@@ -53,13 +58,14 @@ class TestGitAPIMixin:
         self.repository_set = getUtility(IGitRepositorySet)
 
     def assertGitRepositoryNotFound(self, requester, path, permission="read",
-                                    can_authenticate=False):
+                                    can_authenticate=False, macaroon_raw=None):
         """Assert that the given path cannot be translated."""
         if requester is not None:
             requester = requester.id
-        fault = self.git_api.translatePath(
-            path, permission,
-            {"uid": requester, "can-authenticate": can_authenticate})
+        auth_params = {"uid": requester, "can-authenticate": can_authenticate}
+        if macaroon_raw is not None:
+            auth_params["macaroon"] = macaroon_raw
+        fault = self.git_api.translatePath(path, permission, auth_params)
         self.assertEqual(
             faults.GitRepositoryNotFound(path.strip("/")), fault)
 
@@ -145,8 +151,8 @@ class TestGitAPIMixin:
         translation = self.git_api.translatePath(path, permission, auth_params)
         login(ANONYMOUS)
         self.assertEqual(
-            {"path": repository.getInternalPath(), "writable": writable,
-             "trailing": trailing, "private": private},
+            {"path": removeSecurityProxy(repository).getInternalPath(),
+             "writable": writable, "trailing": trailing, "private": private},
             translation)
 
     def assertCreates(self, requester, path, can_authenticate=False,
@@ -179,6 +185,20 @@ class TestGitAPIMixin:
         self.assertEqual(
             {"clone_from": cloned_from.getInternalPath()},
             self.hosting_fixture.create.extract_kwargs()[0])
+
+    def assertHasRefPermissions(self, requester, repository, ref_paths,
+                                permissions, macaroon_raw=None):
+        if requester is not None:
+            requester = requester.id
+        auth_params = {"uid": requester}
+        if macaroon_raw is not None:
+            auth_params["macaroon"] = macaroon_raw
+        translated_path = removeSecurityProxy(repository).getInternalPath()
+        results = self.git_api.checkRefPermissions(
+            translated_path, ref_paths, auth_params)
+        self.assertThat(results, MatchesDict({
+            ref_path: Equals(ref_permissions)
+            for ref_path, ref_permissions in permissions.items()}))
 
     def test_translatePath_private_repository(self):
         requester = self.factory.makePerson()
@@ -258,6 +278,246 @@ class TestGitAPIMixin:
         login(ANONYMOUS)
         self.assertEqual(
             initial_count, getUtility(IAllGitRepositories).count())
+
+    def test_translatePath_grant_to_other(self):
+        requester = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=requester)
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/next')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=other_person,
+            can_force_push=True)
+        path = u"/%s" % repository.unique_name
+        self.assertTranslates(
+            other_person, path, repository, True, private=False)
+
+    def test_translatePath_grant_but_no_access(self):
+        requester = self.factory.makePerson()
+        grant_person = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(owner=requester)
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/next')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=grant_person,
+            can_force_push=True)
+        path = u"/%s" % repository.unique_name
+        self.assertTranslates(
+            other_person, path, repository, False, private=False)
+
+    def test_translatePath_grant_to_other_private(self):
+        requester = self.factory.makePerson()
+        other_person = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(
+                owner=requester, information_type=InformationType.USERDATA))
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/next')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=other_person,
+            can_force_push=True)
+        path = u"/%s" % repository.unique_name
+        self.assertGitRepositoryNotFound(
+            other_person, path, can_authenticate=True)
+
+    def _make_scenario_one_repository(self):
+        user_a = self.factory.makePerson()
+        user_b = self.factory.makePerson()
+        user_c = self.factory.makePerson()
+        stable_team = self.factory.makeTeam(members=[user_a, user_b])
+        next_team = self.factory.makeTeam(members=[user_b, user_c])
+
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=user_a))
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/next')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_force_push=True)
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/protected')
+        self.factory.makeGitRuleGrant(rule=rule, grantee=stable_team)
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/archived/*')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=user_b, can_create=True)
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/stable/*')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=stable_team, can_push=True)
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/*/next')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=next_team, can_force_push=True)
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/tags/*')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_create=True)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=stable_team, can_create=True)
+
+        test_ref_paths = [
+            'refs/heads/stable/next', 'refs/heads/stable/protected',
+            'refs/heads/stable/foo', 'refs/heads/archived/foo',
+            'refs/heads/foo/next', 'refs/heads/unprotected',
+            'refs/tags/1.0',
+        ]
+
+        return (user_a, user_b, user_c, stable_team, next_team, repository,
+                test_ref_paths)
+
+    def test_checkRefPermissions_scenario_one_user_a(self):
+        user_a, _, _, _, _, repo, paths = self._make_scenario_one_repository()
+
+        results = self.git_api.checkRefPermissions(
+            repo.getInternalPath(),
+            paths,
+            {'uid': user_a.id})
+
+        self.assertThat(results, MatchesDict({
+            'refs/heads/stable/next': Equals(['push', 'force_push']),
+            'refs/heads/stable/protected': Equals(['create', 'push']),
+            'refs/heads/stable/foo': Equals(['create', 'push']),
+            'refs/heads/archived/foo': Equals([]),
+            'refs/heads/foo/next': Equals(['create', 'push']),
+            'refs/heads/unprotected': Equals(['create', 'push', 'force_push']),
+            'refs/tags/1.0': Equals(['create']),
+        }))
+
+    def test_checkRefPermissions_scenario_one_user_b(self):
+        _, user_b, _, _, _, repo, paths = self._make_scenario_one_repository()
+
+        results = self.git_api.checkRefPermissions(
+            repo.getInternalPath(),
+            paths,
+            {'uid': user_b.id})
+
+        self.assertThat(results, MatchesDict({
+            'refs/heads/stable/next': Equals(['push', 'force_push']),
+            'refs/heads/stable/protected': Equals([]),
+            'refs/heads/stable/foo': Equals(['push']),
+            'refs/heads/archived/foo': Equals(['create']),
+            'refs/heads/foo/next': Equals(['push', 'force_push']),
+            'refs/heads/unprotected': Equals([]),
+            'refs/tags/1.0': Equals(['create']),
+        }))
+
+    def test_checkRefPermissions_scenario_one_user_c(self):
+        _, _, user_c, _, _, repo, paths = self._make_scenario_one_repository()
+
+        results = self.git_api.checkRefPermissions(
+            repo.getInternalPath(),
+            paths,
+            {'uid': user_c.id})
+
+        self.assertThat(results, MatchesDict({
+            'refs/heads/stable/next': Equals(['push', 'force_push']),
+            'refs/heads/stable/protected': Equals([]),
+            'refs/heads/stable/foo': Equals([]),
+            'refs/heads/archived/foo': Equals([]),
+            'refs/heads/foo/next': Equals(['push', 'force_push']),
+            'refs/heads/unprotected': Equals([]),
+            'refs/tags/1.0': Equals([]),
+        }))
+
+    def test_checkRefPermissions_scenario_one_user_d(self):
+        user_d = self.factory.makePerson()
+        _, _, user_c, _, _, repo, paths = self._make_scenario_one_repository()
+
+        results = self.git_api.checkRefPermissions(
+            repo.getInternalPath(),
+            paths,
+            {'uid': user_d.id})
+
+        self.assertThat(results, MatchesDict({
+            'refs/heads/stable/next': Equals([]),
+            'refs/heads/stable/protected': Equals([]),
+            'refs/heads/stable/foo': Equals([]),
+            'refs/heads/archived/foo': Equals([]),
+            'refs/heads/foo/next': Equals([]),
+            'refs/heads/unprotected': Equals([]),
+            'refs/tags/1.0': Equals([]),
+        }))
+
+    def _make_scenario_two_repository(self):
+        user_a = self.factory.makePerson()
+        user_b = self.factory.makePerson()
+
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=user_a))
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/master')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=user_b, can_push=True)
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/heads/*')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_create=True, can_push=True, can_force_push=True)
+
+        rule = self.factory.makeGitRule(
+            repository, ref_pattern=u'refs/tags/*')
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=user_b, can_push=True)
+
+        test_ref_paths = ['refs/heads/master', 'refs/heads/foo',
+                          'refs/tags/1.0', 'refs/other']
+        return user_a, user_b, repository, test_ref_paths
+
+    def test_checkRefPermissions_scenario_two_user_a(self):
+        user_a, _, repo, paths = self._make_scenario_two_repository()
+        results = self.git_api.checkRefPermissions(
+            repo.getInternalPath(),
+            paths,
+            {'uid': user_a.id})
+
+        self.assertThat(results, MatchesDict({
+            'refs/heads/master': Equals(['create', 'push', 'force_push']),
+            'refs/heads/foo': Equals(['create', 'push', 'force_push']),
+            'refs/tags/1.0': Equals(['create', 'push']),
+            'refs/other': Equals(['create', 'push', 'force_push']),
+        }))
+
+    def test_checkRefPermissions_scenario_two_user_b(self):
+        _, user_b, repo, paths = self._make_scenario_two_repository()
+        results = self.git_api.checkRefPermissions(
+            repo.getInternalPath(),
+            paths,
+            {'uid': user_b.id})
+
+        self.assertThat(results, MatchesDict({
+            'refs/heads/master': Equals(['push']),
+            'refs/heads/foo': Equals([]),
+            'refs/tags/1.0': Equals(['push']),
+            'refs/other': Equals([]),
+        }))
+
+    def test_checkRefPermissions_scenario_two_user_c(self):
+        _, _, repo, paths = self._make_scenario_two_repository()
+        user_c = self.factory.makePerson()
+        results = self.git_api.checkRefPermissions(
+            repo.getInternalPath(),
+            paths,
+            {'uid': user_c.id})
+
+        self.assertThat(results, MatchesDict({
+            'refs/heads/master': Equals([]),
+            'refs/heads/foo': Equals([]),
+            'refs/tags/1.0': Equals([]),
+            'refs/other': Equals([]),
+        }))
 
 
 class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
@@ -646,7 +906,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
             removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
         path = u"/%s" % code_imports[0].git_repository.unique_name
         self.assertPermissionDenied(
-            None, path, permission="write", macaroon_raw=macaroons[0])
+            None, path, permission="write",
+            macaroon_raw=macaroons[0].serialize())
         with celebrity_logged_in("vcs_imports"):
             getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
         self.assertTranslates(
@@ -661,6 +922,48 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
                 location=config.vhost.mainsite.hostname, identifier="another",
                 key="another-secret").serialize())
         self.assertPermissionDenied(
+            None, path, permission="write", macaroon_raw="nonsense")
+
+    def test_translatePath_private_code_import(self):
+        # A code import worker with a suitable macaroon can write to a
+        # repository associated with a running private code import job.
+        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        code_imports = [
+            self.factory.makeCodeImport(
+                target_rcs_type=TargetRevisionControlSystems.GIT)
+            for _ in range(2)]
+        private_repository = code_imports[0].git_repository
+        removeSecurityProxy(private_repository).transitionToInformationType(
+            InformationType.PRIVATESECURITY, private_repository.owner)
+        with celebrity_logged_in("vcs_imports"):
+            jobs = [
+                self.factory.makeCodeImportJob(code_import=code_import)
+                for code_import in code_imports]
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroons = [
+            removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
+        path = u"/%s" % code_imports[0].git_repository.unique_name
+        self.assertPermissionDenied(
+            None, path, permission="write",
+            macaroon_raw=macaroons[0].serialize())
+        with celebrity_logged_in("vcs_imports"):
+            getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
+        self.assertTranslates(
+            None, path, code_imports[0].git_repository, True,
+            permission="write", macaroon_raw=macaroons[0].serialize(),
+            private=True)
+        # The expected faults are slightly different from the public case,
+        # because we deny the existence of private repositories.
+        self.assertGitRepositoryNotFound(
+            None, path, permission="write",
+            macaroon_raw=macaroons[1].serialize())
+        self.assertGitRepositoryNotFound(
+            None, path, permission="write",
+            macaroon_raw=Macaroon(
+                location=config.vhost.mainsite.hostname, identifier="another",
+                key="another-secret").serialize())
+        self.assertGitRepositoryNotFound(
             None, path, permission="write", macaroon_raw="nonsense")
 
     def test_notify(self):
@@ -714,6 +1017,89 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         self.assertIsInstance(
             self.git_api.authenticateWithPassword("", "nonsense"),
             faults.Unauthorized)
+
+    def test_checkRefPermissions_code_import(self):
+        # A code import worker with a suitable macaroon has repository owner
+        # privileges on a repository associated with a running code import
+        # job.
+        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        code_imports = [
+            self.factory.makeCodeImport(
+                target_rcs_type=TargetRevisionControlSystems.GIT)
+            for _ in range(2)]
+        with celebrity_logged_in("vcs_imports"):
+            jobs = [
+                self.factory.makeCodeImportJob(code_import=code_import)
+                for code_import in code_imports]
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroons = [
+            removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
+        repository = code_imports[0].git_repository
+        ref_path = "refs/heads/master"
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[0].serialize())
+        with celebrity_logged_in("vcs_imports"):
+            getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
+        self.assertHasRefPermissions(
+            None, repository, [ref_path],
+            {ref_path: ["create", "push", "force_push"]},
+            macaroon_raw=macaroons[0].serialize())
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[1].serialize())
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw=Macaroon(
+                location=config.vhost.mainsite.hostname, identifier="another",
+                key="another-secret").serialize())
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw="nonsense")
+
+    def test_checkRefPermissions_private_code_import(self):
+        # A code import worker with a suitable macaroon has repository owner
+        # privileges on a repository associated with a running private code
+        # import job.
+        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        code_imports = [
+            self.factory.makeCodeImport(
+                target_rcs_type=TargetRevisionControlSystems.GIT)
+            for _ in range(2)]
+        private_repository = code_imports[0].git_repository
+        removeSecurityProxy(private_repository).transitionToInformationType(
+            InformationType.PRIVATESECURITY, private_repository.owner)
+        with celebrity_logged_in("vcs_imports"):
+            jobs = [
+                self.factory.makeCodeImportJob(code_import=code_import)
+                for code_import in code_imports]
+        issuer = getUtility(IMacaroonIssuer, "code-import-job")
+        macaroons = [
+            removeSecurityProxy(issuer).issueMacaroon(job) for job in jobs]
+        repository = code_imports[0].git_repository
+        ref_path = "refs/heads/master"
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[0])
+        with celebrity_logged_in("vcs_imports"):
+            getUtility(ICodeImportJobWorkflow).startJob(jobs[0], machine)
+        self.assertHasRefPermissions(
+            None, repository, [ref_path],
+            {ref_path: ["create", "push", "force_push"]},
+            macaroon_raw=macaroons[0].serialize())
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw=macaroons[1].serialize())
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw=Macaroon(
+                location=config.vhost.mainsite.hostname, identifier="another",
+                key="another-secret").serialize())
+        self.assertHasRefPermissions(
+            None, repository, [ref_path], {ref_path: []},
+            macaroon_raw="nonsense")
 
 
 class TestGitAPISecurity(TestGitAPIMixin, TestCaseWithFactory):

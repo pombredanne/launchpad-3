@@ -542,7 +542,7 @@ class IHasStanding(Interface):
         description=_("The reason the person's standing is what it is."))
 
 
-class IPersonSettings(Interface):
+class IPersonSettingsViewRestricted(Interface):
     """Settings for a person (not a team!) that are used relatively rarely.
 
     We store these attributes on a separate object, PersonSettings, to which
@@ -554,6 +554,9 @@ class IPersonSettings(Interface):
     class, too.
 
     We also may want TeamSettings and PersonTeamSettings in the future.
+
+    These attributes need launchpad.View to see, and launchpad.Edit to
+    change.
     """
 
     selfgenerated_bugnotifications = Bool(
@@ -566,6 +569,24 @@ class IPersonSettings(Interface):
             "Some email clients do not allow filtering on arbitrary message "
             "headers.  If you use one of these, you can set this option to "
             "add more information to the end of message bodies."),
+        required=False, default=False)
+
+
+class IPersonSettingsModerate(Interface):
+    """Settings for a person (not a team!) that are used relatively rarely.
+
+    These attributes need launchpad.View to see, and launchpad.Moderate to
+    change.
+    """
+
+    require_strong_email_authentication = Bool(
+        title=_("Require strong authentication for incoming emails"),
+        description=_(
+            "If this option is set, Launchpad will only accept incoming "
+            "emails from you if it can authenticate them using OpenPGP or "
+            "DKIM.  Launchpad administrators may set this if one of your "
+            "email addresses is being forged as the sender address for "
+            "incoming spam."),
         required=False, default=False)
 
 
@@ -703,7 +724,8 @@ class IPersonViewRestricted(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasMugshot,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
                     IHasBugs, IHasRecipes, IHasTranslationImports,
-                    IPersonSettings, IQuestionsPerson, IHasGitRepositories):
+                    IPersonSettingsViewRestricted, IQuestionsPerson,
+                    IHasGitRepositories):
     """IPerson attributes that require launchpad.View permission."""
     account = Object(schema=IAccount)
     accountID = Int(title=_('Account ID'), required=True, readonly=True)
@@ -1865,6 +1887,10 @@ class IPersonSpecialRestricted(Interface):
         """
 
 
+class IPersonModerate(IPersonSettingsModerate):
+    """IPerson attributes that the user can see and moderators can change."""
+
+
 class IPersonModerateRestricted(Interface):
     """IPerson attributes that require launchpad.Moderate permission."""
 
@@ -1884,10 +1910,14 @@ class IPersonModerateRestricted(Interface):
         as_of='devel')
 
 
+class IPersonSettings(IPersonSettingsViewRestricted, IPersonSettingsModerate):
+    """A person's settings."""
+
+
 class IPerson(IPersonPublic, IPersonLimitedView, IPersonViewRestricted,
-              IPersonEditRestricted, IPersonModerateRestricted,
-              IPersonSpecialRestricted, IHasStanding, ISetLocation,
-              IHeadingContext):
+              IPersonEditRestricted, IPersonModerate,
+              IPersonModerateRestricted, IPersonSpecialRestricted,
+              IPersonSettings, IHasStanding, ISetLocation, IHeadingContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -2322,8 +2352,9 @@ class IPersonSet(Interface):
     @operation_parameters(
         openid_identifier=TextLine(
             title=_("OpenID identifier suffix"), required=True),
-        key_text=TextLine(
-            title=_("SSH key text"), required=True),
+        # This is more liberal than the type for adding keys, in order to
+        # avoid existing keys being undeleteable.
+        key_text=Text(title=_("SSH key text"), required=True),
         dry_run=Bool(_("Don't save changes")))
     @export_write_operation()
     @operation_for_version("devel")

@@ -14,7 +14,7 @@ Bug 1 affects the Firefox project. The 1.0 milestone is available for
 use, but the bug is not yet targeted to that milestone.
 
     >>> table = find_tag_by_id(owner_browser.contents, 'affected-software')
-    >>> print extract_text(table)
+    >>> print(extract_text(table))
     Affects             Status  Importance  Assigned to        Milestone
     ... Mozilla Firefox ... New     Low     Mark Shuttleworth
     ...
@@ -32,7 +32,7 @@ Affects table, and in the selected value of the Milestone menu.
     >>> milestone_control.displayValue = ['Mozilla Firefox 1.0']
     >>> owner_browser.getControl('Save Changes', index=0).click()
     >>> table = find_tag_by_id(owner_browser.contents, 'affected-software')
-    >>> print extract_text(table)
+    >>> print(extract_text(table))
     Affects             Status  Importance  Assigned to           Milestone
     ... Mozilla Firefox ... New     Low     Mark Shuttleworth ... 1.0
     ...
@@ -84,7 +84,7 @@ They target bug #1 to milestone 5.04-rc1 for Ubuntu.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/+bug/1')
     >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
-    >>> print extract_text(table)
+    >>> print(extract_text(table))
     Affects                      Status  Importance  Assigned to           Milestone
     ... Mozilla Firefox          ... New     Low     Mark Shuttleworth ... 1.0
     ...
@@ -99,7 +99,7 @@ They target bug #1 to milestone 5.04-rc1 for Ubuntu.
     >>> milestone_control.displayValue = ['Ubuntu 5.04.rc1']
     >>> admin_browser.getControl('Save Changes', index=3).click()
     >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
-    >>> print extract_text(table)
+    >>> print(extract_text(table))
     Affects                      Status  Importance  Assigned to           Milestone
     ... Mozilla Firefox      ... New     Low         Mark Shuttleworth ... 1.0
     ...

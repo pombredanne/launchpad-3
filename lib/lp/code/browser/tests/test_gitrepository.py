@@ -13,7 +13,11 @@ from textwrap import dedent
 
 from fixtures import FakeLogger
 import pytz
-from testtools.matchers import DocTestMatches
+from storm.store import Store
+from testtools.matchers import (
+    DocTestMatches,
+    Equals,
+    )
 import transaction
 from zope.component import getUtility
 from zope.formlib.itemswidgets import ItemDisplayWidget
@@ -24,14 +28,22 @@ from zope.security.proxy import removeSecurityProxy
 from lp.app.enums import InformationType
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.interfaces.services import IService
-from lp.code.enums import GitRepositoryType
+from lp.code.enums import (
+    BranchMergeProposalStatus,
+    CodeReviewVote,
+    GitRepositoryType,
+    )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.tests.helpers import GitHostingFixture
-from lp.registry.enums import BranchSharingPolicy
+from lp.registry.enums import (
+    BranchSharingPolicy,
+    VCSType,
+    )
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
 from lp.registry.interfaces.person import PersonVisibility
 from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.database.constants import UTC_NOW
+from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -41,9 +53,13 @@ from lp.testing import (
     logout,
     person_logged_in,
     record_two_runs,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.testing.matchers import (
     Contains,
     HasQueryCount,
@@ -76,18 +92,29 @@ class TestGitRepositoryNavigation(TestCaseWithFactory):
         url = "%s/+ref/refs/heads/master" % canonical_url(repository)
         self.assertRaises(NotFound, test_traverse, url)
 
+    def test_traverse_quoted_ref(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/with#hash"])
+        url = "%s/+ref/with%%23hash" % canonical_url(ref.repository)
+        self.assertEqual(ref, test_traverse(url)[0])
+
+    def test_traverse_non_ascii(self):
+        [ref] = self.factory.makeGitRefs(paths=["refs/heads/\N{SNOWMAN}"])
+        url = "%s/+ref/%%E2%%98%%83" % canonical_url(ref.repository)
+        self.assertEqual(ref, test_traverse(url)[0])
+
 
 class TestGitRepositoryView(BrowserTestCase):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_clone_instructions(self):
         repository = self.factory.makeGitRepository()
+        username = repository.owner.name
         text = self.getMainText(repository, "+index", user=repository.owner)
         self.assertTextMatchesExpressionIgnoreWhitespace(r"""
-            git clone https://.*
-            git clone git\+ssh://.*
-            """, text)
+            git clone https://git.launchpad.dev/.*
+            git clone git\+ssh://{username}@git.launchpad.dev/.*
+            """.format(username=username), text)
 
     def test_user_can_push(self):
         # A user can push if they have edit permissions.
@@ -154,13 +181,15 @@ class TestGitRepositoryView(BrowserTestCase):
         # explain how to do so.
         self.factory.makeSSHKey(person=self.user, send_notification=False)
         repository = self.factory.makeGitRepository(owner=self.user)
+        username = self.user.name
         browser = self.getViewBrowser(repository)
         directions = find_tag_by_id(browser.contents, "push-directions")
         login_person(self.user)
         self.assertThat(extract_text(directions), DocTestMatches(dedent("""
             Update this repository:
-            git push git+ssh://git.launchpad.dev/{repository.shortened_path}
-            """).format(repository=repository),
+            git push
+            git+ssh://{username}@git.launchpad.dev/{repository.shortened_path}
+            """).format(username=username, repository=repository),
             flags=doctest.NORMALIZE_WHITESPACE))
 
     def test_push_directions_logged_in_can_push_no_sshkeys(self):
@@ -232,6 +261,146 @@ class TestGitRepositoryView(BrowserTestCase):
         # The main check: No Unauthorized error should be raised.
         browser = self.getUserBrowser(url, user=user)
         self.assertIn(project_name, browser.contents)
+
+    def test_view_with_active_reviews(self):
+        repository = self.factory.makeGitRepository()
+        git_refs = self.factory.makeGitRefs(
+            repository,
+            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=git_refs[0],
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        with FeatureFixture({"code.git.show_repository_mps": "on"}):
+            with person_logged_in(repository.owner):
+                browser = self.getViewBrowser(repository)
+                self.assertIsNotNone(
+                    find_tag_by_id(browser.contents, 'landing-candidates'))
+
+    def test_landing_candidates_count(self):
+        source_repository = self.factory.makeGitRepository()
+        view = create_initialized_view(source_repository, '+index')
+
+        self.assertEqual('No branches', view._getBranchCountText(0))
+        self.assertEqual('1 branch', view._getBranchCountText(1))
+        self.assertEqual('2 branches', view._getBranchCountText(2))
+
+    def test_landing_candidates_query_count(self):
+        repository = self.factory.makeGitRepository()
+        git_refs = self.factory.makeGitRefs(
+            repository,
+            paths=["refs/heads/master", "refs/heads/1.0", "refs/tags/1.1"])
+
+        def login_and_view():
+            with FeatureFixture({"code.git.show_repository_mps": "on"}):
+                with person_logged_in(repository.owner):
+                    browser = self.getViewBrowser(repository)
+                    self.assertIsNotNone(
+                        find_tag_by_id(browser.contents, 'landing-candidates'))
+
+        def create_merge_proposal():
+            bmp = self.factory.makeBranchMergeProposalForGit(
+                target_ref=git_refs[0],
+                set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+            self.factory.makePreviewDiff(merge_proposal=bmp)
+            self.factory.makeCodeReviewComment(
+                vote=CodeReviewVote.APPROVE, merge_proposal=bmp)
+
+        recorder1, recorder2 = record_two_runs(
+            login_and_view,
+            create_merge_proposal,
+            2)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
+
+    def test_view_with_landing_targets(self):
+        product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
+        target_repository = self.factory.makeGitRepository(target=product)
+        source_repository = self.factory.makeGitRepository(target=product)
+        [target_git_ref] = self.factory.makeGitRefs(
+            target_repository,
+            paths=["refs/heads/master"])
+        [source_git_ref] = self.factory.makeGitRefs(
+            source_repository,
+            paths=["refs/heads/master"])
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_git_ref,
+            source_ref=source_git_ref,
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        with FeatureFixture({"code.git.show_repository_mps": "on"}):
+            with person_logged_in(target_repository.owner):
+                browser = self.getViewBrowser(
+                    source_repository, user=source_repository.owner)
+                self.assertIsNotNone(
+                    find_tag_by_id(browser.contents, 'landing-targets'))
+
+    def test_landing_targets_query_count(self):
+        product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
+        target_repository = self.factory.makeGitRepository(target=product)
+        source_repository = self.factory.makeGitRepository(target=product)
+
+        def create_merge_proposal():
+            [target_git_ref] = self.factory.makeGitRefs(
+                target_repository)
+            [source_git_ref] = self.factory.makeGitRefs(
+                source_repository)
+            bmp = self.factory.makeBranchMergeProposalForGit(
+                target_ref=target_git_ref,
+                source_ref=source_git_ref,
+                set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+            self.factory.makePreviewDiff(merge_proposal=bmp)
+            self.factory.makeCodeReviewComment(
+                vote=CodeReviewVote.APPROVE, merge_proposal=bmp)
+
+        def login_and_view():
+            with FeatureFixture({"code.git.show_repository_mps": "on"}):
+                with person_logged_in(target_repository.owner):
+                    browser = self.getViewBrowser(
+                        source_repository, user=source_repository.owner)
+                    self.assertIsNotNone(
+                        find_tag_by_id(browser.contents, 'landing-targets'))
+
+        recorder1, recorder2 = record_two_runs(
+            login_and_view,
+            create_merge_proposal,
+            2)
+        # XXX cjwatson 2018-09-10: There is currently one extra
+        # TeamParticipation query per reviewer (at least in this test setup)
+        # due to GitRepository.isPersonTrustedReviewer.  Fixing this
+        # probably requires a suitable helper to update Person._inTeam_cache
+        # in bulk.
+        self.assertThat(recorder2, HasQueryCount(Equals(recorder1.count + 2)))
+
+    def test_view_with_inactive_landing_targets(self):
+        product = self.factory.makeProduct(name="foo", vcs=VCSType.GIT)
+        target_repository = self.factory.makeGitRepository(target=product)
+        source_repository = self.factory.makeGitRepository(target=product)
+        [target_git_ref] = self.factory.makeGitRefs(
+            target_repository,
+            paths=["refs/heads/master"])
+        [source_git_ref] = self.factory.makeGitRefs(
+            source_repository,
+            paths=["refs/heads/master"])
+        self.factory.makeBranchMergeProposalForGit(
+            target_ref=target_git_ref,
+            source_ref=source_git_ref,
+            set_state=BranchMergeProposalStatus.MERGED)
+        with FeatureFixture({"code.git.show_repository_mps": "on"}):
+            with person_logged_in(target_repository.owner):
+                browser = self.getViewBrowser(
+                    source_repository, user=source_repository.owner)
+                self.assertIsNone(
+                    find_tag_by_id(browser.contents, 'landing-targets'))
+
+    def test_query_count_subscriber_content(self):
+        repository = self.factory.makeGitRepository()
+        for _ in range(10):
+            self.factory.makeGitSubscription(repository=repository)
+        Store.of(repository).flush()
+        Store.of(repository).invalidate()
+        view = create_initialized_view(
+            repository, "+repository-portlet-subscriber-content")
+        with StormStatementRecorder() as recorder:
+            view.render()
+        self.assertThat(recorder, HasQueryCount(Equals(6)))
 
 
 class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):
@@ -875,7 +1044,8 @@ class TestGitRepositoryDiffView(BrowserTestCase):
         hosting_fixture = self.useFixture(GitHostingFixture(
             diff={"patch": diff}))
         person = self.factory.makePerson()
-        repository = self.factory.makeGitRepository(owner=person)
+        repository = self.factory.makeGitRepository(
+            owner=person, name="some-repository")
         browser = self.getUserBrowser(
             canonical_url(repository) + "/+diff/0123456/0123456^")
         with person_logged_in(person):
@@ -886,7 +1056,7 @@ class TestGitRepositoryDiffView(BrowserTestCase):
             'text/x-patch;charset=UTF-8', browser.headers["Content-Type"])
         self.assertEqual(str(len(diff)), browser.headers["Content-Length"])
         self.assertEqual(
-            "attachment; filename=0123456^_0123456.diff",
+            'attachment; filename="some-repository_0123456^_0123456.diff"',
             browser.headers["Content-Disposition"])
         self.assertEqual(diff, browser.contents)
 
@@ -910,6 +1080,21 @@ class TestGitRepositoryDiffView(BrowserTestCase):
         self.assertRaises(
             Unauthorized, self.getUserBrowser,
             repository_url + "/+diff/0123456/0123456^")
+
+    def test_filename_quoting(self):
+        # If we construct revisions containing metacharacters and somehow
+        # manage to get that past the hosting service, the
+        # Content-Disposition header is quoted properly.
+        diff = "A fake diff\n"
+        self.useFixture(GitHostingFixture(diff={"patch": diff}))
+        person = self.factory.makePerson()
+        repository = self.factory.makeGitRepository(
+            owner=person, name="some-repository")
+        browser = self.getUserBrowser(
+            canonical_url(repository) + '/+diff/foo"/"bar')
+        self.assertEqual(
+            r'attachment; filename="some-repository_\"bar_foo\".diff"',
+            browser.headers["Content-Disposition"])
 
 
 class TestGitRepositoryDeletionView(BrowserTestCase):

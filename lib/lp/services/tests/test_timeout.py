@@ -1,4 +1,4 @@
-# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """timeout.py tests.
@@ -15,15 +15,26 @@ from textwrap import dedent
 import threading
 import xmlrpclib
 
+from fixtures import (
+    MonkeyPatch,
+    TempDir,
+    )
+from requests import Response
 from requests.exceptions import (
     ConnectionError,
     InvalidSchema,
     )
-from testtools.matchers import MatchesStructure
+from testtools.matchers import (
+    ContainsDict,
+    Equals,
+    MatchesStructure,
+    )
 
+from lp.services.osutils import write_file
 from lp.services.timeout import (
     default_timeout,
     get_default_timeout_function,
+    override_timeout,
     reduced_timeout,
     set_default_timeout_function,
     TimeoutError,
@@ -37,6 +48,7 @@ from lp.services.webapp.adapter import (
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import TestCase
+from lp.testing.fakemethod import FakeMethod
 
 
 @with_timeout()
@@ -247,6 +259,15 @@ class TestTimeout(TestCase):
         finally:
             clear_request_started()
 
+    def test_override_timeout(self):
+        """override_timeout temporarily overrides the default timeout."""
+        self.addCleanup(set_default_timeout_function, None)
+        with override_timeout(1.0):
+            self.assertEqual(1.0, get_default_timeout_function()())
+        set_default_timeout_function(lambda: 5.0)
+        with override_timeout(1.0):
+            self.assertEqual(1.0, get_default_timeout_function()())
+
     def make_test_socket(self):
         """One common use case for timing out is when making an HTTP request
         to an external site to fetch content. To this end, the timeout
@@ -346,14 +367,115 @@ class TestTimeout(TestCase):
             MatchesStructure.byEquality(status_code=200, content='Success.'))
         t.join()
 
-    def test_urlfetch_does_not_support_ftp_urls(self):
-        """urlfetch() does not support ftp urls."""
+    def test_urlfetch_no_proxy_by_default(self):
+        """urlfetch does not use a proxy by default."""
+        self.pushConfig('launchpad', http_proxy='http://proxy.example:3128/')
+        set_default_timeout_function(lambda: 1)
+        self.addCleanup(set_default_timeout_function, None)
+        fake_send = FakeMethod(result=Response())
+        self.useFixture(
+            MonkeyPatch('requests.adapters.HTTPAdapter.send', fake_send))
+        urlfetch('http://example.com/')
+        self.assertEqual({}, fake_send.calls[0][1]['proxies'])
+
+    def test_urlfetch_uses_proxies_if_requested(self):
+        """urlfetch uses proxies if explicitly requested."""
+        proxy = 'http://proxy.example:3128/'
+        self.pushConfig('launchpad', http_proxy=proxy)
+        set_default_timeout_function(lambda: 1)
+        self.addCleanup(set_default_timeout_function, None)
+        fake_send = FakeMethod(result=Response())
+        self.useFixture(
+            MonkeyPatch('requests.adapters.HTTPAdapter.send', fake_send))
+        urlfetch('http://example.com/', use_proxy=True)
+        self.assertEqual(
+            {scheme: proxy for scheme in ('http', 'https')},
+            fake_send.calls[0][1]['proxies'])
+
+    def test_urlfetch_does_not_support_ftp_urls_by_default(self):
+        """urlfetch() does not support ftp urls by default."""
         set_default_timeout_function(lambda: 1)
         self.addCleanup(set_default_timeout_function, None)
         url = 'ftp://localhost/'
         e = self.assertRaises(InvalidSchema, urlfetch, url)
         self.assertEqual(
             "No connection adapters were found for '%s'" % url, str(e))
+
+    def test_urlfetch_supports_ftp_urls_if_allow_ftp(self):
+        """urlfetch() supports ftp urls via a proxy if explicitly asked."""
+        sock, http_server_url = self.make_test_socket()
+        sock.listen(1)
+
+        def success_result():
+            (client_sock, client_addr) = sock.accept()
+            # We only provide a test HTTP proxy, not anything beyond that.
+            client_sock.sendall(dedent("""\
+                HTTP/1.0 200 Ok
+                Content-Type: text/plain
+                Content-Length: 8
+
+                Success."""))
+            client_sock.close()
+
+        self.pushConfig('launchpad', http_proxy=http_server_url)
+        t = threading.Thread(target=success_result)
+        t.start()
+        set_default_timeout_function(lambda: 1)
+        self.addCleanup(set_default_timeout_function, None)
+        response = urlfetch(
+            'ftp://example.com/', use_proxy=True, allow_ftp=True)
+        self.assertThat(response, MatchesStructure(
+            status_code=Equals(200),
+            headers=ContainsDict({'content-length': Equals('8')}),
+            content=Equals('Success.')))
+        t.join()
+
+    def test_urlfetch_does_not_support_file_urls_by_default(self):
+        """urlfetch() does not support file urls by default."""
+        set_default_timeout_function(lambda: 1)
+        self.addCleanup(set_default_timeout_function, None)
+        test_path = self.useFixture(TempDir()).join('file')
+        write_file(test_path, '')
+        url = 'file://' + test_path
+        e = self.assertRaises(InvalidSchema, urlfetch, url)
+        self.assertEqual(
+            "No connection adapters were found for '%s'" % url, str(e))
+
+    def test_urlfetch_supports_file_urls_if_allow_file(self):
+        """urlfetch() supports file urls if explicitly asked to do so."""
+        set_default_timeout_function(lambda: 1)
+        self.addCleanup(set_default_timeout_function, None)
+        test_path = self.useFixture(TempDir()).join('file')
+        write_file(test_path, 'Success.')
+        url = 'file://' + test_path
+        self.assertThat(urlfetch(url, allow_file=True), MatchesStructure(
+            status_code=Equals(200),
+            headers=ContainsDict({'Content-Length': Equals(8)}),
+            content=Equals('Success.')))
+
+    def test_urlfetch_writes_to_output_file(self):
+        """If given an output_file, urlfetch writes to it."""
+        sock, http_server_url = self.make_test_socket()
+        sock.listen(1)
+
+        def success_result():
+            (client_sock, client_addr) = sock.accept()
+            client_sock.sendall(dedent("""\
+                HTTP/1.0 200 Ok
+                Content-Type: text/plain
+                Content-Length: 8
+
+                Success."""))
+            client_sock.close()
+
+        t = threading.Thread(target=success_result)
+        t.start()
+        output_path = self.useFixture(TempDir()).join('out')
+        with open(output_path, 'wb+') as f:
+            urlfetch(http_server_url, output_file=f)
+            f.seek(0)
+            self.assertEqual(b'Success.', f.read())
+        t.join()
 
     def test_xmlrpc_transport(self):
         """ Another use case for timeouts is communicating with external

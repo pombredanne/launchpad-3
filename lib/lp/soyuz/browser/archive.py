@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for archive."""
@@ -58,13 +58,13 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.app.browser.badge import HasBadgeBase
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -99,7 +99,10 @@ from lp.services.browser_helpers import (
 from lp.services.database.bulk import load_related
 from lp.services.helpers import english_list
 from lp.services.job.model.job import Job
-from lp.services.librarian.browser import FileNavigationMixin
+from lp.services.librarian.browser import (
+    DeletedProxiedLibraryFileAlias,
+    FileNavigationMixin,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -120,6 +123,7 @@ from lp.services.webapp.interfaces import (
     IStructuredString,
     )
 from lp.services.webapp.menu import NavigationMenu
+from lp.services.webapp.publisher import RedirectionView
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,
@@ -455,6 +459,46 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
 
         return self.context.getArchiveDependency(archive)
 
+    @stepthrough('+sourcefiles')
+    def traverse_sourcefiles(self, sourcepackagename):
+        """Traverse to a source file in the archive.
+
+        Normally, files in an archive are unique by filename, so the +files
+        traversal is sufficient.  Unfortunately, a gina-imported archive may
+        contain the same filename with different contents due to a
+        combination of epochs and less stringent checks applied by the
+        upstream archive software.  (In practice this only happens for
+        source packages because that's normally all we import using gina.)
+        This provides an unambiguous way to traverse to such files even with
+        this problem.
+
+        The path scheme is::
+
+            +sourcefiles/:sourcename/:sourceversion/:filename
+        """
+        if len(self.request.stepstogo) < 2:
+            return None
+
+        version = self.request.stepstogo.consume()
+        filename = self.request.stepstogo.consume()
+
+        if not check_permission('launchpad.View', self.context):
+            raise Unauthorized()
+
+        library_file = self.context.getSourceFileByName(
+            sourcepackagename, version, filename)
+
+        # Deleted library files result in a NotFound-like error.
+        if library_file.deleted:
+            raise DeletedProxiedLibraryFileAlias(filename, self.context)
+
+        # There can be no further path segments.
+        if len(self.request.stepstogo) > 0:
+            return None
+
+        return RedirectionView(
+            library_file.getURL(include_token=True), self.request)
+
 
 class ArchiveMenuMixin:
 
@@ -785,8 +829,8 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
     """A Form view for filtering and batching source packages."""
 
     schema = IPPAPackageFilter
-    custom_widget('series_filter', SeriesFilterWidget)
-    custom_widget('status_filter', StatusFilterWidget)
+    custom_widget_series_filter = SeriesFilterWidget
+    custom_widget_status_filter = StatusFilterWidget
 
     # By default this view will not display the sources with selectable
     # checkboxes, but subclasses can override as needed.
@@ -1084,7 +1128,7 @@ class ArchivePackagesView(ArchiveSourcePackageListViewBase):
 class ArchiveSourceSelectionFormView(ArchiveSourcePackageListViewBase):
     """Base class to implement a source selection widget for PPAs."""
 
-    custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
+    custom_widget_selected_sources = LabeledMultiCheckBoxWidget
 
     selectable_sources = True
 
@@ -1167,7 +1211,8 @@ class ArchivePackageDeletionView(ArchiveSourceSelectionFormView):
     """
 
     schema = IArchivePackageDeletionForm
-    custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
+    custom_widget_deletion_comment = CustomWidgetFactory(
+        StrippedTextWidget, displayWidth=50)
     label = 'Delete packages'
 
     @property
@@ -1405,9 +1450,9 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
     a copying action that can be performed upon a set of selected packages.
     """
     schema = IPPAPackageFilter
-    custom_widget('destination_archive', DestinationArchiveDropdownWidget)
-    custom_widget('destination_series', DestinationSeriesDropdownWidget)
-    custom_widget('include_binaries', LaunchpadRadioWidget)
+    custom_widget_destination_archive = DestinationArchiveDropdownWidget
+    custom_widget_destination_series = DestinationSeriesDropdownWidget
+    custom_widget_include_binaries = LaunchpadRadioWidget
     label = 'Copy packages'
 
     @property
@@ -1570,12 +1615,13 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
     schema = IArchiveEditDependenciesForm
 
-    custom_widget('selected_dependencies', PlainMultiCheckBoxWidget,
-                  cssClass='line-through-when-checked ppa-dependencies')
-    custom_widget('primary_dependencies', LaunchpadRadioWidget,
-                  cssClass='highlight-selected')
-    custom_widget('primary_components', LaunchpadRadioWidget,
-                  cssClass='highlight-selected')
+    custom_widget_selected_dependencies = CustomWidgetFactory(
+        PlainMultiCheckBoxWidget,
+        cssClass='line-through-when-checked ppa-dependencies')
+    custom_widget_primary_dependencies = CustomWidgetFactory(
+        LaunchpadRadioWidget, cssClass='highlight-selected')
+    custom_widget_primary_components = CustomWidgetFactory(
+        LaunchpadRadioWidget, cssClass='highlight-selected')
 
     label = "Edit PPA dependencies"
     page_title = label
@@ -1877,8 +1923,8 @@ class ArchiveActivateView(LaunchpadFormView):
 
     schema = IArchive
     field_names = ('name', 'displayname', 'description')
-    custom_widget('description', TextAreaWidget, height=3)
-    custom_widget('name', PPANameWidget, label="URL")
+    custom_widget_description = CustomWidgetFactory(TextAreaWidget, height=3)
+    custom_widget_name = CustomWidgetFactory(PPANameWidget, label="URL")
     label = 'Activate a Personal Package Archive'
     page_title = 'Activate PPA'
 
@@ -2061,8 +2107,8 @@ class ArchiveEditView(BaseArchiveEditView, EnableProcessorsMixin):
         'build_debug_symbols',
         'publish_debug_symbols',
         ]
-    custom_widget(
-        'description', TextAreaWidget, height=10, width=30)
+    custom_widget_description = CustomWidgetFactory(
+        TextAreaWidget, height=10, width=30)
     page_title = 'Change details'
 
     @property
@@ -2115,7 +2161,8 @@ class ArchiveAdminView(BaseArchiveEditView, EnableProcessorsMixin):
         'relative_build_score',
         'external_dependencies',
         ]
-    custom_widget('external_dependencies', TextAreaWidget, height=3)
+    custom_widget_external_dependencies = CustomWidgetFactory(
+        TextAreaWidget, height=3)
     page_title = 'Administer'
 
     @property

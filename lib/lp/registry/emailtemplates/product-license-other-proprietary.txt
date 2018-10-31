@@ -6,10 +6,8 @@ in Launchpad is proprietary.
 
 %(commercial_use_expiration)s
 
-Proprietary projects can use Launchpad by purchasing a commercial-use
-subscription which costs US$250/year/project.  Follow the instructions
-presented on your project overview page to purchase a subscription
-voucher.
+Proprietary projects can only use Launchpad with prior approval from
+Canonical.
 
 A commercial-use subscription allows you to host your commercial project
 on Launchpad in the same way as any other project. Project's with a

@@ -18,7 +18,7 @@ So, the checkbox is not shown.
     ...     'Someone should review this translation')
     Traceback (most recent call last):
     ...
-    LookupError: label 'Someone...
+    LookupError: label u'Someone...
 
 If the same user tries translating for another, unrestricted project,
 they get to see the checkbox:
@@ -41,7 +41,7 @@ a translator needs to mark the needs review checkbox.
     >>> user_browser.getControl(
     ...     name='msgset_130_es_translation_0_new').value = "New suggestion"
     >>> user_browser.getControl('Save & Continue').click()
-    >>> print user_browser.url
+    >>> print(user_browser.url)
     http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/2/+translate
 
 The needs review flag is unset when we go back to the previous message.
@@ -55,9 +55,9 @@ The needs review flag is unset when we go back to the previous message.
 But a new suggestion is provided for this message.
 
     >>> import re
-    >>> print extract_text(find_tag_by_id(
+    >>> print(extract_text(find_tag_by_id(
     ...     user_browser.contents,
-    ...     re.compile(r'^msgset_130_es_suggestion_\d+_0$')))
+    ...     re.compile(r'^msgset_130_es_suggestion_\d+_0$'))))
     New suggestion
 
 
@@ -82,8 +82,8 @@ translation, while no suggestions are displayed.
     ...     name='msgset_166_es_translation_0_new')
     >>> inputfield.value = 'New test translation'
     >>> admin_browser.getControl('Save & Continue').click()
-    >>> print extract_text(find_tag_by_id(admin_browser.contents,
-    ...                             'messages_to_translate'))
+    >>> print(extract_text(find_tag_by_id(admin_browser.contents,
+    ...                             'messages_to_translate')))
     1. English: test man page
     Current Spanish: New test translation Translated and reviewed ...
     New translation:
@@ -101,8 +101,8 @@ message will be listed as suggestions.
     ...    name='msgset_166_es_translation_0_radiobutton')
     >>> inputradio.value = ['msgset_166_es_translation_0_new']
     >>> admin_browser.getControl('Save & Continue').click()
-    >>> print extract_text(find_tag_by_id(admin_browser.contents,
-    ...                             'messages_to_translate'))
+    >>> print(extract_text(find_tag_by_id(admin_browser.contents,
+    ...                             'messages_to_translate')))
     1. English: test man page
     Current Spanish: (no translation yet)
     Suggestions:

@@ -8,10 +8,11 @@ from __future__ import absolute_import, print_function, unicode_literals
 import os
 
 from lp.services.testing import build_test_suite
+from lp.testing.systemdocs import setUp
 
 
 here = os.path.dirname(os.path.realpath(__file__))
 
 
 def test_suite():
-    return build_test_suite(here)
+    return build_test_suite(here, setUp=lambda test: setUp(test, future=True))

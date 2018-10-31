@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SourcePackageRecipe views."""
@@ -61,7 +61,6 @@ from zope.schema.vocabulary import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     has_structured_doc,
     LaunchpadEditFormView,
     LaunchpadFormView,
@@ -379,7 +378,7 @@ class SourcePackageRecipeRequestBuildsView(LaunchpadFormView):
             Choice(vocabulary='BuildableDistroSeries'),
             title=u'Distribution series')
 
-    custom_widget('distroseries', LabeledMultiCheckBoxWidget)
+    custom_widget_distroseries = LabeledMultiCheckBoxWidget
 
     def validate(self, data):
         if not data['archive']:
@@ -668,23 +667,21 @@ class RelatedBranchesWidget(Widget):
 class RecipeRelatedBranchesMixin(LaunchpadFormView):
     """A class to find related branches for a recipe's base branch."""
 
-    custom_widget('related-branches', RelatedBranchesWidget)
+    custom_widget_related_branches = RelatedBranchesWidget
 
     def extendFields(self):
         """See `LaunchpadFormView`.
 
         Adds a related branches field to the form.
         """
-        self.form_fields += form.Fields(Field(__name__='related-branches'))
-        self.form_fields['related-branches'].custom_widget = (
-            self.custom_widgets['related-branches'])
-        self.widget_errors['related-branches'] = ''
+        self.form_fields += form.Fields(Field(__name__='related_branches'))
+        self.widget_errors['related_branches'] = ''
 
     def setUpWidgets(self, context=None):
         # Adds a new related branches widget.
         super(RecipeRelatedBranchesMixin, self).setUpWidgets(context)
-        self.widgets['related-branches'].display_label = False
-        self.widgets['related-branches'].setRenderedValue(dict(
+        self.widgets['related_branches'].display_label = False
+        self.widgets['related_branches'].setRenderedValue(dict(
             related_package_branch_info=self.related_package_branch_info,
             related_series_branch_info=self.related_series_branch_info))
 
@@ -712,9 +709,9 @@ class SourcePackageRecipeAddView(RecipeRelatedBranchesMixin,
     title = label = 'Create a new source package recipe'
 
     schema = ISourcePackageAddSchema
-    custom_widget('distroseries', LabeledMultiCheckBoxWidget)
-    custom_widget('owner', RecipeOwnerWidget)
-    custom_widget('use_ppa', LaunchpadRadioWidget)
+    custom_widget_distroseries = LabeledMultiCheckBoxWidget
+    custom_widget_owner = RecipeOwnerWidget
+    custom_widget_use_ppa = LaunchpadRadioWidget
 
     def initialize(self):
         super(SourcePackageRecipeAddView, self).initialize()
@@ -862,7 +859,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
     label = title
 
     schema = ISourcePackageEditSchema
-    custom_widget('distroseries', LabeledMultiCheckBoxWidget)
+    custom_widget_distroseries = LabeledMultiCheckBoxWidget
 
     def setUpFields(self):
         super(SourcePackageRecipeEditView, self).setUpFields()

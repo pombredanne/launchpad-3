@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Milestone views."""
@@ -40,7 +40,6 @@ from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     safe_action,
@@ -452,7 +451,7 @@ class MilestoneAddView(MilestoneTagBase, LaunchpadFormView):
     field_names = ['name', 'code_name', 'dateexpected', 'summary']
     label = "Register a new milestone"
 
-    custom_widget('dateexpected', DateWidget)
+    custom_widget_dateexpected = DateWidget
 
     @action(_('Register Milestone'), name='register')
     def register_action(self, action, data):
@@ -489,7 +488,7 @@ class MilestoneEditView(MilestoneTagBase, LaunchpadEditFormView):
     schema = IMilestone
     label = "Modify milestone details"
 
-    custom_widget('dateexpected', DateWidget)
+    custom_widget_dateexpected = DateWidget
 
     @property
     def cancel_url(self):

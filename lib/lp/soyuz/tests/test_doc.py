@@ -11,6 +11,7 @@ import logging
 import os
 import unittest
 
+import scandir
 import transaction
 
 from lp.services.config import config
@@ -20,7 +21,10 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.testing.pages import PageTestSuite
+from lp.testing.pages import (
+    PageTestSuite,
+    setUpGlobs,
+    )
 from lp.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -55,7 +59,7 @@ def lobotomize_stevea():
 
 def uploaderSetUp(test):
     """setup the package uploader script tests."""
-    setUp(test)
+    setUp(test, future=True)
     switch_dbuser('uploader')
 
 
@@ -63,7 +67,7 @@ def statisticianSetUp(test):
     test_dbuser = config.statistician.dbuser
     test.globs['test_dbuser'] = test_dbuser
     switch_dbuser(test_dbuser)
-    setUp(test)
+    setUp(test, future=True)
 
 
 def statisticianTearDown(test):
@@ -74,7 +78,7 @@ def uploadQueueSetUp(test):
     lobotomize_stevea()
     test_dbuser = config.uploadqueue.dbuser
     switch_dbuser(test_dbuser)
-    setUp(test)
+    setUp(test, future=True)
     test.globs['test_dbuser'] = test_dbuser
 
 
@@ -88,7 +92,7 @@ def uploaderBugsSetUp(test):
     lobotomize_stevea()
     test_dbuser = config.uploader.dbuser
     switch_dbuser(test_dbuser)
-    setUp(test)
+    setUp(test, future=True)
     test.globs['test_dbuser'] = test_dbuser
 
 
@@ -108,7 +112,7 @@ special = {
         ),
     'distroarchseriesbinarypackage.txt': LayeredDocFileSuite(
         '../doc/distroarchseriesbinarypackage.txt',
-        setUp=setUp, tearDown=tearDown,
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'closing-bugs-from-changelogs.txt': LayeredDocFileSuite(
@@ -126,6 +130,7 @@ special = {
         ),
     'soyuz-set-of-uploads.txt': LayeredDocFileSuite(
         '../doc/soyuz-set-of-uploads.txt',
+        setUp=lambda test: setUp(test, future=True),
         layer=LaunchpadZopelessLayer,
         ),
     'package-relationship.txt': LayeredDocFileSuite(
@@ -133,27 +138,27 @@ special = {
         stdout_logging=False, layer=None),
     'publishing.txt': LayeredDocFileSuite(
         '../doc/publishing.txt',
-        setUp=setUp,
+        setUp=lambda test: setUp(test, future=True),
         layer=LaunchpadZopelessLayer,
         ),
     'build-failedtoupload-workflow.txt': LayeredDocFileSuite(
         '../doc/build-failedtoupload-workflow.txt',
-        setUp=setUp, tearDown=tearDown,
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
         layer=LaunchpadZopelessLayer,
         ),
     'distroseriesqueue.txt': LayeredDocFileSuite(
         '../doc/distroseriesqueue.txt',
-        setUp=setUp, tearDown=tearDown,
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
         layer=LaunchpadZopelessLayer,
         ),
     'distroseriesqueue-notify.txt': LayeredDocFileSuite(
         '../doc/distroseriesqueue-notify.txt',
-        setUp=setUp, tearDown=tearDown,
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
         layer=LaunchpadZopelessLayer,
         ),
     'distroseriesqueue-translations.txt': LayeredDocFileSuite(
         '../doc/distroseriesqueue-translations.txt',
-        setUp=setUp, tearDown=tearDown,
+        setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
         layer=LaunchpadZopelessLayer,
         ),
     }
@@ -163,14 +168,15 @@ def test_suite():
     suite = unittest.TestSuite()
 
     stories_dir = os.path.join(os.path.pardir, 'stories')
-    suite.addTest(PageTestSuite(stories_dir))
+    suite.addTest(PageTestSuite(
+        stories_dir, setUp=lambda test: setUpGlobs(test, future=True)))
     stories_path = os.path.join(here, stories_dir)
-    for story_dir in os.listdir(stories_path):
-        full_story_dir = os.path.join(stories_path, story_dir)
-        if not os.path.isdir(full_story_dir):
+    for story_entry in scandir.scandir(stories_path):
+        if not story_entry.is_dir():
             continue
-        story_path = os.path.join(stories_dir, story_dir)
-        suite.addTest(PageTestSuite(story_path))
+        story_path = os.path.join(stories_dir, story_entry.name)
+        suite.addTest(PageTestSuite(
+            story_path, setUp=lambda test: setUpGlobs(test, future=True)))
 
     # Add special needs tests
     for key in sorted(special):
@@ -190,7 +196,8 @@ def test_suite():
     for filename in filenames:
         path = os.path.join('../doc', filename)
         one_test = LayeredDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown,
+            path,
+            setUp=lambda test: setUp(test, future=True), tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING)
         suite.addTest(one_test)

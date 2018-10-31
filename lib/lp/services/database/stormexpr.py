@@ -340,5 +340,5 @@ def fti_search(table, text, ftq=True):
 def rank_by_fti(table, text, ftq=True):
     table, query_fragment = determine_table_and_fragment(table, ftq)
     return SQL(
-        '-rank(%s.fti, %s)' % (table.name, query_fragment), params=(text,),
+        '-ts_rank(%s.fti, %s)' % (table.name, query_fragment), params=(text,),
         tables=(table,))

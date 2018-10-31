@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive interfaces."""
@@ -462,7 +462,19 @@ class IArchiveSubscriberView(Interface):
     series_with_sources = Attribute(
         "DistroSeries to which this archive has published sources")
     signing_key = Object(
-        title=_('Repository sigining key.'), required=False, schema=IGPGKey)
+        title=_('Repository signing key.'), required=False, schema=IGPGKey)
+
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getSigningKeyData():
+        """Get the public key used to sign this repository.
+
+        If the repository has a signing key but it cannot be retrieved from
+        the keyserver, then the response will have an appropriate 4xx or 5xx
+        HTTP status code.  Otherwise, returns the ASCII-armoured public key
+        material as a text string, or None if the repository has no signing
+        key.
+        """
 
     def getAuthToken(person):
         """Returns an IArchiveAuthToken for the archive in question for
@@ -934,6 +946,21 @@ class IArchiveView(IHasBuildRecords):
         :raises NotFoundError if no file could not be found.
 
         :return the corresponding `ILibraryFileAlias` is the file was found.
+        """
+
+    def getSourceFileByName(name, version, filename):
+        """Return the `ILibraryFileAlias` for a source name/version/filename.
+
+        This can be used to avoid ambiguities with `getFileByName` in
+        imported archives, where the upstream archive software may not
+        always have had robust historical filename uniqueness checks.
+
+        :param name: The name of the source package.
+        :param version: The version of the source package.
+        :param filename: The exact filename to look up.
+
+        :raises NotFoundError: if no matching file could be found.
+        :return: the corresponding `ILibraryFileAlias`.
         """
 
     def getBinaryPackageRelease(name, version, archtag):
@@ -2367,6 +2394,9 @@ class IArchiveSet(Interface):
 
         The result is ordered by PPA displayname.
         """
+
+    def getPPADistributionsForUser(user):
+        """Return the `Distribution`s of all PPAs for the given user."""
 
     def getPPAsPendingSigningKey():
         """Return all PPAs pending signing key generation.

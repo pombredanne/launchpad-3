@@ -13,8 +13,12 @@ from lazr.restfulclient.errors import (
     )
 from zope.security.management import endInteraction
 
+from lp.services.features.testing import FeatureFixture
+from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
 from lp.testing import (
+    api_url,
     launchpadlib_for,
+    login_as,
     TestCaseWithFactory,
     ws_object,
     )
@@ -118,3 +122,39 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         self.assertTrue(ws_das.chroot_url.endswith(expected_file))
         ws_das.removeChroot()
         self.assertIsNone(ws_das.chroot_url)
+
+    def test_setChrootFromBuild(self):
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
+        das = self.factory.makeDistroArchSeries()
+        build = self.factory.makeLiveFSBuild()
+        build_url = api_url(build)
+        login_as(build.livefs.owner)
+        lfas = []
+        for filename in (
+                "livecd.ubuntu-base.rootfs.tar.gz",
+                "livecd.ubuntu-base.manifest"):
+            lfa = self.factory.makeLibraryFileAlias(filename=filename)
+            lfas.append(lfa)
+            build.addFile(lfa)
+        user = das.distroseries.distribution.main_archive.owner
+        webservice = launchpadlib_for("testing", user)
+        ws_das = ws_object(webservice, das)
+        ws_das.setChrootFromBuild(
+            livefsbuild=build_url, filename="livecd.ubuntu-base.rootfs.tar.gz")
+        self.assertEqual(lfas[0], das.getChroot())
+
+    def test_setChrootFromBuild_random_user(self):
+        # Random users are not allowed to set chroots from a livefs build.
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
+        das = self.factory.makeDistroArchSeries()
+        build = self.factory.makeLiveFSBuild()
+        build_url = api_url(build)
+        login_as(build.livefs.owner)
+        build.addFile(self.factory.makeLibraryFileAlias(
+            filename="livecd.ubuntu-base.rootfs.tar.gz"))
+        user = self.factory.makePerson()
+        webservice = launchpadlib_for("testing", user, version='devel')
+        ws_das = ws_object(webservice, das)
+        self.assertRaises(
+            Unauthorized, ws_das.setChrootFromBuild,
+            livefsbuild=build_url, filename="livecd.ubuntu-base.rootfs.tar.gz")

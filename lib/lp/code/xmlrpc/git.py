@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of the XML-RPC APIs for Git."""
@@ -8,6 +8,8 @@ __all__ = [
     'GitAPI',
     ]
 
+from collections import defaultdict
+from fnmatch import fnmatch
 import sys
 
 from pymacaroons import Macaroon
@@ -24,7 +26,11 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.app.errors import NameLookupFailed
 from lp.app.validators import LaunchpadValidationError
-from lp.code.enums import GitRepositoryType
+from lp.code.enums import (
+    GitGranteeType,
+    GitPermissionType,
+    GitRepositoryType,
+    )
 from lp.code.errors import (
     GitRepositoryCreationException,
     GitRepositoryCreationFault,
@@ -97,7 +103,7 @@ class GitAPI(LaunchpadXMLRPCView):
         else:
             return issuer.checkMacaroonIssuer(macaroon)
 
-    def _performLookup(self, path, auth_params):
+    def _performLookup(self, requester, path, auth_params):
         repository, extra_path = getUtility(IGitLookup).getByPath(path)
         if repository is None:
             return None
@@ -108,7 +114,8 @@ class GitAPI(LaunchpadXMLRPCView):
             # The authentication parameters specifically grant access to
             # this repository, so we can bypass other checks.
             # For the time being, this only works for code imports.
-            assert repository.repository_type == GitRepositoryType.IMPORTED
+            assert (
+                naked_repository.repository_type == GitRepositoryType.IMPORTED)
             hosting_path = naked_repository.getInternalPath()
             writable = True
             private = naked_repository.private
@@ -120,6 +127,13 @@ class GitAPI(LaunchpadXMLRPCView):
             writable = (
                 repository.repository_type == GitRepositoryType.HOSTED and
                 check_permission("launchpad.Edit", repository))
+            # If we have any grants to this user, they are declared to have
+            # write access at this point. `_checkRefPermissions` will
+            # sort out access to individual refs at a later point in the push.
+            if not writable:
+                grants = naked_repository.findRuleGrantsByGrantee(requester)
+                if not grants.is_empty():
+                    writable = True
             private = repository.private
         return {
             "path": hosting_path,
@@ -275,11 +289,11 @@ class GitAPI(LaunchpadXMLRPCView):
         if requester == LAUNCHPAD_ANONYMOUS:
             requester = None
         try:
-            result = self._performLookup(path, auth_params)
+            result = self._performLookup(requester, path, auth_params)
             if (result is None and requester is not None and
                 permission == "write"):
                 self._createRepository(requester, path)
-                result = self._performLookup(path, auth_params)
+                result = self._performLookup(requester, path, auth_params)
             if result is None:
                 raise faults.GitRepositoryNotFound(path)
             if permission != "read" and not result["writable"]:
@@ -324,3 +338,97 @@ class GitAPI(LaunchpadXMLRPCView):
         else:
             # Only macaroons are supported for password authentication.
             return faults.Unauthorized()
+
+    def _renderPermissions(self, set_of_permissions):
+        """Render a set of permission strings for XML-RPC output."""
+        permissions = []
+        if GitPermissionType.CAN_CREATE in set_of_permissions:
+            permissions.append('create')
+        if GitPermissionType.CAN_PUSH in set_of_permissions:
+            permissions.append('push')
+        if GitPermissionType.CAN_FORCE_PUSH in set_of_permissions:
+            permissions.append('force_push')
+        return permissions
+
+    def _buildPermissions(self, grant):
+        """Build a set of the available permissions from a GitRuleGrant"""
+        permissions = set(grant.permissions)
+        if GitPermissionType.CAN_FORCE_PUSH in permissions:
+            # Permission to force-push implies permission to push.
+            permissions.add(GitPermissionType.CAN_PUSH)
+        return permissions
+
+    def _findMatchingRules(self, repository, ref_path):
+        """Find all matching rules for a given ref path"""
+        matching_rules = []
+        for rule in repository.rules:
+            if fnmatch(ref_path, rule.ref_pattern):
+                matching_rules.append(rule)
+        return matching_rules
+
+    def _checkRefPermissions(self, requester, translated_path, ref_paths,
+                             auth_params):
+        if requester == LAUNCHPAD_ANONYMOUS:
+            requester = None
+        repository = removeSecurityProxy(
+            getUtility(IGitLookup).getByHostingPath(translated_path))
+        result = {}
+
+        grants_for_user = defaultdict(list)
+        macaroon_raw = auth_params.get("macaroon")
+        if (macaroon_raw is not None and
+                self._verifyMacaroon(macaroon_raw, repository)):
+            # The authentication parameters grant access as an anonymous
+            # repository owner.
+            # For the time being, this only works for code imports.
+            assert repository.repository_type == GitRepositoryType.IMPORTED
+            is_owner = True
+            grants = repository.findRuleGrantsByGrantee(
+                GitGranteeType.REPOSITORY_OWNER)
+        elif requester is None:
+            is_owner = False
+            grants = []
+        else:
+            is_owner = requester.inTeam(repository.owner)
+            grants = repository.findRuleGrantsByGrantee(requester)
+            if is_owner:
+                owner_grants = repository.findRuleGrantsByGrantee(
+                    GitGranteeType.REPOSITORY_OWNER)
+                grants = grants.union(owner_grants)
+        for grant in grants:
+            grants_for_user[grant.rule].append(grant)
+
+        for ref in ref_paths:
+            matching_rules = self._findMatchingRules(repository, ref)
+            if is_owner and not matching_rules:
+                result[ref] = ['create', 'push', 'force_push']
+                continue
+            seen_grantees = set()
+            union_permissions = set()
+            for rule in matching_rules:
+                for grant in grants_for_user[rule]:
+                    if (grant.grantee, grant.grantee_type) in seen_grantees:
+                        continue
+                    permissions = self._buildPermissions(grant)
+                    union_permissions.update(permissions)
+                    seen_grantees.add((grant.grantee, grant.grantee_type))
+
+            owner_type = (None, GitGranteeType.REPOSITORY_OWNER)
+            if is_owner and owner_type not in seen_grantees:
+                union_permissions.update(
+                    [GitPermissionType.CAN_CREATE, GitPermissionType.CAN_PUSH])
+
+            result[ref] = self._renderPermissions(union_permissions)
+        return result
+
+    def checkRefPermissions(self, translated_path, ref_paths, auth_params):
+        """ See `IGitAPI`"""
+        requester_id = auth_params.get("uid")
+        if requester_id is None:
+            requester_id = LAUNCHPAD_ANONYMOUS
+        return run_with_login(
+            requester_id,
+            self._checkRefPermissions,
+            translated_path,
+            ref_paths,
+            auth_params)

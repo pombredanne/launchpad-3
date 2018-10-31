@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Multiple step views."""
@@ -11,6 +11,7 @@ __all__ = [
 
 
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextWidget
 from zope.interface import Interface
 from zope.schema import TextLine
@@ -18,7 +19,6 @@ from zope.schema import TextLine
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadFormView,
     )
 from lp.services.webapp import (
@@ -148,7 +148,8 @@ class StepView(LaunchpadFormView):
     override `main_action_label`.
     """
     # Use a custom widget in order to make it invisible.
-    custom_widget('__visited_steps__', TextWidget, visible=False)
+    custom_widget___visited_steps__ = CustomWidgetFactory(
+        TextWidget, visible=False)
 
     _field_names = []
     step_name = ''

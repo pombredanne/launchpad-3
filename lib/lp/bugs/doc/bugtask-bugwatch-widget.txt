@@ -40,7 +40,7 @@ define a helper function to make it easier to see what's going on.
     ...         selected = 'SELECTED'
     ...     else:
     ...         selected = 'NOT SELECTED'
-    ...     print "%s: %s" % (selected, label_td.label)
+    ...     print("%s: %s" % (selected, label_td.label))
 
 Now if we pass None to renderItems(), the first radio button will be
 selected.
@@ -94,8 +94,8 @@ let's take a look at which bug watches are currently associated with
 the bug.
 
     >>> for bug_watch in bug_one.watches:
-    ...     print "%s: #%s" % (
-    ...         bug_watch.bugtracker.title, bug_watch.remotebug)
+    ...     print("%s: #%s" % (
+    ...         bug_watch.bugtracker.title, bug_watch.remotebug))
     The Mozilla.org Bug Tracker: #123543
     The Mozilla.org Bug Tracker: #2000
     The Mozilla.org Bug Tracker: #42
@@ -117,8 +117,8 @@ Now let's create a new bug watch, pointing at bug #84 in the Gnome tracker.
     u'84'
 
     >>> for bug_watch in bug_one.watches:
-    ...     print "%s: #%s" % (
-    ...         bug_watch.bugtracker.title, bug_watch.remotebug)
+    ...     print("%s: #%s" % (
+    ...         bug_watch.bugtracker.title, bug_watch.remotebug))
     The Mozilla.org Bug Tracker: #123543
     The Mozilla.org Bug Tracker: #2000
     The Mozilla.org Bug Tracker: #42
@@ -140,8 +140,8 @@ watch is being returned, and no new bug watch is created.
     u'84'
 
     >>> for bug_watch in bug_one.watches:
-    ...     print "%s: #%s" % (
-    ...         bug_watch.bugtracker.title, bug_watch.remotebug)
+    ...     print("%s: #%s" % (
+    ...         bug_watch.bugtracker.title, bug_watch.remotebug))
     The Mozilla.org Bug Tracker: #123543
     The Mozilla.org Bug Tracker: #2000
     The Mozilla.org Bug Tracker: #42

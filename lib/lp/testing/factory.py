@@ -48,9 +48,11 @@ import warnings
 
 from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 from bzrlib.revision import Revision as BzrRevision
+from cryptography.utils import int_to_bytes
 from lazr.jobrunner.jobrunner import SuspendJobException
 import pytz
 from pytz import UTC
+import six
 from twisted.conch.ssh.common import (
     MP,
     NS,
@@ -227,11 +229,7 @@ from lp.registry.interfaces.sourcepackage import (
     SourcePackageUrgency,
     )
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.interfaces.ssh import (
-    ISSHKeySet,
-    SSH_KEY_TYPE_TO_TEXT,
-    SSHKeyType,
-    )
+from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.commercialsubscription import CommercialSubscription
 from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.milestone import Milestone
@@ -1204,7 +1202,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         else:
             make_sourcepackagename = (
                 sourcepackagename is None or
-                isinstance(sourcepackagename, str))
+                isinstance(sourcepackagename, six.text_type))
             if make_sourcepackagename:
                 sourcepackagename = self.makeSourcePackageName(
                     sourcepackagename)
@@ -1811,7 +1809,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             paths = [self.getUniqueString('refs/heads/path').decode('utf-8')]
         refs_info = {
             path: {
-                u"sha1": unicode(hashlib.sha1(path).hexdigest()),
+                u"sha1": unicode(
+                    hashlib.sha1(path.encode('utf-8')).hexdigest()),
                 u"type": GitObjectType.COMMIT,
                 }
             for path in paths}
@@ -1828,6 +1827,31 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if path is None:
             path = self.getUniqueString('refs/heads/path').decode('utf-8')
         return getUtility(IGitRefRemoteSet).new(repository_url, path)
+
+    def makeGitRule(self, repository=None, ref_pattern=u"refs/heads/*",
+                    creator=None, position=None, **repository_kwargs):
+        """Create a Git repository access rule."""
+        if repository is None:
+            repository = self.makeGitRepository(**repository_kwargs)
+        if creator is None:
+            creator = repository.owner
+        with person_logged_in(creator):
+            return repository.addRule(ref_pattern, creator, position=position)
+
+    def makeGitRuleGrant(self, rule=None, grantee=None, grantor=None,
+                         can_create=False, can_push=False,
+                         can_force_push=False, **rule_kwargs):
+        """Create a Git repository access grant."""
+        if rule is None:
+            rule = self.makeGitRule(**rule_kwargs)
+        if grantee is None:
+            grantee = self.makePerson()
+        if grantor is None:
+            grantor = rule.repository.owner
+        with person_logged_in(grantor):
+            return rule.addGrant(
+                grantee, grantor, can_create=can_create, can_push=can_push,
+                can_force_push=can_force_push)
 
     def makeBug(self, target=None, owner=None, bug_watch_url=None,
                 information_type=None, date_closed=None, title=None,
@@ -4310,37 +4334,56 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return getUtility(IHWSubmissionDeviceSet).create(
             device_driver_link, submission, parent, hal_device_id)
 
-    def makeSSHKeyText(self, key_type=SSHKeyType.RSA, comment=None):
+    def makeSSHKeyText(self, key_type="ssh-rsa", comment=None):
         """Create new SSH public key text.
 
-        :param key_type: If specified, the type of SSH key to generate. Must be
-            a member of SSHKeyType. If unspecified, SSHKeyType.RSA is used.
+        :param key_type: If specified, the type of SSH key to generate, as a
+            public key algorithm name
+            (https://www.iana.org/assignments/ssh-parameters/).  Must be a
+            member of SSH_TEXT_TO_KEY_TYPE.  If unspecified, "ssh-rsa" is
+            used.
         """
-        key_type_string = SSH_KEY_TYPE_TO_TEXT.get(key_type)
-        if key_type is None:
-            raise AssertionError(
-                "key_type must be a member of SSHKeyType, not %r" % key_type)
-        if key_type == SSHKeyType.RSA:
+        parameters = None
+        if key_type == "ssh-rsa":
             parameters = [MP(keydata.RSAData[param]) for param in ("e", "n")]
-        elif key_type == SSHKeyType.DSA:
+        elif key_type == "ssh-dss":
             parameters = [
                 MP(keydata.DSAData[param]) for param in ("p", "q", "g", "y")]
-        else:
+        elif key_type.startswith("ecdsa-sha2-"):
+            curve = key_type[len("ecdsa-sha2-"):]
+            key_size, curve_data = {
+                "nistp256": (256, keydata.ECDatanistp256),
+                "nistp384": (384, keydata.ECDatanistp384),
+                "nistp521": (521, keydata.ECDatanistp521),
+                }.get(curve, (None, None))
+            if curve_data is not None:
+                key_byte_length = (key_size + 7) // 8
+                parameters = [
+                    NS(curve_data["curve"][-8:]),
+                    NS(b"\x04" +
+                       int_to_bytes(curve_data["x"], key_byte_length) +
+                       int_to_bytes(curve_data["y"], key_byte_length)),
+                    ]
+        if parameters is None:
             raise AssertionError(
-                "key_type must be a member of SSHKeyType, not %r" % key_type)
-        key_text = base64.b64encode(NS(key_type_string) + b"".join(parameters))
+                "key_type must be a member of SSH_TEXT_TO_KEY_TYPE, not %r" %
+                key_type)
+        key_text = base64.b64encode(NS(key_type) + b"".join(parameters))
         if comment is None:
             comment = self.getUniqueString()
-        return "%s %s %s" % (key_type_string, key_text, comment)
+        return "%s %s %s" % (key_type, key_text, comment)
 
-    def makeSSHKey(self, person=None, key_type=SSHKeyType.RSA,
+    def makeSSHKey(self, person=None, key_type="ssh-rsa",
                    send_notification=True):
         """Create a new SSHKey.
 
         :param person: If specified, the person to attach the key to. If
             unspecified, a person is created.
-        :param key_type: If specified, the type of SSH key to generate. Must be
-            a member of SSHKeyType. If unspecified, SSHKeyType.RSA is used.
+        :param key_type: If specified, the type of SSH key to generate, as a
+            public key algorithm name
+            (https://www.iana.org/assignments/ssh-parameters/).  Must be a
+            member of SSH_TEXT_TO_KEY_TYPE.  If unspecified, "ssh-rsa" is
+            used.
         """
         if person is None:
             person = self.makePerson()
@@ -4709,6 +4752,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             removeSecurityProxy(snap).is_stale = is_stale
         IStore(snap).flush()
         return snap
+
+    def makeSnapBuildRequest(self, snap=None, requester=None, archive=None,
+                             pocket=PackagePublishingPocket.UPDATES,
+                             channels=None):
+        """Make a new SnapBuildRequest."""
+        if snap is None:
+            snap = self.makeSnap()
+        if requester is None:
+            requester = snap.owner.teamowner
+        if archive is None:
+            archive = snap.distro_series.main_archive
+        return snap.requestBuilds(
+            requester, archive, pocket, channels=channels)
 
     def makeSnapBuild(self, requester=None, registrant=None, snap=None,
                       archive=None, distroarchseries=None, pocket=None,

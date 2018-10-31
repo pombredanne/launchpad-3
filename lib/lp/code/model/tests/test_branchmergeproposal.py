@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchMergeProposals."""
@@ -32,6 +32,7 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -64,6 +65,7 @@ from lp.code.interfaces.branchmergeproposal import (
     notify_modified,
     )
 from lp.code.model.branchmergeproposal import (
+    BranchMergeProposal,
     BranchMergeProposalGetter,
     is_valid_transition,
     )
@@ -605,6 +607,57 @@ class TestMergeProposalGetComment(TestCase):
         """Tests that we can get a comment."""
         self.assertRaises(WrongBranchMergeProposal,
                           self.merge_proposal2.getComment, self.comment.id)
+
+
+class TestMergeProposalSetCommentVisibility(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_anonymous(self):
+        comment = self.factory.makeCodeReviewComment()
+        self.assertRaisesWithContent(
+            Unauthorized,
+            "User <anonymous> cannot hide or show code review comments.",
+            comment.branch_merge_proposal.setCommentVisibility,
+            user=None, comment_number=comment.id, visible=False)
+
+    def test_random_user(self):
+        comment = self.factory.makeCodeReviewComment()
+        person = self.factory.makePerson()
+        self.assertRaisesWithContent(
+            Unauthorized,
+            "User %s cannot hide or show code review comments." % person.name,
+            comment.branch_merge_proposal.setCommentVisibility,
+            user=person, comment_number=comment.id, visible=False)
+
+    def test_comment_author(self):
+        comment = self.factory.makeCodeReviewComment()
+        another_comment = self.factory.makeCodeReviewComment(
+            merge_proposal=comment.branch_merge_proposal)
+        comment.branch_merge_proposal.setCommentVisibility(
+            user=comment.author, comment_number=comment.id, visible=False)
+        self.assertFalse(comment.visible)
+        self.assertTrue(another_comment.visible)
+
+    def test_registry_expert(self):
+        comment = self.factory.makeCodeReviewComment()
+        another_comment = self.factory.makeCodeReviewComment(
+            merge_proposal=comment.branch_merge_proposal)
+        comment.branch_merge_proposal.setCommentVisibility(
+            user=self.factory.makeRegistryExpert(), comment_number=comment.id,
+            visible=False)
+        self.assertFalse(comment.visible)
+        self.assertTrue(another_comment.visible)
+
+    def test_admin(self):
+        comment = self.factory.makeCodeReviewComment()
+        another_comment = self.factory.makeCodeReviewComment(
+            merge_proposal=comment.branch_merge_proposal)
+        comment.branch_merge_proposal.setCommentVisibility(
+            user=self.factory.makeAdministrator(), comment_number=comment.id,
+            visible=False)
+        self.assertFalse(comment.visible)
+        self.assertTrue(another_comment.visible)
 
 
 class TestMergeProposalGetVoteReference(TestCaseWithFactory):
@@ -1688,7 +1741,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             merge_proposal.target_branch.owner, vote.reviewer)
 
     def makeProposalWithReviewer(self, reviewer=None, review_type=None,
-                                 registrant=None):
+                                 registrant=None, **kwargs):
         """Make a proposal and request a review from reviewer.
 
         If no reviewer is passed in, make a reviewer.
@@ -1698,7 +1751,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         if registrant is None:
             registrant = self.factory.makePerson()
         merge_proposal = make_merge_proposal_without_reviewers(
-            factory=self.factory, registrant=registrant)
+            factory=self.factory, registrant=registrant, **kwargs)
         login_person(merge_proposal.source_branch.owner)
         merge_proposal.nominateReviewer(
             reviewer=reviewer, registrant=registrant, review_type=review_type)
@@ -1962,6 +2015,27 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(comment, vote.comment)
         # Still only one vote.
         self.assertEqual(1, len(list(merge_proposal.votes)))
+
+    def test_preloadDataForBMPs_maps_votes_to_proposals(self):
+        # When called on multiple merge proposals, preloadDataForBMPs
+        # assigns votes to the correct proposals.
+        merge_proposal_1, reviewer_1 = self.makeProposalWithReviewer(
+            set_state=BranchMergeProposalStatus.MERGED)
+        merge_proposal_2, _ = self.makeProposalWithReviewer(
+            target_branch=merge_proposal_1.target_branch,
+            source_branch=merge_proposal_1.source_branch)
+        merge_proposal_2.nominateReviewer(
+            reviewer=reviewer_1, registrant=merge_proposal_2.registrant)
+        votes_1 = list(merge_proposal_1.votes)
+        self.assertEqual(1, len(votes_1))
+        votes_2 = list(merge_proposal_2.votes)
+        self.assertEqual(2, len(votes_2))
+        BranchMergeProposal.preloadDataForBMPs(
+            [removeSecurityProxy(merge_proposal_1),
+             removeSecurityProxy(merge_proposal_2)],
+            reviewer_1)
+        self.assertContentEqual(votes_1, merge_proposal_1.votes)
+        self.assertContentEqual(votes_2, merge_proposal_2.votes)
 
 
 class TestBranchMergeProposalResubmit(TestCaseWithFactory):

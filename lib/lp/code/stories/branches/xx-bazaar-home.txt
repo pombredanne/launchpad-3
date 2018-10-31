@@ -14,7 +14,7 @@ Check that the Bazaar home page works.
     >>> browser.open('http://code.launchpad.dev/')
     >>> footer = find_tag_by_id(browser.contents, 'application-footer')
 
-    >>> print extract_text(footer)
+    >>> print(extract_text(footer))
     30 branches registered in
     6 projects
     1 imported branches
@@ -30,11 +30,11 @@ The main code home page now has a subset of the project tag cloud,
 with a link to the complete listing.
 
     >>> preview = find_tag_by_id(browser.contents, 'project-cloud-preview')
-    >>> print extract_text(preview)
+    >>> print(extract_text(preview))
     Most active projects in the last month
     see all projects&#8230;
 
-    >>> print preview.findAll('a')[-1]['href']
+    >>> print(preview.findAll('a')[-1]['href'])
     /projects
 
 
@@ -44,7 +44,7 @@ Search
 Any user can see the project search form.
 
     >>> form = find_tag_by_id(browser.contents, 'search-projects-form')
-    >>> print form['action']
+    >>> print(form['action'])
     http://launchpad.dev/projects
 
     >>> browser.getControl(name='text', index=0)
@@ -72,11 +72,11 @@ The recently registered branch listing is ordered with the most recently
 registered branches first.
 
     >>> registered = find_tag_by_id(browser.contents, 'recently-registered')
-    >>> print registered.findAll('a')[-1]['href']
+    >>> print(registered.findAll('a')[-1]['href'])
     /+recently-registered-branches
 
     >>> browser.getLink(url='recently-registered-branches').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Recently registered branches
 
 Since the view contains branches across different projects, the project
@@ -85,7 +85,7 @@ registered is the ordering, the registered date is also shown.
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.thead.findAll('tr'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     Name
     Status
     Registered
@@ -105,16 +105,16 @@ recent commits first.
 
     >>> browser.open('http://code.launchpad.dev/')
     >>> changed = find_tag_by_id(browser.contents, 'recently-changed')
-    >>> print changed.findAll('a')[-1]['href']
+    >>> print(changed.findAll('a')[-1]['href'])
     /+recently-changed-branches
 
     >>> browser.getLink(url='recently-changed-branches').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Recently changed branches
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.thead.findAll('tr'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     Name
     Status
     Registered
@@ -132,11 +132,11 @@ imported branches.
 
     >>> browser.open('http://code.launchpad.dev/')
     >>> imported = find_tag_by_id(browser.contents, 'recent-imports')
-    >>> print imported.findAll('a')[-1]['href']
+    >>> print(imported.findAll('a')[-1]['href'])
     /+recently-imported-branches
 
     >>> browser.getLink(url='recently-imported-branches').click()
-    >>> print browser.title
+    >>> print(browser.title)
     Recently imported branches
 
 Since imported branches are all owned by vcs-imports, and the authors
@@ -145,7 +145,7 @@ imported branch listings.
 
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.thead.findAll('tr'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     Name
     Status
     Registered

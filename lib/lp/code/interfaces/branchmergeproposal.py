@@ -376,7 +376,41 @@ class IBranchMergeProposalView(Interface):
     @operation_returns_entry(Interface)
     @export_read_operation()
     def getComment(id):
-        """Return the CodeReviewComment with the specified ID."""
+        """Return the CodeReviewComment with the specified ID.
+
+        :raises WrongBranchMergeProposal: if the comment with this ID is not
+            on this merge proposal.
+        """
+
+    def userCanSetCommentVisibility(user):
+        """Can `user` set code review comment visibility?
+
+        Admins and registry experts can set the visibility of any code
+        review comment.
+
+        Comment authors can also set the visibility of their own comments,
+        but that is not checked here; this method determines whether
+        arbitrary users can set the visibility of comments they did not make
+        themselves.
+        """
+
+    @operation_parameters(
+        # Really comment_id, but this lets us use common JavaScript code.
+        comment_number=Int(title=_('The comment ID.'), required=True),
+        visible=Bool(title=_('Show this comment?'), required=True))
+    @call_with(user=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setCommentVisibility(user, comment_number, visible):
+        """Set the visible attribute on a code review comment.
+
+        This is restricted to Launchpad admins, registry experts, and
+        comment authors, and will return a HTTP Error 401: Unauthorized
+        error for non-admin callers.
+
+        :raises WrongBranchMergeProposal: if the comment with this ID is not
+            on this merge proposal.
+        """
 
     @call_with(user=REQUEST_USER)
     # Really IBugTask.

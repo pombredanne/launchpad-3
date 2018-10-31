@@ -39,13 +39,14 @@ converts the old query string into an updated one. Only the statuses
     ...     )
     >>> query_string_rewritten = (
     ...     rewrite_old_bugtask_status_query_string(query_string))
-    >>> print query_string_rewritten.split('&')
-    ['freddy=krueger',
-     'field.status%3Alist=New',
-     'field.status%3Alist=Incomplete',
-     'field.status%3Alist=Invalid',
-     'field.status%3Alist=Fix+Committed',
-     'sid=nancy']
+    >>> for param in query_string_rewritten.split('&'):
+    ...     print(param)
+    freddy=krueger
+    field.status%3Alist=New
+    field.status%3Alist=Incomplete
+    field.status%3Alist=Invalid
+    field.status%3Alist=Fix+Committed
+    sid=nancy
 
 If the url does not contain any old statuses
 rewrite_old_bugtask_status_query_string returns the original query

@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builders."""
@@ -22,13 +22,13 @@ import operator
 from lazr.restful.utils import smartquote
 from zope.component import getUtility
 from zope.event import notify
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -350,10 +350,10 @@ class BuilderSetAddView(LaunchpadFormView):
         'name', 'title', 'processors', 'url', 'active', 'virtualized',
         'vm_host', 'vm_reset_protocol', 'owner'
         ]
-    custom_widget('owner', HiddenUserWidget)
-    custom_widget('url', TextWidget, displayWidth=30)
-    custom_widget('vm_host', TextWidget, displayWidth=30)
-    custom_widget('processors', LabeledMultiCheckBoxWidget)
+    custom_widget_owner = HiddenUserWidget
+    custom_widget_url = CustomWidgetFactory(TextWidget, displayWidth=30)
+    custom_widget_vm_host = CustomWidgetFactory(TextWidget, displayWidth=30)
+    custom_widget_processors = LabeledMultiCheckBoxWidget
 
     @action(_('Register builder'), name='register')
     def register_action(self, action, data):
@@ -393,7 +393,7 @@ class BuilderEditView(LaunchpadEditFormView):
         'virtualized', 'builderok', 'failnotes', 'vm_host',
         'vm_reset_protocol', 'active',
         ]
-    custom_widget('processors', LabeledMultiCheckBoxWidget)
+    custom_widget_processors = LabeledMultiCheckBoxWidget
 
     @action(_('Change'), name='update')
     def change_details(self, action, data):

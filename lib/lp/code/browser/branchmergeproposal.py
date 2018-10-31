@@ -41,6 +41,7 @@ from zope.component import (
     getUtility,
     )
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import TextAreaWidget
 from zope.interface import (
     implementer,
@@ -60,7 +61,6 @@ from zope.schema.vocabulary import (
 from lp import _
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -123,6 +123,7 @@ from lp.services.webapp import (
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
+from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.menu import NavigationMenu
 
 
@@ -265,7 +266,7 @@ class BranchMergeProposalMenuMixin:
         if (self.context.queue_status ==
             BranchMergeProposalStatus.NEEDS_REVIEW):
             enabled = True
-            if (self.context.votes.count()) > 0:
+            if len(self.context.votes) > 0:
                 text = 'Request another review'
         return Link('+request-review', text, icon='add', enabled=enabled)
 
@@ -436,8 +437,13 @@ class BranchMergeProposalNavigation(Navigation):
         except ValueError:
             return None
         try:
-            return self.context.getComment(id)
+            comment = self.context.getComment(id)
         except WrongBranchMergeProposal:
+            return None
+        user = getUtility(ILaunchBag).user
+        if comment.visible or comment.userCanSetCommentVisibility(user):
+            return comment
+        else:
             return None
 
     @stepthrough("+preview-diff")
@@ -591,6 +597,8 @@ class CodeReviewNewRevisions:
         self.comment_date = None
         self.display_attachments = False
         self.index = None
+        self.visible = True
+        self.show_spam_controls = False
 
     def download(self, request):
         pass
@@ -609,19 +617,16 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         super(BranchMergeProposalView, self).initialize()
         cache = IJSONRequestCache(self.request)
         cache.objects['branch_name'] = self.context.merge_source.name
-        if IBranch.providedBy(self.context.merge_source):
-            cache.objects.update({
-                'branch_diff_link':
-                    'https://%s/+loggerhead/%s/diff/' % (
-                        config.launchpad.code_domain,
-                        self.context.source_branch.unique_name),
-                })
+        if (IBranch.providedBy(self.context.merge_source) and
+                getFeatureFlag("code.bzr.diff.disable_proxy")):
+            # This fallback works for public branches, but not private ones.
+            cache.objects['branch_diff_link'] = (
+                'https://%s/+loggerhead/%s/diff/' % (
+                    config.launchpad.code_domain,
+                    self.context.source_branch.unique_name))
         else:
-            cache.objects.update({
-                'branch_diff_link':
-                    canonical_url(self.context.source_git_repository) +
-                    '/+diff/',
-                })
+            cache.objects['branch_diff_link'] = (
+                canonical_url(self.context.parent) + '/+diff/')
         if getFeatureFlag("longpoll.merge_proposals.enabled"):
             cache.objects['merge_proposal_event_key'] = subscribe(
                 self.context).event_key
@@ -661,6 +666,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         source = merge_proposal.merge_source
         if IBranch.providedBy(source):
             source = DecoratedBranch(source)
+        user = getUtility(ILaunchBag).user
+        strip_invisible = not merge_proposal.userCanSetCommentVisibility(user)
         comments = []
         if (getFeatureFlag('code.incremental_diffs.enabled') and
                 merge_proposal.source_branch is not None):
@@ -688,6 +695,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 for comment in merge_proposal.all_comments)
             merge_proposal = merge_proposal.supersedes
         comments = sorted(comments, key=operator.attrgetter('date'))
+        if strip_invisible:
+            comments = [c for c in comments if c.visible or c.author == user]
         self._populate_previewdiffs(comments)
         return CodeReviewConversation(comments)
 
@@ -881,8 +890,15 @@ class BranchMergeProposalVoteView(LaunchpadView):
     @cachedproperty
     def reviews(self):
         """Return the decorated votes for the proposal."""
-        users_vote = self.context.getUsersVoteReference(self.user)
-        return [DecoratedCodeReviewVoteReference(vote, self.user, users_vote)
+
+        # This would use getUsersVoteReference, but we need to
+        # be able to cache the property. We don't need to normalize
+        # the review types.
+        users_vote = sorted((uv for uv in self.context.votes
+                             if uv.reviewer == self.user),
+                            key=operator.attrgetter('date_created'))
+        final_vote = users_vote[0] if users_vote else None
+        return [DecoratedCodeReviewVoteReference(vote, self.user, final_vote)
                 for vote in self.context.votes
                 if check_permission('launchpad.LimitedView', vote.reviewer)]
 
@@ -1299,7 +1315,8 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
     schema = IAddVote
     field_names = ['vote', 'review_type', 'comment']
 
-    custom_widget('comment', TextAreaWidget, cssClass='comment-text')
+    custom_widget_comment = CustomWidgetFactory(
+        TextAreaWidget, cssClass='comment-text')
 
     @cachedproperty
     def initial_values(self):

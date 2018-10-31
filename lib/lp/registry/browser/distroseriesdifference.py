@@ -1,4 +1,4 @@
-# Copyright 2010-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for DistroSeriesDifferences."""
@@ -26,10 +26,7 @@ from zope.schema.vocabulary import (
     SimpleVocabulary,
     )
 
-from lp.app.browser.launchpadform import (
-    custom_widget,
-    LaunchpadFormView,
-    )
+from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.registry.enums import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -112,7 +109,7 @@ class IDistroSeriesDifferenceForm(Interface):
 @implementer(IConversation)
 class DistroSeriesDifferenceView(LaunchpadFormView):
     schema = IDistroSeriesDifferenceForm
-    custom_widget('blacklist_options', RadioWidget)
+    custom_widget_blacklist_options = RadioWidget
 
     @property
     def initial_values(self):
@@ -254,6 +251,8 @@ class DistroSeriesDifferenceDisplayComment(MessageComment):
     index = None
 
     download_url = None
+
+    visible = True
 
     def __init__(self, comment):
         """Setup the attributes required by `IComment`."""

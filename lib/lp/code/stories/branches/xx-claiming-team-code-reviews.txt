@@ -27,8 +27,8 @@ link shown in the reviewer table for the team.
 
 The reviewer table shows both the Vikings team and Eric himself.
 
-    >>> print extract_text(find_tag_by_id(
-    ...     eric_browser.contents, 'code-review-votes'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     eric_browser.contents, 'code-review-votes')))
     Reviewer         Review Type    Date Requested    Status
     Vikings                         ...               Pending [Review]
     Review via email: mp+...@code.launchpad.dev
@@ -44,8 +44,8 @@ All is good with the review, no comment needed.
 
 The team review has been claimed.
 
-    >>> print extract_text(find_tag_by_id(
-    ...     eric_browser.contents, 'code-review-votes'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     eric_browser.contents, 'code-review-votes')))
     Reviewer                   Review Type    Date Requested  Status
     Eric the Viking                                           Approve ... ago
     Review via email: mp+...@code.launchpad.dev

@@ -406,7 +406,7 @@ The shipit FAQ URL is provides by the view for the template to use.
 Page searches
 -------------
 
-The view uses the GoogleSearchService to locate pages that match the
+The view uses the Search Service to locate pages that match the
 search terms.
 
     >>> search_view = getSearchView(
@@ -418,23 +418,23 @@ search terms.
     >>> search_view.pages
     <...SiteSearchBatchNavigator ...>
 
-The GoogleSearchService may not be available due to connectivity problems.
+The Search Service may not be available due to connectivity problems.
 The view's has_page_service attribute reports when the search was performed
-with Google page matches.
+with the Search Service page matches.
 
     >>> search_view.has_page_service
     True
 
 The batch navigation heading is created by the view. The heading
 property returns a 2-tuple of singular and plural heading. There
-is a heading when there are only Google page matches...
+is a heading when there are only Search Service page matches...
 
     >>> search_view.has_exact_matches
     False
     >>> search_view.batch_heading
     (u'page matching "bug"', u'pages matching "bug"')
 
-...and a heading for when there are exact matches and Google page
+...and a heading for when there are exact matches and Search Service page
 matches.
 
     >>> search_view = getSearchView(
@@ -518,14 +518,11 @@ showing the matching terms in context of the page text.
     >>> page.summary
     u'...Launchpad\u2019s ...bug... tracker allows collaboration...'
 
-See `google-searchservice.txt` for more information about the
-GoogleSearchService and PageMatch objects.
-
 
 No page matches
 ---------------
 
-When an empty PageMatches object is returned by the GoogleSearchService to
+When an empty PageMatches object is returned by the Search Service to
 the view, there are no matches to show.
 
     >>> search_view = getSearchView(form={'field.text': 'no-meaningful'})
@@ -549,11 +546,11 @@ error. Also disable warnings, since we are tossing around malformed Unicode.
     True
 
 
-Bad Google response handling
+Bad site search response handling
 ----------------------------
 
 Connectivity problems can cause missing or incomplete responses from
-Google. The LaunchpadSearchView will display the other searches and
+the site search engine. The LaunchpadSearchView will display the other searches and
 show a message explaining that the user can search again to find
 matching pages.
 
@@ -631,7 +628,7 @@ WindowedList and SiteSearchBatchNavigator
 The LaunchpadSearchView uses two helper classes to work with
 PageMatches.
 
-The PageMatches object returned by the GoogleSearchService contains 20
+The PageMatches object returned by the Search Service contains 20
 or fewer PageMatches of what could be thousands of matches. Google
 requires client's to make repeats request to step though the batches of
 matches. The Windowed list is a list that contains only a subset of its
@@ -661,7 +658,7 @@ the first 20 items are None. Only the last 5 items are PageMatches.
 
 The SiteSearchBatchNavigator restricts the batch size to 20. the 'batch'
 parameter that comes from the URL is ignored. For example, setting
-the 'batch' parameter to 100 has no affect upon the Google search
+the 'batch' parameter to 100 has no affect upon the site search
 or on the navigator object.
 
     >>> from lp.app.browser.root import SiteSearchBatchNavigator
@@ -699,7 +696,7 @@ navigator conforms to Google's maximum size of 20.
     '...start=20'
 
 The PageMatches object can be smaller than 20, for instance, pages
-without titles are skipped when parsing the Google Search XML. The size
+without titles are skipped when parsing the search engine response. The size
 of the batch is still 20, but when the items in the batch are iterated,
 the true size can be seen. For example there could be only 3 matches in
 the PageMatches object, so only 3 are yielded. The start of the next

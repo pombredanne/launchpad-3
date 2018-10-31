@@ -67,3 +67,10 @@ class IGitAPI(Interface):
         :returns: An `Unauthorized` fault, as password authentication is
             not yet supported.
         """
+
+    def checkRefPermissions(translated_paths, ref_paths, auth_params):
+        """Return a list of ref rules for a `user` in a `repository` that
+        match the input refs.
+
+        :returns: A list of rules for the user in the specified repository
+        """

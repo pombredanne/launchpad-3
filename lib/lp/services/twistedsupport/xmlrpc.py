@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Support for XML-RPC stuff with Twisted."""
@@ -9,6 +9,8 @@ __all__ = [
     'DeferredBlockingProxy',
     'trap_fault',
     ]
+
+import sys
 
 from twisted.internet import defer
 from twisted.web import xmlrpc
@@ -55,12 +57,17 @@ def trap_fault(failure, *fault_classes):
 
     :param failure: A Twisted L{Failure}.
     :param *fault_codes: `LaunchpadFault` subclasses.
-    :raise Failure: if 'failure' is not a Fault failure, or if the fault code
-        does not match the given codes.
+    :raise Exception: if 'failure' is not a Fault failure, or if the fault
+        code does not match the given codes.  In line with L{Failure.trap},
+        the exception is the L{Failure} itself on Python 2 and the
+        underlying exception on Python 3.
     :return: The Fault if it matches one of the codes.
     """
     failure.trap(xmlrpc.Fault)
     fault = failure.value
     if fault.faultCode in [cls.error_code for cls in fault_classes]:
         return fault
-    raise failure
+    if sys.version_info >= (3, 0):
+        failure.raiseException()
+    else:
+        raise failure

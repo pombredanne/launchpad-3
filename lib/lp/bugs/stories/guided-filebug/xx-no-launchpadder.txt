@@ -15,7 +15,7 @@ Alsa-utils, for instance, doesn't use Launchpad Bugs:
     ...     'http://bugs.launchpad.dev/alsa-utils/+filebug')
     >>> for message in find_tags_by_class(
     ...     user_browser.contents, 'highlight-message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     alsa-utils does not use Launchpad as its bug tracker.
 
 But it's packaged in Ubuntu and Debian, and we suggest those packages
@@ -39,7 +39,7 @@ information for it:
     ...     'http://bugs.launchpad.dev/gnomebaker/+filebug')
     >>> for message in find_tags_by_class(
     ...     user_browser.contents, 'highlight-message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     gnomebaker does not use Launchpad as its bug tracker.
 
     >>> user_browser.getLink("linking them for us.") is not None
@@ -47,8 +47,8 @@ information for it:
 
 But we are advised to file bugs in the upstream bug tracker:
 
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'bugtarget-upstream-bugtracker-info'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bugtarget-upstream-bugtracker-info')))
     Bugs in upstream gnomebaker should be reported in its official bug
     tracker, GnomeGBug GTracker
 
@@ -69,8 +69,8 @@ an email address.
 
     >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+filebug')
 
-    >>> print extract_text(find_tag_by_id(
-    ...     user_browser.contents, 'bugtarget-upstream-bugtracker-info'))
+    >>> print(extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'bugtarget-upstream-bugtracker-info')))
     Bugs in upstream Jokosher should be sent to
     mailto:puff@magicdragon.example.com
 
@@ -87,7 +87,7 @@ The same happens with the advanced filebug form:
     ...     "http://launchpad.dev/products/alsa-utils/+filebug")
     >>> for message in find_tags_by_class(
     ...     user_browser.contents, 'highlight-message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     alsa-utils does not use Launchpad as its bug tracker.
 
 
@@ -100,7 +100,7 @@ Distributions have less options available if they don't use Launchpad:
     ...     'http://bugs.launchpad.dev/debian/+filebug')
     >>> for message in find_tags_by_class(
     ...     user_browser.contents, 'highlight-message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     Debian does not use Launchpad as its bug tracker.
 
 They get the same messages in the advanced filebug page:
@@ -109,7 +109,7 @@ They get the same messages in the advanced filebug page:
     ...     "http://launchpad.dev/distros/debian/+filebug")
     >>> for message in find_tags_by_class(
     ...     user_browser.contents, 'highlight-message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     Debian does not use Launchpad as its bug tracker.
 
 
@@ -124,7 +124,7 @@ package.
     ...     "+filebug")
     >>> for message in find_tags_by_class(
     ...     user_browser.contents, 'highlight-message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     Debian does not use Launchpad as its bug tracker.
 
 Not even using the advanced filebug page:
@@ -134,7 +134,7 @@ Not even using the advanced filebug page:
     ...     "+filebug")
     >>> for message in find_tags_by_class(
     ...     user_browser.contents, 'highlight-message'):
-    ...     print extract_text(message)
+    ...     print(extract_text(message))
     Debian does not use Launchpad as its bug tracker.
 
 

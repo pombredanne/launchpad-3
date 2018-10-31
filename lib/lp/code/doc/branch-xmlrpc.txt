@@ -27,7 +27,7 @@ On success, resolve_lp_path returns a dict containing a single key,
 
     >>> results = public_codehosting_api.resolve_lp_path(
     ...     '~vcs-imports/evolution/main')
-    >>> print results.keys()
+    >>> print(results.keys())
     ['urls']
 
 
@@ -37,7 +37,7 @@ accessed:
     >>> results = public_codehosting_api.resolve_lp_path(
     ...     '~vcs-imports/evolution/main')
     >>> for url in results['urls']:
-    ...     print url
+    ...     print(url)
     bzr+ssh://bazaar.launchpad.dev/~vcs-imports/evolution/main
     http://bazaar.launchpad.dev/~vcs-imports/evolution/main
 

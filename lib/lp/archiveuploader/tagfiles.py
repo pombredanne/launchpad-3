@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utility classes for parsing Debian tag files."""
@@ -22,7 +22,7 @@ class TagFileParseError(Exception):
     pass
 
 
-def parse_tagfile_content(content, filename=None):
+def parse_tagfile_content(content, filename=None, as_bytes=False):
     """Parses a tag file and returns a dictionary where each field is a key.
 
     The mandatory first argument is the contents of the tag file as a
@@ -36,7 +36,7 @@ def parse_tagfile_content(content, filename=None):
         f.write(strip_pgp_signature(content))
         f.seek(0)
         try:
-            stanzas = list(apt_pkg.TagFile(f))
+            stanzas = list(apt_pkg.TagFile(f, bytes=as_bytes))
         except SystemError as e:
             raise TagFileParseError("%s: %s" % (filename, e))
     if len(stanzas) != 1:

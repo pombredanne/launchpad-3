@@ -35,7 +35,7 @@ user/team page.
 The form looks almost identical to that for a public team.
 
    >>> browser.getLink('Create a new PPA').click()
-   >>> print browser.title
+   >>> print(browser.title)
    Activate PPA : ...Private Team...
 
 There is, however, an extra bit of information indicating the new PPA
@@ -46,8 +46,8 @@ will be private.
 
 The URL template also shows the private URL.
 
-    >>> print extract_text(
-    ...     first_tag_by_class(browser.contents, 'form'))
+    >>> print(extract_text(
+    ...     first_tag_by_class(browser.contents, 'form')))
     URL:
       http://private-ppa.launchpad.dev/private-team/
       At least one lowercase letter or number, followed by letters, numbers,
@@ -58,7 +58,7 @@ The URL template also shows the private URL.
    >>> browser.getControl(name='field.displayname').value = "Private Team PPA"
    >>> browser.getControl(name='field.accepted').value = True
    >>> browser.getControl("Activate").click()
-   >>> print browser.title
+   >>> print(browser.title)
    Private Team PPA : “Private Team” team
 
 

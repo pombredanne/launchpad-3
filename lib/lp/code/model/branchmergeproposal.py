@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for branch merge proposals."""
@@ -10,6 +10,7 @@ __all__ = [
     'is_valid_transition',
     ]
 
+from collections import defaultdict
 from email.utils import make_msgid
 from operator import attrgetter
 import sys
@@ -21,7 +22,6 @@ from lazr.lifecycle.event import (
 from sqlobject import (
     ForeignKey,
     IntCol,
-    SQLMultipleJoin,
     StringCol,
     )
 from storm.expr import (
@@ -43,6 +43,7 @@ from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implementer
+from zope.security.interfaces import Unauthorized
 
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -97,6 +98,7 @@ from lp.registry.interfaces.person import (
     validate_public_person,
     )
 from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.model.person import Person
 from lp.services.config import config
 from lp.services.database.bulk import (
@@ -121,7 +123,12 @@ from lp.services.database.sqlbase import (
 from lp.services.helpers import shortlist
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.librarian.model import LibraryFileAlias
 from lp.services.mail.sendmail import validate_message
+from lp.services.messages.model.message import (
+    Message,
+    MessageChunk,
+    )
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -560,13 +567,29 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         return CodeReviewComment.selectBy(branch_merge_proposal=self.id)
 
     def getComment(self, id):
-        """See `IBranchMergeProposal`.
-
-        This function can raise WrongBranchMergeProposal."""
+        """See `IBranchMergeProposal`."""
         comment = CodeReviewComment.get(id)
         if comment.branch_merge_proposal != self:
             raise WrongBranchMergeProposal
         return comment
+
+    def userCanSetCommentVisibility(self, user):
+        """See `IBranchMergeProposal`."""
+        if user is None:
+            return False
+        roles = IPersonRoles(user)
+        return roles.in_admin or roles.in_registry_experts
+
+    def setCommentVisibility(self, user, comment_number, visible):
+        """See `IBranchMergeProposal`."""
+        comment = CodeReviewComment.get(comment_number)
+        if comment.branch_merge_proposal != self:
+            raise WrongBranchMergeProposal
+        if not comment.userCanSetCommentVisibility(user):
+            raise Unauthorized(
+                "User %s cannot hide or show code review comments." %
+                (user.name if user is not None else "<anonymous>"))
+        comment.message.setVisible(visible)
 
     def getVoteReference(self, id):
         """See `IBranchMergeProposal`.
@@ -592,8 +615,11 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
     def preview_diff(self):
         return self._preview_diffs.last()
 
-    votes = SQLMultipleJoin(
-        'CodeReviewVoteReference', joinColumn='branch_merge_proposal')
+    @cachedproperty
+    def votes(self):
+        return list(Store.of(self).find(
+            CodeReviewVoteReference,
+            CodeReviewVoteReference.branch_merge_proposal == self))
 
     def getNotificationRecipients(self, min_level):
         """See IBranchMergeProposal.getNotificationRecipients"""
@@ -997,8 +1023,6 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             if not subject.startswith('Re: '):
                 subject = 'Re: ' + subject
 
-        # Avoid circular dependencies.
-        from lp.services.messages.model.message import Message, MessageChunk
         msgid = make_msgid('codereview')
         message = Message(
             parent=parent_message, owner=owner, rfc822msgid=msgid,
@@ -1257,7 +1281,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
 
     @staticmethod
-    def preloadDataForBMPs(branch_merge_proposals, user):
+    def preloadDataForBMPs(branch_merge_proposals, user, include_votes=True):
         # Utility to load the data related to a list of bmps.
         # Circular imports.
         from lp.code.model.branch import Branch
@@ -1312,7 +1336,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
                 PreviewDiff.branch_merge_proposal_id,
                 Desc(PreviewDiff.date_created)).config(
                     distinct=[PreviewDiff.branch_merge_proposal_id])
-        load_related(Diff, preview_diffs, ['diff_id'])
+        diffs = load_related(Diff, preview_diffs, ['diff_id'])
         preview_diff_map = {}
         for previewdiff in preview_diffs:
             preview_diff_map[previewdiff.branch_merge_proposal_id] = (
@@ -1339,15 +1363,33 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             repository.owner_id for repository in repositories
             if repository.id in git_repository_ids)
 
-        # Pre-load Person and ValidPersonCache.
-        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-            person_ids, need_validity=True))
-
         # Pre-load branches'/repositories' data.
         if branches:
             GenericBranchCollection.preloadDataForBranches(branches)
         if repositories:
             GenericGitCollection.preloadDataForRepositories(repositories)
+
+        # if we need to include a vote summary, we should precache
+        # that data too
+        if include_votes:
+            votes = load_referencing(
+                CodeReviewVoteReference, branch_merge_proposals,
+                ['branch_merge_proposalID'])
+            votes_map = defaultdict(list)
+            for vote in votes:
+                votes_map[vote.branch_merge_proposalID].append(vote)
+            for mp in branch_merge_proposals:
+                get_property_cache(mp).votes = votes_map[mp.id]
+            comments = load_related(CodeReviewComment, votes, ['commentID'])
+            load_related(Message, comments, ['messageID'])
+            person_ids.update(vote.reviewerID for vote in votes)
+
+            # we also provide a summary of diffs, so load them
+            load_related(LibraryFileAlias, diffs, ['diff_textID'])
+
+        # Pre-load Person and ValidPersonCache.
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True))
 
 
 @implementer(IBranchMergeProposalGetter)

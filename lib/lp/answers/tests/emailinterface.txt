@@ -46,7 +46,7 @@ AnswerTrackerHandler.
     ...     lines.append('')
     ...     lines.append(body)
     ...     raw_msg = '\n'.join(lines)
-    ...     msg = signed_message_from_string(raw_msg)
+    ...     msg = signed_message_from_string(raw_msg.encode('UTF-8'))
     ...     if handler.process(msg, msg['To']):
     ...         # Ensures that the DB user has the correct permission to \
     ...         # saves the changes.
@@ -151,13 +151,13 @@ For example, from the Open state:
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Give more information
-    >>> print message.subject
+    >>> print(message.subject)
     PowerMac 7200
-    >>> print message.text_contents
+    >>> print(message.text_contents)
     I forgot to specify that I'm installing on a PowerMac 7200.
-    >>> print message.owner.displayname
+    >>> print(message.owner.displayname)
     No Privileges Person
 
 And from the Needs information state:
@@ -171,7 +171,7 @@ And from the Needs information state:
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Give more information
 
 In these states, the other possibility would be that the message is
@@ -197,7 +197,7 @@ the email is reopening the question with more information.
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Reopen
 
 From the Open state, the other possibilities for the owner email would
@@ -217,7 +217,7 @@ From the Expired state:
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Reopen
 
 From the Expired state, the other possibility is the less probable
@@ -239,7 +239,7 @@ message as a comment.
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Comment
 
 The other alternative is that the owner wanted to reopen the question.
@@ -258,7 +258,7 @@ And from the Invalid:
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Comment
 
 That is the only possibility on an Invalid question. From the 'Invalid'
@@ -285,9 +285,9 @@ fine. So it is the safest thing to assume.
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Answer
-    >>> print message.owner.displayname
+    >>> print(message.owner.displayname)
     Sample Person
 
 Needs information example:
@@ -300,12 +300,12 @@ Needs information example:
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Answer
 
 Answered example:
 
-    >>> print question.status.title
+    >>> print(question.status.title)
     Answered
 
     >>> msgid =  send_question_email(
@@ -315,7 +315,7 @@ Answered example:
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Answer
 
 
@@ -335,7 +335,7 @@ interpretation is that it is a comment.
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Comment
 
     >>> setQuestionStatus(question, QuestionStatus.EXPIRED)
@@ -347,7 +347,7 @@ interpretation is that it is a comment.
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Comment
 
     >>> setQuestionStatus(question, QuestionStatus.INVALID)
@@ -358,7 +358,7 @@ interpretation is that it is a comment.
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Comment
     >>> transaction.abort()
 
@@ -388,7 +388,7 @@ Answers may also be linked to FAQ questions.
     >>> message = question.messages[-1]
     >>> message.rfc822msgid == msgid
     True
-    >>> print message.action.title
+    >>> print(message.action.title)
     Answer
 
 
@@ -398,7 +398,7 @@ AnswerTrackerHandler Integration
 The general mail processor delegates all emails to the
 config.answertracker.email_domain to the AnswerTrackerHandler.
 
-    >>> raw_msg = """From: test@canonical.com
+    >>> raw_msg = b"""From: test@canonical.com
     ... X-Launchpad-Original-To: question1@answers.launchpad.net
     ... Subject: A new comment
     ... Message-Id: <comment1@localhost>
@@ -426,7 +426,7 @@ For backward compatibility with notifications sent before the support
 tracker was renamed to Answer Tracker, we still accept emails sent
 to the old ticket<ID>@support.launchpad.net address:
 
-    >>> raw_msg = """From: test@canonical.com
+    >>> raw_msg = b"""From: test@canonical.com
     ... X-Launchpad-Original-To: ticket11@support.launchpad.net
     ... Subject: Another comment
     ... Message-Id: <comment2@localhost>

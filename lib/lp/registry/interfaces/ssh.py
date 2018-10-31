@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'ISSHKey',
     'ISSHKeySet',
-    'SSH_KEY_TYPE_TO_TEXT',
     'SSH_TEXT_TO_KEY_TYPE',
     'SSHKeyAdditionError',
     'SSHKeyType',
@@ -25,6 +24,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry,
     exported,
     )
+import six
 from zope.interface import Interface
 from zope.schema import (
     Choice,
@@ -38,7 +38,7 @@ from lp import _
 class SSHKeyType(DBEnumeratedType):
     """SSH key type
 
-    SSH (version 2) can use RSA or DSA keys for authentication. See
+    SSH (version 2) can use RSA, DSA, or ECDSA keys for authentication.  See
     OpenSSH's ssh-keygen(1) man page for details.
     """
 
@@ -54,14 +54,20 @@ class SSHKeyType(DBEnumeratedType):
         DSA
         """)
 
+    ECDSA = DBItem(3, """
+        ECDSA
 
-SSH_KEY_TYPE_TO_TEXT = {
-    SSHKeyType.RSA: "ssh-rsa",
-    SSHKeyType.DSA: "ssh-dss",
-}
+        ECDSA
+        """)
 
 
-SSH_TEXT_TO_KEY_TYPE = {v: k for k, v in SSH_KEY_TYPE_TO_TEXT.items()}
+SSH_TEXT_TO_KEY_TYPE = {
+    "ssh-rsa": SSHKeyType.RSA,
+    "ssh-dss": SSHKeyType.DSA,
+    "ecdsa-sha2-nistp256": SSHKeyType.ECDSA,
+    "ecdsa-sha2-nistp384": SSHKeyType.ECDSA,
+    "ecdsa-sha2-nistp521": SSHKeyType.ECDSA,
+    }
 
 
 class ISSHKey(Interface):
@@ -124,4 +130,33 @@ class ISSHKeySet(Interface):
 
 @error_status(httplib.BAD_REQUEST)
 class SSHKeyAdditionError(Exception):
-    """Raised when the SSH public key is invalid."""
+    """Raised when the SSH public key is invalid.
+
+    WARNING: Be careful when changing the message format as
+    SSO uses a regex to recognize it.
+    """
+
+    def __init__(self, *args, **kwargs):
+        msg = ""
+        if 'key' in kwargs:
+            key = kwargs.pop('key')
+            msg = "Invalid SSH key data: '%s'" % key
+        if 'kind' in kwargs:
+            kind = kwargs.pop('kind')
+            msg = "Invalid SSH key type: '%s'" % kind
+        if 'type_mismatch' in kwargs:
+            keytype, keydatatype = kwargs.pop('type_mismatch')
+            msg = (
+                "Invalid SSH key data: key type '%s' does not match key data "
+                "type '%s'" % (keytype, keydatatype))
+        if 'exception' in kwargs:
+            exception = kwargs.pop('exception')
+            try:
+                exception_text = six.text_type(exception)
+            except UnicodeDecodeError:
+                # On Python 2, Key.fromString can raise exceptions with
+                # non-UTF-8 messages.
+                exception_text = bytes(exception).decode(
+                    'unicode_escape').encode('unicode_escape')
+            msg = "%s (%s)" % (msg, exception_text)
+        super(SSHKeyAdditionError, self).__init__(msg, *args, **kwargs)

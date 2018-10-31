@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of `IGitNamespace`."""
@@ -138,15 +138,15 @@ class _BaseGitNamespace:
 
     def validateRepositoryName(self, name):
         """See `IGitNamespace`."""
-        existing_repository = self.getByName(name)
-        if existing_repository is not None:
-            raise GitRepositoryExists(existing_repository)
-
         # Not all code paths that lead to Git repository creation go via a
         # schema-validated form, so we validate the repository name here to
         # give a nicer error message than 'ERROR: new row for relation
         # "gitrepository" violates check constraint "valid_name"...'.
         IGitRepository['name'].validate(unicode(name))
+
+        existing_repository = self.getByName(name)
+        if existing_repository is not None:
+            raise GitRepositoryExists(existing_repository)
 
     def validateDefaultFlags(self, repository):
         """See `IGitNamespace`."""
@@ -250,7 +250,7 @@ class PersonalGitNamespace(_BaseGitNamespace):
 
     has_defaults = False
     allow_push_to_set_default = False
-    supports_merge_proposals = False
+    supports_merge_proposals = True
     supports_code_imports = False
     allow_recipe_name_from_target = False
 
@@ -303,15 +303,17 @@ class PersonalGitNamespace(_BaseGitNamespace):
         else:
             return InformationType.PUBLIC
 
-    def areRepositoriesMergeable(self, other_namespace):
+    def areRepositoriesMergeable(self, this, other):
         """See `IGitNamespacePolicy`."""
-        return False
+        if this.namespace != self:
+            raise AssertionError(
+                "Namespace of %s is not %s." % (this.unique_name, self.name))
+        return this == other
 
     @property
     def collection(self):
         """See `IGitNamespacePolicy`."""
-        return getUtility(IAllGitRepositories).ownedBy(
-            self.person).isPersonal()
+        return getUtility(IAllGitRepositories).ownedBy(self.owner).isPersonal()
 
     def assignKarma(self, person, action_name, date_created=None):
         """See `IGitNamespacePolicy`."""
@@ -383,12 +385,16 @@ class ProjectGitNamespace(_BaseGitNamespace):
             return None
         return default_type
 
-    def areRepositoriesMergeable(self, other_namespace):
+    def areRepositoriesMergeable(self, this, other):
         """See `IGitNamespacePolicy`."""
         # Repositories are mergeable into a project repository if the
         # project is the same.
         # XXX cjwatson 2015-04-18: Allow merging from a package repository
         # if any (active?) series is linked to this project.
+        if this.namespace != self:
+            raise AssertionError(
+                "Namespace of %s is not %s." % (this.unique_name, self.name))
+        other_namespace = other.namespace
         if zope_isinstance(other_namespace, ProjectGitNamespace):
             return self.target == other_namespace.target
         else:
@@ -457,12 +463,16 @@ class PackageGitNamespace(_BaseGitNamespace):
         """See `IGitNamespace`."""
         return InformationType.PUBLIC
 
-    def areRepositoriesMergeable(self, other_namespace):
+    def areRepositoriesMergeable(self, this, other):
         """See `IGitNamespacePolicy`."""
         # Repositories are mergeable into a package repository if the
         # package is the same.
         # XXX cjwatson 2015-04-18: Allow merging from a project repository
         # if any (active?) series links this package to that project.
+        if this.namespace != self:
+            raise AssertionError(
+                "Namespace of %s is not %s." % (this.unique_name, self.name))
+        other_namespace = other.namespace
         if zope_isinstance(other_namespace, PackageGitNamespace):
             return self.target == other_namespace.target
         else:

@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the bulk database functions."""
@@ -35,7 +35,10 @@ from lp.services.database.interfaces import (
     ISlaveStore,
     IStore,
     )
-from lp.services.database.sqlbase import get_transaction_timestamp
+from lp.services.database.sqlbase import (
+    convert_storm_clause_to_string,
+    get_transaction_timestamp,
+    )
 from lp.services.features.model import (
     FeatureFlag,
     getFeatureStore,
@@ -172,6 +175,27 @@ class TestLoaders(TestCaseWithFactory):
         bulk.reload([db_object])
         self.assertIsNone(db_object_info.get('invalidated'))
 
+    def test__make_compound_load_clause(self):
+        # The query constructed by _make_compound_load_clause has the
+        # correct structure.
+        clause = bulk._make_compound_load_clause(
+            # This primary key is fictional, but lets us do a more elaborate
+            # test.
+            (FeatureFlag.scope, FeatureFlag.priority, FeatureFlag.flag),
+            sorted(
+                [(u'foo', 0, u'bar'), (u'foo', 0, u'baz'),
+                 (u'foo', 1, u'bar'), (u'foo', 1, u'quux'),
+                 (u'bar', 0, u'foo')]))
+        self.assertEqual(
+            "FeatureFlag.scope = E'bar' AND ("
+            "FeatureFlag.priority = 0 AND FeatureFlag.flag IN (E'foo')) OR "
+            "FeatureFlag.scope = E'foo' AND ("
+            "FeatureFlag.priority = 0 AND "
+            "FeatureFlag.flag IN (E'bar', E'baz') OR "
+            "FeatureFlag.priority = 1 AND "
+            "FeatureFlag.flag IN (E'bar', E'quux'))",
+            convert_storm_clause_to_string(clause))
+
     def test_load(self):
         # load() loads objects of the given type by their primary keys.
         db_objects = [
@@ -189,7 +213,7 @@ class TestLoaders(TestCaseWithFactory):
             ClassInfoError, bulk.load, str, [])
 
     def test_load_with_compound_primary_keys(self):
-        # load() does not like compound primary keys.
+        # load() can load objects with compound primary keys.
         flags = [
             FeatureFlag(u'foo', 0, u'bar', u'true'),
             FeatureFlag(u'foo', 0, u'baz', u'false'),

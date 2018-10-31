@@ -1,4 +1,4 @@
-# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad Form View Classes
@@ -8,7 +8,6 @@ __metaclass__ = type
 
 __all__ = [
     'action',
-    'custom_widget',
     'has_structured_doc',
     'LaunchpadEditFormView',
     'LaunchpadFormView',
@@ -25,7 +24,10 @@ from zope.event import notify
 from zope.formlib import form
 # imported so it may be exported
 from zope.formlib.form import action
-from zope.formlib.interfaces import IInputWidget
+from zope.formlib.interfaces import (
+    IInputWidget,
+    IWidgetFactory,
+    )
 from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import (
     CheckBoxWidget,
@@ -38,7 +40,6 @@ from zope.interface import (
     implementer,
     providedBy,
     )
-from zope.interface.advice import addClassAdvisor
 from zope.traversing.interfaces import (
     ITraversable,
     TraversalError,
@@ -77,8 +78,6 @@ class LaunchpadFormView(LaunchpadView):
     schema = None
     # Subset of fields to use
     field_names = None
-    # Dictionary mapping field names to custom widgets
-    custom_widgets = ()
 
     # The next URL to redirect to on successful form submission
     next_url = None
@@ -197,12 +196,17 @@ class LaunchpadFormView(LaunchpadView):
 
         If no context is given, the view's context is used."""
         for field in self.form_fields:
-            if (field.custom_widget is None and
-                field.__name__ in self.custom_widgets):
-                # The check for custom_widget is None means that we honor the
-                # value if previously set. This is important for some existing
-                # forms.
-                field.custom_widget = self.custom_widgets[field.__name__]
+            # Honour the custom_widget value if it was already set.  This is
+            # important for some existing forms.
+            if field.custom_widget is None:
+                widget = getattr(
+                    self, 'custom_widget_%s' % field.__name__, None)
+                if widget is not None:
+                    if IWidgetFactory.providedBy(widget):
+                        field.custom_widget = widget
+                    else:
+                        # Allow views to save some typing in common cases.
+                        field.custom_widget = CustomWidgetFactory(widget)
         if context is None:
             context = self.context
         self.widgets = form.setUpWidgets(
@@ -476,26 +480,6 @@ class LaunchpadEditFormView(LaunchpadFormView):
             notify(ObjectModifiedEvent(
                 context, context_before_modification, field_names))
         return was_changed
-
-
-class custom_widget:
-    """A class advisor for overriding the default widget for a field."""
-
-    def __init__(self, field_name, widget, *args, **kwargs):
-        self.field_name = field_name
-        if widget is None:
-            self.widget = None
-        else:
-            self.widget = CustomWidgetFactory(widget, *args, **kwargs)
-        addClassAdvisor(self.advise)
-
-    def advise(self, cls):
-        if cls.custom_widgets is None:
-            cls.custom_widgets = {}
-        else:
-            cls.custom_widgets = dict(cls.custom_widgets)
-        cls.custom_widgets[self.field_name] = self.widget
-        return cls
 
 
 def safe_action(action):

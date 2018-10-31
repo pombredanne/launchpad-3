@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,14 +9,18 @@ __all__ = [
     'GitRefRemote',
     ]
 
-from datetime import datetime
 from functools import partial
 import json
-from urllib import quote_plus
+import re
+from urllib import (
+    quote,
+    quote_plus,
+    )
 from urlparse import urlsplit
 
 from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
+import requests
 from storm.locals import (
     DateTime,
     Int,
@@ -42,6 +46,9 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     BranchMergeProposalExists,
+    GitRepositoryBlobNotFound,
+    GitRepositoryBlobUnsupportedRemote,
+    GitRepositoryScanFault,
     InvalidBranchMergeProposal,
     )
 from lp.code.event.branchmergeproposal import (
@@ -53,6 +60,7 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.gitcollection import IAllGitRepositories
 from lp.code.interfaces.githosting import IGitHostingClient
+from lp.code.interfaces.gitlookup import IGitLookup
 from lp.code.interfaces.gitref import (
     IGitRef,
     IGitRefRemoteSet,
@@ -60,6 +68,10 @@ from lp.code.interfaces.gitref import (
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
     BranchMergeProposalGetter,
+    )
+from lp.code.model.gitrule import (
+    GitRule,
+    GitRuleGrant,
     )
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
@@ -69,6 +81,8 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.timeout import urlfetch
+from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.interfaces import ILaunchBag
 
 
@@ -96,6 +110,11 @@ class GitRefMixin:
             return self.path[len("refs/heads/"):]
         else:
             return self.path
+
+    @property
+    def url_quoted_name(self):
+        """See `IGitRef`."""
+        return quote(self.name.encode("UTF-8"))
 
     @property
     def identity(self):
@@ -130,7 +149,8 @@ class GitRefMixin:
     def getCodebrowseUrl(self):
         """See `IGitRef`."""
         return "%s?h=%s" % (
-            self.repository.getCodebrowseUrl(), quote_plus(self.name))
+            self.repository.getCodebrowseUrl(),
+            quote_plus(self.name.encode("UTF-8")))
 
     def getCodebrowseUrlForRevision(self, commit):
         """See `IGitRef`."""
@@ -329,19 +349,18 @@ class GitRefMixin:
             else:
                 # Fall back to synthesising something reasonable based on
                 # information in our own database.
-                epoch = datetime.fromtimestamp(0, tz=pytz.UTC)
                 log = [{
                     "sha1": self.commit_sha1,
                     "message": self.commit_message,
                     "author": None if self.author is None else {
                         "name": self.author.name_without_email,
                         "email": self.author.email,
-                        "time": (self.author_date - epoch).total_seconds(),
+                        "time": seconds_since_epoch(self.author_date),
                         },
                     "committer": None if self.committer is None else {
                         "name": self.committer.name_without_email,
                         "email": self.committer.email,
-                        "time": (self.committer_date - epoch).total_seconds(),
+                        "time": seconds_since_epoch(self.committer_date),
                         },
                     }]
         return log
@@ -387,6 +406,10 @@ class GitRefMixin:
                     commit["sha1"])
         return commits
 
+    def getBlob(self, filename):
+        """See `IGitRef`."""
+        return self.repository.getBlob(filename, rev=self.path)
+
     @property
     def recipes(self):
         """See `IHasRecipes`."""
@@ -401,6 +424,22 @@ class GitRefMixin:
             self.repository, revspecs=list(revspecs))
         hook = SourcePackageRecipe.preLoadDataForSourcePackageRecipes
         return DecoratedResultSet(recipes, pre_iter_hook=hook)
+
+    def getGrants(self):
+        """See `IGitRef`."""
+        return list(Store.of(self).find(
+            GitRuleGrant, GitRuleGrant.rule_id == GitRule.id,
+            GitRule.repository_id == self.repository_id,
+            GitRule.ref_pattern == self.path))
+
+    def setGrants(self, grants, user):
+        """See `IGitRef`."""
+        rule = self.repository.getRule(self.path)
+        if rule is None:
+            # We don't need to worry about position, since this is an
+            # exact-match rule and therefore has a canonical position.
+            rule = self.repository.addRule(self.path, user)
+        rule.setGrants(grants, user)
 
 
 @implementer(IGitRef)
@@ -433,7 +472,10 @@ class GitRef(StormBase, GitRefMixin):
 
     @property
     def commit_message_first_line(self):
-        return self.commit_message.split("\n", 1)[0]
+        if self.commit_message is not None:
+            return self.commit_message.split("\n", 1)[0]
+        else:
+            return None
 
     @property
     def has_commits(self):
@@ -634,6 +676,32 @@ class GitRefFrozen(GitRefDatabaseBackedMixin):
         return ref
 
 
+def _fetch_blob_from_github(repository_url, ref_path, filename):
+    repo_path = urlsplit(repository_url).path.strip("/")
+    if repo_path.endswith(".git"):
+        repo_path = repo_path[:len(".git")]
+    try:
+        response = urlfetch(
+            "https://raw.githubusercontent.com/%s/%s/%s" % (
+                repo_path,
+                # GitHub supports either branch or tag names here, but both
+                # must be shortened.  (If both a branch and a tag exist with
+                # the same name, it appears to pick the branch.)
+                quote(re.sub(r"^refs/(?:heads|tags)/", "", ref_path)),
+                quote(filename)),
+            use_proxy=True)
+    except requests.RequestException as e:
+        if (e.response is not None and
+                e.response.status_code == requests.codes.NOT_FOUND):
+            raise GitRepositoryBlobNotFound(
+                repository_url, filename, rev=ref_path)
+        else:
+            raise GitRepositoryScanFault(
+                "Failed to get file from Git repository at %s: %s" %
+                (repository_url, str(e)))
+    return response.content
+
+
 @implementer(IGitRef)
 @provider(IGitRefRemoteSet)
 class GitRefRemote(GitRefMixin):
@@ -725,10 +793,36 @@ class GitRefRemote(GitRefMixin):
         """See `IGitRef`."""
         return []
 
+    def getBlob(self, filename):
+        """See `IGitRef`."""
+        # In general, we can't easily get hold of a blob from a remote
+        # repository without cloning the whole thing.  In future we might
+        # dispatch a build job or a code import or something like that to do
+        # so.  For now, we just special-case some providers where we know
+        # how to fetch a blob on its own.
+        repository = getUtility(IGitLookup).getByUrl(self.repository_url)
+        if repository is not None:
+            # This is one of our own repositories.  Doing this by URL seems
+            # gratuitously complex, but apparently we already have some
+            # examples of this on production.
+            return repository.getBlob(filename, rev=self.path)
+        url = urlsplit(self.repository_url)
+        if (url.hostname == "github.com" and
+                len(url.path.strip("/").split("/")) == 2):
+            return _fetch_blob_from_github(
+                self.repository_url, self.path, filename)
+        raise GitRepositoryBlobUnsupportedRemote(self.repository_url)
+
     @property
     def recipes(self):
         """See `IHasRecipes`."""
         return []
+
+    def getGrants(self):
+        """See `IGitRef`."""
+        return []
+
+    setGrants = _unimplemented
 
     def __eq__(self, other):
         return (

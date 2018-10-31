@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """View classes for `IProductSeries`."""
@@ -32,6 +32,7 @@ from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
+from zope.formlib.widget import CustomWidgetFactory
 from zope.formlib.widgets import (
     TextAreaWidget,
     TextWidget,
@@ -50,7 +51,6 @@ from lp import _
 from lp.app.browser.informationtype import InformationTypePortletMixin
 from lp.app.browser.launchpadform import (
     action,
-    custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
@@ -502,7 +502,7 @@ class ProductSeriesUbuntuPackagingView(LaunchpadFormView):
             return IPackaging
 
     field_names = ['sourcepackagename', 'distroseries']
-    custom_widget('sourcepackagename', UbuntuSourcePackageNameWidget)
+    custom_widget_sourcepackagename = UbuntuSourcePackageNameWidget
     page_title = 'Ubuntu source packaging'
     label = page_title
 
@@ -636,8 +636,10 @@ class ProductSeriesEditView(LaunchpadEditFormView):
     schema = IProductSeries
     field_names = [
         'name', 'summary', 'status', 'branch', 'releasefileglob']
-    custom_widget('summary', TextAreaWidget, height=7, width=62)
-    custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
+    custom_widget_summary = CustomWidgetFactory(
+        TextAreaWidget, height=7, width=62)
+    custom_widget_releasefileglob = CustomWidgetFactory(
+        StrippedTextWidget, displayWidth=40)
 
     @property
     def label(self):
@@ -797,7 +799,7 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
     """A view to review and change the series `IProduct` and name."""
     schema = IProductSeries
     field_names = ['product', 'name']
-    custom_widget('name', TextWidget, displayWidth=20)
+    custom_widget_name = CustomWidgetFactory(TextWidget, displayWidth=20)
 
     @property
     def label(self):

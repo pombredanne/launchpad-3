@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -68,6 +68,10 @@ from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepository
+from lp.code.interfaces.gitrule import (
+    IGitNascentRule,
+    IGitNascentRuleGrant,
+    )
 from lp.code.interfaces.gitsubscription import IGitSubscription
 from lp.code.interfaces.hasbranches import (
     IHasBranches,
@@ -150,6 +154,7 @@ from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
 from lp.services.comments.interfaces.conversation import IComment
+from lp.services.fields import InlineObject
 from lp.services.messages.interfaces.message import (
     IIndexedMessage,
     IMessage,
@@ -489,6 +494,8 @@ patch_reference_property(
 
 # IDistroArchSeries
 patch_reference_property(IDistroArchSeries, 'main_archive', IArchive)
+patch_plain_parameter_type(
+    IDistroArchSeries, 'setChrootFromBuild', 'livefsbuild', ILiveFSBuild)
 
 # IGitRef
 patch_reference_property(IGitRef, 'repository', IGitRepository)
@@ -504,6 +511,8 @@ patch_collection_property(IGitRef, 'dependent_landings', IBranchMergeProposal)
 patch_entry_return_type(IGitRef, 'createMergeProposal', IBranchMergeProposal)
 patch_collection_return_type(
     IGitRef, 'getMergeProposals', IBranchMergeProposal)
+patch_list_parameter_type(
+    IGitRef, 'setGrants', 'grants', InlineObject(schema=IGitNascentRuleGrant))
 
 # IGitRepository
 patch_collection_property(IGitRepository, 'branches', IGitRef)
@@ -519,6 +528,10 @@ patch_collection_property(
     IGitRepository, '_api_landing_candidates', IBranchMergeProposal)
 patch_collection_property(
     IGitRepository, 'dependent_landings', IBranchMergeProposal)
+patch_collection_return_type(
+    IGitRepository, 'getMergeProposals', IBranchMergeProposal)
+patch_list_parameter_type(
+    IGitRepository, 'setRules', 'rules', InlineObject(schema=IGitNascentRule))
 
 # ILiveFSFile
 patch_reference_property(ILiveFSFile, 'livefsbuild', ILiveFSBuild)

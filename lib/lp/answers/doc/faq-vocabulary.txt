@@ -1,4 +1,5 @@
-= FAQ Vocabulary =
+FAQ Vocabulary
+==============
 
 The FAQ vocabulary contains all the FAQs available in a particular
 collection. It provides the IHugeVocabulary interface.
@@ -15,7 +16,7 @@ collection. It provides the IHugeVocabulary interface.
     >>> verifyObject(IHugeVocabulary, vocabulary)
     True
 
-    >>> print vocabulary.displayname
+    >>> print(vocabulary.displayname)
     Select a FAQ
 
 It contains all the FAQs of the collection, but not those from other
@@ -37,7 +38,7 @@ The term's token is the FAQ's id and its title is the FAQ's title:
     >>> term = vocabulary.getTerm(firefox_faq)
     >>> term.token
     '10'
-    >>> print term.title
+    >>> print(term.title)
     How do I install plugins (Shockwave, QuickTime, etc.)?
 
 Asking for something which isn't a FAQ of the target raises LookupError:
@@ -55,7 +56,7 @@ Since IHugeVocabulary extends IVocabularyTokenized, the term can also
 be retrieved by token:
 
     >>> term = vocabulary.getTermByToken(u'10')
-    >>> print term.title
+    >>> print(term.title)
     How do I install plugins (Shockwave, QuickTime, etc.)?
 
 Trying to retrieve an invalid or non-existent token raises LookupError:
@@ -81,6 +82,6 @@ are similar to the query:
     >>> terms.count()
     2
     >>> for term in terms:
-    ...     print term.title
+    ...     print(term.title)
     How do I install Extensions?
     How do I troubleshoot problems with extensions/themes?

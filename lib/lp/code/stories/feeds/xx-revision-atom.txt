@@ -79,7 +79,7 @@ that have been committed by that person (or attributed to that person).
     [u'Latest Revisions by Mike Murphy']
     >>> def print_parse_ids(browser):
     ...     for id in parse_ids(browser.contents):
-    ...         print id
+    ...         print(id)
 
 Ignore the date associated with the id of 'mike' as this is the date created
 of the person, which will be different each time the test is run.
@@ -94,7 +94,7 @@ Ensure the self link is correct and there is only one.
 
     >>> def print_parse_links(browser):
     ...     for link in parse_links(browser.contents, rel="self"):
-    ...         print link
+    ...         print(link)
     >>> print_parse_links(anon_browser)
     <link rel="self" href="http://feeds.launchpad.dev/~mike/revisions.atom" />
 

@@ -20,8 +20,8 @@ package, and the number of open bugs in various states.
     ...     for key, value in sorted(package_count.items()):
     ...         if IDistributionSourcePackage.providedBy(value):
     ...             value = value.bugtargetdisplayname
-    ...         print "%s: %s" % (key, value)
-    ...     print # Blank line, to make output more readable.
+    ...         print("%s: %s" % (key, value))
+    ...     print() # Blank line, to make output more readable.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> packages = [

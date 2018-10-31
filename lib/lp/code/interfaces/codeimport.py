@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Code import interfaces."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'CODE_IMPORT_GIT_TARGET_FEATURE_FLAG',
     'ICodeImport',
     'ICodeImportSet',
     ]
@@ -50,9 +49,6 @@ from lp.services.fields import (
     PublicPersonChoice,
     URIField,
     )
-
-
-CODE_IMPORT_GIT_TARGET_FEATURE_FLAG = u'code.import.git_target'
 
 
 def validate_cvs_root(cvsroot):

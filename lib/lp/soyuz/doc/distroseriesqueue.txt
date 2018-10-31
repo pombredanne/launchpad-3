@@ -90,14 +90,14 @@ XXX cprov 20051209: need to build a broken upload to test it properly
     ...         item.setAccepted()
     ...         item.syncUpdate()
     ...     except QueueInconsistentStateError as info:
-    ...         print info
+    ...         print(info)
 
     >>> accepted_queue = hoary.getPackageUploads(PackageUploadStatus.ACCEPTED)
 
     >>> from lp.services.log.logger import FakeLogger
     >>> for item in accepted_queue:
     ...     for source in item.sources:
-    ...         print source.sourcepackagerelease.name
+    ...         print(source.sourcepackagerelease.name)
     ...     pub_records = item.realiseUpload(FakeLogger())
     ed
     DEBUG Publishing source ed/0.2-20 to ubuntu/hoary in ubuntu
@@ -110,7 +110,7 @@ Confirm we can now find ed published in hoary.
     >>> for release in SourcePackagePublishingHistory.selectBy(
     ...     distroseries=hoary, status=PackagePublishingStatus.PENDING):
     ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
-    ...         print release.sourcepackagerelease.version
+    ...         print(release.sourcepackagerelease.version)
     0.2-20
 
 
@@ -177,19 +177,19 @@ Check the behaviour of @cachedproperty  attributes:
     >>> qitem.date_created
     datetime.datetime(...)
 
-    >>> print qitem.changesfile.filename
+    >>> print(qitem.changesfile.filename)
     mozilla-firefox_0.9_i386.changes
 
-    >>> print qitem.sourcepackagerelease.name
+    >>> print(qitem.sourcepackagerelease.name)
     mozilla-firefox
 
-    >>> print qitem.displayname
+    >>> print(qitem.displayname)
     mozilla-firefox
 
-    >>> print qitem.displayversion
+    >>> print(qitem.displayversion)
     0.9
 
-    >>> print qitem.displayarchs
+    >>> print(qitem.displayarchs)
     i386
 
     >>> qitem.sourcepackagerelease
@@ -203,19 +203,19 @@ Let's check the behaviour of @cachedproperty attributes in a custom upload:
     >>> custom_item.date_created
     datetime.datetime(...)
 
-    >>> print custom_item.changesfile.filename
+    >>> print(custom_item.changesfile.filename)
     netapplet-1.0.0.tar.gz
 
-    >>> print custom_item.displayname
+    >>> print(custom_item.displayname)
     netapplet-1.0.0.tar.gz
 
-    >>> print custom_item.displayversion
+    >>> print(custom_item.displayversion)
     -
 
-    >>> print custom_item.displayarchs
+    >>> print(custom_item.displayarchs)
     raw-translations
 
-    >>> print custom_item.sourcepackagerelease
+    >>> print(custom_item.sourcepackagerelease)
     None
 
 The method getBuildByBuildIDs() will return all the PackageUploadBuild
@@ -223,7 +223,7 @@ records that match the supplied build IDs.
 
     >>> ids = (18,19)
     >>> for package_upload_build in qset.getBuildByBuildIDs(ids):
-    ...     print package_upload_build.packageupload.displayname
+    ...     print(package_upload_build.packageupload.displayname)
     mozilla-firefox
     pmount
 
@@ -299,7 +299,7 @@ Performing full acceptance:
     >>> items = breezy_autotest.getPackageUploads(PackageUploadStatus.NEW)
     >>> for item in items:
     ...     item.setAccepted()
-    ...     print item.displayname, item.status.name
+    ...     print(item.displayname, item.status.name)
     netapplet-1.0.0.tar.gz ACCEPTED
     netapplet-1.0.0.tar.gz ACCEPTED
     alsa-utils ACCEPTED
@@ -314,7 +314,7 @@ Move the ACCEPTED items back to NEW.
     ...     PackageUploadStatus.ACCEPTED)
     >>> for item in items:
     ...     item.status = PassthroughStatusValue(PackageUploadStatus.NEW)
-    ...     print item.displayname, item.status.name
+    ...     print(item.displayname, item.status.name)
     netapplet-1.0.0.tar.gz NEW
     netapplet-1.0.0.tar.gz NEW
     alsa-utils NEW
@@ -353,9 +353,9 @@ XXX cprov 20060118: remove proxy magic is required for BPR instances.
     >>> try:
     ...     item.setAccepted()
     ... except QueueInconsistentStateError as e:
-    ...     print item.displayname, e
+    ...     print(item.displayname, e)
     ... else:
-    ...     print item.displayname, 'ACCEPTED'
+    ...     print(item.displayname, 'ACCEPTED')
     mozilla-firefox Component "hell" is not allowed in breezy-autotest
 
 Check how we treat source upload duplications in UNAPPROVED queue (NEW
@@ -447,7 +447,7 @@ The 'pmount' entry for the unofficial section 'boing', can be
 normally accepted.
 
     >>> item.setAccepted()
-    >>> print item.status.name
+    >>> print(item.status.name)
     ACCEPTED
 
 Roll back modified data:
@@ -467,9 +467,9 @@ Sampledata contains only a i386 binary exactly matching 'pmount 0.1-1'.
     >>> from operator import attrgetter
     >>> def print_queue_items(queue_items):
     ...     for queue_item in queue_items:
-    ...         print "%s  %s  %s" % (
+    ...         print("%s  %s  %s" % (
     ...             queue_item.displayname, queue_item.displayversion,
-    ...             queue_item.displayarchs)
+    ...             queue_item.displayarchs))
 
     >>> queue_items = breezy_autotest.getPackageUploads(
     ...     PackageUploadStatus.NEW, name=u'pmount', version=u'0.1-1',
@@ -577,9 +577,9 @@ and section "base".
     >>> [item] = breezy_autotest.getPackageUploads(
     ...     PackageUploadStatus.NEW, name=u'alsa-utils')
     >>> [source] = item.sources
-    >>> print "%s/%s" % (
+    >>> print("%s/%s" % (
     ...     source.sourcepackagerelease.component.name,
-    ...     source.sourcepackagerelease.section.name)
+    ...     source.sourcepackagerelease.section.name))
     main/base
 
 Overriding to a component not in the allowed_components list results in
@@ -589,9 +589,9 @@ an error:
     >>> universe = getUtility(IComponentSet)['universe']
     >>> main = getUtility(IComponentSet)['main']
     >>> web = getUtility(ISectionSet)['web']
-    >>> print item.overrideSource(
+    >>> print(item.overrideSource(
     ...     new_component=restricted, new_section=web,
-    ...     allowed_components=(universe,))
+    ...     allowed_components=(universe,)))
     Traceback (most recent call last):
     ...
     QueueAdminUnauthorizedError: No rights to override to restricted
@@ -599,9 +599,9 @@ an error:
 Allowing "restricted" still won't work because the original component
 is "main":
 
-    >>> print item.overrideSource(
+    >>> print(item.overrideSource(
     ...     new_component=restricted, new_section=web,
-    ...     allowed_components=(restricted,))
+    ...     allowed_components=(restricted,)))
     Traceback (most recent call last):
     ...
     QueueAdminUnauthorizedError: No rights to override from main
@@ -609,13 +609,13 @@ is "main":
 Specifying both main and restricted allows the override to restricted/web.
 overrideSource() returns True if it completed the task.
 
-    >>> print item.overrideSource(
+    >>> print(item.overrideSource(
     ...     new_component=restricted, new_section=web,
-    ...     allowed_components=(main,restricted))
+    ...     allowed_components=(main,restricted)))
     True
-    >>> print "%s/%s" % (
+    >>> print("%s/%s" % (
     ...     source.sourcepackagerelease.component.name,
-    ...     source.sourcepackagerelease.section.name)
+    ...     source.sourcepackagerelease.section.name))
     restricted/web
 
 Similarly for binaries:
@@ -624,10 +624,10 @@ Similarly for binaries:
     ...     PackageUploadStatus.NEW, name=u'pmount')
     >>> [build] = item.builds
     >>> [binary_package] = build.build.binarypackages
-    >>> print "%s/%s/%s" % (
+    >>> print("%s/%s/%s" % (
     ...     binary_package.component.name,
     ...     binary_package.section.name,
-    ...     binary_package.priority.title)
+    ...     binary_package.priority.title))
     main/base/Important
 
     >>> from lp.soyuz.enums import PackagePublishingPriority
@@ -636,25 +636,25 @@ Similarly for binaries:
     ...     "section": web,
     ...     "priority": PackagePublishingPriority.EXTRA,
     ...     }]
-    >>> print item.overrideBinaries(
-    ...     binary_changes, allowed_components=(universe,))
+    >>> print(item.overrideBinaries(
+    ...     binary_changes, allowed_components=(universe,)))
     Traceback (most recent call last):
     ...
     QueueAdminUnauthorizedError: No rights to override to restricted
 
-    >>> print item.overrideBinaries(
-    ...     binary_changes, allowed_components=(restricted,))
+    >>> print(item.overrideBinaries(
+    ...     binary_changes, allowed_components=(restricted,)))
     Traceback (most recent call last):
     ...
     QueueAdminUnauthorizedError: No rights to override from main
 
-    >>> print item.overrideBinaries(
-    ...     binary_changes, allowed_components=(main,restricted))
+    >>> print(item.overrideBinaries(
+    ...     binary_changes, allowed_components=(main, restricted)))
     True
-    >>> print "%s/%s/%s" % (
+    >>> print("%s/%s/%s" % (
     ...     binary_package.component.name,
     ...     binary_package.section.name,
-    ...     binary_package.priority.title)
+    ...     binary_package.priority.title))
     restricted/web/Extra
 
 
@@ -703,8 +703,8 @@ Filtering by custom_type.  We need to add some custom uploads to show this.
 
     >>> add_static_xlat_upload()
 
-    >>> print warty.getPackageUploads(
-    ...     custom_type=static_xlat).count()
+    >>> print(warty.getPackageUploads(
+    ...     custom_type=static_xlat).count())
     1
 
 There is also a created_since_date filter that will only return packages
@@ -720,7 +720,7 @@ Add another custom upload.
 
     >>> add_static_xlat_upload()
     >>> uploads = warty.getPackageUploads(custom_type=static_xlat)
-    >>> print uploads.count()
+    >>> print(uploads.count())
     2
 
 Commit a transaction to ensure new DB objects get a later timestamp.
@@ -783,13 +783,13 @@ build once it was accepted, using 'queue-tool' or via the Web UI.
     >>> queue_source = items[1].sources[0]
     >>> [build] = queue_source.sourcepackagerelease.builds
 
-    >>> print build.title
+    >>> print(build.title)
     i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
 
-    >>> print build.status.name
+    >>> print(build.status.name)
     NEEDSBUILD
 
-    >>> print build.buildqueue_record.lastscore
+    >>> print(build.buildqueue_record.lastscore)
     10
 
 Let's reject something in the queue:

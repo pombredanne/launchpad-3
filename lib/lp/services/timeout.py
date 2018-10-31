@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     "default_timeout",
     "get_default_timeout_function",
+    "override_timeout",
     "reduced_timeout",
     "SafeTransportWithTimeout",
     "set_default_timeout_function",
@@ -39,7 +40,11 @@ from requests.packages.urllib3.connectionpool import (
     )
 from requests.packages.urllib3.exceptions import ClosedPoolError
 from requests.packages.urllib3.poolmanager import PoolManager
+from requests_file import FileAdapter
+from requests_toolbelt.downloadutils import stream
 from six import reraise
+
+from lp.services.config import config
 
 
 default_timeout_function = None
@@ -104,6 +109,21 @@ def reduced_timeout(clearance, webapp_max=None, default=None):
             return remaining
 
     set_default_timeout_function(timeout)
+    try:
+        yield
+    finally:
+        set_default_timeout_function(original_timeout_function)
+
+
+@contextmanager
+def override_timeout(timeout):
+    """A context manager that temporarily overrides the default timeout.
+
+    :param timeout: The new timeout to use.
+    """
+    original_timeout_function = get_default_timeout_function()
+
+    set_default_timeout_function(lambda: timeout)
     try:
         yield
     finally:
@@ -182,6 +202,16 @@ class with_timeout:
 
     def __call__(self, f):
         """Wraps the method."""
+        def cleanup(t, args):
+            if self.cleanup is not None:
+                if isinstance(self.cleanup, basestring):
+                    # 'self' will be first positional argument.
+                    getattr(args[0], self.cleanup)()
+                else:
+                    self.cleanup()
+                # Collect cleaned-up worker thread.
+                t.join()
+
         def call_with_timeout(*args, **kwargs):
             # Ensure that we have a timeout before we start the thread
             timeout = self.timeout
@@ -194,16 +224,17 @@ class with_timeout:
                     timeout = timeout()
             t = ThreadCapturingResult(f, args, kwargs)
             t.start()
-            t.join(timeout)
+            try:
+                t.join(timeout)
+            except Exception as e:
+                # This will commonly be SoftTimeLimitExceeded from celery,
+                # since celery's timeout often happens before the job's due
+                # to job setup time.
+                if t.isAlive():
+                    cleanup(t, args)
+                raise
             if t.isAlive():
-                if self.cleanup is not None:
-                    if isinstance(self.cleanup, basestring):
-                        # 'self' will be first positional argument.
-                        getattr(args[0], self.cleanup)()
-                    else:
-                        self.cleanup()
-                    # Collect cleaned-up worker thread.
-                    t.join()
+                cleanup(t, args)
                 raise TimeoutError("timeout exceeded.")
             if getattr(t, 'exc_info', None) is not None:
                 exc_info = t.exc_info
@@ -300,35 +331,72 @@ class CleanableHTTPAdapter(HTTPAdapter):
 class URLFetcher:
     """Object fetching remote URLs with a time out."""
 
-    @staticmethod
-    def _makeSession(trust_env=None):
-        session = Session()
-        if trust_env is not None:
-            session.trust_env = trust_env
-        # Mount our custom adapters.
-        session.mount("https://", CleanableHTTPAdapter())
-        session.mount("http://", CleanableHTTPAdapter())
-        return session
+    def __init__(self):
+        self.session = None
 
     @with_timeout(cleanup='cleanup')
-    def fetch(self, url, trust_env=None, **request_kwargs):
-        """Fetch the URL using a custom HTTP handler supporting timeout."""
+    def fetch(self, url, use_proxy=False, allow_ftp=False, allow_file=False,
+              output_file=None, **request_kwargs):
+        """Fetch the URL using a custom HTTP handler supporting timeout.
+
+        :param url: The URL to fetch.
+        :param use_proxy: If True, use Launchpad's configured proxy.
+        :param allow_ftp: If True, allow ftp:// URLs.
+        :param allow_file: If True, allow file:// URLs.  (Be careful to only
+            pass this if the URL is trusted.)
+        :param output_file: If not None, download the response content to
+            this file object or path.
+        :param request_kwargs: Additional keyword arguments passed on to
+            `Session.request`.
+        """
+        self.session = Session()
+        # Always ignore proxy/authentication settings in the environment; we
+        # configure that sort of thing explicitly.
+        self.session.trust_env = False
+        # Mount our custom adapters.
+        self.session.mount("https://", CleanableHTTPAdapter())
+        self.session.mount("http://", CleanableHTTPAdapter())
+        # We can do FTP, but currently only via an HTTP proxy.
+        if allow_ftp and use_proxy:
+            self.session.mount("ftp://", CleanableHTTPAdapter())
+        if allow_file:
+            self.session.mount("file://", FileAdapter())
+
         request_kwargs.setdefault("method", "GET")
-        self.session = self._makeSession(trust_env=trust_env)
+        if use_proxy and config.launchpad.http_proxy:
+            request_kwargs.setdefault("proxies", {})
+            request_kwargs["proxies"]["http"] = config.launchpad.http_proxy
+            request_kwargs["proxies"]["https"] = config.launchpad.http_proxy
+            if allow_ftp:
+                request_kwargs["proxies"]["ftp"] = config.launchpad.http_proxy
+        if output_file is not None:
+            request_kwargs["stream"] = True
         response = self.session.request(url=url, **request_kwargs)
         response.raise_for_status()
-        # Make sure the content has been consumed before returning.
-        response.content
+        if output_file is None:
+            # Make sure the content has been consumed before returning.
+            response.content
+        else:
+            # Download the content to the given file.
+            stream.stream_response_to_file(response, path=output_file)
+        # The responses library doesn't persist cookies in the session
+        # (https://github.com/getsentry/responses/issues/80).  Work around
+        # this.
+        session_cookies = request_kwargs.get("cookies")
+        if session_cookies is not None and response.cookies:
+            session_cookies.update(response.cookies)
         return response
 
     def cleanup(self):
         """Reset the connection when the operation timed out."""
-        self.session.close()
+        if self.session is not None:
+            self.session.close()
+        self.session = None
 
 
-def urlfetch(url, trust_env=None, **request_kwargs):
+def urlfetch(url, **request_kwargs):
     """Wrapper for `requests.get()` that times out."""
-    return URLFetcher().fetch(url, trust_env=trust_env, **request_kwargs)
+    return URLFetcher().fetch(url, **request_kwargs)
 
 
 class TransportWithTimeout(Transport):

@@ -21,7 +21,7 @@ redirect back to the PPA page with a feedback message:
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+subscriptions")
 
-    >>> print cprov_browser.url
+    >>> print(cprov_browser.url)
     http://launchpad.dev/~cprov/+archive/ubuntu/ppa
 
     >>> print_feedback_messages(cprov_browser.contents)
@@ -52,11 +52,11 @@ this may need to change, to add the owner/team). A heading is displayed
 with a message:
 
     >>> main_content = find_main_content(cprov_browser.contents)
-    >>> print extract_text(main_content.find('h1'))
+    >>> print(extract_text(main_content.find('h1')))
     Manage access to PPA named p3a for Celso Providelo
 
-    >>> print extract_text(find_tag_by_id(cprov_browser.contents,
-    ...     'no-subscribers'))
+    >>> print(extract_text(find_tag_by_id(cprov_browser.contents,
+    ...     'no-subscribers')))
     No one has access to install software from this PPA.
 
 Create two new users that can be subscribed to archives, and a team:
@@ -89,7 +89,7 @@ Once the subscription has been added, it will display in the table:
 
     >>> for row in find_tags_by_class(cprov_browser.contents,
     ...                               'archive_subscriber_row'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     Name                Expires     Comment
     Brad Smith          2200-08-01  Brad can access for a while.  Edit/Cancel
     Team Joe                        Joes friends are my friends   Edit/Cancel
@@ -101,7 +101,7 @@ The title of a persons archive subscriptions is displayed as the main
 heading:
 
     >>> cprov_browser.open("/~cprov/+archivesubscriptions")
-    >>> print find_main_content(cprov_browser.contents)
+    >>> print(find_main_content(cprov_browser.contents))
     <div...
     <h1>Private PPA access</h1>...
 
@@ -109,7 +109,7 @@ A person who is not subscribed to any archives will see an appropriate
 explanation if they try to view their archive subscriptions:
 
     >>> explanation = find_main_content(cprov_browser.contents).find('p')
-    >>> print extract_text(explanation)
+    >>> print(extract_text(explanation))
     You do not have any current subscriptions to private archives...
 
 First, create a subscription for Joe Smith's team to mark's archive
@@ -131,7 +131,7 @@ listed in the current subscriptions area:
     ...     "http://launchpad.dev/~joesmith/+archivesubscriptions")
     >>> for row in find_tags_by_class(joe_browser.contents,
     ...                               'archive-subscription-row'):
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     Archive                          Owner
     PPA named... (ppa:mark/p3a)      Mark Shuttleworth       View
     PPA named... (ppa:cprov/p3a)     Celso Providelo         View
@@ -207,7 +207,7 @@ subscriptions page.
     >>> rows = find_tags_by_class(
     ...     joe_browser.contents, 'archive-subscription-row')
     >>> for row in rows:
-    ...     print extract_text(row)
+    ...     print(extract_text(row))
     Archive                                            Owner
     PPA named p3a for Mark Shuttleworth (ppa:mark/p3a) Mark Shuttleworth View
     PPA named p3a for Celso Providelo (ppa:cprov/p3a)  Celso Providelo   View
