@@ -1,20 +1,18 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from cStringIO import StringIO
 from datetime import datetime
+from gzip import GzipFile
 import hashlib
 import httplib
+from io import BytesIO
 import os
 import unittest
-from urllib2 import (
-    HTTPError,
-    urlopen,
-    )
 from urlparse import urlparse
 
 from lazr.uri import URI
 import pytz
+import requests
 from storm.expr import SQL
 import testtools
 from testtools.matchers import EndsWith
@@ -55,7 +53,6 @@ def uri_path_replace(url, old, new):
 class LibrarianWebTestCase(testtools.TestCase):
     """Test the librarian's web interface."""
     layer = LaunchpadFunctionalLayer
-    dbuser = 'librarian'
 
     # Add stuff to a librarian via the upload port, then check that it's
     # immediately visible on the web interface. (in an attempt to test ddaa's
@@ -75,9 +72,9 @@ class LibrarianWebTestCase(testtools.TestCase):
         for count in range(10):
             # Upload a file.  This should work without any exceptions being
             # thrown.
-            sampleData = 'x' + ('blah' * (count % 5))
+            sampleData = b'x' + (b'blah' * (count % 5))
             fileAlias = client.addFile('sample', len(sampleData),
-                                                 StringIO(sampleData),
+                                                 BytesIO(sampleData),
                                                  contentType='text/plain')
 
             # Make sure we can get its URL
@@ -98,9 +95,9 @@ class LibrarianWebTestCase(testtools.TestCase):
             fileObj.close()
 
             # And make sure the URL works too
-            fileObj = urlopen(url)
-            self.assertEqual(sampleData, fileObj.read())
-            fileObj.close()
+            response = requests.get(url)
+            response.raise_for_status()
+            self.assertEqual(sampleData, response.content)
 
     def test_checkGzipEncoding(self):
         # Files that end in ".txt.gz" are treated special and are returned
@@ -108,29 +105,34 @@ class LibrarianWebTestCase(testtools.TestCase):
         # displaying Ubuntu build logs in the browser.  The mimetype should be
         # "text/plain" for these files.
         client = LibrarianClient()
-        contents = 'Build log...'
-        build_log = StringIO(contents)
+        contents = b'Build log...'
+        build_log = BytesIO()
+        with GzipFile(mode='wb', fileobj=build_log) as f:
+            f.write(contents)
+        build_log.seek(0)
         alias_id = client.addFile(name="build_log.txt.gz",
-                                  size=len(contents),
+                                  size=len(build_log.getvalue()),
                                   file=build_log,
                                   contentType="text/plain")
 
         self.commit()
 
         url = client.getURLForAlias(alias_id)
-        fileObj = urlopen(url)
-        mimetype = fileObj.headers['content-type']
-        encoding = fileObj.headers['content-encoding']
+        response = requests.get(url)
+        response.raise_for_status()
+        mimetype = response.headers['content-type']
+        encoding = response.headers['content-encoding']
         self.assertTrue(mimetype == "text/plain; charset=utf-8",
                         "Wrong mimetype. %s != 'text/plain'." % mimetype)
         self.assertTrue(encoding == "gzip",
                         "Wrong encoding. %s != 'gzip'." % encoding)
+        self.assertEqual(contents, response.content)
 
     def test_checkNoEncoding(self):
         # Other files should have no encoding.
         client = LibrarianClient()
-        contents = 'Build log...'
-        build_log = StringIO(contents)
+        contents = b'Build log...'
+        build_log = BytesIO(contents)
         alias_id = client.addFile(name="build_log.tgz",
                                   size=len(contents),
                                   file=build_log,
@@ -139,10 +141,10 @@ class LibrarianWebTestCase(testtools.TestCase):
         self.commit()
 
         url = client.getURLForAlias(alias_id)
-        fileObj = urlopen(url)
-        mimetype = fileObj.headers['content-type']
-        self.assertRaises(KeyError, fileObj.headers.__getitem__,
-                          'content-encoding')
+        response = requests.get(url)
+        response.raise_for_status()
+        mimetype = response.headers['content-type']
+        self.assertNotIn('content-encoding', response.headers)
         self.assertTrue(
             mimetype == "application/x-tar",
             "Wrong mimetype. %s != 'application/x-tar'." % mimetype)
@@ -157,13 +159,17 @@ class LibrarianWebTestCase(testtools.TestCase):
         # ignored
         client = LibrarianClient()
         filename = 'sample.txt'
-        aid = client.addFile(filename, 6, StringIO('sample'), 'text/plain')
+        aid = client.addFile(filename, 6, BytesIO(b'sample'), 'text/plain')
         self.commit()
         url = client.getURLForAlias(aid)
-        self.assertEqual(urlopen(url).read(), 'sample')
+        response = requests.get(url)
+        response.raise_for_status()
+        self.assertEqual(response.content, b'sample')
 
         old_url = uri_path_replace(url, str(aid), '42/%d' % aid)
-        self.assertEqual(urlopen(old_url).read(), 'sample')
+        response = requests.get(url)
+        response.raise_for_status()
+        self.assertEqual(response.content, b'sample')
 
         # If the content and alias IDs are not integers, a 404 is raised
         old_url = uri_path_replace(url, str(aid), 'foo/%d' % aid)
@@ -174,10 +180,12 @@ class LibrarianWebTestCase(testtools.TestCase):
     def test_404(self):
         client = LibrarianClient()
         filename = 'sample.txt'
-        aid = client.addFile(filename, 6, StringIO('sample'), 'text/plain')
+        aid = client.addFile(filename, 6, BytesIO(b'sample'), 'text/plain')
         self.commit()
         url = client.getURLForAlias(aid)
-        self.assertEqual(urlopen(url).read(), 'sample')
+        response = requests.get(url)
+        response.raise_for_status()
+        self.assertEqual(response.content, b'sample')
 
         # Change the aliasid and assert we get a 404
         self.assertIn(str(aid), url)
@@ -192,29 +200,30 @@ class LibrarianWebTestCase(testtools.TestCase):
     def test_duplicateuploads(self):
         client = LibrarianClient()
         filename = 'sample.txt'
-        id1 = client.addFile(filename, 6, StringIO('sample'), 'text/plain')
-        id2 = client.addFile(filename, 6, StringIO('sample'), 'text/plain')
+        id1 = client.addFile(filename, 6, BytesIO(b'sample'), 'text/plain')
+        id2 = client.addFile(filename, 6, BytesIO(b'sample'), 'text/plain')
 
         self.assertNotEqual(id1, id2, 'Got allocated the same id!')
 
         self.commit()
 
-        self.assertEqual(client.getFileByAlias(id1).read(), 'sample')
-        self.assertEqual(client.getFileByAlias(id2).read(), 'sample')
+        self.assertEqual(client.getFileByAlias(id1).read(), b'sample')
+        self.assertEqual(client.getFileByAlias(id2).read(), b'sample')
 
     def test_robotsTxt(self):
         url = 'http://%s:%d/robots.txt' % (
             config.librarian.download_host, config.librarian.download_port)
-        f = urlopen(url)
-        self.assertIn('Disallow: /', f.read())
+        response = requests.get(url)
+        response.raise_for_status()
+        self.assertIn('Disallow: /', response.text)
 
     def test_headers(self):
         client = LibrarianClient()
 
         # Upload a file so we can retrieve it.
-        sample_data = 'blah'
+        sample_data = b'blah'
         file_alias_id = client.addFile(
-            'sample', len(sample_data), StringIO(sample_data),
+            'sample', len(sample_data), BytesIO(sample_data),
             contentType='text/plain')
         url = client.getURLForAlias(file_alias_id)
 
@@ -229,9 +238,10 @@ class LibrarianWebTestCase(testtools.TestCase):
         self.commit()
 
         # Fetch the file via HTTP, recording the interesting headers
-        result = urlopen(url)
-        last_modified_header = result.info()['Last-Modified']
-        cache_control_header = result.info()['Cache-Control']
+        response = requests.get(url)
+        response.raise_for_status()
+        last_modified_header = response.headers['Last-Modified']
+        cache_control_header = response.headers['Cache-Control']
 
         # URLs point to the same content for ever, so we have a hardcoded
         # 1 year max-age cache policy.
@@ -247,9 +257,9 @@ class LibrarianWebTestCase(testtools.TestCase):
         client = LibrarianClient()
 
         # Upload a file so we can retrieve it.
-        sample_data = 'blah'
+        sample_data = b'blah'
         file_alias_id = client.addFile(
-            'sample', len(sample_data), StringIO(sample_data),
+            'sample', len(sample_data), BytesIO(sample_data),
             contentType='text/plain')
         url = client.getURLForAlias(file_alias_id)
 
@@ -262,18 +272,19 @@ class LibrarianWebTestCase(testtools.TestCase):
         self.commit()
 
         # Fetch the file via HTTP.
-        urlopen(url)
+        response = requests.get(url)
+        response.raise_for_status()
 
         # Delete the on-disk file.
         storage = LibrarianStorage(config.librarian_server.root, None)
         os.remove(storage._fileLocation(file_alias.contentID))
 
         # The URL now 500s, since the DB says it should exist.
-        exception = self.assertRaises(HTTPError, urlopen, url)
-        self.assertEqual(500, exception.code)
-        self.assertIn('Server', exception.info())
-        self.assertNotIn('Last-Modified', exception.info())
-        self.assertNotIn('Cache-Control', exception.info())
+        response = requests.get(url)
+        self.assertEqual(500, response.status_code)
+        self.assertIn('Server', response.headers)
+        self.assertNotIn('Last-Modified', response.headers)
+        self.assertNotIn('Cache-Control', response.headers)
 
     def get_restricted_file_and_public_url(self, filename='sample'):
         # Use a regular LibrarianClient to ensure we speak to the
@@ -281,10 +292,10 @@ class LibrarianWebTestCase(testtools.TestCase):
         # restricted files are served from.
         client = LibrarianClient()
         fileAlias = client.addFile(
-            filename, 12, StringIO('a' * 12), contentType='text/plain')
+            filename, 12, BytesIO(b'a' * 12), contentType='text/plain')
         # Note: We're deliberately using the wrong url here: we should be
         # passing secure=True to getURLForAlias, but to use the returned URL
-        # we would need a wildcard DNS facility patched into urlopen; instead
+        # we would need a wildcard DNS facility patched into requests; instead
         # we use the *deliberate* choice of having the path of secure and
         # insecure urls be the same, so that we can test it: the server code
         # doesn't need to know about the fancy wildcard domains.
@@ -301,9 +312,9 @@ class LibrarianWebTestCase(testtools.TestCase):
         # IFF there is a .restricted. in the host, then the library file alias
         # in the subdomain must match that in the path.
         client = LibrarianClient()
-        fileAlias = client.addFile('sample', 12, StringIO('a' * 12),
+        fileAlias = client.addFile('sample', 12, BytesIO(b'a' * 12),
             contentType='text/plain')
-        fileAlias2 = client.addFile('sample', 12, StringIO('b' * 12),
+        fileAlias2 = client.addFile('sample', 12, BytesIO(b'b' * 12),
             contentType='text/plain')
         self.commit()
         url = client.getURLForAlias(fileAlias)
@@ -313,7 +324,8 @@ class LibrarianWebTestCase(testtools.TestCase):
         template_host = 'i%%d.restricted.%s' % download_host
         path = get_libraryfilealias_download_path(fileAlias, 'sample')
         # The basic URL must work.
-        urlopen(url)
+        response = requests.get(url)
+        response.raise_for_status()
         # Use the network level protocol because DNS resolution won't work
         # here (no wildcard support)
         connection = httplib.HTTPConnection(
@@ -356,20 +368,17 @@ class LibrarianWebTestCase(testtools.TestCase):
         fileAlias, url = self.get_restricted_file_and_public_url()
         # The file should not be able to be opened - the token supplied
         # is not one we issued.
-        self.require404(url + '?token=haxx0r')
+        self.require404(url, params={"token": "haxx0r"})
 
     def test_restricted_with_token(self):
         fileAlias, url = self.get_restricted_file_and_public_url()
         # We have the base url for a restricted file; grant access to it
         # for a short time.
         token = TimeLimitedToken.allocate(url)
-        url = url + "?token=%s" % token
         # Now we should be able to access the file.
-        fileObj = urlopen(url)
-        try:
-            self.assertEqual("a" * 12, fileObj.read())
-        finally:
-            fileObj.close()
+        response = requests.get(url, params={"token": token})
+        response.raise_for_status()
+        self.assertEqual(b"a" * 12, response.content)
 
     def test_restricted_with_token_encoding(self):
         fileAlias, url = self.get_restricted_file_and_public_url('foo~%')
@@ -380,20 +389,16 @@ class LibrarianWebTestCase(testtools.TestCase):
         token = TimeLimitedToken.allocate(url)
 
         # Now we should be able to access the file.
-        fileObj = urlopen(url + "?token=%s" % token)
-        try:
-            self.assertEqual("a" * 12, fileObj.read())
-        finally:
-            fileObj.close()
+        response = requests.get(url, params={"token": token})
+        response.raise_for_status()
+        self.assertEqual(b"a" * 12, response.content)
 
         # The token is valid even if the filename is encoded differently.
         mangled_url = url.replace('~', '%7E')
         self.assertNotEqual(mangled_url, url)
-        fileObj = urlopen(mangled_url + "?token=%s" % token)
-        try:
-            self.assertEqual("a" * 12, fileObj.read())
-        finally:
-            fileObj.close()
+        response = requests.get(url, params={"token": token})
+        response.raise_for_status()
+        self.assertEqual(b"a" * 12, response.content)
 
     def test_restricted_with_expired_token(self):
         fileAlias, url = self.get_restricted_file_and_public_url()
@@ -407,14 +412,12 @@ class LibrarianWebTestCase(testtools.TestCase):
             TimeLimitedToken.token == hashlib.sha256(token).hexdigest())
         tokens.set(
             TimeLimitedToken.created == SQL("created - interval '1 week'"))
-        url = url + "?token=%s" % token
         # Now, as per test_restricted_no_token we should get a 404.
-        self.require404(url)
+        self.require404(url, params={"token": token})
 
     def test_restricted_file_headers(self):
         fileAlias, url = self.get_restricted_file_and_public_url()
         token = TimeLimitedToken.allocate(url)
-        url = url + "?token=%s" % token
         # Change the date_created to a known value for testing.
         file_alias = IMasterStore(LibraryFileAlias).get(
             LibraryFileAlias, fileAlias)
@@ -423,9 +426,9 @@ class LibrarianWebTestCase(testtools.TestCase):
         # Commit the update.
         self.commit()
         # Fetch the file via HTTP, recording the interesting headers
-        result = urlopen(url)
-        last_modified_header = result.info()['Last-Modified']
-        cache_control_header = result.info()['Cache-Control']
+        response = requests.get(url, params={"token": token})
+        last_modified_header = response.headers['Last-Modified']
+        cache_control_header = response.headers['Cache-Control']
         # No caching for restricted files.
         self.assertEqual(cache_control_header, 'max-age=0, private')
         # And we should have a correct Last-Modified header too.
@@ -433,13 +436,10 @@ class LibrarianWebTestCase(testtools.TestCase):
             last_modified_header, 'Tue, 30 Jan 2001 13:45:59 GMT')
         # Perhaps we should also set Expires to the Last-Modified.
 
-    def require404(self, url):
+    def require404(self, url, **kwargs):
         """Assert that opening `url` raises a 404."""
-        try:
-            urlopen(url)
-            self.fail('404 not raised')
-        except HTTPError as e:
-            self.assertEqual(e.code, 404)
+        response = requests.get(url, **kwargs)
+        self.assertEqual(404, response.status_code)
 
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
@@ -455,9 +455,9 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     def test_getURLForAliasObject(self):
         # getURLForAliasObject returns the same URL as getURLForAlias.
         client = LibrarianClient()
-        content = "Test content"
+        content = b"Test content"
         alias_id = client.addFile(
-            'test.txt', len(content), StringIO(content),
+            'test.txt', len(content), BytesIO(content),
             contentType='text/plain')
         self.commit()
 
@@ -481,7 +481,7 @@ class DeletedContentTestCase(unittest.TestCase):
         switch_dbuser('testadmin')
 
         alias = getUtility(ILibraryFileAliasSet).create(
-                'whatever', 8, StringIO('xxx\nxxx\n'), 'text/plain')
+                'whatever', 8, BytesIO(b'xxx\nxxx\n'), 'text/plain')
         alias_id = alias.id
         transaction.commit()
 
@@ -493,8 +493,9 @@ class DeletedContentTestCase(unittest.TestCase):
 
         # And it can be retrieved via the web
         url = alias.http_url
-        retrieved_content = urlopen(url).read()
-        self.assertEqual(retrieved_content, 'xxx\nxxx\n')
+        response = requests.get(url)
+        response.raise_for_status()
+        self.assertEqual(response.content, b'xxx\nxxx\n')
 
         # But when we flag the content as deleted
         cur = cursor()
@@ -508,8 +509,5 @@ class DeletedContentTestCase(unittest.TestCase):
         self.assertRaises(DownloadFailed, alias.open)
 
         # And people see a 404 page
-        try:
-            urlopen(url)
-            self.fail('404 not raised')
-        except HTTPError as x:
-            self.assertEqual(x.code, 404)
+        response = requests.get(url)
+        self.assertEqual(404, response.status_code)
