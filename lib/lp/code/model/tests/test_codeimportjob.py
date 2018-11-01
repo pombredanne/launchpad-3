@@ -131,7 +131,8 @@ class TestCodeImportJob(TestCaseWithFactory):
                 'git://git.example.com/project.git']))
 
     def test_git_to_git_arguments(self):
-        self.pushConfig('codeimport', macaroon_secret_key='some-secret')
+        self.pushConfig(
+            'launchpad', internal_macaroon_secret_key='some-secret')
         self.useFixture(GitHostingFixture())
         code_import = self.factory.makeCodeImport(
             git_repo_url="git://git.example.com/project.git",
@@ -1271,7 +1272,8 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
     def setUp(self):
         super(TestCodeImportJobMacaroonIssuer, self).setUp()
         login_for_code_imports()
-        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
         self.useFixture(GitHostingFixture())
 
     def makeJob(self, target_rcs_type=TargetRevisionControlSystems.GIT):
@@ -1295,6 +1297,11 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
             MatchesStructure.byEquality(
                 caveat_id="lp.code-import-job %s" % job.id),
             ]))
+
+    def test_issueMacaroon_good_old_config(self):
+        self.pushConfig("launchpad", internal_macaroon_secret_key="")
+        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        self.test_issueMacaroon_good()
 
     def test_checkMacaroonIssuer_good(self):
         job = self.makeJob()

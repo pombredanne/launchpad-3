@@ -891,7 +891,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     def test_translatePath_code_import(self):
         # A code import worker with a suitable macaroon can write to a
         # repository associated with a running code import job.
-        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
         machine = self.factory.makeCodeImportMachine(set_online=True)
         code_imports = [
             self.factory.makeCodeImport(
@@ -927,7 +928,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
     def test_translatePath_private_code_import(self):
         # A code import worker with a suitable macaroon can write to a
         # repository associated with a running private code import job.
-        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
         machine = self.factory.makeCodeImportMachine(set_online=True)
         code_imports = [
             self.factory.makeCodeImport(
@@ -999,7 +1001,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
             faults.Unauthorized)
 
     def test_authenticateWithPassword_code_import(self):
-        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
         code_import = self.factory.makeCodeImport(
             target_rcs_type=TargetRevisionControlSystems.GIT)
         with celebrity_logged_in("vcs_imports"):
@@ -1022,7 +1025,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         # A code import worker with a suitable macaroon has repository owner
         # privileges on a repository associated with a running code import
         # job.
-        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
         machine = self.factory.makeCodeImportMachine(set_online=True)
         code_imports = [
             self.factory.makeCodeImport(
@@ -1062,7 +1066,8 @@ class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
         # A code import worker with a suitable macaroon has repository owner
         # privileges on a repository associated with a running private code
         # import job.
-        self.pushConfig("codeimport", macaroon_secret_key="some-secret")
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
         machine = self.factory.makeCodeImportMachine(set_online=True)
         code_imports = [
             self.factory.makeCodeImport(
