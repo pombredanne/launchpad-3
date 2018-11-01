@@ -907,18 +907,14 @@ class TestCalculateScore(TestCaseWithFactory):
 
 
 class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
-    """Test BinaryPackageBuild macaroon issuing and verification.
-
-    The librarian server verifies these macaroons, and has no Zope
-    interaction when doing so, so we take care to test that verification
-    works without an interaction.
-    """
+    """Test BinaryPackageBuild macaroon issuing and verification."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         super(TestBinaryPackageBuildMacaroonIssuer, self).setUp()
-        self.pushConfig("librarian", macaroon_secret_key="some-secret")
+        self.pushConfig(
+            "launchpad", internal_macaroon_secret_key="some-secret")
 
     def test_issueMacaroon_refuses_public_archive(self):
         build = self.factory.makeBinaryPackageBuild()
@@ -968,7 +964,6 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = issuer.issueMacaroon(build)
-        logout()
         self.assertTrue(issuer.verifyMacaroon(macaroon, lfa_id))
 
     def test_verifyMacaroon_wrong_location(self):
@@ -982,7 +977,6 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = Macaroon(
             location="another-location", key=issuer._root_secret)
-        logout()
         self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
 
     def test_verifyMacaroon_wrong_key(self):
@@ -996,7 +990,6 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname, key="another-secret")
-        logout()
         self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
 
     def test_verifyMacaroon_not_building(self):
@@ -1008,7 +1001,6 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = issuer.issueMacaroon(build)
-        logout()
         self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
 
     def test_verifyMacaroon_wrong_build(self):
@@ -1024,7 +1016,6 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = issuer.issueMacaroon(other_build)
-        logout()
         self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))
 
     def test_verifyMacaroon_wrong_file(self):
@@ -1038,5 +1029,4 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         issuer = removeSecurityProxy(
             getUtility(IMacaroonIssuer, "binary-package-build"))
         macaroon = issuer.issueMacaroon(build)
-        logout()
         self.assertFalse(issuer.verifyMacaroon(macaroon, lfa_id))

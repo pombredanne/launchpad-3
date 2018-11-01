@@ -12,13 +12,19 @@ import hashlib
 import urllib
 
 from pymacaroons import Macaroon
+from six.moves.xmlrpc_client import Fault
 from storm.expr import (
     And,
     SQL,
     )
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
+from twisted.internet import (
+    defer,
+    reactor as default_reactor,
+    threads,
+    )
+from twisted.web import xmlrpc
 
+from lp.services.config import config
 from lp.services.database.interfaces import IStore
 from lp.services.database.sqlbase import session_store
 from lp.services.librarian.model import (
@@ -26,7 +32,8 @@ from lp.services.librarian.model import (
     LibraryFileContent,
     TimeLimitedToken,
     )
-from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.twistedsupport import cancel_on_timeout
+from lp.xmlrpc import faults
 
 
 class Library:
@@ -40,11 +47,38 @@ class Library:
             Files created in this library will marked as restricted.
         """
         self.restricted = restricted
+        self._authserver = xmlrpc.Proxy(
+            config.librarian.authentication_endpoint,
+            connectTimeout=config.librarian.authentication_timeout)
 
     # The following methods are read-only queries.
 
     def lookupBySHA1(self, digest):
         return [fc.id for fc in LibraryFileContent.selectBy(sha1=digest)]
+
+    @defer.inlineCallbacks
+    def _verifyMacaroon(self, macaroon, aliasid):
+        """Verify an LFA-authorising macaroon with the authserver.
+
+        This must be called in the reactor thread.
+
+        :param macaroon: A `Macaroon`.
+        :param aliasid: A `LibraryFileAlias` ID.
+        :return: True if the authserver reports that `macaroon` authorises
+            access to `aliasid`; False if it reports that it does not.
+        :raises Fault: if the authserver request fails.
+        """
+        try:
+            yield cancel_on_timeout(
+                self._authserver.callRemote(
+                    "verifyMacaroon", macaroon.serialize(), aliasid),
+                config.librarian.authentication_timeout)
+            defer.returnValue(True)
+        except Fault as fault:
+            if fault.faultCode == faults.Unauthorized.error_code:
+                defer.returnValue(False)
+            else:
+                raise
 
     def getAlias(self, aliasid, token, path):
         """Returns a LibraryFileAlias, or raises LookupError.
@@ -52,6 +86,7 @@ class Library:
         A LookupError is raised if no record with the given ID exists
         or if not related LibraryFileContent exists.
 
+        :param aliasid: A `LibraryFileAlias` ID.
         :param token: The token for the file. If None no token is present.
             When a token is supplied, it is looked up with path.
         :param path: The path the request is for, unused unless a token
@@ -74,13 +109,11 @@ class Library:
             # This needs to match url_path_quote.
             normalised_path = urllib.quote(urllib.unquote(path), safe='/~+')
             if isinstance(token, Macaroon):
-                # We have no Zope interaction, so must remove the proxy.
-                issuer = removeSecurityProxy(
-                    getUtility(IMacaroonIssuer, token.identifier))
                 # Macaroons have enough other constraints that they don't
                 # need to be path-specific; it's simpler and faster to just
                 # check the alias ID.
-                token_ok = issuer.verifyMacaroon(token, aliasid)
+                token_ok = threads.blockingCallFromThread(
+                    default_reactor, self._verifyMacaroon, token, aliasid)
             else:
                 store = session_store()
                 token_ok = not store.find(TimeLimitedToken,

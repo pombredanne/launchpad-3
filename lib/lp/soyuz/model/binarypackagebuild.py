@@ -1377,9 +1377,10 @@ class BinaryPackageBuildMacaroonIssuer:
 
     @property
     def _root_secret(self):
-        secret = config.librarian.macaroon_secret_key
+        secret = config.launchpad.internal_macaroon_secret_key
         if not secret:
-            raise RuntimeError("librarian.macaroon_secret_key not configured.")
+            raise RuntimeError(
+                "launchpad.internal_macaroon_secret_key not configured.")
         return secret
 
     def issueMacaroon(self, context):
