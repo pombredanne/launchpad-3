@@ -16,6 +16,7 @@ __all__ = [
     'GitRepositoryEditReviewerView',
     'GitRepositoryEditView',
     'GitRepositoryNavigation',
+    'GitRepositoryPermissionsActivityView',
     'GitRepositoryURL',
     'GitRepositoryView',
     ]
@@ -771,3 +772,6 @@ class GitRepositoryDeletionView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+class GitRepositoryPermissionsActivityView(LaunchpadView):
+    pass
