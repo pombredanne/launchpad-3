@@ -159,7 +159,7 @@ class LibrarianWebTestCase(LibrarianWebTestMixin, TestCaseWithFactory):
         # displaying Ubuntu build logs in the browser.  The mimetype should be
         # "text/plain" for these files.
         client = LibrarianClient()
-        contents = b'Build log...'
+        contents = u'Build log \N{SNOWMAN}...'.encode('UTF-8')
         build_log = BytesIO()
         with GzipFile(mode='wb', fileobj=build_log) as f:
             f.write(contents)
@@ -180,7 +180,7 @@ class LibrarianWebTestCase(LibrarianWebTestMixin, TestCaseWithFactory):
                         "Wrong mimetype. %s != 'text/plain'." % mimetype)
         self.assertTrue(encoding == "gzip",
                         "Wrong encoding. %s != 'gzip'." % encoding)
-        self.assertEqual(contents, response.content)
+        self.assertEqual(contents.decode('UTF-8'), response.text)
 
     def test_checkNoEncoding(self):
         # Other files should have no encoding.
