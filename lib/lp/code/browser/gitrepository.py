@@ -774,4 +774,11 @@ class GitRepositoryDeletionView(LaunchpadFormView):
         return canonical_url(self.context)
 
 class GitRepositoryPermissionsActivityView(LaunchpadView):
-    pass
+
+    @property
+    def page_title(self):
+        return "Permissions Activity"
+
+    @property
+    def activity(self):
+        return self.context.getActivity()
