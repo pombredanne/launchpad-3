@@ -1154,3 +1154,53 @@ class TestGitRepositoryDeletionView(BrowserTestCase):
         self.assertEqual(
             ["Repository %s deleted." % name],
             get_feedback_messages(browser.contents))
+
+
+class TestGitRepositoryPermissionsActivityView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_render(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True, can_create=True)
+
+        browser = self.getViewBrowser(
+            repository, "+permissionsactivity", rootsite="code",
+            user=repository.owner)
+        self.assertIsNotNone(
+            find_tag_by_id(browser.contents, 'activity-listing'))
+
+    def test_activity_query_count(self):
+        requester = self.factory.makePerson()
+        repository = repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+        rule = self.factory.makeGitRule(repository)
+
+        grantees = iter([self.factory.makePerson() for _ in range(4)])
+
+        def login_and_view():
+            browser = self.getViewBrowser(
+                repository,
+                "+permissionsactivity",
+                rootsite="code",
+                user=repository.owner)
+            self.assertIsNotNone(
+                find_tag_by_id(browser.contents, 'activity-listing'))
+
+        def create_activity():
+            self.factory.makeGitRuleGrant(
+                rule=rule,
+                grantee=next(grantees),
+                can_push=True,
+                can_create=True)
+
+        recorder1, recorder2 = record_two_runs(
+            login_and_view,
+            create_activity,
+            2)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

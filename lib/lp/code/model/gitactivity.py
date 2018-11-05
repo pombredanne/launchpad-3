@@ -83,6 +83,10 @@ class GitActivity(StormBase):
         else:
             return None
 
+    @staticmethod
+    def preloadDataForActivities(activities):
+        return activities
+
 
 def _make_rule_value(rule, position=None):
     return {

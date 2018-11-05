@@ -1287,6 +1287,11 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         return Store.of(self).find(GitActivity, *clauses).order_by(
             Desc(GitActivity.date_changed), Desc(GitActivity.id))
 
+    def getPrecachedActivity(self, changed_after=None):
+        results = self.getActivity(changed_after)
+        loader = partial(GitActivity.preloadDataForActivities)
+        return DecoratedResultSet(results, pre_iter_hook=loader)
+
     def canBeDeleted(self):
         """See `IGitRepository`."""
         # Can't delete if the repository is associated with anything.

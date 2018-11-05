@@ -29,7 +29,7 @@
     <div class="yui-g">
       <div class="top-portlet">
         <h1>Activity log for repository <span tal:replace="context/display_name" /></h1>
-        <table class="listing">
+        <table id="activity-listing" class="listing">
           <thead>
             <tr>
               <th>Date</th>

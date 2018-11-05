@@ -773,6 +773,7 @@ class GitRepositoryDeletionView(LaunchpadFormView):
     def cancel_url(self):
         return canonical_url(self.context)
 
+
 class GitRepositoryPermissionsActivityView(LaunchpadView):
 
     @property
@@ -781,4 +782,4 @@ class GitRepositoryPermissionsActivityView(LaunchpadView):
 
     @property
     def activity(self):
-        return self.context.getActivity()
+        return self.context.getPrecachedActivity()
