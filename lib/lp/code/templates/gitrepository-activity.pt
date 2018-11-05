@@ -7,6 +7,24 @@
   i18n:domain="launchpad">
 <body>
 
+<metal:macros fill-slot="bogus">
+    <metal:macro define-macro="activity-value">
+        <ul tal:condition="value">
+          <li><b>Ref Pattern:</b> <span tal:content="value/ref_pattern" /></li>
+          <tal:comment condition="nothing">
+            Grant changes
+          </tal:comment>
+          <span tal:condition="python:'can_create' in value"><b>create: </b><span tal:content="value/can_create" />, </span>
+          <span tal:condition="python:'can_push' in value"><b>push: </b><span tal:content="value/can_push" />, </span>
+          <span tal:condition="python:'can_force_push' in value"><b>force-push: </b><span tal:content="value/can_force_push" /></span>
+          <tal:comment condition="nothing">
+            Rule changes
+          </tal:comment>
+          <li tal:condition="python: 'position' in value">Rule position: <span tal:content="value/position" /></li>
+        </ul>
+    </metal:macro>
+</metal:macros>
+
 <div metal:fill-slot="main">
     <div class="yui-g">
       <div class="top-portlet">
@@ -35,8 +53,16 @@
               <td tal:content="structure log/changer/fmt:link">Changer</td>
               <td tal:content="structure log/changee/fmt:link">Changee</td>
               <td tal:content="log/what_changed/title">description</td>
-              <td tal:content="log/old_value">old value</td>
-              <td tal:content="log/new_value">new value</td>
+              <td>
+                <tal:activity define="value log/old_value">
+                    <metal:logs use-macro="template/macros/activity-value" />
+                </tal:activity>
+              </td>
+              <td>
+                <tal:activity define="value log/new_value">
+                    <metal:logs use-macro="template/macros/activity-value" />
+                </tal:activity>
+              </td>
             </tr>
           </tbody>
         </table>

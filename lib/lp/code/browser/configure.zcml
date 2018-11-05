@@ -880,7 +880,7 @@
         class="lp.code.browser.gitrepository.GitRepositoryPermissionsActivityView"
         permission="launchpad.Edit"
         name="+permissionsactivity"
-        template="../templates/gitrepository-activity.pt"/>
+        template="../templates/gitrepository-activity.pt" />
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitsubscription.GitSubscriptionAddView"
