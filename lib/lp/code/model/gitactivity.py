@@ -17,6 +17,7 @@ from storm.locals import (
     JSON,
     Reference,
     )
+from zope.component import getUtility
 from zope.interface import implementer
 
 from lp.code.enums import GitActivityType
@@ -25,6 +26,7 @@ from lp.code.interfaces.gitactivity import (
     IGitActivitySet,
     )
 from lp.registry.interfaces.person import (
+    IPersonSet,
     validate_person,
     validate_public_person,
     )
@@ -85,6 +87,13 @@ class GitActivity(StormBase):
 
     @staticmethod
     def preloadDataForActivities(activities):
+        # Utility to load related data for a list of GitActivity
+        person_ids = set()
+        for activity in activities:
+            person_ids.add(activity.changer_id)
+            person_ids.add(activity.changee_id)
+        list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+            person_ids, need_validity=True))
         return activities
 
 
