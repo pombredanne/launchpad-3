@@ -419,9 +419,9 @@ class ISnapView(Interface):
     def requestBuilds(requester, archive, pocket, channels=None):
         """Request that the snap package be built for relevant architectures.
 
-        This is an asynchronous operation, and returns a job ID which can be
-        passed to `snap.getRequestedBuilds`; once the operation has
-        finished, that method will return the resulting builds.
+        This is an asynchronous operation; once the operation has finished,
+        the resulting build request's C{status} will be "Completed" and its
+        C{builds} collection will return the resulting builds.
 
         :param requester: The person requesting the builds.
         :param archive: The IArchive to associate the builds with.
