@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from testtools.matchers import StartsWith
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
@@ -60,6 +61,18 @@ class TestSSHKey(TestCaseWithFactory):
         with person_logged_in(person):
             key = self.factory.makeSSHKey(person, "ecdsa-sha2-nistp521")
         expected = "ecdsa-sha2-nistp521 %s %s" % (key.keytext, key.comment)
+        self.assertEqual(expected, key.getFullKeyText())
+
+    def test_getFullKeyText_for_corrupt_key(self):
+        # If the key text is corrupt, the type from the database is used
+        # instead of the one decoded from the text.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            key = self.factory.makeSSHKey(person, "ssh-rsa")
+            # The base64 has a valid netstring, but the contents are garbage so
+            # can't be a valid key type.
+            removeSecurityProxy(key).keytext = 'AAAAB3NzaC1012EAAAA='
+        expected = "ssh-rsa %s %s" % (key.keytext, key.comment)
         self.assertEqual(expected, key.getFullKeyText())
 
     def test_destroySelf_sends_notification_by_default(self):
