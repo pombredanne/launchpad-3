@@ -1156,7 +1156,7 @@ class TestGitRepositoryDeletionView(BrowserTestCase):
             get_feedback_messages(browser.contents))
 
 
-class TestGitRepositoryPermissionsActivityView(BrowserTestCase):
+class TestGitRepositoryActivityView(BrowserTestCase):
 
     layer = DatabaseFunctionalLayer
 
@@ -1170,7 +1170,7 @@ class TestGitRepositoryPermissionsActivityView(BrowserTestCase):
             rule=rule, grantee=requester, can_push=True, can_create=True)
 
         browser = self.getViewBrowser(
-            repository, "+permissionsactivity", rootsite="code",
+            repository, "+activity", rootsite="code",
             user=repository.owner)
         self.assertIsNotNone(
             find_tag_by_id(browser.contents, 'activity-listing'))
@@ -1186,7 +1186,7 @@ class TestGitRepositoryPermissionsActivityView(BrowserTestCase):
         def login_and_view():
             browser = self.getViewBrowser(
                 repository,
-                "+permissionsactivity",
+                "+activity",
                 rootsite="code",
                 user=repository.owner)
             self.assertIsNotNone(
