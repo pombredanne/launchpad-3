@@ -55,14 +55,14 @@
               <td>
                 <tal:activity define="value log/old_value">
                   <metal:logs use-macro="template/macros/activity-value">
-                    <span metal:fill-slot="permissions" tal:content="python:view.old_permissions(log)"></span>
+                    <span metal:fill-slot="permissions" tal:content="python:view.display_permissions(log.old_value)"></span>
                   </metal:logs>
                 </tal:activity>
               </td>
               <td>
                 <tal:activity define="value log/new_value">
                   <metal:logs use-macro="template/macros/activity-value">
-                    <span metal:fill-slot="permissions" tal:content="python:view.new_permissions(log)"></span>
+                    <span metal:fill-slot="permissions" tal:content="python:view.display_permissions(log.new_value)"></span>
                   </metal:logs>
                 </tal:activity>
               </td>
