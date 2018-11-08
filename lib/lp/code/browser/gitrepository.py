@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'GitRefBatchNavigator',
     'GitRepositoriesBreadcrumb',
+    'GitRepositoryActivityView',
     'GitRepositoryBreadcrumb',
     'GitRepositoryContextMenu',
     'GitRepositoryDeletionView',
@@ -16,7 +17,6 @@ __all__ = [
     'GitRepositoryEditReviewerView',
     'GitRepositoryEditView',
     'GitRepositoryNavigation',
-    'GitRepositoryPermissionsActivityView',
     'GitRepositoryURL',
     'GitRepositoryView',
     ]
@@ -233,7 +233,7 @@ class GitRepositoryEditMenu(NavigationMenu):
     @enabled_with_permission("launchpad.Edit")
     def activity(self):
         text = "View activity"
-        return Link("+activity", text, icon="edit")
+        return Link("+activity", text, icon="info")
 
     @enabled_with_permission("launchpad.Edit")
     def delete(self):
@@ -781,19 +781,13 @@ class GitRepositoryDeletionView(LaunchpadFormView):
 
 class GitRepositoryActivityView(LaunchpadView):
 
-    @property
-    def page_title(self):
-        return "Activity"
+    page_title = "Activity"
 
     @property
     def label(self):
-        return "Activity log"
+        return "Activity log for %s" % self.context.display_name
 
-    @property
-    def activity(self):
-        return self.context.getPrecachedActivity()
-
-    def display_permissions(self, values):
+    def displayPermissions(self, values):
         """Assemble a human readable list from the permissions changes."""
         permissions = []
         if values.get('can_create'):

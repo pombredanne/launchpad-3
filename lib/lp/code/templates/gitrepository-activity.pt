@@ -40,7 +40,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="log view/activity">
+            <tr tal:repeat="log context/getPrecachedActivity">
               <tal:comment condition="nothing">
                 XXX: Gavin Panella 2009-08-12 bug=412963: Using strftime()
                 here because fmt:datetime changes timezone, even though we
@@ -55,14 +55,14 @@
               <td>
                 <tal:activity define="value log/old_value">
                   <metal:logs use-macro="template/macros/activity-value">
-                    <span metal:fill-slot="permissions" tal:content="python:view.display_permissions(log.old_value)"></span>
+                    <span metal:fill-slot="permissions" tal:content="python:view.displayPermissions(log.old_value)"></span>
                   </metal:logs>
                 </tal:activity>
               </td>
               <td>
                 <tal:activity define="value log/new_value">
                   <metal:logs use-macro="template/macros/activity-value">
-                    <span metal:fill-slot="permissions" tal:content="python:view.display_permissions(log.new_value)"></span>
+                    <span metal:fill-slot="permissions" tal:content="python:view.displayPermissions(log.new_value)"></span>
                   </metal:logs>
                 </tal:activity>
               </td>
