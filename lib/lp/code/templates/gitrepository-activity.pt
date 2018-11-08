@@ -10,18 +10,17 @@
   <metal:macros fill-slot="bogus">
     <metal:macro define-macro="activity-value">
       <ul tal:condition="value">
-        <li><b>Ref Pattern:</b> <span tal:content="value/ref_pattern" /></li>
-        <tal:comment condition="nothing">
-          Grant changes
-        </tal:comment>
-        <span tal:condition="python:'can_create' in value"><b>create: </b><span tal:content="value/can_create" />,
-        </span>
-        <span tal:condition="python:'can_push' in value"><b>push: </b><span tal:content="value/can_push" />, </span>
-        <span tal:condition="python:'can_force_push' in value"><b>force-push: </b><span tal:content="value/can_force_push" /></span>
+        <li><b>Pattern:</b> <span tal:content="value/ref_pattern" /></li>
         <tal:comment condition="nothing">
           Rule changes
         </tal:comment>
-        <li tal:condition="python: 'position' in value">Rule position: <span tal:content="value/position" /></li>
+        <li tal:condition="python: 'position' in value"><strong>Rule position:</strong> <span tal:content="value/position" /></li>
+        <tal:comment condition="nothing">
+          Grant changes
+        </tal:comment>
+        <li tal:condition="python: 'position' not in value"><strong>Permissions:</strong>
+          <span metal:define-slot="permissions"></span>
+        </li>
       </ul>
     </metal:macro>
   </metal:macros>
@@ -29,7 +28,6 @@
   <div metal:fill-slot="main">
     <div class="yui-g">
       <div class="top-portlet">
-        <h1>Activity log for repository <span tal:replace="context/display_name" /></h1>
         <table id="activity-listing" class="listing">
           <thead>
             <tr>
@@ -56,12 +54,16 @@
               <td tal:content="log/what_changed/title">description</td>
               <td>
                 <tal:activity define="value log/old_value">
-                  <metal:logs use-macro="template/macros/activity-value" />
+                  <metal:logs use-macro="template/macros/activity-value">
+                    <span metal:fill-slot="permissions" tal:content="python:view.old_permissions(log)"></span>
+                  </metal:logs>
                 </tal:activity>
               </td>
               <td>
                 <tal:activity define="value log/new_value">
-                  <metal:logs use-macro="template/macros/activity-value" />
+                  <metal:logs use-macro="template/macros/activity-value">
+                    <span metal:fill-slot="permissions" tal:content="python:view.new_permissions(log)"></span>
+                  </metal:logs>
                 </tal:activity>
               </td>
             </tr>

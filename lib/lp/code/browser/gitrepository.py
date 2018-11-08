@@ -781,10 +781,31 @@ class GitRepositoryDeletionView(LaunchpadFormView):
 
 class GitRepositoryActivityView(LaunchpadView):
 
+    def _build_permissions(self, values):
+        """Assemble a human readable list from the permissions changes."""
+        permissions = []
+        if values.get('can_create'):
+            permissions.append('create')
+        if values.get('can_push'):
+            permissions.append('push')
+        if values.get('can_force_push'):
+            permissions.append('force-push')
+        return ', '.join(permissions)
+
     @property
     def page_title(self):
         return "Activity"
 
     @property
+    def label(self):
+        return "Activity log"
+
+    @property
     def activity(self):
         return self.context.getPrecachedActivity()
+
+    def old_permissions(self, log):
+        return self._build_permissions(log.old_value)
+
+    def new_permissions(self, log):
+        return self._build_permissions(log.new_value)
