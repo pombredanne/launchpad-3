@@ -1177,7 +1177,7 @@ class TestGitRepositoryActivityView(BrowserTestCase):
 
     def test_activity_query_count(self):
         requester = self.factory.makePerson()
-        repository = repository = removeSecurityProxy(
+        repository = removeSecurityProxy(
             self.factory.makeGitRepository(owner=requester))
         rule = self.factory.makeGitRule(repository)
 
