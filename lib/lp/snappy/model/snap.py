@@ -50,10 +50,7 @@ from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     )
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
-from lp.app.errors import (
-    IncompatibleArguments,
-    NotFoundError,
-    )
+from lp.app.errors import IncompatibleArguments
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
@@ -117,6 +114,7 @@ from lp.services.database.stormexpr import (
     )
 from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -162,6 +160,7 @@ from lp.snappy.interfaces.snapjob import ISnapRequestBuildsJobSource
 from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snapbuild import SnapBuild
+from lp.snappy.model.snapjob import SnapJob
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.model.archive import (
     Archive,
@@ -879,6 +878,9 @@ class Snap(Storm, WebhookTargetMixin):
                 SnapBuild.snap = ?
             """, (self.id,))
         store.find(SnapBuild, SnapBuild.snap == self).remove()
+        affected_jobs = Select(
+            [SnapJob.job_id], And(SnapJob.job == Job.id, SnapJob.snap == self))
+        store.find(Job, Job.id.is_in(affected_jobs)).remove()
         getUtility(IWebhookSet).delete(self.webhooks)
         store.remove(self)
         store.find(
