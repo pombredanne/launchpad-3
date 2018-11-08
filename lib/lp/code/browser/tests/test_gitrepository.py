@@ -1172,8 +1172,32 @@ class TestGitRepositoryActivityView(BrowserTestCase):
         browser = self.getViewBrowser(
             repository, "+activity", rootsite="code",
             user=repository.owner)
-        self.assertIsNotNone(
-            find_tag_by_id(browser.contents, 'activity-listing'))
+
+        table = find_tag_by_id(browser.contents, "activity-listing")
+        date = repository.getActivity()[0].date_changed.strftime(
+            '%Y-%m-%d %T')
+        person_name = repository.owner.display_name
+        self.assertThat(extract_text(table), DocTestMatches(dedent("""
+            Date
+            Author
+            Target
+            What changed
+            Old value
+            New value
+            {date}
+            {person_name}
+            {person_name}
+            Added access grant
+            Pattern: refs/heads/*
+            Permissions:
+            create, push
+            {date}
+            {person_name}
+            Added access rule
+            Pattern: refs/heads/*
+            Rule position: 0
+            """.format(date=date, person_name=person_name)),
+            flags=doctest.NORMALIZE_WHITESPACE))
 
     def test_activity_query_count(self):
         requester = self.factory.makePerson()
