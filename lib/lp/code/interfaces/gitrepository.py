@@ -639,6 +639,14 @@ class IGitRepositoryView(IHasRecipes):
         :return: A `ResultSet` of `IGitActivity`.
         """
 
+    def getPrecachedActivity(changed_after=None):
+        """Activity log entries are preloaded.
+
+        :param changed_after: If supplied, only return entries for changes
+            made after this date.
+        :return: A `ResultSet` of `IGitActivity`.
+        """
+
 
 class IGitRepositoryModerateAttributes(Interface):
     """IGitRepository attributes that can be edited by more than one community.

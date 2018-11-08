@@ -137,7 +137,10 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sharingjob import (
@@ -1286,6 +1289,22 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             clauses.append(GitActivity.date_changed > changed_after)
         return Store.of(self).find(GitActivity, *clauses).order_by(
             Desc(GitActivity.date_changed), Desc(GitActivity.id))
+
+    def getPrecachedActivity(self, **kwargs):
+
+        def preloadDataForActivities(activities):
+            # Utility to load related data for a list of GitActivity
+            person_ids = set()
+            for activity in activities:
+                person_ids.add(activity.changer_id)
+                person_ids.add(activity.changee_id)
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                person_ids, need_validity=True))
+            return activities
+
+        results = self.getActivity(**kwargs)
+        return DecoratedResultSet(
+            results, pre_iter_hook=preloadDataForActivities)
 
     def canBeDeleted(self):
         """See `IGitRepository`."""

@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'GitRefBatchNavigator',
     'GitRepositoriesBreadcrumb',
+    'GitRepositoryActivityView',
     'GitRepositoryBreadcrumb',
     'GitRepositoryContextMenu',
     'GitRepositoryDeletionView',
@@ -210,7 +211,7 @@ class GitRepositoryEditMenu(NavigationMenu):
     usedfor = IGitRepository
     facet = "branches"
     title = "Edit Git repository"
-    links = ["edit", "reviewer", "webhooks", "delete"]
+    links = ["edit", "reviewer", "webhooks", "activity", "delete"]
 
     @enabled_with_permission("launchpad.Edit")
     def edit(self):
@@ -228,6 +229,11 @@ class GitRepositoryEditMenu(NavigationMenu):
         return Link(
             "+webhooks", text, icon="edit",
             enabled=bool(getFeatureFlag('webhooks.new.enabled')))
+
+    @enabled_with_permission("launchpad.Edit")
+    def activity(self):
+        text = "View activity"
+        return Link("+activity", text, icon="info")
 
     @enabled_with_permission("launchpad.Edit")
     def delete(self):
@@ -771,3 +777,23 @@ class GitRepositoryDeletionView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+class GitRepositoryActivityView(LaunchpadView):
+
+    page_title = "Activity"
+
+    @property
+    def label(self):
+        return "Activity log for %s" % self.context.display_name
+
+    def displayPermissions(self, values):
+        """Assemble a human readable list from the permissions changes."""
+        permissions = []
+        if values.get('can_create'):
+            permissions.append('create')
+        if values.get('can_push'):
+            permissions.append('push')
+        if values.get('can_force_push'):
+            permissions.append('force-push')
+        return ', '.join(permissions)
