@@ -139,7 +139,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.person import (
     IPerson,
-    IPersonSet
+    IPersonSet,
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IHasOwner
@@ -1290,7 +1290,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         return Store.of(self).find(GitActivity, *clauses).order_by(
             Desc(GitActivity.date_changed), Desc(GitActivity.id))
 
-    def getPrecachedActivity(self, changed_after=None):
+    def getPrecachedActivity(self, **kwargs):
 
         def preloadDataForActivities(activities):
             # Utility to load related data for a list of GitActivity
@@ -1302,7 +1302,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 person_ids, need_validity=True))
             return activities
 
-        results = self.getActivity(changed_after)
+        results = self.getActivity(**kwargs)
         return DecoratedResultSet(
             results, pre_iter_hook=preloadDataForActivities)
 
