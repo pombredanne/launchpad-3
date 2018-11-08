@@ -10,7 +10,7 @@
   <metal:macros fill-slot="bogus">
     <metal:macro define-macro="activity-value">
       <ul tal:condition="value">
-        <li><b>Pattern:</b> <span tal:content="value/ref_pattern" /></li>
+        <li><strong>Pattern:</strong> <span tal:content="value/ref_pattern" /></li>
         <tal:comment condition="nothing">
           Rule changes
         </tal:comment>
@@ -18,7 +18,8 @@
         <tal:comment condition="nothing">
           Grant changes
         </tal:comment>
-        <li tal:condition="python: 'position' not in value"><strong>Permissions:</strong>
+        <li tal:condition="python: 'position' not in value">
+          <strong>Permissions:</strong>
           <span metal:define-slot="permissions"></span>
         </li>
       </ul>
