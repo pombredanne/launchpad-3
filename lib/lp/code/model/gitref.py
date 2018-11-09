@@ -65,6 +65,7 @@ from lp.code.interfaces.gitref import (
     IGitRef,
     IGitRefRemoteSet,
     )
+from lp.code.interfaces.gitrule import describe_git_permissions
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
     BranchMergeProposalGetter,
@@ -440,6 +441,12 @@ class GitRefMixin:
             # exact-match rule and therefore has a canonical position.
             rule = self.repository.addRule(self.path, user)
         rule.setGrants(grants, user)
+
+    def checkPermissions(self, person):
+        """See `IGitRef`."""
+        return describe_git_permissions(
+            self.repository.checkRefPermissions(
+                person, [self.path])[self.path])
 
 
 @implementer(IGitRef)
@@ -854,6 +861,7 @@ class GitRefRemote(GitRefMixin):
         return []
 
     setGrants = _unimplemented
+    checkPermissions = _unimplemented
 
     def __eq__(self, other):
         return (

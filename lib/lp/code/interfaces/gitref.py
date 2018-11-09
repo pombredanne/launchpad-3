@@ -433,6 +433,19 @@ class IGitRefEdit(Interface):
         Other grants may apply via wildcard rules.
         """
 
+    @operation_parameters(
+        person=Reference(title=_("Person to check"), schema=IPerson))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def checkPermissions(person):
+        """Check a person's permissions on this reference.
+
+        :param person: An `IPerson` to check.
+        :return: A list of zero or more of "create", "push", and
+            "force-push", indicating the requested person's effective
+            permissions on this reference.
+        """
+
 
 class IGitRef(IGitRefView, IGitRefEdit):
     """A reference in a Git repository."""
