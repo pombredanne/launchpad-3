@@ -639,7 +639,7 @@ class IGitRepositoryView(IHasRecipes):
         :return: A `ResultSet` of `IGitActivity`.
         """
 
-    def getPrecachedActivity(changed_after=None):
+    def getPrecachedActivity(**kwargs):
         """Activity log entries are preloaded.
 
         :param changed_after: If supplied, only return entries for changes
