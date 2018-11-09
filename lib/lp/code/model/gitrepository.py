@@ -77,6 +77,7 @@ from lp.app.interfaces.launchpad import (
     IPrivacy,
     )
 from lp.app.interfaces.services import IService
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import (
     BranchMergeProposalStatus,
     GitGranteeType,
@@ -93,7 +94,6 @@ from lp.code.errors import (
 from lp.code.event.git import GitRefsUpdatedEvent
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    notify_modified,
     )
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.gitactivity import IGitActivitySet
@@ -1101,9 +1101,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 "Merge detected: %s => %s",
                 proposal.source_git_ref.identity,
                 proposal.target_git_ref.identity)
-        notify_modified(
-            proposal, proposal.markAsMerged,
-            merged_revision_id=merged_revision_id)
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(proposal):
+            proposal.markAsMerged(merged_revision_id=merged_revision_id)
 
     def detectMerges(self, paths, logger=None):
         """See `IGitRepository`."""

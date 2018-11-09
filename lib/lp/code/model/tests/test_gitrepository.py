@@ -15,7 +15,6 @@ import json
 
 from bzrlib import urlutils
 from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.exceptions import LostObjectError
@@ -32,8 +31,6 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
-from zope.event import notify
-from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -138,6 +135,7 @@ from lp.services.propertycache import clear_property_cache
 from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.snapshot import notify_modified
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -939,9 +937,10 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
         # modified date is set to UTC_NOW.
         repository = self.factory.makeGitRepository(
             date_created=datetime(2015, 2, 4, 17, 42, 0, tzinfo=pytz.UTC))
-        notify(ObjectModifiedEvent(
-            removeSecurityProxy(repository), repository,
-            [IGitRepository["name"]], user=repository.owner))
+        with notify_modified(
+                removeSecurityProxy(repository), ["name"],
+                user=repository.owner):
+            pass
         self.assertSqlAttributeEqualsDate(
             repository, "date_last_modified", UTC_NOW)
 
@@ -997,26 +996,22 @@ class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
         subscriber_address = (
             removeSecurityProxy(subscriber.preferredemail).email)
         transaction.commit()
-        repository_before_modification = Snapshot(
-            repository, providing=providedBy(repository))
         with person_logged_in(repository.owner):
-            repository.subscribe(
-                repository.owner,
-                BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
-                BranchSubscriptionDiffSize.NODIFF,
-                CodeReviewNotificationLevel.NOEMAIL,
-                repository.owner)
-            repository.subscribe(
-                subscriber,
-                BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
-                BranchSubscriptionDiffSize.NODIFF,
-                CodeReviewNotificationLevel.NOEMAIL,
-                repository.owner)
-            repository.setName("bar", repository.owner)
-            repository.addRule("refs/heads/stable/*", repository.owner)
-            notify(ObjectModifiedEvent(
-                repository, repository_before_modification, ["name"],
-                user=repository.owner))
+            with notify_modified(repository, ["name"], user=repository.owner):
+                repository.subscribe(
+                    repository.owner,
+                    BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+                    BranchSubscriptionDiffSize.NODIFF,
+                    CodeReviewNotificationLevel.NOEMAIL,
+                    repository.owner)
+                repository.subscribe(
+                    subscriber,
+                    BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+                    BranchSubscriptionDiffSize.NODIFF,
+                    CodeReviewNotificationLevel.NOEMAIL,
+                    repository.owner)
+                repository.setName("bar", repository.owner)
+                repository.addRule("refs/heads/stable/*", repository.owner)
         with dbuser(config.IGitRepositoryModifiedMailJobSource.dbuser):
             JobRunner.fromReady(
                 getUtility(IGitRepositoryModifiedMailJobSource)).runAll()
