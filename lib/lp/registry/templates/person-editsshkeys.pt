@@ -50,6 +50,8 @@
           <code>~/.ssh/id_rsa.pub</code>, <code>~/.ssh/id_dsa.pub</code>, or
           <code>~/.ssh/id_ecdsa.pub</code>).
           Only SSH v2 keys are supported.
+          Ed25519 keys are <a href="https://bugs.launchpad.net/bugs/907675">not
+          yet supported</a>.
           <a href="https://help.launchpad.net/YourAccount/CreatingAnSSHKeyPair">
             How do I create a public key?
           </a>
