@@ -1154,3 +1154,77 @@ class TestGitRepositoryDeletionView(BrowserTestCase):
         self.assertEqual(
             ["Repository %s deleted." % name],
             get_feedback_messages(browser.contents))
+
+
+class TestGitRepositoryActivityView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_render(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        self.factory.makeGitRuleGrant(
+            rule=rule, grantee=requester, can_push=True, can_create=True)
+
+        browser = self.getViewBrowser(
+            repository, "+activity", rootsite="code",
+            user=repository.owner)
+
+        table = find_tag_by_id(browser.contents, "activity-listing")
+        date = repository.getActivity()[0].date_changed.strftime(
+            '%Y-%m-%d %T')
+        person_name = repository.owner.display_name
+        self.assertThat(extract_text(table), DocTestMatches(dedent("""
+            Date
+            Author
+            Target
+            What changed
+            Old value
+            New value
+            {date}
+            {person_name}
+            {person_name}
+            Added access grant
+            Pattern: refs/heads/*
+            Permissions:
+            create, push
+            {date}
+            {person_name}
+            Added access rule
+            Pattern: refs/heads/*
+            Rule position: 0
+            """.format(date=date, person_name=person_name)),
+            flags=doctest.NORMALIZE_WHITESPACE))
+
+    def test_activity_query_count(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+        rule = self.factory.makeGitRule(repository)
+
+        grantees = iter([self.factory.makePerson() for _ in range(4)])
+
+        def login_and_view():
+            browser = self.getViewBrowser(
+                repository,
+                "+activity",
+                rootsite="code",
+                user=repository.owner)
+            self.assertIsNotNone(
+                find_tag_by_id(browser.contents, 'activity-listing'))
+
+        def create_activity():
+            self.factory.makeGitRuleGrant(
+                rule=rule,
+                grantee=next(grantees),
+                can_push=True,
+                can_create=True)
+
+        recorder1, recorder2 = record_two_runs(
+            login_and_view,
+            create_activity,
+            2)
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))
