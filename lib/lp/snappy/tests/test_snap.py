@@ -111,6 +111,7 @@ from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snap import SnapSet
 from lp.snappy.model.snapbuild import SnapFile
 from lp.snappy.model.snapbuildjob import SnapBuildJob
+from lp.snappy.model.snapjob import SnapJob
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -960,6 +961,65 @@ class TestSnapDeleteWithBuilds(TestCaseWithFactory):
         self.assertEqual(
             other_build, getUtility(ISnapBuildSet).getByID(other_build.id))
         self.assertIsNotNone(other_build.buildqueue_record)
+
+    def test_delete_with_build_requests(self):
+        # A snap package with build requests can be deleted.
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        processor = self.factory.makeProcessor(supports_virtualized=True)
+        das = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag=processor.name,
+            processor=processor)
+        das.addOrUpdateChroot(
+            self.factory.makeLibraryFileAlias(
+                filename="fake_chroot.tar.gz", db_only=True))
+        self.useFixture(GitHostingFixture(blob=dedent("""\
+            architectures:
+              - build-on: %s
+            """ % processor.name)))
+        [git_ref] = self.factory.makeGitRefs()
+        condemned_snap = self.factory.makeSnap(
+            registrant=owner, owner=owner, distroseries=distroseries,
+            name="condemned", git_ref=git_ref)
+        other_snap = self.factory.makeSnap(
+            registrant=owner, owner=owner, distroseries=distroseries,
+            git_ref=git_ref)
+        self.assertTrue(getUtility(ISnapSet).exists(owner, "condemned"))
+        with person_logged_in(owner):
+            requests = []
+            jobs = []
+            for snap in (condemned_snap, other_snap):
+                requests.append(snap.requestBuilds(
+                    owner, distroseries.main_archive,
+                    PackagePublishingPocket.UPDATES))
+                jobs.append(removeSecurityProxy(requests[-1])._job)
+            with dbuser(config.ISnapRequestBuildsJobSource.dbuser):
+                JobRunner(jobs).runAll()
+            for job in jobs:
+                self.assertEqual(JobStatus.COMPLETED, job.job.status)
+            for request in requests:
+                self.assertNotEqual([], request.builds)
+        store = Store.of(condemned_snap)
+        store.flush()
+        job_ids = [job.job_id for job in jobs]
+        build_ids = [
+            [build.id for build in request.builds] for request in requests]
+        with person_logged_in(condemned_snap.owner):
+            condemned_snap.destroySelf()
+        flush_database_caches()
+        # The deleted snap, its build requests, and its builds are gone.
+        self.assertFalse(getUtility(ISnapSet).exists(owner, "condemned"))
+        self.assertIsNone(store.get(SnapJob, job_ids[0]))
+        for build_id in build_ids[0]:
+            self.assertIsNone(getUtility(ISnapBuildSet).getByID(build_id))
+        # Unrelated build requests and builds are still present.
+        self.assertEqual(
+            removeSecurityProxy(jobs[1]).context,
+            store.get(SnapJob, job_ids[1]))
+        other_builds = [
+            getUtility(ISnapBuildSet).getByID(build_id)
+            for build_id in build_ids[1]]
+        self.assertEqual(list(requests[1].builds), other_builds)
 
     def test_related_webhooks_deleted(self):
         owner = self.factory.makePerson()

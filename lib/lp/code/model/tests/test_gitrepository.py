@@ -3738,3 +3738,48 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
                             can_push=Is(True),
                             can_force_push=Is(False)))),
                 ]))
+
+    def test_checkRefPermissions(self):
+        repository = self.factory.makeGitRepository()
+        owner = repository.owner
+        grantees = [self.factory.makePerson() for _ in range(2)]
+        master_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/master")
+        self.factory.makeGitRuleGrant(
+            rule=master_rule, grantee=grantees[0], can_create=True)
+        self.factory.makeGitRuleGrant(
+            rule=master_rule, grantee=grantees[1], can_push=True)
+        self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=grantees[1], can_force_push=True)
+        with person_logged_in(owner):
+            repository_url = api_url(repository)
+            owner_url = api_url(owner)
+            grantee_urls = [api_url(grantee) for grantee in grantees]
+        webservice = webservice_for_person(
+            owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_get(
+            repository_url, "checkRefPermissions", person=owner_url,
+            paths=["refs/heads/master", "refs/heads/next", "refs/other"])
+        self.assertThat(json.loads(response.body), MatchesDict({
+            "refs/heads/master": Equals(["create", "push"]),
+            "refs/heads/next": Equals(["create", "push"]),
+            "refs/other": Equals(["create", "push", "force-push"]),
+            }))
+        response = webservice.named_get(
+            repository_url, "checkRefPermissions", person=grantee_urls[0],
+            paths=["refs/heads/master", "refs/heads/next", "refs/other"])
+        self.assertThat(json.loads(response.body), MatchesDict({
+            "refs/heads/master": Equals(["create"]),
+            "refs/heads/next": Equals([]),
+            "refs/other": Equals([]),
+            }))
+        response = webservice.named_get(
+            repository_url, "checkRefPermissions", person=grantee_urls[1],
+            paths=["refs/heads/master", "refs/heads/next", "refs/other"])
+        self.assertThat(json.loads(response.body), MatchesDict({
+            "refs/heads/master": Equals(["push"]),
+            "refs/heads/next": Equals(["push", "force-push"]),
+            "refs/other": Equals([]),
+            }))
