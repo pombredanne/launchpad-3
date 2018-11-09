@@ -9,9 +9,13 @@ __all__ = [
     'parse_git_commits',
     ]
 
-from collections import OrderedDict
+from collections import (
+    defaultdict,
+    OrderedDict,
+    )
 from datetime import datetime
 import email
+from fnmatch import fnmatch
 from functools import partial
 from itertools import (
     chain,
@@ -48,7 +52,10 @@ from storm.locals import (
     Reference,
     Unicode,
     )
-from storm.store import Store
+from storm.store import (
+    EmptyResultSet,
+    Store,
+    )
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
@@ -77,10 +84,12 @@ from lp.app.interfaces.launchpad import (
     IPrivacy,
     )
 from lp.app.interfaces.services import IService
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.code.enums import (
     BranchMergeProposalStatus,
     GitGranteeType,
     GitObjectType,
+    GitPermissionType,
     GitRepositoryType,
     )
 from lp.code.errors import (
@@ -93,7 +102,6 @@ from lp.code.errors import (
 from lp.code.event.git import GitRefsUpdatedEvent
 from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
-    notify_modified,
     )
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.gitactivity import IGitActivitySet
@@ -114,6 +122,7 @@ from lp.code.interfaces.gitrepository import (
     IGitRepositorySet,
     user_has_special_git_repository_access,
     )
+from lp.code.interfaces.gitrule import describe_git_permissions
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
 from lp.code.model.branchmergeproposal import BranchMergeProposal
@@ -137,7 +146,10 @@ from lp.registry.interfaces.accesspolicy import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sharingjob import (
@@ -1098,9 +1110,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 "Merge detected: %s => %s",
                 proposal.source_git_ref.identity,
                 proposal.target_git_ref.identity)
-        notify_modified(
-            proposal, proposal.markAsMerged,
-            merged_revision_id=merged_revision_id)
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(proposal):
+            proposal.markAsMerged(merged_revision_id=merged_revision_id)
 
     def detectMerges(self, paths, logger=None):
         """See `IGitRepository`."""
@@ -1290,6 +1301,68 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 "(got %s instead)" %
                 (requested_rule_order, observed_rule_order))
 
+    def checkRefPermissions(self, person, ref_paths):
+        """See `IGitRepository`."""
+        result = {}
+
+        rules = list(self.rules)
+        grants_for_user = defaultdict(list)
+        grants = EmptyResultSet()
+        is_owner = False
+        if IPerson.providedBy(person):
+            grants = grants.union(self.findRuleGrantsByGrantee(person))
+            if person.inTeam(self.owner):
+                is_owner = True
+        elif person == GitGranteeType.REPOSITORY_OWNER:
+            is_owner = True
+        if is_owner:
+            grants = grants.union(
+                self.findRuleGrantsByGrantee(GitGranteeType.REPOSITORY_OWNER))
+        for grant in grants:
+            grants_for_user[grant.rule].append(grant)
+
+        for ref_path in ref_paths:
+            matching_rules = [
+                rule for rule in rules if fnmatch(ref_path, rule.ref_pattern)]
+            if is_owner and not matching_rules:
+                # If there are no matching rules, then the repository owner
+                # can do anything.
+                result[ref_path] = {
+                    GitPermissionType.CAN_CREATE, GitPermissionType.CAN_PUSH,
+                    GitPermissionType.CAN_FORCE_PUSH,
+                    }
+                continue
+
+            seen_grantees = set()
+            union_permissions = set()
+            for rule in matching_rules:
+                for grant in grants_for_user[rule]:
+                    if (grant.grantee, grant.grantee_type) in seen_grantees:
+                        continue
+                    union_permissions.update(grant.permissions)
+                    seen_grantees.add((grant.grantee, grant.grantee_type))
+
+            owner_type = (None, GitGranteeType.REPOSITORY_OWNER)
+            if is_owner and owner_type not in seen_grantees:
+                union_permissions.update(
+                    {GitPermissionType.CAN_CREATE, GitPermissionType.CAN_PUSH})
+
+            # Permission to force-push implies permission to push.
+            if GitPermissionType.CAN_FORCE_PUSH in union_permissions:
+                union_permissions.add(GitPermissionType.CAN_PUSH)
+
+            result[ref_path] = union_permissions
+
+        return result
+
+    def api_checkRefPermissions(self, person, paths):
+        """See `IGitRepository`."""
+        return {
+            path: describe_git_permissions(permissions)
+            for path, permissions in self.checkRefPermissions(
+                person, paths).items()
+            }
+
     def getActivity(self, changed_after=None):
         """See `IGitRepository`."""
         clauses = [GitActivity.repository_id == self.id]
@@ -1297,6 +1370,22 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             clauses.append(GitActivity.date_changed > changed_after)
         return Store.of(self).find(GitActivity, *clauses).order_by(
             Desc(GitActivity.date_changed), Desc(GitActivity.id))
+
+    def getPrecachedActivity(self, **kwargs):
+
+        def preloadDataForActivities(activities):
+            # Utility to load related data for a list of GitActivity
+            person_ids = set()
+            for activity in activities:
+                person_ids.add(activity.changer_id)
+                person_ids.add(activity.changee_id)
+            list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+                person_ids, need_validity=True))
+            return activities
+
+        results = self.getActivity(**kwargs)
+        return DecoratedResultSet(
+            results, pre_iter_hook=preloadDataForActivities)
 
     def canBeDeleted(self):
         """See `IGitRepository`."""

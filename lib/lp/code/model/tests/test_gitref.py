@@ -344,6 +344,51 @@ class TestGitRefGetBlob(TestCaseWithFactory):
         self.assertEqual(expected_calls, hosting_fixture.getBlob.calls)
 
     @responses.activate
+    def test_remote_launchpad_production_branch(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://git.launchpad.net/~owner/+git/name",
+            path="refs/heads/path")
+        responses.add(
+            "GET",
+            "https://git.launchpad.net/~owner/+git/name/plain/dir/file"
+            "?h=refs%2Fheads%2Fpath",
+            body=b"foo")
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+
+    @responses.activate
+    def test_remote_launchpad_production_HEAD(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://git.launchpad.net/~owner/+git/name",
+            path="HEAD")
+        responses.add(
+            "GET",
+            "https://git.launchpad.net/~owner/+git/name/plain/dir/file?h=HEAD",
+            body=b"foo")
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+
+    @responses.activate
+    def test_remote_launchpad_production_404(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://git.launchpad.net/~owner/+git/name",
+            path="HEAD")
+        responses.add(
+            "GET",
+            "https://git.launchpad.net/~owner/+git/name/plain/dir/file?h=HEAD",
+            status=404)
+        self.assertRaises(GitRepositoryBlobNotFound, ref.getBlob, "dir/file")
+
+    @responses.activate
+    def test_remote_launchpad_production_error(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://git.launchpad.net/~owner/+git/name",
+            path="HEAD")
+        responses.add(
+            "GET",
+            "https://git.launchpad.net/~owner/+git/name/plain/dir/file?h=HEAD",
+            status=500)
+        self.assertRaises(GitRepositoryScanFault, ref.getBlob, "dir/file")
+
+    @responses.activate
     def test_remote_github_branch(self):
         ref = self.factory.makeGitRefRemote(
             repository_url="https://github.com/owner/name",
@@ -875,3 +920,30 @@ class TestGitRefWebservice(TestCaseWithFactory):
                             can_push=Is(True),
                             can_force_push=Is(False)))),
                 ]))
+
+    def test_checkPermissions(self):
+        [ref] = self.factory.makeGitRefs()
+        owner = ref.owner
+        grantees = [self.factory.makePerson() for _ in range(2)]
+        self.factory.makeGitRuleGrant(
+            repository=ref.repository, ref_pattern=ref.path,
+            grantee=grantees[0], can_create=True)
+        self.factory.makeGitRuleGrant(
+            repository=ref.repository, ref_pattern="*",
+            grantee=grantees[1], can_force_push=True)
+        with person_logged_in(owner):
+            ref_url = api_url(ref)
+            owner_url = api_url(owner)
+            grantee_urls = [api_url(grantee) for grantee in grantees]
+        webservice = webservice_for_person(
+            owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_get(
+            ref_url, "checkPermissions", person=owner_url)
+        self.assertEqual(["create", "push"], json.loads(response.body))
+        response = webservice.named_get(
+            ref_url, "checkPermissions", person=grantee_urls[0])
+        self.assertEqual(["create"], json.loads(response.body))
+        response = webservice.named_get(
+            ref_url, "checkPermissions", person=grantee_urls[1])
+        self.assertEqual(["push", "force-push"], json.loads(response.body))

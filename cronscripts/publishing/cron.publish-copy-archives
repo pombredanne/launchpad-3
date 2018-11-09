@@ -33,7 +33,7 @@ else
 fi
 
 # Configuration options.
-LAUNCHPADROOT=/srv/launchpad.net/production/launchpad
+LAUNCHPADROOT="$(dirname "$0")/../.."
 LOCKFILE=/srv/launchpad.net/rebuild-test/cron.daily.lock
 DISTRONAME=ubuntu
 

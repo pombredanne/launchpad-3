@@ -7,8 +7,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from storm.store import Store
 from testtools.matchers import (
     Equals,
@@ -19,8 +17,6 @@ from testtools.matchers import (
     MatchesStructure,
     )
 import transaction
-from zope.event import notify
-from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import (
@@ -34,6 +30,7 @@ from lp.code.interfaces.gitrule import (
     IGitRuleGrant,
     )
 from lp.services.database.sqlbase import get_transaction_timestamp
+from lp.services.webapp.snapshot import notify_modified
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -490,11 +487,9 @@ class TestGitRule(TestCaseWithFactory):
         repository = self.factory.makeGitRepository(owner=owner)
         rule = self.factory.makeGitRule(
             repository=repository, ref_pattern="refs/heads/*")
-        rule_before_modification = Snapshot(rule, providing=providedBy(rule))
         with person_logged_in(member):
-            rule.ref_pattern = "refs/heads/other/*"
-            notify(ObjectModifiedEvent(
-                rule, rule_before_modification, ["ref_pattern"]))
+            with notify_modified(rule, ["ref_pattern"]):
+                rule.ref_pattern = "refs/heads/other/*"
         self.assertThat(repository.getActivity().first(), MatchesStructure(
             repository=Equals(repository),
             changer=Equals(member),
@@ -686,14 +681,10 @@ class TestGitRuleGrant(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(
             repository=repository, grantee=GitGranteeType.REPOSITORY_OWNER,
             can_create=True)
-        grant_before_modification = Snapshot(
-            grant, providing=providedBy(grant))
         with person_logged_in(member):
-            grant.can_create = False
-            grant.can_force_push = True
-            notify(ObjectModifiedEvent(
-                grant, grant_before_modification,
-                ["can_create", "can_force_push"]))
+            with notify_modified(grant, ["can_create", "can_force_push"]):
+                grant.can_create = False
+                grant.can_force_push = True
         self.assertThat(repository.getActivity().first(), MatchesStructure(
             repository=Equals(repository),
             changer=Equals(member),
