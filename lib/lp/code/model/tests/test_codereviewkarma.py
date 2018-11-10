@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for karma allocated for code reviews."""
@@ -7,7 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from lp.code.interfaces.branchmergeproposal import notify_modified
+from lp.code.adapters.branch import BranchMergeProposalNoPreviewDiffDelta
 from lp.registry.interfaces.karma import IKarmaAssignedEvent
 from lp.registry.interfaces.person import IPerson
 from lp.testing import (
@@ -117,8 +117,8 @@ class TestCodeReviewKarma(TestCaseWithFactory):
         reviewer = proposal.target_branch.owner
         self.karma_events = []
         login_person(reviewer)
-        notify_modified(
-            proposal, proposal.approveBranch, reviewer, "A rev id.")
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(proposal):
+            proposal.approveBranch(reviewer, "A rev id.")
         self.assertOneKarmaEvent(reviewer, 'branchmergeapproved')
 
     def test_approvingOwnCodeReview(self):
@@ -129,8 +129,8 @@ class TestCodeReviewKarma(TestCaseWithFactory):
             target_branch=target_branch, registrant=reviewer)
         self.karma_events = []
         login_person(reviewer)
-        notify_modified(
-            proposal, proposal.approveBranch, reviewer, "A rev id.")
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(proposal):
+            proposal.approveBranch(reviewer, "A rev id.")
         self.assertOneKarmaEvent(reviewer, 'branchmergeapprovedown')
 
     def test_rejectedCodeReview(self):
@@ -140,7 +140,8 @@ class TestCodeReviewKarma(TestCaseWithFactory):
         reviewer = proposal.target_branch.owner
         self.karma_events = []
         login_person(reviewer)
-        notify_modified(proposal, proposal.rejectBranch, reviewer, "A rev id.")
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(proposal):
+            proposal.rejectBranch(reviewer, "A rev id.")
         self.assertOneKarmaEvent(reviewer, 'branchmergerejected')
 
     def test_rejectedOwnCodeReview(self):
@@ -153,5 +154,6 @@ class TestCodeReviewKarma(TestCaseWithFactory):
             target_branch=target_branch, registrant=reviewer)
         self.karma_events = []
         login_person(reviewer)
-        notify_modified(proposal, proposal.rejectBranch, reviewer, "A rev id.")
+        with BranchMergeProposalNoPreviewDiffDelta.monitor(proposal):
+            proposal.rejectBranch(reviewer, "A rev id.")
         self.assertOneKarmaEvent(reviewer, 'branchmergerejectedown')

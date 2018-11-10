@@ -15,10 +15,7 @@ from difflib import unified_diff
 import hashlib
 from unittest import TestCase
 
-from lazr.lifecycle.event import (
-    ObjectCreatedEvent,
-    ObjectModifiedEvent,
-    )
+from lazr.lifecycle.event import ObjectCreatedEvent
 from lazr.restfulclient.errors import BadRequest
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
@@ -62,7 +59,6 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
     IBranchMergeProposalJobSource,
-    notify_modified,
     )
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
@@ -1679,25 +1675,6 @@ class TestBranchMergeProposalBugsGit(
         self.assertContentEqual(bugs[:3], bmp.bugs)
         self.assertEqual(1, len(self.oopses))
         self.assertEqual("TooManyRelatedBugs", self.oopses[0]["type"])
-
-
-class TestNotifyModified(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_notify_modified_generates_notification(self):
-        """notify_modified generates an event.
-
-        notify_modified runs the callable with the specified args and kwargs,
-        and generates a ObjectModifiedEvent.
-        """
-        bmp = self.factory.makeBranchMergeProposal()
-        login_person(bmp.target_branch.owner)
-        self.assertNotifies(
-            ObjectModifiedEvent, False, notify_modified, bmp, bmp.markAsMerged,
-            merge_reporter=bmp.target_branch.owner)
-        self.assertEqual(BranchMergeProposalStatus.MERGED, bmp.queue_status)
-        self.assertEqual(bmp.target_branch.owner, bmp.merge_reporter)
 
 
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
