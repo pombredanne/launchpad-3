@@ -277,7 +277,7 @@ class TestDistributionExcludeConjoinedMasterSearch(TestSearchBase):
         Store.of(self.milestone).flush()
         with StormStatementRecorder() as recorder:
             list(self.bugtask_set.search(self.params))
-        self.assertThat(recorder, HasQueryCount(Equals(4)))
+        self.assertThat(recorder, HasQueryCount(Equals(5)))
 
     def test_search_results_count_with_other_productseries_tasks(self):
         # Test with zero conjoined masters and bugtasks targeted to
