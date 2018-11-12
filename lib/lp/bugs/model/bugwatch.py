@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -613,12 +613,20 @@ class BugWatchSet:
 
     def parseSavaneURL(self, scheme, host, path, query):
         """Extract Savane base URL and bug ID."""
-        # Savane bugs URLs are in the form /bugs/?<bug-id>, so we
-        # exclude any path that isn't '/bugs/'. We also exclude query
-        # string that have a length of more or less than one, since in
-        # such cases we'd be taking a guess at the bug ID, which would
-        # probably be wrong.
-        if path != '/bugs/' or len(query) != 1:
+        # We're only interested in URLs that look like they come from a
+        # Savane bugtracker. We currently accept URL paths /bugs/ or
+        # /bugs/index.php, and accept query strings that are just the bug ID
+        # or that have an item_id parameter containing the bug ID.
+        if path not in ('/bugs/', '/bugs/index.php'):
+            return None
+        if len(query) == 1 and query.values()[0] is None:
+            # The query string is just a bare ID.
+            remote_bug = query.keys()[0]
+        elif 'item_id' in query:
+            remote_bug = query['item_id']
+        else:
+            return None
+        if not remote_bug.isdigit():
             return None
 
         # There's only one global Savannah bugtracker registered with
@@ -627,13 +635,6 @@ class BugWatchSet:
         savannah_hosts = [
             urlsplit(alias)[1] for alias in savannah_tracker.aliases]
         savannah_hosts.append(urlsplit(savannah_tracker.baseurl)[1])
-
-        # The remote bug is actually a key in the query dict rather than
-        # a value, so we simply use the first and only key we come
-        # across as a best-effort guess.
-        remote_bug = query.popitem()[0]
-        if remote_bug is None or not remote_bug.isdigit():
-            return None
 
         if host in savannah_hosts:
             return savannah_tracker.baseurl, remote_bug
