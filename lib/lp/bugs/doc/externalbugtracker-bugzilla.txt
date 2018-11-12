@@ -188,6 +188,33 @@ XML-RPC proxy that behaves like a Bugzilla 3.4 instance.
     ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
     True
 
+A version older than 3.4 is not accepted.
+
+    >>> test_transport = APIXMLRPCTransport()
+    >>> test_transport.version = '3.3'
+
+    >>> bugzilla._test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...     'http://example.com/xmlrpc.cgi',
+    ...     transport=test_transport)
+
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+    >>> isinstance(bugzilla_to_use, BugzillaAPI)
+    False
+
+bugzilla.mozilla.org uses a date-based version scheme.  This is accepted.
+
+    >>> test_transport = APIXMLRPCTransport()
+    >>> test_transport.version = '20181108.1'
+
+    >>> bugzilla._test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...     'http://example.com/xmlrpc.cgi',
+    ...     transport=test_transport)
+
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+    >>> (isinstance(bugzilla_to_use, BugzillaAPI) and
+    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    True
+
 If the remote system has the Launchpad plugin installed, an
 getExternalBugTrackerToUse() will return a BugzillaLPPlugin instance.
 
