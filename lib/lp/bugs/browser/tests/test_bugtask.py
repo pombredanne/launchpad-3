@@ -175,7 +175,7 @@ class TestBugTaskView(TestCaseWithFactory):
         recorder1, recorder2 = record_two_runs(
             lambda: self.getUserBrowser(url, owner),
             make_merge_proposals, 0, 1)
-        self.assertThat(recorder1, HasQueryCount(LessThan(90)))
+        self.assertThat(recorder1, HasQueryCount(LessThan(92)))
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
         self.assertThat(
