@@ -106,6 +106,8 @@ class BugLinksListingView(LaunchpadView):
         for task in bugtasks:
             bugs[task.bug].append(task)
         badges = bugtask_set.getBugTaskBadgeProperties(bugtasks)
+        tags = bugtask_set.getBugTaskTags(bugtasks)
+        people = bugtask_set.getBugTaskPeople(bugtasks)
         links = []
         columns_to_show = ["id", "summary", "bugtargetdisplayname",
             "importance", "status"]
@@ -114,6 +116,8 @@ class BugLinksListingView(LaunchpadView):
                 columns_to_show=columns_to_show,
                 size=config.malone.buglist_batch_size)
             get_property_cache(navigator).bug_badge_properties = badges
+            get_property_cache(navigator).tags_for_batch = tags
+            get_property_cache(navigator).bugtask_people = people
             links.append({
                 'bug': bug,
                 'title': bug.title,
