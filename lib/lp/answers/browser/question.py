@@ -29,13 +29,10 @@ __all__ = [
 from operator import attrgetter
 import re
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import copy_field
 from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
-from zope.event import notify
 from zope.formlib import form
 from zope.formlib.interfaces import IWidgetFactory
 from zope.formlib.widget import (
@@ -49,7 +46,6 @@ from zope.formlib.widgets import (
 from zope.interface import (
     alsoProvides,
     implementer,
-    providedBy,
     )
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder
@@ -118,6 +114,7 @@ from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import IAlwaysSubmittedWidget
+from lp.services.webapp.snapshot import notify_modified
 from lp.services.worlddata.helpers import (
     is_english_variant,
     preferred_or_request_languages,
@@ -364,27 +361,23 @@ class QuestionSubscriptionView(LaunchpadView):
             # No post, nothing to do
             return
 
-        question_unmodified = Snapshot(
-            self.context, providing=providedBy(self.context))
         modified_fields = set()
-
-        response = self.request.response
-        # Establish if a subscription form was posted.
-        newsub = self.request.form.get('subscribe', None)
-        if newsub is not None:
-            if newsub == 'Subscribe':
-                self.context.subscribe(self.user)
-                response.addNotification(
-                    _("You have subscribed to this question."))
-                modified_fields.add('subscribers')
-            elif newsub == 'Unsubscribe':
-                self.context.unsubscribe(self.user, self.user)
-                response.addNotification(
-                    _("You have unsubscribed from this question."))
-                modified_fields.add('subscribers')
-            response.redirect(canonical_url(self.context))
-        notify(ObjectModifiedEvent(
-            self.context, question_unmodified, list(modified_fields)))
+        with notify_modified(self.context):
+            response = self.request.response
+            # Establish if a subscription form was posted.
+            newsub = self.request.form.get('subscribe', None)
+            if newsub is not None:
+                if newsub == 'Subscribe':
+                    self.context.subscribe(self.user)
+                    response.addNotification(
+                        _("You have subscribed to this question."))
+                    modified_fields.add('subscribers')
+                elif newsub == 'Unsubscribe':
+                    self.context.unsubscribe(self.user, self.user)
+                    response.addNotification(
+                        _("You have unsubscribed from this question."))
+                    modified_fields.add('subscribers')
+                response.redirect(canonical_url(self.context))
 
     @property
     def page_title(self):

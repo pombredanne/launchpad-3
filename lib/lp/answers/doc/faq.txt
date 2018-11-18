@@ -154,14 +154,9 @@ Initially, the last_updated_by and date_last_updated are not set.
 
 When the FAQ is modified, the attributes are automatically updated.
 
-    >>> from zope.event import notify
-    >>> from zope.interface import providedBy
-    >>> from lazr.lifecycle.event import ObjectModifiedEvent
-    >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> old_faq = Snapshot(firefox_faq, providing=providedBy(firefox_faq))
-    >>> firefox_faq.keywords = 'extension'
-    >>> notify(ObjectModifiedEvent(
-    ...     firefox_faq, old_faq, ['keywords'], user=sample_person))
+    >>> from lp.services.webapp.snapshot import notify_modified
+    >>> with notify_modified(firefox_faq, ['keywords'], user=sample_person):
+    ...     firefox_faq.keywords = 'extension'
 
     >>> print(firefox_faq.last_updated_by.displayname)
     Sample Person

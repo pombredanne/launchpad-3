@@ -6,7 +6,6 @@ out, informing the subscribers and the answer contacts about the change.
 Let's start with creating a question, and see what the resulting
 notification looks like:
 
-    >>> from zope.event import notify
     >>> from lp.answers.tests.test_question_notifications import (
     ...     pop_questionemailjobs)
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -84,23 +83,18 @@ Edit Notifications
 If we edit the title and description of the question, a notification
 will be sent.
 
-    >>> from zope.interface import providedBy
-    >>> from lazr.lifecycle.event import ObjectModifiedEvent
-    >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.services.webapp.snapshot import notify_modified
 
     >>> login('test@canonical.com')
-    >>> unmodified_question = Snapshot(
-    ...     ubuntu_question, providing=providedBy(ubuntu_question))
-    >>> ubuntu_question.title = "Installer doesn't work on a Mac"
-    >>> ubuntu_question.description = """I insert the install CD in the CD-ROM
-    ... drive, but it won't boot.
-    ...
-    ... It boots straight into MacOS 9."""
-    >>> libstdcplusplus_sourcepackage = ubuntu.getSourcePackage('libstdc++')
-    >>> ubuntu_question.target = libstdcplusplus_sourcepackage
-    >>> notify(ObjectModifiedEvent(
-    ...     ubuntu_question, unmodified_question,
-    ...     ['title', 'description', 'target']))
+    >>> with notify_modified(
+    ...         ubuntu_question, ['title', 'description', 'target']):
+    ...     ubuntu_question.title = "Installer doesn't work on a Mac"
+    ...     ubuntu_question.description = (
+    ...         "I insert the install CD in the CD-ROM\n"
+    ...         "drive, but it won't boot.\n"
+    ...         "\n"
+    ...         "It boots straight into MacOS 9.")
+    ...     ubuntu_question.target = ubuntu.getSourcePackage('libstdc++')
 
 Three copies of the notification got sent, one to Sample Person, one to
 Foo Bar, and one to Ubuntu Team:
@@ -130,11 +124,8 @@ status whiteboard, priority. For example, if a question is # transferred
 to another QuestionTarget and priority is changed, # the notification
 does not include priority.
 
-    >>> unmodified_question = Snapshot(
-    ...     ubuntu_question, providing=providedBy(ubuntu_question))
-    >>> ubuntu_question.target = ubuntu
-    >>> notify(ObjectModifiedEvent(
-    ...     ubuntu_question, unmodified_question, ['target']))
+    >>> with notify_modified(ubuntu_question, ['target']):
+    ...     ubuntu_question.target = ubuntu
     >>> notifications = pop_questionemailjobs()
     >>> edit_notification = notifications[1]
     >>> print(edit_notification.body)
@@ -147,11 +138,8 @@ Changing the assignee will trigger a notification.
 
     >>> login('foo.bar@canonical.com')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> unmodified_question = Snapshot(
-    ...     ubuntu_question, providing=providedBy(ubuntu_question))
-    >>> ubuntu_question.assignee = no_priv
-    >>> notify(ObjectModifiedEvent(
-    ...     ubuntu_question, unmodified_question, ['assignee']))
+    >>> with notify_modified(ubuntu_question, ['assignee']):
+    ...     ubuntu_question.assignee = no_priv
     >>> notifications = pop_questionemailjobs()
     >>> edit_notification = notifications[1]
     >>> print(edit_notification.body)
@@ -163,10 +151,8 @@ Changing the assignee will trigger a notification.
 If we trigger a modification event when no changes worth notifying about
 was made, no notification is sent:
 
-    >>> unmodified_question = Snapshot(
-    ...     ubuntu_question, providing=providedBy(ubuntu_question))
-    >>> notify(ObjectModifiedEvent(
-    ...     ubuntu_question, unmodified_question, ['status']))
+    >>> with notify_modified(ubuntu_question, ['status']):
+    ...     pass
 
     >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
@@ -190,17 +176,13 @@ has been linked to it:
     >>> from lp.bugs.interfaces.bug import CreateBugParams
 
     >>> login('no-priv@canonical.com')
-    >>> unmodified_question = Snapshot(
-    ...     ubuntu_question, providing=providedBy(ubuntu_question))
-    >>> params = CreateBugParams(
-    ...     owner=no_priv, title="Installer fails on a Mac PPC",
-    ...     comment=ubuntu_question.description)
-    >>> bug = ubuntu_question.target.createBug(params)
-    >>> ubuntu_question.linkBug(bug)
+    >>> with notify_modified(ubuntu_question, ['bugs']):
+    ...     params = CreateBugParams(
+    ...         owner=no_priv, title="Installer fails on a Mac PPC",
+    ...         comment=ubuntu_question.description)
+    ...     bug = ubuntu_question.target.createBug(params)
+    ...     ubuntu_question.linkBug(bug)
     True
-
-    >>> notify(ObjectModifiedEvent(
-    ...     ubuntu_question, unmodified_question, ['bugs']))
 
     >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
@@ -221,13 +203,9 @@ Bug Unlinked Notification
 
 A notification is also sent when a bug is unlinked from the question:
 
-    >>> unmodified_question = Snapshot(ubuntu_question,
-    ...     providing=providedBy(ubuntu_question))
-    >>> ubuntu_question.unlinkBug(bug)
+    >>> with notify_modified(ubuntu_question, ['bugs']):
+    ...     ubuntu_question.unlinkBug(bug)
     True
-
-    >>> notify(ObjectModifiedEvent(
-    ...     ubuntu_question, unmodified_question, ['bugs']))
 
     >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
@@ -788,11 +766,8 @@ No notification will be sent to the answer contacts when this question
 is modified. Only the owner will receive a modification notification
 with a warning appended to it.
 
-    >>> unmodified_question = Snapshot(
-    ...     french_question, providing=providedBy(french_question))
-    >>> french_question.title = u"CD d'Ubuntu ne d\xe9marre pas"
-    >>> notify(ObjectModifiedEvent(
-    ...     french_question, unmodified_question, ['title']))
+    >>> with notify_modified(french_question, ['title']):
+    ...     french_question.title = u"CD d'Ubuntu ne d\xe9marre pas"
     >>> notifications = pop_questionemailjobs()
 
     >>> notification_body = recode_text(notifications[0])
