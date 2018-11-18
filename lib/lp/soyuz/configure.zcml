@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -330,6 +330,9 @@
             set_attributes="build_debug_symbols description displayname
                             publish publish_debug_symbols status
                             suppress_subscription_notifications"/>
+        <require
+            permission="launchpad.Delete"
+            interface="lp.soyuz.interfaces.archive.IArchiveDelete"/>
         <!--
            NOTE: The 'private' permission controls who can turn a public
            archive into a private one, and vice versa. The logic that
