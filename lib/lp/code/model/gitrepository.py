@@ -685,7 +685,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             ref[0]: ref[1:]
             for ref in Store.of(self).find(
                 (GitRef.path, GitRef.commit_sha1, GitRef.object_type,
-                 Or(
+                 And(
                      GitRef.author_id != None,
                      GitRef.author_date != None,
                      GitRef.committer_id != None,
