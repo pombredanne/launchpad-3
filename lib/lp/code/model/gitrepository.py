@@ -679,20 +679,27 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                 if logger is not None:
                     logger.warning(
                         "Unconvertible ref %s %s: %s" % (path, info, e))
-        current_refs = {ref.path: ref for ref in self.refs}
+        # GitRef rows can be large (especially commit_message), and we don't
+        # need the whole thing.
+        current_refs = {
+            ref[0]: ref[1:]
+            for ref in Store.of(self).find(
+                (GitRef.path, GitRef.commit_sha1, GitRef.object_type,
+                 And(
+                     GitRef.author_id != None,
+                     GitRef.author_date != None,
+                     GitRef.committer_id != None,
+                     GitRef.committer_date != None,
+                     GitRef.commit_message != None)),
+                GitRef.repository_id == self.id)}
         refs_to_upsert = {}
         for path, info in new_refs.items():
             current_ref = current_refs.get(path)
             if (current_ref is None or
-                info["sha1"] != current_ref.commit_sha1 or
-                info["type"] != current_ref.object_type):
+                    info["sha1"] != current_ref[0] or
+                    info["type"] != current_ref[1]):
                 refs_to_upsert[path] = info
-            elif (info["type"] == GitObjectType.COMMIT and
-                  (current_ref.author_id is None or
-                   current_ref.author_date is None or
-                   current_ref.committer_id is None or
-                   current_ref.committer_date is None or
-                   current_ref.commit_message is None)):
+            elif info["type"] == GitObjectType.COMMIT and not current_ref[2]:
                 # Only request detailed commit metadata for refs that point
                 # to commits.
                 refs_to_upsert[path] = info

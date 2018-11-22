@@ -1453,6 +1453,41 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
             }))
         self.assertEqual(({}, set()), repository.planRefChanges("dummy"))
 
+    def test_planRefChanges_includes_unfetched_commits(self):
+        # planRefChanges plans updates to refs pointing to commits for which
+        # we haven't yet fetched detailed metadata.
+        repository = self.factory.makeGitRepository()
+        paths = ("refs/heads/master", "refs/heads/foo")
+        self.factory.makeGitRefs(repository=repository, paths=paths)
+        author_addr = (
+            removeSecurityProxy(repository.owner).preferredemail.email)
+        [author] = getUtility(IRevisionSet).acquireRevisionAuthors(
+            [author_addr]).values()
+        naked_master = removeSecurityProxy(
+            repository.getRefByPath("refs/heads/master"))
+        naked_master.author_id = naked_master.committer_id = author.id
+        naked_master.author_date = naked_master.committer_date = (
+            datetime.now(pytz.UTC))
+        naked_master.commit_message = "message"
+        self.useFixture(GitHostingFixture(refs={
+            path: {
+                "object": {
+                    "sha1": repository.getRefByPath(path).commit_sha1,
+                    "type": "commit",
+                    },
+                }
+            for path in paths}))
+        refs_to_upsert, refs_to_remove = repository.planRefChanges("dummy")
+
+        expected_upsert = {
+            "refs/heads/foo": {
+                "sha1": repository.getRefByPath("refs/heads/foo").commit_sha1,
+                "type": GitObjectType.COMMIT,
+                },
+            }
+        self.assertEqual(expected_upsert, refs_to_upsert)
+        self.assertEqual(set(), refs_to_remove)
+
     def test_fetchRefCommits(self):
         # fetchRefCommits fetches detailed tip commit metadata for the
         # requested refs.
