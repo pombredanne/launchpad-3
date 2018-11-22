@@ -145,6 +145,16 @@ class TestGitHostingClient(TestCase):
         self.assertEqual({"refs/heads/master": {}}, refs)
         self.assertRequest("repo/123/refs", method="GET")
 
+    def test_getRefs_exclude_prefixes(self):
+        with self.mockRequests("GET", json={"refs/heads/master": {}}):
+            refs = self.client.getRefs(
+                "123", exclude_prefixes=["refs/changes/", "refs/pull/"])
+        self.assertEqual({"refs/heads/master": {}}, refs)
+        self.assertRequest(
+            "repo/123/refs"
+            "?exclude_prefix=refs%2Fchanges%2F&exclude_prefix=refs%2Fpull%2F",
+            method="GET")
+
     def test_getRefs_failure(self):
         with self.mockRequests("GET", status=400):
             self.assertRaisesWithContent(

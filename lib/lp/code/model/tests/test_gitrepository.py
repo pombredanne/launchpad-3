@@ -1488,6 +1488,23 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
         self.assertEqual(expected_upsert, refs_to_upsert)
         self.assertEqual(set(), refs_to_remove)
 
+    def test_planRefChanges_excludes_configured_prefixes(self):
+        # planRefChanges excludes some ref prefixes by default, and can be
+        # configured otherwise.
+        repository = self.factory.makeGitRepository()
+        hosting_fixture = self.useFixture(GitHostingFixture())
+        repository.planRefChanges("dummy")
+        self.assertEqual(
+            [{"exclude_prefixes": ["refs/changes/"]}],
+            hosting_fixture.getRefs.extract_kwargs())
+        hosting_fixture.getRefs.calls = []
+        self.pushConfig(
+            "codehosting", git_exclude_ref_prefixes="refs/changes/ refs/pull/")
+        repository.planRefChanges("dummy")
+        self.assertEqual(
+            [{"exclude_prefixes": ["refs/changes/", "refs/pull/"]}],
+            hosting_fixture.getRefs.extract_kwargs())
+
     def test_fetchRefCommits(self):
         # fetchRefCommits fetches detailed tip commit metadata for the
         # requested refs.

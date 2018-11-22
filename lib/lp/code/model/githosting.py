@@ -116,10 +116,12 @@ class GitHostingClient:
             raise GitRepositoryScanFault(
                 "Failed to set properties of Git repository: %s" % unicode(e))
 
-    def getRefs(self, path):
+    def getRefs(self, path, exclude_prefixes=None):
         """See `IGitHostingClient`."""
         try:
-            return self._get("/repo/%s/refs" % path)
+            return self._get(
+                "/repo/%s/refs" % path,
+                params={"exclude_prefix": exclude_prefixes})
         except requests.RequestException as e:
             raise GitRepositoryScanFault(
                 "Failed to get refs from Git repository: %s" % unicode(e))
