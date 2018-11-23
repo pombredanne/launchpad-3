@@ -672,7 +672,9 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         """See `IGitRepository`."""
         hosting_client = getUtility(IGitHostingClient)
         new_refs = {}
-        for path, info in hosting_client.getRefs(hosting_path).items():
+        exclude_prefixes = config.codehosting.git_exclude_ref_prefixes.split()
+        for path, info in hosting_client.getRefs(
+                hosting_path, exclude_prefixes=exclude_prefixes).items():
             try:
                 new_refs[path] = self._convertRefInfo(info)
             except ValueError as e:
