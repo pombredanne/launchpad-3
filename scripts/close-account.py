@@ -202,7 +202,7 @@ def main():
     con = None
     try:
         log.debug("Connecting to database")
-        con = connect()
+        con = connect(user="launchpad")
         for username in args:
             if not close_account(con, log, username):
                 log.debug("Rolling back")
