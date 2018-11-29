@@ -135,6 +135,11 @@
       </tal:diff-expander>
     </tal:ajax-revision-diffs>
   </dl>
+  <tal:synthetic
+      condition="python: any(commit_info.get('synthetic')
+                             for commit_info in commit_infos)">
+    <div>Some recent commit information could not be fetched.</div>
+  </tal:synthetic>
 
 </metal:ref-commits>
 

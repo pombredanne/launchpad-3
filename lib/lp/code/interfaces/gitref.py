@@ -364,7 +364,8 @@ class IGitRefView(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         "yet been scanned.")
 
     def getCommits(start, limit=None, stop=None, union_repository=None,
-                   start_date=None, end_date=None, logger=None):
+                   start_date=None, end_date=None, handle_timeout=False,
+                   logger=None):
         """Get commit information from this reference.
 
         :param start: The commit to start listing from.
@@ -374,11 +375,14 @@ class IGitRefView(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
             this repository as well (particularly useful with `stop`).
         :param start_date: If not None, ignore commits before this date.
         :param end_date: If not None, ignore commits after this date.
+        :param handle_timeout: If True and the backend request times out,
+            synthesise commit information from what we have in the database.
         :param logger: An optional logger.
         :return: An iterable of commit information dicts.
         """
 
-    def getLatestCommits(quantity=10):
+    def getLatestCommits(quantity=10, extended_details=False, user=None,
+                         logger=None):
         """Return a specific number of the latest commits in this ref."""
 
     has_commits = Attribute("Whether this reference has any commits.")

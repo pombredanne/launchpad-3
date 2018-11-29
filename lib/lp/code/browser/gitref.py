@@ -49,6 +49,7 @@ from lp.code.interfaces.gitref import IGitRef
 from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.services.helpers import english_list
 from lp.services.propertycache import cachedproperty
+from lp.services.scripts import log
 from lp.services.webapp import (
     canonical_url,
     ContextMenu,
@@ -180,7 +181,7 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
     @cachedproperty
     def commit_infos(self):
         return self.context.getLatestCommits(
-            extended_details=True, user=self.user)
+            extended_details=True, user=self.user, logger=log)
 
     @property
     def recipes_link(self):

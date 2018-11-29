@@ -11,10 +11,14 @@ from datetime import datetime
 import hashlib
 import re
 
+from fixtures import FakeLogger
 import pytz
 import soupmatchers
 from storm.store import Store
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    Not,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -23,6 +27,7 @@ from lp.code.interfaces.gitrepository import IGitRepositorySet
 from lp.code.tests.helpers import GitHostingFixture
 from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.job.runner import JobRunner
+from lp.services.timeout import TimeoutError
 from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
@@ -80,6 +85,14 @@ class TestGitRefNavigation(TestCaseWithFactory):
         self.assertEqual(
             "%s/+ref/refs/tags/1.0" % canonical_url(ref.repository),
             canonical_url(ref))
+
+
+class MissingCommitsNote(soupmatchers.Tag):
+
+    def __init__(self):
+        super(MissingCommitsNote, self).__init__(
+            "missing commits note", "div",
+            text="Some recent commit information could not be fetched.")
 
 
 class TestGitRefView(BrowserTestCase):
@@ -186,11 +199,12 @@ class TestGitRefView(BrowserTestCase):
         self.hosting_fixture.getLog.result = list(reversed(log))
         self.scanRef(ref, log[-1])
         view = create_initialized_view(ref, "+index")
+        contents = view()
         expected_texts = list(reversed([
             "%.7s...\nby\n%s\non 2015-01-%02d" % (
                 log[i]["sha1"], log[i]["author"]["name"], i + 1)
             for i in range(5)]))
-        details = find_tags_by_class(view(), "commit-details")
+        details = find_tags_by_class(contents, "commit-details")
         self.assertEqual(
             expected_texts, [extract_text(detail) for detail in details])
         expected_urls = list(reversed([
@@ -199,6 +213,8 @@ class TestGitRefView(BrowserTestCase):
             for i in range(5)]))
         self.assertEqual(
             expected_urls, [detail.a["href"] for detail in details])
+        self.assertThat(
+            contents, Not(soupmatchers.HTMLContains(MissingCommitsNote())))
 
     def test_recent_commits_with_merge(self):
         [ref] = self.factory.makeGitRefs(paths=["refs/heads/branch"])
@@ -211,7 +227,8 @@ class TestGitRefView(BrowserTestCase):
         self.scanRef(mp.merge_source, merged_tip)
         mp.markAsMerged(merged_revision_id=log[0]["sha1"])
         view = create_initialized_view(ref, "+index")
-        soup = BeautifulSoup(view())
+        contents = view()
+        soup = BeautifulSoup(contents)
         details = soup.findAll(
             attrs={"class": re.compile(r"commit-details|commit-comment")})
         expected_texts = list(reversed([
@@ -225,6 +242,8 @@ class TestGitRefView(BrowserTestCase):
         self.assertEqual(
             [canonical_url(mp), canonical_url(mp.merge_source)],
             [link["href"] for link in details[5].findAll("a")])
+        self.assertThat(
+            contents, Not(soupmatchers.HTMLContains(MissingCommitsNote())))
 
     def test_recent_commits_with_merge_from_deleted_ref(self):
         [ref] = self.factory.makeGitRefs(paths=["refs/heads/branch"])
@@ -238,7 +257,8 @@ class TestGitRefView(BrowserTestCase):
         mp.markAsMerged(merged_revision_id=log[0]["sha1"])
         mp.source_git_repository.removeRefs([mp.source_git_path])
         view = create_initialized_view(ref, "+index")
-        soup = BeautifulSoup(view())
+        contents = view()
+        soup = BeautifulSoup(contents)
         details = soup.findAll(
             attrs={"class": re.compile(r"commit-details|commit-comment")})
         expected_texts = list(reversed([
@@ -252,6 +272,8 @@ class TestGitRefView(BrowserTestCase):
         self.assertEqual(
             [canonical_url(mp)],
             [link["href"] for link in details[5].findAll("a")])
+        self.assertThat(
+            contents, Not(soupmatchers.HTMLContains(MissingCommitsNote())))
 
     def _test_all_commits_link(self, branch_name, encoded_branch_name=None):
         if encoded_branch_name is None:
@@ -312,3 +334,22 @@ class TestGitRefView(BrowserTestCase):
         with StormStatementRecorder() as recorder:
             view.landing_targets
         self.assertThat(recorder, HasQueryCount(Equals(12)))
+
+    def test_timeout(self):
+        # The page renders even if fetching commits times out.
+        self.useFixture(FakeLogger())
+        [ref] = self.factory.makeGitRefs()
+        log = self.makeCommitLog()
+        self.scanRef(ref, log[-1])
+        self.hosting_fixture.getLog.failure = TimeoutError
+        view = create_initialized_view(ref, "+index")
+        contents = view()
+        soup = BeautifulSoup(contents)
+        details = soup.findAll(
+            attrs={"class": re.compile(r"commit-details|commit-comment")})
+        expected_text = "%.7s...\nby\n%s\non 2015-01-%02d" % (
+            log[-1]["sha1"], log[-1]["author"]["name"], len(log))
+        self.assertEqual(
+            [expected_text], [extract_text(detail) for detail in details])
+        self.assertThat(
+            contents, soupmatchers.HTMLContains(MissingCommitsNote()))
