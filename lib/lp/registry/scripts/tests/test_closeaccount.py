@@ -22,6 +22,7 @@ from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccountSet,
     )
+from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
 from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.testing import TestCaseWithFactory
@@ -57,6 +58,7 @@ class TestCloseAccount(TestCaseWithFactory):
         """Return a person and account linked to some personal information."""
         person = self.factory.makePerson(karma=10)
         self.assertEqual(AccountStatus.ACTIVE, person.account.status)
+        self.assertNotEqual([], list(person.account.openid_identifiers))
         self.factory.makeBugTask().transitionToAssignee(person, validate=False)
         self.factory.makeQuestion().assignee = person
         self.factory.makeQuestion(owner=person)
@@ -79,19 +81,20 @@ class TestCloseAccount(TestCaseWithFactory):
         return person, person.id, person.account.id
 
     def assertRemoved(self, account_id, person_id):
-        # We can't just set the account to DEACTIVATED, as the
-        # close-account.py script is used to satisfy people who insist on us
-        # removing all their personal details from our system.  The Account
-        # has been removed entirely.
-        self.assertRaises(
-            LookupError, getUtility(IAccountSet).get, account_id)
+        # The Account row still exists, but has been anonymised, leaving
+        # only a minimal audit trail.
+        account = getUtility(IAccountSet).get(account_id)
+        self.assertEqual('Removed by request', account.displayname)
+        self.assertEqual(AccountStatus.CLOSED, account.status)
+        self.assertIn('Closed using close-account.', account.status_history)
 
-        # The Person record still exists to maintain links with information
+        # The Person row still exists to maintain links with information
         # that won't be removed, such as bug comments, but has been
-        # anonymized.
+        # anonymised.
         person = getUtility(IPersonSet).get(person_id)
         self.assertThat(person.name, StartsWith('removed'))
         self.assertEqual('Removed by request', person.display_name)
+        self.assertEqual(account, person.account)
 
         # The corresponding PersonSettings row has been reset to the
         # defaults.
@@ -99,12 +102,22 @@ class TestCloseAccount(TestCaseWithFactory):
         self.assertFalse(person.expanded_notification_footers)
         self.assertFalse(person.require_strong_email_authentication)
 
+        # EmailAddress and OpenIdIdentifier rows have been removed.
+        self.assertEqual(
+            [], list(getUtility(IEmailAddressSet).getByPerson(person)))
+        self.assertEqual([], list(account.openid_identifiers))
+
     def assertNotRemoved(self, account_id, person_id):
         account = getUtility(IAccountSet).get(account_id)
+        self.assertNotEqual('Removed by request', account.displayname)
         self.assertEqual(AccountStatus.ACTIVE, account.status)
         person = getUtility(IPersonSet).get(person_id)
-        self.assertIsNotNone(person.account)
+        self.assertEqual(account, person.account)
+        self.assertNotEqual('Removed by request', person.display_name)
         self.assertThat(person.name, Not(StartsWith('removed')))
+        self.assertNotEqual(
+            [], list(getUtility(IEmailAddressSet).getByPerson(person)))
+        self.assertNotEqual([], list(account.openid_identifiers))
 
     def test_nonexistent(self):
         script = self.makeScript(['nonexistent-person'])

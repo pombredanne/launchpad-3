@@ -54,31 +54,38 @@ class TestAccount(TestCaseWithFactory):
         account = self.factory.makeAccount(status=AccountStatus.NOACCOUNT)
         login_celebrity('admin')
         self.assertCannotTransition(
-            account, [AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED])
+            account,
+            [AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED,
+             AccountStatus.CLOSED])
         self.assertCanTransition(account, [AccountStatus.ACTIVE])
 
     def test_status_from_active(self):
-        # The status may change from ACTIVE to DEACTIVATED or SUSPENDED.
+        # The status may change from ACTIVE to DEACTIVATED, SUSPENDED, or
+        # CLOSED.
         account = self.factory.makeAccount(status=AccountStatus.ACTIVE)
         login_celebrity('admin')
         self.assertCannotTransition(account, [AccountStatus.NOACCOUNT])
         self.assertCanTransition(
-            account, [AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED])
+            account,
+            [AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED,
+             AccountStatus.CLOSED])
 
     def test_status_from_deactivated(self):
-        # The status may change from DEACTIVATED to ACTIVATED.
+        # The status may change from DEACTIVATED to ACTIVATED or CLOSED.
         account = self.factory.makeAccount()
         login_celebrity('admin')
         account.setStatus(AccountStatus.DEACTIVATED, None, 'gbcw')
         self.assertCannotTransition(
             account, [AccountStatus.NOACCOUNT, AccountStatus.SUSPENDED])
-        self.assertCanTransition(account, [AccountStatus.ACTIVE])
+        self.assertCanTransition(
+            account, [AccountStatus.ACTIVE, AccountStatus.CLOSED])
 
     def test_status_from_suspended(self):
-        # The status may change from SUSPENDED to DEACTIVATED.
+        # The status may change from SUSPENDED to DEACTIVATED or CLOSED.
         account = self.factory.makeAccount()
         login_celebrity('admin')
         account.setStatus(AccountStatus.SUSPENDED, None, 'spammer!')
         self.assertCannotTransition(
             account, [AccountStatus.NOACCOUNT, AccountStatus.ACTIVE])
-        self.assertCanTransition(account, [AccountStatus.DEACTIVATED])
+        self.assertCanTransition(
+            account, [AccountStatus.DEACTIVATED, AccountStatus.CLOSED])

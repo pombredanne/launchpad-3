@@ -11,11 +11,17 @@ from storm.expr import (
     Lower,
     Or,
     )
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QuestionStatus
 from lp.answers.model.question import Question
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
-from lp.registry.interfaces.person import PersonCreationRationale
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    )
 from lp.registry.model.person import (
     Person,
     PersonSettings,
@@ -24,8 +30,13 @@ from lp.services.database import postgresql
 from lp.services.database.constants import DEFAULT
 from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import cursor
-from lp.services.identity.model.account import Account
+from lp.services.identity.interfaces.account import (
+    AccountCreationRationale,
+    AccountStatus,
+    IAccountSet,
+    )
 from lp.services.identity.model.emailaddress import EmailAddress
+from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -147,18 +158,17 @@ def close_account(username, log):
 
     # Clean out personal details from the Person table
     table_notification('Person')
-    store.find(Person, Person.id == person_id).set(
-        display_name='Removed by request',
-        name=new_name,
-        accountID=None,
-        homepage_content=None,
-        iconID=None,
-        mugshotID=None,
-        hide_email_addresses=True,
-        registrantID=None,
-        logoID=None,
-        creation_rationale=PersonCreationRationale.UNKNOWN,
-        creation_comment=None)
+    person = removeSecurityProxy(getUtility(IPersonSet).get(person_id))
+    person.display_name = 'Removed by request'
+    person.name = new_name
+    person.homepage_content = None
+    person.icon = None
+    person.mugshot = None
+    person.hide_email_addresses = False
+    person.registrant = None
+    person.logo = None
+    person.creation_rationale = PersonCreationRationale.UNKNOWN
+    person.creation_comment = None
 
     # Keep the corresponding PersonSettings row, but reset everything to the
     # defaults.
@@ -171,15 +181,21 @@ def close_account(username, log):
         require_strong_email_authentication=False)
     skip.add(('personsettings', 'person'))
 
-    # Remove the Account. We don't set the status to deactivated,
-    # as this script is used to satisfy people who insist on us removing
-    # all their personal details from our systems. This includes any
-    # identification tokens like email addresses or openid identifiers.
-    # So the Account record would be unusable, and contain no useful
-    # information.
-    table_notification('Account')
+    # Remove almost everything from the Account row and the corresponding
+    # OpenIdIdentifier rows, preserving only a minimal audit trail.
     if account_id is not None:
-        store.find(Account, Account.id == account_id).remove()
+        table_notification('Account')
+        account = removeSecurityProxy(getUtility(IAccountSet).get(account_id))
+        account.displayname = 'Removed by request'
+        account.creation_rationale = AccountCreationRationale.UNKNOWN
+        janitor = getUtility(ILaunchpadCelebrities).janitor
+        person.setAccountStatus(
+            AccountStatus.CLOSED, janitor, "Closed using close-account.")
+
+        table_notification('OpenIdIdentifier')
+        store.find(
+            OpenIdIdentifier,
+            OpenIdIdentifier.account_id == account_id).remove()
 
     # Reassign their bugs
     table_notification('BugTask')
