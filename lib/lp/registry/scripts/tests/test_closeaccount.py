@@ -14,7 +14,9 @@ from testtools.matchers import (
 import transaction
 from twisted.python.compat import nativeString
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from lp.answers.enums import QuestionStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.scripts.closeaccount import CloseAccountScript
 from lp.services.database.sqlbase import flush_database_caches
@@ -194,3 +196,43 @@ class TestCloseAccount(TestCaseWithFactory):
         self.assertEqual(person, branch_subscription.subscribed_by)
         self.assertEqual(person, snap_build.requester)
         self.assertEqual(person, specification.drafter)
+
+    def test_solves_questions_in_non_final_states(self):
+        person = self.factory.makePerson()
+        person_id = person.id
+        account_id = person.account.id
+        questions = []
+        for status in (
+                QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
+                QuestionStatus.ANSWERED):
+            question = self.factory.makeQuestion(owner=person)
+            removeSecurityProxy(question).status = status
+            questions.append(question)
+        script = self.makeScript([nativeString(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        for question in questions:
+            self.assertEqual(QuestionStatus.SOLVED, question.status)
+            self.assertEqual(
+                'Closed by Launchpad due to owner requesting account removal',
+                question.whiteboard)
+
+    def test_skips_questions_in_final_states(self):
+        person = self.factory.makePerson()
+        person_id = person.id
+        account_id = person.account.id
+        questions = {}
+        for status in (
+                QuestionStatus.SOLVED, QuestionStatus.EXPIRED,
+                QuestionStatus.INVALID):
+            question = self.factory.makeQuestion(owner=person)
+            removeSecurityProxy(question).status = status
+            questions[status] = question
+        script = self.makeScript([nativeString(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        for question_status, question in questions.items():
+            self.assertEqual(question_status, question.status)
+            self.assertIsNone(question.whiteboard)

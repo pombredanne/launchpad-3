@@ -202,10 +202,16 @@ def close_account(username, log):
     store.find(BugTask, BugTask.assigneeID == person_id).set(assigneeID=None)
 
     # Reassign questions assigned to the user, and close all their questions
-    # since nobody else can
+    # in non-final states since nobody else can.
     table_notification('Question')
     store.find(Question, Question.assigneeID == person_id).set(assigneeID=None)
-    store.find(Question, Question.ownerID == person_id).set(
+    owned_non_final_questions = store.find(
+        Question, Question.ownerID == person_id,
+        Question.status.is_in([
+            QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
+            QuestionStatus.ANSWERED,
+            ]))
+    owned_non_final_questions.set(
         status=QuestionStatus.SOLVED,
         whiteboard=(
             'Closed by Launchpad due to owner requesting account removal'))
