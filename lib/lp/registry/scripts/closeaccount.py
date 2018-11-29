@@ -16,8 +16,14 @@ from lp.answers.enums import QuestionStatus
 from lp.answers.model.question import Question
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.person import PersonCreationRationale
-from lp.registry.model.person import Person
+from lp.registry.model.person import (
+    Person,
+    PersonSettings,
+    )
+from lp.services.database import postgresql
+from lp.services.database.constants import DEFAULT
 from lp.services.database.interfaces import IMasterStore
+from lp.services.database.sqlbase import cursor
 from lp.services.identity.model.account import Account
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.scripts.base import (
@@ -32,6 +38,10 @@ def close_account(username, log):
     Return True on success, or log an error message and return False
     """
     store = IMasterStore(Person)
+
+    cur = cursor()
+    references = list(postgresql.listReferences(cur, 'person', 'id'))
+    postgresql.check_indirect_references(references)
 
     row = store.using(
         Person,
@@ -57,6 +67,78 @@ def close_account(username, log):
     # succeed.
     new_name = 'removed%d' % person_id
 
+    # Some references can safely remain in place and link to the cleaned-out
+    # Person row.
+    skip = {
+        # These references express some kind of audit trail.  The actions in
+        # question still happened, and in some cases the rows may still have
+        # functional significance (e.g. subscriptions or access grants), but
+        # we no longer identify the actor.
+        ('accessartifactgrant', 'grantor'),
+        ('accesspolicygrant', 'grantor'),
+        ('binarypackagepublishinghistory', 'removed_by'),
+        ('branchmergeproposal', 'merge_reporter'),
+        ('branchmergeproposal', 'merger'),
+        ('branchmergeproposal', 'queuer'),
+        ('branchmergeproposal', 'reviewer'),
+        ('branchsubscription', 'subscribed_by'),
+        ('bug', 'who_made_private'),
+        ('bugactivity', 'person'),
+        ('bugnomination', 'decider'),
+        ('bugsubscription', 'subscribed_by'),
+        ('faq', 'last_updated_by'),
+        ('featureflagchangelogentry', 'person'),
+        ('gitactivity', 'changee'),
+        ('gitactivity', 'changer'),
+        ('gitrule', 'creator'),
+        ('gitrulegrant', 'grantor'),
+        ('gitsubscription', 'subscribed_by'),
+        ('messageapproval', 'disposed_by'),
+        ('messageapproval', 'posted_by'),
+        ('packagecopyrequest', 'requester'),
+        ('packagediff', 'requester'),
+        ('personlocation', 'last_modified_by'),
+        ('persontransferjob', 'major_person'),
+        ('persontransferjob', 'minor_person'),
+        ('poexportrequest', 'person'),
+        ('question', 'answerer'),
+        ('questionreopening', 'answerer'),
+        ('questionreopening', 'reopener'),
+        ('snapbuild', 'requester'),
+        ('sourcepackagepublishinghistory', 'creator'),
+        ('sourcepackagepublishinghistory', 'removed_by'),
+        ('sourcepackagepublishinghistory', 'sponsor'),
+        ('sourcepackagerecipebuild', 'requester'),
+        ('specification', 'approver'),
+        ('specification', 'completer'),
+        ('specification', 'drafter'),
+        ('specification', 'goal_decider'),
+        ('specification', 'goal_proposer'),
+        ('specification', 'last_changed_by'),
+        ('specification', 'starter'),
+        ('structuralsubscription', 'subscribed_by'),
+        ('teammembership', 'acknowledged_by'),
+        ('teammembership', 'proposed_by'),
+        ('teammembership', 'reviewed_by'),
+        ('translationimportqueueentry', 'importer'),
+        ('translationmessage', 'reviewer'),
+        ('translationmessage', 'submitter'),
+        ('usertouseremail', 'recipient'),
+        ('usertouseremail', 'sender'),
+        ('xref', 'creator'),
+        }
+    reference_names = {
+        (src_tab, src_col) for src_tab, src_col, _, _, _, _ in references}
+    for src_tab, src_col in skip:
+        if (src_tab, src_col) not in reference_names:
+            raise AssertionError(
+                "%s.%s is not a Person reference; possible typo?" %
+                (src_tab, src_col))
+
+    # XXX cjwatson 2018-11-29: Registrants could possibly be left as-is, but
+    # perhaps we should pretend that the registrant was ~registry in that
+    # case instead?
+
     # Remove the EmailAddress. This is the most important step, as
     # people requesting account removal seem to primarily be interested
     # in ensuring we no longer store this information.
@@ -77,6 +159,17 @@ def close_account(username, log):
         logoID=None,
         creation_rationale=PersonCreationRationale.UNKNOWN,
         creation_comment=None)
+
+    # Keep the corresponding PersonSettings row, but reset everything to the
+    # defaults.
+    table_notification('PersonSettings')
+    store.find(PersonSettings, PersonSettings.personID == person_id).set(
+        selfgenerated_bugnotifications=DEFAULT,
+        # XXX cjwatson 2018-11-29: These two columns have NULL defaults, but
+        # perhaps shouldn't?
+        expanded_notification_footers=False,
+        require_strong_email_authentication=False)
+    skip.add(('personsettings', 'person'))
 
     # Remove the Account. We don't set the status to deactivated,
     # as this script is used to satisfy people who insist on us removing
@@ -100,6 +193,7 @@ def close_account(username, log):
         status=QuestionStatus.SOLVED,
         whiteboard=(
             'Closed by Launchpad due to owner requesting account removal'))
+    skip.add(('question', 'owner'))
 
     # Remove rows from tables in simple cases in the given order
     removals = [
@@ -116,10 +210,14 @@ def close_account(username, log):
 
         # Subscriptions
         ('BranchSubscription', 'person'),
-        ('GitSubscription', 'person'),
+        ('BugMute', 'person'),
         ('BugSubscription', 'person'),
+        ('BugSubscriptionFilterMute', 'person'),
+        ('GitSubscription', 'person'),
+        ('MailingListSubscription', 'person'),
         ('QuestionSubscription', 'person'),
         ('SpecificationSubscription', 'person'),
+        ('StructuralSubscription', 'subscriber'),
 
         # Personal stuff, freeing up the namespace for others who want to play
         # or just to remove any fingerprints identifying the user.
@@ -146,7 +244,11 @@ def close_account(username, log):
         ('POExportRequest', 'person'),
 
         # Access grants
+        ('AccessArtifactGrant', 'grantee'),
+        ('AccessPolicyGrant', 'grantee'),
+        ('ArchivePermission', 'person'),
         ('GitRuleGrant', 'grantee'),
+        ('SharingJob', 'grantee'),
         ]
     for table, person_id_column in removals:
         table_notification(table)
@@ -167,6 +269,33 @@ def close_account(username, log):
             AND attendee = ?
             AND Sprint.time_starts > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
         """, (person_id,))
+    # Any remaining past sprint attendance records can harmlessly refer to
+    # the placeholder person row.
+    skip.add(('sprintattendance', 'attendee'))
+
+    # Closing the account will only work if all references have been handled
+    # by this point.  If not, it's safer to bail out.  It's OK if this
+    # doesn't work in all conceivable situations, since some of them may
+    # require careful thought and decisions by a human administrator.
+    has_references = False
+    for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
+        if (src_tab, src_col) in skip:
+            continue
+        result = store.execute("""
+            SELECT COUNT(*) FROM %(src_tab)s WHERE %(src_col)s = ?
+            """ % {
+                'src_tab': src_tab,
+                'src_col': src_col,
+                },
+            (person_id,))
+        count = result.get_one()[0]
+        if count:
+            log.error(
+                "User %s is still referenced by %d %s.%s values" %
+                (username, count, src_tab, src_col))
+            has_references = True
+    if has_references:
+        raise LaunchpadScriptFailure("User %s is still referenced" % username)
 
     return True
 
