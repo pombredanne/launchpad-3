@@ -1320,8 +1320,12 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             grants_for_user[grant.rule].append(grant)
 
         for ref_path in ref_paths:
+            encoded_ref_path = (
+                ref_path if isinstance(ref_path, bytes)
+                else ref_path.encode("UTF-8"))
             matching_rules = [
-                rule for rule in rules if fnmatch(ref_path, rule.ref_pattern)]
+                rule for rule in rules if
+                fnmatch(encoded_ref_path, rule.ref_pattern.encode("UTF-8"))]
             if is_owner and not matching_rules:
                 # If there are no matching rules, then the repository owner
                 # can do anything.

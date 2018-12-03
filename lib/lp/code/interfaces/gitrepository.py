@@ -824,7 +824,8 @@ class IGitRepositoryEdit(IWebhookTarget):
         :param person: An `IPerson` to check, or
             `GitGranteeType.REPOSITORY_OWNER` to check an anonymous
             repository owner.
-        :param ref_paths: An iterable of reference paths.
+        :param ref_paths: An iterable of reference paths (each of which may
+            be either bytes or text).
         :return: A dict mapping reference paths to sets of
             `GitPermissionType`, corresponding to the requested person's
             effective permissions on each of the requested references.
