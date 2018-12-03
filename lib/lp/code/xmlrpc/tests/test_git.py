@@ -6,9 +6,15 @@
 __metaclass__ = type
 
 from pymacaroons import Macaroon
+from six.moves import xmlrpc_client
 from testtools.matchers import (
     Equals,
+    IsInstance,
+    MatchesAll,
     MatchesDict,
+    MatchesListwise,
+    MatchesSetwise,
+    MatchesStructure,
     )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -194,11 +200,25 @@ class TestGitAPIMixin:
         if macaroon_raw is not None:
             auth_params["macaroon"] = macaroon_raw
         translated_path = removeSecurityProxy(repository).getInternalPath()
-        results = self.git_api.checkRefPermissions(
-            translated_path, ref_paths, auth_params)
-        self.assertThat(results, MatchesDict({
-            ref_path: Equals(ref_permissions)
-            for ref_path, ref_permissions in permissions.items()}))
+        if all(isinstance(ref_path, bytes) for ref_path in ref_paths):
+            ref_paths = [
+                xmlrpc_client.Binary(ref_path) for ref_path in ref_paths]
+            results = self.git_api.checkRefPermissions(
+                translated_path, ref_paths, auth_params)
+            self.assertThat(results, MatchesSetwise(*(
+                MatchesListwise([
+                    MatchesAll(
+                        IsInstance(xmlrpc_client.Binary),
+                        MatchesStructure.byEquality(data=ref_path)),
+                    Equals(ref_permissions),
+                    ])
+                for ref_path, ref_permissions in permissions.items())))
+        else:
+            results = self.git_api.checkRefPermissions(
+                translated_path, ref_paths, auth_params)
+            self.assertThat(results, MatchesDict({
+                ref_path: Equals(ref_permissions)
+                for ref_path, ref_permissions in permissions.items()}))
 
     def test_translatePath_private_repository(self):
         requester = self.factory.makePerson()
@@ -518,6 +538,50 @@ class TestGitAPIMixin:
             'refs/tags/1.0': Equals([]),
             'refs/other': Equals([]),
         }))
+
+    def test_checkRefPermissions_bytes(self):
+        owner = self.factory.makePerson()
+        grantee = self.factory.makePerson()
+        no_privileges = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=owner))
+        self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=u"refs/heads/next/*",
+            grantee=grantee, can_push=True)
+        paths = [
+            # Properly-encoded UTF-8.
+            u"refs/heads/next/\N{BLACK HEART SUIT}".encode("UTF-8"),
+            # Non-UTF-8.  (git does not require any particular encoding for
+            # ref paths; non-UTF-8 ones won't work well everywhere, but it's
+            # at least possible to round-trip them through Launchpad.)
+            b"refs/heads/next/\x80",
+            ]
+
+        self.assertHasRefPermissions(
+            grantee, repository, paths, {path: ["push"] for path in paths})
+        login(ANONYMOUS)
+        self.assertHasRefPermissions(
+            no_privileges, repository, paths, {path: [] for path in paths})
+
+    def test_checkRefPermissions_unicode(self):
+        # Actual Unicode ref paths work too.
+        # XXX cjwatson 2018-11-21: Remove this when the transition to the
+        # new protocol is complete.
+        owner = self.factory.makePerson()
+        grantee = self.factory.makePerson()
+        no_privileges = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=owner))
+        self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=u"refs/heads/next/*",
+            grantee=grantee, can_push=True)
+        path = u"refs/heads/next/\N{SNOWMAN}"
+
+        self.assertHasRefPermissions(
+            grantee, repository, [path], {path: ["push"]})
+        login(ANONYMOUS)
+        self.assertHasRefPermissions(
+            no_privileges, repository, [path], {path: []})
 
 
 class TestGitAPI(TestGitAPIMixin, TestCaseWithFactory):
