@@ -18,10 +18,7 @@ from lp.answers.enums import QuestionStatus
 from lp.answers.model.question import Question
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonCreationRationale,
-    )
+from lp.registry.interfaces.person import PersonCreationRationale
 from lp.registry.model.person import (
     Person,
     PersonSettings,
@@ -33,7 +30,6 @@ from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.account import (
     AccountCreationRationale,
     AccountStatus,
-    IAccountSet,
     )
 from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.openid.model.openididentifier import OpenIdIdentifier
@@ -54,29 +50,29 @@ def close_account(username, log):
     references = list(postgresql.listReferences(cur, 'person', 'id'))
     postgresql.check_indirect_references(references)
 
-    row = store.using(
+    person = store.using(
         Person,
         LeftJoin(EmailAddress, Person.id == EmailAddress.personID)
     ).find(
-        (Person.id, Person.accountID, Person.name, Person.teamownerID),
+        Person,
         Or(Person.name == username,
            Lower(EmailAddress.email) == Lower(username))).one()
-    if row is None:
+    if person is None:
         raise LaunchpadScriptFailure("User %s does not exist" % username)
-    person_id, account_id, username, teamowner_id = row
+    person_name = person.name
 
     # We don't do teams
-    if teamowner_id is not None:
-        raise LaunchpadScriptFailure("%s is a team" % username)
+    if person.is_team:
+        raise LaunchpadScriptFailure("%s is a team" % person_name)
 
-    log.info("Closing %s's account" % username)
+    log.info("Closing %s's account" % person_name)
 
     def table_notification(table):
         log.debug("Handling the %s table" % table)
 
     # All names starting with 'removed' are blacklisted, so this will always
     # succeed.
-    new_name = 'removed%d' % person_id
+    new_name = 'removed%d' % person.id
 
     # Some references can safely remain in place and link to the cleaned-out
     # Person row.
@@ -154,11 +150,10 @@ def close_account(username, log):
     # people requesting account removal seem to primarily be interested
     # in ensuring we no longer store this information.
     table_notification('EmailAddress')
-    store.find(EmailAddress, EmailAddress.personID == person_id).remove()
+    store.find(EmailAddress, EmailAddress.personID == person.id).remove()
 
     # Clean out personal details from the Person table
     table_notification('Person')
-    person = removeSecurityProxy(getUtility(IPersonSet).get(person_id))
     person.display_name = 'Removed by request'
     person.name = new_name
     person.homepage_content = None
@@ -173,7 +168,7 @@ def close_account(username, log):
     # Keep the corresponding PersonSettings row, but reset everything to the
     # defaults.
     table_notification('PersonSettings')
-    store.find(PersonSettings, PersonSettings.personID == person_id).set(
+    store.find(PersonSettings, PersonSettings.personID == person.id).set(
         selfgenerated_bugnotifications=DEFAULT,
         # XXX cjwatson 2018-11-29: These two columns have NULL defaults, but
         # perhaps shouldn't?
@@ -183,9 +178,9 @@ def close_account(username, log):
 
     # Remove almost everything from the Account row and the corresponding
     # OpenIdIdentifier rows, preserving only a minimal audit trail.
-    if account_id is not None:
+    if person.account is not None:
         table_notification('Account')
-        account = removeSecurityProxy(getUtility(IAccountSet).get(account_id))
+        account = removeSecurityProxy(person.account)
         account.displayname = 'Removed by request'
         account.creation_rationale = AccountCreationRationale.UNKNOWN
         janitor = getUtility(ILaunchpadCelebrities).janitor
@@ -195,18 +190,18 @@ def close_account(username, log):
         table_notification('OpenIdIdentifier')
         store.find(
             OpenIdIdentifier,
-            OpenIdIdentifier.account_id == account_id).remove()
+            OpenIdIdentifier.account_id == account.id).remove()
 
     # Reassign their bugs
     table_notification('BugTask')
-    store.find(BugTask, BugTask.assigneeID == person_id).set(assigneeID=None)
+    store.find(BugTask, BugTask.assigneeID == person.id).set(assigneeID=None)
 
     # Reassign questions assigned to the user, and close all their questions
     # in non-final states since nobody else can.
     table_notification('Question')
-    store.find(Question, Question.assigneeID == person_id).set(assigneeID=None)
+    store.find(Question, Question.assigneeID == person.id).set(assigneeID=None)
     owned_non_final_questions = store.find(
-        Question, Question.ownerID == person_id,
+        Question, Question.ownerID == person.id,
         Question.status.is_in([
             QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
             QuestionStatus.ANSWERED,
@@ -280,7 +275,7 @@ def close_account(username, log):
                 'table': table,
                 'person_id_column': person_id_column,
                 },
-            (person_id,))
+            (person.id,))
 
     # Trash Sprint Attendance records in the future.
     table_notification('SprintAttendance')
@@ -290,7 +285,7 @@ def close_account(username, log):
         WHERE Sprint.id = SprintAttendance.sprint
             AND attendee = ?
             AND Sprint.time_starts > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-        """, (person_id,))
+        """, (person.id,))
     # Any remaining past sprint attendance records can harmlessly refer to
     # the placeholder person row.
     skip.add(('sprintattendance', 'attendee'))
@@ -309,15 +304,16 @@ def close_account(username, log):
                 'src_tab': src_tab,
                 'src_col': src_col,
                 },
-            (person_id,))
+            (person.id,))
         count = result.get_one()[0]
         if count:
             log.error(
                 "User %s is still referenced by %d %s.%s values" %
-                (username, count, src_tab, src_col))
+                (person_name, count, src_tab, src_col))
             has_references = True
     if has_references:
-        raise LaunchpadScriptFailure("User %s is still referenced" % username)
+        raise LaunchpadScriptFailure(
+            "User %s is still referenced" % person_name)
 
     return True
 
