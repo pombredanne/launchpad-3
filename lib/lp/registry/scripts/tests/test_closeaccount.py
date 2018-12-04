@@ -180,6 +180,16 @@ class TestCloseAccount(TestCaseWithFactory):
         self.assertRemoved(account_ids[1], person_ids[1])
         self.assertNotRemoved(account_ids[2], person_ids[2])
 
+    def test_unactivated(self):
+        person = self.factory.makePerson(
+            account_status=AccountStatus.NOACCOUNT)
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([person.guessedemails[0].email])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+
     def test_retains_audit_trail(self):
         person = self.factory.makePerson()
         person_id = person.id

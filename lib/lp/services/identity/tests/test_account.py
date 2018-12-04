@@ -1,4 +1,4 @@
-# Copyright 2009-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `Account` objects."""
@@ -50,14 +50,13 @@ class TestAccount(TestCaseWithFactory):
         self.assertEqual(status, account.status)
 
     def test_status_from_noaccount(self):
-        # The status may change from NOACCOUNT to ACTIVE.
+        # The status may change from NOACCOUNT to ACTIVE or CLOSED.
         account = self.factory.makeAccount(status=AccountStatus.NOACCOUNT)
         login_celebrity('admin')
         self.assertCannotTransition(
-            account,
-            [AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED,
-             AccountStatus.CLOSED])
-        self.assertCanTransition(account, [AccountStatus.ACTIVE])
+            account, [AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED])
+        self.assertCanTransition(
+            account, [AccountStatus.ACTIVE, AccountStatus.CLOSED])
 
     def test_status_from_active(self):
         # The status may change from ACTIVE to DEACTIVATED, SUSPENDED, or

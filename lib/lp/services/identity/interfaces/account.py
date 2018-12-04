@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Account interfaces."""
@@ -243,7 +243,7 @@ class AccountStatusChoice(Choice):
     transitions = {
         AccountStatus.PLACEHOLDER: [
             AccountStatus.NOACCOUNT, AccountStatus.ACTIVE],
-        AccountStatus.NOACCOUNT: [AccountStatus.ACTIVE],
+        AccountStatus.NOACCOUNT: [AccountStatus.ACTIVE, AccountStatus.CLOSED],
         AccountStatus.ACTIVE: [
             AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED,
             AccountStatus.CLOSED],
