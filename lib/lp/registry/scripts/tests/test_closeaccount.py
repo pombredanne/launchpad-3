@@ -206,6 +206,7 @@ class TestCloseAccount(TestCaseWithFactory):
                 QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
                 QuestionStatus.ANSWERED):
             question = self.factory.makeQuestion(owner=person)
+            question.addComment(person, "comment")
             removeSecurityProxy(question).status = status
             questions.append(question)
         script = self.makeScript([nativeString(person.name)])
@@ -227,6 +228,7 @@ class TestCloseAccount(TestCaseWithFactory):
                 QuestionStatus.SOLVED, QuestionStatus.EXPIRED,
                 QuestionStatus.INVALID):
             question = self.factory.makeQuestion(owner=person)
+            question.addComment(person, "comment")
             removeSecurityProxy(question).status = status
             questions[status] = question
         script = self.makeScript([nativeString(person.name)])
