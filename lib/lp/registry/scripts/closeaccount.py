@@ -100,6 +100,7 @@ def close_account(username, log):
         ('gitrule', 'creator'),
         ('gitrulegrant', 'grantor'),
         ('gitsubscription', 'subscribed_by'),
+        ('message', 'owner'),
         ('messageapproval', 'disposed_by'),
         ('messageapproval', 'posted_by'),
         ('packagecopyrequest', 'requester'),
