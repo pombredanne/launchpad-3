@@ -361,8 +361,11 @@ class QuestionSubscriptionView(LaunchpadView):
             # No post, nothing to do
             return
 
+        # XXX cjwatson 2018-12-07: None of the (IQuestion,
+        # IObjectModifiedEvent) subscribers seem to care about the
+        # 'subscribers' field.  Do we need this notification?
         modified_fields = set()
-        with notify_modified(self.context):
+        with notify_modified(self.context, modified_fields):
             response = self.request.response
             # Establish if a subscription form was posted.
             newsub = self.request.form.get('subscribe', None)
