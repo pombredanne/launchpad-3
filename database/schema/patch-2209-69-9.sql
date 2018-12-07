@@ -3,6 +3,6 @@
 
 SET client_min_messages=ERROR;
 
-CREATE INDEX livefsfile__libraryfile__idx ON livefsfile(libraryfile);
+CREATE INDEX snapfile__libraryfile__idx ON snapfile(libraryfile);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 56, 4);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 69, 9);
