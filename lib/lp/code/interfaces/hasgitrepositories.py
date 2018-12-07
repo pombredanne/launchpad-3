@@ -17,7 +17,8 @@ class IHasGitRepositories(Interface):
     """An object that has related Git repositories.
 
     A project contains Git repositories, a source package on a distribution
-    contains branches, and a person contains "personal" branches.
+    contains Git repositories, and a person contains "personal" Git
+    repositories.
     """
 
     export_as_webservice_entry(
