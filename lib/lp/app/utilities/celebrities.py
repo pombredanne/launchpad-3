@@ -22,7 +22,7 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 class MutatedCelebrityError(Exception):
     """A celebrity has had its id or name changed in the database.
 
-    This would indicate a major prodution screwup.
+    This would indicate a major production screwup.
     """
 
 

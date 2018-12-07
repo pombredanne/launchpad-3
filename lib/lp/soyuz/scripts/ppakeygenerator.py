@@ -19,7 +19,7 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 
 class PPAKeyGenerator(LaunchpadCronScript):
 
-    usage = '%prog [-p PPA owner]'
+    usage = '%prog [-A archive-reference]'
     description = 'Generate a GPG signing key for PPAs.'
 
     def add_my_options(self):
