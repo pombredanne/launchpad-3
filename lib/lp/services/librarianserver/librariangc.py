@@ -523,6 +523,41 @@ class UnreferencedContentPruner:
         else:
             return False
 
+    def remove_content(self, content_id):
+        removed = []
+    
+        # Remove the file from disk, if it hasn't already been.
+        path = get_file_path(content_id)
+        try:
+            os.unlink(path)
+            removed.append('filesystem')
+        except OSError as e:
+            if e.errno != errno.ENOENT:
+                raise
+    
+        # Remove the file from Swift, if it hasn't already been.
+        if self.swift_enabled:
+            container, name = swift.swift_location(content_id)
+            with swift.connection() as swift_connection:
+                try:
+                    swift.quiet_swiftclient(
+                        swift_connection.delete_object, container, name)
+                    removed.append('Swift')
+                except swiftclient.ClientException as x:
+                    if x.http_status != 404:
+                        raise
+    
+        if removed:
+            log.debug3(
+                "Deleted %s from %s", content_id, ' & '.join(removed))
+    
+        elif config.librarian_server.upstream_host is None:
+            # It is normal to have files in the database that
+            # are not on disk if the Librarian has an upstream
+            # Librarian, such as on staging. Don't annoy the
+            # operator with noise in this case.
+            log.info("%s already deleted", path)
+
     def __call__(self, chunksize):
         chunksize = int(chunksize)
 
@@ -549,39 +584,7 @@ class UnreferencedContentPruner:
             WHERE id BETWEEN %s AND %s
             """, (self.index, self.index + chunksize - 1))
         for content_id in (row[0] for row in cur.fetchall()):
-            removed = []
-
-            # Remove the file from disk, if it hasn't already been.
-            path = get_file_path(content_id)
-            try:
-                os.unlink(path)
-                removed.append('filesystem')
-            except OSError as e:
-                if e.errno != errno.ENOENT:
-                    raise
-
-            # Remove the file from Swift, if it hasn't already been.
-            if self.swift_enabled:
-                container, name = swift.swift_location(content_id)
-                with swift.connection() as swift_connection:
-                    try:
-                        swift.quiet_swiftclient(
-                            swift_connection.delete_object, container, name)
-                        removed.append('Swift')
-                    except swiftclient.ClientException as x:
-                        if x.http_status != 404:
-                            raise
-
-            if removed:
-                log.debug3(
-                    "Deleted %s from %s", content_id, ' & '.join(removed))
-
-            elif config.librarian_server.upstream_host is None:
-                # It is normal to have files in the database that
-                # are not on disk if the Librarian has an upstream
-                # Librarian, such as on staging. Don't annoy the
-                # operator with noise in this case.
-                log.info("%s already deleted", path)
+            self.remove_content(content_id)
         self.con.rollback()
 
         self.index += chunksize
