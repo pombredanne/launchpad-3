@@ -11,6 +11,7 @@ __all__ = [
 import sys
 
 from pymacaroons import Macaroon
+import six
 from six.moves import xmlrpc_client
 from storm.store import Store
 import transaction
@@ -313,11 +314,9 @@ class GitAPI(LaunchpadXMLRPCView):
         requester_id = auth_params.get("uid")
         if requester_id is None:
             requester_id = LAUNCHPAD_ANONYMOUS
-        if isinstance(path, str):
-            path = path.decode('utf-8')
         return run_with_login(
             requester_id, self._translatePath,
-            path.strip("/"), permission, auth_params)
+            six.ensure_text(path).strip("/"), permission, auth_params)
 
     def notify(self, translated_path):
         """See `IGitAPI`."""

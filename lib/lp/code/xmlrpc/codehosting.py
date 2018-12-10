@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementations of the XML-RPC APIs for codehosting."""
@@ -18,6 +18,7 @@ from bzrlib.urlutils import (
     unescape,
     )
 import pytz
+import six
 import transaction
 from zope.component import getUtility
 from zope.interface import implementer
@@ -109,9 +110,8 @@ def run_with_login(login_id, function, *args, **kwargs):
         # Don't pass in an actual user. Instead pass in LAUNCHPAD_SERVICES
         # and expect `function` to use `removeSecurityProxy` or similar.
         return function(login_id, *args, **kwargs)
-    if isinstance(login_id, basestring):
-        if isinstance(login_id, bytes):
-            login_id = login_id.decode("UTF-8")
+    if isinstance(login_id, (six.binary_type, six.text_type)):
+        login_id = six.ensure_text(login_id)
         # OpenID identifiers must contain a slash, while names must not.
         if "/" in login_id:
             requester = getUtility(IPersonSet).getByOpenIDIdentifier(login_id)
@@ -242,10 +242,7 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                 branch = namespace.createBranch(
                     BranchType.HOSTED, branch_name, requester)
             except LaunchpadValidationError as e:
-                msg = e.args[0]
-                if isinstance(msg, unicode):
-                    msg = msg.encode('utf-8')
-                return faults.PermissionDenied(msg)
+                return faults.PermissionDenied(six.ensure_binary(e.args[0]))
             except BranchCreationException as e:
                 return faults.PermissionDenied(str(e))
 

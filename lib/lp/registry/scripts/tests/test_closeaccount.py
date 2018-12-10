@@ -7,12 +7,12 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
+import six
 from testtools.matchers import (
     Not,
     StartsWith,
     )
 import transaction
-from twisted.python.compat import nativeString
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -143,7 +143,7 @@ class TestCloseAccount(TestCaseWithFactory):
         person_id = person.id
         account_id = person.account.id
         self.factory.makeProduct(owner=person)
-        script = self.makeScript([nativeString(person.name)])
+        script = self.makeScript([six.ensure_str(person.name)])
         with dbuser('launchpad'):
             self.assertRaisesWithContent(
                 LaunchpadScriptFailure,
@@ -157,14 +157,14 @@ class TestCloseAccount(TestCaseWithFactory):
 
     def test_single_by_name(self):
         person, person_id, account_id = self.makePopulatedUser()
-        script = self.makeScript([nativeString(person.name)])
+        script = self.makeScript([six.ensure_str(person.name)])
         with dbuser('launchpad'):
             self.runScript(script)
         self.assertRemoved(account_id, person_id)
 
     def test_single_by_email(self):
         person, person_id, account_id = self.makePopulatedUser()
-        script = self.makeScript([nativeString(person.preferredemail.email)])
+        script = self.makeScript([six.ensure_str(person.preferredemail.email)])
         with dbuser('launchpad'):
             self.runScript(script)
         self.assertRemoved(account_id, person_id)
@@ -199,7 +199,7 @@ class TestCloseAccount(TestCaseWithFactory):
         snap = self.factory.makeSnap()
         snap_build = self.factory.makeSnapBuild(requester=person, snap=snap)
         specification = self.factory.makeSpecification(drafter=person)
-        script = self.makeScript([nativeString(person.name)])
+        script = self.makeScript([six.ensure_str(person.name)])
         with dbuser('launchpad'):
             self.runScript(script)
         self.assertRemoved(account_id, person_id)
@@ -219,7 +219,7 @@ class TestCloseAccount(TestCaseWithFactory):
             question.addComment(person, "comment")
             removeSecurityProxy(question).status = status
             questions.append(question)
-        script = self.makeScript([nativeString(person.name)])
+        script = self.makeScript([six.ensure_str(person.name)])
         with dbuser('launchpad'):
             self.runScript(script)
         self.assertRemoved(account_id, person_id)
@@ -241,7 +241,7 @@ class TestCloseAccount(TestCaseWithFactory):
             question.addComment(person, "comment")
             removeSecurityProxy(question).status = status
             questions[status] = question
-        script = self.makeScript([nativeString(person.name)])
+        script = self.makeScript([six.ensure_str(person.name)])
         with dbuser('launchpad'):
             self.runScript(script)
         self.assertRemoved(account_id, person_id)

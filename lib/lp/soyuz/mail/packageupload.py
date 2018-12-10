@@ -1,4 +1,4 @@
-# Copyright 2011-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,6 +9,7 @@ __all__ = [
 from collections import OrderedDict
 import os.path
 
+import six
 from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -620,7 +621,5 @@ class PackageUploadMailer(BaseMailer):
             debug(self.logger, "  Bcc: %s" % ctrl.headers['Bcc'])
         debug(self.logger, "  Body:")
         for line in ctrl.body.splitlines():
-            if isinstance(line, bytes):
-                line = line.decode('utf-8', 'replace')
-            debug(self.logger, line)
+            debug(self.logger, six.ensure_text(line, errors="replace"))
         return ctrl

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -32,6 +32,7 @@ from urlparse import (
     )
 
 from lazr.restful.utils import get_current_browser_request
+import six
 from storm.store import Store
 from zope.interface import implementer
 
@@ -142,8 +143,7 @@ class FileUploadClient:
         if size <= min_size:
             raise UploadFailed('Invalid length: %d' % size)
 
-        if isinstance(name, unicode):
-            name = name.encode('utf-8')
+        name = six.ensure_binary(name)
 
         # Import in this method to avoid a circular import
         from lp.services.librarian.model import LibraryFileContent
@@ -235,8 +235,7 @@ class FileUploadClient:
             raise TypeError('No data')
         if size <= 0:
             raise UploadFailed('No data')
-        if isinstance(name, unicode):
-            name = name.encode('utf-8')
+        name = six.ensure_binary(name)
         self._connect()
         try:
             database_name = ConnectionString(dbconfig.main_master).dbname

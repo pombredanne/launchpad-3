@@ -24,6 +24,7 @@ from lazr.restful.utils import get_current_browser_request
 from pymacaroons import Macaroon
 import requests
 from requests_toolbelt import MultipartEncoder
+import six
 from zope.component import getUtility
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
@@ -189,9 +190,8 @@ class SnapStoreClient:
                     error_message = "\n".join(
                         error["message"]
                         for error in response_data["error_list"])
-        detail = requests_error.response.content
-        if isinstance(detail, bytes):
-            detail = detail.decode("UTF-8", errors="replace")
+        detail = six.ensure_text(
+            requests_error.response.content, errors="replace")
         can_retry = requests_error.response.status_code in (502, 503)
         return error_class(error_message, detail=detail, can_retry=can_retry)
 

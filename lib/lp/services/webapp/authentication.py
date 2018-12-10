@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,6 +15,7 @@ __all__ = [
 import binascii
 
 from contrib.oauth import OAuthRequest
+import six
 from zope.authentication.interfaces import ILoginPassword
 from zope.component import getUtility
 from zope.event import notify
@@ -283,9 +284,7 @@ def get_oauth_authorization(request):
         # http://oauth.net/core/1.0/#encoding_parameters says "Text names
         # and values MUST be encoded as UTF-8 octets before percent-encoding
         # them", so we can reasonably fail if this hasn't been done.
-        if isinstance(header, bytes):
-            header = header.decode("UTF-8")
-        return OAuthRequest._split_header(header)
+        return OAuthRequest._split_header(six.ensure_text(header))
     else:
         return request.form
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,6 +17,9 @@ from datetime import (
     )
 import hashlib
 import re
+
+import pytz
+import six
 from storm.locals import (
     Bool,
     DateTime,
@@ -24,8 +27,6 @@ from storm.locals import (
     Reference,
     Unicode,
     )
-
-import pytz
 from zope.interface import implementer
 
 from lp.registry.interfaces.distribution import IDistribution
@@ -81,10 +82,7 @@ def sha256_digest(data):
     this is straightforward because hexdigest() returns that anyway, but in
     Python 2 we must decode.
     """
-    digest = hashlib.sha256(data).hexdigest()
-    if isinstance(digest, bytes):
-        digest = digest.decode('ASCII')
-    return digest
+    return six.ensure_text(hashlib.sha256(data).hexdigest(), encoding='ASCII')
 
 
 @implementer(IOAuthConsumer)

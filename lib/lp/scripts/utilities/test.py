@@ -22,6 +22,7 @@ import sys
 import time
 import warnings
 
+import six
 from zope.testing import testrunner
 from zope.testing.testrunner import options
 
@@ -39,9 +40,7 @@ def fix_doctest_output():
     class _SpoofOut(doctest._SpoofOut):
 
         def write(self, value):
-            if isinstance(value, unicode):
-                value = value.encode('utf8')
-            _RealSpoofOut.write(self, value)
+            _RealSpoofOut.write(self, six.ensure_binary(value))
 
     doctest._SpoofOut = _SpoofOut
 

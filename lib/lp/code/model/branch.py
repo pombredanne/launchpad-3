@@ -18,6 +18,7 @@ from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
 from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
+import six
 from six.moves.urllib_parse import urlsplit
 from sqlobject import (
     ForeignKey,
@@ -813,10 +814,9 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             memcache_client = getUtility(IMemcacheClient)
             instance_name = urlsplit(
                 config.codehosting.internal_bzr_api_endpoint).hostname
-            memcache_key = '%s:bzr-file-list:%s:%s:%s' % (
-                instance_name, self.id, revision_id, dirname)
-            if not isinstance(memcache_key, bytes):
-                memcache_key = memcache_key.encode('UTF-8')
+            memcache_key = six.ensure_binary(
+                '%s:bzr-file-list:%s:%s:%s' % (
+                    instance_name, self.id, revision_id, dirname))
             cached_file_list = memcache_client.get(memcache_key)
             if cached_file_list is not None:
                 try:

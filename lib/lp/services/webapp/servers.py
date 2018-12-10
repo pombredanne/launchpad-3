@@ -542,21 +542,11 @@ def wsgi_native_string(s):
     porting to Python 3 via an intermediate stage of Unicode literals in
     Python 2, we enforce this here.
     """
-    # Based on twisted.python.compat.nativeString, but using a different
-    # encoding.
-    if not isinstance(s, (bytes, unicode)):
-        raise TypeError('%r is neither bytes nor unicode' % s)
-    if six.PY3:
-        if isinstance(s, bytes):
-            return s.decode('ISO-8859-1')
-        else:
-            # Ensure we're limited to ISO-8859-1.
-            s.encode('ISO-8859-1')
-    else:
-        if isinstance(s, unicode):
-            return s.encode('ISO-8859-1')
-        # Bytes objects are always decodable as ISO-8859-1.
-    return s
+    result = six.ensure_str(s, encoding='ISO-8859-1')
+    if six.PY3 and isinstance(s, six.text_type):
+        # Ensure we're limited to ISO-8859-1.
+        result.encode('ISO-8859-1')
+    return result
 
 
 class LaunchpadBrowserRequestMixin:
@@ -1311,9 +1301,7 @@ class WebServicePublication(WebServicePublicationMixin,
             # Try to retrieve a consumer based on the User-Agent
             # header.
             anonymous_request = True
-            consumer_key = request.getHeader('User-Agent', '')
-            if isinstance(consumer_key, bytes):
-                consumer_key = consumer_key.decode('UTF-8')
+            consumer_key = six.ensure_text(request.getHeader('User-Agent', ''))
             if consumer_key == u'':
                 consumer_key = u'anonymous client'
             consumer = consumers.getByKey(consumer_key)

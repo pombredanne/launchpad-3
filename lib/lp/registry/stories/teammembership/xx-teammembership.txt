@@ -224,13 +224,13 @@ On a team's +members page we can see all active members of that team, as
 well as the former members and the ones which proposed themselves or that
 have been invited.
 
+    >>> import six
+
     >>> def print_members(contents, type):
     ...     table = find_tag_by_id(contents, type)
     ...     for link in table.findAll('a'):
     ...         if link.renderContents() != 'Edit' and not link.find('img'):
-    ...             contents = link.renderContents()
-    ...             if isinstance(contents, str):
-    ...                 contents = contents.decode('utf-8')
+    ...             contents = six.ensure_text(link.renderContents())
     ...             print contents.encode('ascii', 'replace')
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
