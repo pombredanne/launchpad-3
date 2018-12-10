@@ -5,6 +5,6 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE SnapBuild ADD COLUMN store_upload_json_data text;
 
-COMMENT ON COLUMN SnapBuild.store_upload_json_data IS 'Data that is specific to a particular build.';
+COMMENT ON COLUMN SnapBuild.store_upload_json_data IS 'Data that is related to the process of uploading a build to the store.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2209, 83, 5);
