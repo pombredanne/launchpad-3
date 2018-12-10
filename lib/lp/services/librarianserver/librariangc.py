@@ -11,6 +11,7 @@ from datetime import (
     )
 import errno
 import hashlib
+import multiprocessing.pool
 import os
 import re
 import sys
@@ -583,8 +584,13 @@ class UnreferencedContentPruner:
             SELECT content FROM UnreferencedLibraryFileContent
             WHERE id BETWEEN %s AND %s
             """, (self.index, self.index + chunksize - 1))
-        for content_id in (row[0] for row in cur.fetchall()):
-            self.remove_content(content_id)
+
+        pool = multiprocessing.pool.ThreadPool(10)
+        try:
+            pool.map(self.remove_content, (row[0] for row in cur.fetchall()))
+        finally:
+            pool.close()
+            pool.join()
         self.con.rollback()
 
         self.index += chunksize
