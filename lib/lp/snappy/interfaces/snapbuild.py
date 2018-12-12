@@ -36,7 +36,7 @@ from lazr.restful.fields import (
 from zope.component.interfaces import IObjectEvent
 from zope.interface import (
     Attribute,
-    Interface
+    Interface,
     )
 from zope.schema import (
     Bool,
