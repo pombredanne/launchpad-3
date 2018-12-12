@@ -227,7 +227,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
     @error_message.setter
     def error_message(self, message):
         """See `ISnapStoreUploadJob`."""
-        self.snapbuild.store_upload_metadata["error_message"] = message
+        self.metadata["error_message"] = message
 
     @property
     def error_detail(self):
@@ -237,7 +237,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
     @error_detail.setter
     def error_detail(self, detail):
         """See `ISnapStoreUploadJob`."""
-        self.snapbuild.store_upload_metadata["error_detail"] = detail
+        self.metadata["error_detail"] = detail
 
     @property
     def error_messages(self):
@@ -247,7 +247,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
     @error_messages.setter
     def error_messages(self, messages):
         """See `ISnapStoreUploadJob`."""
-        self.snapbuild.store_upload_metadata["error_messages"] = messages
+        self.metadata["error_messages"] = messages
 
     @property
     def store_url(self):
@@ -336,7 +336,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
                 self.attempt_count = 1
             if self.store_url is None:
                 self.store_url, self.store_revision = (
-                    client.checkStatus(self.store_metadata["status_url"]))
+                    client.checkStatus(self.status_url))
                 # We made progress, so reset attempt_count.
                 self.attempt_count = 1
             if self.snapbuild.snap.store_channels:
