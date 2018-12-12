@@ -179,7 +179,7 @@ class SnapBuild(PackageBuildMixin, Storm):
 
     def __init__(self, build_farm_job, requester, snap, archive,
                  distro_arch_series, pocket, channels, processor, virtualized,
-                 date_created, store_upload_metadata, build_request=None):
+                 date_created, store_upload_metadata=None, build_request=None):
         """Construct a `SnapBuild`."""
         super(SnapBuild, self).__init__()
         self.build_farm_job = build_farm_job
@@ -192,7 +192,7 @@ class SnapBuild(PackageBuildMixin, Storm):
         self.processor = processor
         self.virtualized = virtualized
         self.date_created = date_created
-        self.store_upload_metadata = store_upload_metadata
+        self.store_upload_metadata = store_upload_metadata or {}
         if build_request is not None:
             self.build_request_id = build_request.id
         self.status = BuildStatus.NEEDSBUILD
@@ -511,7 +511,7 @@ class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
 
     def new(self, requester, snap, archive, distro_arch_series, pocket,
             channels=None, date_created=DEFAULT,
-            store_upload_metadata=None, build_request=None, ):
+            store_upload_metadata=None, build_request=None):
         """See `ISnapBuildSet`."""
         store = IMasterStore(SnapBuild)
         build_farm_job = getUtility(IBuildFarmJobSource).new(
@@ -522,7 +522,7 @@ class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
             pocket, channels, distro_arch_series.processor,
             not distro_arch_series.processor.supports_nonvirtualized
             or snap.require_virtualized or archive.require_virtualized,
-            date_created, store_upload_metadata=store_upload_metadata or {},
+            date_created, store_upload_metadata=store_upload_metadata,
             build_request=build_request)
         store.add(snapbuild)
         return snapbuild
