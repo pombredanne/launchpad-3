@@ -212,54 +212,71 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         return job
 
     @property
+    def store_metadata(self):
+        """See `ISnapStoreUploadJob`."""
+        intermediate = {}
+        intermediate.update(self.metadata)
+        intermediate.update(self.snapbuild.store_upload_metadata)
+        return intermediate
+
+    @property
     def error_message(self):
         """See `ISnapStoreUploadJob`."""
-        return self.metadata.get("error_message")
+        return self.store_metadata.get("error_message")
 
     @error_message.setter
     def error_message(self, message):
         """See `ISnapStoreUploadJob`."""
-        self.metadata["error_message"] = message
+        self.snapbuild.store_upload_metadata["error_message"] = message
 
     @property
     def error_detail(self):
         """See `ISnapStoreUploadJob`."""
-        return self.metadata.get("error_detail")
+        return self.store_metadata.get("error_detail")
 
     @error_detail.setter
     def error_detail(self, detail):
         """See `ISnapStoreUploadJob`."""
-        self.metadata["error_detail"] = detail
+        self.snapbuild.store_upload_metadata["error_detail"] = detail
 
     @property
     def error_messages(self):
         """See `ISnapStoreUploadJob`."""
-        return self.metadata.get("error_messages")
+        return self.store_metadata.get("error_messages")
 
     @error_messages.setter
     def error_messages(self, messages):
         """See `ISnapStoreUploadJob`."""
-        self.metadata["error_messages"] = messages
+        self.snapbuild.store_upload_metadata["error_messages"] = messages
 
     @property
     def store_url(self):
         """See `ISnapStoreUploadJob`."""
-        return self.metadata.get("store_url")
+        return self.store_metadata.get("store_url")
 
     @store_url.setter
     def store_url(self, url):
         """See `ISnapStoreUploadJob`."""
-        self.metadata["store_url"] = url
+        self.snapbuild.store_upload_metadata["store_url"] = url
 
     @property
     def store_revision(self):
         """See `ISnapStoreUploadJob`."""
-        return self.metadata.get("store_revision")
+        return self.store_metadata.get("store_revision")
 
     @store_revision.setter
     def store_revision(self, revision):
         """See `ISnapStoreUploadJob`."""
-        self.metadata["store_revision"] = revision
+        self.snapbuild.store_upload_metadata["store_revision"] = revision
+
+    @property
+    def status_url(self):
+        """See `ISnapStoreUploadJob`."""
+        return self.store_metadata.get('status_url')
+
+    @status_url.setter
+    def status_url(self, url):
+        self.snapbuild.store_upload_metadata["status_url"] = url
 
     # Ideally we'd just override Job._set_status or similar, but
     # lazr.delegates makes that difficult, so we use this to override all
@@ -297,7 +314,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
     @property
     def retry_delay(self):
         """See `BaseRunnableJob`."""
-        if "status_url" in self.metadata and self.store_url is None:
+        if "status_url" in self.store_metadata and self.store_url is None:
             # At the moment we have to poll the status endpoint to find out
             # if the store has finished scanning.  Try to deal with easy
             # cases quickly without hammering our job runners or the store
@@ -313,13 +330,13 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         """See `IRunnableJob`."""
         client = getUtility(ISnapStoreClient)
         try:
-            if "status_url" not in self.metadata:
-                self.metadata["status_url"] = client.upload(self.snapbuild)
+            if "status_url" not in self.store_metadata:
+                self.status_url = client.upload(self.snapbuild)
                 # We made progress, so reset attempt_count.
                 self.attempt_count = 1
             if self.store_url is None:
                 self.store_url, self.store_revision = (
-                    client.checkStatus(self.metadata["status_url"]))
+                    client.checkStatus(self.store_metadata["status_url"]))
                 # We made progress, so reset attempt_count.
                 self.attempt_count = 1
             if self.snapbuild.snap.store_channels:

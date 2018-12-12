@@ -628,7 +628,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         for expected_delay in (15, 15, 30, 30, 60):
             with dbuser(config.ISnapStoreUploadJobSource.dbuser):
                 JobRunner([job]).runAll()
-            self.assertIn("status_url", job.metadata)
+            self.assertIn("status_url", job.snapbuild.store_upload_metadata)
             self.assertIsNone(job.store_url)
             self.assertEqual(
                 timedelta(seconds=expected_delay), job.retry_delay)
@@ -641,3 +641,38 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertIsNone(job.error_message)
         self.assertEqual([], pop_notifications())
         self.assertEqual(JobStatus.COMPLETED, job.job.status)
+
+    def test_retry_after_upload_does_not_upload(self):
+        # If the job has uploaded, but failed to release, it should
+        # not attempt to upload again on the next run.
+        self.useFixture(FakeLogger())
+        snapbuild = self.makeSnapBuild(store_channels=["stable", "edge"])
+        self.assertContentEqual([], snapbuild.store_upload_jobs)
+        job = SnapStoreUploadJob.create(snapbuild)
+        client = FakeSnapStoreClient()
+        client.upload.result = self.status_url
+        client.checkStatus.result = (self.store_url, 1)
+        client.release.failure = UploadFailedResponse(
+            "Proxy error", can_retry=True)
+        self.useFixture(ZopeUtilityFixture(client, ISnapStoreClient))
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+
+        previous_upload = client.upload.calls
+        previous_checkStatus = client.checkStatus.calls
+        len_previous_release = len(client.release.calls)
+
+        # Check we uploaded as expected
+        self.assertEqual(self.store_url, job.store_url)
+        self.assertEqual(1, job.store_revision)
+        self.assertEqual(timedelta(seconds=60), job.retry_delay)
+        self.assertEqual(1, len(client.upload.calls))
+
+        # Run the job again
+        with dbuser(config.ISnapStoreUploadJobSource.dbuser):
+            JobRunner([job]).runAll()
+
+        # We should not have called `upload`, but moved straight to `release`
+        self.assertEqual(previous_upload, client.upload.calls)
+        self.assertEqual(previous_checkStatus, client.checkStatus.calls)
+        self.assertEqual(len_previous_release + 1, len(client.release.calls))

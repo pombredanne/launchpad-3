@@ -34,7 +34,10 @@ from lazr.restful.fields import (
     Reference,
     )
 from zope.component.interfaces import IObjectEvent
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface
+    )
 from zope.schema import (
     Bool,
     Choice,
@@ -241,6 +244,9 @@ class ISnapBuildView(IPackageBuild):
             "to the store."),
         value_type=Dict(key_type=TextLine()),
         required=False, readonly=True))
+
+    store_upload_metadata = Attribute(
+        _("A dict of data about store upload progress."))
 
     def getFiles():
         """Retrieve the build's `ISnapFile` records.

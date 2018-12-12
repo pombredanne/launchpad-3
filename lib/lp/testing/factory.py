@@ -4770,7 +4770,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                       archive=None, distroarchseries=None, pocket=None,
                       channels=None, date_created=DEFAULT,
                       status=BuildStatus.NEEDSBUILD, builder=None,
-                      duration=None, **kwargs):
+                      duration=None, metadata=None, **kwargs):
         """Make a new SnapBuild."""
         if requester is None:
             requester = self.makePerson()
