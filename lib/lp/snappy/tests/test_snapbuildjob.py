@@ -667,6 +667,7 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual(1, job.store_revision)
         self.assertEqual(timedelta(seconds=60), job.retry_delay)
         self.assertEqual(1, len(client.upload.calls))
+        self.assertIsNone(job.error_message)
 
         # Run the job again
         with dbuser(config.ISnapStoreUploadJobSource.dbuser):
@@ -676,3 +677,4 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual(previous_upload, client.upload.calls)
         self.assertEqual(previous_checkStatus, client.checkStatus.calls)
         self.assertEqual(len_previous_release + 1, len(client.release.calls))
+        self.assertIsNone(job.error_message)
