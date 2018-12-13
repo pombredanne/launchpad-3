@@ -222,7 +222,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
     @property
     def error_message(self):
         """See `ISnapStoreUploadJob`."""
-        return self.store_metadata.get("error_message")
+        return self.metadata.get("error_message")
 
     @error_message.setter
     def error_message(self, message):
@@ -232,7 +232,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
     @property
     def error_detail(self):
         """See `ISnapStoreUploadJob`."""
-        return self.store_metadata.get("error_detail")
+        return self.metadata.get("error_detail")
 
     @error_detail.setter
     def error_detail(self, detail):
@@ -242,7 +242,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
     @property
     def error_messages(self):
         """See `ISnapStoreUploadJob`."""
-        return self.store_metadata.get("error_messages")
+        return self.metadata.get("error_messages")
 
     @error_messages.setter
     def error_messages(self, messages):
