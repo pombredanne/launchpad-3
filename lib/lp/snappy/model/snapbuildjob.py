@@ -257,6 +257,8 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
     @store_url.setter
     def store_url(self, url):
         """See `ISnapStoreUploadJob`."""
+        if self.snapbuild.store_upload_metadata is None:
+            self.snapbuild.store_upload_metadata = {}
         self.snapbuild.store_upload_metadata["store_url"] = url
 
     @property
@@ -267,6 +269,8 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
     @store_revision.setter
     def store_revision(self, revision):
         """See `ISnapStoreUploadJob`."""
+        if self.snapbuild.store_upload_metadata is None:
+            self.snapbuild.store_upload_metadata = {}
         self.snapbuild.store_upload_metadata["store_revision"] = revision
 
     @property
@@ -276,6 +280,8 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
 
     @status_url.setter
     def status_url(self, url):
+        if self.snapbuild.store_upload_metadata is None:
+            self.snapbuild.store_upload_metadata = {}
         self.snapbuild.store_upload_metadata["status_url"] = url
 
     # Ideally we'd just override Job._set_status or similar, but
