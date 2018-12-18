@@ -686,7 +686,7 @@ class GitRefFrozen(GitRefDatabaseBackedMixin):
 def _fetch_blob_from_github(repository_url, ref_path, filename):
     repo_path = urlsplit(repository_url).path.strip("/")
     if repo_path.endswith(".git"):
-        repo_path = repo_path[:len(".git")]
+        repo_path = repo_path[:-len(".git")]
     try:
         response = urlfetch(
             "https://raw.githubusercontent.com/%s/%s/%s" % (
