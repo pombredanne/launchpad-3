@@ -175,7 +175,7 @@ class SnapBuild(PackageBuildMixin, Storm):
 
     failure_count = Int(name='failure_count', allow_none=False)
 
-    store_upload_metadata = JSON('store_upload_json_data', allow_none=False)
+    store_upload_metadata = JSON('store_upload_json_data', allow_none=True)
 
     def __init__(self, build_farm_job, requester, snap, archive,
                  distro_arch_series, pocket, channels, processor, virtualized,
