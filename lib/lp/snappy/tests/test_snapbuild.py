@@ -780,8 +780,9 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
     def test_store_upload_metadata_existing_as_none(self):
         db_build = self.factory.makeSnapBuild(requester=self.person)
         unsecure_db_build = removeSecurityProxy(db_build)
-        unsecure_db_build.store_upload_metadata = None
+        unsecure_db_build._store_upload_metadata = None
         store = IStore(SnapBuild)
         store.flush()
         loaded_build = store.find(SnapBuild, id=unsecure_db_build.id).one()
-        self.assertIsNone(loaded_build.store_upload_metadata)
+        self.assertIsNone(loaded_build._store_upload_metadata)
+        self.assertIsNotNone(loaded_build.store_upload_metadata)

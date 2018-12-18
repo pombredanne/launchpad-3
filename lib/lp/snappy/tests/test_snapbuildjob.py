@@ -685,10 +685,28 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
     def test_with_snapbuild_metadata_as_none(self):
         db_build = self.factory.makeSnapBuild()
         unsecure_db_build = removeSecurityProxy(db_build)
-        unsecure_db_build.store_upload_metadata = None
+        unsecure_db_build._store_upload_metadata = None
         store = IStore(SnapBuild)
         store.flush()
         loaded_build = store.find(SnapBuild, id=unsecure_db_build.id).one()
 
         job = SnapStoreUploadJob.create(loaded_build)
         self.assertEqual({}, job.store_metadata)
+
+    def test_with_snapbuild_metadata_as_none_set_status(self):
+        db_build = self.factory.makeSnapBuild()
+        unsecure_db_build = removeSecurityProxy(db_build)
+        unsecure_db_build._store_upload_metadata = None
+        store = IStore(SnapBuild)
+        store.flush()
+        loaded_build = store.find(SnapBuild, id=unsecure_db_build.id).one()
+
+        job = SnapStoreUploadJob.create(loaded_build)
+        job.status_url = 'http://example.org'
+        store.flush()
+
+        loaded_build = store.find(SnapBuild, id=unsecure_db_build.id).one()
+        self.assertEqual(
+            'http://example.org',
+            loaded_build.store_upload_metadata['status_url']
+            )
