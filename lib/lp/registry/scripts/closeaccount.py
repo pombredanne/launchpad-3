@@ -105,6 +105,7 @@ def close_account(username, log):
         ('messageapproval', 'posted_by'),
         ('packagecopyrequest', 'requester'),
         ('packagediff', 'requester'),
+        ('packageupload', 'signing_key_owner'),
         ('personlocation', 'last_modified_by'),
         ('persontransferjob', 'major_person'),
         ('persontransferjob', 'minor_person'),
@@ -117,6 +118,9 @@ def close_account(username, log):
         ('sourcepackagepublishinghistory', 'removed_by'),
         ('sourcepackagepublishinghistory', 'sponsor'),
         ('sourcepackagerecipebuild', 'requester'),
+        ('sourcepackagerelease', 'creator'),
+        ('sourcepackagerelease', 'maintainer'),
+        ('sourcepackagerelease', 'signing_key_owner'),
         ('specification', 'approver'),
         ('specification', 'completer'),
         ('specification', 'drafter'),
@@ -267,6 +271,10 @@ def close_account(username, log):
         ('ArchivePermission', 'person'),
         ('GitRuleGrant', 'grantee'),
         ('SharingJob', 'grantee'),
+
+        # Soyuz reporting
+        ('LatestPersonSourcePackageReleaseCache', 'creator'),
+        ('LatestPersonSourcePackageReleaseCache', 'maintainer'),
         ]
     for table, person_id_column in removals:
         table_notification(table)

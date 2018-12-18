@@ -17,19 +17,26 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QuestionStatus
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.scripts.closeaccount import CloseAccountScript
+from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
 from lp.services.database.sqlbase import flush_database_caches
 from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccountSet,
     )
 from lp.services.identity.interfaces.emailaddress import IEmailAddressSet
-from lp.services.log.logger import BufferLogger
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser
-from lp.testing.layers import ZopelessDatabaseLayer
+from lp.testing.layers import LaunchpadZopelessLayer
 
 
 class TestCloseAccount(TestCaseWithFactory):
@@ -41,7 +48,7 @@ class TestCloseAccount(TestCaseWithFactory):
     script.  See Bug #120506 for more details.
     """
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
 
     def makeScript(self, test_args):
         script = CloseAccountScript(test_args=test_args)
@@ -248,3 +255,29 @@ class TestCloseAccount(TestCaseWithFactory):
         for question_status, question in questions.items():
             self.assertEqual(question_status, question.status)
             self.assertIsNone(question.whiteboard)
+
+    def test_handles_packaging_references(self):
+        person = self.factory.makePerson()
+        person_id = person.id
+        account_id = person.account.id
+        self.factory.makeGPGKey(person)
+        publisher = SoyuzTestPublisher()
+        publisher.person = person
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        spph = publisher.getPubSource(
+            status=PackagePublishingStatus.PUBLISHED,
+            distroseries=ubuntu.currentseries,
+            maintainer=person, creator=person)
+        with dbuser('garbo_frequently'):
+            job = PopulateLatestPersonSourcePackageReleaseCache(
+                DevNullLogger())
+            while not job.isDone():
+                job(chunk_size=100)
+        self.assertTrue(person.hasMaintainedPackages())
+        script = self.makeScript([nativeString(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertEqual(person, spph.package_maintainer)
+        self.assertEqual(person, spph.package_creator)
+        self.assertFalse(person.hasMaintainedPackages())
