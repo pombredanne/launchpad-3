@@ -216,7 +216,7 @@ class SnapStoreUploadJob(SnapBuildJobDerived):
         """See `ISnapStoreUploadJob`."""
         intermediate = {}
         intermediate.update(self.metadata)
-        intermediate.update(self.snapbuild.store_upload_metadata or {})
+        intermediate.update(self.snapbuild.store_upload_metadata)
         return intermediate
 
     @property

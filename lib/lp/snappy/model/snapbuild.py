@@ -175,7 +175,9 @@ class SnapBuild(PackageBuildMixin, Storm):
 
     failure_count = Int(name='failure_count', allow_none=False)
 
-    store_upload_metadata = JSON('store_upload_json_data', allow_none=True)
+    # Private variable that is used by the `store_upload_metadata` to
+    # set as an empty dict rather than None, to handle pre-existing data.
+    _store_upload_metadata = JSON('store_upload_json_data', allow_none=True)
 
     def __init__(self, build_farm_job, requester, snap, archive,
                  distro_arch_series, pocket, channels, processor, virtualized,
@@ -192,10 +194,20 @@ class SnapBuild(PackageBuildMixin, Storm):
         self.processor = processor
         self.virtualized = virtualized
         self.date_created = date_created
-        self.store_upload_metadata = store_upload_metadata or {}
+        self._store_upload_metadata = store_upload_metadata or {}
         if build_request is not None:
             self.build_request_id = build_request.id
         self.status = BuildStatus.NEEDSBUILD
+
+    @property
+    def store_upload_metadata(self):
+        if self._store_upload_metadata is None:
+            self._store_upload_metadata = {}
+        return self._store_upload_metadata
+
+    @store_upload_metadata.setter
+    def store_upload_metadata(self, value):
+        self._store_upload_metadata = value
 
     @property
     def build_request(self):
