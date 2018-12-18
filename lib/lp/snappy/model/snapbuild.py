@@ -194,7 +194,7 @@ class SnapBuild(PackageBuildMixin, Storm):
         self.processor = processor
         self.virtualized = virtualized
         self.date_created = date_created
-        self._store_upload_metadata = store_upload_metadata or {}
+        self._store_upload_metadata = store_upload_metadata
         if build_request is not None:
             self.build_request_id = build_request.id
         self.status = BuildStatus.NEEDSBUILD
