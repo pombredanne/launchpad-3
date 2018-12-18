@@ -18,9 +18,11 @@ from testtools.matchers import (
     MatchesStructure,
     )
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.buildmaster.enums import BuildStatus
 from lp.services.config import config
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import JobRunner
@@ -39,6 +41,7 @@ from lp.snappy.interfaces.snapstoreclient import (
     UploadFailedResponse,
     UploadNotScannedYetResponse,
     )
+from lp.snappy.model.snapbuild import SnapBuild
 from lp.snappy.model.snapbuildjob import (
     SnapBuildJob,
     SnapBuildJobType,
@@ -678,3 +681,14 @@ class TestSnapStoreUploadJob(TestCaseWithFactory):
         self.assertEqual(previous_checkStatus, client.checkStatus.calls)
         self.assertEqual(len_previous_release + 1, len(client.release.calls))
         self.assertIsNone(job.error_message)
+
+    def test_with_snapbuild_metadata_as_none(self):
+        db_build = self.factory.makeSnapBuild()
+        unsecure_db_build = removeSecurityProxy(db_build)
+        unsecure_db_build.store_upload_metadata = None
+        store = IStore(SnapBuild)
+        store.flush()
+        loaded_build = store.find(SnapBuild, id=unsecure_db_build.id).one()
+
+        job = SnapStoreUploadJob.create(loaded_build)
+        self.assertEqual({}, job.store_metadata)

@@ -35,6 +35,7 @@ from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import PersonVisibility
 from lp.services.config import config
+from lp.services.database.interfaces import IStore
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
@@ -49,6 +50,7 @@ from lp.snappy.interfaces.snapbuild import (
     SnapBuildStoreUploadStatus,
     )
 from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
+from lp.snappy.model.snapbuild import SnapBuild
 from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     ANONYMOUS,
@@ -774,3 +776,12 @@ class TestSnapBuildWebservice(TestCaseWithFactory):
         browser = self.getNonRedirectingBrowser(user=self.person)
         for file_url in file_urls:
             self.assertCanOpenRedirectedUrl(browser, file_url)
+
+    def test_store_upload_metadata_existing_as_none(self):
+        db_build = self.factory.makeSnapBuild(requester=self.person)
+        unsecure_db_build = removeSecurityProxy(db_build)
+        unsecure_db_build.store_upload_metadata = None
+        store = IStore(SnapBuild)
+        store.flush()
+        loaded_build = store.find(SnapBuild, id=unsecure_db_build.id).one()
+        self.assertIsNone(loaded_build.store_upload_metadata)
