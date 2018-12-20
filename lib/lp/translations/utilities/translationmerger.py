@@ -274,7 +274,9 @@ class MessageSharingMerge(LaunchpadScript):
         subset = self.template_set.getSharingSubset(
                 product=product, distribution=distribution,
                 sourcepackagename=sourcepackagename)
-        template_regex = six.ensure_text(self.options.template_names)
+        template_regex = self.options.template_names
+        if template_regex is not None:
+            template_regex = six.ensure_text(template_regex)
         equivalence_classes = subset.groupEquivalentPOTemplates(template_regex)
 
         class_count = len(equivalence_classes)
