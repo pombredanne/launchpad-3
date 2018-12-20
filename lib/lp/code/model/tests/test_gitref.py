@@ -421,6 +421,16 @@ class TestGitRefGetBlob(TestCaseWithFactory):
         self.assertEqual(b"foo", ref.getBlob("dir/file"))
 
     @responses.activate
+    def test_remote_github_trailing_dot_git(self):
+        ref = self.factory.makeGitRefRemote(
+            repository_url="https://github.com/owner/name.git", path="HEAD")
+        responses.add(
+            "GET",
+            "https://raw.githubusercontent.com/owner/name/HEAD/dir/file",
+            body=b"foo")
+        self.assertEqual(b"foo", ref.getBlob("dir/file"))
+
+    @responses.activate
     def test_remote_github_404(self):
         ref = self.factory.makeGitRefRemote(
             repository_url="https://github.com/owner/name", path="HEAD")
