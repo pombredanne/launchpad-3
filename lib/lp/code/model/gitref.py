@@ -415,9 +415,9 @@ class GitRefMixin:
         return commits
 
     def getLatestCommits(self, quantity=10, extended_details=False, user=None,
-                         logger=None):
+                         handle_timeout=False, logger=None):
         commits = self.getCommits(
-            self.commit_sha1, limit=quantity, handle_timeout=True,
+            self.commit_sha1, limit=quantity, handle_timeout=handle_timeout,
             logger=logger)
         if extended_details:
             # XXX cjwatson 2016-05-09: Add support for linked bugtasks once

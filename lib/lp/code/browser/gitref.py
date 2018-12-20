@@ -181,7 +181,8 @@ class GitRefView(LaunchpadView, HasSnapsViewMixin):
     @cachedproperty
     def commit_infos(self):
         return self.context.getLatestCommits(
-            extended_details=True, user=self.user, logger=log)
+            extended_details=True, user=self.user, handle_timeout=True,
+            logger=log)
 
     @property
     def recipes_link(self):

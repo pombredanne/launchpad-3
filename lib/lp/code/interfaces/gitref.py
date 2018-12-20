@@ -382,7 +382,7 @@ class IGitRefView(IHasMergeProposals, IHasRecipes, IPrivacy, IInformationType):
         """
 
     def getLatestCommits(quantity=10, extended_details=False, user=None,
-                         logger=None):
+                         handle_timeout=False, logger=None):
         """Return a specific number of the latest commits in this ref."""
 
     has_commits = Attribute("Whether this reference has any commits.")
