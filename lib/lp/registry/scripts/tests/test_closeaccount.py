@@ -274,7 +274,7 @@ class TestCloseAccount(TestCaseWithFactory):
             while not job.isDone():
                 job(chunk_size=100)
         self.assertTrue(person.hasMaintainedPackages())
-        script = self.makeScript([nativeString(person.name)])
+        script = self.makeScript([six.ensure_str(person.name)])
         with dbuser('launchpad'):
             self.runScript(script)
         self.assertRemoved(account_id, person_id)
