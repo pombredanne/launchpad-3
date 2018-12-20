@@ -21,6 +21,7 @@ from urlparse import urlsplit
 from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
 import requests
+import six
 from storm.locals import (
     DateTime,
     Int,
@@ -329,8 +330,7 @@ class GitRefMixin:
                 memcache_key += ":limit=%s" % limit
             if stop is not None:
                 memcache_key += ":stop=%s" % stop
-            if isinstance(memcache_key, unicode):
-                memcache_key = memcache_key.encode("UTF-8")
+            memcache_key = six.ensure_binary(memcache_key)
             cached_log = memcache_client.get(memcache_key)
             if cached_log is not None:
                 try:

@@ -1,10 +1,11 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = ['Packageset', 'PackagesetSet']
 
 import pytz
+import six
 from storm.expr import SQL
 from storm.locals import (
     DateTime,
@@ -377,8 +378,7 @@ class PackagesetSet:
     def getByName(self, distroseries, name):
         """See `IPackagesetSet`."""
         store = IStore(Packageset)
-        if not isinstance(name, unicode):
-            name = unicode(name, 'utf-8')
+        name = six.ensure_text(name)
         package_set = store.find(
             Packageset, Packageset.name == name,
             Packageset.distroseries == distroseries).one()

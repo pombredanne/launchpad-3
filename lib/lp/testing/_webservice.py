@@ -1,4 +1,4 @@
-# Copyright 2010-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -19,6 +19,7 @@ from launchpadlib.credentials import (
     Credentials,
     )
 from launchpadlib.launchpad import Launchpad
+import six
 import transaction
 from zope.component import getUtility
 import zope.testing.cleanup
@@ -133,8 +134,7 @@ def launchpadlib_for(
     """
     # XXX cjwatson 2016-01-22: Callers should be updated to pass Unicode
     # directly, but that's a big change.
-    if isinstance(consumer_name, bytes):
-        consumer_name = unicode(consumer_name)
+    consumer_name = six.ensure_text(consumer_name)
     if person is None:
         token = AnonymousAccessToken()
         credentials = Credentials(consumer_name, access_token=token)

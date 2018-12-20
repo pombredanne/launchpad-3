@@ -1,4 +1,4 @@
-# Copyright 2010-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,6 +9,7 @@ __all__ = [
 
 from cStringIO import StringIO
 
+import six
 from zope.component import getUtility
 
 from lp.buildmaster.enums import BuildStatus
@@ -82,8 +83,7 @@ class PackageBuildMixin(BuildFarmJobMixin):
         if filename is None:
             filename = 'upload_%s_log.txt' % self.id
         contentType = filenameToContentType(filename)
-        if isinstance(content, unicode):
-            content = content.encode('utf-8')
+        content = six.ensure_binary(content)
         file_size = len(content)
         file_content = StringIO(content)
         restricted = self.is_private

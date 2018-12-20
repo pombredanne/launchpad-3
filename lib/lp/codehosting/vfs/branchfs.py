@@ -73,6 +73,7 @@ from bzrlib.smart.request import jail_info
 from bzrlib.transport import get_transport
 from bzrlib.transport.memory import MemoryServer
 from lazr.uri import URI
+import six
 from twisted.internet import (
     defer,
     error,
@@ -609,9 +610,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
             fault = trap_fault(
                 fail, faults.NotFound, faults.PermissionDenied,
                 faults.InvalidSourcePackageName, faults.InvalidProductName)
-            faultString = fault.faultString
-            if isinstance(faultString, unicode):
-                faultString = faultString.encode('utf-8')
+            faultString = six.ensure_binary(fault.faultString)
             return failure.Failure(
                 PermissionDenied(virtual_url_fragment, faultString))
 

@@ -11,6 +11,7 @@ __all__ = [
 
 from operator import methodcaller
 
+import six
 from storm.locals import (
     ClassAlias,
     Store,
@@ -273,9 +274,7 @@ class MessageSharingMerge(LaunchpadScript):
         subset = self.template_set.getSharingSubset(
                 product=product, distribution=distribution,
                 sourcepackagename=sourcepackagename)
-        template_regex = self.options.template_names
-        if isinstance(template_regex, str):
-            template_regex = template_regex.decode('utf-8')
+        template_regex = six.ensure_text(self.options.template_names)
         equivalence_classes = subset.groupEquivalentPOTemplates(template_regex)
 
         class_count = len(equivalence_classes)
