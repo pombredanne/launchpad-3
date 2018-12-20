@@ -12,6 +12,7 @@ from lazr.uri import (
     InvalidURIError,
     URI,
     )
+import six
 from zope.component import (
     adapter,
     getUtility,
@@ -235,9 +236,7 @@ class SegmentIterator:
         self.traversed = []
 
     def next(self):
-        segment = next(self._iterator)
-        if not isinstance(segment, unicode):
-            segment = segment.decode("US-ASCII")
+        segment = six.ensure_text(next(self._iterator), encoding="US-ASCII")
         self.traversed.append(segment)
         return segment
 

@@ -21,6 +21,7 @@ from xmlrpclib import (
 
 import requests
 from requests.cookies import RequestsCookieJar
+import six
 
 from lp.bugs.externalbugtracker.base import repost_on_redirect_hook
 from lp.services.config import config
@@ -71,8 +72,7 @@ class RequestsTransport(Transport):
         url = urlunparse((self.scheme, host, handler, '', '', ''))
         # httplib can raise a UnicodeDecodeError when using a Unicode
         # URL, a non-ASCII body and a proxy. http://bugs.python.org/issue12398
-        if not isinstance(url, bytes):
-            url = url.encode('utf-8')
+        url = six.ensure_binary(url)
         try:
             with override_timeout(self.timeout):
                 response = urlfetch(

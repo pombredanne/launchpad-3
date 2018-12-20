@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Internal Codehosting API interfaces."""
@@ -25,6 +25,7 @@ import os.path
 import urllib
 
 from lazr.uri import URI
+import six
 from zope.interface import Interface
 
 from lp.app.validators.name import valid_name
@@ -201,11 +202,9 @@ def compose_public_url(scheme, unique_name, suffix=None):
     accepted_schemes.add('sftp')
     assert scheme in accepted_schemes, "Unknown scheme: %s" % scheme
     host = URI(config.codehosting.supermirror_root).host
-    if isinstance(unique_name, unicode):
-        unique_name = unique_name.encode('utf-8')
     # After quoting and encoding, the path should be perfectly
     # safe as a plain ASCII string, str() just enforces this
-    path = '/' + str(urllib.quote(unique_name, safe='/~+'))
+    path = '/' + str(urllib.quote(six.ensure_binary(unique_name), safe='/~+'))
     if suffix:
         path = os.path.join(path, suffix)
     return str(URI(scheme=scheme, host=host, path=path))

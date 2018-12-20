@@ -29,6 +29,7 @@ from lazr.enum import DBItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
+import six
 from storm.databases.postgres import Returning
 from storm.expr import (
     And,
@@ -580,9 +581,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             raise ValueError('ref info sha1 is not a 40-character string')
         if obj["type"] not in object_type_map:
             raise ValueError('ref info type is not a recognised object type')
-        sha1 = obj["sha1"]
-        if isinstance(sha1, bytes):
-            sha1 = sha1.decode("US-ASCII")
+        sha1 = six.ensure_text(obj["sha1"], encoding="US-ASCII")
         return {"sha1": sha1, "type": object_type_map[obj["type"]]}
 
     def createOrUpdateRefs(self, refs_info, get_objects=False, logger=None):
@@ -1320,12 +1319,10 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             grants_for_user[grant.rule].append(grant)
 
         for ref_path in ref_paths:
-            encoded_ref_path = (
-                ref_path if isinstance(ref_path, bytes)
-                else ref_path.encode("UTF-8"))
             matching_rules = [
-                rule for rule in rules if
-                fnmatch(encoded_ref_path, rule.ref_pattern.encode("UTF-8"))]
+                rule for rule in rules if fnmatch(
+                    six.ensure_binary(ref_path),
+                    rule.ref_pattern.encode("UTF-8"))]
             if is_owner and not matching_rules:
                 # If there are no matching rules, then the repository owner
                 # can do anything.

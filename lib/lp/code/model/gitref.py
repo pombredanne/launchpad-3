@@ -21,6 +21,7 @@ from urlparse import urlsplit
 from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
 import requests
+import six
 from storm.locals import (
     DateTime,
     Int,
@@ -82,7 +83,11 @@ from lp.services.database.interfaces import IStore
 from lp.services.database.stormbase import StormBase
 from lp.services.features import getFeatureFlag
 from lp.services.memcache.interfaces import IMemcacheClient
-from lp.services.timeout import urlfetch
+from lp.services.timeout import (
+    reduced_timeout,
+    TimeoutError,
+    urlfetch,
+    )
 from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.interfaces import ILaunchBag
 
@@ -329,16 +334,16 @@ class GitRefMixin:
                 memcache_key += ":limit=%s" % limit
             if stop is not None:
                 memcache_key += ":stop=%s" % stop
-            if isinstance(memcache_key, unicode):
-                memcache_key = memcache_key.encode("UTF-8")
+            memcache_key = six.ensure_binary(memcache_key)
             cached_log = memcache_client.get(memcache_key)
             if cached_log is not None:
                 try:
                     log = json.loads(cached_log)
                 except Exception:
-                    logger.exception(
-                        "Cannot load cached log information for %s:%s; "
-                        "deleting" % (path, start))
+                    if logger is not None:
+                        logger.exception(
+                            "Cannot load cached log information for %s:%s; "
+                            "deleting" % (path, start))
                     memcache_client.delete(memcache_key)
         if log is None:
             if enable_hosting:
@@ -367,19 +372,38 @@ class GitRefMixin:
         return log
 
     def getCommits(self, start, limit=None, stop=None, union_repository=None,
-                   start_date=None, end_date=None, logger=None):
+                   start_date=None, end_date=None, handle_timeout=False,
+                   logger=None):
         # Circular import.
         from lp.code.model.gitrepository import parse_git_commits
 
-        log = self._getLog(
-            start, limit=limit, stop=stop, union_repository=union_repository,
-            logger=logger)
-        parsed_commits = parse_git_commits(log)
+        with reduced_timeout(1.0 if handle_timeout else 0.0):
+            try:
+                log = self._getLog(
+                    start, limit=limit, stop=stop,
+                    union_repository=union_repository, logger=logger)
+                commit_oids = [
+                    commit["sha1"] for commit in log if "sha1" in commit]
+                parsed_commits = parse_git_commits(log)
+            except TimeoutError:
+                if not handle_timeout:
+                    raise
+                if logger is not None:
+                    logger.exception(
+                        "Timeout fetching commits for %s" % self.identity)
+                # Synthesise a response based on what we have in the database.
+                commit_oids = [self.commit_sha1]
+                tip = {"sha1": self.commit_sha1, "synthetic": True}
+                optional_fields = (
+                    "author", "author_date", "committer", "committer_date",
+                    "commit_message")
+                for field in optional_fields:
+                    if getattr(self, field) is not None:
+                        tip[field] = getattr(self, field)
+                parsed_commits = {self.commit_sha1: tip}
         commits = []
-        for commit in log:
-            if "sha1" not in commit:
-                continue
-            parsed_commit = parsed_commits[commit["sha1"]]
+        for commit_oid in commit_oids:
+            parsed_commit = parsed_commits[commit_oid]
             author_date = parsed_commit.get("author_date")
             if start_date is not None:
                 if author_date is None or author_date < start_date:
@@ -390,8 +414,11 @@ class GitRefMixin:
             commits.append(parsed_commit)
         return commits
 
-    def getLatestCommits(self, quantity=10, extended_details=False, user=None):
-        commits = self.getCommits(self.commit_sha1, limit=quantity)
+    def getLatestCommits(self, quantity=10, extended_details=False, user=None,
+                         handle_timeout=False, logger=None):
+        commits = self.getCommits(
+            self.commit_sha1, limit=quantity, handle_timeout=handle_timeout,
+            logger=logger)
         if extended_details:
             # XXX cjwatson 2016-05-09: Add support for linked bugtasks once
             # those are supported for Git.
