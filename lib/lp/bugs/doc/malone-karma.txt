@@ -25,8 +25,7 @@ Karma Actions
 
 Create a bug:
 
-    >>> from lazr.lifecycle.event import (
-    ...     ObjectCreatedEvent, ObjectModifiedEvent)
+    >>> from lazr.lifecycle.event import ObjectCreatedEvent
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> params = CreateBugParams(
@@ -36,18 +35,15 @@ Create a bug:
 
 Change the title of a bug:
 
-    >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from lp.bugs.interfaces.bug import IBug
-    >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> bug.title = "Better Title"
-    >>> notify(ObjectModifiedEvent(bug, old_bug, ['title']))
+    >>> from lp.services.webapp.snapshot import notify_modified
+    >>> with notify_modified(bug, ['title']):
+    ...     bug.title = "Better Title"
     Karma added: action=bugtitlechanged, distribution=debian
 
 Change the description of a bug:
 
-    >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> bug.description = "Description of bug"
-    >>> notify(ObjectModifiedEvent(bug, old_bug, ['description']))
+    >>> with notify_modified(bug, ['description']):
+    ...     bug.description = "Description of bug"
     Karma added: action=bugdescriptionchanged, distribution=debian
 
 Add a CVE reference to a bug:
@@ -79,15 +75,11 @@ Add watch for external bug to the bug:
 
 Mark a bug task as fixed:
 
-    >>> from lp.bugs.interfaces.bugtask import (
-    ...     BugTaskStatus,
-    ...     IBugTask,
-    ...     )
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> bugtask = bug.bugtasks[0]
-    >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
-    >>> bugtask.transitionToStatus(
-    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
+    >>> with notify_modified(bugtask, ['status']):
+    ...     bugtask.transitionToStatus(
+    ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     Karma added: action=bugfixed, distribution=debian
 
 Mark a bug task as fixed when it is assigned awards the karma to the assignee:
@@ -96,10 +88,9 @@ Mark a bug task as fixed when it is assigned awards the karma to the assignee:
     >>> assignee = factory.makePerson(name='assignee')
     >>> assigned_bugtask = factory.makeBugTask(bug=bug, target=ufo_product)
     >>> assigned_bugtask.transitionToAssignee(assignee)
-    >>> old_bugtask = Snapshot(assigned_bugtask, providing=IBugTask)
-    >>> assigned_bugtask.transitionToStatus(
-    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    >>> notify(ObjectModifiedEvent(assigned_bugtask, old_bugtask, ['status']))
+    >>> with notify_modified(assigned_bugtask, ['status']):
+    ...     assigned_bugtask.transitionToStatus(
+    ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     Karma added: action=bugfixed, product=ufo
 
     >>> for karma in assignee.latestKarma():
@@ -108,27 +99,24 @@ Mark a bug task as fixed when it is assigned awards the karma to the assignee:
 
 Reject a bug task:
 
-    >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
-    >>> bugtask.transitionToStatus(
-    ...     BugTaskStatus.INVALID, bugtask.target.owner)
-    >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
+    >>> with notify_modified(bugtask, ['status']):
+    ...     bugtask.transitionToStatus(
+    ...         BugTaskStatus.INVALID, bugtask.target.owner)
     Karma added: action=bugrejected, distribution=debian
 
 User accept a bug task:
 
-    >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
-    >>> bugtask.transitionToStatus(
-    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
-    >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
+    >>> with notify_modified(bugtask, ['status']):
+    ...     bugtask.transitionToStatus(
+    ...         BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     Karma added: action=bugaccepted, distribution=debian
 
 Driver accept a bug task:
 
     >>> ignored = login_person(bugtask.target.owner)
-    >>> old_bugtask = Snapshot(bugtask, providing=IBugTask)
-    >>> bugtask.transitionToStatus(
-    ...     BugTaskStatus.TRIAGED, getUtility(ILaunchBag).user)
-    >>> notify(ObjectModifiedEvent(bugtask, old_bugtask, ['status']))
+    >>> with notify_modified(bugtask, ['status']):
+    ...     bugtask.transitionToStatus(
+    ...         BugTaskStatus.TRIAGED, getUtility(ILaunchBag).user)
     Karma added: action=bugaccepted, distribution=debian
 
     >>> login('admin@canonical.com')
@@ -139,11 +127,10 @@ Change a bug task's importance:
     >>> bugtask.transitionToImportance(
     ...     BugTaskImportance.HIGH, getUtility(ILaunchBag).user)
     >>> for importance in BugTaskImportance.items:
-    ...     old_bugtask = Snapshot(bugtask, providing=IBugTask)
-    ...     bugtask.transitionToImportance(
-    ...         importance, getUtility(ILaunchBag).user)
-    ...     print(importance.name)
-    ...     notify(ObjectModifiedEvent(bugtask, old_bugtask, ['importance']))
+    ...     with notify_modified(bugtask, ['importance']):
+    ...         bugtask.transitionToImportance(
+    ...             importance, getUtility(ILaunchBag).user)
+    ...         print(importance.name)
     UNKNOWN
     Karma added: action=bugtaskimportancechanged, distribution=debian
     UNDECIDED
@@ -189,36 +176,29 @@ Accept a distro series task.
 
     >>> debian_woody_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
-    >>> old_bugtask = Snapshot(
-    ...     debian_woody_task, providing=IBugTask)
-    >>> debian_woody_task.transitionToStatus(
-    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
-    >>> notify(ObjectModifiedEvent(
-    ...     debian_woody_task, old_bugtask, ['status']))
+    >>> with notify_modified(debian_woody_task, ['status']):
+    ...     debian_woody_task.transitionToStatus(
+    ...         BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     Karma added: action=bugaccepted, distribution=debian
 
 Accept a productseries task.
 
     >>> evolution_trunk_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
-    >>> old_bugtask = Snapshot(
-    ...     evolution_trunk_task, providing=IBugTask)
-    >>> evolution_trunk_task.transitionToStatus(
-    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
-    >>> notify(ObjectModifiedEvent(
-    ...     evolution_trunk_task, old_bugtask, ['status']))
+    >>> with notify_modified(evolution_trunk_task, ['status']):
+    ...     evolution_trunk_task.transitionToStatus(
+    ...         BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     Karma added: action=bugaccepted, product=evolution
 
 Mark a bug as a duplicate:
 
-    >>> bug_one = getUtility(IBugSet).get(1)
-    >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> bug.markAsDuplicate(bug_one)
+(Notice how changing a bug with multiple bugtasks will assign karma to you
+once for each bugtask. This is so because we consider changes in a bug to
+be actual contributions to all bugtasks of that bug.)
 
-    (Notice how changing a bug with multiple bugtasks will assign karma to you
-    once for each bugtask. This is so because we consider changes in a bug to
-    be actual contributions to all bugtasks of that bug)
-    >>> notify(ObjectModifiedEvent(bug, old_bug, ['duplicateof']))
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> with notify_modified(bug, ['duplicateof']):
+    ...     bug.markAsDuplicate(bug_one)
     Karma added: action=bugmarkedasduplicate, product=evolution
     Karma added: action=bugmarkedasduplicate, product=evolution
     Karma added: action=bugmarkedasduplicate, product=ufo
