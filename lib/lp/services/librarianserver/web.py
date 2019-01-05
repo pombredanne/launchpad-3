@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -48,7 +48,7 @@ defaultResource = static.Data("""
         file repository used by
         <a href="https://launchpad.net/">Launchpad</a>.
         </p>
-        <p><small>Copyright 2004-2018 Canonical Ltd.</small></p>
+        <p><small>Copyright 2004-2019 Canonical Ltd.</small></p>
         <!-- kthxbye. -->
         </body></html>
         """, type='text/html')
