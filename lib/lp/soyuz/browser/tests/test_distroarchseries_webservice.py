@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import absolute_import, print_function, unicode_literals
@@ -13,12 +13,14 @@ from lazr.restfulclient.errors import (
     )
 from zope.security.management import endInteraction
 
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
 from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
 from lp.testing import (
     api_url,
     launchpadlib_for,
     login_as,
+    person_logged_in,
     TestCaseWithFactory,
     ws_object,
     )
@@ -122,6 +124,29 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         self.assertTrue(ws_das.chroot_url.endswith(expected_file))
         ws_das.removeChroot()
         self.assertIsNone(ws_das.chroot_url)
+
+    def test_setChroot_pocket(self):
+        das = self.factory.makeDistroArchSeries()
+        user = das.distroseries.distribution.main_archive.owner
+        webservice = launchpadlib_for("testing", user)
+        ws_das = ws_object(webservice, das)
+        sha1_1 = hashlib.sha1('abcxyz').hexdigest()
+        ws_das.setChroot(data='abcxyz', sha1sum=sha1_1)
+        sha1_2 = hashlib.sha1('123456').hexdigest()
+        ws_das.setChroot(data='123456', sha1sum=sha1_2, pocket='Updates')
+        release_chroot = das.getChroot(pocket=PackagePublishingPocket.RELEASE)
+        self.assertEqual(sha1_1, release_chroot.content.sha1)
+        updates_chroot = das.getChroot(pocket=PackagePublishingPocket.UPDATES)
+        self.assertEqual(sha1_2, updates_chroot.content.sha1)
+        with person_logged_in(user):
+            release_chroot_url = release_chroot.http_url
+            updates_chroot_url = updates_chroot.http_url
+        self.assertEqual(
+            release_chroot_url, ws_das.getChrootURL(pocket='Release'))
+        self.assertEqual(
+            updates_chroot_url, ws_das.getChrootURL(pocket='Updates'))
+        self.assertEqual(
+            updates_chroot_url, ws_das.getChrootURL(pocket='Proposed'))
 
     def test_setChrootFromBuild(self):
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))

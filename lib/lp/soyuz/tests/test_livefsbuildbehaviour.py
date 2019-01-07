@@ -1,4 +1,4 @@
-# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystem build behaviour."""
@@ -272,7 +272,9 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
         build_request = yield job.composeBuildRequest(None)
         args = yield job.extraBuildArgs()
         self.assertEqual(
-            ('livefs', job.build.distro_arch_series, {}, args), build_request)
+            ('livefs', job.build.distro_arch_series, job.build.pocket, {},
+             args),
+            build_request)
 
 
 class MakeLiveFSBuildMixin:

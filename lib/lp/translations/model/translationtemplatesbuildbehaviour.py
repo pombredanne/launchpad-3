@@ -28,6 +28,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
 from lp.buildmaster.model.buildfarmjobbehaviour import (
     BuildFarmJobBehaviourBase,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -63,6 +64,10 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
     def distro_arch_series(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return ubuntu.currentseries.nominatedarchindep
+
+    @property
+    def pocket(self):
+        return PackagePublishingPocket.RELEASE
 
     def extraBuildArgs(self, logger=None):
         args = super(TranslationTemplatesBuildBehaviour, self).extraBuildArgs(

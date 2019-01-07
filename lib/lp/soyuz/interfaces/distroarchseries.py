@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Distribution architecture series interfaces."""
@@ -16,6 +16,7 @@ import httplib
 from lazr.restful.declarations import (
     error_status,
     export_as_webservice_entry,
+    export_read_operation,
     export_write_operation,
     exported,
     operation_for_version,
@@ -32,6 +33,7 @@ from zope.interface import (
 from zope.schema import (
     Bool,
     Bytes,
+    Choice,
     Int,
     Text,
     TextLine,
@@ -42,6 +44,7 @@ from lp.app.validators.name import name_validator
 from lp.buildmaster.interfaces.processor import IProcessor
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.role import IHasOwner
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 
@@ -149,17 +152,31 @@ class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
         """Update the cached binary package count for this distro arch
         series.
         """
-    def getPocketChroot():
+
+    def getPocketChroot(pocket, exact_pocket=False):
         """Return the PocketChroot for this distroarchseries and given pocket.
+
+        If exact_pocket is False, this follows pocket dependencies and finds
+        the chroot for the closest pocket that exists: for example, if no
+        chroot exists for SECURITY, then it will choose the one for RELEASE.
+        If exact_pocket is True, this only finds chroots for exactly the
+        given pocket.
         """
 
-    def getChroot(default=None):
-        """Return the Chroot for this distroarchseries.
+    def getChroot(default=None, pocket=None):
+        """Return the Chroot for this distroarchseries and pocket.
 
         It uses getPocketChroot and if not found returns 'default'.
         """
 
-    def addOrUpdateChroot(pocket, chroot):
+    @operation_parameters(
+        pocket=Choice(vocabulary=PackagePublishingPocket, required=False))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getChrootURL(pocket=None):
+        """Return the chroot URL for this distroarchseries and pocket."""
+
+    def addOrUpdateChroot(chroot, pocket=None):
         """Return the just added or modified PocketChroot."""
 
     def searchBinaryPackages(text):
@@ -177,10 +194,12 @@ class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
 
 class IDistroArchSeriesModerate(Interface):
 
-    @operation_parameters(data=Bytes(), sha1sum=Text())
+    @operation_parameters(
+        data=Bytes(), sha1sum=Text(),
+        pocket=Choice(vocabulary=PackagePublishingPocket, required=False))
     @export_write_operation()
     @operation_for_version("devel")
-    def setChroot(data, sha1sum):
+    def setChroot(data, sha1sum, pocket=None):
         """Set the chroot tarball used for builds in this architecture.
 
         The SHA-1 checksum must match the chroot file.
@@ -196,9 +215,11 @@ class IDistroArchSeriesModerate(Interface):
     def setChrootFromBuild(livefsbuild, filename):
         """Set the chroot tarball from a live filesystem build."""
 
+    @operation_parameters(
+        pocket=Choice(vocabulary=PackagePublishingPocket, required=False))
     @export_write_operation()
     @operation_for_version("devel")
-    def removeChroot():
+    def removeChroot(pocket=None):
         """Remove the chroot tarball used for builds in this architecture."""
 
 
