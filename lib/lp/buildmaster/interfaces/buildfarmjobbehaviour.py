@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for build farm job behaviours."""
@@ -20,6 +20,8 @@ class IBuildFarmJobBehaviour(Interface):
     builder_type = Attribute(
         "The name of the builder type to use for this build, corresponding "
         "to a launchpad-buildd build manager tag.")
+
+    archive = Attribute("The `Archive` to build against.")
 
     distro_arch_series = Attribute("The `DistroArchSeries` to build against.")
 

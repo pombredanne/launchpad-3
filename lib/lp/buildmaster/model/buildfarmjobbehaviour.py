@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base and idle BuildFarmJobBehaviour classes."""
@@ -50,6 +50,13 @@ class BuildFarmJobBehaviourBase:
         self._builder = None
 
     @property
+    def archive(self):
+        if self.build is not None:
+            return self.build.archive
+        else:
+            return None
+
+    @property
     def distro_arch_series(self):
         if self.build is not None:
             return self.build.distro_arch_series
@@ -69,7 +76,7 @@ class BuildFarmJobBehaviourBase:
         """The default behaviour is to send only common extra arguments."""
         args = {}
         args["arch_tag"] = self.distro_arch_series.architecturetag
-        args["archive_private"] = self.build.archive.private
+        args["archive_private"] = self.archive.private
         args["build_url"] = canonical_url(self.build)
         args["fast_cleanup"] = self._builder.virtualized
         args["series"] = self.distro_arch_series.distroseries.name
