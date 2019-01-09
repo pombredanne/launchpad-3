@@ -265,7 +265,7 @@ class TestGitRepository(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=requester, can_push=True, can_create=True)
 
-        results = repository.findRuleGrantsByGrantee(requester)
+        results = repository.findRuleGrantsByGrantee(member)
         self.assertEqual([grant], list(results))
 
     def test_findRuleGrantsByGrantee_team_in_team(self):
@@ -356,6 +356,117 @@ class TestGitRepository(TestCaseWithFactory):
 
         results = repository.findRuleGrantsByGrantee(requester)
         self.assertEqual([owner_grant], list(results))
+
+    def test_findRuleGrantsByGrantee_ref_pattern(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+        [ref] = self.factory.makeGitRefs(repository=repository)
+
+        exact_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=ref.path, grantee=requester)
+        self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=requester)
+
+        results = repository.findRuleGrantsByGrantee(
+            requester, ref_pattern=ref.path)
+        self.assertEqual([exact_grant], list(results))
+
+    def test_findRuleGrantsByGrantee_exclude_transitive_person(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(rule=rule, grantee=requester)
+
+        results = repository.findRuleGrantsByGrantee(
+            requester, include_transitive=False)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_exclude_transitive_team(self):
+        team = self.factory.makeTeam()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=team))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(rule=rule, grantee=team)
+
+        results = repository.findRuleGrantsByGrantee(
+            team, include_transitive=False)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_exclude_transitive_member_of_team(self):
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[member])
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=team))
+
+        rule = self.factory.makeGitRule(repository)
+        self.factory.makeGitRuleGrant(rule=rule, grantee=team)
+
+        results = repository.findRuleGrantsByGrantee(
+            member, include_transitive=False)
+        self.assertEqual([], list(results))
+
+    def test_findRuleGrantsByGrantee_no_owner_grant(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+
+        rule = self.factory.makeGitRule(repository=repository)
+        self.factory.makeGitRuleGrant(rule=rule)
+
+        results = repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER)
+        self.assertEqual([], list(results))
+
+    def test_findRuleGrantsByGrantee_owner_grant(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+
+        rule = self.factory.makeGitRule(repository=repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER)
+        self.factory.makeGitRuleGrant(rule=rule)
+
+        results = repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_owner_ref_pattern(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+        [ref] = self.factory.makeGitRefs(repository=repository)
+
+        exact_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=ref.path,
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+        self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+
+        results = ref.repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER, ref_pattern=ref.path)
+        self.assertEqual([exact_grant], list(results))
+
+    def test_findRuleGrantsByGrantee_owner_exclude_transitive(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+        [ref] = self.factory.makeGitRefs(repository=repository)
+
+        exact_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=ref.path,
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+        self.factory.makeGitRuleGrant(
+            rule=exact_grant.rule, grantee=repository.owner)
+        wildcard_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+
+        results = ref.repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER, include_transitive=False)
+        self.assertItemsEqual([exact_grant, wildcard_grant], list(results))
+        results = ref.repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER, ref_pattern=ref.path,
+            include_transitive=False)
+        self.assertEqual([exact_grant], list(results))
 
 
 class TestGitIdentityMixin(TestCaseWithFactory):
