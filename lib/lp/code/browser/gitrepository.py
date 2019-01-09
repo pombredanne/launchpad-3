@@ -831,7 +831,7 @@ class GitRepositoryPermissionsView(LaunchpadFormView):
     def _getRuleGrants(self, rule):
         def grantee_key(grant):
             if grant.grantee is not None:
-                return grant.grantee_type, grant.grantee.name
+                return (grant.grantee_type, grant.grantee.name)
             else:
                 return (grant.grantee_type,)
 
