@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository views."""
@@ -23,6 +23,7 @@ __all__ = [
     ]
 
 import base64
+from collections import defaultdict
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -1061,14 +1062,72 @@ class GitRepositoryPermissionsView(LaunchpadFormView):
             "pattern": widgets_by_name[new_pattern_field_name],
             }
 
-    def updateRepositoryFromData(self, repository, data):
-        pattern_field_names = sorted(
-            name for name in data if name.split(".")[0] == "pattern")
-        new_pattern_field_names = sorted(
-            name for name in data if name.split(".")[0] == "new-pattern")
-        permissions_field_names = sorted(
-            name for name in data if name.split(".")[0] == "permissions")
+    def parseData(self, data):
+        """Rearrange form data to make it easier to process."""
+        parsed_data = {
+            "rules": {},
+            "grants": defaultdict(list),
+            }
 
+        for field_name in sorted(
+                name for name in data if name.split(".")[0] == "pattern"):
+            _, ref_pattern, _ = self._parseFieldName(field_name)
+            prefix, _ = self._parseRefPattern(ref_pattern)
+            position_field_name = self._getFieldName("position", ref_pattern)
+            delete_field_name = self._getFieldName("delete", ref_pattern)
+            if data.get(delete_field_name):
+                position = None
+                action = "delete"
+            else:
+                position = max(0, data[position_field_name] - 1)
+                action = "change"
+            parsed_data["rules"].setdefault(ref_pattern, {
+                "position": position,
+                "pattern": ref_pattern,
+                "new_pattern": prefix + data[field_name],
+                "action": action,
+                })
+
+        for field_name in sorted(
+                name for name in data if name.split(".")[0] == "new-pattern"):
+            _, prefix, _ = self._parseFieldName(field_name)
+            position_field_name = self._getFieldName("position", prefix)
+            if not data[field_name]:
+                continue
+            if position_field_name in data:
+                position = max(0, data[position_field_name] - 1)
+            else:
+                position = None
+            parsed_data["rules"].setdefault(prefix, {
+                "position": position,
+                "pattern": prefix + data[field_name],
+                "action": "add",
+                })
+
+        for field_name in sorted(
+                name for name in data if name.split(".")[0] == "permissions"):
+            _, ref_pattern, grantee = self._parseFieldName(field_name)
+            grantee_field_name = self._getFieldName("grantee", ref_pattern)
+            delete_field_name = self._getFieldName(
+                "delete", ref_pattern, grantee)
+            if grantee is None:
+                grantee = data.get(grantee_field_name)
+                if grantee is None:
+                    continue
+                action = "add"
+            elif data.get(delete_field_name):
+                action = "delete"
+            else:
+                action = "change"
+            parsed_data["grants"][ref_pattern].append({
+                "grantee": grantee,
+                "permissions": data[field_name],
+                "action": action,
+                })
+
+        return parsed_data
+
+    def updateRepositoryFromData(self, repository, parsed_data):
         # Fetch rules before making any changes, since their ref_patterns
         # may change as a result of this update.
         rule_map = {rule.ref_pattern: rule for rule in self.repository.rules}
@@ -1077,63 +1136,54 @@ class GitRepositoryPermissionsView(LaunchpadFormView):
             for grant in self.repository.grants}
 
         # Patterns must be processed in rule order so that position changes
-        # work in a reasonably natural way.
-        ordered_patterns = []
-        for pattern_field_name in pattern_field_names:
-            _, ref_pattern, _ = self._parseFieldName(pattern_field_name)
-            if ref_pattern is not None:
-                rule = rule_map.get(ref_pattern)
-                ordered_patterns.append(
-                    (pattern_field_name, ref_pattern, rule))
-        ordered_patterns.sort(key=lambda item: item[2].position)
-
-        for pattern_field_name, ref_pattern, rule in ordered_patterns:
-            prefix, _ = self._parseRefPattern(ref_pattern)
+        # work in a reasonably natural way.  Process new rules last.
+        ordered_rules = []
+        for ref_pattern, parsed_rule in parsed_data["rules"].items():
             rule = rule_map.get(ref_pattern)
-            delete_field_name = self._getFieldName("delete", ref_pattern)
-            # If the rule was already deleted by somebody else, then we
-            # have nothing to do.
-            if rule is not None and data.get(delete_field_name):
+            if parsed_rule["action"] == "add":
+                ordered_rules.append((ref_pattern, parsed_rule, -1))
+            elif rule is not None:
+                # Ignore attempts to change or delete rules that have
+                # already been deleted by somebody else.
+                ordered_rules.append((ref_pattern, parsed_rule, rule.position))
+        ordered_rules.sort(
+            key=lambda item: (item[1]["action"] != "add", item[2]))
+
+        for ref_pattern, parsed_rule, position in ordered_rules:
+            rule = rule_map.get(parsed_rule["pattern"])
+            action = parsed_rule["action"]
+            if action not in ("add", "change", "delete"):
+                raise AssertionError(
+                    "unknown action: %s" % parsed_rule["action"])
+
+            if action == "add" and rule is None:
+                rule = repository.addRule(
+                    parsed_rule["pattern"], self.user,
+                    position=parsed_rule["position"])
+                if ref_pattern == self.tags_prefix:
+                    # Tags are a special case: on creation, they
+                    # automatically get a grant of create permissions to
+                    # the repository owner (suppressing the normal
+                    # ability of the repository owner to push protected
+                    # references).
+                    rule.addGrant(
+                        GitGranteeType.REPOSITORY_OWNER, self.user,
+                        can_create=True)
+            elif action == "change" and rule is not None:
+                self.repository.moveRule(
+                    rule, parsed_rule["position"], self.user)
+                if parsed_rule["new_pattern"] != rule.ref_pattern:
+                    with notify_modified(rule, ["ref_pattern"]):
+                        rule.ref_pattern = parsed_rule["new_pattern"]
+            elif action == "delete" and rule is not None:
                 rule.destroySelf(self.user)
-                rule_map[ref_pattern] = rule = None
-            position_field_name = self._getFieldName("position", ref_pattern)
-            if rule is not None:
-                new_position = max(0, data[position_field_name] - 1)
-                self.repository.moveRule(rule, new_position, self.user)
-            new_pattern = prefix + data[pattern_field_name]
-            if rule is not None and new_pattern != rule.ref_pattern:
-                with notify_modified(rule, ["ref_pattern"]):
-                    rule.ref_pattern = new_pattern
+                rule_map[parsed_rule["pattern"]] = None
+            else:
+                raise AssertionError(
+                    "unknown action: %s" % parsed_rule["action"])
 
-        for new_pattern_field_name in new_pattern_field_names:
-            _, prefix, _ = self._parseFieldName(new_pattern_field_name)
-            if data[new_pattern_field_name]:
-                # This is an "add rule" entry.
-                new_position_field_name = self._getFieldName(
-                    "position", prefix)
-                new_pattern = prefix + data[new_pattern_field_name]
-                rule = rule_map.get(new_pattern)
-                if rule is None:
-                    if new_position_field_name in data:
-                        new_position = max(
-                            0, data[new_position_field_name] - 1)
-                    else:
-                        new_position = None
-                    rule = repository.addRule(
-                        new_pattern, self.user, position=new_position)
-                    if prefix == self.tags_prefix:
-                        # Tags are a special case: on creation, they
-                        # automatically get a grant of create permissions to
-                        # the repository owner (suppressing the normal
-                        # ability of the repository owner to push protected
-                        # references).
-                        rule.addGrant(
-                            GitGranteeType.REPOSITORY_OWNER, self.user,
-                            can_create=True)
-
-        for permissions_field_name in permissions_field_names:
-            _, ref_pattern, grantee = self._parseFieldName(
-                permissions_field_name)
+        for ref_pattern, parsed_grants in sorted(
+                parsed_data["grants"].items()):
             if ref_pattern not in rule_map:
                 self.addError(structured(
                     "Cannot edit grants for nonexistent rule %s", ref_pattern))
@@ -1143,55 +1193,40 @@ class GitRepositoryPermissionsView(LaunchpadFormView):
                 # Already deleted.
                 continue
 
-            # Find or create the corresponding grant.  We only create a
-            # grant if explicitly processing an "add grant" entry in the UI;
-            # if there isn't already a grant for an existing entry that's
-            # being modified, implicitly adding it is probably too
-            # confusing.
-            permissions = data[permissions_field_name]
-            grant = None
-            if grantee is not None:
-                # This entry should correspond to an existing grant.  Make
-                # whatever changes were requested to it.
-                grant = grant_map.get((ref_pattern, grantee))
-                delete_field_name = self._getFieldName(
-                    "delete", ref_pattern, grantee)
-                # If the grant was already deleted by somebody else, then we
-                # have nothing to do.
-                if grant is not None and data.get(delete_field_name):
-                    grant.destroySelf(self.user)
-                    grant = None
-                if grant is not None and permissions != grant.permissions:
+            for parsed_grant in parsed_grants:
+                grant = grant_map.get((ref_pattern, parsed_grant["grantee"]))
+                action = parsed_grant["action"]
+                if action not in ("add", "change", "delete"):
+                    raise AssertionError(
+                        "unknown action: %s" % parsed_rule["action"])
+
+                if action == "add" and grant is None:
+                    rule.addGrant(
+                        parsed_grant["grantee"], self.user,
+                        permissions=parsed_grant["permissions"])
+                elif (action in ("add", "change") and grant is not None and
+                      parsed_grant["permissions"] != grant.permissions):
+                    # Make the requested changes.  This can happen in the
+                    # add case if somebody else added the grant since the
+                    # form was last rendered, in which case updating it with
+                    # the permissions from this request seems best.
                     with notify_modified(
                             grant,
                             ["can_create", "can_push", "can_force_push"]):
-                        grant.permissions = permissions
-            else:
-                # This is an "add grant" entry.
-                grantee_field_name = self._getFieldName("grantee", ref_pattern)
-                grantee = data.get(grantee_field_name)
-                if grantee:
-                    grant = grant_map.get((ref_pattern, grantee))
-                    if grant is None:
-                        rule.addGrant(
-                            grantee, self.user, permissions=permissions)
-                    elif permissions != grant.permissions:
-                        # Somebody else added the grant since the form was
-                        # last rendered.  Updating it with the permissions
-                        # from this request seems best.
-                        with notify_modified(
-                                grant,
-                                ["can_create", "can_push", "can_force_push"]):
-                            grant.permissions = permissions
-
-        self.request.response.addNotification(
-            "Saved permissions for %s" % self.context.identity)
-        self.next_url = canonical_url(self.context, view_name="+permissions")
+                        grant.permissions = parsed_grant["permissions"]
+                elif action == "delete" and grant is not None:
+                    grant.destroySelf(self.user)
+                    grant_map[(ref_pattern, parsed_grant["grantee"])] = None
 
     @action("Save", name="save")
     def save_action(self, action, data):
         with notify_modified(self.repository, []):
-            self.updateRepositoryFromData(self.repository, data)
+            parsed_data = self.parseData(data)
+            self.updateRepositoryFromData(self.repository, parsed_data)
+
+        self.request.response.addNotification(
+            "Saved permissions for %s" % self.context.identity)
+        self.next_url = canonical_url(self.context, view_name="+permissions")
 
 
 class GitRepositoryDeletionView(LaunchpadFormView):
