@@ -373,7 +373,7 @@ class TestGitRepository(TestCaseWithFactory):
             requester, ref_pattern=ref.path)
         self.assertEqual([exact_grant], list(results))
 
-    def test_findRuleGrantsByGrantee_exact_grantee_person(self):
+    def test_findRuleGrantsByGrantee_exclude_transitive_person(self):
         requester = self.factory.makePerson()
         repository = removeSecurityProxy(
             self.factory.makeGitRepository(owner=requester))
@@ -382,10 +382,10 @@ class TestGitRepository(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(rule=rule, grantee=requester)
 
         results = repository.findRuleGrantsByGrantee(
-            requester, exact_grantee=True)
+            requester, include_transitive=False)
         self.assertEqual([grant], list(results))
 
-    def test_findRuleGrantsByGrantee_exact_grantee_team(self):
+    def test_findRuleGrantsByGrantee_exclude_transitive_team(self):
         team = self.factory.makeTeam()
         repository = removeSecurityProxy(
             self.factory.makeGitRepository(owner=team))
@@ -393,10 +393,11 @@ class TestGitRepository(TestCaseWithFactory):
         rule = self.factory.makeGitRule(repository)
         grant = self.factory.makeGitRuleGrant(rule=rule, grantee=team)
 
-        results = repository.findRuleGrantsByGrantee(team, exact_grantee=True)
+        results = repository.findRuleGrantsByGrantee(
+            team, include_transitive=False)
         self.assertEqual([grant], list(results))
 
-    def test_findRuleGrantsByGrantee_exact_grantee_member_of_team(self):
+    def test_findRuleGrantsByGrantee_exclude_transitive_member_of_team(self):
         member = self.factory.makePerson()
         team = self.factory.makeTeam(members=[member])
         repository = removeSecurityProxy(
@@ -406,7 +407,7 @@ class TestGitRepository(TestCaseWithFactory):
         self.factory.makeGitRuleGrant(rule=rule, grantee=team)
 
         results = repository.findRuleGrantsByGrantee(
-            member, exact_grantee=True)
+            member, include_transitive=False)
         self.assertEqual([], list(results))
 
     def test_findRuleGrantsByGrantee_no_owner_grant(self):
@@ -446,7 +447,7 @@ class TestGitRepository(TestCaseWithFactory):
             GitGranteeType.REPOSITORY_OWNER, ref_pattern=ref.path)
         self.assertEqual([exact_grant], list(results))
 
-    def test_findRuleGrantsByGrantee_owner_exact_grantee(self):
+    def test_findRuleGrantsByGrantee_owner_exclude_transitive(self):
         repository = removeSecurityProxy(self.factory.makeGitRepository())
         [ref] = self.factory.makeGitRefs(repository=repository)
 
@@ -460,11 +461,11 @@ class TestGitRepository(TestCaseWithFactory):
             grantee=GitGranteeType.REPOSITORY_OWNER)
 
         results = ref.repository.findRuleGrantsByGrantee(
-            GitGranteeType.REPOSITORY_OWNER, exact_grantee=True)
+            GitGranteeType.REPOSITORY_OWNER, include_transitive=False)
         self.assertItemsEqual([exact_grant, wildcard_grant], list(results))
         results = ref.repository.findRuleGrantsByGrantee(
             GitGranteeType.REPOSITORY_OWNER, ref_pattern=ref.path,
-            exact_grantee=True)
+            include_transitive=False)
         self.assertEqual([exact_grant], list(results))
 
 

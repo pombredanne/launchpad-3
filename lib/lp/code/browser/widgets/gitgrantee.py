@@ -191,7 +191,7 @@ class GitGranteeWidget(GitGranteeWidgetBase, InputWidget):
             not self.context.rule.repository.findRuleGrantsByGrantee(
                 GitGranteeType.REPOSITORY_OWNER,
                 ref_pattern=self.context.rule.ref_pattern,
-                exact_grantee=True).is_empty()):
+                include_transitive=False).is_empty()):
             show_options["repository_owner"] = False
         return show_options
 
