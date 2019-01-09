@@ -801,7 +801,7 @@ class GitRepositoryPermissionsView(LaunchpadFormView):
 
     page_title = "Manage permissions"
 
-    @cachedproperty
+    @property
     def repository(self):
         return self.context
 
@@ -809,19 +809,19 @@ class GitRepositoryPermissionsView(LaunchpadFormView):
     def rules(self):
         return self.repository.getRules()
 
-    @cachedproperty
+    @property
     def branch_rules(self):
         return [
             rule for rule in self.rules
             if rule.ref_pattern.startswith(u"refs/heads/")]
 
-    @cachedproperty
+    @property
     def tag_rules(self):
         return [
             rule for rule in self.rules
             if rule.ref_pattern.startswith(u"refs/tags/")]
 
-    @cachedproperty
+    @property
     def other_rules(self):
         return [
             rule for rule in self.rules
