@@ -1683,14 +1683,21 @@ class TestGitRepositoryPermissionsView(BrowserTestCase):
         repository = self.factory.makeGitRepository()
         self.factory.makeGitRule(
             repository=repository, ref_pattern="refs/heads/stable/*")
-        self.factory.makeGitRule(
+        heads_rule = self.factory.makeGitRule(
             repository=repository, ref_pattern="refs/heads/*")
+        self.factory.makeGitRuleGrant(
+            rule=heads_rule, grantee=GitGranteeType.REPOSITORY_OWNER,
+            can_push=True)
         removeSecurityProxy(repository.getActivity()).remove()
         login_person(repository.owner)
         encoded_pattern = encode_form_field_id("refs/heads/*")
         form = {
             "field.pattern." + encoded_pattern: "*",
             "field.delete." + encoded_pattern: "on",
+            # Form data entries relating to grants for the deleted rule are
+            # ignored.
+            "field.permissions.%s._repository_owner" % encoded_pattern: (
+                "can_push"),
             "field.actions.save": "Save",
             }
         view = create_initialized_view(
