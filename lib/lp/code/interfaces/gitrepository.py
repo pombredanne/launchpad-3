@@ -766,12 +766,18 @@ class IGitRepositoryEdit(IWebhookTarget):
         :param user: The `IPerson` who is moving the rule.
         """
 
-    def findRuleGrantsByGrantee(grantee):
+    def findRuleGrantsByGrantee(grantee, include_transitive=True,
+                                ref_pattern=None):
         """Find the grants for a grantee applied to this repository.
 
         :param grantee: The `IPerson` to search for, or an item of
             `GitGranteeType` other than `GitGranteeType.PERSON` to search
             for some other kind of entity.
+        :param include_transitive: If False, match `grantee` exactly; if
+            True (the default), also accept teams of which `grantee` is a
+            member.
+        :param ref_pattern: If not None, only return grants for rules with
+            this ref_pattern.
         """
 
     @export_read_operation()
