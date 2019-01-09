@@ -648,6 +648,7 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
     def __call__(self, chunk_size):
         cache_filter_data = []
         new_records = dict()
+        person_ids = set()
         # Create a map of new published spr data for creators and maintainers.
         # The map is keyed on (creator/maintainer, archive, spn, distroseries).
         for new_published_spr_data in self.getPendingUpdates()[:chunk_size]:
@@ -661,8 +662,10 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
                 maintainer_id, None, archive_id, distroseries_id, spn_id)
             creator_key = (
                 None, creator_id, archive_id, distroseries_id, spn_id)
-            new_records[maintainer_key] = maintainer_key + value
-            new_records[creator_key] = creator_key + value
+            new_records[maintainer_key] = list(maintainer_key + value)
+            new_records[creator_key] = list(creator_key + value)
+            person_ids.add(maintainer_id)
+            person_ids.add(creator_id)
             self.last_spph_id = spph_id
 
         # Gather all the current cached reporting records corresponding to the
@@ -689,14 +692,32 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
             existing_records[key] = pytz.UTC.localize(
                 lpsprc_record.dateuploaded)
 
+        # Gather account statuses for creators and maintainers.
+        # Deactivating or closing an account removes its LPSPRC rows, and we
+        # don't want to resurrect them.
+        account_statuses = dict(self.store.find(
+            (Person.id, Account.status),
+            Person.id.is_in(person_ids), Person.account == Account.id))
+        ignore_statuses = (AccountStatus.DEACTIVATED, AccountStatus.CLOSED)
+        for new_record in new_records.values():
+            if (new_record[0] is not None and
+                    account_statuses.get(new_record[0]) in ignore_statuses):
+                new_record[0] = None
+            if (new_record[1] is not None and
+                    account_statuses.get(new_record[1]) in ignore_statuses):
+                new_record[1] = None
+
         # Figure out what records from the new published spr data need to be
         # inserted and updated into the cache table.
         inserts = dict()
         updates = dict()
         for key, new_published_spr_data in new_records.items():
             existing_dateuploaded = existing_records.get(key, None)
-            new_dateuploaded = new_published_spr_data[7]
-            if existing_dateuploaded is None:
+            new_maintainer, new_creator, _, _, _, _, _, new_dateuploaded, _ = (
+                new_published_spr_data)
+            if new_maintainer is None and new_creator is None:
+                continue
+            elif existing_dateuploaded is None:
                 target = inserts
             else:
                 target = updates

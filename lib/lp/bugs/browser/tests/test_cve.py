@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """CVE related tests."""
@@ -13,10 +13,13 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.services.webapp.publisher import canonical_url
 from lp.testing import (
+    login_person,
     person_logged_in,
+    record_two_runs,
     TestCaseWithFactory,
     )
 from lp.testing.layers import DatabaseFunctionalLayer
+from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 
 
@@ -174,3 +177,22 @@ class TestCVEReportView(TestCaseWithFactory):
             '<span style="text-decoration: underline">CVE-2011-0456</span>'
             '</a>')
         self.assertEqual(expected, result)
+
+    def test_query_count(self):
+        cve = self.getCVE()
+        cve_url = canonical_url(cve)
+        person = self.factory.makePerson()
+
+        def make_bug_and_tasks():
+            bug = self.factory.makeBug()
+            self.factory.makeBugTask(
+                bug=bug, target=self.factory.makeProductSeries())
+            self.factory.makeBugTask(
+                bug=bug, target=self.factory.makeSourcePackage())
+            bug.linkCVE(cve, person)
+
+        recorder1, recorder2 = record_two_runs(
+            lambda: self.getUserBrowser(cve_url, person),
+            make_bug_and_tasks, 2, 10,
+            login_method=lambda: login_person(person))
+        self.assertThat(recorder2, HasQueryCount.byEquality(recorder1))

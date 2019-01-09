@@ -171,7 +171,8 @@ class TestBuildNotify(TestCaseWithFactory):
 
 
         If you want further information about this situation, feel free to
-        contact a member of the Launchpad Buildd Administrators team.
+        contact us by asking a question on Launchpad
+        (https://answers.launchpad.net/launchpad/+addquestion).
 
         %s
         %s

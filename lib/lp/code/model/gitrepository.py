@@ -29,6 +29,7 @@ from lazr.enum import DBItem
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
+import six
 from storm.databases.postgres import Returning
 from storm.expr import (
     And,
@@ -580,9 +581,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
             raise ValueError('ref info sha1 is not a 40-character string')
         if obj["type"] not in object_type_map:
             raise ValueError('ref info type is not a recognised object type')
-        sha1 = obj["sha1"]
-        if isinstance(sha1, bytes):
-            sha1 = sha1.decode("US-ASCII")
+        sha1 = six.ensure_text(obj["sha1"], encoding="US-ASCII")
         return {"sha1": sha1, "type": object_type_map[obj["type"]]}
 
     def createOrUpdateRefs(self, refs_info, get_objects=False, logger=None):
@@ -672,27 +671,36 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         """See `IGitRepository`."""
         hosting_client = getUtility(IGitHostingClient)
         new_refs = {}
-        for path, info in hosting_client.getRefs(hosting_path).items():
+        exclude_prefixes = config.codehosting.git_exclude_ref_prefixes.split()
+        for path, info in hosting_client.getRefs(
+                hosting_path, exclude_prefixes=exclude_prefixes).items():
             try:
                 new_refs[path] = self._convertRefInfo(info)
             except ValueError as e:
                 if logger is not None:
                     logger.warning(
                         "Unconvertible ref %s %s: %s" % (path, info, e))
-        current_refs = {ref.path: ref for ref in self.refs}
+        # GitRef rows can be large (especially commit_message), and we don't
+        # need the whole thing.
+        current_refs = {
+            ref[0]: ref[1:]
+            for ref in Store.of(self).find(
+                (GitRef.path, GitRef.commit_sha1, GitRef.object_type,
+                 And(
+                     GitRef.author_id != None,
+                     GitRef.author_date != None,
+                     GitRef.committer_id != None,
+                     GitRef.committer_date != None,
+                     GitRef.commit_message != None)),
+                GitRef.repository_id == self.id)}
         refs_to_upsert = {}
         for path, info in new_refs.items():
             current_ref = current_refs.get(path)
             if (current_ref is None or
-                info["sha1"] != current_ref.commit_sha1 or
-                info["type"] != current_ref.object_type):
+                    info["sha1"] != current_ref[0] or
+                    info["type"] != current_ref[1]):
                 refs_to_upsert[path] = info
-            elif (info["type"] == GitObjectType.COMMIT and
-                  (current_ref.author_id is None or
-                   current_ref.author_date is None or
-                   current_ref.committer_id is None or
-                   current_ref.committer_date is None or
-                   current_ref.commit_message is None)):
+            elif info["type"] == GitObjectType.COMMIT and not current_ref[2]:
                 # Only request detailed commit metadata for refs that point
                 # to commits.
                 refs_to_upsert[path] = info
@@ -1216,7 +1224,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         return Store.of(self).find(
             GitRuleGrant, GitRuleGrant.repository_id == self.id)
 
-    def findRuleGrantsByGrantee(self, grantee, exact_grantee=False,
+    def findRuleGrantsByGrantee(self, grantee, include_transitive=True,
                                 ref_pattern=None):
         """See `IGitRepository`."""
         if isinstance(grantee, DBItem) and grantee.enum == GitGranteeType:
@@ -1225,7 +1233,7 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
                     "grantee may not be GitGranteeType.PERSON; pass a person "
                     "object instead")
             clauses = [GitRuleGrant.grantee_type == grantee]
-        elif exact_grantee:
+        elif not include_transitive:
             clauses = [
                 GitRuleGrant.grantee_type == GitGranteeType.PERSON,
                 GitRuleGrant.grantee == grantee,
@@ -1323,7 +1331,9 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
 
         for ref_path in ref_paths:
             matching_rules = [
-                rule for rule in rules if fnmatch(ref_path, rule.ref_pattern)]
+                rule for rule in rules if fnmatch(
+                    six.ensure_binary(ref_path),
+                    rule.ref_pattern.encode("UTF-8"))]
             if is_owner and not matching_rules:
                 # If there are no matching rules, then the repository owner
                 # can do anything.

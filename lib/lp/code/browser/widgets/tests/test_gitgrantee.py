@@ -176,11 +176,10 @@ class TestGitGranteeDisplayWidget(
         self.widget.setUpSubWidgets()
         person = self.factory.makePerson()
         self.widget.setRenderedValue(person)
-        person_url = canonical_url(person)
+        person_url = canonical_url(person, path_only_if_possible=True)
         self.assertEqual(
-            '<a href="%s">'
-            '<img style="padding-bottom: 2px" alt="" src="/@@/person" /> '
-            '%s</a>' % (person_url, html_escape(person.display_name)),
+            '<a href="%s" class="sprite person">%s</a>' % (
+                person_url, html_escape(person.display_name)),
             self.widget.person_widget())
 
 

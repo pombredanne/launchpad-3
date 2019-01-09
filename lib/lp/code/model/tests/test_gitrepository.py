@@ -373,7 +373,7 @@ class TestGitRepository(TestCaseWithFactory):
             requester, ref_pattern=ref.path)
         self.assertEqual([exact_grant], list(results))
 
-    def test_findRuleGrantsByGrantee_exact_grantee_person(self):
+    def test_findRuleGrantsByGrantee_exclude_transitive_person(self):
         requester = self.factory.makePerson()
         repository = removeSecurityProxy(
             self.factory.makeGitRepository(owner=requester))
@@ -382,10 +382,10 @@ class TestGitRepository(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(rule=rule, grantee=requester)
 
         results = repository.findRuleGrantsByGrantee(
-            requester, exact_grantee=True)
+            requester, include_transitive=False)
         self.assertEqual([grant], list(results))
 
-    def test_findRuleGrantsByGrantee_exact_grantee_team(self):
+    def test_findRuleGrantsByGrantee_exclude_transitive_team(self):
         team = self.factory.makeTeam()
         repository = removeSecurityProxy(
             self.factory.makeGitRepository(owner=team))
@@ -393,10 +393,11 @@ class TestGitRepository(TestCaseWithFactory):
         rule = self.factory.makeGitRule(repository)
         grant = self.factory.makeGitRuleGrant(rule=rule, grantee=team)
 
-        results = repository.findRuleGrantsByGrantee(team, exact_grantee=True)
+        results = repository.findRuleGrantsByGrantee(
+            team, include_transitive=False)
         self.assertEqual([grant], list(results))
 
-    def test_findRuleGrantsByGrantee_exact_grantee_member_of_team(self):
+    def test_findRuleGrantsByGrantee_exclude_transitive_member_of_team(self):
         member = self.factory.makePerson()
         team = self.factory.makeTeam(members=[member])
         repository = removeSecurityProxy(
@@ -406,7 +407,7 @@ class TestGitRepository(TestCaseWithFactory):
         self.factory.makeGitRuleGrant(rule=rule, grantee=team)
 
         results = repository.findRuleGrantsByGrantee(
-            member, exact_grantee=True)
+            member, include_transitive=False)
         self.assertEqual([], list(results))
 
     def test_findRuleGrantsByGrantee_no_owner_grant(self):
@@ -446,7 +447,7 @@ class TestGitRepository(TestCaseWithFactory):
             GitGranteeType.REPOSITORY_OWNER, ref_pattern=ref.path)
         self.assertEqual([exact_grant], list(results))
 
-    def test_findRuleGrantsByGrantee_owner_exact_grantee(self):
+    def test_findRuleGrantsByGrantee_owner_exclude_transitive(self):
         repository = removeSecurityProxy(self.factory.makeGitRepository())
         [ref] = self.factory.makeGitRefs(repository=repository)
 
@@ -460,11 +461,11 @@ class TestGitRepository(TestCaseWithFactory):
             grantee=GitGranteeType.REPOSITORY_OWNER)
 
         results = ref.repository.findRuleGrantsByGrantee(
-            GitGranteeType.REPOSITORY_OWNER, exact_grantee=True)
+            GitGranteeType.REPOSITORY_OWNER, include_transitive=False)
         self.assertItemsEqual([exact_grant, wildcard_grant], list(results))
         results = ref.repository.findRuleGrantsByGrantee(
             GitGranteeType.REPOSITORY_OWNER, ref_pattern=ref.path,
-            exact_grantee=True)
+            include_transitive=False)
         self.assertEqual([exact_grant], list(results))
 
 
@@ -1562,6 +1563,58 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 },
             }))
         self.assertEqual(({}, set()), repository.planRefChanges("dummy"))
+
+    def test_planRefChanges_includes_unfetched_commits(self):
+        # planRefChanges plans updates to refs pointing to commits for which
+        # we haven't yet fetched detailed metadata.
+        repository = self.factory.makeGitRepository()
+        paths = ("refs/heads/master", "refs/heads/foo")
+        self.factory.makeGitRefs(repository=repository, paths=paths)
+        author_addr = (
+            removeSecurityProxy(repository.owner).preferredemail.email)
+        [author] = getUtility(IRevisionSet).acquireRevisionAuthors(
+            [author_addr]).values()
+        naked_master = removeSecurityProxy(
+            repository.getRefByPath("refs/heads/master"))
+        naked_master.author_id = naked_master.committer_id = author.id
+        naked_master.author_date = naked_master.committer_date = (
+            datetime.now(pytz.UTC))
+        naked_master.commit_message = "message"
+        self.useFixture(GitHostingFixture(refs={
+            path: {
+                "object": {
+                    "sha1": repository.getRefByPath(path).commit_sha1,
+                    "type": "commit",
+                    },
+                }
+            for path in paths}))
+        refs_to_upsert, refs_to_remove = repository.planRefChanges("dummy")
+
+        expected_upsert = {
+            "refs/heads/foo": {
+                "sha1": repository.getRefByPath("refs/heads/foo").commit_sha1,
+                "type": GitObjectType.COMMIT,
+                },
+            }
+        self.assertEqual(expected_upsert, refs_to_upsert)
+        self.assertEqual(set(), refs_to_remove)
+
+    def test_planRefChanges_excludes_configured_prefixes(self):
+        # planRefChanges excludes some ref prefixes by default, and can be
+        # configured otherwise.
+        repository = self.factory.makeGitRepository()
+        hosting_fixture = self.useFixture(GitHostingFixture())
+        repository.planRefChanges("dummy")
+        self.assertEqual(
+            [{"exclude_prefixes": ["refs/changes/"]}],
+            hosting_fixture.getRefs.extract_kwargs())
+        hosting_fixture.getRefs.calls = []
+        self.pushConfig(
+            "codehosting", git_exclude_ref_prefixes="refs/changes/ refs/pull/")
+        repository.planRefChanges("dummy")
+        self.assertEqual(
+            [{"exclude_prefixes": ["refs/changes/", "refs/pull/"]}],
+            hosting_fixture.getRefs.extract_kwargs())
 
     def test_fetchRefCommits(self):
         # fetchRefCommits fetches detailed tip commit metadata for the

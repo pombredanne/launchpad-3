@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes that implement IBugTask and its related interfaces."""
@@ -1480,7 +1480,10 @@ class BugTaskSet:
             claim they were inefficient and unwanted.
         """
         # Prevent circular import problems.
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
         from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
         from lp.bugs.model.bug import Bug
         from lp.bugs.model.bugtasksearch import search_bugs
         _noprejoins = kwargs.get('_noprejoins', False)
@@ -1490,6 +1493,9 @@ class BugTaskSet:
             def eager_load(rows):
                 load_related(Bug, rows, ['bugID'])
                 load_related(Product, rows, ['productID'])
+                load_related(ProductSeries, rows, ['productseriesID'])
+                load_related(Distribution, rows, ['distributionID'])
+                load_related(DistroSeries, rows, ['distroseriesID'])
                 load_related(SourcePackageName, rows, ['sourcepackagenameID'])
         return search_bugs(eager_load, (params,) + args)
 

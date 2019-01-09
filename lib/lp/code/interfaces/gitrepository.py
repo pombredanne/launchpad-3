@@ -766,15 +766,16 @@ class IGitRepositoryEdit(IWebhookTarget):
         :param user: The `IPerson` who is moving the rule.
         """
 
-    def findRuleGrantsByGrantee(grantee, exact_grantee=False,
+    def findRuleGrantsByGrantee(grantee, include_transitive=True,
                                 ref_pattern=None):
         """Find the grants for a grantee applied to this repository.
 
         :param grantee: The `IPerson` to search for, or an item of
             `GitGranteeType` other than `GitGranteeType.PERSON` to search
             for some other kind of entity.
-        :param exact_grantee: If True, match `grantee` exactly; if False
-            (the default), also accept teams of which `grantee` is a member.
+        :param include_transitive: If False, match `grantee` exactly; if
+            True (the default), also accept teams of which `grantee` is a
+            member.
         :param ref_pattern: If not None, only return grants for rules with
             this ref_pattern.
         """
@@ -829,7 +830,8 @@ class IGitRepositoryEdit(IWebhookTarget):
         :param person: An `IPerson` to check, or
             `GitGranteeType.REPOSITORY_OWNER` to check an anonymous
             repository owner.
-        :param ref_paths: An iterable of reference paths.
+        :param ref_paths: An iterable of reference paths (each of which may
+            be either bytes or text).
         :return: A dict mapping reference paths to sets of
             `GitPermissionType`, corresponding to the requested person's
             effective permissions on each of the requested references.

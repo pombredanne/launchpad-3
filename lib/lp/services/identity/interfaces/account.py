@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Account interfaces."""
@@ -84,10 +84,17 @@ class AccountStatus(DBEnumeratedType):
         The account has been suspended by a Launchpad admin.
         """)
 
+    CLOSED = DBItem(50, """
+        Closed
+
+        The account has been permanently closed, removing as much personal
+        information as possible.
+        """)
+
 
 INACTIVE_ACCOUNT_STATUSES = [
     AccountStatus.PLACEHOLDER, AccountStatus.DEACTIVATED,
-    AccountStatus.SUSPENDED]
+    AccountStatus.SUSPENDED, AccountStatus.CLOSED]
 
 
 class AccountCreationRationale(DBEnumeratedType):
@@ -236,11 +243,15 @@ class AccountStatusChoice(Choice):
     transitions = {
         AccountStatus.PLACEHOLDER: [
             AccountStatus.NOACCOUNT, AccountStatus.ACTIVE],
-        AccountStatus.NOACCOUNT: [AccountStatus.ACTIVE],
+        AccountStatus.NOACCOUNT: [AccountStatus.ACTIVE, AccountStatus.CLOSED],
         AccountStatus.ACTIVE: [
-            AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED],
-        AccountStatus.DEACTIVATED: [AccountStatus.ACTIVE],
-        AccountStatus.SUSPENDED: [AccountStatus.DEACTIVATED],
+            AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED,
+            AccountStatus.CLOSED],
+        AccountStatus.DEACTIVATED: [
+            AccountStatus.ACTIVE, AccountStatus.CLOSED],
+        AccountStatus.SUSPENDED: [
+            AccountStatus.DEACTIVATED, AccountStatus.CLOSED],
+        AccountStatus.CLOSED: [],
         }
 
     def constraint(self, value):

@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A configuration class describing the Launchpad web service."""
@@ -9,6 +9,7 @@ __all__ = [
 ]
 
 from lazr.restful.simple import BaseWebServiceConfiguration
+import six
 from zope.component import getUtility
 
 from lp.app import versioninfo
@@ -64,8 +65,8 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
         """See `IWebServiceConfiguration`."""
         # The request is going to try to decode the 'PATH_INFO' using utf-8,
         # so if it is currently unicode, encode it.
-        if isinstance(environ.get('PATH_INFO'), unicode):
-            environ['PATH_INFO'] = environ['PATH_INFO'].encode('utf-8')
+        if 'PATH_INFO' in environ:
+            environ['PATH_INFO'] = six.ensure_binary(environ['PATH_INFO'])
         request = WebServiceClientRequest(body_instream, environ)
         request.setPublication(WebServicePublication(None))
         return request

@@ -1351,9 +1351,10 @@ class TestGitRepositoryPermissionsView(BrowserTestCase):
         suffix = "." + encode_form_field_id(pattern)
         if IPerson.providedBy(grantee):
             suffix += "." + str(grantee.id)
+            grantee_url = canonical_url(grantee, path_only_if_possible=True)
             grantee_widget_matcher = soupmatchers.Tag(
-                "grantee widget", "a", attrs={"href": canonical_url(grantee)},
-                text=" " + grantee.display_name)
+                "grantee widget", "a", attrs={"href": grantee_url},
+                text=grantee.display_name)
         else:
             suffix += "._" + grantee.name.lower()
             grantee_widget_matcher = soupmatchers.Tag(

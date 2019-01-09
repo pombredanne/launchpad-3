@@ -343,7 +343,7 @@ class NascentUpload:
             # by one.
             max += 1
         if len(considered_archs) > max:
-            self.reject("Upload has more architetures than it is supported.")
+            self.reject("Upload has more architectures than is supported.")
 
     def _matchDDEBs(self):
         """Check and link DEBs and DDEBs in the upload.

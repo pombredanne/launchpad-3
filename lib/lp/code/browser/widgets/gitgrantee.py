@@ -39,18 +39,17 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import isinstance as zope_isinstance
 
 from lp import _
+from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.popup import PersonPickerWidget
 from lp.code.enums import GitGranteeType
 from lp.code.interfaces.gitrule import IGitRule
 from lp.registry.interfaces.person import IPerson
-from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IMultiLineWidgetLayout,
     )
-from lp.services.webapp.publisher import canonical_url
 
 
 class IGitGranteeField(IField):
@@ -86,14 +85,7 @@ class GitGranteePersonDisplayWidget(BrowserWidget):
 
     def __call__(self):
         if self._renderedValueSet():
-            grantee = self._data
-            person_img = renderElement(
-                "img", style="padding-bottom: 2px", src="/@@/person", alt="")
-            return renderElement(
-                "a", href=canonical_url(grantee),
-                contents="%s %s" % (
-                    person_img,
-                    structured("%s", grantee.display_name).escapedtext))
+            return PersonFormatterAPI(self._data).link(None)
         else:
             return ""
 
@@ -199,7 +191,7 @@ class GitGranteeWidget(GitGranteeWidgetBase, InputWidget):
             not self.context.rule.repository.findRuleGrantsByGrantee(
                 GitGranteeType.REPOSITORY_OWNER,
                 ref_pattern=self.context.rule.ref_pattern,
-                exact_grantee=True).is_empty()):
+                include_transitive=False).is_empty()):
             show_options["repository_owner"] = False
         return show_options
 

@@ -97,7 +97,8 @@ Note that the generated notification contain the 'extra_info' content:
   ANY OUTPUT
   <BLANKLINE>
   If you want further information about this situation, feel free to
-  contact a member of the Launchpad Buildd Administrators team.
+  contact us by asking a question on Launchpad
+  (https://answers.launchpad.net/launchpad/+addquestion).
   <BLANKLINE>
   -- =
   <BLANKLINE>
