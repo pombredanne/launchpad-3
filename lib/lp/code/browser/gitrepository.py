@@ -795,6 +795,9 @@ class GitRulePatternField(UniqueField):
 class GitRepositoryPermissionsView(LaunchpadFormView):
     """A view to manage repository permissions."""
 
+    heads_prefix = u"refs/heads/"
+    tags_prefix = u"refs/tags/"
+
     @property
     def label(self):
         return "Manage permissions for %s" % self.context.identity
@@ -813,20 +816,20 @@ class GitRepositoryPermissionsView(LaunchpadFormView):
     def branch_rules(self):
         return [
             rule for rule in self.rules
-            if rule.ref_pattern.startswith(u"refs/heads/")]
+            if rule.ref_pattern.startswith(self.heads_prefix)]
 
     @property
     def tag_rules(self):
         return [
             rule for rule in self.rules
-            if rule.ref_pattern.startswith(u"refs/tags/")]
+            if rule.ref_pattern.startswith(self.tags_prefix)]
 
     @property
     def other_rules(self):
         return [
             rule for rule in self.rules
-            if not rule.ref_pattern.startswith(u"refs/heads/") and
-               not rule.ref_pattern.startswith(u"refs/tags/")]
+            if not rule.ref_pattern.startswith(self.heads_prefix) and
+               not rule.ref_pattern.startswith(self.tags_prefix)]
 
     def _getRuleGrants(self, rule):
         def grantee_key(grant):
@@ -839,7 +842,7 @@ class GitRepositoryPermissionsView(LaunchpadFormView):
 
     def _parseRefPattern(self, ref_pattern):
         """Parse a pattern into a prefix and the displayed portion."""
-        for prefix in (u"refs/heads/", u"refs/tags/"):
+        for prefix in (self.heads_prefix, self.tags_prefix):
             if ref_pattern.startswith(prefix):
                 return prefix, ref_pattern[len(prefix):]
         return u"", ref_pattern
@@ -916,8 +919,8 @@ class GitRepositoryPermissionsView(LaunchpadFormView):
         permissions_fields = []
 
         default_permissions_by_prefix = {
-            "refs/heads/": "can_push",
-            "refs/tags/": "can_create",
+            self.heads_prefix: "can_push",
+            self.tags_prefix: "can_create",
             "": "can_push",
             }
 
@@ -971,7 +974,7 @@ class GitRepositoryPermissionsView(LaunchpadFormView):
                     source=permissions_vocabulary, readonly=False,
                     default=permissions_vocabulary.getTermByToken(
                         default_permissions_by_prefix[ref_prefix]).value))
-        for ref_prefix in ("refs/heads/", "refs/tags/"):
+        for ref_prefix in (self.heads_prefix, self.tags_prefix):
             position_fields.append(
                 Int(
                     __name__=self._getFieldName("new-position", ref_prefix),
@@ -1118,7 +1121,7 @@ class GitRepositoryPermissionsView(LaunchpadFormView):
                         new_position = None
                     rule = repository.addRule(
                         new_pattern, self.user, position=new_position)
-                    if prefix == "refs/tags/":
+                    if prefix == self.tags_prefix:
                         # Tags are a special case: on creation, they
                         # automatically get a grant of create permissions to
                         # the repository owner (suppressing the normal
