@@ -210,19 +210,11 @@ prevented from using the private attribute to mark bug #6 private:
 
 We must use setPrivate:
 
-    >>> from zope.event import notify
-    >>> from lazr.lifecycle.event import (
-    ...     ObjectModifiedEvent, ObjectCreatedEvent)
-    >>> from lazr.lifecycle.snapshot import Snapshot
+    >>> from lp.services.webapp.snapshot import notify_modified
 
-    >>> old_state = Snapshot(firefox_crashes, providing=IBug)
-    >>> firefox_crashes.setPrivate(True, current_user())
+    >>> with notify_modified(firefox_crashes, ["id", "title", "private"]):
+    ...     firefox_crashes.setPrivate(True, current_user())
     True
-    >>> bug_set_private = ObjectModifiedEvent(
-    ...     firefox_crashes, old_state,
-    ...     ["id", "title", "private"])
-
-    >>> notify(bug_set_private)
     >>> flush_database_updates()
 
 Trying to mark a private bug as private is a no-op, as is marking a
@@ -297,14 +289,9 @@ and set it private (as Foo Bar again who, of course, is an admin.)
 
 And again, let's fake setting the bug private:
 
-    >>> old_state = Snapshot(reflow_problems_bug, providing=IBug)
-    >>> reflow_problems_bug.setPrivate(True, current_user())
+    >>> with notify_modified(reflow_problems_bug, ["id", "title", "private"]):
+    ...     reflow_problems_bug.setPrivate(True, current_user())
     True
-    >>> bug_set_private = ObjectModifiedEvent(
-    ...     reflow_problems_bug, old_state,
-    ...     ["id", "title", "private"])
-
-    >>> notify(bug_set_private)
     >>> flush_database_updates()
 
 Then let's permit the Ubuntu Team to access this bug by adding them to
@@ -495,34 +482,20 @@ Adding a comment.
 
 Changing the bug summary.
 
-    >>> from lp.bugs.interfaces.bug import IBug
-
-    >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
-
-    >>> firefox_bug.title = "a new title"
-
-    >>> bug_summary_changed = ObjectModifiedEvent(
-    ...     firefox_bug, bug_before_modification, ["title"])
-
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(bug_summary_changed)
+    >>> with notify_modified(firefox_bug, ["title"]):
+    ...     firefox_bug.title = "a new title"
 
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
 
 Changing the description.
 
-    >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
-
-    >>> firefox_bug.description = "a new description"
-
-    >>> bug_description_changed = ObjectModifiedEvent(
-    ...     firefox_bug, bug_before_modification, ["description"])
-
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(bug_description_changed)
+    >>> with notify_modified(firefox_bug, ["description"]):
+    ...     firefox_bug.description = "a new description"
 
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
@@ -530,7 +503,7 @@ Changing the description.
 Modifying a bugtask will update IBug.date_last_updated.
 
     >>> from lp.bugs.interfaces.bugtask import (
-    ...     BugTaskImportance, BugTaskStatus, IBugTask)
+    ...     BugTaskImportance, BugTaskStatus)
 
     >>> firefox_task = firefox_bug.bugtasks[0]
 
@@ -542,27 +515,21 @@ Modifying a bugtask will update IBug.date_last_updated.
     >>> print(firefox_task.status.title)
     New
 
-    >>> bugtask_before_modification = Snapshot(
-    ...     firefox_task, providing=IBugTask)
-
-    >>> firefox_task.transitionToImportance(
-    ...     BugTaskImportance.CRITICAL, current_user())
-    >>> firefox_task.transitionToStatus(
-    ...     BugTaskStatus.CONFIRMED, current_user())
-
-    >>> bugtask_modified = ObjectModifiedEvent(
-    ...     firefox_task, bugtask_before_modification,
-    ...     ["status", "importance"])
-
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(bugtask_modified)
+    >>> with notify_modified(firefox_task, ["status", "importance"]):
+    ...     firefox_task.transitionToImportance(
+    ...         BugTaskImportance.CRITICAL, current_user())
+    ...     firefox_task.transitionToStatus(
+    ...         BugTaskStatus.CONFIRMED, current_user())
 
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
 
 Adding a new task.
 
+    >>> from zope.event import notify
+    >>> from lazr.lifecycle.event import ObjectCreatedEvent
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
 
     >>> thunderbird = productset.getByName("thunderbird")
@@ -656,56 +623,41 @@ or oldest bugtask.
 
 Changing bug visibility.
 
-    >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
-
     >>> firefox_bug.private
     False
-    >>> firefox_bug.setPrivate(True, current_user())
-    True
-
-    >>> bug_visibility_changed = ObjectModifiedEvent(
-    ...     firefox_bug, bug_before_modification, ["private"])
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(bug_visibility_changed)
+    >>> with notify_modified(firefox_bug, ["private"]):
+    ...     firefox_bug.setPrivate(True, current_user())
+    True
 
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
 
 Changing bug security.
 
-    >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
-
     >>> firefox_bug.security_related
     False
-    >>> changed = firefox_bug.setSecurityRelated(True,
-    ...     getUtility(ILaunchBag).user)
-
-    >>> bug_security_changed = ObjectModifiedEvent(
-    ...     firefox_bug, bug_before_modification, ["security_related"])
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(bug_security_changed)
+    >>> with notify_modified(firefox_bug, ["security_related"]):
+    ...     changed = firefox_bug.setSecurityRelated(
+    ...         True, getUtility(ILaunchBag).user)
 
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
 
 Marking as duplicate.
 
-    >>> bug_before_modification = Snapshot(firefox_bug, providing=IBug)
-
     >>> print(firefox_bug.duplicateof)
     None
-    >>> firefox_bug.markAsDuplicate(factory.makeBug())
-
-    >>> bug_duplicateof_changed = ObjectModifiedEvent(
-    ...     firefox_bug, bug_before_modification, ["duplicateof"])
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(bug_duplicateof_changed)
+    >>> with notify_modified(firefox_bug, ["duplicateof"]):
+    ...     firefox_bug.markAsDuplicate(factory.makeBug())
 
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
@@ -749,20 +701,10 @@ Adding an attachment.
 
 Editing an attachment.
 
-    >>> from lp.bugs.interfaces.bugattachment import IBugAttachment
-
-    >>> attachment_before_modification = Snapshot(
-    ...     attachment, providing=IBugAttachment)
-
-    >>> attachment.title = "a new title"
-
-    >>> attachment_changed = ObjectModifiedEvent(
-    ...     attachment, attachment_before_modification,
-    ...     ["title"])
-
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(attachment_changed)
+    >>> with notify_modified(attachment, ["title"]):
+    ...     attachment.title = "a new title"
 
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
@@ -807,23 +749,14 @@ Linking to an external bug tracker.
 
 Editing the external bug watch.
 
-    >>> from lp.bugs.interfaces.bugwatch import IBugWatch
-
-    >>> bugwatch_before_modification = Snapshot(
-    ...     bugwatch, providing=IBugWatch)
-
     >>> print(bugwatch.remotebug)
     1234
 
-    >>> bugwatch.remotebug = '5678'
-
-    >>> bugwatch_changed = ObjectModifiedEvent(
-    ...     bugwatch, bugwatch_before_modification, ["remotebug"],
-    ...     bugwatch.bug.owner)
-
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> notify(bugwatch_changed)
+    >>> with notify_modified(
+    ...         bugwatch, ["remotebug"], user=bugwatch.bug.owner):
+    ...     bugwatch.remotebug = '5678'
 
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True
