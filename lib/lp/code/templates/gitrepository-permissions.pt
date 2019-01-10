@@ -206,10 +206,10 @@
     <h2>Effective permissions</h2>
     <p>
       Launchpad works out the effective permissions that a user has on a
-      protected branch as follows:
+      protected branch or tag as follows:
     </p>
     <ol>
-      <li>Take all the rules that match the branch.</li>
+      <li>Take all the rules that match the branch or tag.</li>
       <li>
         For each matching rule, select any grants whose grantee matches the
         user, as long as the same grantee has not already been seen in an
