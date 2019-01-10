@@ -7,60 +7,120 @@
   i18n:domain="launchpad">
 <body>
 
+  <metal:block fill-slot="head_epilogue">
+    <style type="text/css">
+      table.git-rules-table tr.even {
+        background-color: #eee;
+      }
+      tr.git-rule td, tr.git-new-rule td {
+        padding-top: 1em;
+      }
+      tr.git-new-rule-grant td, tr.git-new-rule td {
+        padding-bottom: 1em;
+      }
+      /* Position, pattern, and delete add up to 100%. */
+      tr .git-rule-position {
+        width: 10%;
+      }
+      tr .git-rule-pattern {
+        width: 85%;
+      }
+      tr .git-rule-delete {
+        width: 5%;
+      }
+      /* Grantee and permissions add up to pattern (85%). */
+      tr .git-rule-grant-grantee {
+        width: 40%;
+      }
+      tr .git-rule-grant-permissions {
+        width: 45%;
+      }
+    </style>
+  </metal:block>
+
   <metal:macros fill-slot="bogus">
     <metal:macro define-macro="rule-rows">
       <tal:rule repeat="rule rules">
         <tal:rule_widgets
-            define="rule_widgets python:view.getRuleWidgets(rule)">
-          <tr class="git-rule">
-            <td tal:define="widget nocall:rule_widgets/position">
+            define="rule_widgets python:view.getRuleWidgets(rule);
+                    parity python:'even' if repeat['rule'].even() else 'odd'">
+          <tr tal:attributes="class string:git-rule ${parity}">
+            <td class="git-rule-position"
+                tal:define="widget nocall:rule_widgets/position">
               <metal:block use-macro="context/@@launchpad_form/widget_div" />
             </td>
-            <td tal:define="widget nocall:rule_widgets/pattern" colspan="2">
+            <td class="git-rule-pattern"
+                tal:define="widget nocall:rule_widgets/pattern" colspan="2">
               <metal:block use-macro="context/@@launchpad_form/widget_div" />
             </td>
-            <td tal:define="widget nocall:rule_widgets/delete">
+            <td class="git-rule-delete"
+                tal:define="widget nocall:rule_widgets/delete">
               <metal:block use-macro="context/@@launchpad_form/widget_div" />
             </td>
           </tr>
-          <tr class="git-rule-grant"
+          <tr tal:attributes="class string:git-rule-grant ${parity}"
               tal:repeat="grant_widgets rule_widgets/grants">
             <td></td>
-            <td tal:define="widget nocall:grant_widgets/grantee">
+            <td class="git-rule-grant-grantee"
+                tal:define="widget nocall:grant_widgets/grantee">
               <metal:block use-macro="context/@@launchpad_form/widget_div" />
             </td>
-            <td tal:define="widget nocall:grant_widgets/permissions">
+            <td class="git-rule-grant-permissions"
+                tal:define="widget nocall:grant_widgets/permissions">
               <metal:block use-macro="context/@@launchpad_form/widget_div" />
             </td>
-            <td tal:define="widget nocall:grant_widgets/delete">
+            <td class="git-rule-delete"
+                tal:define="widget nocall:grant_widgets/delete">
               <metal:block use-macro="context/@@launchpad_form/widget_div" />
             </td>
           </tr>
-          <tr class="git-new-rule-grant"
+          <tr tal:attributes="class string:git-new-rule-grant ${parity}"
               tal:define="new_grant_widgets rule_widgets/new_grant">
             <td></td>
-            <td tal:define="widget nocall:new_grant_widgets/grantee">
+            <td class="git-rule-grant-grantee"
+                tal:define="widget nocall:new_grant_widgets/grantee">
               <metal:block use-macro="context/@@launchpad_form/widget_div" />
             </td>
-            <td tal:define="widget nocall:new_grant_widgets/permissions">
+            <td class="git-rule-grant-permissions"
+                tal:define="widget nocall:new_grant_widgets/permissions">
               <metal:block use-macro="context/@@launchpad_form/widget_div" />
             </td>
             <td></td>
           </tr>
         </tal:rule_widgets>
       </tal:rule>
-      <tal:allows-new-rule condition="ref_prefix">
-        <tr class="git-new-rule"
+      <tal:allows-new-rule
+          condition="ref_prefix"
+          define="parity python:'odd' if len(rules) % 2 else 'even'">
+        <tr tal:attributes="class string:git-new-rule ${parity}"
             tal:define="new_rule_widgets python:view.getNewRuleWidgets(ref_prefix)">
-          <td tal:define="widget nocall:new_rule_widgets/position">
+          <td class="git-rule-position"
+              tal:define="widget nocall:new_rule_widgets/position">
             <metal:block use-macro="context/@@launchpad_form/widget_div" />
           </td>
-          <td tal:define="widget nocall:new_rule_widgets/pattern" colspan="2">
+          <td class="git-rule-pattern"
+              tal:define="widget nocall:new_rule_widgets/pattern" colspan="2">
             <metal:block use-macro="context/@@launchpad_form/widget_div" />
           </td>
           <td></td>
         </tr>
       </tal:allows-new-rule>
+    </metal:macro>
+
+    <metal:macro define-macro="rules-table">
+      <table class="listing git-rules-table"
+             style="max-width: 60em; margin-bottom: 1em;">
+        <thead>
+          <tr>
+            <th class="git-rule-position">Position</th>
+            <th class="git-rule-pattern" colspan="2">Rule</th>
+            <th class="git-rule-delete">Delete?</th>
+          </tr>
+        </thead>
+        <tbody>
+          <metal:rules use-macro="template/macros/rule-rows" />
+        </tbody>
+      </table>
     </metal:macro>
   </metal:macros>
 
@@ -86,44 +146,24 @@
 
     <metal:grants-form use-macro="context/@@launchpad_form/form">
       <div class="form" metal:fill-slot="widgets">
-        <table id="rules-table" class="listing"
-               style="max-width: 60em; margin-bottom: 1em;">
-          <thead>
-            <tr>
-              <th>Position</th>
-              <th colspan="2">Rule</th>
-              <th>Delete?</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td colspan="4">
-                <h3>Protected branches (under <code>refs/heads/</code>)</h3>
-              </td>
-            </tr>
-            <tal:branches define="rules view/branch_rules;
-                                  ref_prefix string:refs/heads/">
-              <metal:grants use-macro="template/macros/rule-rows" />
-            </tal:branches>
+        <h3>Protected branches (under <code>refs/heads/</code>)</h3>
+        <tal:branches define="rules view/branch_rules;
+                              ref_prefix string:refs/heads/">
+          <metal:table use-macro="template/macros/rules-table" />
+        </tal:branches>
 
-            <tr>
-              <td colspan="4">
-                <h3>Protected tags (under <code>refs/tags/</code>)</h3>
-              </td>
-            </tr>
-            <tal:tags define="rules view/tag_rules;
-                              ref_prefix string:refs/tags/">
-              <metal:grants use-macro="template/macros/rule-rows" />
-            </tal:tags>
+        <h3>Protected tags (under <code>refs/tags/</code>)</h3>
+        <tal:tags define="rules view/tag_rules;
+                          ref_prefix string:refs/tags/">
+          <metal:table use-macro="template/macros/rules-table" />
+        </tal:tags>
 
-            <tal:has-other condition="view/other_rules">
-              <tr><td colspan="4"><h3>Other protected references</h3></td></tr>
-              <tal:other define="rules view/other_rules; ref_prefix nothing">
-                <metal:grants use-macro="template/macros/rule-rows" />
-              </tal:other>
-            </tal:has-other>
-          </tbody>
-        </table>
+        <tal:has-other condition="view/other_rules">
+          <h3>Other protected references</h3>
+          <tal:other define="rules view/other_rules; ref_prefix nothing">
+            <metal:table use-macro="template/macros/rules-table" />
+          </tal:other>
+        </tal:has-other>
 
         <p class="actions">
           <input tal:replace="structure view/save_action/render" />

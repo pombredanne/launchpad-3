@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for GitRepositoryView."""
@@ -10,6 +10,7 @@ __metaclass__ = type
 import base64
 from datetime import datetime
 import doctest
+from itertools import chain
 from operator import attrgetter
 import re
 from textwrap import dedent
@@ -85,6 +86,7 @@ from lp.testing.matchers import (
 from lp.testing.pages import (
     extract_text,
     find_tag_by_id,
+    find_tags_by_class,
     get_feedback_messages,
     setupBrowser,
     setupBrowserForUser,
@@ -1306,12 +1308,15 @@ class TestGitRepositoryPermissionsView(BrowserTestCase):
         delete_field_name = "field.delete" + suffix
         return self._matchesCells(rule_tag, [
             soupmatchers.Within(
-                soupmatchers.Tag("position cell", "td"),
+                soupmatchers.Tag(
+                    "position cell", "td",
+                    attrs={"class": "git-rule-position"}),
                 soupmatchers.Tag(
                     "position widget", "input",
                     attrs={"name": position_field_name, "value": position})),
             soupmatchers.Within(
-                soupmatchers.Tag("pattern cell", "td"),
+                soupmatchers.Tag(
+                    "pattern cell", "td", attrs={"class": "git-rule-pattern"}),
                 soupmatchers.Tag(
                     "pattern widget", "input",
                     attrs={
@@ -1319,7 +1324,8 @@ class TestGitRepositoryPermissionsView(BrowserTestCase):
                         "value": short_pattern,
                         })),
             soupmatchers.Within(
-                soupmatchers.Tag("delete cell", "td"),
+                soupmatchers.Tag(
+                    "delete cell", "td", attrs={"class": "git-rule-delete"}),
                 soupmatchers.Tag(
                     "delete widget", "input",
                     attrs={"name": delete_field_name})),
@@ -1333,12 +1339,15 @@ class TestGitRepositoryPermissionsView(BrowserTestCase):
         new_pattern_field_name = "field.new-pattern" + suffix
         return self._matchesCells(new_rule_tag, [
             soupmatchers.Within(
-                soupmatchers.Tag("position cell", "td"),
+                soupmatchers.Tag(
+                    "position cell", "td",
+                    attrs={"class": "git-rule-position"}),
                 soupmatchers.Tag(
                     "position widget", "input",
                     attrs={"name": new_position_field_name, "value": ""})),
             soupmatchers.Within(
-                soupmatchers.Tag("pattern cell", "td"),
+                soupmatchers.Tag(
+                    "pattern cell", "td", attrs={"class": "git-rule-pattern"}),
                 soupmatchers.Tag(
                     "pattern widget", "input",
                     attrs={"name": new_pattern_field_name, "value": ""})),
@@ -1364,10 +1373,14 @@ class TestGitRepositoryPermissionsView(BrowserTestCase):
         delete_field_name = "field.delete" + suffix
         return self._matchesCells(rule_grant_tag, [
             soupmatchers.Within(
-                soupmatchers.Tag("grantee cell", "td"),
+                soupmatchers.Tag(
+                    "grantee cell", "td",
+                    attrs={"class": "git-rule-grant-grantee"}),
                 grantee_widget_matcher),
             soupmatchers.Within(
-                soupmatchers.Tag("permissions cell", "td"),
+                soupmatchers.Tag(
+                    "permissions cell", "td",
+                    attrs={"class": "git-rule-grant-permissions"}),
                 soupmatchers.Within(
                     soupmatchers.Tag(
                         "permissions widget", "select",
@@ -1380,7 +1393,8 @@ class TestGitRepositoryPermissionsView(BrowserTestCase):
                             },
                         text=permissions_title))),
             soupmatchers.Within(
-                soupmatchers.Tag("delete cell", "td"),
+                soupmatchers.Tag(
+                    "delete cell", "td", attrs={"class": "git-rule-delete"}),
                 soupmatchers.Tag(
                     "delete widget", "input",
                     attrs={"name": delete_field_name})),
@@ -1394,12 +1408,16 @@ class TestGitRepositoryPermissionsView(BrowserTestCase):
         permissions_field_name = "field.permissions" + suffix
         return self._matchesCells(rule_grant_tag, [
             soupmatchers.Within(
-                soupmatchers.Tag("grantee cell", "td"),
+                soupmatchers.Tag(
+                    "grantee cell", "td",
+                    attrs={"class": "git-rule-grant-grantee"}),
                 soupmatchers.Tag(
                     "grantee widget", "input",
                     attrs={"name": grantee_field_name})),
             soupmatchers.Within(
-                soupmatchers.Tag("permissions cell", "td"),
+                soupmatchers.Tag(
+                    "permissions cell", "td",
+                    attrs={"class": "git-rule-grant-permissions"}),
                 soupmatchers.Within(
                     soupmatchers.Tag(
                         "permissions widget", "select",
@@ -1412,7 +1430,7 @@ class TestGitRepositoryPermissionsView(BrowserTestCase):
                             }))),
             ])
 
-    def test_rules_table(self):
+    def test_rules_tables(self):
         repository = self.factory.makeGitRepository()
         heads_rule = self.factory.makeGitRule(
             repository=repository, ref_pattern="refs/heads/stable/*")
@@ -1431,8 +1449,10 @@ class TestGitRepositoryPermissionsView(BrowserTestCase):
         login_person(repository.owner)
         view = create_initialized_view(
             repository, name="+permissions", principal=repository.owner)
-        rules_table = find_tag_by_id(view(), "rules-table")
-        rows = rules_table.findAll("tr", {"class": True})
+        rules_tables = find_tags_by_class(view(), "git-rules-table")
+        rows = list(chain.from_iterable([
+            rules_table.findAll("tr", {"class": True})
+            for rules_table in rules_tables]))
         self.assertThat(rows, MatchesListwise([
             self._matchesRule("1", "refs/heads/stable/*", "stable/*"),
             self._matchesRuleGrant(
