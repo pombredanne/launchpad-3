@@ -871,6 +871,12 @@
     </class>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitrepository.GitRepositoryPermissionsView"
+        name="+permissions"
+        permission="launchpad.Edit"
+        template="../templates/gitrepository-permissions.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.gitrepository.GitRepositoryDeletionView"
         permission="launchpad.Edit"
         name="+delete"
