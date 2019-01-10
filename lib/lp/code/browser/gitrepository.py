@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository views."""
@@ -17,9 +17,13 @@ __all__ = [
     'GitRepositoryEditReviewerView',
     'GitRepositoryEditView',
     'GitRepositoryNavigation',
+    'GitRepositoryPermissionsView',
     'GitRepositoryURL',
     'GitRepositoryView',
     ]
+
+import base64
+from collections import defaultdict
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -34,14 +38,21 @@ from six.moves.urllib_parse import (
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.textwidgets import IntWidget
+from zope.formlib.widget import CustomWidgetFactory
 from zope.interface import (
     implementer,
     Interface,
     providedBy,
     )
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Choice
+from zope.schema import (
+    Bool,
+    Choice,
+    Int,
+    )
 from zope.schema.vocabulary import (
+    getVocabularyRegistry,
     SimpleTerm,
     SimpleVocabulary,
     )
@@ -53,7 +64,10 @@ from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.errors import NotFoundError
+from lp.app.errors import (
+    NotFoundError,
+    UnexpectedFormData,
+    )
 from lp.app.vocabularies import InformationTypeVocabulary
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.code.browser.branch import CodeEditOwnerMixin
@@ -62,11 +76,19 @@ from lp.code.browser.branchmergeproposal import (
     )
 from lp.code.browser.codeimport import CodeImportTargetMixin
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
+from lp.code.browser.widgets.gitgrantee import (
+    GitGranteeDisplayWidget,
+    GitGranteeField,
+    GitGranteeWidget,
+    )
 from lp.code.browser.widgets.gitrepositorytarget import (
     GitRepositoryTargetDisplayWidget,
     GitRepositoryTargetWidget,
     )
-from lp.code.enums import GitRepositoryType
+from lp.code.enums import (
+    GitGranteeType,
+    GitRepositoryType,
+    )
 from lp.code.errors import (
     GitDefaultConflict,
     GitRepositoryCreationForbidden,
@@ -76,6 +98,7 @@ from lp.code.errors import (
 from lp.code.interfaces.gitnamespace import get_git_namespace
 from lp.code.interfaces.gitref import IGitRefBatchNavigator
 from lp.code.interfaces.gitrepository import IGitRepository
+from lp.code.vocabularies.gitrule import GitPermissionsVocabulary
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -84,6 +107,7 @@ from lp.registry.vocabularies import UserTeamsParticipationPlusSelfVocabulary
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features import getFeatureFlag
+from lp.services.fields import UniqueField
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -105,6 +129,7 @@ from lp.services.webapp.breadcrumb import Breadcrumb
 from lp.services.webapp.escaping import structured
 from lp.services.webapp.interfaces import ICanonicalUrlData
 from lp.services.webapp.publisher import DataDownloadView
+from lp.services.webapp.snapshot import notify_modified
 from lp.services.webhooks.browser import WebhookTargetNavigationMixin
 from lp.snappy.browser.hassnaps import HasSnapsViewMixin
 
@@ -211,7 +236,14 @@ class GitRepositoryEditMenu(NavigationMenu):
     usedfor = IGitRepository
     facet = "branches"
     title = "Edit Git repository"
-    links = ["edit", "reviewer", "webhooks", "activity", "delete"]
+    links = [
+        "edit",
+        "reviewer",
+        "permissions",
+        "activity",
+        "webhooks",
+        "delete",
+        ]
 
     @enabled_with_permission("launchpad.Edit")
     def edit(self):
@@ -222,6 +254,11 @@ class GitRepositoryEditMenu(NavigationMenu):
     def reviewer(self):
         text = "Set repository reviewer"
         return Link("+reviewer", text, icon="edit")
+
+    @enabled_with_permission("launchpad.Edit")
+    def permissions(self):
+        text = "Manage permissions"
+        return Link("+permissions", text, icon="edit")
 
     @enabled_with_permission("launchpad.Edit")
     def webhooks(self):
@@ -707,6 +744,489 @@ class GitRepositoryDiffView(DataDownloadView):
 
     def browserDefault(self, request):
         return self, ()
+
+
+def encode_form_field_id(value):
+    """Encode text for use in form field names.
+
+    We use a modified version of base32 which fits into CSS identifiers and
+    so doesn't cause FormattersAPI.zope_css_id to do unhelpful things.
+    """
+    return base64.b32encode(
+        value.encode("UTF-8")).decode("UTF-8").replace("=", "_")
+
+
+def decode_form_field_id(encoded):
+    """Inverse of `encode_form_field_id`."""
+    return base64.b32decode(
+        encoded.replace("_", "=").encode("UTF-8")).decode("UTF-8")
+
+
+class GitRulePatternField(UniqueField):
+
+    errormessage = _("%s is already in use by another rule")
+    attribute = "ref_pattern"
+    _content_iface = IGitRepository
+
+    def __init__(self, ref_prefix, rule=None, *args, **kwargs):
+        self.ref_prefix = ref_prefix
+        self.rule = rule
+        super(GitRulePatternField, self).__init__(*args, **kwargs)
+
+    def _getByAttribute(self, ref_pattern):
+        """See `UniqueField`."""
+        if self._content_iface.providedBy(self.context):
+            return self.context.getRule(self.ref_prefix + ref_pattern)
+        else:
+            return None
+
+    def unchanged(self, input):
+        """See `UniqueField`."""
+        return (
+            self.rule is not None and
+            self.ref_prefix + input == self.rule.ref_pattern)
+
+    def set(self, object, value):
+        """See `IField`."""
+        if value is not None:
+            value = value.strip()
+        super(GitRulePatternField, self).set(object, value)
+
+
+class GitRepositoryPermissionsView(LaunchpadFormView):
+    """A view to manage repository permissions."""
+
+    heads_prefix = u"refs/heads/"
+    tags_prefix = u"refs/tags/"
+
+    @property
+    def label(self):
+        return "Manage permissions for %s" % self.context.identity
+
+    page_title = "Manage permissions"
+
+    @property
+    def repository(self):
+        return self.context
+
+    @cachedproperty
+    def rules(self):
+        return self.repository.getRules()
+
+    @property
+    def branch_rules(self):
+        return [
+            rule for rule in self.rules
+            if rule.ref_pattern.startswith(self.heads_prefix)]
+
+    @property
+    def tag_rules(self):
+        return [
+            rule for rule in self.rules
+            if rule.ref_pattern.startswith(self.tags_prefix)]
+
+    @property
+    def other_rules(self):
+        return [
+            rule for rule in self.rules
+            if not rule.ref_pattern.startswith(self.heads_prefix) and
+               not rule.ref_pattern.startswith(self.tags_prefix)]
+
+    def _getRuleGrants(self, rule):
+        def grantee_key(grant):
+            if grant.grantee is not None:
+                return (grant.grantee_type, grant.grantee.name)
+            else:
+                return (grant.grantee_type,)
+
+        return sorted(rule.grants, key=grantee_key)
+
+    def _parseRefPattern(self, ref_pattern):
+        """Parse a pattern into a prefix and the displayed portion."""
+        for prefix in (self.heads_prefix, self.tags_prefix):
+            if ref_pattern.startswith(prefix):
+                return prefix, ref_pattern[len(prefix):]
+        return u"", ref_pattern
+
+    def _getFieldName(self, name, ref_pattern, grantee=None):
+        """Get the combined field name for a ref pattern and optional grantee.
+
+        In order to be able to render a permissions table, we encode the ref
+        pattern and the grantee in the form field name.
+        """
+        suffix = "." + encode_form_field_id(ref_pattern)
+        if grantee is not None:
+            if IPerson.providedBy(grantee):
+                suffix += "." + str(grantee.id)
+            else:
+                suffix += "._" + grantee.name.lower()
+        return name + suffix
+
+    def _parseFieldName(self, field_name):
+        """Parse a combined field name as described in `_getFieldName`.
+
+        :raises UnexpectedFormData: if the field name cannot be parsed or
+            the grantee cannot be found.
+        """
+        field_bits = field_name.split(".")
+        if len(field_bits) < 2:
+            raise UnexpectedFormData(
+                "Cannot parse field name: %s" % field_name)
+        field_type = field_bits[0]
+        try:
+            ref_pattern = decode_form_field_id(field_bits[1])
+        except TypeError:
+            raise UnexpectedFormData(
+                "Cannot parse field name: %s" % field_name)
+        if len(field_bits) > 2:
+            grantee_id = field_bits[2]
+            if grantee_id.startswith("_"):
+                grantee_id = grantee_id[1:]
+                try:
+                    grantee = GitGranteeType.getTermByToken(grantee_id).value
+                except LookupError:
+                    grantee = None
+            else:
+                try:
+                    grantee_id = int(grantee_id)
+                except ValueError:
+                    grantee = None
+                else:
+                    grantee = getUtility(IPersonSet).get(grantee_id)
+            if grantee is None or grantee == GitGranteeType.PERSON:
+                raise UnexpectedFormData("No such grantee: %s" % grantee_id)
+        else:
+            grantee = None
+        return field_type, ref_pattern, grantee
+
+    def _getPermissionsTerm(self, grant):
+        """Return a term from `GitPermissionsVocabulary` for this grant."""
+        vocabulary = getVocabularyRegistry().get(grant, "GitPermissions")
+        try:
+            return vocabulary.getTerm(grant.permissions)
+        except LookupError:
+            # This should never happen, because GitPermissionsVocabulary
+            # adds a custom term for the context grant if necessary.
+            raise AssertionError(
+                "Could not find GitPermissions term for %r" % grant)
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        position_fields = []
+        pattern_fields = []
+        delete_fields = []
+        readonly_grantee_fields = []
+        grantee_fields = []
+        permissions_fields = []
+
+        default_permissions_by_prefix = {
+            self.heads_prefix: "can_push",
+            self.tags_prefix: "can_create",
+            "": "can_push",
+            }
+
+        for rule_index, rule in enumerate(self.rules):
+            # Remove the usual branch/tag prefixes from patterns.  The full
+            # pattern goes into form field names, so no data is lost here.
+            ref_pattern = rule.ref_pattern
+            ref_prefix, short_pattern = self._parseRefPattern(ref_pattern)
+            position_fields.append(
+                Int(
+                    __name__=self._getFieldName("position", ref_pattern),
+                    required=True, readonly=False, default=rule_index + 1))
+            pattern_fields.append(
+                GitRulePatternField(
+                    __name__=self._getFieldName("pattern", ref_pattern),
+                    required=True, readonly=False, ref_prefix=ref_prefix,
+                    rule=rule, default=short_pattern))
+            delete_fields.append(
+                Bool(
+                    __name__=self._getFieldName("delete", ref_pattern),
+                    readonly=False, default=False))
+            for grant in self._getRuleGrants(rule):
+                grantee = grant.combined_grantee
+                readonly_grantee_fields.append(
+                    GitGranteeField(
+                        __name__=self._getFieldName(
+                            "grantee", ref_pattern, grantee),
+                        required=False, readonly=True, default=grantee,
+                        rule=rule))
+                permissions_fields.append(
+                    Choice(
+                        __name__=self._getFieldName(
+                            "permissions", ref_pattern, grantee),
+                        source=GitPermissionsVocabulary(grant),
+                        readonly=False,
+                        default=self._getPermissionsTerm(grant).value))
+                delete_fields.append(
+                    Bool(
+                        __name__=self._getFieldName(
+                            "delete", ref_pattern, grantee),
+                        readonly=False, default=False))
+            grantee_fields.append(
+                GitGranteeField(
+                    __name__=self._getFieldName("grantee", ref_pattern),
+                    required=False, readonly=False, rule=rule))
+            permissions_vocabulary = GitPermissionsVocabulary(rule)
+            permissions_fields.append(
+                Choice(
+                    __name__=self._getFieldName(
+                        "permissions", ref_pattern),
+                    source=permissions_vocabulary, readonly=False,
+                    default=permissions_vocabulary.getTermByToken(
+                        default_permissions_by_prefix[ref_prefix]).value))
+        for ref_prefix in (self.heads_prefix, self.tags_prefix):
+            position_fields.append(
+                Int(
+                    __name__=self._getFieldName("new-position", ref_prefix),
+                    required=False, readonly=True))
+            pattern_fields.append(
+                GitRulePatternField(
+                    __name__=self._getFieldName("new-pattern", ref_prefix),
+                    required=False, readonly=False, ref_prefix=ref_prefix))
+
+        self.form_fields = (
+            form.FormFields(
+                *position_fields,
+                custom_widget=CustomWidgetFactory(IntWidget, displayWidth=2)) +
+            form.FormFields(*pattern_fields) +
+            form.FormFields(*delete_fields) +
+            form.FormFields(
+                *readonly_grantee_fields,
+                custom_widget=CustomWidgetFactory(GitGranteeDisplayWidget)) +
+            form.FormFields(
+                *grantee_fields,
+                custom_widget=CustomWidgetFactory(GitGranteeWidget)) +
+            form.FormFields(*permissions_fields))
+
+    def setUpWidgets(self, context=None):
+        """See `LaunchpadFormView`."""
+        super(GitRepositoryPermissionsView, self).setUpWidgets(
+            context=context)
+        for widget in self.widgets:
+            widget.display_label = False
+            widget.hint = None
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    def getRuleWidgets(self, rule):
+        widgets_by_name = {widget.name: widget for widget in self.widgets}
+        ref_pattern = rule.ref_pattern
+        position_field_name = (
+            "field." + self._getFieldName("position", ref_pattern))
+        pattern_field_name = (
+            "field." + self._getFieldName("pattern", ref_pattern))
+        delete_field_name = (
+            "field." + self._getFieldName("delete", ref_pattern))
+        grant_widgets = []
+        for grant in self._getRuleGrants(rule):
+            grantee = grant.combined_grantee
+            grantee_field_name = (
+                "field." + self._getFieldName("grantee", ref_pattern, grantee))
+            permissions_field_name = (
+                "field." +
+                self._getFieldName("permissions", ref_pattern, grantee))
+            delete_grant_field_name = (
+                "field." + self._getFieldName("delete", ref_pattern, grantee))
+            grant_widgets.append({
+                "grantee": widgets_by_name[grantee_field_name],
+                "permissions": widgets_by_name[permissions_field_name],
+                "delete": widgets_by_name[delete_grant_field_name],
+                })
+        new_grantee_field_name = (
+            "field." + self._getFieldName("grantee", ref_pattern))
+        new_permissions_field_name = (
+            "field." + self._getFieldName("permissions", ref_pattern))
+        new_grant_widgets = {
+            "grantee": widgets_by_name[new_grantee_field_name],
+            "permissions": widgets_by_name[new_permissions_field_name],
+            }
+        return {
+            "position": widgets_by_name[position_field_name],
+            "pattern": widgets_by_name[pattern_field_name],
+            "delete": widgets_by_name.get(delete_field_name),
+            "grants": grant_widgets,
+            "new_grant": new_grant_widgets,
+            }
+
+    def getNewRuleWidgets(self, ref_prefix):
+        widgets_by_name = {widget.name: widget for widget in self.widgets}
+        new_position_field_name = (
+            "field." + self._getFieldName("new-position", ref_prefix))
+        new_pattern_field_name = (
+            "field." + self._getFieldName("new-pattern", ref_prefix))
+        return {
+            "position": widgets_by_name[new_position_field_name],
+            "pattern": widgets_by_name[new_pattern_field_name],
+            }
+
+    def parseData(self, data):
+        """Rearrange form data to make it easier to process."""
+        parsed_data = {
+            "rules": {},
+            "grants": defaultdict(list),
+            }
+
+        for field_name in sorted(
+                name for name in data if name.split(".")[0] == "pattern"):
+            _, ref_pattern, _ = self._parseFieldName(field_name)
+            prefix, _ = self._parseRefPattern(ref_pattern)
+            position_field_name = self._getFieldName("position", ref_pattern)
+            delete_field_name = self._getFieldName("delete", ref_pattern)
+            if data.get(delete_field_name):
+                position = None
+                action = "delete"
+            else:
+                position = max(0, data[position_field_name] - 1)
+                action = "change"
+            parsed_data["rules"].setdefault(ref_pattern, {
+                "position": position,
+                "pattern": ref_pattern,
+                "new_pattern": prefix + data[field_name],
+                "action": action,
+                })
+
+        for field_name in sorted(
+                name for name in data if name.split(".")[0] == "new-pattern"):
+            _, prefix, _ = self._parseFieldName(field_name)
+            position_field_name = self._getFieldName("position", prefix)
+            if not data[field_name]:
+                continue
+            if position_field_name in data:
+                position = max(0, data[position_field_name] - 1)
+            else:
+                position = None
+            parsed_data["rules"].setdefault(prefix, {
+                "position": position,
+                "pattern": prefix + data[field_name],
+                "action": "add",
+                })
+
+        for field_name in sorted(
+                name for name in data if name.split(".")[0] == "permissions"):
+            _, ref_pattern, grantee = self._parseFieldName(field_name)
+            grantee_field_name = self._getFieldName("grantee", ref_pattern)
+            delete_field_name = self._getFieldName(
+                "delete", ref_pattern, grantee)
+            if grantee is None:
+                grantee = data.get(grantee_field_name)
+                if grantee is None:
+                    continue
+                action = "add"
+            elif data.get(delete_field_name):
+                action = "delete"
+            else:
+                action = "change"
+            parsed_data["grants"][ref_pattern].append({
+                "grantee": grantee,
+                "permissions": data[field_name],
+                "action": action,
+                })
+
+        return parsed_data
+
+    def updateRepositoryFromData(self, repository, parsed_data):
+        # Fetch rules before making any changes, since their ref_patterns
+        # may change as a result of this update.
+        rule_map = {rule.ref_pattern: rule for rule in self.repository.rules}
+        grant_map = {
+            (grant.rule.ref_pattern, grant.combined_grantee): grant
+            for grant in self.repository.grants}
+
+        # Patterns must be processed in rule order so that position changes
+        # work in a reasonably natural way.  Process new rules last.
+        ordered_rules = []
+        for ref_pattern, parsed_rule in parsed_data["rules"].items():
+            rule = rule_map.get(ref_pattern)
+            if parsed_rule["action"] == "add":
+                ordered_rules.append((ref_pattern, parsed_rule, -1))
+            elif rule is not None:
+                # Ignore attempts to change or delete rules that have
+                # already been deleted by somebody else.
+                ordered_rules.append((ref_pattern, parsed_rule, rule.position))
+        ordered_rules.sort(
+            key=lambda item: (item[1]["action"] != "add", item[2]))
+
+        for ref_pattern, parsed_rule, position in ordered_rules:
+            rule = rule_map.get(parsed_rule["pattern"])
+            action = parsed_rule["action"]
+            if action not in ("add", "change", "delete"):
+                raise AssertionError(
+                    "unknown action: %s" % parsed_rule["action"])
+
+            if action == "add" and rule is None:
+                rule = repository.addRule(
+                    parsed_rule["pattern"], self.user,
+                    position=parsed_rule["position"])
+                if ref_pattern == self.tags_prefix:
+                    # Tags are a special case: on creation, they
+                    # automatically get a grant of create permissions to
+                    # the repository owner (suppressing the normal
+                    # ability of the repository owner to push protected
+                    # references).
+                    rule.addGrant(
+                        GitGranteeType.REPOSITORY_OWNER, self.user,
+                        can_create=True)
+            elif action == "change" and rule is not None:
+                self.repository.moveRule(
+                    rule, parsed_rule["position"], self.user)
+                if parsed_rule["new_pattern"] != rule.ref_pattern:
+                    with notify_modified(rule, ["ref_pattern"]):
+                        rule.ref_pattern = parsed_rule["new_pattern"]
+            elif action == "delete" and rule is not None:
+                rule.destroySelf(self.user)
+                rule_map[parsed_rule["pattern"]] = None
+            else:
+                raise AssertionError(
+                    "unknown action: %s" % parsed_rule["action"])
+
+        for ref_pattern, parsed_grants in sorted(
+                parsed_data["grants"].items()):
+            if ref_pattern not in rule_map:
+                self.addError(structured(
+                    "Cannot edit grants for nonexistent rule %s", ref_pattern))
+                return
+            rule = rule_map.get(ref_pattern)
+            if rule is None:
+                # Already deleted.
+                continue
+
+            for parsed_grant in parsed_grants:
+                grant = grant_map.get((ref_pattern, parsed_grant["grantee"]))
+                action = parsed_grant["action"]
+                if action not in ("add", "change", "delete"):
+                    raise AssertionError(
+                        "unknown action: %s" % parsed_rule["action"])
+
+                if action == "add" and grant is None:
+                    rule.addGrant(
+                        parsed_grant["grantee"], self.user,
+                        permissions=parsed_grant["permissions"])
+                elif (action in ("add", "change") and grant is not None and
+                      parsed_grant["permissions"] != grant.permissions):
+                    # Make the requested changes.  This can happen in the
+                    # add case if somebody else added the grant since the
+                    # form was last rendered, in which case updating it with
+                    # the permissions from this request seems best.
+                    with notify_modified(
+                            grant,
+                            ["can_create", "can_push", "can_force_push"]):
+                        grant.permissions = parsed_grant["permissions"]
+                elif action == "delete" and grant is not None:
+                    grant.destroySelf(self.user)
+                    grant_map[(ref_pattern, parsed_grant["grantee"])] = None
+
+    @action("Save", name="save")
+    def save_action(self, action, data):
+        with notify_modified(self.repository, []):
+            parsed_data = self.parseData(data)
+            self.updateRepositoryFromData(self.repository, parsed_data)
+
+        self.request.response.addNotification(
+            "Saved permissions for %s" % self.context.identity)
+        self.next_url = canonical_url(self.context, view_name="+permissions")
 
 
 class GitRepositoryDeletionView(LaunchpadFormView):
