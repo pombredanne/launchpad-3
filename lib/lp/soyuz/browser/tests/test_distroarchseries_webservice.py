@@ -114,7 +114,7 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
     def test_setChroot_removeChroot(self):
         das = self.factory.makeDistroArchSeries()
         user = das.distroseries.distribution.main_archive.owner
-        expected_file = 'chroot-%s-%s-%s.tar.bz2' % (
+        expected_file = 'chroot-%s-%s-%s.tar.gz' % (
             das.distroseries.distribution.name, das.distroseries.name,
             das.architecturetag)
         webservice = launchpadlib_for("testing", user)
