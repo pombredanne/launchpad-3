@@ -136,7 +136,8 @@ class DistroArchSeries(SQLBase):
             for pocket_chroot in IStore(PocketChroot).find(
                 PocketChroot,
                 PocketChroot.distroarchseries == self,
-                PocketChroot.pocket.is_in(pockets))}
+                PocketChroot.pocket.is_in(pockets),
+                PocketChroot.chroot != None)}
         for pocket_dep in reversed(pockets):
             if pocket_dep in pocket_chroots:
                 return pocket_chroots[pocket_dep]

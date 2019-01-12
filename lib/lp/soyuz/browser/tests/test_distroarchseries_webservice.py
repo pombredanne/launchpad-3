@@ -125,7 +125,7 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         ws_das.removeChroot()
         self.assertIsNone(ws_das.chroot_url)
 
-    def test_setChroot_pocket(self):
+    def test_setChroot_removeChroot_pocket(self):
         das = self.factory.makeDistroArchSeries()
         user = das.distroseries.distribution.main_archive.owner
         webservice = launchpadlib_for("testing", user)
@@ -147,6 +147,13 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
             updates_chroot_url, ws_das.getChrootURL(pocket='Updates'))
         self.assertEqual(
             updates_chroot_url, ws_das.getChrootURL(pocket='Proposed'))
+        ws_das.removeChroot(pocket='Updates')
+        self.assertEqual(
+            release_chroot_url, ws_das.getChrootURL(pocket='Release'))
+        self.assertEqual(
+            release_chroot_url, ws_das.getChrootURL(pocket='Updates'))
+        self.assertEqual(
+            release_chroot_url, ws_das.getChrootURL(pocket='Proposed'))
 
     def test_setChrootFromBuild(self):
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
