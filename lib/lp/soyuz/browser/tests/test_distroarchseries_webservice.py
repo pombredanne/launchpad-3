@@ -125,7 +125,7 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         ws_das.removeChroot()
         self.assertIsNone(ws_das.chroot_url)
 
-    def test_setChroot_pocket(self):
+    def test_setChroot_removeChroot_pocket(self):
         das = self.factory.makeDistroArchSeries()
         user = das.distroseries.distribution.main_archive.owner
         webservice = launchpadlib_for("testing", user)
@@ -147,6 +147,13 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
             updates_chroot_url, ws_das.getChrootURL(pocket='Updates'))
         self.assertEqual(
             updates_chroot_url, ws_das.getChrootURL(pocket='Proposed'))
+        ws_das.removeChroot(pocket='Updates')
+        self.assertEqual(
+            release_chroot_url, ws_das.getChrootURL(pocket='Release'))
+        self.assertEqual(
+            release_chroot_url, ws_das.getChrootURL(pocket='Updates'))
+        self.assertEqual(
+            release_chroot_url, ws_das.getChrootURL(pocket='Proposed'))
 
     def test_setChrootFromBuild(self):
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
@@ -183,3 +190,23 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         self.assertRaises(
             Unauthorized, ws_das.setChrootFromBuild,
             livefsbuild=build_url, filename="livecd.ubuntu-base.rootfs.tar.gz")
+
+    def test_setChrootFromBuild_pocket(self):
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
+        das = self.factory.makeDistroArchSeries()
+        build = self.factory.makeLiveFSBuild()
+        build_url = api_url(build)
+        login_as(build.livefs.owner)
+        lfa = self.factory.makeLibraryFileAlias(
+            filename="livecd.ubuntu-base.rootfs.tar.gz")
+        build.addFile(lfa)
+        user = das.distroseries.distribution.main_archive.owner
+        webservice = launchpadlib_for("testing", user)
+        ws_das = ws_object(webservice, das)
+        ws_das.setChrootFromBuild(
+            livefsbuild=build_url, filename="livecd.ubuntu-base.rootfs.tar.gz",
+            pocket="Updates")
+        self.assertIsNone(
+            das.getChroot(pocket=PackagePublishingPocket.RELEASE))
+        self.assertEqual(
+            lfa, das.getChroot(pocket=PackagePublishingPocket.UPDATES))

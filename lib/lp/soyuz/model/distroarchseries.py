@@ -136,7 +136,8 @@ class DistroArchSeries(SQLBase):
             for pocket_chroot in IStore(PocketChroot).find(
                 PocketChroot,
                 PocketChroot.distroarchseries == self,
-                PocketChroot.pocket.is_in(pockets))}
+                PocketChroot.pocket.is_in(pockets),
+                PocketChroot.chroot != None)}
         for pocket_dep in reversed(pockets):
             if pocket_dep in pocket_chroots:
                 return pocket_chroots[pocket_dep]
@@ -213,9 +214,10 @@ class DistroArchSeries(SQLBase):
             raise InvalidChrootUploaded("Chroot upload checksums do not match")
         self.addOrUpdateChroot(lfa, pocket=pocket)
 
-    def setChrootFromBuild(self, livefsbuild, filename):
+    def setChrootFromBuild(self, livefsbuild, filename, pocket=None):
         """See `IDistroArchSeries`."""
-        self.addOrUpdateChroot(livefsbuild.getFileByName(filename))
+        self.addOrUpdateChroot(
+            livefsbuild.getFileByName(filename), pocket=pocket)
 
     def removeChroot(self, pocket=None):
         """See `IDistroArchSeries`."""

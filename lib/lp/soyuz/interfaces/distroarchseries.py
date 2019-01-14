@@ -209,10 +209,11 @@ class IDistroArchSeriesModerate(Interface):
         # Really ILiveFSBuild, patched in _schema_circular_imports.py.
         livefsbuild=Reference(
             Interface, title=_("Live filesystem build"), required=True),
-        filename=TextLine(title=_("Filename"), required=True))
+        filename=TextLine(title=_("Filename"), required=True),
+        pocket=Choice(vocabulary=PackagePublishingPocket, required=False))
     @export_write_operation()
     @operation_for_version("devel")
-    def setChrootFromBuild(livefsbuild, filename):
+    def setChrootFromBuild(livefsbuild, filename, pocket=None):
         """Set the chroot tarball from a live filesystem build."""
 
     @operation_parameters(
