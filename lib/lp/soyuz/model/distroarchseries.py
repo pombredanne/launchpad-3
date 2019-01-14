@@ -28,6 +28,7 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implementer
 
+from lp.buildmaster.enums import BuildBaseImageType
 from lp.buildmaster.model.processor import Processor
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -128,8 +129,10 @@ class DistroArchSeries(SQLBase):
         return (self.distroseries.nominatedarchindep is not None and
                 self.id == self.distroseries.nominatedarchindep.id)
 
-    def getPocketChroot(self, pocket, exact_pocket=False):
+    def getPocketChroot(self, pocket, exact_pocket=False, image_type=None):
         """See `IDistroArchSeries`."""
+        if image_type is None:
+            image_type = BuildBaseImageType.CHROOT
         pockets = [pocket] if exact_pocket else pocket_dependencies[pocket]
         pocket_chroots = {
             pocket_chroot.pocket: pocket_chroot
@@ -137,26 +140,27 @@ class DistroArchSeries(SQLBase):
                 PocketChroot,
                 PocketChroot.distroarchseries == self,
                 PocketChroot.pocket.is_in(pockets),
+                PocketChroot.image_type == image_type,
                 PocketChroot.chroot != None)}
         for pocket_dep in reversed(pockets):
             if pocket_dep in pocket_chroots:
                 return pocket_chroots[pocket_dep]
         return None
 
-    def getChroot(self, default=None, pocket=None):
+    def getChroot(self, default=None, pocket=None, image_type=None):
         """See `IDistroArchSeries`."""
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
-        pocket_chroot = self.getPocketChroot(pocket)
+        pocket_chroot = self.getPocketChroot(pocket, image_type=image_type)
 
         if pocket_chroot is None:
             return default
 
         return pocket_chroot.chroot
 
-    def getChrootURL(self, pocket=None):
+    def getChrootURL(self, pocket=None, image_type=None):
         """See `IDistroArchSeries`."""
-        chroot = self.getChroot(pocket=pocket)
+        chroot = self.getChroot(pocket=pocket, image_type=image_type)
         if chroot is None:
             return None
         return chroot.http_url
@@ -166,21 +170,25 @@ class DistroArchSeries(SQLBase):
         """See `IDistroArchSeries`."""
         return self.getChrootURL()
 
-    def addOrUpdateChroot(self, chroot, pocket=None):
+    def addOrUpdateChroot(self, chroot, pocket=None, image_type=None):
         """See `IDistroArchSeries`."""
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
-        pocket_chroot = self.getPocketChroot(pocket, exact_pocket=True)
+        if image_type is None:
+            image_type = BuildBaseImageType.CHROOT
+        pocket_chroot = self.getPocketChroot(
+            pocket, exact_pocket=True, image_type=image_type)
 
         if pocket_chroot is None:
             return PocketChroot(
-                distroarchseries=self, pocket=pocket, chroot=chroot)
+                distroarchseries=self, pocket=pocket, chroot=chroot,
+                image_type=image_type)
         else:
             pocket_chroot.chroot = chroot
 
         return pocket_chroot
 
-    def setChroot(self, data, sha1sum, pocket=None):
+    def setChroot(self, data, sha1sum, pocket=None, image_type=None):
         """See `IDistroArchSeries`."""
         # XXX: StevenK 2013-06-06 bug=1116954: We should not need to refetch
         # the file content from the request, since the passed in one has been
@@ -204,7 +212,13 @@ class DistroArchSeries(SQLBase):
         if content_sha1sum != sha1sum:
             raise InvalidChrootUploaded("Chroot upload checksums do not match")
 
-        filename = 'chroot-%s-%s-%s.tar.gz' % (
+        # This duplicates addOrUpdateChroot, but we need it to build a
+        # reasonable filename.
+        if image_type is None:
+            image_type = BuildBaseImageType.CHROOT
+
+        filename = '%s-%s-%s-%s.tar.gz' % (
+            image_type.name.lower().split()[0],
             self.distroseries.distribution.name, self.distroseries.name,
             self.architecturetag)
         lfa = getUtility(ILibraryFileAliasSet).create(
@@ -212,16 +226,18 @@ class DistroArchSeries(SQLBase):
             contentType='application/octet-stream')
         if lfa.content.sha1 != sha1sum:
             raise InvalidChrootUploaded("Chroot upload checksums do not match")
-        self.addOrUpdateChroot(lfa, pocket=pocket)
+        self.addOrUpdateChroot(lfa, pocket=pocket, image_type=image_type)
 
-    def setChrootFromBuild(self, livefsbuild, filename, pocket=None):
+    def setChrootFromBuild(self, livefsbuild, filename, pocket=None,
+                           image_type=None):
         """See `IDistroArchSeries`."""
         self.addOrUpdateChroot(
-            livefsbuild.getFileByName(filename), pocket=pocket)
+            livefsbuild.getFileByName(filename), pocket=pocket,
+            image_type=image_type)
 
-    def removeChroot(self, pocket=None):
+    def removeChroot(self, pocket=None, image_type=None):
         """See `IDistroArchSeries`."""
-        self.addOrUpdateChroot(None, pocket=pocket)
+        self.addOrUpdateChroot(None, pocket=pocket, image_type=image_type)
 
     def searchBinaryPackages(self, text):
         """See `IDistroArchSeries`."""
@@ -322,3 +338,7 @@ class PocketChroot(SQLBase):
         default=PackagePublishingPocket.RELEASE, notNull=True)
 
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')
+
+    image_type = EnumCol(
+        schema=BuildBaseImageType, default=BuildBaseImageType.CHROOT,
+        notNull=True)

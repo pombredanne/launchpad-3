@@ -41,6 +41,7 @@ from zope.schema import (
 
 from lp import _
 from lp.app.validators.name import name_validator
+from lp.buildmaster.enums import BuildBaseImageType
 from lp.buildmaster.interfaces.processor import IProcessor
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
@@ -153,8 +154,8 @@ class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
         series.
         """
 
-    def getPocketChroot(pocket, exact_pocket=False):
-        """Return the PocketChroot for this distroarchseries and given pocket.
+    def getPocketChroot(pocket, exact_pocket=False, image_type=None):
+        """Return the PocketChroot for this series, pocket, and image type.
 
         If exact_pocket is False, this follows pocket dependencies and finds
         the chroot for the closest pocket that exists: for example, if no
@@ -163,20 +164,21 @@ class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
         given pocket.
         """
 
-    def getChroot(default=None, pocket=None):
-        """Return the Chroot for this distroarchseries and pocket.
+    def getChroot(default=None, pocket=None, image_type=None):
+        """Return the Chroot for this series, pocket, and image type.
 
         It uses getPocketChroot and if not found returns 'default'.
         """
 
     @operation_parameters(
-        pocket=Choice(vocabulary=PackagePublishingPocket, required=False))
+        pocket=Choice(vocabulary=PackagePublishingPocket, required=False),
+        image_type=Choice(vocabulary=BuildBaseImageType, required=False))
     @export_read_operation()
     @operation_for_version("devel")
-    def getChrootURL(pocket=None):
-        """Return the chroot URL for this distroarchseries and pocket."""
+    def getChrootURL(pocket=None, image_type=None):
+        """Return the chroot URL for this series, pocket, and image type."""
 
-    def addOrUpdateChroot(chroot, pocket=None):
+    def addOrUpdateChroot(chroot, pocket=None, image_type=None):
         """Return the just added or modified PocketChroot."""
 
     def searchBinaryPackages(text):
@@ -196,10 +198,11 @@ class IDistroArchSeriesModerate(Interface):
 
     @operation_parameters(
         data=Bytes(), sha1sum=Text(),
-        pocket=Choice(vocabulary=PackagePublishingPocket, required=False))
+        pocket=Choice(vocabulary=PackagePublishingPocket, required=False),
+        image_type=Choice(vocabulary=BuildBaseImageType, required=False))
     @export_write_operation()
     @operation_for_version("devel")
-    def setChroot(data, sha1sum, pocket=None):
+    def setChroot(data, sha1sum, pocket=None, image_type=None):
         """Set the chroot tarball used for builds in this architecture.
 
         The SHA-1 checksum must match the chroot file.
@@ -210,17 +213,20 @@ class IDistroArchSeriesModerate(Interface):
         livefsbuild=Reference(
             Interface, title=_("Live filesystem build"), required=True),
         filename=TextLine(title=_("Filename"), required=True),
-        pocket=Choice(vocabulary=PackagePublishingPocket, required=False))
+        pocket=Choice(vocabulary=PackagePublishingPocket, required=False),
+        image_type=Choice(vocabulary=BuildBaseImageType, required=False))
     @export_write_operation()
     @operation_for_version("devel")
-    def setChrootFromBuild(livefsbuild, filename, pocket=None):
+    def setChrootFromBuild(livefsbuild, filename, pocket=None,
+                           image_type=None):
         """Set the chroot tarball from a live filesystem build."""
 
     @operation_parameters(
-        pocket=Choice(vocabulary=PackagePublishingPocket, required=False))
+        pocket=Choice(vocabulary=PackagePublishingPocket, required=False),
+        image_type=Choice(vocabulary=BuildBaseImageType, required=False))
     @export_write_operation()
     @operation_for_version("devel")
-    def removeChroot(pocket=None):
+    def removeChroot(pocket=None, image_type=None):
         """Remove the chroot tarball used for builds in this architecture."""
 
 
@@ -236,6 +242,7 @@ class IPocketChroot(Interface):
         "The DistroArchSeries this chroot belongs to.")
     pocket = Attribute("The Pocket this chroot is for.")
     chroot = Attribute("The file alias of the chroot.")
+    image_type = Attribute("The type of this image.")
 
     def syncUpdate():
         """Commit changes to DB."""

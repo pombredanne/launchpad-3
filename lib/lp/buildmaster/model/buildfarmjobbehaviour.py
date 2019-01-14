@@ -20,6 +20,7 @@ from twisted.internet import defer
 from zope.component import getUtility
 
 from lp.buildmaster.enums import (
+    BuildBaseImageType,
     BuildFarmJobType,
     BuildStatus,
     )
@@ -44,6 +45,8 @@ class BuildFarmJobBehaviourBase:
 
     All build-farm job behaviours should inherit from this.
     """
+
+    image_types = [BuildBaseImageType.CHROOT]
 
     def __init__(self, build):
         """Store a reference to the job_type with which we were created."""
@@ -113,10 +116,17 @@ class BuildFarmJobBehaviourBase:
             self.composeBuildRequest(logger))
 
         # First cache the chroot and any other files that the job needs.
-        chroot = das.getChroot(pocket=pocket)
-        if chroot is None:
+        pocket_chroot = None
+        for image_type in self.image_types:
+            pocket_chroot = das.getPocketChroot(
+                pocket=pocket, image_type=image_type)
+            if pocket_chroot is not None:
+                break
+        if pocket_chroot is None:
             raise CannotBuild(
                 "Unable to find a chroot for %s" % das.displayname)
+        chroot = pocket_chroot.chroot
+        args["image_type"] = pocket_chroot.image_type.name.lower()
 
         filename_to_sha1 = {}
         dl = []
