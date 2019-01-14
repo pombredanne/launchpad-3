@@ -214,9 +214,10 @@ class DistroArchSeries(SQLBase):
             raise InvalidChrootUploaded("Chroot upload checksums do not match")
         self.addOrUpdateChroot(lfa, pocket=pocket)
 
-    def setChrootFromBuild(self, livefsbuild, filename):
+    def setChrootFromBuild(self, livefsbuild, filename, pocket=None):
         """See `IDistroArchSeries`."""
-        self.addOrUpdateChroot(livefsbuild.getFileByName(filename))
+        self.addOrUpdateChroot(
+            livefsbuild.getFileByName(filename), pocket=pocket)
 
     def removeChroot(self, pocket=None):
         """See `IDistroArchSeries`."""
