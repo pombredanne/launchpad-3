@@ -37,6 +37,7 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
 class TestCloseAccount(TestCaseWithFactory):
@@ -307,3 +308,15 @@ class TestCloseAccount(TestCaseWithFactory):
             self.runScript(script)
         self.assertRemoved(account_id, person_id)
         self.assertFalse(bug.isUserAffected(person))
+
+    def test_skips_translation_relicensing_agreements(self):
+        person = self.factory.makePerson()
+        translations_person = ITranslationsPerson(person)
+        translations_person.translations_relicensing_agreement = True
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertTrue(translations_person.translations_relicensing_agreement)

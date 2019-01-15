@@ -137,6 +137,7 @@ def close_account(username, log):
         ('translationimportqueueentry', 'importer'),
         ('translationmessage', 'reviewer'),
         ('translationmessage', 'submitter'),
+        ('translationrelicensingagreement', 'person'),
         ('usertouseremail', 'recipient'),
         ('usertouseremail', 'sender'),
         ('xref', 'creator'),
