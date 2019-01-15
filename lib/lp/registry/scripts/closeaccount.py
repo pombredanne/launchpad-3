@@ -89,9 +89,11 @@ def close_account(username, log):
         ('branchmergeproposal', 'queuer'),
         ('branchmergeproposal', 'reviewer'),
         ('branchsubscription', 'subscribed_by'),
+        ('bug', 'owner'),
         ('bug', 'who_made_private'),
         ('bugactivity', 'person'),
         ('bugnomination', 'decider'),
+        ('bugtask', 'owner'),
         ('bugsubscription', 'subscribed_by'),
         ('faq', 'last_updated_by'),
         ('featureflagchangelogentry', 'person'),
@@ -230,9 +232,10 @@ def close_account(username, log):
         ('SignedCodeOfConduct', 'owner'),
         ('GpgKey', 'owner'),
 
-        # Subscriptions
+        # Subscriptions and notifications
         ('BranchSubscription', 'person'),
         ('BugMute', 'person'),
+        ('BugNotificationRecipient', 'person'),
         ('BugSubscription', 'person'),
         ('BugSubscriptionFilterMute', 'person'),
         ('GitSubscription', 'person'),
@@ -275,6 +278,9 @@ def close_account(username, log):
         # Soyuz reporting
         ('LatestPersonSourcePackageReleaseCache', 'creator'),
         ('LatestPersonSourcePackageReleaseCache', 'maintainer'),
+
+        # "Affects me too" information
+        ('BugAffectsPerson', 'person'),
         ]
     for table, person_id_column in removals:
         table_notification(table)

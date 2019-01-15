@@ -281,3 +281,29 @@ class TestCloseAccount(TestCaseWithFactory):
         self.assertEqual(person, spph.package_maintainer)
         self.assertEqual(person, spph.package_creator)
         self.assertFalse(person.hasMaintainedPackages())
+
+    def test_skips_reported_bugs(self):
+        person = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=person)
+        bugtask = self.factory.makeBugTask(bug=bug, owner=person)
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertEqual(person, bug.owner)
+        self.assertEqual(person, bugtask.owner)
+
+    def test_handles_bug_affects_person(self):
+        person = self.factory.makePerson()
+        bug = self.factory.makeBug()
+        bug.markUserAffected(person)
+        self.assertTrue(bug.isUserAffected(person))
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertFalse(bug.isUserAffected(person))
