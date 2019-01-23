@@ -147,7 +147,7 @@
       <div id="branch-scan-failed" class="pending-update">
         <h3>Branch scan failed</h3>
         <p>
-          Scanning this branch for changes has failed, you can manually rescan if required.
+          Scanning this branch for changes failed.  You can manually rescan if required.
         </p>
         <p>
           <form action="./+rescan" name="launchpadform" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
