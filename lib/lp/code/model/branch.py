@@ -1295,6 +1295,16 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             job.celeryRunOnCommit()
         return (self.last_mirrored_id, old_scanned_id)
 
+    def getLatestScanJob(self):
+        from lp.code.model.branchjob import BranchJob, BranchScanJob
+        from lp.services.database.interfaces import IStore
+        latest_job = IStore(BranchJob).find(
+            BranchJob,
+            branch=self,
+            job_type=BranchScanJob.class_job_type).order_by(
+                BranchJob.id).first()
+        return latest_job
+
     def requestMirror(self):
         """See `IBranch`."""
         if self.branch_type in (BranchType.REMOTE, BranchType.HOSTED):
