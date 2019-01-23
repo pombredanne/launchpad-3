@@ -654,12 +654,8 @@ class BranchRescanView(LaunchpadEditFormView):
 
     @action('Rescan', name='rescan')
     def rescan(self, action, data):
-        result = self.context.unscan(rescan=True)
-        if result:
-            message = "Branch scan scheduled"
-        else:
-            message = "Branch scan schedule failed"
-        self.request.response.addNotification(message)
+        self.context.unscan(rescan=True)
+        self.request.response.addNotification("Branch scan scheduled")
         self.next_url = canonical_url(self.context)
 
 
