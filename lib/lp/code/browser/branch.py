@@ -590,8 +590,9 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
 
     @property
     def show_rescan_link(self):
+        """Only show the rescan button if the latest scan has failed"""
         scan_job = self.context.getLatestScanJob()
-        return scan_job.job.status == JobStatus.FAILED
+        return scan_job and (scan_job.job.status == JobStatus.FAILED)
 
     @cachedproperty
     def linked_bugtasks(self):
