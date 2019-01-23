@@ -321,7 +321,7 @@ class TestBranchView(BrowserTestCase):
         branch = self.factory.makeAnyBranch()
         view = create_initialized_view(branch, '+index')
         result = view.show_rescan_link
-        self.assertFalse(result)
+        self.assertTrue(result)
 
     def test_show_rescan_link_latest_didnt_fail(self):
         branch = self.factory.makeAnyBranch()
