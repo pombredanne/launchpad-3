@@ -130,19 +130,17 @@
 
   </div>
 
-  <tal:rescan condition="not:view/show_rescan_link">
-    <div class="yui-g" tal:condition="view/pending_updates">
-      <div class="portlet">
-        <div id="branch-pending-updates" class="pending-update">
-          <h3>Updating branch...</h3>
-          <p>
-            Launchpad is processing new changes to this branch which will be
-            available in a few minutes. Reload to see the changes.
-          </p>
-        </div>
+  <div class="yui-g" tal:condition="python: not view.show_rescan_link and view.pending_updates">
+    <div class="portlet">
+      <div id="branch-pending-updates" class="pending-update">
+        <h3>Updating branch...</h3>
+        <p>
+          Launchpad is processing new changes to this branch which will be
+          available in a few minutes. Reload to see the changes.
+        </p>
       </div>
     </div>
-  </tal:rescan>
+  </div>
 
   <div class="yui-g" tal:condition="view/show_rescan_link">
     <div class="portlet">
