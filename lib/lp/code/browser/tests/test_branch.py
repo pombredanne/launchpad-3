@@ -313,6 +313,7 @@ class TestBranchView(BrowserTestCase):
         branch = self.factory.makeAnyBranch()
         job = BranchScanJob.create(branch)
         job.job._status = JobStatus.COMPLETED
+        job.job.date_finished = UTC_NOW
         view = create_initialized_view(branch, '+index')
         result = view.show_rescan_link
         self.assertFalse(result)
@@ -645,7 +646,7 @@ class TestBranchView(BrowserTestCase):
         logout()
         with StormStatementRecorder() as recorder:
             browser.open(branch_url)
-        self.assertThat(recorder, HasQueryCount(Equals(30)))
+        self.assertThat(recorder, HasQueryCount(Equals(29)))
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):
