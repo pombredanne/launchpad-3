@@ -150,7 +150,7 @@
           Scanning this branch for changes failed.  You can manually rescan if required.
         </p>
         <p>
-          <form action="./+rescan" name="launchpadform" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
+          <form action="+rescan" name="launchpadform" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
             <input id="field.actions.rescan" class="button" type="submit"
              name="field.actions.rescan" value="Rescan" />
           </form>
