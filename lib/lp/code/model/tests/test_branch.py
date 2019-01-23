@@ -3502,6 +3502,19 @@ class TestBranchUnscan(TestCaseWithFactory):
                 getUtility(ILaunchpadCelebrities).commercial_admin):
             branch.unscan()
 
+    def test_getLatestScanJob(self):
+        branch = self.factory.makeAnyBranch()
+        with person_logged_in(branch.owner):
+            branch.unscan(rescan=True)
+        found = Store.of(branch).find(BranchJob, branch=branch)[0]
+        result = branch.getLatestScanJob()
+        self.assertEqual(found, result)
+
+    def test_getLatestScanJob_no_scans(self):
+        branch = self.factory.makeAnyBranch()
+        result = branch.getLatestScanJob()
+        self.assertIsNone(result)
+
 
 class TestWebservice(TestCaseWithFactory):
     """Tests for the webservice."""

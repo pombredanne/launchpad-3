@@ -167,7 +167,7 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.interfaces import IMasterStore, IStore
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -1297,7 +1297,6 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
 
     def getLatestScanJob(self):
         from lp.code.model.branchjob import BranchJob, BranchScanJob
-        from lp.services.database.interfaces import IStore
         latest_job = IStore(BranchJob).find(
             BranchJob,
             branch=self,
