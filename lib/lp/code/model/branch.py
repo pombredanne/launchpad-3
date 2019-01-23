@@ -1302,9 +1302,10 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         from lp.code.model.branchjob import BranchJob, BranchScanJob
         latest_job = IStore(BranchJob).find(
             BranchJob,
-            branch=self,
+            BranchJob.branch == self,
+            Job.date_finished != None,
             job_type=BranchScanJob.class_job_type).order_by(
-                BranchJob.id).first()
+                Desc(Job.date_finished)).first()
         return latest_job
 
     def requestMirror(self):
