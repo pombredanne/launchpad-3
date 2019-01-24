@@ -2686,6 +2686,12 @@ class ViewArchive(AuthorizationBase):
         if user.in_admin or user.in_commercial_admin:
             return True
 
+        # Registry experts are allowed to view public but disabled archives
+        # (since they are allowed to disable archives).
+        if (not self.obj.private and not self.obj.enabled and
+                user.in_registry_experts):
+            return True
+
         # Owners can view the PPA.
         if user.inTeam(self.obj.owner):
             return True
@@ -2746,6 +2752,21 @@ class EditArchive(AuthorizationBase):
             return user.isOwner(self.obj.distribution) or user.in_admin
 
         return user.isOwner(self.obj) or user.in_admin
+
+
+class DeleteArchive(EditArchive):
+    """Restrict archive deletion operations.
+
+    People who can edit an archive can delete it.  In addition, registry
+    experts can delete non-main archives, as a spam control mechanism.
+    """
+    permission = 'launchpad.Delete'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        return (
+            super(DeleteArchive, self).checkAuthenticated(user) or
+            (not self.obj.is_main and user.in_registry_experts))
 
 
 class AppendArchive(AuthorizationBase):
