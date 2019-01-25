@@ -124,6 +124,8 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         self.assertTrue(ws_das.chroot_url.endswith(expected_file))
         ws_das.removeChroot()
         self.assertIsNone(ws_das.chroot_url)
+        ws_das.setChroot(data='abcxyz', sha1sum=sha1)
+        self.assertTrue(ws_das.chroot_url.endswith(expected_file))
 
     def test_setChroot_removeChroot_pocket(self):
         das = self.factory.makeDistroArchSeries()
@@ -154,6 +156,17 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
             release_chroot_url, ws_das.getChrootURL(pocket='Updates'))
         self.assertEqual(
             release_chroot_url, ws_das.getChrootURL(pocket='Proposed'))
+        ws_das.setChroot(data='123456', sha1sum=sha1_2, pocket='Updates')
+        updates_chroot = das.getChroot(pocket=PackagePublishingPocket.UPDATES)
+        self.assertEqual(sha1_2, updates_chroot.content.sha1)
+        with person_logged_in(user):
+            updates_chroot_url = updates_chroot.http_url
+        self.assertEqual(
+            release_chroot_url, ws_das.getChrootURL(pocket='Release'))
+        self.assertEqual(
+            updates_chroot_url, ws_das.getChrootURL(pocket='Updates'))
+        self.assertEqual(
+            updates_chroot_url, ws_das.getChrootURL(pocket='Proposed'))
 
     def test_setChrootFromBuild(self):
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
