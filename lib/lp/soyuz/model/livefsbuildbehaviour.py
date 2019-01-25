@@ -1,4 +1,4 @@
-# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `LiveFSBuild`.
@@ -71,7 +71,7 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         if build.archive.private and build.livefs.owner != build.archive.owner:
             raise LiveFSBuildArchiveOwnerMismatch()
 
-        chroot = build.distro_arch_series.getChroot()
+        chroot = build.distro_arch_series.getChroot(pocket=build.pocket)
         if chroot is None:
             raise CannotBuild(
                 "Missing chroot for %s" % build.distro_arch_series.displayname)

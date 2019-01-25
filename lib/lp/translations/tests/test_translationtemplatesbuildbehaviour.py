@@ -22,6 +22,7 @@ from lp.buildmaster.tests.mock_slaves import (
     SlaveTestHelpers,
     WaitingSlave,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.librarian.utils import copy_and_close
 from lp.services.webapp import canonical_url
@@ -105,7 +106,8 @@ class TestTranslationTemplatesBuildBehaviour(
         build_request = yield behaviour.composeBuildRequest(None)
         das = behaviour.distro_arch_series
         self.assertEqual(
-            ('translation-templates', das, {}, {
+            ('translation-templates', das, PackagePublishingPocket.RELEASE, {},
+             {
                 'arch_tag': das.architecturetag,
                 'archive_private': False,
                 'branch_url': behaviour.build.branch.composePublicURL(),

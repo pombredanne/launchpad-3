@@ -1,20 +1,15 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for recording changes done to a bug."""
 
-from lazr.lifecycle.event import (
-    ObjectCreatedEvent,
-    ObjectModifiedEvent,
-    )
-from lazr.lifecycle.snapshot import Snapshot
+from lazr.lifecycle.event import ObjectCreatedEvent
 from testtools.matchers import (
     MatchesStructure,
     StartsWith,
     )
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import providedBy
 
 from lp.app.enums import InformationType
 from lp.bugs.enums import BugNotificationLevel
@@ -27,6 +22,7 @@ from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.scripts.bugnotification import construct_email_notifications
 from lp.services.librarian.browser import ProxiedLibraryFileAlias
 from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.snapshot import notify_modified
 from lp.testing import (
     api_url,
     launchpadlib_for,
@@ -100,15 +96,13 @@ class TestBugChanges(TestCaseWithFactory):
 
         :return: The value of `attribute` before modification.
         """
-        obj_before_modification = Snapshot(obj, providing=providedBy(obj))
-        if attribute == 'duplicateof':
-            obj.markAsDuplicate(new_value)
-        else:
-            setattr(obj, attribute, new_value)
-        notify(ObjectModifiedEvent(
-            obj, obj_before_modification, [attribute], self.user))
-
-        return getattr(obj_before_modification, attribute)
+        with notify_modified(
+                obj, [attribute], user=self.user) as obj_before_modification:
+            if attribute == 'duplicateof':
+                obj.markAsDuplicate(new_value)
+            else:
+                setattr(obj, attribute, new_value)
+            return getattr(obj_before_modification, attribute)
 
     def getNewNotifications(self, bug=None):
         if bug is None:
@@ -673,12 +667,9 @@ class TestBugChanges(TestCaseWithFactory):
         # log and notifications.
         bug = self.factory.makeBug()
         self.saveOldChanges(bug=bug)
-        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
-        bug.transitionToInformationType(
-            InformationType.PRIVATESECURITY, self.user)
-        notify(ObjectModifiedEvent(
-            bug, bug_before_modification, ['information_type'],
-            user=self.user))
+        with notify_modified(bug, ['information_type'], user=self.user):
+            bug.transitionToInformationType(
+                InformationType.PRIVATESECURITY, self.user)
 
         information_type_change_activity = {
             'person': self.user,
@@ -998,13 +989,9 @@ class TestBugChanges(TestCaseWithFactory):
     def test_change_bugtask_importance(self):
         # When a bugtask's importance is changed, BugActivity and
         # BugNotification get updated.
-        bug_task_before_modification = Snapshot(
-            self.bug_task, providing=providedBy(self.bug_task))
-        self.bug_task.transitionToImportance(
-            BugTaskImportance.HIGH, user=self.user)
-        notify(ObjectModifiedEvent(
-            self.bug_task, bug_task_before_modification,
-            ['importance'], user=self.user))
+        with notify_modified(self.bug_task, ['importance'], user=self.user):
+            self.bug_task.transitionToImportance(
+                BugTaskImportance.HIGH, user=self.user)
 
         # This checks the activity's attribute and target attributes.
         activity = self.bug.activity[-1]
@@ -1033,13 +1020,9 @@ class TestBugChanges(TestCaseWithFactory):
     def test_change_bugtask_status(self):
         # When a bugtask's status is changed, BugActivity and
         # BugNotification get updated.
-        bug_task_before_modification = Snapshot(
-            self.bug_task, providing=providedBy(self.bug_task))
-        self.bug_task.transitionToStatus(
-            BugTaskStatus.FIXCOMMITTED, user=self.user)
-        notify(ObjectModifiedEvent(
-            self.bug_task, bug_task_before_modification, ['status'],
-            user=self.user))
+        with notify_modified(self.bug_task, ['status'], user=self.user):
+            self.bug_task.transitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, user=self.user)
 
         expected_activity = {
             'person': self.user,
@@ -1063,16 +1046,13 @@ class TestBugChanges(TestCaseWithFactory):
     def test_target_bugtask_to_product(self):
         # When a bugtask's target is changed, BugActivity and
         # BugNotification get updated.
-        bug_task_before_modification = Snapshot(
-            self.bug_task, providing=providedBy(self.bug_task))
-
-        new_target = self.factory.makeProduct(owner=self.user)
-        target_lifecycle_subscriber = self.newSubscriber(
-            new_target, "target-lifecycle", BugNotificationLevel.LIFECYCLE)
-        self.bug_task.transitionToTarget(new_target, self.user)
-        notify(ObjectModifiedEvent(
-            self.bug_task, bug_task_before_modification,
-            ['target', 'product'], user=self.user))
+        with notify_modified(
+                self.bug_task, ['target', 'product'],
+                user=self.user) as bug_task_before_modification:
+            new_target = self.factory.makeProduct(owner=self.user)
+            target_lifecycle_subscriber = self.newSubscriber(
+                new_target, "target-lifecycle", BugNotificationLevel.LIFECYCLE)
+            self.bug_task.transitionToTarget(new_target, self.user)
 
         expected_activity = {
             'person': self.user,
@@ -1115,14 +1095,10 @@ class TestBugChanges(TestCaseWithFactory):
             owner=self.user, target=target)
         self.saveOldChanges(source_package_bug)
 
-        bug_task_before_modification = Snapshot(
-            source_package_bug_task,
-            providing=providedBy(source_package_bug_task))
-        source_package_bug_task.transitionToTarget(new_target, self.user)
-
-        notify(ObjectModifiedEvent(
-            source_package_bug_task, bug_task_before_modification,
-            ['target', 'sourcepackagename'], user=self.user))
+        with notify_modified(
+                source_package_bug_task, ['target', 'sourcepackagename'],
+                user=self.user) as bug_task_before_modification:
+            source_package_bug_task.transitionToTarget(new_target, self.user)
 
         expected_activity = {
             'person': self.user,
@@ -1221,13 +1197,8 @@ class TestBugChanges(TestCaseWithFactory):
     def test_assign_bugtask(self):
         # Assigning a bug task to someone adds entries to the bug
         # activity and notifications sets.
-        bug_task_before_modification = Snapshot(
-            self.bug_task, providing=providedBy(self.bug_task))
-
-        self.bug_task.transitionToAssignee(self.user)
-        notify(ObjectModifiedEvent(
-            self.bug_task, bug_task_before_modification,
-            ['assignee'], user=self.user))
+        with notify_modified(self.bug_task, ['assignee'], user=self.user):
+            self.bug_task.transitionToAssignee(self.user)
 
         expected_activity = {
             'person': self.user,
@@ -1257,14 +1228,8 @@ class TestBugChanges(TestCaseWithFactory):
         # bug activity and notifications sets.
 
         old_assignee = bug_task.assignee
-        bug_task_before_modification = Snapshot(
-            bug_task, providing=providedBy(bug_task))
-
-        bug_task.transitionToAssignee(None)
-
-        notify(ObjectModifiedEvent(
-            bug_task, bug_task_before_modification,
-            ['assignee'], user=self.user))
+        with notify_modified(bug_task, ['assignee'], user=self.user):
+            bug_task.transitionToAssignee(None)
 
         expected_activity = {
             'person': self.user,

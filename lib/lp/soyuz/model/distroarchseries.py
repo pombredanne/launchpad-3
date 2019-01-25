@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -47,6 +47,7 @@ from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.webapp.publisher import (
     get_raw_form_value_from_current_request,
     )
+from lp.soyuz.adapters.archivedependencies import pocket_dependencies
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
@@ -127,40 +128,64 @@ class DistroArchSeries(SQLBase):
         return (self.distroseries.nominatedarchindep is not None and
                 self.id == self.distroseries.nominatedarchindep.id)
 
-    def getPocketChroot(self):
+    def getPocketChroot(self, pocket, exact_pocket=False):
         """See `IDistroArchSeries`."""
-        pchroot = PocketChroot.selectOneBy(distroarchseries=self)
-        return pchroot
+        pockets = [pocket] if exact_pocket else pocket_dependencies[pocket]
+        pocket_chroots = {
+            pocket_chroot.pocket: pocket_chroot
+            for pocket_chroot in IStore(PocketChroot).find(
+                PocketChroot,
+                PocketChroot.distroarchseries == self,
+                PocketChroot.pocket.is_in(pockets))}
+        for pocket_dep in reversed(pockets):
+            if pocket_dep in pocket_chroots:
+                pocket_chroot = pocket_chroots[pocket_dep]
+                # We normally only return a PocketChroot row that is
+                # actually populated with a chroot, but if exact_pocket is
+                # set then we return even an unpopulated row in order to
+                # avoid constraint violations in addOrUpdateChroot.
+                if pocket_chroot.chroot is not None or exact_pocket:
+                    return pocket_chroot
+        return None
 
-    def getChroot(self, default=None):
+    def getChroot(self, default=None, pocket=None):
         """See `IDistroArchSeries`."""
-        pocket_chroot = self.getPocketChroot()
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        pocket_chroot = self.getPocketChroot(pocket)
 
         if pocket_chroot is None:
             return default
 
         return pocket_chroot.chroot
 
-    @property
-    def chroot_url(self):
+    def getChrootURL(self, pocket=None):
         """See `IDistroArchSeries`."""
-        chroot = self.getChroot()
+        chroot = self.getChroot(pocket=pocket)
         if chroot is None:
             return None
         return chroot.http_url
 
-    def addOrUpdateChroot(self, chroot):
+    @property
+    def chroot_url(self):
         """See `IDistroArchSeries`."""
-        pocket_chroot = self.getPocketChroot()
+        return self.getChrootURL()
+
+    def addOrUpdateChroot(self, chroot, pocket=None):
+        """See `IDistroArchSeries`."""
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        pocket_chroot = self.getPocketChroot(pocket, exact_pocket=True)
 
         if pocket_chroot is None:
-            return PocketChroot(distroarchseries=self, chroot=chroot)
+            return PocketChroot(
+                distroarchseries=self, pocket=pocket, chroot=chroot)
         else:
             pocket_chroot.chroot = chroot
 
         return pocket_chroot
 
-    def setChroot(self, data, sha1sum):
+    def setChroot(self, data, sha1sum, pocket=None):
         """See `IDistroArchSeries`."""
         # XXX: StevenK 2013-06-06 bug=1116954: We should not need to refetch
         # the file content from the request, since the passed in one has been
@@ -192,15 +217,16 @@ class DistroArchSeries(SQLBase):
             contentType='application/octet-stream')
         if lfa.content.sha1 != sha1sum:
             raise InvalidChrootUploaded("Chroot upload checksums do not match")
-        self.addOrUpdateChroot(lfa)
+        self.addOrUpdateChroot(lfa, pocket=pocket)
 
-    def setChrootFromBuild(self, livefsbuild, filename):
+    def setChrootFromBuild(self, livefsbuild, filename, pocket=None):
         """See `IDistroArchSeries`."""
-        self.addOrUpdateChroot(livefsbuild.getFileByName(filename))
+        self.addOrUpdateChroot(
+            livefsbuild.getFileByName(filename), pocket=pocket)
 
-    def removeChroot(self):
+    def removeChroot(self, pocket=None):
         """See `IDistroArchSeries`."""
-        self.addOrUpdateChroot(None)
+        self.addOrUpdateChroot(None, pocket=pocket)
 
     def searchBinaryPackages(self, text):
         """See `IDistroArchSeries`."""

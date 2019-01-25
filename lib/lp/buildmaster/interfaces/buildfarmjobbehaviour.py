@@ -25,6 +25,8 @@ class IBuildFarmJobBehaviour(Interface):
 
     distro_arch_series = Attribute("The `DistroArchSeries` to build against.")
 
+    pocket = Attribute("The `PackagePublishingPocket` to build against.")
+
     def setBuilder(builder, slave):
         """Sets the associated builder and slave for this instance."""
 
@@ -52,6 +54,7 @@ class IBuildFarmJobBehaviour(Interface):
         :param logger: A logger to be used to log diagnostic information.
         :return: A tuple of (
             "builder type", `DistroArchSeries` to build against,
+            `PackagePublishingPocket` to build against,
             {filename: `sendFileToSlave` arguments}, {extra build arguments}),
             or a Deferred resulting in the same.
         """

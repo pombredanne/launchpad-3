@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Classes that implement IBugTask and its related interfaces."""
@@ -30,11 +30,7 @@ from operator import (
     )
 import re
 
-from lazr.lifecycle.event import (
-    ObjectDeletedEvent,
-    ObjectModifiedEvent,
-    )
-from lazr.lifecycle.snapshot import Snapshot
+from lazr.lifecycle.event import ObjectDeletedEvent
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -143,6 +139,7 @@ from lp.services.helpers import shortlist
 from lp.services.propertycache import get_property_cache
 from lp.services.searchbuilder import any
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.snapshot import notify_modified
 from lp.services.xref.interfaces import IXRefSet
 
 
@@ -839,16 +836,13 @@ class BugTask(SQLBase):
             # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
             ):
             janitor = getUtility(ILaunchpadCelebrities).janitor
-            bugtask_before_modification = Snapshot(
-                self, providing=providedBy(self))
-            # Create a bug message explaining why the janitor auto-confirmed
-            # the bugtask.
-            msg = ("Status changed to 'Confirmed' because the bug "
-                   "affects multiple users.")
-            self.bug.newMessage(owner=janitor, content=msg)
-            self.transitionToStatus(BugTaskStatus.CONFIRMED, janitor)
-            notify(ObjectModifiedEvent(
-                self, bugtask_before_modification, ['status'], user=janitor))
+            with notify_modified(self, ['status'], user=janitor):
+                # Create a bug message explaining why the janitor
+                # auto-confirmed the bugtask.
+                msg = ("Status changed to 'Confirmed' because the bug "
+                       "affects multiple users.")
+                self.bug.newMessage(owner=janitor, content=msg)
+                self.transitionToStatus(BugTaskStatus.CONFIRMED, janitor)
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""

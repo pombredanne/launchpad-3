@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BuildFarmJobBehaviourBase."""
@@ -76,7 +76,7 @@ class FakeLibraryFileAlias:
 
 class FakeDistroArchSeries:
 
-    def getChroot(self):
+    def getChroot(self, pocket=None):
         return FakeLibraryFileAlias('chroot-fooix-bar-y86.tar.bz2')
 
 
@@ -150,7 +150,8 @@ class TestDispatchBuildToSlave(TestCase):
         slave = OkSlave()
         logger = BufferLogger()
         behaviour.composeBuildRequest = FakeMethod(
-            ('foobuild', FakeDistroArchSeries(), files,
+            ('foobuild', FakeDistroArchSeries(),
+             PackagePublishingPocket.RELEASE, files,
              {'some': 'arg', 'archives': ['http://admin:sekrit@blah/']}))
         behaviour.setBuilder(builder, slave)
         yield behaviour.dispatchBuildToSlave(logger)
