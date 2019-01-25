@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Builder behaviour for binary package builds."""
@@ -110,7 +110,7 @@ class BinaryPackageBuildBehaviour(BuildFarmJobBehaviourBase):
             "Soyuz is not yet capable of building SECURITY uploads.")
 
         # Ensure build has the needed chroot
-        chroot = build.distro_arch_series.getChroot()
+        chroot = build.distro_arch_series.getChroot(pocket=build.pocket)
         if chroot is None:
             raise CannotBuild(
                 "Missing CHROOT for %s/%s/%s" % (

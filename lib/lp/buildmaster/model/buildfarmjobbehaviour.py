@@ -27,6 +27,7 @@ from lp.buildmaster.interfaces.builder import (
     BuildDaemonError,
     CannotBuild,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.config import config
 from lp.services.helpers import filenameToContentType
 from lp.services.librarian.interfaces import ILibraryFileAliasSet
@@ -63,6 +64,13 @@ class BuildFarmJobBehaviourBase:
         else:
             return None
 
+    @property
+    def pocket(self):
+        if self.build is not None:
+            return self.build.pocket
+        else:
+            return PackagePublishingPocket.RELEASE
+
     def setBuilder(self, builder, slave):
         """The builder should be set once and not changed."""
         self._builder = builder
@@ -86,7 +94,7 @@ class BuildFarmJobBehaviourBase:
     def composeBuildRequest(self, logger):
         args = yield self.extraBuildArgs(logger=logger)
         defer.returnValue(
-            (self.builder_type, self.distro_arch_series,
+            (self.builder_type, self.distro_arch_series, self.pocket,
              self.determineFilesToSend(), args))
 
     def verifyBuildRequest(self, logger):
@@ -101,10 +109,11 @@ class BuildFarmJobBehaviourBase:
             "Preparing job %s (%s) on %s."
             % (cookie, self.build.title, self._builder.url))
 
-        builder_type, das, files, args = yield self.composeBuildRequest(logger)
+        builder_type, das, pocket, files, args = yield (
+            self.composeBuildRequest(logger))
 
         # First cache the chroot and any other files that the job needs.
-        chroot = das.getChroot()
+        chroot = das.getChroot(pocket=pocket)
         if chroot is None:
             raise CannotBuild(
                 "Unable to find a chroot for %s" % das.displayname)

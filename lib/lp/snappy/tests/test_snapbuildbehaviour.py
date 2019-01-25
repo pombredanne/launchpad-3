@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package build behaviour."""
@@ -329,8 +329,13 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         lfa = self.factory.makeLibraryFileAlias(db_only=True)
         job.build.distro_arch_series.addOrUpdateChroot(lfa)
         build_request = yield job.composeBuildRequest(None)
-        self.assertEqual(build_request[1], job.build.distro_arch_series)
-        self.assertThat(build_request[3], IsInstance(dict))
+        self.assertThat(build_request, MatchesListwise([
+            Equals('snap'),
+            Equals(job.build.distro_arch_series),
+            Equals(job.build.pocket),
+            Equals({}),
+            IsInstance(dict),
+            ]))
 
     @defer.inlineCallbacks
     def test_requestProxyToken_unconfigured(self):
@@ -593,7 +598,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         job = self.makeJob()
         build_request = yield job.composeBuildRequest(None)
         self.assertThat(
-            build_request[3]["proxy_url"], self.getProxyURLMatcher(job))
+            build_request[4]["proxy_url"], self.getProxyURLMatcher(job))
 
     @defer.inlineCallbacks
     def test_composeBuildRequest_deleted(self):
