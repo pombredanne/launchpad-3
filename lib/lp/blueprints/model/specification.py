@@ -13,10 +13,7 @@ __all__ = [
 
 import operator
 
-from lazr.lifecycle.event import (
-    ObjectCreatedEvent,
-    ObjectModifiedEvent,
-    )
+from lazr.lifecycle.event import ObjectCreatedEvent
 from lazr.lifecycle.objectdelta import ObjectDelta
 from sqlobject import (
     BoolCol,
@@ -109,6 +106,7 @@ from lp.services.propertycache import (
     get_property_cache,
     )
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.snapshot import notify_modified
 from lp.services.xref.interfaces import IXRefSet
 
 
@@ -736,13 +734,8 @@ class Specification(SQLBase, BugLinkTargetMixin, InformationTypeMixin):
                 # 'essential' changes, there's no need to create a new
                 # subscription, but we modify the existing subscription
                 # and notify the user about the change.
-                sub.essential = essential
-                # The second argument should really be a copy of sub with
-                # only the essential attribute changed, but we know
-                # that we can get away with not examining the attribute
-                # at all - it's a boolean!
-                notify(ObjectModifiedEvent(
-                        sub, sub, ['essential'], user=subscribed_by))
+                with notify_modified(sub, ['essential'], user=subscribed_by):
+                    sub.essential = essential
             return sub
         # since no previous subscription existed, create and return a new one
         sub = SpecificationSubscription(specification=self,

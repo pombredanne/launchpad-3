@@ -12,13 +12,11 @@ from datetime import (
     timedelta,
     )
 
-from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz
 from storm.locals import Store
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
-from zope.event import notify
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -34,6 +32,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.snapshot import notify_modified
 from lp.soyuz.interfaces.livefs import (
     CannotDeleteLiveFS,
     ILiveFS,
@@ -108,8 +107,8 @@ class TestLiveFS(TestCaseWithFactory):
         # date is set to UTC_NOW.
         livefs = self.factory.makeLiveFS(
             date_created=datetime(2014, 4, 25, 10, 38, 0, tzinfo=pytz.UTC))
-        notify(ObjectModifiedEvent(
-            removeSecurityProxy(livefs), livefs, [ILiveFS["name"]]))
+        with notify_modified(removeSecurityProxy(livefs), ["name"]):
+            pass
         self.assertSqlAttributeEqualsDate(
             livefs, "date_last_modified", UTC_NOW)
 

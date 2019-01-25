@@ -45,8 +45,6 @@ from subprocess import (
     Popen,
     )
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interface import (
     copy_field,
     use_template,
@@ -59,7 +57,6 @@ from lazr.restful.interfaces import (
 from zope import component
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.event import notify
 from zope.formlib import form
 from zope.formlib.form import Fields
 from zope.formlib.widget import CustomWidgetFactory
@@ -70,7 +67,6 @@ from zope.formlib.widgets import (
 from zope.interface import (
     implementer,
     Interface,
-    providedBy,
     )
 from zope.schema import (
     Bool,
@@ -141,6 +137,7 @@ from lp.services.webapp.menu import (
     Link,
     NavigationMenu,
     )
+from lp.services.webapp.snapshot import notify_modified
 
 
 class INewSpecification(Interface):
@@ -826,10 +823,8 @@ class SpecificationEditWorkItemsView(SpecificationEditView):
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
-        old_spec = Snapshot(self.context, providing=providedBy(self.context))
-        self.context.setWorkItems(data['workitems_text'])
-        notify(ObjectModifiedEvent(
-            self.context, old_spec, edited_fields=['workitems_text']))
+        with notify_modified(self.context, ['workitems_text']):
+            self.context.setWorkItems(data['workitems_text'])
         self.next_url = canonical_url(self.context)
 
 
