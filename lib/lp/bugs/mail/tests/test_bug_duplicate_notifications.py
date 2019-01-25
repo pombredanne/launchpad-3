@@ -1,18 +1,16 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for notification strings of duplicate Bugs."""
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 import transaction
 from zope.component import getUtility
-from zope.event import notify
-from zope.interface import providedBy
 
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.services.mail import stub
+from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.scripts.bugnotification import construct_email_notifications
 from lp.services.webapp.interfaces import ILaunchBag
+from lp.services.webapp.snapshot import notify_modified
 from lp.testing import TestCaseWithFactory
 from lp.testing.layers import DatabaseFunctionalLayer
 
@@ -32,9 +30,6 @@ class TestAssignmentNotification(TestCaseWithFactory):
         self.master_bug = self.factory.makeBug(target=self.product)
         self.dup_bug = self.factory.makeBug(target=self.product)
         self.master_bug_task = self.master_bug.getBugTask(self.product)
-        self.master_bug_task_before_modification = Snapshot(
-            self.master_bug_task,
-            providing=providedBy(self.master_bug_task))
         self.person_subscribed_email = 'person@example.com'
         self.person_subscribed = self.factory.makePerson(
             name='subscribed', displayname='Person',
@@ -47,14 +42,14 @@ class TestAssignmentNotification(TestCaseWithFactory):
     def test_dup_subscriber_change_notification_message(self):
         """Duplicate bug number in the reason (email footer) for
            duplicate subscribers when a master bug is modified."""
-        self.assertEqual(len(stub.test_emails), 0, 'emails in queue')
-        self.master_bug_task.transitionToStatus(
-            BugTaskStatus.CONFIRMED, self.user)
-        notify(ObjectModifiedEvent(
-            self.master_bug_task, self.master_bug_task_before_modification,
-            ['status'], user=self.user))
+        with notify_modified(self.master_bug_task, ['status'], user=self.user):
+            self.master_bug_task.transitionToStatus(
+                BugTaskStatus.CONFIRMED, self.user)
         transaction.commit()
-        self.assertEqual(len(stub.test_emails), 2, 'email not sent')
+        latest_notification = BugNotification.selectFirst(orderBy='-id')
+        notifications, omitted, messages = construct_email_notifications(
+            [latest_notification])
+        self.assertEqual(
+            len(notifications), 1, 'email notification not created')
         rationale = 'duplicate bug report (%i)' % self.dup_bug.id
-        msg = stub.test_emails[-1][2]
-        self.assertIn(rationale, msg)
+        self.assertIn(rationale, str(messages[-1]))
