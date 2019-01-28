@@ -77,7 +77,7 @@ class FakeLibraryFileAlias:
 class FakeDistroArchSeries:
 
     def getChroot(self, pocket=None):
-        return FakeLibraryFileAlias('chroot-fooix-bar-y86.tar.bz2')
+        return FakeLibraryFileAlias('chroot-fooix-bar-y86.tar.gz')
 
 
 class TestBuildFarmJobBehaviourBase(TestCaseWithFactory):
@@ -160,11 +160,11 @@ class TestDispatchBuildToSlave(TestCase):
         # files, and then to start the build.
         expected_calls = [
             ('ensurepresent',
-             'http://librarian.dev/chroot-fooix-bar-y86.tar.bz2', '', ''),
+             'http://librarian.dev/chroot-fooix-bar-y86.tar.gz', '', ''),
             ('ensurepresent', 'http://host/bar.tar', 'admin', 'sekrit'),
             ('ensurepresent', 'http://host/foo.dsc', '', ''),
             ('build', 'PACKAGEBUILD-1', 'foobuild',
-             hashlib.sha1('chroot-fooix-bar-y86.tar.bz2').hexdigest(),
+             hashlib.sha1('chroot-fooix-bar-y86.tar.gz').hexdigest(),
              ['foo.dsc', 'bar.tar'],
              {'archives': ['http://admin:sekrit@blah/'], 'some': 'arg'})]
         self.assertEqual(expected_calls, slave.call_log)

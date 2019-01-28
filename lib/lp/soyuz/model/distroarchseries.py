@@ -209,7 +209,7 @@ class DistroArchSeries(SQLBase):
         if content_sha1sum != sha1sum:
             raise InvalidChrootUploaded("Chroot upload checksums do not match")
 
-        filename = 'chroot-%s-%s-%s.tar.bz2' % (
+        filename = 'chroot-%s-%s-%s.tar.gz' % (
             self.distroseries.distribution.name, self.distroseries.name,
             self.architecturetag)
         lfa = getUtility(ILibraryFileAliasSet).create(
