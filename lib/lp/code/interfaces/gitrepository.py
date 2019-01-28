@@ -366,6 +366,9 @@ class IGitRepositoryView(IHasRecipes):
     def getCodebrowseUrlForRevision(commit):
         """The URL to the commit of the merge to the target branch"""
 
+    def getLatestScanJob():
+        """Return the last IGitRefScanJobSource for this repository"""
+
     def visibleByUser(user):
         """Can the specified user see this repository?"""
 
@@ -744,9 +747,6 @@ class IGitRepositoryEdit(IWebhookTarget):
 
         This may be helpful in cases where a previous scan crashed.
         """
-
-    def getLatestScanJob(self):
-        """Return the last IGitRefScanJobSource for this repository"""
 
     def addRule(ref_pattern, creator, position=None):
         """Add an access rule to this repository.
