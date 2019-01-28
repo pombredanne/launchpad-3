@@ -167,7 +167,10 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.interfaces import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -1294,6 +1297,16 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             job = BranchScanJob.create(self)
             job.celeryRunOnCommit()
         return (self.last_mirrored_id, old_scanned_id)
+
+    def getLatestScanJob(self):
+        from lp.code.model.branchjob import BranchJob, BranchScanJob
+        latest_job = IStore(BranchJob).find(
+            BranchJob,
+            BranchJob.branch == self,
+            Job.date_finished != None,
+            job_type=BranchScanJob.class_job_type).order_by(
+                Desc(Job.date_finished)).first()
+        return latest_job
 
     def requestMirror(self):
         """See `IBranch`."""

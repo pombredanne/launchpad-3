@@ -118,6 +118,7 @@ from lp.services.helpers import (
     english_list,
     truncate_text,
     )
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -587,6 +588,16 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
         """Only show the link if there are more than five."""
         return len(self.landing_candidates) > 5
 
+    @property
+    def show_rescan_link(self):
+        """Only show the rescan button if the latest scan has failed"""
+        scan_job = self.context.getLatestScanJob()
+        # If there are no jobs, we failed to create one for some reason,
+        # so we should allow a rescan
+        if not scan_job:
+            return True
+        return scan_job.job.status == JobStatus.FAILED
+
     @cachedproperty
     def linked_bugtasks(self):
         """Return a list of bugtasks linked to the branch."""
@@ -633,6 +644,19 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     @property
     def spec_links(self):
         return self.context.getSpecificationLinks(self.user)
+
+
+class BranchRescanView(LaunchpadEditFormView):
+
+    schema = Interface
+
+    field_names = []
+
+    @action('Rescan', name='rescan')
+    def rescan(self, action, data):
+        self.context.unscan(rescan=True)
+        self.request.response.addNotification("Branch scan scheduled")
+        self.next_url = canonical_url(self.context)
 
 
 class BranchEditFormView(LaunchpadEditFormView):
