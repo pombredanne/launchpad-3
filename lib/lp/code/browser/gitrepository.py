@@ -108,6 +108,7 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features import getFeatureFlag
 from lp.services.fields import UniqueField
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import cachedproperty
 from lp.services.webapp import (
     canonical_url,
@@ -440,6 +441,29 @@ class GitRepositoryView(InformationTypePortletMixin, LaunchpadView,
         targets = self.context.getPrecachedLandingTargets(
             self.user, only_active=True)
         return latest_proposals_for_each_branch(targets)
+
+    @property
+    def show_rescan_link(self):
+        """Only show the rescan button if the latest scan has failed"""
+        scan_job = self.context.getLatestScanJob()
+        # If there are no jobs, we failed to create one for some reason,
+        # so we should allow a rescan
+        if not scan_job:
+            return True
+        return scan_job.job.status == JobStatus.FAILED
+
+
+class GitRepositoryRescanView(LaunchpadEditFormView):
+
+    schema = Interface
+
+    field_names = []
+
+    @action('Rescan', name='rescan')
+    def rescan(self, action, data):
+        self.context.rescan()
+        self.request.response.addNotification("Repository scan scheduled")
+        self.next_url = canonical_url(self.context)
 
 
 class GitRepositoryEditFormView(LaunchpadEditFormView):
