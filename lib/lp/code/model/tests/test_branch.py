@@ -105,6 +105,7 @@ from lp.code.model.branch import (
 from lp.code.model.branchjob import (
     BranchJob,
     BranchJobType,
+    BranchScanJob,
     ReclaimBranchSpaceJob,
     )
 from lp.code.model.branchmergeproposal import BranchMergeProposal
@@ -3501,6 +3502,45 @@ class TestBranchUnscan(TestCaseWithFactory):
         with person_logged_in(
                 getUtility(ILaunchpadCelebrities).commercial_admin):
             branch.unscan()
+
+    def test_getLatestScanJob(self):
+        complete_date = datetime.now(UTC)
+
+        branch = self.factory.makeAnyBranch()
+        failed_job = BranchScanJob.create(branch)
+        failed_job.job._status = JobStatus.FAILED
+        failed_job.job.date_finished = complete_date
+        completed_job = BranchScanJob.create(branch)
+        completed_job.job._status = JobStatus.COMPLETED
+        completed_job.job.date_finished = complete_date - timedelta(seconds=10)
+        result = branch.getLatestScanJob()
+        self.assertEqual(failed_job.id, result.id)
+
+    def test_getLatestScanJob_no_scans(self):
+        branch = self.factory.makeAnyBranch()
+        result = branch.getLatestScanJob()
+        self.assertIsNone(result)
+
+    def test_getLatestScanJob_correct_branch(self):
+        complete_date = datetime.now(UTC)
+
+        main_branch = self.factory.makeAnyBranch()
+        second_branch = self.factory.makeAnyBranch()
+        failed_job = BranchScanJob.create(second_branch)
+        failed_job.job._status = JobStatus.FAILED
+        failed_job.job.date_finished = complete_date
+        completed_job = BranchScanJob.create(main_branch)
+        completed_job.job._status = JobStatus.COMPLETED
+        completed_job.job.date_finished = complete_date - timedelta(seconds=10)
+        result = main_branch.getLatestScanJob()
+        self.assertEqual(completed_job.id, result.id)
+
+    def test_getLatestScanJob_without_completion_date(self):
+        branch = self.factory.makeAnyBranch()
+        failed_job = BranchScanJob.create(branch)
+        failed_job.job._status = JobStatus.FAILED
+        result = branch.getLatestScanJob()
+        self.assertFalse(result)
 
 
 class TestWebservice(TestCaseWithFactory):

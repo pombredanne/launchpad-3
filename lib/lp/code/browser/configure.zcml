@@ -437,6 +437,12 @@
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
+        name="+rescan"
+        for="lp.code.interfaces.branch.IBranch"
+        class="lp.code.browser.branch.BranchRescanView"
+        permission="launchpad.Edit"
+        template="../templates/branch-rescan.pt"/>
+    <browser:page
         name="+edit-import"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.codeimport.CodeImportEditView"
