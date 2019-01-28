@@ -1304,7 +1304,7 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             BranchJob,
             BranchJob.branch == self,
             Job.date_finished != None,
-            job_type=BranchScanJob.class_job_type).order_by(
+            BranchJob.job_type == BranchScanJob.class_job_type).order_by(
                 Desc(Job.date_finished)).first()
         return latest_job
 
