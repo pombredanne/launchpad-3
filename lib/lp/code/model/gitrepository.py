@@ -752,7 +752,6 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         latest_job = IStore(GitJob).find(
             GitJob,
             GitJob.repository == self,
-            Job.date_finished != None,
             GitJob.job_type == GitRefScanJob.class_job_type).order_by(
                 Desc(Job.date_finished)).first()
         return latest_job

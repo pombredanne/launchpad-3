@@ -2234,7 +2234,8 @@ class TestGitRepositoryRescan(TestCaseWithFactory):
         failed_job = GitRefScanJob.create(repository)
         failed_job.job._status = JobStatus.FAILED
         result = repository.getLatestScanJob()
-        self.assertFalse(result)
+        self.assertTrue(result)
+        self.assertIsNone(result.job.date_finished)
 
 
 class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
