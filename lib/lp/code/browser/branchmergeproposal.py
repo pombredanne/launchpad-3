@@ -101,6 +101,7 @@ from lp.services.comments.interfaces.conversation import (
     )
 from lp.services.config import config
 from lp.services.features import getFeatureFlag
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.propertycache import (
     cachedproperty,
@@ -797,6 +798,14 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 'launchpad.Edit', self.context),
             })
 
+    @property
+    def show_rescan_link(self):
+        latest_incremental, latest_preview = self.context.getLatestScanJobs()
+        if not latest_incremental or not latest_preview:
+            return True
+        return (latest_incremental.job.status == JobStatus.FAILED and
+                latest_preview.job.status == JobStatus.FAILED)
+
 
 @delegate_to(ICodeReviewVoteReference)
 class DecoratedCodeReviewVoteReference:
@@ -920,6 +929,19 @@ class BranchMergeProposalVoteView(LaunchpadView):
         # Now sort so the most recently created is first.
         return sorted(reviews, key=operator.attrgetter('date_created'),
                       reverse=True)
+
+
+class BranchMergeProposalRescanView(LaunchpadEditFormView):
+
+    schema = Interface
+
+    field_names = []
+
+    @action('Rescan', name='rescan')
+    def rescan(self, action, data):
+        self.context.rescan()
+        self.request.response.addNotification("Diff scan scheduled")
+        self.next_url = canonical_url(self.context)
 
 
 class IReviewRequest(Interface):
