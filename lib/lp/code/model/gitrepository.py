@@ -746,6 +746,16 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         """
         return set()
 
+    def getLatestScanJob(self):
+        """See `IGitRepository`."""
+        from lp.code.model.gitjob import GitJob, GitRefScanJob
+        latest_job = IStore(GitJob).find(
+            GitJob,
+            GitJob.repository == self,
+            GitJob.job_type == GitRefScanJob.class_job_type).order_by(
+                Desc(Job.date_finished)).first()
+        return latest_job
+
     def visibleByUser(self, user):
         """See `IGitRepository`."""
         if self.information_type in PUBLIC_INFORMATION_TYPES:

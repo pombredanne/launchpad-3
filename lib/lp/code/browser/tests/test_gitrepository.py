@@ -50,6 +50,7 @@ from lp.code.enums import (
     GitRepositoryType,
     )
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.gitjob import GitRefScanJob
 from lp.code.tests.helpers import GitHostingFixture
 from lp.registry.enums import (
     BranchSharingPolicy,
@@ -63,6 +64,7 @@ from lp.registry.interfaces.person import (
 from lp.services.beautifulsoup import BeautifulSoup
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -421,6 +423,39 @@ class TestGitRepositoryView(BrowserTestCase):
         with StormStatementRecorder() as recorder:
             view.render()
         self.assertThat(recorder, HasQueryCount(Equals(6)))
+
+    def test_show_rescan_link(self):
+        repository = self.factory.makeGitRepository()
+        job = GitRefScanJob.create(repository)
+        job.job._status = JobStatus.FAILED
+        view = create_initialized_view(repository, '+index')
+        result = view.show_rescan_link
+        self.assertTrue(result)
+
+    def test_show_rescan_link_no_failures(self):
+        repository = self.factory.makeGitRepository()
+        job = GitRefScanJob.create(repository)
+        job.job._status = JobStatus.COMPLETED
+        job.job.date_finished = UTC_NOW
+        view = create_initialized_view(repository, '+index')
+        result = view.show_rescan_link
+        self.assertFalse(result)
+
+    def test_show_rescan_link_no_scan_jobs(self):
+        repository = self.factory.makeGitRepository()
+        view = create_initialized_view(repository, '+index')
+        result = view.show_rescan_link
+        self.assertTrue(result)
+
+    def test_show_rescan_link_latest_didnt_fail(self):
+        repository = self.factory.makeGitRepository()
+        job = GitRefScanJob.create(repository)
+        job.job._status = JobStatus.FAILED
+        job = GitRefScanJob.create(repository)
+        job.job._status = JobStatus.COMPLETED
+        view = create_initialized_view(repository, '+index')
+        result = view.show_rescan_link
+        self.assertTrue(result)
 
 
 class TestGitRepositoryViewPrivateArtifacts(BrowserTestCase):

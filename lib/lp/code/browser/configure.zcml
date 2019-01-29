@@ -867,6 +867,12 @@
         template="../templates/gitrepository-edit.pt"/>
     <browser:page
         for="lp.code.interfaces.gitrepository.IGitRepository"
+        class="lp.code.browser.gitrepository.GitRepositoryRescanView"
+        permission="launchpad.Edit"
+        name="+rescan"
+        template="../templates/gitrepository-rescan.pt"/>
+    <browser:page
+        for="lp.code.interfaces.gitrepository.IGitRepository"
         class="lp.code.browser.codeimport.CodeImportEditView"
         permission="launchpad.Edit"
         name="+edit-import"

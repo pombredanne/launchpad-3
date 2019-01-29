@@ -7,7 +7,10 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import email
 from functools import partial
 import hashlib
@@ -96,6 +99,7 @@ from lp.code.model.gitactivity import GitActivity
 from lp.code.model.gitjob import (
     GitJob,
     GitJobType,
+    GitRefScanJob,
     ReclaimGitRepositorySpaceJob,
     )
 from lp.code.model.gitrepository import (
@@ -2192,6 +2196,46 @@ class TestGitRepositoryRescan(TestCaseWithFactory):
             repository.rescan()
         [job] = list(job_source.iterReady())
         self.assertEqual(repository, job.repository)
+
+    def test_getLatestScanJob(self):
+        complete_date = datetime.now(pytz.UTC)
+
+        repository = self.factory.makeGitRepository()
+        failed_job = GitRefScanJob.create(repository)
+        failed_job.job._status = JobStatus.FAILED
+        failed_job.job.date_finished = complete_date
+        completed_job = GitRefScanJob.create(repository)
+        completed_job.job._status = JobStatus.COMPLETED
+        completed_job.job.date_finished = complete_date - timedelta(seconds=10)
+        result = removeSecurityProxy(repository.getLatestScanJob())
+        self.assertEqual(failed_job.job_id, result.job_id)
+
+    def test_getLatestScanJob_no_scans(self):
+        repository = self.factory.makeGitRepository()
+        result = repository.getLatestScanJob()
+        self.assertIsNone(result)
+
+    def test_getLatestScanJob_correct_branch(self):
+        complete_date = datetime.now(pytz.UTC)
+
+        main_repository = self.factory.makeGitRepository()
+        second_repository = self.factory.makeGitRepository()
+        failed_job = GitRefScanJob.create(second_repository)
+        failed_job.job._status = JobStatus.FAILED
+        failed_job.job.date_finished = complete_date
+        completed_job = GitRefScanJob.create(main_repository)
+        completed_job.job._status = JobStatus.COMPLETED
+        completed_job.job.date_finished = complete_date - timedelta(seconds=10)
+        result = removeSecurityProxy(main_repository.getLatestScanJob())
+        self.assertEqual(completed_job.job_id, result.job_id)
+
+    def test_getLatestScanJob_without_completion_date(self):
+        repository = self.factory.makeGitRepository()
+        failed_job = GitRefScanJob.create(repository)
+        failed_job.job._status = JobStatus.FAILED
+        result = repository.getLatestScanJob()
+        self.assertTrue(result)
+        self.assertIsNone(result.job.date_finished)
 
 
 class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
