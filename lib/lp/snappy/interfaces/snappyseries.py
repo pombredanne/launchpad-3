@@ -24,7 +24,6 @@ from lazr.restful.declarations import (
     exported,
     operation_for_version,
     operation_parameters,
-    operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
     )
