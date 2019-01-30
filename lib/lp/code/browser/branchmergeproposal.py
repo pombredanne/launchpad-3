@@ -800,10 +800,13 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @property
     def show_rescan_link(self):
-        latest_preview = self.context.getLatestScanJob()
-        if not latest_preview:
-            return True
-        return latest_preview.job.status == JobStatus.FAILED
+        """Only show the rescan button if the latest scan has failed"""
+        scan_job = self.context.getLatestScanJob()
+        # Having no jobs is a valid situation as there is a prune job.
+        # We don't need to allow a rescan
+        if not scan_job:
+            return False
+        return scan_job.job.status == JobStatus.FAILED
 
 
 @delegate_to(ICodeReviewVoteReference)
