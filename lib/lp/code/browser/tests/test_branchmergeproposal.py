@@ -2081,6 +2081,9 @@ class TestBranchMergeProposal(BrowserTestCase):
         self.useContext(feature_flags())
         set_feature_flag('longpoll.merge_proposals.enabled', 'enabled')
         bmp = self.factory.makeBranchMergeProposal()
+
+        from lp.code.model.branchmergeproposaljob import GenerateIncrementalDiffJob
+        GenerateIncrementalDiffJob.create(bmp, 'test1', 'test2')
         browser = self.getViewBrowser(bmp)
         self.assertIn(
             "An updated diff is being calculated and will appear "

@@ -1220,6 +1220,31 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         if return_jobs:
             return jobs
 
+    def rescan(self):
+        """See `IBranchMergeProposal`."""
+        self.scheduleDiffUpdates()
+
+    def getLatestScanJobs(self):
+        """See `IBranchMergeProposal`."""
+        from lp.code.model.branchmergeproposaljob import (
+            BranchMergeProposalJob,
+            GenerateIncrementalDiffJob,
+            UpdatePreviewDiffJob,
+            )
+        diff_type = GenerateIncrementalDiffJob.class_job_type
+        incremental_type = UpdatePreviewDiffJob.class_job_type
+        latest_incremental = IStore(BranchMergeProposalJob).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == self,
+            BranchMergeProposalJob.job_type == diff_type,
+            ).order_by(Desc(Job.date_finished)).first()
+        latest_preview = IStore(BranchMergeProposalJob).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == self,
+            BranchMergeProposalJob.job_type == incremental_type,
+            ).order_by(Desc(Job.date_finished)).first()
+        return latest_incremental, latest_preview
+
     @property
     def revision_end_date(self):
         """The cutoff date for showing revisions.
@@ -1279,32 +1304,6 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         ranges = self.getIncrementalDiffRanges()
         diffs = self.getIncrementalDiffs(ranges)
         return [range_ for range_, diff in zip(ranges, diffs) if diff is None]
-
-    def rescan(self):
-        """See `IBranchMergeProposal`."""
-        self.scheduleDiffUpdates()
-
-    def getLatestScanJobs(self):
-        """See `IBranchMergeProposal`."""
-        from lp.code.model.branchmergeproposaljob import (
-            BranchMergeProposalJob,
-            GenerateIncrementalDiffJob,
-            UpdatePreviewDiffJob,
-            )
-        diff_type = GenerateIncrementalDiffJob.class_job_type
-        incremental_type = UpdatePreviewDiffJob.class_job_type
-        latest_incremental = IStore(BranchMergeProposalJob).find(
-            BranchMergeProposalJob,
-            BranchMergeProposalJob.branch_merge_proposal == self,
-            BranchMergeProposalJob.job_type == diff_type,
-            ).order_by(Desc(Job.date_finished)).first()
-        latest_preview = IStore(BranchMergeProposalJob).find(
-            BranchMergeProposalJob,
-            BranchMergeProposalJob.branch_merge_proposal == self,
-            BranchMergeProposalJob.job_type == incremental_type,
-            ).order_by(Desc(Job.date_finished)).first()
-        return latest_incremental, latest_preview
-
 
     @staticmethod
     def preloadDataForBMPs(branch_merge_proposals, user, include_votes=True):
