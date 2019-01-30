@@ -322,7 +322,7 @@ class TestBranchView(BrowserTestCase):
         branch = self.factory.makeAnyBranch()
         view = create_initialized_view(branch, '+index')
         result = view.show_rescan_link
-        self.assertTrue(result)
+        self.assertFalse(result)
 
     def test_show_rescan_link_latest_didnt_fail(self):
         branch = self.factory.makeAnyBranch()
@@ -646,7 +646,7 @@ class TestBranchView(BrowserTestCase):
         logout()
         with StormStatementRecorder() as recorder:
             browser.open(branch_url)
-        self.assertThat(recorder, HasQueryCount(Equals(29)))
+        self.assertThat(recorder, HasQueryCount(Equals(30)))
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):
