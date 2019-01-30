@@ -1224,26 +1224,21 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         """See `IBranchMergeProposal`."""
         self.scheduleDiffUpdates()
 
-    def getLatestScanJobs(self):
+    def getLatestScanJob(self):
         """See `IBranchMergeProposal`."""
         from lp.code.model.branchmergeproposaljob import (
             BranchMergeProposalJob,
-            GenerateIncrementalDiffJob,
             UpdatePreviewDiffJob,
             )
-        diff_type = GenerateIncrementalDiffJob.class_job_type
-        incremental_type = UpdatePreviewDiffJob.class_job_type
-        latest_incremental = IStore(BranchMergeProposalJob).find(
+        diff_type = UpdatePreviewDiffJob.class_job_type
+        latest_preview = IStore(BranchMergeProposalJob).find(
             BranchMergeProposalJob,
             BranchMergeProposalJob.branch_merge_proposal == self,
             BranchMergeProposalJob.job_type == diff_type,
             ).order_by(Desc(Job.date_finished)).first()
-        latest_preview = IStore(BranchMergeProposalJob).find(
-            BranchMergeProposalJob,
-            BranchMergeProposalJob.branch_merge_proposal == self,
-            BranchMergeProposalJob.job_type == incremental_type,
-            ).order_by(Desc(Job.date_finished)).first()
-        return latest_incremental, latest_preview
+        if latest_preview is not None:
+            latest_preview = latest_preview.makeDerived()
+        return latest_preview
 
     @property
     def revision_end_date(self):

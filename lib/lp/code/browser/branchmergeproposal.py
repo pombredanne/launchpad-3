@@ -57,6 +57,7 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -800,11 +801,10 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @property
     def show_rescan_link(self):
-        latest_incremental, latest_preview = self.context.getLatestScanJobs()
-        if not latest_incremental or not latest_preview:
+        latest_preview = self.context.getLatestScanJob()
+        if not latest_preview:
             return True
-        return (latest_incremental.job.status == JobStatus.FAILED and
-                latest_preview.job.status == JobStatus.FAILED)
+        return latest_preview.job.status == JobStatus.FAILED
 
 
 @delegate_to(ICodeReviewVoteReference)
