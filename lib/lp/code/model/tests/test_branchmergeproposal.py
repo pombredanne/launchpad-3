@@ -2222,6 +2222,41 @@ class TestScheduleDiffUpdates(TestCaseWithFactory):
         [job] = self.job_source.iterReady()
         self.assertIsInstance(job, UpdatePreviewDiffJob)
 
+    def test_getLatestScanJob(self):
+        complete_date = datetime.now(UTC)
+
+        bmp = self.factory.makeBranchMergeProposal()
+        failed_job = removeSecurityProxy(bmp.getLatestScanJob())
+        failed_job.job._status = JobStatus.FAILED
+        failed_job.job.date_finished = complete_date
+        completed_job = UpdatePreviewDiffJob.create(bmp)
+        completed_job.job._status = JobStatus.COMPLETED
+        completed_job.job.date_finished = complete_date - timedelta(seconds=10)
+        result = removeSecurityProxy(bmp.getLatestScanJob())
+        self.assertEqual(failed_job.job_id, result.job_id)
+
+    def test_getLatestScanJob_correct_branch(self):
+        complete_date = datetime.now(UTC)
+
+        main_bmp = self.factory.makeBranchMergeProposal()
+        second_bmp = self.factory.makeBranchMergeProposal()
+        failed_job = removeSecurityProxy(second_bmp.getLatestScanJob())
+        failed_job.job._status = JobStatus.FAILED
+        failed_job.job.date_finished = complete_date
+        completed_job = removeSecurityProxy(main_bmp.getLatestScanJob())
+        completed_job.job._status = JobStatus.COMPLETED
+        completed_job.job.date_finished = complete_date - timedelta(seconds=10)
+        result = removeSecurityProxy(main_bmp.getLatestScanJob())
+        self.assertEqual(completed_job.job_id, result.job_id)
+
+    def test_getLatestScanJob_without_completion_date(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        failed_job = removeSecurityProxy(bmp.getLatestScanJob())
+        failed_job.job._status = JobStatus.FAILED
+        result = bmp.getLatestScanJob()
+        self.assertTrue(result)
+        self.assertIsNone(result.job.date_finished)
+
 
 class TestNextPreviewDiffJob(TestCaseWithFactory):
 
