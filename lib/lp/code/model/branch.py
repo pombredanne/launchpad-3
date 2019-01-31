@@ -1303,7 +1303,6 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
         latest_job = IStore(BranchJob).find(
             BranchJob,
             BranchJob.branch == self,
-            Job.date_finished != None,
             BranchJob.job_type == BranchScanJob.class_job_type).order_by(
                 Desc(Job.date_finished)).first()
         return latest_job

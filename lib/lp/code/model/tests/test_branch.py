@@ -3540,7 +3540,8 @@ class TestBranchUnscan(TestCaseWithFactory):
         failed_job = BranchScanJob.create(branch)
         failed_job.job._status = JobStatus.FAILED
         result = branch.getLatestScanJob()
-        self.assertFalse(result)
+        self.assertTrue(result)
+        self.assertIsNone(result.job.date_finished)
 
 
 class TestWebservice(TestCaseWithFactory):
