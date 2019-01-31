@@ -1,16 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for linking bugs and questions."""
 
 __metaclass__ = type
 __all__ = []
-
-
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
-from zope.event import notify
-from zope.interface import providedBy
 
 from lp import _
 from lp.app.browser.launchpadform import (
@@ -22,6 +16,7 @@ from lp.bugs.interfaces.bug import (
     IBug,
     )
 from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.snapshot import notify_modified
 
 
 class QuestionMakeBugView(LaunchpadFormView):
@@ -63,16 +58,13 @@ class QuestionMakeBugView(LaunchpadFormView):
         """Create a Bug from a Question."""
         question = self.context
 
-        unmodifed_question = Snapshot(
-            question, providing=providedBy(question))
-        params = CreateBugParams(
-            owner=self.user, title=data['title'], comment=data['description'])
-        bug = question.target.createBug(params)
-        question.linkBug(bug, user=self.user)
-        bug.subscribe(question.owner, self.user)
-        bug_added_event = ObjectModifiedEvent(
-            question, unmodifed_question, ['bugs'])
-        notify(bug_added_event)
+        with notify_modified(question, ['bugs']):
+            params = CreateBugParams(
+                owner=self.user, title=data['title'],
+                comment=data['description'])
+            bug = question.target.createBug(params)
+            question.linkBug(bug, user=self.user)
+            bug.subscribe(question.owner, self.user)
         self.request.response.addNotification(
             _('Thank you! Bug #$bugid created.', mapping={'bugid': bug.id}))
         self.next_url = canonical_url(bug)
