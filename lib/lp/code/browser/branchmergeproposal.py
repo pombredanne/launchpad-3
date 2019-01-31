@@ -930,14 +930,14 @@ class BranchMergeProposalVoteView(LaunchpadView):
                       reverse=True)
 
 
-class BranchMergeProposalRescanView(LaunchpadEditFormView):
+class BranchMergeProposalScheduleUpdateDiffView(LaunchpadEditFormView):
 
     schema = Interface
 
     field_names = []
 
-    @action('Rescan', name='rescan')
-    def rescan(self, action, data):
+    @action('Update', name='update')
+    def update(self, action, data):
         self.context.scheduleDiffUpdates()
         self.request.response.addNotification("Diff update scheduled")
         self.next_url = canonical_url(self.context)

@@ -198,12 +198,12 @@
       <div class="pending-update" id="diff-pending-update">
         <h3>Diff calculation failed</h3>
         <p>
-          Calculating the branch diff failed. You can manually rescan if required.
+          Calculating the branch diff failed. You can manually schedule an update if required.
         </p>
         <p>
-          <form action="+rescan" name="launchpadform" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
-            <input id="field.actions.rescan" class="button" type="submit"
-             name="field.actions.rescan" value="Rescan" />
+          <form action="+update-diff" name="launchpadform" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
+            <input id="field.actions.update" class="button" type="submit"
+             name="field.actions.update" value="Update diff" />
           </form>
         </p>
       </div>
