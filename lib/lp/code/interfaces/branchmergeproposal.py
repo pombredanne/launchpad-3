@@ -517,9 +517,7 @@ class IBranchMergeProposalView(Interface):
         """
 
     def getLatestDiffUpdateJob():
-        """Return the latest IGenerateIncrementalDiffJob and
-        IUpdatePreviewDiffJob for this repository.
-        """
+        """Return the latest IUpdatePreviewDiffJob for this MP."""
 
 
 class IBranchMergeProposalEdit(Interface):
