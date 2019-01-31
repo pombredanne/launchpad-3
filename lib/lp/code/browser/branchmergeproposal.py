@@ -799,14 +799,13 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             })
 
     @property
-    def show_rescan_link(self):
-        """Only show the rescan button if the latest scan has failed"""
-        scan_job = self.context.getLatestScanJob()
+    def show_diff_update_link(self):
+        latest_preview = self.context.getLatestDiffUpdateJob()
         # Having no jobs is a valid situation as there is a prune job.
         # We don't need to allow a rescan
-        if not scan_job:
+        if not latest_preview:
             return False
-        return scan_job.job.status == JobStatus.FAILED
+        return latest_preview.job.status == JobStatus.FAILED
 
 
 @delegate_to(ICodeReviewVoteReference)
@@ -933,16 +932,16 @@ class BranchMergeProposalVoteView(LaunchpadView):
                       reverse=True)
 
 
-class BranchMergeProposalRescanView(LaunchpadEditFormView):
+class BranchMergeProposalScheduleUpdateDiffView(LaunchpadEditFormView):
 
     schema = Interface
 
     field_names = []
 
-    @action('Rescan', name='rescan')
-    def rescan(self, action, data):
-        self.context.rescan()
-        self.request.response.addNotification("Diff scan scheduled")
+    @action('Update', name='update')
+    def update(self, action, data):
+        self.context.scheduleDiffUpdates()
+        self.request.response.addNotification("Diff update scheduled")
         self.next_url = canonical_url(self.context)
 
 

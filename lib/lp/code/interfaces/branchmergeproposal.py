@@ -516,10 +516,8 @@ class IBranchMergeProposalView(Interface):
         :param previewdiff_id: The ID of the target `PreviewDiff`.
         """
 
-    def getLatestScanJob():
-        """Return the latest IGenerateIncrementalDiffJob and
-        IUpdatePreviewDiffJob for this repository.
-        """
+    def getLatestDiffUpdateJob():
+        """Return the latest IUpdatePreviewDiffJob for this MP."""
 
 
 class IBranchMergeProposalEdit(Interface):
@@ -665,14 +663,6 @@ class IBranchMergeProposalEdit(Interface):
             (defaults to the current commit message).
         :param description: The description for the new proposal (defaults to
             the current description).
-        """
-
-    @export_write_operation()
-    @operation_for_version("devel")
-    def rescan():
-        """Force a rescan of the diff for this branch merge proposal.
-
-        Thus may be helpful in cases where a previous scan has crashed.
         """
 
     @operation_parameters(

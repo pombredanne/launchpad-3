@@ -259,11 +259,11 @@
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
-        name="+rescan"
+        name="+update-diff"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
-        class="lp.code.browser.branchmergeproposal.BranchMergeProposalRescanView"
+        class="lp.code.browser.branchmergeproposal.BranchMergeProposalScheduleUpdateDiffView"
         permission="launchpad.Edit"
-        template="../templates/branchmergeproposal-rescan.pt"/>
+        template="../templates/branchmergeproposal-update-diff.pt"/>
     <browser:page
         name="+linkbug"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"

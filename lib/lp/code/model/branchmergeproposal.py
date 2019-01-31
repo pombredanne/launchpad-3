@@ -1220,11 +1220,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         if return_jobs:
             return jobs
 
-    def rescan(self):
-        """See `IBranchMergeProposal`."""
-        self.scheduleDiffUpdates()
-
-    def getLatestScanJob(self):
+    def getLatestDiffUpdateJob(self):
         """See `IBranchMergeProposal`."""
         from lp.code.model.branchmergeproposaljob import (
             BranchMergeProposalJob,
