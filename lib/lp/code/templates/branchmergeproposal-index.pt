@@ -182,7 +182,7 @@
   </div>
 
   <div id="diff-area">
-    <div class="yui-g" tal:condition="python: not view.show_rescan_link and view.pending_diff">
+    <div class="yui-g" tal:condition="python: not view.show_diff_update_link and view.pending_diff">
       <div class="pending-update" id="diff-pending-update">
         <h3>Updating diff...</h3>
         <p tal:condition="not: features/longpoll.merge_proposals.enabled">
@@ -194,7 +194,7 @@
         </p>
       </div>
     </div>
-    <div class="yui-g" tal:condition="view/show_rescan_link">
+    <div class="yui-g" tal:condition="view/show_diff_update_link">
       <div class="pending-update" id="diff-pending-update">
         <h3>Diff calculation failed</h3>
         <p>

@@ -799,8 +799,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             })
 
     @property
-    def show_rescan_link(self):
-        latest_preview = self.context.getLatestScanJob()
+    def show_diff_update_link(self):
+        latest_preview = self.context.getLatestDiffUpdateJob()
         if not latest_preview:
             return True
         return latest_preview.job.status == JobStatus.FAILED

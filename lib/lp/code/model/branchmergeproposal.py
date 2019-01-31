@@ -1224,7 +1224,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         """See `IBranchMergeProposal`."""
         self.scheduleDiffUpdates()
 
-    def getLatestScanJob(self):
+    def getLatestDiffUpdateJob(self):
         """See `IBranchMergeProposal`."""
         from lp.code.model.branchmergeproposaljob import (
             BranchMergeProposalJob,

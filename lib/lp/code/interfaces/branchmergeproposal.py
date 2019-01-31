@@ -516,7 +516,7 @@ class IBranchMergeProposalView(Interface):
         :param previewdiff_id: The ID of the target `PreviewDiff`.
         """
 
-    def getLatestScanJob():
+    def getLatestDiffUpdateJob():
         """Return the latest IGenerateIncrementalDiffJob and
         IUpdatePreviewDiffJob for this repository.
         """
