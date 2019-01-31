@@ -938,7 +938,7 @@ class BranchMergeProposalRescanView(LaunchpadEditFormView):
 
     @action('Rescan', name='rescan')
     def rescan(self, action, data):
-        self.context.rescan()
+        self.context.scheduleDiffUpdates()
         self.request.response.addNotification("Diff update scheduled")
         self.next_url = canonical_url(self.context)
 

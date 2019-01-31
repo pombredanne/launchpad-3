@@ -665,14 +665,6 @@ class IBranchMergeProposalEdit(Interface):
             the current description).
         """
 
-    @export_write_operation()
-    @operation_for_version("devel")
-    def rescan():
-        """Force a rescan of the diff for this branch merge proposal.
-
-        Thus may be helpful in cases where a previous scan has crashed.
-        """
-
     @operation_parameters(
         reviewer=Reference(
             title=_("A reviewer."), schema=IPerson),
