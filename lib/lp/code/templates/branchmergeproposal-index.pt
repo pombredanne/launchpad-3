@@ -182,7 +182,7 @@
   </div>
 
   <div id="diff-area">
-    <div class="yui-g" tal:condition="view/pending_diff">
+    <div class="yui-g" tal:condition="python: not view.show_diff_update_link and view.pending_diff">
       <div class="pending-update" id="diff-pending-update">
         <h3>Updating diff...</h3>
         <p tal:condition="not: features/longpoll.merge_proposals.enabled">
@@ -191,6 +191,20 @@
         </p>
         <p tal:condition="features/longpoll.merge_proposals.enabled">
           An updated diff is being calculated and will appear automatically when ready.
+        </p>
+      </div>
+    </div>
+    <div class="yui-g" tal:condition="view/show_diff_update_link">
+      <div class="pending-update" id="diff-pending-update">
+        <h3>Diff calculation failed</h3>
+        <p>
+          Calculating the branch diff failed. You can manually schedule an update if required.
+        </p>
+        <p>
+          <form action="+update-diff" name="launchpadform" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
+            <input id="field.actions.update" class="button" type="submit"
+             name="field.actions.update" value="Update diff" />
+          </form>
         </p>
       </div>
     </div>
