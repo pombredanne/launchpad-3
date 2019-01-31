@@ -197,14 +197,6 @@ class SnappySeriesSet:
             raise NoSuchSnappySeries(name)
         return snappy_series
 
-    def getByDistroSeries(self, distro_series):
-        """See `ISnappySeriesSet`."""
-        rows = IStore(SnappySeries).find(
-            SnappySeries,
-            SnappyDistroSeries.snappy_series_id == SnappySeries.id,
-            SnappyDistroSeries.distro_series == distro_series)
-        return rows.order_by(Desc(SnappySeries.name))
-
     def getAll(self):
         """See `ISnappySeriesSet`."""
         return IStore(SnappySeries).find(SnappySeries).order_by(
@@ -214,15 +206,6 @@ class SnappySeriesSet:
 @implementer(ISnappyDistroSeriesSet)
 class SnappyDistroSeriesSet:
     """See `ISnappyDistroSeriesSet`."""
-
-    def getByDistroSeries(self, distro_series):
-        """See `ISnappyDistroSeriesSet`."""
-        store = IStore(SnappyDistroSeries)
-        rows = store.using(SnappyDistroSeries, SnappySeries).find(
-            SnappyDistroSeries,
-            SnappyDistroSeries.snappy_series_id == SnappySeries.id,
-            SnappyDistroSeries.distro_series == distro_series)
-        return rows.order_by(Desc(SnappySeries.name))
 
     def getByBothSeries(self, snappy_series, distro_series):
         """See `ISnappyDistroSeriesSet`."""
