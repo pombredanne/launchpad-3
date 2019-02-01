@@ -4,23 +4,17 @@ Linked Bug Status Changed Notification
 While a bug is linked to a question , its subscribers will be notified
 of changes to the bug status:
 
-    >>> from zope.event import notify
-    >>> from zope.interface import providedBy
-    >>> from lazr.lifecycle.event import ObjectModifiedEvent
-    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from lp.answers.tests.test_question_notifications import (
     ...     pop_questionemailjobs)
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.services.webapp.snapshot import notify_modified
 
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bugtask = get_bugtask_linked_to_question()
-    >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
-    >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED, no_priv)
-    >>> ignore = pop_questionemailjobs()
-    >>> notify(ObjectModifiedEvent(
-    ...     bugtask, original_bugtask, ['status'],
-    ...     user=no_priv))
+    >>> with notify_modified(bugtask, ['status'], user=no_priv):
+    ...     bugtask.transitionToStatus(BugTaskStatus.CONFIRMED, no_priv)
+    ...     ignore = pop_questionemailjobs()
 
     >>> notifications = pop_questionemailjobs()
     >>> len(notifications)
@@ -50,11 +44,9 @@ Only a change in status triggers a notification.
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> ignored = login_person(sample_person)
-    >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
-    >>> bugtask.transitionToAssignee(sample_person)
-    >>> notify(ObjectModifiedEvent(
-    ...     bugtask, original_bugtask, ['assignee', 'dateassigned'],
-    ...     user=sample_person))
+    >>> with notify_modified(
+    ...         bugtask, ['assignee', 'dateassigned'], user=sample_person):
+    ...     bugtask.transitionToAssignee(sample_person)
 
     >>> len(pop_questionemailjobs())
     0

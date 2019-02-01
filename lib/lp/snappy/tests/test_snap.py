@@ -18,7 +18,6 @@ from urlparse import urlsplit
 
 from fixtures import MockPatch
 import iso8601
-from lazr.lifecycle.event import ObjectModifiedEvent
 from pymacaroons import Macaroon
 import pytz
 import responses
@@ -38,7 +37,6 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
-from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -85,6 +83,7 @@ from lp.services.propertycache import clear_property_cache
 from lp.services.timeout import default_timeout
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.snapshot import notify_modified
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     CannotFetchSnapcraftYaml,
@@ -191,8 +190,8 @@ class TestSnap(TestCaseWithFactory):
         # When a Snap receives an object modified event, the last modified
         # date is set to UTC_NOW.
         snap = self.factory.makeSnap(date_created=ONE_DAY_AGO)
-        notify(ObjectModifiedEvent(
-            removeSecurityProxy(snap), snap, [ISnap["name"]]))
+        with notify_modified(removeSecurityProxy(snap), ["name"]):
+            pass
         self.assertSqlAttributeEqualsDate(snap, "date_last_modified", UTC_NOW)
 
     def makeBuildableDistroArchSeries(self, **kwargs):

@@ -24,7 +24,6 @@ from lazr.restful.declarations import (
     exported,
     operation_for_version,
     operation_parameters,
-    operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
     )
@@ -179,15 +178,6 @@ class ISnappySeriesSet(ISnappySeriesSetEdit):
         :raises NoSuchSnappySeries: if no snappy series exists with this name.
         """
 
-    @operation_parameters(
-        distro_series=Reference(
-            IDistroSeries, title=_("Distro series"), required=True))
-    @operation_returns_collection_of(ISnappySeries)
-    @export_read_operation()
-    @operation_for_version("devel")
-    def getByDistroSeries(distro_series):
-        """Return all `ISnappySeries` usable with this `IDistroSeries`."""
-
     @collection_default_content()
     def getAll():
         """Return all `ISnappySeries`."""
@@ -195,9 +185,6 @@ class ISnappySeriesSet(ISnappySeriesSetEdit):
 
 class ISnappyDistroSeriesSet(Interface):
     """Interface representing the set of snappy/distro series links."""
-
-    def getByDistroSeries(distro_series):
-        """Return all `SnappyDistroSeries` for this `IDistroSeries`."""
 
     def getByBothSeries(snappy_series, distro_series):
         """Return a `SnappyDistroSeries` for this pair of series, or None."""

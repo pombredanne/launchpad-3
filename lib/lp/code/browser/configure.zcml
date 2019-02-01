@@ -259,6 +259,12 @@
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
+        name="+update-diff"
+        for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
+        class="lp.code.browser.branchmergeproposal.BranchMergeProposalScheduleUpdateDiffView"
+        permission="launchpad.Edit"
+        template="../templates/branchmergeproposal-update-diff.pt"/>
+    <browser:page
         name="+linkbug"
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         class="lp.bugs.browser.buglinktarget.BugLinkView"
