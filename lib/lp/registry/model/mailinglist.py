@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -18,11 +18,7 @@ import operator
 from socket import getfqdn
 from string import Template
 
-from lazr.lifecycle.event import (
-    ObjectCreatedEvent,
-    ObjectModifiedEvent,
-    )
-from lazr.lifecycle.snapshot import Snapshot
+from lazr.lifecycle.event import ObjectCreatedEvent
 from sqlobject import (
     ForeignKey,
     StringCol,
@@ -39,10 +35,7 @@ from zope.component import (
     queryAdapter,
     )
 from zope.event import notify
-from zope.interface import (
-    implementer,
-    providedBy,
-    )
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp import _
@@ -90,6 +83,7 @@ from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.messages.model.message import Message
 from lp.services.privacy.interfaces import IObjectPrivacy
 from lp.services.propertycache import cachedproperty
+from lp.services.webapp.snapshot import notify_modified
 
 
 EMAIL_ADDRESS_STATUSES = (
@@ -314,12 +308,8 @@ class MailingList(SQLBase):
         if self.date_activated is not None:
             return
 
-        old_mailinglist = Snapshot(self, providing=providedBy(self))
-        self.date_activated = UTC_NOW
-        notify(ObjectModifiedEvent(
-                self,
-                object_before_modification=old_mailinglist,
-                edited_fields=['date_activated']))
+        with notify_modified(self, ['date_activated']):
+            self.date_activated = UTC_NOW
 
     def deactivate(self):
         """See `IMailingList`."""

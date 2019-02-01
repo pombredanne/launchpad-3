@@ -592,10 +592,10 @@ class BranchView(InformationTypePortletMixin, FeedsMixin, BranchMirrorMixin,
     def show_rescan_link(self):
         """Only show the rescan button if the latest scan has failed"""
         scan_job = self.context.getLatestScanJob()
-        # If there are no jobs, we failed to create one for some reason,
-        # so we should allow a rescan
+        # Having no jobs is a valid situation as there is a prune job.
+        # We don't need to allow a rescan
         if not scan_job:
-            return True
+            return False
         return scan_job.job.status == JobStatus.FAILED
 
     @cachedproperty

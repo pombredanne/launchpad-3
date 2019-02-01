@@ -1,7 +1,6 @@
 # Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from lazr.lifecycle.event import ObjectModifiedEvent
 from storm.store import Store
 from testtools.matchers import (
     Equals,
@@ -10,7 +9,6 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
-from zope.event import notify
 from zope.security.checker import getChecker
 from zope.security.proxy import removeSecurityProxy
 
@@ -18,10 +16,8 @@ from lp.app.enums import InformationType
 from lp.registry.enums import BranchSharingPolicy
 from lp.services.database.interfaces import IStore
 from lp.services.webapp.authorization import check_permission
-from lp.services.webhooks.interfaces import (
-    IWebhook,
-    IWebhookSet,
-    )
+from lp.services.webapp.snapshot import notify_modified
+from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import (
     WebhookJob,
     WebhookSet,
@@ -50,8 +46,8 @@ class TestWebhook(TestCaseWithFactory):
         transaction.commit()
         with admin_logged_in():
             old_mtime = webhook.date_last_modified
-        notify(ObjectModifiedEvent(
-            webhook, webhook, [IWebhook["delivery_url"]]))
+        with notify_modified(webhook, ['delivery_url']):
+            pass
         with admin_logged_in():
             self.assertThat(
                 webhook.date_last_modified,

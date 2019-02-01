@@ -801,8 +801,10 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     @property
     def show_diff_update_link(self):
         latest_preview = self.context.getLatestDiffUpdateJob()
+        # Having no jobs is a valid situation as there is a prune job.
+        # We don't need to allow a rescan
         if not latest_preview:
-            return True
+            return False
         return latest_preview.job.status == JobStatus.FAILED
 
 

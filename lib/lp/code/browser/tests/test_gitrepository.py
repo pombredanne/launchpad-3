@@ -445,7 +445,7 @@ class TestGitRepositoryView(BrowserTestCase):
         repository = self.factory.makeGitRepository()
         view = create_initialized_view(repository, '+index')
         result = view.show_rescan_link
-        self.assertTrue(result)
+        self.assertFalse(result)
 
     def test_show_rescan_link_latest_didnt_fail(self):
         repository = self.factory.makeGitRepository()

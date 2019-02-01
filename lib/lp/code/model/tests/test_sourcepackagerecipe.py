@@ -14,13 +14,11 @@ from datetime import (
 import textwrap
 
 from bzrlib.plugins.builder.recipe import ForbiddenInstructionError
-from lazr.lifecycle.event import ObjectModifiedEvent
 from pytz import UTC
 from storm.locals import Store
 from testtools.matchers import Equals
 import transaction
 from zope.component import getUtility
-from zope.event import notify
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -63,6 +61,7 @@ from lp.services.database.constants import UTC_NOW
 from lp.services.propertycache import clear_property_cache
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.publisher import canonical_url
+from lp.services.webapp.snapshot import notify_modified
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import (
     ArchiveDisabled,
@@ -1161,9 +1160,8 @@ class RecipeDateLastModified(TestCaseWithFactory):
     def test_modifiedevent_sets_date_last_updated(self):
         # We publish an object modified event to check that the last modified
         # date is set to UTC_NOW.
-        field = ISourcePackageRecipe['name']
-        notify(ObjectModifiedEvent(
-            removeSecurityProxy(self.recipe), self.recipe, [field]))
+        with notify_modified(removeSecurityProxy(self.recipe), ['name']):
+            pass
         self.assertSqlAttributeEqualsDate(
             self.recipe, 'date_last_modified', UTC_NOW)
 
