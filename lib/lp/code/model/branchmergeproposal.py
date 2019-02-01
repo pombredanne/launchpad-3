@@ -1231,6 +1231,7 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
             BranchMergeProposalJob,
             BranchMergeProposalJob.branch_merge_proposal == self,
             BranchMergeProposalJob.job_type == diff_type,
+            BranchMergeProposalJob.job == Job.id,
             ).order_by(Desc(Job.date_finished)).first()
         if latest_preview is not None:
             latest_preview = latest_preview.makeDerived()
