@@ -1,4 +1,4 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the GNU
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the GNU
 # Affero General Public License version 3 (see the file LICENSE).
 
 """Snappy vocabularies."""
@@ -6,12 +6,20 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildableSnappyDistroSeriesVocabulary',
     'SnapDistroArchSeriesVocabulary',
+    'SnappyDistroSeriesVocabulary',
     'SnappySeriesVocabulary',
+    'SnapStoreChannel',
+    'SnapStoreChannelVocabulary',
     ]
 
 from lazr.restful.interfaces import IJSONPublishable
-from storm.locals import Desc
+from storm.expr import LeftJoin
+from storm.locals import (
+    Desc,
+    Not,
+    )
 from zope.component import getUtility
 from zope.interface import implementer
 from zope.schema.vocabulary import (
@@ -24,6 +32,10 @@ from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.series import ACTIVE_STATUSES
 from lp.services.database.interfaces import IStore
+from lp.services.database.stormexpr import (
+    IsDistinctFrom,
+    NullsFirst,
+    )
 from lp.services.webapp.vocabulary import StormVocabularyBase
 from lp.snappy.interfaces.snap import ISnap
 from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
@@ -62,26 +74,35 @@ class SnappyDistroSeriesVocabulary(StormVocabularyBase):
     """A vocabulary for searching snappy/distro series combinations."""
 
     _table = SnappyDistroSeries
-    _clauses = [
-        SnappyDistroSeries.snappy_series_id == SnappySeries.id,
-        SnappyDistroSeries.distro_series_id == DistroSeries.id,
-        DistroSeries.distributionID == Distribution.id,
+    _origin = [
+        SnappyDistroSeries,
+        LeftJoin(
+            SnappySeries,
+            SnappyDistroSeries.snappy_series_id == SnappySeries.id),
+        LeftJoin(
+            DistroSeries,
+            SnappyDistroSeries.distro_series_id == DistroSeries.id),
+        LeftJoin(Distribution, DistroSeries.distributionID == Distribution.id),
         ]
+    _clauses = []
 
     @property
     def _entries(self):
-        tables = [SnappyDistroSeries, SnappySeries, DistroSeries, Distribution]
-        entries = IStore(self._table).using(*tables).find(
+        entries = IStore(self._table).using(*self._origin).find(
             self._table, *self._clauses)
         return entries.order_by(
-            Distribution.display_name, Desc(DistroSeries.date_created),
+            NullsFirst(Distribution.display_name),
+            Desc(DistroSeries.date_created),
             Desc(SnappySeries.date_created))
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
-        token = "%s/%s/%s" % (
-            obj.distro_series.distribution.name, obj.distro_series.name,
-            obj.snappy_series.name)
+        if obj.distro_series is None:
+            token = obj.snappy_series.name
+        else:
+            token = "%s/%s/%s" % (
+                obj.distro_series.distribution.name, obj.distro_series.name,
+                obj.snappy_series.name)
         return SimpleTerm(obj, token, obj.title)
 
     def __contains__(self, value):
@@ -96,15 +117,20 @@ class SnappyDistroSeriesVocabulary(StormVocabularyBase):
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        try:
-            distribution_name, distro_series_name, snappy_series_name = (
-                token.split("/", 2))
-        except ValueError:
-            raise LookupError(token)
-        entry = IStore(self._table).find(
+        if "/" in token:
+            try:
+                distribution_name, distro_series_name, snappy_series_name = (
+                    token.split("/", 2))
+            except ValueError:
+                raise LookupError(token)
+        else:
+            distribution_name = None
+            distro_series_name = None
+            snappy_series_name = token
+        entry = IStore(self._table).using(*self._origin).find(
             self._table,
-            Distribution.name == distribution_name,
-            DistroSeries.name == distro_series_name,
+            Not(IsDistinctFrom(Distribution.name, distribution_name)),
+            Not(IsDistinctFrom(DistroSeries.name, distro_series_name)),
             SnappySeries.name == snappy_series_name,
             *self._clauses).one()
         if entry is None:
