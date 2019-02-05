@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -286,6 +286,7 @@ from lp.services.webapp.sorting import sorted_version_numbers
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.snappy.interfaces.basesnap import IBaseSnapSet
 from lp.snappy.interfaces.snap import ISnapSet
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.interfaces.snappyseries import ISnappySeriesSet
@@ -4842,6 +4843,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             snappy_series.usable_distro_series = [preferred_distro_series]
         IStore(snappy_series).flush()
         return snappy_series
+
+    def makeBaseSnap(self, registrant=None, name=None, display_name=None,
+                     distro_series=None, channels=None, date_created=DEFAULT):
+        """Make a new BaseSnap."""
+        if registrant is None:
+            registrant = self.makePerson()
+        if name is None:
+            name = self.getUniqueString(u"base-snap-name")
+        if display_name is None:
+            display_name = SPACE.join(
+                word.capitalize() for word in name.split('-'))
+        if distro_series is None:
+            distro_series = self.makeDistroSeries()
+        if channels is None:
+            channels = {u"snapcraft": u"stable"}
+        return getUtility(IBaseSnapSet).new(
+            registrant, name, display_name, distro_series, channels,
+            date_created=date_created)
 
 
 # Some factory methods return simple Python types. We don't add

@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -196,6 +196,10 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
+    )
+from lp.snappy.interfaces.basesnap import (
+    IBaseSnap,
+    IBaseSnapSet,
     )
 from lp.snappy.interfaces.snap import (
     ISnap,
@@ -3362,3 +3366,16 @@ class EditSnappySeries(EditByRegistryExpertsOrAdmins):
 
 class EditSnappySeriesSet(EditByRegistryExpertsOrAdmins):
     usedfor = ISnappySeriesSet
+
+
+class ViewBaseSnap(AnonymousAuthorization):
+    """Anyone can view an `IBaseSnap`."""
+    usedfor = IBaseSnap
+
+
+class EditBaseSnap(EditByRegistryExpertsOrAdmins):
+    usedfor = IBaseSnap
+
+
+class EditBaseSnapSet(EditByRegistryExpertsOrAdmins):
+    usedfor = IBaseSnapSet
