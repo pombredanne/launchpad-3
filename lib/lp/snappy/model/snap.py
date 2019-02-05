@@ -93,6 +93,8 @@ from lp.registry.interfaces.role import (
     IHasOwner,
     IPersonRoles,
     )
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -129,6 +131,10 @@ from lp.services.webapp.publisher import canonical_url
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
 from lp.snappy.adapters.buildarch import determine_architectures_to_build
+from lp.snappy.interfaces.basesnap import (
+    IBaseSnapSet,
+    NoSuchBaseSnap,
+    )
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     BadSnapSource,
@@ -258,7 +264,7 @@ class Snap(Storm, WebhookTargetMixin):
     owner_id = Int(name='owner', allow_none=False)
     owner = Reference(owner_id, 'Person.id')
 
-    distro_series_id = Int(name='distro_series', allow_none=False)
+    distro_series_id = Int(name='distro_series', allow_none=True)
     distro_series = Reference(distro_series_id, 'DistroSeries.id')
 
     name = Unicode(name='name', allow_none=False)
@@ -393,13 +399,21 @@ class Snap(Storm, WebhookTargetMixin):
     @property
     def available_processors(self):
         """See `ISnap`."""
-        processors = Store.of(self).find(
-            Processor,
-            Processor.id == DistroArchSeries.processor_id,
-            DistroArchSeries.id.is_in(
+        clauses = [Processor.id == DistroArchSeries.processor_id]
+        if self.distro_series is not None:
+            clauses.append(DistroArchSeries.id.is_in(
                 self.distro_series.enabled_architectures.get_select_expr(
                     DistroArchSeries.id)))
-        return processors.config(distinct=True)
+        else:
+            # We don't know the series until we've looked at snapcraft.yaml
+            # to dispatch a build, so enabled architectures for any active
+            # series will do.
+            clauses.extend([
+                DistroArchSeries.enabled == True,
+                DistroArchSeries.distroseriesID == DistroSeries.id,
+                DistroSeries.status.is_in(ACTIVE_STATUSES),
+                ])
+        return Store.of(self).find(Processor, *clauses).config(distinct=True)
 
     def _getProcessors(self):
         return list(Store.of(self).find(
@@ -445,16 +459,32 @@ class Snap(Storm, WebhookTargetMixin):
 
     processors = property(_getProcessors, setProcessors)
 
-    def getAllowedArchitectures(self):
+    def _isBuildableArchitectureAllowed(self, das):
+        """Check whether we may build for a buildable `DistroArchSeries`.
+
+        The caller is assumed to have already checked that a suitable chroot
+        is available (either directly or via
+        `DistroSeries.buildable_architectures`).
+        """
+        return (
+            das.enabled
+            and das.processor in self.processors
+            and (
+                das.processor.supports_virtualized
+                or not self.require_virtualized))
+
+    def _isArchitectureAllowed(self, das, pocket):
+        return (
+            das.getChroot(pocket=pocket) is not None
+            and self._isBuildableArchitectureAllowed(das))
+
+    def getAllowedArchitectures(self, distro_series=None):
         """See `ISnap`."""
+        if distro_series is None:
+            distro_series = self.distro_series
         return [
-            das for das in self.distro_series.buildable_architectures
-            if (
-                das.enabled
-                and das.processor in self.processors
-                and (
-                    das.processor.supports_virtualized
-                    or not self.require_virtualized))]
+            das for das in distro_series.buildable_architectures
+            if self._isBuildableArchitectureAllowed(das)]
 
     @property
     def store_distro_series(self):
@@ -559,8 +589,8 @@ class Snap(Storm, WebhookTargetMixin):
                      channels=None, build_request=None):
         """See `ISnap`."""
         self._checkRequestBuild(requester, archive)
-        if distro_arch_series not in self.getAllowedArchitectures():
-            raise SnapBuildDisallowedArchitecture(distro_arch_series)
+        if not self._isArchitectureAllowed(distro_arch_series, pocket):
+            raise SnapBuildDisallowedArchitecture(distro_arch_series, pocket)
 
         pending = IStore(self).find(
             SnapBuild,
@@ -591,6 +621,10 @@ class Snap(Storm, WebhookTargetMixin):
                              allow_failures=False, fetch_snapcraft_yaml=True,
                              build_request=None, logger=None):
         """See `ISnap`."""
+        if not fetch_snapcraft_yaml and self.distro_series is None:
+            # Slightly misleading, but requestAutoBuilds is the only place
+            # this can happen right now and it raises a more specific error.
+            raise CannotRequestAutoBuilds("distro_series")
         try:
             if fetch_snapcraft_yaml:
                 try:
@@ -606,12 +640,38 @@ class Snap(Storm, WebhookTargetMixin):
                     snapcraft_data = {}
             else:
                 snapcraft_data = {}
+
+            # Find a suitable base snap.
+            base_snap_set = getUtility(IBaseSnapSet)
+            if "base" in snapcraft_data:
+                base_snap_name = snapcraft_data["base"]
+                if isinstance(base_snap_name, bytes):
+                    base_snap_name = base_snap_name.decode("UTF-8")
+                base_snap = base_snap_set.getByName(base_snap_name)
+            else:
+                base_snap = base_snap_set.getDefault()
+
+            # Combine the base snap with other configuration to find a
+            # suitable distro series and suitable channels.
+            distro_series = self.distro_series
+            if base_snap is not None:
+                if distro_series is None:
+                    distro_series = base_snap.distro_series
+                new_channels = dict(base_snap.channels)
+                if channels is not None:
+                    new_channels.update(channels)
+                channels = new_channels
+            elif distro_series is None:
+                # A base snap is mandatory if there's no configured distro
+                # series.
+                raise NoSuchBaseSnap(snapcraft_data.get("base", "<default>"))
+
             # Sort by Processor.id for determinism.  This is chosen to be
             # the same order as in BinaryPackageBuildSet.createForSource, to
             # minimise confusion.
             supported_arches = OrderedDict(
                 (das.architecturetag, das) for das in sorted(
-                    self.getAllowedArchitectures(),
+                    self.getAllowedArchitectures(distro_series),
                     key=attrgetter("processor.id")))
             architectures_to_build = determine_architectures_to_build(
                 snapcraft_data, supported_arches.keys())
@@ -652,6 +712,11 @@ class Snap(Storm, WebhookTargetMixin):
             raise CannotRequestAutoBuilds("auto_build_archive")
         if self.auto_build_pocket is None:
             raise CannotRequestAutoBuilds("auto_build_pocket")
+        if self.distro_series is None:
+            raise IncompatibleArguments(
+                "Cannot use requestAutoBuilds for a snap package without "
+                "distro_series being set.  Consider using requestBuilds "
+                "instead.")
         self.is_stale = False
         if logger is not None:
             logger.debug(

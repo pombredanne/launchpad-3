@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap package interfaces."""
@@ -153,10 +153,10 @@ class SnapBuildArchiveOwnerMismatch(Forbidden):
 class SnapBuildDisallowedArchitecture(Exception):
     """A build was requested for a disallowed architecture."""
 
-    def __init__(self, das):
+    def __init__(self, das, pocket):
         super(SnapBuildDisallowedArchitecture, self).__init__(
-            "This snap package is not allowed to build for %s." %
-            das.displayname)
+            "This snap package is not allowed to build for %s/%s." %
+            (das.distroseries.getSuite(pocket), das.architecturetag))
 
 
 @error_status(httplib.UNAUTHORIZED)
@@ -453,6 +453,8 @@ class ISnapView(Interface):
         :param build_request: The `ISnapBuildRequest` job being processed,
             if any.
         :param logger: An optional logger.
+        :raises CannotRequestAutoBuilds: if fetch_snapcraft_yaml is False
+            and self.distro_series is not set.
         :return: A sequence of `ISnapBuild` instances.
         """
 
@@ -547,6 +549,10 @@ class ISnapEdit(IWebhookTarget):
                           logger=None):
         """Create and return automatic builds for this snap package.
 
+        This webservice API method is deprecated.  It is normally better to
+        use the `requestBuilds` method instead, which can make dispatching
+        decisions based on the contents of snapcraft.yaml.
+
         :param allow_failures: If True, log exceptions other than "already
             pending" from individual build requests; if False, raise them to
             the caller.
@@ -557,6 +563,7 @@ class ISnapEdit(IWebhookTarget):
         :param logger: An optional logger.
         :raises CannotRequestAutoBuilds: if no auto_build_archive or
             auto_build_pocket is set.
+        :raises IncompatibleArguments: if no distro_series is set.
         :return: A sequence of `ISnapBuild` instances.
         """
 
@@ -632,9 +639,11 @@ class ISnapEditableAttributes(IHasOwner):
         description=_("The owner of this snap package.")))
 
     distro_series = exported(Reference(
-        IDistroSeries, title=_("Distro Series"), required=True, readonly=False,
+        IDistroSeries, title=_("Distro Series"),
+        required=False, readonly=False,
         description=_(
-            "The series for which the snap package should be built.")))
+            "The series for which the snap package should be built.  If not "
+            "set, Launchpad will guess at an appropriate series.")))
 
     name = exported(TextLine(
         title=_("Name"), required=True, readonly=False,
