@@ -319,13 +319,10 @@ milestone and the new one are notified.
 
     >>> from lp.bugs.model.bugnotification import (
     ...     BugNotification)
-    >>> from zope.event import notify
-    >>> from zope.interface import providedBy
-    >>> from lazr.lifecycle.event import ObjectModifiedEvent
-    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.services.webapp.snapshot import notify_modified
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> firefox_trunk = firefox.getSeries('trunk')
     >>> [milestone_one] = [milestone
@@ -350,14 +347,8 @@ subscribed to milestone 1.0, and David is subscribed to milestone 2.0.
 We change the milestone for the task from 1.0 to 2.0, and fire the
 change event.
 
-    >>> bugtask_before_modification = Snapshot(
-    ...     bug_task, providing=providedBy(bug_task))
-    >>> bug_task.milestone = milestone_two
-    >>> notify(
-    ...     ObjectModifiedEvent(
-    ...         object=bug_task,
-    ...         object_before_modification=bugtask_before_modification,
-    ...         edited_fields=['milestone']))
+    >>> with notify_modified(bug_task, ['milestone']):
+    ...     bug_task.milestone = milestone_two
 
 A new bug notification is created, and both Celso and David are in the
 list of recipients.

@@ -34,6 +34,7 @@ from lp.code.bzr import (
     RepositoryFormat,
     )
 from lp.code.enums import BranchType
+from lp.code.model.branchjob import BranchScanJob
 from lp.code.tests.helpers import BranchHostingFixture
 from lp.registry.enums import BranchSharingPolicy
 from lp.registry.interfaces.accesspolicy import IAccessPolicySource
@@ -43,6 +44,7 @@ from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
 from lp.services.helpers import truncate_text
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.servers import LaunchpadTestRequest
 from lp.testing import (
@@ -298,6 +300,39 @@ class TestBranchView(BrowserTestCase):
         self.assertEqual(
             '<a href="+recipes">2 recipes</a> using this branch.',
             view.recipes_link)
+
+    def test_show_rescan_link(self):
+        branch = self.factory.makeAnyBranch()
+        job = BranchScanJob.create(branch)
+        job.job._status = JobStatus.FAILED
+        view = create_initialized_view(branch, '+index')
+        result = view.show_rescan_link
+        self.assertTrue(result)
+
+    def test_show_rescan_link_no_failures(self):
+        branch = self.factory.makeAnyBranch()
+        job = BranchScanJob.create(branch)
+        job.job._status = JobStatus.COMPLETED
+        job.job.date_finished = UTC_NOW
+        view = create_initialized_view(branch, '+index')
+        result = view.show_rescan_link
+        self.assertFalse(result)
+
+    def test_show_rescan_link_no_scan_jobs(self):
+        branch = self.factory.makeAnyBranch()
+        view = create_initialized_view(branch, '+index')
+        result = view.show_rescan_link
+        self.assertFalse(result)
+
+    def test_show_rescan_link_latest_didnt_fail(self):
+        branch = self.factory.makeAnyBranch()
+        job = BranchScanJob.create(branch)
+        job.job._status = JobStatus.FAILED
+        job = BranchScanJob.create(branch)
+        job.job._status = JobStatus.COMPLETED
+        view = create_initialized_view(branch, '+index')
+        result = view.show_rescan_link
+        self.assertTrue(result)
 
     def _addBugLinks(self, branch):
         for status in BugTaskStatus.items:
@@ -611,7 +646,7 @@ class TestBranchView(BrowserTestCase):
         logout()
         with StormStatementRecorder() as recorder:
             browser.open(branch_url)
-        self.assertThat(recorder, HasQueryCount(Equals(28)))
+        self.assertThat(recorder, HasQueryCount(Equals(30)))
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):

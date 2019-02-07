@@ -750,12 +750,6 @@ class SnapEditView(BaseSnapEditView, EnableProcessorsMixin):
     @property
     def initial_values(self):
         initial_values = {}
-        if self.context.store_series is None:
-            # XXX cjwatson 2016-04-26: Remove this case once all existing
-            # Snaps have had a store_series backfilled.
-            sds_set = getUtility(ISnappyDistroSeriesSet)
-            initial_values['store_distro_series'] = sds_set.getByDistroSeries(
-                self.context.distro_series).first()
         if self.context.git_ref is not None:
             initial_values['vcs'] = VCSType.GIT
         else:

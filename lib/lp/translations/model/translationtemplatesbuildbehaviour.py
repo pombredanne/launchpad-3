@@ -57,8 +57,7 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
 
     @property
     def archive(self):
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        return ubuntu.main_archive
+        return self.distro_arch_series.main_archive
 
     @property
     def distro_arch_series(self):

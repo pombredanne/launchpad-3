@@ -140,11 +140,16 @@ class DistroArchSeries(SQLBase):
                 PocketChroot,
                 PocketChroot.distroarchseries == self,
                 PocketChroot.pocket.is_in(pockets),
-                PocketChroot.image_type == image_type,
-                PocketChroot.chroot != None)}
+                PocketChroot.image_type == image_type)}
         for pocket_dep in reversed(pockets):
             if pocket_dep in pocket_chroots:
-                return pocket_chroots[pocket_dep]
+                pocket_chroot = pocket_chroots[pocket_dep]
+                # We normally only return a PocketChroot row that is
+                # actually populated with a chroot, but if exact_pocket is
+                # set then we return even an unpopulated row in order to
+                # avoid constraint violations in addOrUpdateChroot.
+                if pocket_chroot.chroot is not None or exact_pocket:
+                    return pocket_chroot
         return None
 
     def getChroot(self, default=None, pocket=None, image_type=None):

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Create and extract tarballs."""
@@ -33,19 +33,22 @@ def _check_tar_retcode(retcode):
         raise TarError(retcode)
 
 
-def create_tarball(directory, tarball_name):
+def create_tarball(directory, tarball_name, filenames=None):
     """Create a tarball of `directory` called `tarball_name`.
 
     This creates a tarball of `directory` from its parent directory. This
     means that when untarred, it will create a new directory with the same
-    name as `directory`.
+    name as `directory`. If `filenames` is not None, then the tarball will
+    be limited to that list of directory entries under `directory`.
 
     Basically, this is the standard way of making tarballs.
     """
     if not os.path.isdir(directory):
         raise NotADirectory(directory)
+    if filenames is None:
+        filenames = ['.']
     retcode = subprocess.call(
-        ['tar', '-C', directory, '-czf', tarball_name, '.'])
+        ['tar', '-C', directory, '-czf', tarball_name] + filenames)
     _check_tar_retcode(retcode)
 
 

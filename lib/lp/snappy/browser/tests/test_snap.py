@@ -667,27 +667,6 @@ class TestSnapEditView(BaseTestSnapView):
             self.snappyseries = self.factory.makeSnappySeries(
                 usable_distro_series=[self.distroseries])
 
-    def test_initial_store_series(self):
-        # The initial store_series is the newest that is usable for the
-        # selected distroseries.
-        development = self.factory.makeUbuntuDistroSeries(
-            version="14.10", status=SeriesStatus.DEVELOPMENT)
-        experimental = self.factory.makeUbuntuDistroSeries(
-            version="15.04", status=SeriesStatus.EXPERIMENTAL)
-        with admin_logged_in():
-            self.factory.makeSnappySeries(
-                usable_distro_series=[development, experimental])
-            newest = self.factory.makeSnappySeries(
-                usable_distro_series=[development])
-            self.factory.makeSnappySeries(usable_distro_series=[experimental])
-        snap = self.factory.makeSnap(distroseries=development)
-        with person_logged_in(self.person):
-            view = create_initialized_view(snap, "+edit")
-        self.assertThat(
-            view.initial_values["store_distro_series"],
-            MatchesStructure.byEquality(
-                snappy_series=newest, distro_series=development))
-
     def test_edit_snap(self):
         old_series = self.factory.makeUbuntuDistroSeries()
         old_branch = self.factory.makeAnyBranch()
@@ -808,8 +787,8 @@ class TestSnapEditView(BaseTestSnapView):
             "Source:\n%s\nEdit snap package" % new_ref.display_name,
             MatchesTagText(content, "source"))
 
-    def setUpDistroSeries(self):
-        """Set up a distroseries with some available processors."""
+    def setUpSeries(self):
+        """Set up {distro,snappy}series with some available processors."""
         distroseries = self.factory.makeUbuntuDistroSeries()
         processor_names = ["386", "amd64", "hppa"]
         for name in processor_names:
@@ -818,8 +797,9 @@ class TestSnapEditView(BaseTestSnapView):
                 distroseries=distroseries, architecturetag=name,
                 processor=processor)
         with admin_logged_in():
-            self.factory.makeSnappySeries(usable_distro_series=[distroseries])
-        return distroseries
+            snappyseries = self.factory.makeSnappySeries(
+                usable_distro_series=[distroseries])
+        return distroseries, snappyseries
 
     def assertSnapProcessors(self, snap, names):
         self.assertContentEqual(
@@ -835,10 +815,10 @@ class TestSnapEditView(BaseTestSnapView):
         self.assertThat(processors_control.controls, MatchesSetwise(*matchers))
 
     def test_display_processors(self):
-        distroseries = self.setUpDistroSeries()
+        distroseries, snappyseries = self.setUpSeries()
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=distroseries)
+            distroseries=distroseries, store_series=snappyseries)
         browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
         processors = browser.getControl(name="field.processors")
         self.assertContentEqual(
@@ -847,10 +827,10 @@ class TestSnapEditView(BaseTestSnapView):
         self.assertContentEqual(["386", "amd64", "hppa"], processors.options)
 
     def test_edit_processors(self):
-        distroseries = self.setUpDistroSeries()
+        distroseries, snappyseries = self.setUpSeries()
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=distroseries)
+            distroseries=distroseries, store_series=snappyseries)
         self.assertSnapProcessors(snap, ["386", "amd64", "hppa"])
         browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
         processors = browser.getControl(name="field.processors")
@@ -871,10 +851,10 @@ class TestSnapEditView(BaseTestSnapView):
         proc_amd64 = getUtility(IProcessorSet).getByName("amd64")
         proc_armel = self.factory.makeProcessor(
             name="armel", restricted=True, build_by_default=False)
-        distroseries = self.setUpDistroSeries()
+        distroseries, snappyseries = self.setUpSeries()
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=distroseries)
+            distroseries=distroseries, store_series=snappyseries)
         snap.setProcessors([proc_386, proc_amd64, proc_armel])
         browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
         processors = browser.getControl(name="field.processors")
@@ -887,7 +867,7 @@ class TestSnapEditView(BaseTestSnapView):
     def test_edit_processors_restricted(self):
         # A restricted processor is shown disabled in the UI and cannot be
         # enabled.
-        distroseries = self.setUpDistroSeries()
+        distroseries, snappyseries = self.setUpSeries()
         proc_armhf = self.factory.makeProcessor(
             name="armhf", restricted=True, build_by_default=False)
         self.factory.makeDistroArchSeries(
@@ -895,7 +875,7 @@ class TestSnapEditView(BaseTestSnapView):
             processor=proc_armhf)
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=distroseries)
+            distroseries=distroseries, store_series=snappyseries)
         self.assertSnapProcessors(snap, ["386", "amd64", "hppa"])
         browser = self.getViewBrowser(snap, view_name="+edit", user=snap.owner)
         processors = browser.getControl(name="field.processors")
@@ -921,13 +901,13 @@ class TestSnapEditView(BaseTestSnapView):
         proc_amd64 = getUtility(IProcessorSet).getByName("amd64")
         proc_armhf = self.factory.makeProcessor(
             name="armhf", restricted=True, build_by_default=False)
-        distroseries = self.setUpDistroSeries()
+        distroseries, snappyseries = self.setUpSeries()
         self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag="armhf",
             processor=proc_armhf)
         snap = self.factory.makeSnap(
             registrant=self.person, owner=self.person,
-            distroseries=distroseries)
+            distroseries=distroseries, store_series=snappyseries)
         snap.setProcessors([proc_386, proc_amd64, proc_armhf])
         self.assertSnapProcessors(snap, ["386", "amd64", "armhf"])
         browser = self.getUserBrowser(

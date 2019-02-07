@@ -7,7 +7,10 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import email
 from functools import partial
 import hashlib
@@ -96,6 +99,7 @@ from lp.code.model.gitactivity import GitActivity
 from lp.code.model.gitjob import (
     GitJob,
     GitJobType,
+    GitRefScanJob,
     ReclaimGitRepositorySpaceJob,
     )
 from lp.code.model.gitrepository import (
@@ -265,7 +269,7 @@ class TestGitRepository(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=requester, can_push=True, can_create=True)
 
-        results = repository.findRuleGrantsByGrantee(requester)
+        results = repository.findRuleGrantsByGrantee(member)
         self.assertEqual([grant], list(results))
 
     def test_findRuleGrantsByGrantee_team_in_team(self):
@@ -356,6 +360,117 @@ class TestGitRepository(TestCaseWithFactory):
 
         results = repository.findRuleGrantsByGrantee(requester)
         self.assertEqual([owner_grant], list(results))
+
+    def test_findRuleGrantsByGrantee_ref_pattern(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+        [ref] = self.factory.makeGitRefs(repository=repository)
+
+        exact_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=ref.path, grantee=requester)
+        self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=requester)
+
+        results = repository.findRuleGrantsByGrantee(
+            requester, ref_pattern=ref.path)
+        self.assertEqual([exact_grant], list(results))
+
+    def test_findRuleGrantsByGrantee_exclude_transitive_person(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(rule=rule, grantee=requester)
+
+        results = repository.findRuleGrantsByGrantee(
+            requester, include_transitive=False)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_exclude_transitive_team(self):
+        team = self.factory.makeTeam()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=team))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(rule=rule, grantee=team)
+
+        results = repository.findRuleGrantsByGrantee(
+            team, include_transitive=False)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_exclude_transitive_member_of_team(self):
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[member])
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=team))
+
+        rule = self.factory.makeGitRule(repository)
+        self.factory.makeGitRuleGrant(rule=rule, grantee=team)
+
+        results = repository.findRuleGrantsByGrantee(
+            member, include_transitive=False)
+        self.assertEqual([], list(results))
+
+    def test_findRuleGrantsByGrantee_no_owner_grant(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+
+        rule = self.factory.makeGitRule(repository=repository)
+        self.factory.makeGitRuleGrant(rule=rule)
+
+        results = repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER)
+        self.assertEqual([], list(results))
+
+    def test_findRuleGrantsByGrantee_owner_grant(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+
+        rule = self.factory.makeGitRule(repository=repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER)
+        self.factory.makeGitRuleGrant(rule=rule)
+
+        results = repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_owner_ref_pattern(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+        [ref] = self.factory.makeGitRefs(repository=repository)
+
+        exact_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=ref.path,
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+        self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+
+        results = ref.repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER, ref_pattern=ref.path)
+        self.assertEqual([exact_grant], list(results))
+
+    def test_findRuleGrantsByGrantee_owner_exclude_transitive(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+        [ref] = self.factory.makeGitRefs(repository=repository)
+
+        exact_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=ref.path,
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+        self.factory.makeGitRuleGrant(
+            rule=exact_grant.rule, grantee=repository.owner)
+        wildcard_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+
+        results = ref.repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER, include_transitive=False)
+        self.assertItemsEqual([exact_grant, wildcard_grant], list(results))
+        results = ref.repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER, ref_pattern=ref.path,
+            include_transitive=False)
+        self.assertEqual([exact_grant], list(results))
 
 
 class TestGitIdentityMixin(TestCaseWithFactory):
@@ -2081,6 +2196,46 @@ class TestGitRepositoryRescan(TestCaseWithFactory):
             repository.rescan()
         [job] = list(job_source.iterReady())
         self.assertEqual(repository, job.repository)
+
+    def test_getLatestScanJob(self):
+        complete_date = datetime.now(pytz.UTC)
+
+        repository = self.factory.makeGitRepository()
+        failed_job = GitRefScanJob.create(repository)
+        failed_job.job._status = JobStatus.FAILED
+        failed_job.job.date_finished = complete_date
+        completed_job = GitRefScanJob.create(repository)
+        completed_job.job._status = JobStatus.COMPLETED
+        completed_job.job.date_finished = complete_date - timedelta(seconds=10)
+        result = removeSecurityProxy(repository.getLatestScanJob())
+        self.assertEqual(failed_job.job_id, result.job_id)
+
+    def test_getLatestScanJob_no_scans(self):
+        repository = self.factory.makeGitRepository()
+        result = repository.getLatestScanJob()
+        self.assertIsNone(result)
+
+    def test_getLatestScanJob_correct_branch(self):
+        complete_date = datetime.now(pytz.UTC)
+
+        main_repository = self.factory.makeGitRepository()
+        second_repository = self.factory.makeGitRepository()
+        failed_job = GitRefScanJob.create(second_repository)
+        failed_job.job._status = JobStatus.FAILED
+        failed_job.job.date_finished = complete_date
+        completed_job = GitRefScanJob.create(main_repository)
+        completed_job.job._status = JobStatus.COMPLETED
+        completed_job.job.date_finished = complete_date - timedelta(seconds=10)
+        result = removeSecurityProxy(main_repository.getLatestScanJob())
+        self.assertEqual(completed_job.job_id, result.job_id)
+
+    def test_getLatestScanJob_without_completion_date(self):
+        repository = self.factory.makeGitRepository()
+        failed_job = GitRefScanJob.create(repository)
+        failed_job.job._status = JobStatus.FAILED
+        result = repository.getLatestScanJob()
+        self.assertTrue(result)
+        self.assertIsNone(result.job.date_finished)
 
 
 class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):

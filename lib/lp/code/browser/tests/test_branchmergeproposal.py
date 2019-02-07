@@ -74,6 +74,7 @@ from lp.code.interfaces.branchmergeproposal import (
     IMergeProposalNeedsReviewEmailJobSource,
     IMergeProposalUpdatedEmailJobSource,
     )
+from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
 from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
     add_revision_to_branch,
@@ -89,7 +90,9 @@ from lp.registry.enums import (
     PersonVisibility,
     TeamMembershipPolicy,
     )
+from lp.services.database.constants import UTC_NOW
 from lp.services.features.testing import FeatureFixture
+from lp.services.job.interfaces.job import JobStatus
 from lp.services.librarian.interfaces.client import LibrarianServerError
 from lp.services.messages.model.message import MessageSet
 from lp.services.timeout import TimeoutError
@@ -2146,6 +2149,33 @@ class TestBranchMergeProposal(BrowserTestCase):
         hosting_fixture.getLog.failure = TimeoutError
         browser = self.getViewBrowser(comment.branch_merge_proposal)
         self.assertIn('x y' * 100, browser.contents)
+
+    def test_show_diff_update_link(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        job = removeSecurityProxy(bmp.getLatestDiffUpdateJob())
+        job.job._status = JobStatus.FAILED
+        view = create_initialized_view(bmp, '+index')
+        result = view.show_diff_update_link
+        self.assertTrue(result)
+
+    def test_show_diff_update_link_no_failures(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        job = removeSecurityProxy(bmp.getLatestDiffUpdateJob())
+        job.job._status = JobStatus.COMPLETED
+        job.job.date_finished = UTC_NOW
+        view = create_initialized_view(bmp, '+index')
+        result = view.show_diff_update_link
+        self.assertFalse(result)
+
+    def test_show_diff_update_link_latest_didnt_fail(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        job = removeSecurityProxy(bmp.getLatestDiffUpdateJob())
+        job.job._status = JobStatus.FAILED
+        job = UpdatePreviewDiffJob.create(bmp)
+        job.job._status = JobStatus.COMPLETED
+        view = create_initialized_view(bmp, '+index')
+        result = view.show_diff_update_link
+        self.assertTrue(result)
 
 
 class TestLatestProposalsForEachBranchMixin:

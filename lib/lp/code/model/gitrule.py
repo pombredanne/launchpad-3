@@ -310,6 +310,13 @@ class GitRuleGrant(StormBase):
         self.date_created = date_created
         self.date_last_modified = date_created
 
+    @property
+    def combined_grantee(self):
+        if self.grantee_type == GitGranteeType.PERSON:
+            return self.grantee
+        else:
+            return self.grantee_type
+
     def __repr__(self):
         if self.grantee_type == GitGranteeType.PERSON:
             grantee_name = "~%s" % self.grantee.name
