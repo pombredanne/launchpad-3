@@ -16,9 +16,9 @@
         </tal:widget>
         <tal:comment condition="nothing">
           XXX cjwatson 2019-02-05: Architecture selection is still useful
-          even when the series is guessed from snapcraft.yaml, but it's more
-          difficult to work out what choices to offer.  For now we just make
-          it all-or-nothing in that case.
+          even when the series is inferred from snapcraft.yaml, but it's
+          more difficult to work out what choices to offer.  For now we just
+          make it all-or-nothing in that case.
         </tal:comment>
         <tal:has-distro-series condition="context/distro_series">
           <tal:widget define="widget nocall:view/widgets/distro_arch_series">
