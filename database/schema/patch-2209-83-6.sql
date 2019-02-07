@@ -3,7 +3,7 @@
 
 SET client_min_messages=ERROR;
 
-CREATE TABLE BaseSnap (
+CREATE TABLE SnapBase (
     id serial PRIMARY KEY,
     date_created timestamp without time zone DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
     registrant integer NOT NULL REFERENCES person,
@@ -15,18 +15,18 @@ CREATE TABLE BaseSnap (
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
-CREATE UNIQUE INDEX basesnap__name__key ON BaseSnap (name);
-CREATE INDEX basesnap__registrant__idx ON BaseSnap (registrant);
-CREATE UNIQUE INDEX basesnap__is_default__idx ON BaseSnap (is_default) WHERE is_default;
+CREATE UNIQUE INDEX snapbase__name__key ON SnapBase (name);
+CREATE INDEX snapbase__registrant__idx ON SnapBase (registrant);
+CREATE UNIQUE INDEX snapbase__is_default__idx ON SnapBase (is_default) WHERE is_default;
 
-COMMENT ON TABLE BaseSnap IS 'A base snap.';
-COMMENT ON COLUMN BaseSnap.date_created IS 'The date on which this base snap was created in Launchpad.';
-COMMENT ON COLUMN BaseSnap.registrant IS 'The user who registered this base snap.';
-COMMENT ON COLUMN BaseSnap.name IS 'The unique name of this base snap.';
-COMMENT ON COLUMN BaseSnap.display_name IS 'The display name of this base snap.';
-COMMENT ON COLUMN BaseSnap.distro_series IS 'The distro series used for snap builds that specify this base snap.';
-COMMENT ON COLUMN BaseSnap.channels IS 'A dictionary mapping snap names to channels to use when building snaps that specify this base snap.';
-COMMENT ON COLUMN BaseSnap.is_default IS 'Whether this base snap indicates the defaults used for snap builds that do not specify a base snap.';
+COMMENT ON TABLE SnapBase IS 'A base snap.';
+COMMENT ON COLUMN SnapBase.date_created IS 'The date on which this base snap was created in Launchpad.';
+COMMENT ON COLUMN SnapBase.registrant IS 'The user who registered this base snap.';
+COMMENT ON COLUMN SnapBase.name IS 'The unique name of this base snap.';
+COMMENT ON COLUMN SnapBase.display_name IS 'The display name of this base snap.';
+COMMENT ON COLUMN SnapBase.distro_series IS 'The distro series used for snap builds that specify this base snap.';
+COMMENT ON COLUMN SnapBase.channels IS 'A dictionary mapping snap names to channels to use when building snaps that specify this base snap.';
+COMMENT ON COLUMN SnapBase.is_default IS 'Whether this base snap indicates the defaults used for snap builds that do not specify a base snap.';
 
 -- Allow defining snap recipes that detect the distro series from
 -- snapcraft.yaml.
