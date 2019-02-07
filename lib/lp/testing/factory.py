@@ -286,8 +286,8 @@ from lp.services.webapp.sorting import sorted_version_numbers
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.snappy.interfaces.basesnap import IBaseSnapSet
 from lp.snappy.interfaces.snap import ISnapSet
+from lp.snappy.interfaces.snapbase import ISnapBaseSet
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.interfaces.snappyseries import ISnappySeriesSet
 from lp.snappy.model.snapbuild import SnapFile
@@ -4844,13 +4844,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(snappy_series).flush()
         return snappy_series
 
-    def makeBaseSnap(self, registrant=None, name=None, display_name=None,
+    def makeSnapBase(self, registrant=None, name=None, display_name=None,
                      distro_series=None, channels=None, date_created=DEFAULT):
-        """Make a new BaseSnap."""
+        """Make a new SnapBase."""
         if registrant is None:
             registrant = self.makePerson()
         if name is None:
-            name = self.getUniqueString(u"base-snap-name")
+            name = self.getUniqueString(u"snap-base-name")
         if display_name is None:
             display_name = SPACE.join(
                 word.capitalize() for word in name.split('-'))
@@ -4858,7 +4858,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distro_series = self.makeDistroSeries()
         if channels is None:
             channels = {u"snapcraft": u"stable"}
-        return getUtility(IBaseSnapSet).new(
+        return getUtility(ISnapBaseSet).new(
             registrant, name, display_name, distro_series, channels,
             date_created=date_created)
 

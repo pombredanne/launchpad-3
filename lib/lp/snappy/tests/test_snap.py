@@ -85,10 +85,6 @@ from lp.services.timeout import default_timeout
 from lp.services.webapp.interfaces import OAuthPermission
 from lp.services.webapp.publisher import canonical_url
 from lp.services.webapp.snapshot import notify_modified
-from lp.snappy.interfaces.basesnap import (
-    IBaseSnapSet,
-    NoSuchBaseSnap,
-    )
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     CannotFetchSnapcraftYaml,
@@ -104,6 +100,10 @@ from lp.snappy.interfaces.snap import (
     SnapBuildRequestStatus,
     SnapPrivacyMismatch,
     SnapPrivateFeatureDisabled,
+    )
+from lp.snappy.interfaces.snapbase import (
+    ISnapBaseSet,
+    NoSuchSnapBase,
     )
 from lp.snappy.interfaces.snapbuild import (
     ISnapBuild,
@@ -563,19 +563,19 @@ class TestSnap(TestCaseWithFactory):
         # distroseries for the base.
         self.useFixture(GitHostingFixture(blob="base: test-base\n"))
         with admin_logged_in():
-            base_snap = self.factory.makeBaseSnap(
+            snap_base = self.factory.makeSnapBase(
                 name="test-base",
                 channels={"snapcraft": "stable/launchpad-buildd"})
-            self.factory.makeBaseSnap()
+            self.factory.makeSnapBase()
         for arch_tag in ("mips64el", "riscv64"):
             self.makeBuildableDistroArchSeries(
-                distroseries=base_snap.distro_series, architecturetag=arch_tag,
+                distroseries=snap_base.distro_series, architecturetag=arch_tag,
                 processor=self.factory.makeProcessor(
                     name=arch_tag, supports_virtualized=True))
         snap = self.factory.makeSnap(
             distroseries=None, git_ref=self.factory.makeGitRefs()[0])
         job = getUtility(ISnapRequestBuildsJobSource).create(
-            snap, snap.owner.teamowner, base_snap.distro_series.main_archive,
+            snap, snap.owner.teamowner, snap_base.distro_series.main_archive,
             PackagePublishingPocket.RELEASE, None)
         self.assertEqual(
             get_transaction_timestamp(IStore(snap)), job.date_created)
@@ -585,8 +585,8 @@ class TestSnap(TestCaseWithFactory):
                 job.requester, job.archive, job.pocket,
                 build_request=job.build_request)
         self.assertRequestedBuildsMatch(
-            builds, job, ["mips64el", "riscv64"], base_snap.channels,
-            distro_series=base_snap.distro_series)
+            builds, job, ["mips64el", "riscv64"], snap_base.channels,
+            distro_series=snap_base.distro_series)
 
     def test_requestBuildsFromJob_no_distroseries_no_explicit_base(self):
         # If the snap doesn't specify a distroseries and has no explicit
@@ -594,19 +594,19 @@ class TestSnap(TestCaseWithFactory):
         # distroseries for the default base snap.
         self.useFixture(GitHostingFixture(blob="name: foo\n"))
         with admin_logged_in():
-            base_snap = self.factory.makeBaseSnap(
+            snap_base = self.factory.makeSnapBase(
                 channels={"snapcraft": "stable/launchpad-buildd"})
-            getUtility(IBaseSnapSet).setDefault(base_snap)
-            self.factory.makeBaseSnap()
+            getUtility(ISnapBaseSet).setDefault(snap_base)
+            self.factory.makeSnapBase()
         for arch_tag in ("mips64el", "riscv64"):
             self.makeBuildableDistroArchSeries(
-                distroseries=base_snap.distro_series, architecturetag=arch_tag,
+                distroseries=snap_base.distro_series, architecturetag=arch_tag,
                 processor=self.factory.makeProcessor(
                     name=arch_tag, supports_virtualized=True))
         snap = self.factory.makeSnap(
             distroseries=None, git_ref=self.factory.makeGitRefs()[0])
         job = getUtility(ISnapRequestBuildsJobSource).create(
-            snap, snap.owner.teamowner, base_snap.distro_series.main_archive,
+            snap, snap.owner.teamowner, snap_base.distro_series.main_archive,
             PackagePublishingPocket.RELEASE, None)
         self.assertEqual(
             get_transaction_timestamp(IStore(snap)), job.date_created)
@@ -616,8 +616,8 @@ class TestSnap(TestCaseWithFactory):
                 job.requester, job.archive, job.pocket,
                 build_request=job.build_request)
         self.assertRequestedBuildsMatch(
-            builds, job, ["mips64el", "riscv64"], base_snap.channels,
-            distro_series=base_snap.distro_series)
+            builds, job, ["mips64el", "riscv64"], snap_base.channels,
+            distro_series=snap_base.distro_series)
 
     def test_requestBuildsFromJob_no_distroseries_no_default_base(self):
         # If the snap doesn't specify a distroseries and has an explicit
@@ -625,17 +625,17 @@ class TestSnap(TestCaseWithFactory):
         # gives up.
         self.useFixture(GitHostingFixture(blob="name: foo\n"))
         with admin_logged_in():
-            base_snap = self.factory.makeBaseSnap(
+            snap_base = self.factory.makeSnapBase(
                 channels={"snapcraft": "stable/launchpad-buildd"})
         snap = self.factory.makeSnap(
             distroseries=None, git_ref=self.factory.makeGitRefs()[0])
         job = getUtility(ISnapRequestBuildsJobSource).create(
-            snap, snap.owner.teamowner, base_snap.distro_series.main_archive,
+            snap, snap.owner.teamowner, snap_base.distro_series.main_archive,
             PackagePublishingPocket.RELEASE, None)
         transaction.commit()
         with person_logged_in(job.requester):
             self.assertRaises(
-                NoSuchBaseSnap, snap.requestBuildsFromJob,
+                NoSuchSnapBase, snap.requestBuildsFromJob,
                 job.requester, job.archive, job.pocket,
                 build_request=job.build_request)
 

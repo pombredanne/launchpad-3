@@ -7,13 +7,13 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
-    "BaseSnapSetNavigation",
+    "SnapBaseSetNavigation",
     ]
 
 from lp.services.webapp import GetitemNavigation
-from lp.snappy.interfaces.basesnap import IBaseSnapSet
+from lp.snappy.interfaces.snapbase import ISnapBaseSet
 
 
-class BaseSnapSetNavigation(GetitemNavigation):
-    """Navigation methods for `IBaseSnapSet`."""
-    usedfor = IBaseSnapSet
+class SnapBaseSetNavigation(GetitemNavigation):
+    """Navigation methods for `ISnapBaseSet`."""
+    usedfor = ISnapBaseSet

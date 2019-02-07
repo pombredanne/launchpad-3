@@ -7,7 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
-    "BaseSnap",
+    "SnapBase",
     ]
 
 import pytz
@@ -21,28 +21,27 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from zope.component import getUtility
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.constants import DEFAULT
 from lp.services.database.interfaces import (
     IMasterStore,
     IStore,
     )
-from lp.snappy.interfaces.basesnap import (
-    BaseSnapDefaultConflict,
-    CannotDeleteBaseSnap,
-    IBaseSnap,
-    IBaseSnapSet,
-    NoSuchBaseSnap,
+from lp.snappy.interfaces.snapbase import (
+    CannotDeleteSnapBase,
+    ISnapBase,
+    ISnapBaseSet,
+    NoSuchSnapBase,
     )
 
 
-@implementer(IBaseSnap)
-class BaseSnap(Storm):
-    """See `IBaseSnap`."""
+@implementer(ISnapBase)
+class SnapBase(Storm):
+    """See `ISnapBase`."""
 
-    __storm_table__ = "BaseSnap"
+    __storm_table__ = "SnapBase"
 
     id = Int(primary=True)
 
@@ -65,7 +64,7 @@ class BaseSnap(Storm):
 
     def __init__(self, registrant, name, display_name, distro_series, channels,
                  date_created=DEFAULT):
-        super(BaseSnap, self).__init__()
+        super(SnapBase, self).__init__()
         self.registrant = registrant
         self.name = name
         self.display_name = display_name
@@ -74,74 +73,60 @@ class BaseSnap(Storm):
         self.date_created = date_created
         self.is_default = False
 
-    @property
-    def title(self):
-        """See `IBaseSnap`."""
-        return self.display_name
-
-    def setDefault(self, value):
-        """See `IBaseSnap`."""
-        if value:
-            # Check for an existing default.
-            existing = getUtility(IBaseSnapSet).getDefault()
-            if existing is not None and existing != self:
-                raise BaseSnapDefaultConflict(
-                    "The default base snap is already set to %s." %
-                    existing.name)
-        self.is_default = value
-
     def destroySelf(self):
-        """See `IBaseSnap`."""
+        """See `ISnapBase`."""
         # Guard against unfortunate accidents.
         if self.is_default:
-            raise CannotDeleteBaseSnap("Cannot delete the default base snap.")
+            raise CannotDeleteSnapBase("Cannot delete the default base snap.")
         Store.of(self).remove(self)
 
 
-@implementer(IBaseSnapSet)
-class BaseSnapSet:
-    """See `IBaseSnapSet`."""
+@implementer(ISnapBaseSet)
+class SnapBaseSet:
+    """See `ISnapBaseSet`."""
 
     def new(self, registrant, name, display_name, distro_series, channels,
             date_created=DEFAULT):
-        """See `IBaseSnapSet`."""
-        store = IMasterStore(BaseSnap)
-        base_snap = BaseSnap(
+        """See `ISnapBaseSet`."""
+        store = IMasterStore(SnapBase)
+        snap_base = SnapBase(
             registrant, name, display_name, distro_series, channels,
             date_created=date_created)
-        store.add(base_snap)
-        return base_snap
+        store.add(snap_base)
+        return snap_base
 
     def __iter__(self):
-        """See `IBaseSnapSet`."""
+        """See `ISnapBaseSet`."""
         return iter(self.getAll())
 
     def __getitem__(self, name):
-        """See `IBaseSnapSet`."""
+        """See `ISnapBaseSet`."""
         return self.getByName(name)
 
     def getByName(self, name):
-        """See `IBaseSnapSet`."""
-        base_snap = IStore(BaseSnap).find(
-            BaseSnap, BaseSnap.name == name).one()
-        if base_snap is None:
-            raise NoSuchBaseSnap(name)
-        return base_snap
+        """See `ISnapBaseSet`."""
+        snap_base = IStore(SnapBase).find(
+            SnapBase, SnapBase.name == name).one()
+        if snap_base is None:
+            raise NoSuchSnapBase(name)
+        return snap_base
 
     def getDefault(self):
-        """See `IBaseSnapSet`."""
-        return IStore(BaseSnap).find(
-            BaseSnap, BaseSnap.is_default == True).one()
+        """See `ISnapBaseSet`."""
+        return IStore(SnapBase).find(SnapBase, SnapBase.is_default).one()
 
-    def setDefault(self, base_snap):
-        """See `IBaseSnapSet`."""
+    def setDefault(self, snap_base):
+        """See `ISnapBaseSet`."""
         previous = self.getDefault()
-        if previous != base_snap:
+        if previous != snap_base:
+            # We can safely remove the security proxy here, because the
+            # default base snap is logically a property of the set even
+            # though it is stored on the base snap.
             if previous is not None:
-                previous.setDefault(False)
-            if base_snap is not None:
-                base_snap.setDefault(True)
+                removeSecurityProxy(previous).is_default = False
+            if snap_base is not None:
+                removeSecurityProxy(snap_base).is_default = True
 
     def getAll(self):
-        """See `IBaseSnapSet`."""
-        return IStore(BaseSnap).find(BaseSnap).order_by(BaseSnap.name)
+        """See `ISnapBaseSet`."""
+        return IStore(SnapBase).find(SnapBase).order_by(SnapBase.name)

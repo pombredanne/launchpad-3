@@ -131,10 +131,6 @@ from lp.services.webapp.publisher import canonical_url
 from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.webhooks.model import WebhookTargetMixin
 from lp.snappy.adapters.buildarch import determine_architectures_to_build
-from lp.snappy.interfaces.basesnap import (
-    IBaseSnapSet,
-    NoSuchBaseSnap,
-    )
 from lp.snappy.interfaces.snap import (
     BadSnapSearchContext,
     BadSnapSource,
@@ -159,6 +155,10 @@ from lp.snappy.interfaces.snap import (
     SnapNotOwner,
     SnapPrivacyMismatch,
     SnapPrivateFeatureDisabled,
+    )
+from lp.snappy.interfaces.snapbase import (
+    ISnapBaseSet,
+    NoSuchSnapBase,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.interfaces.snapjob import ISnapRequestBuildsJobSource
@@ -642,29 +642,29 @@ class Snap(Storm, WebhookTargetMixin):
                 snapcraft_data = {}
 
             # Find a suitable base snap.
-            base_snap_set = getUtility(IBaseSnapSet)
+            snap_base_set = getUtility(ISnapBaseSet)
             if "base" in snapcraft_data:
-                base_snap_name = snapcraft_data["base"]
-                if isinstance(base_snap_name, bytes):
-                    base_snap_name = base_snap_name.decode("UTF-8")
-                base_snap = base_snap_set.getByName(base_snap_name)
+                snap_base_name = snapcraft_data["base"]
+                if isinstance(snap_base_name, bytes):
+                    snap_base_name = snap_base_name.decode("UTF-8")
+                snap_base = snap_base_set.getByName(snap_base_name)
             else:
-                base_snap = base_snap_set.getDefault()
+                snap_base = snap_base_set.getDefault()
 
             # Combine the base snap with other configuration to find a
             # suitable distro series and suitable channels.
             distro_series = self.distro_series
-            if base_snap is not None:
+            if snap_base is not None:
                 if distro_series is None:
-                    distro_series = base_snap.distro_series
-                new_channels = dict(base_snap.channels)
+                    distro_series = snap_base.distro_series
+                new_channels = dict(snap_base.channels)
                 if channels is not None:
                     new_channels.update(channels)
                 channels = new_channels
             elif distro_series is None:
                 # A base snap is mandatory if there's no configured distro
                 # series.
-                raise NoSuchBaseSnap(snapcraft_data.get("base", "<default>"))
+                raise NoSuchSnapBase(snapcraft_data.get("base", "<default>"))
 
             # Sort by Processor.id for determinism.  This is chosen to be
             # the same order as in BinaryPackageBuildSet.createForSource, to

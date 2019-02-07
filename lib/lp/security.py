@@ -197,13 +197,13 @@ from lp.services.worlddata.interfaces.language import (
     ILanguage,
     ILanguageSet,
     )
-from lp.snappy.interfaces.basesnap import (
-    IBaseSnap,
-    IBaseSnapSet,
-    )
 from lp.snappy.interfaces.snap import (
     ISnap,
     ISnapBuildRequest,
+    )
+from lp.snappy.interfaces.snapbase import (
+    ISnapBase,
+    ISnapBaseSet,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.snappy.interfaces.snappyseries import (
@@ -3368,14 +3368,14 @@ class EditSnappySeriesSet(EditByRegistryExpertsOrAdmins):
     usedfor = ISnappySeriesSet
 
 
-class ViewBaseSnap(AnonymousAuthorization):
-    """Anyone can view an `IBaseSnap`."""
-    usedfor = IBaseSnap
+class ViewSnapBase(AnonymousAuthorization):
+    """Anyone can view an `ISnapBase`."""
+    usedfor = ISnapBase
 
 
-class EditBaseSnap(EditByRegistryExpertsOrAdmins):
-    usedfor = IBaseSnap
+class EditSnapBase(EditByRegistryExpertsOrAdmins):
+    usedfor = ISnapBase
 
 
-class EditBaseSnapSet(EditByRegistryExpertsOrAdmins):
-    usedfor = IBaseSnapSet
+class EditSnapBaseSet(EditByRegistryExpertsOrAdmins):
+    usedfor = ISnapBaseSet

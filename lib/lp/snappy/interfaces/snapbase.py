@@ -7,11 +7,10 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
-    "BaseSnapDefaultConflict",
-    "CannotDeleteBaseSnap",
-    "IBaseSnap",
-    "IBaseSnapSet",
-    "NoSuchBaseSnap",
+    "CannotDeleteSnapBase",
+    "ISnapBase",
+    "ISnapBaseSet",
+    "NoSuchSnapBase",
     ]
 
 import httplib
@@ -50,46 +49,40 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.services.fields import (
     ContentNameField,
     PublicPersonChoice,
-    Title,
     )
 
 
-@error_status(httplib.CONFLICT)
-class BaseSnapDefaultConflict(Exception):
-    """A default base snap already exists."""
-
-
-class NoSuchBaseSnap(NameLookupFailed):
-    """The requested `BaseSnap` does not exist."""
+class NoSuchSnapBase(NameLookupFailed):
+    """The requested `SnapBase` does not exist."""
 
     _message_prefix = "No such base snap"
 
 
 @error_status(httplib.BAD_REQUEST)
-class CannotDeleteBaseSnap(Exception):
+class CannotDeleteSnapBase(Exception):
     """The base snap cannot be deleted at this time."""
 
 
-class BaseSnapNameField(ContentNameField):
-    """Ensure that `IBaseSnap` has unique names."""
+class SnapBaseNameField(ContentNameField):
+    """Ensure that `ISnapBase` has unique names."""
 
     errormessage = _("%s is already in use by another base snap.")
 
     @property
     def _content_iface(self):
         """See `UniqueField`."""
-        return IBaseSnap
+        return ISnapBase
 
     def _getByName(self, name):
         """See `ContentNameField`."""
         try:
-            return getUtility(IBaseSnapSet).getByName(name)
-        except NoSuchBaseSnap:
+            return getUtility(ISnapBaseSet).getByName(name)
+        except NoSuchSnapBase:
             return None
 
 
-class IBaseSnapView(Interface):
-    """`IBaseSnap` attributes that anyone can view."""
+class ISnapBaseView(Interface):
+    """`ISnapBase` attributes that anyone can view."""
 
     id = Int(title=_("ID"), required=True, readonly=True)
 
@@ -108,20 +101,18 @@ class IBaseSnapView(Interface):
             "builds that do not specify a base snap.")))
 
 
-class IBaseSnapEditableAttributes(Interface):
-    """`IBaseSnap` attributes that can be edited.
+class ISnapBaseEditableAttributes(Interface):
+    """`ISnapBase` attributes that can be edited.
 
     Anyone can view these attributes, but they need launchpad.Edit to change.
     """
 
-    name = exported(BaseSnapNameField(
+    name = exported(SnapBaseNameField(
         title=_("Name"), required=True, readonly=False,
         constraint=name_validator))
 
     display_name = exported(TextLine(
         title=_("Display name"), required=True, readonly=False))
-
-    title = Title(title=_("Title"), required=True, readonly=True)
 
     distro_series = exported(Reference(
         IDistroSeries, title=_("Distro series"),
@@ -135,30 +126,19 @@ class IBaseSnapEditableAttributes(Interface):
             "snaps that specify this base snap.")))
 
 
-class IBaseSnapEdit(Interface):
-    """`IBaseSnap` methods that require launchpad.Edit permission."""
-
-    def setDefault(value):
-        """Set whether this base snap is the default.
-
-        This is for internal use; the caller should ensure permission to
-        edit the base snap and should arrange to remove any existing default
-        first.  Most callers should use `IBaseSnapSet.setDefault` instead.
-
-        :param value: True if this base snap should be the default,
-            otherwise False.
-        """
+class ISnapBaseEdit(Interface):
+    """`ISnapBase` methods that require launchpad.Edit permission."""
 
     @export_destructor_operation()
     @operation_for_version("devel")
     def destroySelf():
         """Delete the specified base snap.
 
-        :raises CannotDeleteBaseSnap: if the base snap cannot be deleted.
+        :raises CannotDeleteSnapBase: if the base snap cannot be deleted.
         """
 
 
-class IBaseSnap(IBaseSnapView, IBaseSnapEditableAttributes):
+class ISnapBase(ISnapBaseView, ISnapBaseEditableAttributes):
     """A base snap."""
 
     # XXX cjwatson 2019-01-28 bug=760849: "beta" is a lie to get WADL
@@ -167,56 +147,56 @@ class IBaseSnap(IBaseSnapView, IBaseSnapEditableAttributes):
     export_as_webservice_entry(as_of="beta")
 
 
-class IBaseSnapSetEdit(Interface):
-    """`IBaseSnapSet` methods that require launchpad.Edit permission."""
+class ISnapBaseSetEdit(Interface):
+    """`ISnapBaseSet` methods that require launchpad.Edit permission."""
 
     @call_with(registrant=REQUEST_USER)
     @export_factory_operation(
-        IBaseSnap, ["name", "display_name", "distro_series", "channels"])
+        ISnapBase, ["name", "display_name", "distro_series", "channels"])
     @operation_for_version("devel")
     def new(registrant, name, display_name, distro_series, channels,
             date_created=None):
-        """Create an `IBaseSnap`."""
+        """Create an `ISnapBase`."""
 
     @operation_parameters(
-        base_snap=Reference(
-            title=_("Base snap"), required=True, schema=IBaseSnap))
+        snap_base=Reference(
+            title=_("Base snap"), required=True, schema=ISnapBase))
     @export_write_operation()
     @operation_for_version("devel")
-    def setDefault(base_snap):
+    def setDefault(snap_base):
         """Set the default base snap.
 
         This will be used to pick the default distro series for snap builds
         that do not specify a base.
 
-        :param base_snap: An `IBaseSnap`, or None to unset the default base
+        :param snap_base: An `ISnapBase`, or None to unset the default base
             snap.
         """
 
 
-class IBaseSnapSet(IBaseSnapSetEdit):
+class ISnapBaseSet(ISnapBaseSetEdit):
     """Interface representing the set of base snaps."""
 
-    export_as_webservice_collection(IBaseSnap)
+    export_as_webservice_collection(ISnapBase)
 
     def __iter__():
-        """Iterate over `IBaseSnap`s."""
+        """Iterate over `ISnapBase`s."""
 
     def __getitem__(name):
-        """Return the `IBaseSnap` with this name."""
+        """Return the `ISnapBase` with this name."""
 
     @operation_parameters(
         name=TextLine(title=_("Base snap name"), required=True))
-    @operation_returns_entry(IBaseSnap)
+    @operation_returns_entry(ISnapBase)
     @export_read_operation()
     @operation_for_version("devel")
     def getByName(name):
-        """Return the `IBaseSnap` with this name.
+        """Return the `ISnapBase` with this name.
 
-        :raises NoSuchBaseSnap: if no base snap exists with this name.
+        :raises NoSuchSnapBase: if no base snap exists with this name.
         """
 
-    @operation_returns_entry(IBaseSnap)
+    @operation_returns_entry(ISnapBase)
     @export_read_operation()
     @operation_for_version("devel")
     def getDefault():
@@ -228,4 +208,4 @@ class IBaseSnapSet(IBaseSnapSetEdit):
 
     @collection_default_content()
     def getAll():
-        """Return all `IBaseSnap`s."""
+        """Return all `ISnapBase`s."""
