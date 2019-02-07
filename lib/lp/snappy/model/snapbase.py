@@ -113,8 +113,7 @@ class SnapBaseSet:
 
     def getDefault(self):
         """See `ISnapBaseSet`."""
-        return IStore(SnapBase).find(
-            SnapBase, SnapBase.is_default == True).one()
+        return IStore(SnapBase).find(SnapBase, SnapBase.is_default).one()
 
     def setDefault(self, snap_base):
         """See `ISnapBaseSet`."""
