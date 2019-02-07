@@ -21,6 +21,10 @@ class IBuildFarmJobBehaviour(Interface):
         "The name of the builder type to use for this build, corresponding "
         "to a launchpad-buildd build manager tag.")
 
+    image_types = Attribute(
+        "A list of `BuildBaseImageType`s indicating which types of base "
+        "images can be used for this build.")
+
     archive = Attribute("The `Archive` to build against.")
 
     distro_arch_series = Attribute("The `DistroArchSeries` to build against.")

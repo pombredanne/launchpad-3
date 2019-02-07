@@ -13,6 +13,7 @@ from lazr.restfulclient.errors import (
     )
 from zope.security.management import endInteraction
 
+from lp.buildmaster.enums import BuildBaseImageType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
 from lp.soyuz.interfaces.livefs import LIVEFS_FEATURE_FLAG
@@ -168,6 +169,31 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
         self.assertEqual(
             updates_chroot_url, ws_das.getChrootURL(pocket='Proposed'))
 
+    def test_setChroot_removeChroot_image_type(self):
+        das = self.factory.makeDistroArchSeries()
+        user = das.distroseries.distribution.main_archive.owner
+        webservice = launchpadlib_for("testing", user)
+        ws_das = ws_object(webservice, das)
+        sha1_1 = hashlib.sha1('abcxyz').hexdigest()
+        ws_das.setChroot(data='abcxyz', sha1sum=sha1_1)
+        sha1_2 = hashlib.sha1('123456').hexdigest()
+        ws_das.setChroot(data='123456', sha1sum=sha1_2, image_type='LXD image')
+        chroot_image = das.getChroot(image_type=BuildBaseImageType.CHROOT)
+        self.assertEqual(sha1_1, chroot_image.content.sha1)
+        lxd_image = das.getChroot(image_type=BuildBaseImageType.LXD)
+        self.assertEqual(sha1_2, lxd_image.content.sha1)
+        with person_logged_in(user):
+            chroot_image_url = chroot_image.http_url
+            lxd_image_url = lxd_image.http_url
+        self.assertEqual(
+            chroot_image_url, ws_das.getChrootURL(image_type='Chroot tarball'))
+        self.assertEqual(
+            lxd_image_url, ws_das.getChrootURL(image_type='LXD image'))
+        ws_das.removeChroot(image_type='LXD image')
+        self.assertEqual(
+            chroot_image_url, ws_das.getChrootURL(image_type='Chroot tarball'))
+        self.assertIsNone(ws_das.getChrootURL(image_type='LXD image'))
+
     def test_setChrootFromBuild(self):
         self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
         das = self.factory.makeDistroArchSeries()
@@ -223,3 +249,21 @@ class TestDistroArchSeriesWebservice(TestCaseWithFactory):
             das.getChroot(pocket=PackagePublishingPocket.RELEASE))
         self.assertEqual(
             lfa, das.getChroot(pocket=PackagePublishingPocket.UPDATES))
+
+    def test_setChrootFromBuild_image_type(self):
+        self.useFixture(FeatureFixture({LIVEFS_FEATURE_FLAG: "on"}))
+        das = self.factory.makeDistroArchSeries()
+        build = self.factory.makeLiveFSBuild()
+        build_url = api_url(build)
+        login_as(build.livefs.owner)
+        lfa = self.factory.makeLibraryFileAlias(
+            filename="livecd.ubuntu-base.lxd.tar.gz")
+        build.addFile(lfa)
+        user = das.distroseries.distribution.main_archive.owner
+        webservice = launchpadlib_for("testing", user)
+        ws_das = ws_object(webservice, das)
+        ws_das.setChrootFromBuild(
+            livefsbuild=build_url, filename="livecd.ubuntu-base.lxd.tar.gz",
+            image_type="LXD image")
+        self.assertIsNone(das.getChroot(image_type=BuildBaseImageType.CHROOT))
+        self.assertEqual(lfa, das.getChroot(image_type=BuildBaseImageType.LXD))

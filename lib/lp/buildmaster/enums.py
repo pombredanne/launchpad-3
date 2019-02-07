@@ -1,4 +1,4 @@
-# Copyright 2009-2014 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Common build interfaces."""
@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildBaseImageType',
     'BuilderCleanStatus',
     'BuilderResetProtocol',
     'BuildStatus',
@@ -238,3 +239,13 @@ class BuilderResetProtocol(DBEnumeratedType):
         the webservice to set Builder.clean_status back to 'Clean' when
         the slave is reset and accepting requests.
         """)
+
+
+class BuildBaseImageType(DBEnumeratedType):
+    """Build base image type
+
+    The type of a base image that can be used for builds.
+    """
+
+    CHROOT = DBItem(0, "Chroot tarball")
+    LXD = DBItem(1, "LXD image")

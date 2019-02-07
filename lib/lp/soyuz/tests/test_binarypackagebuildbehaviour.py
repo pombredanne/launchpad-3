@@ -1,4 +1,4 @@
-# Copyright 2010-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BinaryPackageBuildBehaviour."""
@@ -144,6 +144,7 @@ class TestBinaryBuildPackageBehaviour(TestCaseWithFactory):
             'build_url': canonical_url(build),
             'distribution': das.distroseries.distribution.name,
             'fast_cleanup': builder.virtualized,
+            'image_type': 'chroot',
             'ogrecomponent': component,
             'series': ds_name,
             'suite': suite,
