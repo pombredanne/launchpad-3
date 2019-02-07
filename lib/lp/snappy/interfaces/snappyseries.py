@@ -118,10 +118,10 @@ class ISnappySeriesEditableAttributes(Interface):
         value_type=Reference(schema=IDistroSeries),
         required=True, readonly=False))
 
-    can_guess_distro_series = exported(Bool(
-        title=_("Can guess distro series?"), required=True, readonly=False,
+    can_infer_distro_series = exported(Bool(
+        title=_("Can infer distro series?"), required=True, readonly=False,
         description=_(
-            "True if guessing a distro series from snapcraft.yaml is "
+            "True if inferring a distro series from snapcraft.yaml is "
             "supported for this snappy series.")))
 
 

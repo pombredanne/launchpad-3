@@ -86,18 +86,18 @@ class TestSnappySeries(TestCaseWithFactory):
         self.assertContentEqual([], snappy_series.usable_distro_series)
         self.assertIsNone(snappy_series.preferred_distro_series)
 
-    def test_can_guess_distro_series(self):
-        # Setting can_guess_distro_series indicates that this snappy series
+    def test_can_infer_distro_series(self):
+        # Setting can_infer_distro_series indicates that this snappy series
         # supports inferring the distro series from snapcraft.yaml.
         snappy_series = self.factory.makeSnappySeries()
         sds_set = getUtility(ISnappyDistroSeriesSet)
-        self.assertFalse(snappy_series.can_guess_distro_series)
+        self.assertFalse(snappy_series.can_infer_distro_series)
         self.assertIsNone(sds_set.getByBothSeries(snappy_series, None))
-        snappy_series.can_guess_distro_series = True
-        self.assertTrue(snappy_series.can_guess_distro_series)
+        snappy_series.can_infer_distro_series = True
+        self.assertTrue(snappy_series.can_infer_distro_series)
         self.assertIsNotNone(sds_set.getByBothSeries(snappy_series, None))
-        snappy_series.can_guess_distro_series = False
-        self.assertFalse(snappy_series.can_guess_distro_series)
+        snappy_series.can_infer_distro_series = False
+        self.assertFalse(snappy_series.can_infer_distro_series)
         self.assertIsNone(sds_set.getByBothSeries(snappy_series, None))
 
     def test_anonymous(self):
@@ -257,7 +257,7 @@ class TestSnappyDistroSeriesSet(TestCaseWithFactory):
         self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[1], dses[1]))
         self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[0], None))
         self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[1], None))
-        snappy_serieses[0].can_guess_distro_series = True
+        snappy_serieses[0].can_infer_distro_series = True
         self.assertThat(
             sds_set.getByBothSeries(snappy_serieses[0], None),
             MatchesStructure.byEquality(

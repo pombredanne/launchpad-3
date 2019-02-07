@@ -227,8 +227,8 @@ class TestSnapAddView(BaseTestSnapView):
             MatchesStructure.byEquality(
                 snappy_series=newest, distro_series=lts))
 
-    def test_initial_store_distro_series_can_guess_distro_series(self):
-        # If the latest snappy series supports guessing the distro series
+    def test_initial_store_distro_series_can_infer_distro_series(self):
+        # If the latest snappy series supports inferring the distro series
         # from snapcraft.yaml, then we default to that.
         self.useFixture(BranchHostingFixture(blob=b""))
         lts = self.factory.makeUbuntuDistroSeries(
@@ -236,7 +236,7 @@ class TestSnapAddView(BaseTestSnapView):
         with admin_logged_in():
             self.factory.makeSnappySeries(usable_distro_series=[lts])
             newest = self.factory.makeSnappySeries(
-                preferred_distro_series=lts, can_guess_distro_series=True)
+                preferred_distro_series=lts, can_infer_distro_series=True)
         branch = self.factory.makeAnyBranch()
         with person_logged_in(self.person):
             view = create_initialized_view(branch, "+new-snap")
@@ -551,10 +551,10 @@ class TestSnapAddView(BaseTestSnapView):
         self.assertContentEqual(
             ["386", "amd64"], [proc.name for proc in snap.processors])
 
-    def test_create_new_snap_guess_distro_series(self):
+    def test_create_new_snap_infer_distro_series(self):
         self.useFixture(BranchHostingFixture(blob=b""))
         with admin_logged_in():
-            self.snappyseries.can_guess_distro_series = True
+            self.snappyseries.can_infer_distro_series = True
         branch = self.factory.makeAnyBranch()
         browser = self.getViewBrowser(
             branch, view_name="+new-snap", user=self.person)
@@ -1445,12 +1445,12 @@ class TestSnapView(BaseTestSnapView):
 
     def test_index_store_upload_no_distro_series(self):
         # If the snap package is to be automatically uploaded to the store
-        # and is configured to guess an appropriate distro series from
+        # and is configured to infer an appropriate distro series from
         # snapcraft.yaml, the index page shows details of this.
         with admin_logged_in():
             snappyseries = self.factory.makeSnappySeries(
                 usable_distro_series=[self.distroseries],
-                can_guess_distro_series=True)
+                can_infer_distro_series=True)
         snap = self.makeSnap(
             distroseries=None, store_upload=True, store_series=snappyseries,
             store_name=self.getUniqueString("store-name"))

@@ -139,18 +139,18 @@ class SnappySeries(Storm):
                 Store.of(self).add(link)
 
     @cachedproperty
-    def _can_guess_distro_series(self):
+    def _can_infer_distro_series(self):
         return not Store.of(self).find(
             SnappyDistroSeries,
             SnappyDistroSeries.snappy_series == self,
             SnappyDistroSeries.distro_series == None).is_empty()
 
     @property
-    def can_guess_distro_series(self):
-        return self._can_guess_distro_series
+    def can_infer_distro_series(self):
+        return self._can_infer_distro_series
 
-    @can_guess_distro_series.setter
-    def can_guess_distro_series(self, value):
+    @can_infer_distro_series.setter
+    def can_infer_distro_series(self, value):
         store = Store.of(self)
         current = store.find(
             SnappyDistroSeries,
@@ -158,10 +158,10 @@ class SnappySeries(Storm):
             SnappyDistroSeries.distro_series == None).one()
         if current is None and value is True:
             store.add(SnappyDistroSeries(self, None))
-            get_property_cache(self)._can_guess_distro_series = True
+            get_property_cache(self)._can_infer_distro_series = True
         elif current is not None and value is False:
             store.remove(current)
-            get_property_cache(self)._can_guess_distro_series = False
+            get_property_cache(self)._can_infer_distro_series = False
 
 
 @implementer(ISnappyDistroSeries)
