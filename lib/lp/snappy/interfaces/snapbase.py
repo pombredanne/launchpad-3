@@ -49,7 +49,6 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.services.fields import (
     ContentNameField,
     PublicPersonChoice,
-    Title,
     )
 
 
@@ -114,8 +113,6 @@ class ISnapBaseEditableAttributes(Interface):
 
     display_name = exported(TextLine(
         title=_("Display name"), required=True, readonly=False))
-
-    title = Title(title=_("Title"), required=True, readonly=True)
 
     distro_series = exported(Reference(
         IDistroSeries, title=_("Distro series"),

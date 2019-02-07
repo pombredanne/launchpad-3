@@ -73,11 +73,6 @@ class SnapBase(Storm):
         self.date_created = date_created
         self.is_default = False
 
-    @property
-    def title(self):
-        """See `ISnapBase`."""
-        return self.display_name
-
     def destroySelf(self):
         """See `ISnapBase`."""
         # Guard against unfortunate accidents.
