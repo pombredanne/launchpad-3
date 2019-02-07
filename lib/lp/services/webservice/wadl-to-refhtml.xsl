@@ -208,10 +208,6 @@
                 <xsl:text>.</xsl:text>
                 <xsl:text>[component or source package].name</xsl:text>
             </xsl:when>
-            <xsl:when test="@id = 'base_snap'">
-                <xsl:text>/+base-snaps/</xsl:text>
-                <var>&lt;name&gt;</var>
-            </xsl:when>
             <xsl:when test="@id = 'binary_package_publishing_history'">
                 <xsl:text>/</xsl:text>
                 <var>&lt;distribution.name&gt;</var>
@@ -518,6 +514,10 @@
                 <var>&lt;person.name&gt;</var>
                 <xsl:text>/+snap/</xsl:text>
                 <var>&lt;snap.name&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'snap_base'">
+                <xsl:text>/+snap-bases/</xsl:text>
+                <var>&lt;name&gt;</var>
             </xsl:when>
             <xsl:when test="@id = 'snap_build'">
                 <xsl:text>/~</xsl:text>
