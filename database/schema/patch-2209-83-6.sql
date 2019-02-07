@@ -33,9 +33,10 @@ COMMENT ON COLUMN SnapBase.is_default IS 'Whether this base snap indicates the d
 ALTER TABLE Snap ALTER COLUMN distro_series DROP NOT NULL;
 
 -- Allow combined vocabularies of (store_series, distro_series) pairs to
--- include entries for a store series without a distro series.  Columns that
--- are part of a primary key cannot be NULL, so replace the natural primary
--- key with a surrogate.
+-- include entries for a store series without a distro series, allowing
+-- straightforward UI configuration of snaps that infer the distro series
+-- from snapcraft.yaml.  Columns that are part of a primary key cannot be
+-- NULL, so replace the natural primary key with a surrogate.
 ALTER TABLE SnappyDistroSeries
     ADD COLUMN id serial,
     DROP CONSTRAINT snappydistroseries_pkey,
