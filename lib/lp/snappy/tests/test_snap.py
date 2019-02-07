@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap packages."""
@@ -1912,15 +1912,22 @@ class TestSnapProcessors(TestCaseWithFactory):
             name="arm", restricted=True, build_by_default=False)
 
     def test_new_default_processors(self):
-        # SnapSet.new creates a SnapArch for each Processor with
+        # SnapSet.new creates a SnapArch for each available Processor with
         # build_by_default set.
-        self.factory.makeProcessor(name="default", build_by_default=True)
-        self.factory.makeProcessor(name="nondefault", build_by_default=False)
+        new_procs = [
+            self.factory.makeProcessor(name="default", build_by_default=True),
+            self.factory.makeProcessor(
+                name="nondefault", build_by_default=False),
+            ]
         owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        for processor in self.unrestricted_procs + [self.arm] + new_procs:
+            self.factory.makeDistroArchSeries(
+                distroseries=distroseries, architecturetag=processor.name,
+                processor=processor)
         snap = getUtility(ISnapSet).new(
-            registrant=owner, owner=owner,
-            distro_series=self.factory.makeDistroSeries(), name="snap",
-            branch=self.factory.makeAnyBranch())
+            registrant=owner, owner=owner, distro_series=distroseries,
+            name="snap", branch=self.factory.makeAnyBranch())
         self.assertContentEqual(
             ["386", "amd64", "hppa", "default"],
             [processor.name for processor in snap.processors])
@@ -2545,7 +2552,12 @@ class TestSnapWebservice(TestCaseWithFactory):
         ppa_admin = self.factory.makePerson(member_of=[ppa_admin_team])
         self.factory.makeProcessor(
             "arm", "ARM", "ARM", restricted=True, build_by_default=False)
-        snap = self.makeSnap()
+        distroseries = self.factory.makeDistroSeries()
+        for processor in getUtility(IProcessorSet).getAll():
+            self.factory.makeDistroArchSeries(
+                distroseries=distroseries, architecturetag=processor.name,
+                processor=processor)
+        snap = self.makeSnap(distroseries=distroseries)
         self.assertProcessors(ppa_admin, snap, ["386", "hppa", "amd64"])
 
         response = self.setProcessors(ppa_admin, snap, ["386", "arm"])
@@ -2565,7 +2577,12 @@ class TestSnapWebservice(TestCaseWithFactory):
 
     def test_setProcessors_owner(self):
         """The snap owner can enable/disable unrestricted processors."""
-        snap = self.makeSnap()
+        distroseries = self.factory.makeDistroSeries()
+        for processor in getUtility(IProcessorSet).getAll():
+            self.factory.makeDistroArchSeries(
+                distroseries=distroseries, architecturetag=processor.name,
+                processor=processor)
+        snap = self.makeSnap(distroseries=distroseries)
         self.assertProcessors(self.person, snap, ["386", "hppa", "amd64"])
 
         response = self.setProcessors(self.person, snap, ["386"])
