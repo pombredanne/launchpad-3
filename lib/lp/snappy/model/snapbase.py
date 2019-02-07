@@ -58,18 +58,18 @@ class SnapBase(Storm):
     distro_series_id = Int(name="distro_series", allow_none=False)
     distro_series = Reference(distro_series_id, "DistroSeries.id")
 
-    channels = JSON(name="channels", allow_none=False)
+    build_channels = JSON(name="build_channels", allow_none=False)
 
     is_default = Bool(name="is_default", allow_none=False)
 
-    def __init__(self, registrant, name, display_name, distro_series, channels,
-                 date_created=DEFAULT):
+    def __init__(self, registrant, name, display_name, distro_series,
+                 build_channels, date_created=DEFAULT):
         super(SnapBase, self).__init__()
         self.registrant = registrant
         self.name = name
         self.display_name = display_name
         self.distro_series = distro_series
-        self.channels = channels
+        self.build_channels = build_channels
         self.date_created = date_created
         self.is_default = False
 
@@ -85,12 +85,12 @@ class SnapBase(Storm):
 class SnapBaseSet:
     """See `ISnapBaseSet`."""
 
-    def new(self, registrant, name, display_name, distro_series, channels,
-            date_created=DEFAULT):
+    def new(self, registrant, name, display_name, distro_series,
+            build_channels, date_created=DEFAULT):
         """See `ISnapBaseSet`."""
         store = IMasterStore(SnapBase)
         snap_base = SnapBase(
-            registrant, name, display_name, distro_series, channels,
+            registrant, name, display_name, distro_series, build_channels,
             date_created=date_created)
         store.add(snap_base)
         return snap_base
