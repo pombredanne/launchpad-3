@@ -409,7 +409,7 @@ class Snap(Storm, WebhookTargetMixin):
             # to dispatch a build, so enabled architectures for any active
             # series will do.
             clauses.extend([
-                DistroArchSeries.enabled == True,
+                DistroArchSeries.enabled,
                 DistroArchSeries.distroseriesID == DistroSeries.id,
                 DistroSeries.status.is_in(ACTIVE_STATUSES),
                 ])
@@ -759,7 +759,7 @@ class Snap(Storm, WebhookTargetMixin):
         query_args = [
             SnapBuild.snap == self,
             SnapBuild.archive_id == Archive.id,
-            Archive._enabled == True,
+            Archive._enabled,
             get_enabled_archive_filter(
                 getUtility(ILaunchBag).user, include_public=True,
                 include_subscribed=True)
@@ -1292,8 +1292,8 @@ class SnapSet:
             ]
         return IStore(Snap).using(*origin).find(
             Snap,
-            Snap.is_stale == True,
-            Snap.auto_build == True,
+            Snap.is_stale,
+            Snap.auto_build,
             SnapBuild.date_created == None).config(distinct=True)
 
     @classmethod
