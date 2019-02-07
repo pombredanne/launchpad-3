@@ -21,8 +21,8 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from zope.component import getUtility
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.services.database.constants import DEFAULT
 from lp.services.database.interfaces import (
@@ -30,7 +30,6 @@ from lp.services.database.interfaces import (
     IStore,
     )
 from lp.snappy.interfaces.basesnap import (
-    BaseSnapDefaultConflict,
     CannotDeleteBaseSnap,
     IBaseSnap,
     IBaseSnapSet,
@@ -79,17 +78,6 @@ class BaseSnap(Storm):
         """See `IBaseSnap`."""
         return self.display_name
 
-    def setDefault(self, value):
-        """See `IBaseSnap`."""
-        if value:
-            # Check for an existing default.
-            existing = getUtility(IBaseSnapSet).getDefault()
-            if existing is not None and existing != self:
-                raise BaseSnapDefaultConflict(
-                    "The default base snap is already set to %s." %
-                    existing.name)
-        self.is_default = value
-
     def destroySelf(self):
         """See `IBaseSnap`."""
         # Guard against unfortunate accidents.
@@ -137,10 +125,13 @@ class BaseSnapSet:
         """See `IBaseSnapSet`."""
         previous = self.getDefault()
         if previous != base_snap:
+            # We can safely remove the security proxy here, because the
+            # default base snap is logically a property of the set even
+            # though it is stored on the base snap.
             if previous is not None:
-                previous.setDefault(False)
+                removeSecurityProxy(previous).is_default = False
             if base_snap is not None:
-                base_snap.setDefault(True)
+                removeSecurityProxy(base_snap).is_default = True
 
     def getAll(self):
         """See `IBaseSnapSet`."""

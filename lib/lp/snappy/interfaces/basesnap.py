@@ -7,7 +7,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 __all__ = [
-    "BaseSnapDefaultConflict",
     "CannotDeleteBaseSnap",
     "IBaseSnap",
     "IBaseSnapSet",
@@ -52,11 +51,6 @@ from lp.services.fields import (
     PublicPersonChoice,
     Title,
     )
-
-
-@error_status(httplib.CONFLICT)
-class BaseSnapDefaultConflict(Exception):
-    """A default base snap already exists."""
 
 
 class NoSuchBaseSnap(NameLookupFailed):
@@ -137,17 +131,6 @@ class IBaseSnapEditableAttributes(Interface):
 
 class IBaseSnapEdit(Interface):
     """`IBaseSnap` methods that require launchpad.Edit permission."""
-
-    def setDefault(value):
-        """Set whether this base snap is the default.
-
-        This is for internal use; the caller should ensure permission to
-        edit the base snap and should arrange to remove any existing default
-        first.  Most callers should use `IBaseSnapSet.setDefault` instead.
-
-        :param value: True if this base snap should be the default,
-            otherwise False.
-        """
 
     @export_destructor_operation()
     @operation_for_version("devel")
