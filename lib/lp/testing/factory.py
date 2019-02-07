@@ -4848,7 +4848,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return snappy_series
 
     def makeSnapBase(self, registrant=None, name=None, display_name=None,
-                     distro_series=None, channels=None, date_created=DEFAULT):
+                     distro_series=None, build_channels=None,
+                     date_created=DEFAULT):
         """Make a new SnapBase."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4859,10 +4860,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 word.capitalize() for word in name.split('-'))
         if distro_series is None:
             distro_series = self.makeDistroSeries()
-        if channels is None:
-            channels = {u"snapcraft": u"stable"}
+        if build_channels is None:
+            build_channels = {u"snapcraft": u"stable"}
         return getUtility(ISnapBaseSet).new(
-            registrant, name, display_name, distro_series, channels,
+            registrant, name, display_name, distro_series, build_channels,
             date_created=date_created)
 
 

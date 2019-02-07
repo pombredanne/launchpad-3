@@ -565,7 +565,7 @@ class TestSnap(TestCaseWithFactory):
         with admin_logged_in():
             snap_base = self.factory.makeSnapBase(
                 name="test-base",
-                channels={"snapcraft": "stable/launchpad-buildd"})
+                build_channels={"snapcraft": "stable/launchpad-buildd"})
             self.factory.makeSnapBase()
         for arch_tag in ("mips64el", "riscv64"):
             self.makeBuildableDistroArchSeries(
@@ -585,7 +585,7 @@ class TestSnap(TestCaseWithFactory):
                 job.requester, job.archive, job.pocket,
                 build_request=job.build_request)
         self.assertRequestedBuildsMatch(
-            builds, job, ["mips64el", "riscv64"], snap_base.channels,
+            builds, job, ["mips64el", "riscv64"], snap_base.build_channels,
             distro_series=snap_base.distro_series)
 
     def test_requestBuildsFromJob_no_distroseries_no_explicit_base(self):
@@ -595,7 +595,7 @@ class TestSnap(TestCaseWithFactory):
         self.useFixture(GitHostingFixture(blob="name: foo\n"))
         with admin_logged_in():
             snap_base = self.factory.makeSnapBase(
-                channels={"snapcraft": "stable/launchpad-buildd"})
+                build_channels={"snapcraft": "stable/launchpad-buildd"})
             getUtility(ISnapBaseSet).setDefault(snap_base)
             self.factory.makeSnapBase()
         for arch_tag in ("mips64el", "riscv64"):
@@ -616,7 +616,7 @@ class TestSnap(TestCaseWithFactory):
                 job.requester, job.archive, job.pocket,
                 build_request=job.build_request)
         self.assertRequestedBuildsMatch(
-            builds, job, ["mips64el", "riscv64"], snap_base.channels,
+            builds, job, ["mips64el", "riscv64"], snap_base.build_channels,
             distro_series=snap_base.distro_series)
 
     def test_requestBuildsFromJob_no_distroseries_no_default_base(self):
@@ -626,7 +626,7 @@ class TestSnap(TestCaseWithFactory):
         self.useFixture(GitHostingFixture(blob="name: foo\n"))
         with admin_logged_in():
             snap_base = self.factory.makeSnapBase(
-                channels={"snapcraft": "stable/launchpad-buildd"})
+                build_channels={"snapcraft": "stable/launchpad-buildd"})
         snap = self.factory.makeSnap(
             distroseries=None, git_ref=self.factory.makeGitRefs()[0])
         job = getUtility(ISnapRequestBuildsJobSource).create(

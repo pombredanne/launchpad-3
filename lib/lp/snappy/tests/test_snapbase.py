@@ -127,8 +127,8 @@ class TestSnapBaseWebservice(TestCaseWithFactory):
         webservice.default_api_version = "devel"
         response = webservice.named_post(
             "/+snap-bases", "new",
-            name="dummy", display_name="Dummy",
-            distro_series=distroseries_url, channels={"snapcraft": "stable"})
+            name="dummy", display_name="Dummy", distro_series=distroseries_url,
+            build_channels={"snapcraft": "stable"})
         self.assertEqual(401, response.status)
 
     def test_new(self):
@@ -142,8 +142,8 @@ class TestSnapBaseWebservice(TestCaseWithFactory):
         logout()
         response = webservice.named_post(
             "/+snap-bases", "new",
-            name="dummy", display_name="Dummy",
-            distro_series=distroseries_url, channels={"snapcraft": "stable"})
+            name="dummy", display_name="Dummy", distro_series=distroseries_url,
+            build_channels={"snapcraft": "stable"})
         self.assertEqual(201, response.status)
         snap_base = webservice.get(response.getHeader("Location")).jsonBody()
         with person_logged_in(person):
@@ -154,7 +154,7 @@ class TestSnapBaseWebservice(TestCaseWithFactory):
                 "display_name": Equals("Dummy"),
                 "distro_series_link": Equals(
                     webservice.getAbsoluteUrl(distroseries_url)),
-                "channels": Equals({"snapcraft": "stable"}),
+                "build_channels": Equals({"snapcraft": "stable"}),
                 "is_default": Is(False),
                 }))
 
@@ -169,13 +169,13 @@ class TestSnapBaseWebservice(TestCaseWithFactory):
         logout()
         response = webservice.named_post(
             "/+snap-bases", "new",
-            name="dummy", display_name="Dummy",
-            distro_series=distroseries_url, channels={"snapcraft": "stable"})
+            name="dummy", display_name="Dummy", distro_series=distroseries_url,
+            build_channels={"snapcraft": "stable"})
         self.assertEqual(201, response.status)
         response = webservice.named_post(
             "/+snap-bases", "new",
-            name="dummy", display_name="Dummy",
-            distro_series=distroseries_url, channels={"snapcraft": "stable"})
+            name="dummy", display_name="Dummy", distro_series=distroseries_url,
+            build_channels={"snapcraft": "stable"})
         self.assertEqual(400, response.status)
         self.assertEqual(
             "name: dummy is already in use by another base snap.",
