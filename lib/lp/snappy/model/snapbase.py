@@ -127,6 +127,16 @@ class SnapBaseSet:
             if snap_base is not None:
                 removeSecurityProxy(snap_base).is_default = True
 
+    def findForSnapcraftData(self, snapcraft_data):
+        """See `ISnapBaseSet`."""
+        if "base" in snapcraft_data:
+            snap_base_name = snapcraft_data["base"]
+            if isinstance(snap_base_name, bytes):
+                snap_base_name = snap_base_name.decode("UTF-8")
+            return self.getByName(snap_base_name)
+        else:
+            return self.getDefault()
+
     def getAll(self):
         """See `ISnapBaseSet`."""
         return IStore(SnapBase).find(SnapBase).order_by(SnapBase.name)

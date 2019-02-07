@@ -206,6 +206,15 @@ class ISnapBaseSet(ISnapBaseSetEdit):
         that do not specify a base.
         """
 
+    def findForSnapcraftData(snapcraft_data):
+        """Find a suitable base snap given a parsed snapcraft.yaml file.
+
+        :raises NoSuchSnapBase: if the snapcraft.yaml file names an unknown
+            base snap.
+        :return: an `ISnapBase`, or None if the snapcraft.yaml file does not
+            name any base snap and no default base snap is configured.
+        """
+
     @collection_default_content()
     def getAll():
         """Return all `ISnapBase`s."""

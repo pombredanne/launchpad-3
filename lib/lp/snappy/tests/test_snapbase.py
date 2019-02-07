@@ -108,6 +108,27 @@ class TestSnapBaseSet(TestCaseWithFactory):
             [False, False, False],
             [snap_base.is_default for snap_base in snap_bases])
 
+    def test_findForSnapcraftData(self):
+        snap_base_set = getUtility(ISnapBaseSet)
+        snap_bases = [self.factory.makeSnapBase() for _ in range(2)]
+        for snap_base in snap_bases:
+            self.assertEqual(
+                snap_base,
+                snap_base_set.findForSnapcraftData({"base": snap_base.name}))
+        self.assertRaises(
+            NoSuchSnapBase, snap_base_set.findForSnapcraftData,
+            {"base": "nonexistent"})
+        self.assertIsNone(snap_base_set.findForSnapcraftData({}))
+        snap_base_set.setDefault(snap_bases[0])
+        for snap_base in snap_bases:
+            self.assertEqual(
+                snap_base,
+                snap_base_set.findForSnapcraftData({"base": snap_base.name}))
+        self.assertRaises(
+            NoSuchSnapBase, snap_base_set.findForSnapcraftData,
+            {"base": "nonexistent"})
+        self.assertEqual(snap_bases[0], snap_base_set.findForSnapcraftData({}))
+
     def test_getAll(self):
         snap_bases = [self.factory.makeSnapBase() for _ in range(3)]
         self.assertContentEqual(snap_bases, getUtility(ISnapBaseSet).getAll())
