@@ -670,7 +670,7 @@ class TestBranchRescanView(BrowserTestCase):
             branch, view_name='+rescan', rootsite='code')
         browser = self._getBrowser(branch.owner)
         browser.open(branch_url)
-        self.assertTrue('schedule a rescan' in browser.contents)
+        self.assertIn('schedule a rescan', browser.contents)
 
     def test_other_user_can_see_rescan(self):
         other_user = self.factory.makePerson()
@@ -682,7 +682,7 @@ class TestBranchRescanView(BrowserTestCase):
             branch, view_name='+rescan', rootsite='code')
         browser = self._getBrowser(other_user)
         browser.open(branch_url)
-        self.assertTrue('schedule a rescan' in browser.contents)
+        self.assertIn('schedule a rescan', browser.contents)
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):
