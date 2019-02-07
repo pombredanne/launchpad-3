@@ -672,11 +672,12 @@ class TestBranchRescanView(BrowserTestCase):
         self.assertTrue('schedule a rescan' in browser.contents)
 
     def test_other_user_can_see_rescan(self):
-        branch = self.factory.makeAnyBranch()
+        other_user = self.factory.makePerson()
+        product = self.factory.makeProduct(owner=other_user)
+        branch = self.factory.makeAnyBranch(product=product)
         job = BranchScanJob.create(branch)
         job.job._status = JobStatus.FAILED
         branch_url = canonical_url(branch, view_name='+rescan', rootsite='code')
-        other_user = self.factory.makePerson()
         browser = self._getBrowser(other_user)
         browser.open(branch_url)
         self.assertTrue('schedule a rescan' in browser.contents)
