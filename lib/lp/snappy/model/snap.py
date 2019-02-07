@@ -617,6 +617,27 @@ class Snap(Storm, WebhookTargetMixin):
             self, requester, archive, pocket, channels)
         return self.getBuildRequest(job.job_id)
 
+    def _pickDistroSeries(self, snap_base, snapcraft_data):
+        """Pick a suitable `IDistroSeries` for a build."""
+        if snap_base is not None:
+            return self.distro_series or snap_base.distro_series
+        elif self.distro_series is None:
+            # A base snap is mandatory if there's no configured distro
+            # series.
+            raise NoSuchSnapBase(snapcraft_data.get("base", "<default>"))
+        else:
+            return self.distro_series
+
+    def _pickChannels(self, snap_base, channels=None):
+        """Pick suitable snap channels for a build."""
+        if snap_base is not None:
+            new_channels = dict(snap_base.build_channels)
+            if channels is not None:
+                new_channels.update(channels)
+            return new_channels
+        else:
+            return channels
+
     def requestBuildsFromJob(self, requester, archive, pocket, channels=None,
                              allow_failures=False, fetch_snapcraft_yaml=True,
                              build_request=None, logger=None):
@@ -646,18 +667,8 @@ class Snap(Storm, WebhookTargetMixin):
             # channels.
             snap_base = getUtility(ISnapBaseSet).findForSnapcraftData(
                 snapcraft_data)
-            distro_series = self.distro_series
-            if snap_base is not None:
-                if distro_series is None:
-                    distro_series = snap_base.distro_series
-                new_channels = dict(snap_base.build_channels)
-                if channels is not None:
-                    new_channels.update(channels)
-                channels = new_channels
-            elif distro_series is None:
-                # A base snap is mandatory if there's no configured distro
-                # series.
-                raise NoSuchSnapBase(snapcraft_data.get("base", "<default>"))
+            distro_series = self._pickDistroSeries(snap_base, snapcraft_data)
+            channels = self._pickChannels(snap_base, channels=channels)
 
             # Sort by Processor.id for determinism.  This is chosen to be
             # the same order as in BinaryPackageBuildSet.createForSource, to
