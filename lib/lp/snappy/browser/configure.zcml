@@ -139,16 +139,16 @@
             module="lp.snappy.browser.snappyseries"
             classes="SnappySeriesSetNavigation" />
         <browser:url
-            for="lp.snappy.interfaces.basesnap.IBaseSnap"
+            for="lp.snappy.interfaces.snapbase.ISnapBase"
             path_expression="name"
-            parent_utility="lp.snappy.interfaces.basesnap.IBaseSnapSet" />
+            parent_utility="lp.snappy.interfaces.snapbase.ISnapBaseSet" />
         <browser:url
-            for="lp.snappy.interfaces.basesnap.IBaseSnapSet"
-            path_expression="string:+base-snaps"
+            for="lp.snappy.interfaces.snapbase.ISnapBaseSet"
+            path_expression="string:+snap-bases"
             parent_utility="lp.services.webapp.interfaces.ILaunchpadRoot" />
         <browser:navigation
-            module="lp.snappy.browser.basesnap"
-            classes="BaseSnapSetNavigation" />
+            module="lp.snappy.browser.snapbase"
+            classes="SnapBaseSetNavigation" />
 
         <browser:page
             for="*"

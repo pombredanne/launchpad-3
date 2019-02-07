@@ -19,11 +19,11 @@ from zope.component import (
 
 from lp.app.interfaces.security import IAuthorization
 from lp.services.webapp.interfaces import OAuthPermission
-from lp.snappy.interfaces.basesnap import (
-    CannotDeleteBaseSnap,
-    IBaseSnap,
-    IBaseSnapSet,
-    NoSuchBaseSnap,
+from lp.snappy.interfaces.snapbase import (
+    CannotDeleteSnapBase,
+    ISnapBase,
+    ISnapBaseSet,
+    NoSuchSnapBase,
     )
 from lp.testing import (
     api_url,
@@ -39,86 +39,86 @@ from lp.testing.layers import (
 from lp.testing.pages import webservice_for_person
 
 
-class TestBaseSnap(TestCaseWithFactory):
+class TestSnapBase(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
     def test_implements_interface(self):
-        # BaseSnap implements IBaseSnap.
-        base_snap = self.factory.makeBaseSnap()
-        self.assertProvides(base_snap, IBaseSnap)
+        # SnapBase implements ISnapBase.
+        snap_base = self.factory.makeSnapBase()
+        self.assertProvides(snap_base, ISnapBase)
 
     def test_new_not_default(self):
-        base_snap = self.factory.makeBaseSnap()
-        self.assertFalse(base_snap.is_default)
+        snap_base = self.factory.makeSnapBase()
+        self.assertFalse(snap_base.is_default)
 
     def test_anonymous(self):
-        # Anyone can view an `IBaseSnap`.
-        base_snap = self.factory.makeBaseSnap()
-        authz = getAdapter(base_snap, IAuthorization, name="launchpad.View")
+        # Anyone can view an `ISnapBase`.
+        snap_base = self.factory.makeSnapBase()
+        authz = getAdapter(snap_base, IAuthorization, name="launchpad.View")
         self.assertTrue(authz.checkUnauthenticated())
 
     def test_destroySelf(self):
-        base_snap = self.factory.makeBaseSnap()
-        base_snap_name = base_snap.name
-        base_snap_set = getUtility(IBaseSnapSet)
-        self.assertEqual(base_snap, base_snap_set.getByName(base_snap_name))
-        base_snap.destroySelf()
+        snap_base = self.factory.makeSnapBase()
+        snap_base_name = snap_base.name
+        snap_base_set = getUtility(ISnapBaseSet)
+        self.assertEqual(snap_base, snap_base_set.getByName(snap_base_name))
+        snap_base.destroySelf()
         self.assertRaises(
-            NoSuchBaseSnap, base_snap_set.getByName, base_snap_name)
+            NoSuchSnapBase, snap_base_set.getByName, snap_base_name)
 
     def test_destroySelf_refuses_default(self):
-        base_snap = self.factory.makeBaseSnap()
-        getUtility(IBaseSnapSet).setDefault(base_snap)
-        self.assertRaises(CannotDeleteBaseSnap, base_snap.destroySelf)
+        snap_base = self.factory.makeSnapBase()
+        getUtility(ISnapBaseSet).setDefault(snap_base)
+        self.assertRaises(CannotDeleteSnapBase, snap_base.destroySelf)
 
 
-class TestBaseSnapSet(TestCaseWithFactory):
+class TestSnapBaseSet(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
     def test_getByName(self):
-        base_snap_set = getUtility(IBaseSnapSet)
-        base_snap = self.factory.makeBaseSnap(name="foo")
-        self.factory.makeBaseSnap()
-        self.assertEqual(base_snap, base_snap_set.getByName("foo"))
-        self.assertRaises(NoSuchBaseSnap, base_snap_set.getByName, "bar")
+        snap_base_set = getUtility(ISnapBaseSet)
+        snap_base = self.factory.makeSnapBase(name="foo")
+        self.factory.makeSnapBase()
+        self.assertEqual(snap_base, snap_base_set.getByName("foo"))
+        self.assertRaises(NoSuchSnapBase, snap_base_set.getByName, "bar")
 
     def test_getDefault(self):
-        base_snap_set = getUtility(IBaseSnapSet)
-        base_snap = self.factory.makeBaseSnap()
-        self.factory.makeBaseSnap()
-        self.assertIsNone(base_snap_set.getDefault())
-        base_snap_set.setDefault(base_snap)
-        self.assertEqual(base_snap, base_snap_set.getDefault())
+        snap_base_set = getUtility(ISnapBaseSet)
+        snap_base = self.factory.makeSnapBase()
+        self.factory.makeSnapBase()
+        self.assertIsNone(snap_base_set.getDefault())
+        snap_base_set.setDefault(snap_base)
+        self.assertEqual(snap_base, snap_base_set.getDefault())
 
     def test_setDefault(self):
-        base_snap_set = getUtility(IBaseSnapSet)
-        base_snaps = [self.factory.makeBaseSnap() for _ in range(3)]
-        base_snap_set.setDefault(base_snaps[0])
+        snap_base_set = getUtility(ISnapBaseSet)
+        snap_bases = [self.factory.makeSnapBase() for _ in range(3)]
+        snap_base_set.setDefault(snap_bases[0])
         self.assertEqual(
             [True, False, False],
-            [base_snap.is_default for base_snap in base_snaps])
-        base_snap_set.setDefault(base_snaps[1])
+            [snap_base.is_default for snap_base in snap_bases])
+        snap_base_set.setDefault(snap_bases[1])
         self.assertEqual(
             [False, True, False],
-            [base_snap.is_default for base_snap in base_snaps])
-        base_snap_set.setDefault(None)
+            [snap_base.is_default for snap_base in snap_bases])
+        snap_base_set.setDefault(None)
         self.assertEqual(
             [False, False, False],
-            [base_snap.is_default for base_snap in base_snaps])
+            [snap_base.is_default for snap_base in snap_bases])
 
     def test_getAll(self):
-        base_snaps = [self.factory.makeBaseSnap() for _ in range(3)]
-        self.assertContentEqual(base_snaps, getUtility(IBaseSnapSet).getAll())
+        snap_bases = [self.factory.makeSnapBase() for _ in range(3)]
+        self.assertContentEqual(snap_bases, getUtility(ISnapBaseSet).getAll())
 
 
-class TestBaseSnapWebservice(TestCaseWithFactory):
+class TestSnapBaseWebservice(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def test_new_unpriv(self):
-        # An unprivileged user cannot create a BaseSnap.
+        # An unprivileged user cannot create a SnapBase.
         person = self.factory.makePerson()
         distroseries = self.factory.makeDistroSeries()
         distroseries_url = api_url(distroseries)
@@ -126,13 +126,13 @@ class TestBaseSnapWebservice(TestCaseWithFactory):
             person, permission=OAuthPermission.WRITE_PUBLIC)
         webservice.default_api_version = "devel"
         response = webservice.named_post(
-            "/+base-snaps", "new",
+            "/+snap-bases", "new",
             name="dummy", display_name="Dummy",
             distro_series=distroseries_url, channels={"snapcraft": "stable"})
         self.assertEqual(401, response.status)
 
     def test_new(self):
-        # A registry expert can create a BaseSnap.
+        # A registry expert can create a SnapBase.
         person = self.factory.makeRegistryExpert()
         distroseries = self.factory.makeDistroSeries()
         distroseries_url = api_url(distroseries)
@@ -141,13 +141,13 @@ class TestBaseSnapWebservice(TestCaseWithFactory):
         webservice.default_api_version = "devel"
         logout()
         response = webservice.named_post(
-            "/+base-snaps", "new",
+            "/+snap-bases", "new",
             name="dummy", display_name="Dummy",
             distro_series=distroseries_url, channels={"snapcraft": "stable"})
         self.assertEqual(201, response.status)
-        base_snap = webservice.get(response.getHeader("Location")).jsonBody()
+        snap_base = webservice.get(response.getHeader("Location")).jsonBody()
         with person_logged_in(person):
-            self.assertThat(base_snap, ContainsDict({
+            self.assertThat(snap_base, ContainsDict({
                 "registrant_link": Equals(
                     webservice.getAbsoluteUrl(api_url(person))),
                 "name": Equals("dummy"),
@@ -159,7 +159,7 @@ class TestBaseSnapWebservice(TestCaseWithFactory):
                 }))
 
     def test_new_duplicate_name(self):
-        # An attempt to create a BaseSnap with a duplicate name is rejected.
+        # An attempt to create a SnapBase with a duplicate name is rejected.
         person = self.factory.makeRegistryExpert()
         distroseries = self.factory.makeDistroSeries()
         distroseries_url = api_url(distroseries)
@@ -168,12 +168,12 @@ class TestBaseSnapWebservice(TestCaseWithFactory):
         webservice.default_api_version = "devel"
         logout()
         response = webservice.named_post(
-            "/+base-snaps", "new",
+            "/+snap-bases", "new",
             name="dummy", display_name="Dummy",
             distro_series=distroseries_url, channels={"snapcraft": "stable"})
         self.assertEqual(201, response.status)
         response = webservice.named_post(
-            "/+base-snaps", "new",
+            "/+snap-bases", "new",
             name="dummy", display_name="Dummy",
             distro_series=distroseries_url, channels={"snapcraft": "stable"})
         self.assertEqual(400, response.status)
@@ -182,92 +182,92 @@ class TestBaseSnapWebservice(TestCaseWithFactory):
             response.body)
 
     def test_getByName(self):
-        # lp.base_snaps.getByName returns a matching BaseSnap.
+        # lp.snap_bases.getByName returns a matching SnapBase.
         person = self.factory.makePerson()
         webservice = webservice_for_person(
             person, permission=OAuthPermission.READ_PUBLIC)
         webservice.default_api_version = "devel"
         with celebrity_logged_in("registry_experts"):
-            self.factory.makeBaseSnap(name="dummy")
+            self.factory.makeSnapBase(name="dummy")
         response = webservice.named_get(
-            "/+base-snaps", "getByName", name="dummy")
+            "/+snap-bases", "getByName", name="dummy")
         self.assertEqual(200, response.status)
         self.assertEqual("dummy", response.jsonBody()["name"])
 
     def test_getByName_missing(self):
-        # lp.base_snaps.getByName returns 404 for a non-existent BaseSnap.
+        # lp.snap_bases.getByName returns 404 for a non-existent SnapBase.
         person = self.factory.makePerson()
         webservice = webservice_for_person(
             person, permission=OAuthPermission.READ_PUBLIC)
         webservice.default_api_version = "devel"
         logout()
         response = webservice.named_get(
-            "/+base-snaps", "getByName", name="nonexistent")
+            "/+snap-bases", "getByName", name="nonexistent")
         self.assertEqual(404, response.status)
         self.assertEqual("No such base snap: 'nonexistent'.", response.body)
 
     def test_getDefault(self):
-        # lp.base_snaps.getDefault returns the default BaseSnap, if any.
+        # lp.snap_bases.getDefault returns the default SnapBase, if any.
         person = self.factory.makePerson()
         webservice = webservice_for_person(
             person, permission=OAuthPermission.READ_PUBLIC)
         webservice.default_api_version = "devel"
-        response = webservice.named_get("/+base-snaps", "getDefault")
+        response = webservice.named_get("/+snap-bases", "getDefault")
         self.assertEqual(200, response.status)
         self.assertIsNone(response.jsonBody())
         with celebrity_logged_in("registry_experts"):
-            getUtility(IBaseSnapSet).setDefault(
-                self.factory.makeBaseSnap(name="default-base"))
-            self.factory.makeBaseSnap()
-        response = webservice.named_get("/+base-snaps", "getDefault")
+            getUtility(ISnapBaseSet).setDefault(
+                self.factory.makeSnapBase(name="default-base"))
+            self.factory.makeSnapBase()
+        response = webservice.named_get("/+snap-bases", "getDefault")
         self.assertEqual(200, response.status)
         self.assertEqual("default-base", response.jsonBody()["name"])
 
     def test_setDefault_unpriv(self):
-        # An unprivileged user cannot set the default BaseSnap.
+        # An unprivileged user cannot set the default SnapBase.
         person = self.factory.makePerson()
         with celebrity_logged_in("registry_experts"):
-            base_snap = self.factory.makeBaseSnap()
-            base_snap_url = api_url(base_snap)
+            snap_base = self.factory.makeSnapBase()
+            snap_base_url = api_url(snap_base)
         webservice = webservice_for_person(
             person, permission=OAuthPermission.WRITE_PUBLIC)
         webservice.default_api_version = "devel"
         response = webservice.named_post(
-            "/+base-snaps", "setDefault", base_snap=base_snap_url)
+            "/+snap-bases", "setDefault", snap_base=snap_base_url)
         self.assertEqual(401, response.status)
 
     def test_setDefault(self):
-        # A registry expert can set the default BaseSnap.
+        # A registry expert can set the default SnapBase.
         person = self.factory.makeRegistryExpert()
         with person_logged_in(person):
-            base_snaps = [self.factory.makeBaseSnap() for _ in range(3)]
-            base_snap_urls = [api_url(base_snap) for base_snap in base_snaps]
+            snap_bases = [self.factory.makeSnapBase() for _ in range(3)]
+            snap_base_urls = [api_url(snap_base) for snap_base in snap_bases]
         webservice = webservice_for_person(
             person, permission=OAuthPermission.WRITE_PUBLIC)
         webservice.default_api_version = "devel"
         response = webservice.named_post(
-            "/+base-snaps", "setDefault", base_snap=base_snap_urls[0])
+            "/+snap-bases", "setDefault", snap_base=snap_base_urls[0])
         self.assertEqual(200, response.status)
         with person_logged_in(person):
             self.assertEqual(
-                base_snaps[0], getUtility(IBaseSnapSet).getDefault())
+                snap_bases[0], getUtility(ISnapBaseSet).getDefault())
         response = webservice.named_post(
-            "/+base-snaps", "setDefault", base_snap=base_snap_urls[1])
+            "/+snap-bases", "setDefault", snap_base=snap_base_urls[1])
         self.assertEqual(200, response.status)
         with person_logged_in(person):
             self.assertEqual(
-                base_snaps[1], getUtility(IBaseSnapSet).getDefault())
+                snap_bases[1], getUtility(ISnapBaseSet).getDefault())
 
     def test_collection(self):
-        # lp.base_snaps is a collection of all BaseSnaps.
+        # lp.snap_bases is a collection of all SnapBases.
         person = self.factory.makePerson()
         webservice = webservice_for_person(
             person, permission=OAuthPermission.READ_PUBLIC)
         webservice.default_api_version = "devel"
         with celebrity_logged_in("registry_experts"):
             for i in range(3):
-                self.factory.makeBaseSnap(name="base-%d" % i)
-        response = webservice.get("/+base-snaps")
+                self.factory.makeSnapBase(name="base-%d" % i)
+        response = webservice.get("/+snap-bases")
         self.assertEqual(200, response.status)
         self.assertContentEqual(
             ["base-0", "base-1", "base-2"],
