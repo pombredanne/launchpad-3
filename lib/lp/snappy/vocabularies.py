@@ -77,14 +77,12 @@ class SnappyDistroSeriesVocabulary(StormVocabularyBase):
     _origin = [
         SnappyDistroSeries,
         LeftJoin(
-            SnappySeries,
-            SnappyDistroSeries.snappy_series_id == SnappySeries.id),
-        LeftJoin(
             DistroSeries,
             SnappyDistroSeries.distro_series_id == DistroSeries.id),
         LeftJoin(Distribution, DistroSeries.distributionID == Distribution.id),
+        SnappySeries,
         ]
-    _clauses = []
+    _clauses = [SnappyDistroSeries.snappy_series_id == SnappySeries.id]
 
     @property
     def _entries(self):
