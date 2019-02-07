@@ -649,6 +649,40 @@ class TestBranchView(BrowserTestCase):
         self.assertThat(recorder, HasQueryCount(Equals(30)))
 
 
+class TestBranchRescanView(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def _getBrowser(self, user=None):
+        if user is None:
+            browser = setupBrowser()
+            logout()
+            return browser
+        else:
+            login_person(user)
+            return setupBrowserForUser(user=user)
+
+    def test_owner_can_see_rescan(self):
+        branch = self.factory.makeAnyBranch()
+        job = BranchScanJob.create(branch)
+        job.job._status = JobStatus.FAILED
+        branch_url = canonical_url(branch, view_name='+rescan', rootsite='code')
+        browser = self._getBrowser(branch.owner)
+        browser.open(branch_url)
+        self.assertTrue('schedule a rescan' in browser.contents)
+
+    def test_other_user_can_see_rescan(self):
+        branch = self.factory.makeAnyBranch()
+        job = BranchScanJob.create(branch)
+        job.job._status = JobStatus.FAILED
+        branch_url = canonical_url(branch, view_name='+rescan', rootsite='code')
+        other_user = self.factory.makePerson()
+        browser = self._getBrowser(other_user)
+        browser.open(branch_url)
+        self.assertTrue('schedule a rescan' in browser.contents)
+
+
+
 class TestBranchViewPrivateArtifacts(BrowserTestCase):
     """ Tests that branches with private team artifacts can be viewed.
 
