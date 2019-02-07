@@ -666,7 +666,8 @@ class TestBranchRescanView(BrowserTestCase):
         branch = self.factory.makeAnyBranch()
         job = BranchScanJob.create(branch)
         job.job._status = JobStatus.FAILED
-        branch_url = canonical_url(branch, view_name='+rescan', rootsite='code')
+        branch_url = canonical_url(
+            branch, view_name='+rescan', rootsite='code')
         browser = self._getBrowser(branch.owner)
         browser.open(branch_url)
         self.assertTrue('schedule a rescan' in browser.contents)
@@ -677,11 +678,11 @@ class TestBranchRescanView(BrowserTestCase):
         branch = self.factory.makeAnyBranch(product=product)
         job = BranchScanJob.create(branch)
         job.job._status = JobStatus.FAILED
-        branch_url = canonical_url(branch, view_name='+rescan', rootsite='code')
+        branch_url = canonical_url(
+            branch, view_name='+rescan', rootsite='code')
         browser = self._getBrowser(other_user)
         browser.open(branch_url)
         self.assertTrue('schedule a rescan' in browser.contents)
-
 
 
 class TestBranchViewPrivateArtifacts(BrowserTestCase):
