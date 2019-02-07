@@ -162,12 +162,17 @@ class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
         chroot exists for SECURITY, then it will choose the one for RELEASE.
         If exact_pocket is True, this only finds chroots for exactly the
         given pocket.
+
+        The image type defaults to `BuildBaseImageType.CHROOT`.
         """
 
     def getChroot(default=None, pocket=None, image_type=None):
         """Return the Chroot for this series, pocket, and image type.
 
         It uses getPocketChroot and if not found returns 'default'.
+
+        The pocket defaults to `PackagePublishingPocket.RELEASE`; the image
+        type defaults to `BuildBaseImageType.CHROOT`.
         """
 
     @operation_parameters(
@@ -176,10 +181,18 @@ class IDistroArchSeriesPublic(IHasBuildRecords, IHasOwner):
     @export_read_operation()
     @operation_for_version("devel")
     def getChrootURL(pocket=None, image_type=None):
-        """Return the chroot URL for this series, pocket, and image type."""
+        """Return the chroot URL for this series, pocket, and image type.
+
+        The pocket defaults to "Release"; the image type defaults to "Chroot
+        tarball".
+        """
 
     def addOrUpdateChroot(chroot, pocket=None, image_type=None):
-        """Return the just added or modified PocketChroot."""
+        """Return the just added or modified PocketChroot.
+
+        The pocket defaults to `PackagePublishingPocket.RELEASE`; the image
+        type defaults to `BuildBaseImageType.CHROOT`.
+        """
 
     def searchBinaryPackages(text):
         """Search BinaryPackageRelease published in this series for those
@@ -206,6 +219,9 @@ class IDistroArchSeriesModerate(Interface):
         """Set the chroot tarball used for builds in this architecture.
 
         The SHA-1 checksum must match the chroot file.
+
+        The pocket defaults to "Release"; the image type defaults to "Chroot
+        tarball".
         """
 
     @operation_parameters(
@@ -219,7 +235,11 @@ class IDistroArchSeriesModerate(Interface):
     @operation_for_version("devel")
     def setChrootFromBuild(livefsbuild, filename, pocket=None,
                            image_type=None):
-        """Set the chroot tarball from a live filesystem build."""
+        """Set the chroot tarball from a live filesystem build.
+
+        The pocket defaults to "Release"; the image type defaults to "Chroot
+        tarball".
+        """
 
     @operation_parameters(
         pocket=Choice(vocabulary=PackagePublishingPocket, required=False),
@@ -227,7 +247,11 @@ class IDistroArchSeriesModerate(Interface):
     @export_write_operation()
     @operation_for_version("devel")
     def removeChroot(pocket=None, image_type=None):
-        """Remove the chroot tarball used for builds in this architecture."""
+        """Remove the chroot tarball used for builds in this architecture.
+
+        The pocket defaults to "Release"; the image type defaults to "Chroot
+        tarball".
+        """
 
 
 class IDistroArchSeries(IDistroArchSeriesPublic, IDistroArchSeriesModerate):
