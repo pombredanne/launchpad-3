@@ -446,7 +446,7 @@
         name="+rescan"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchRescanView"
-        permission="launchpad.Edit"
+        permission="launchpad.Moderate"
         template="../templates/branch-rescan.pt"/>
     <browser:page
         name="+edit-import"
