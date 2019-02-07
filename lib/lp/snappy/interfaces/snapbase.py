@@ -118,8 +118,8 @@ class ISnapBaseEditableAttributes(Interface):
         IDistroSeries, title=_("Distro series"),
         required=True, readonly=False))
 
-    channels = exported(Dict(
-        title=_("Source snap channels"),
+    build_channels = exported(Dict(
+        title=_("Source snap channels for builds"),
         key_type=TextLine(), required=True, readonly=False,
         description=_(
             "A dictionary mapping snap names to channels to use when building "
@@ -152,9 +152,9 @@ class ISnapBaseSetEdit(Interface):
 
     @call_with(registrant=REQUEST_USER)
     @export_factory_operation(
-        ISnapBase, ["name", "display_name", "distro_series", "channels"])
+        ISnapBase, ["name", "display_name", "distro_series", "build_channels"])
     @operation_for_version("devel")
-    def new(registrant, name, display_name, distro_series, channels,
+    def new(registrant, name, display_name, distro_series, build_channels,
             date_created=None):
         """Create an `ISnapBase`."""
 

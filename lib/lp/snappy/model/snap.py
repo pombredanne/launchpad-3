@@ -657,7 +657,7 @@ class Snap(Storm, WebhookTargetMixin):
             if snap_base is not None:
                 if distro_series is None:
                     distro_series = snap_base.distro_series
-                new_channels = dict(snap_base.channels)
+                new_channels = dict(snap_base.build_channels)
                 if channels is not None:
                     new_channels.update(channels)
                 channels = new_channels
