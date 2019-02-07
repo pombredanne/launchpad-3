@@ -10,7 +10,7 @@ CREATE TABLE SnapBase (
     name text NOT NULL,
     display_name text NOT NULL,
     distro_series integer NOT NULL REFERENCES distroseries,
-    channels text NOT NULL,
+    build_channels text NOT NULL,
     is_default boolean NOT NULL,
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
@@ -25,7 +25,7 @@ COMMENT ON COLUMN SnapBase.registrant IS 'The user who registered this base snap
 COMMENT ON COLUMN SnapBase.name IS 'The unique name of this base snap.';
 COMMENT ON COLUMN SnapBase.display_name IS 'The display name of this base snap.';
 COMMENT ON COLUMN SnapBase.distro_series IS 'The distro series used for snap builds that specify this base snap.';
-COMMENT ON COLUMN SnapBase.channels IS 'A dictionary mapping snap names to channels to use when building snaps that specify this base snap.';
+COMMENT ON COLUMN SnapBase.build_channels IS 'A dictionary mapping snap names to channels to use when building snaps that specify this base snap.';
 COMMENT ON COLUMN SnapBase.is_default IS 'Whether this base snap indicates the defaults used for snap builds that do not specify a base snap.';
 
 -- Allow defining snap recipes that detect the distro series from
