@@ -663,7 +663,7 @@ class TestBranchRescanView(BrowserTestCase):
         browser.open(branch_url)
         self.assertIn('schedule a rescan', browser.contents)
 
-    def test_other_user_can_see_rescan(self):
+    def test_project_owner_can_see_rescan(self):
         project_owner = self.factory.makePerson()
         product = self.factory.makeProduct(owner=project_owner)
         branch = self.factory.makeAnyBranch(product=product)
