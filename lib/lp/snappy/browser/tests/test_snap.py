@@ -1341,7 +1341,7 @@ class TestSnapView(BaseTestSnapView):
             """, self.getMainText(build.snap))
 
     def test_index_no_distro_series(self):
-        # If the snap is configured to guess an appropriate distro series
+        # If the snap is configured to infer an appropriate distro series
         # from snapcraft.yaml, then the index page does not show a distro
         # series.
         snap = self.makeSnap(distroseries=None)
@@ -1708,7 +1708,7 @@ class TestSnapRequestBuildsView(BaseTestSnapView):
         self.assertEqual(ppa, request.archive)
 
     def test_request_builds_no_distro_series(self):
-        # Requesting builds of a snap configured to guess an appropriate
+        # Requesting builds of a snap configured to infer an appropriate
         # distro series from snapcraft.yaml creates a pending build request.
         login_person(self.person)
         self.snap.distro_series = None

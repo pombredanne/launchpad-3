@@ -643,7 +643,8 @@ class ISnapEditableAttributes(IHasOwner):
         required=False, readonly=False,
         description=_(
             "The series for which the snap package should be built.  If not "
-            "set, Launchpad will guess at an appropriate series.")))
+            "set, Launchpad will infer an appropriate series from "
+            "snapcraft.yaml.")))
 
     name = exported(TextLine(
         title=_("Name"), required=True, readonly=False,

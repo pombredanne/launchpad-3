@@ -313,8 +313,8 @@ class SnapRequestBuildsView(LaunchpadFormView):
         return {
             'archive': (
                 # XXX cjwatson 2019-02-04: In order to support non-Ubuntu
-                # bases, we'd need to store this as None and guess it based
-                # on the guessed distro series; but this will do for now.
+                # bases, we'd need to store this as None and infer it based
+                # on the inferred distro series; but this will do for now.
                 getUtility(ILaunchpadCelebrities).ubuntu.main_archive
                 if self.context.distro_series is None
                 else self.context.distro_series.main_archive),
@@ -509,8 +509,8 @@ class SnapAddView(
                 if p.build_by_default],
             'auto_build_archive': (
                 # XXX cjwatson 2019-02-04: In order to support non-Ubuntu
-                # bases, we'd need to store this as None and guess it based
-                # on the guessed distro series; but this will do for now.
+                # bases, we'd need to store this as None and infer it based
+                # on the inferred distro series; but this will do for now.
                 getUtility(ILaunchpadCelebrities).ubuntu.main_archive
                 if distro_series is None
                 else distro_series.main_archive),
