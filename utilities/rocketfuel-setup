@@ -74,12 +74,12 @@ for hostname in $hostnames; do
 done
 
 # Enable relevant Ubuntu package repositories
-grep -q "^deb http:.* ${DISTRIB_CODENAME} .*universe" /etc/apt/sources.list
+grep -qE "^deb https?:.* ${DISTRIB_CODENAME} .*universe" /etc/apt/sources.list
 if [ $? -ne 0 ]; then
     echo "Please enable the 'universe' component in /etc/apt/sources.list'"
     exit 1
 fi
-grep -q "^deb http:.* ${DISTRIB_CODENAME} .*multiverse" /etc/apt/sources.list
+grep -qE "^deb https?:.* ${DISTRIB_CODENAME} .*multiverse" /etc/apt/sources.list
 if [ $? -ne 0 ]; then
     echo "Please enable the 'multiverse' component in /etc/apt/sources.list'"
     exit 1
@@ -96,7 +96,7 @@ if [ $? -ne 0 ]; then
   echo "Adding ~launchpad PPA repository to package source list."
   echo "$LP_PPA"  | sudo tee -a $LPDEV_SOURCES
 fi
-REQUIRED_PPA_KEYS="0A5174AF"
+REQUIRED_PPA_KEYS="2AF499CB24AC5F65461405572D1FFB6C0A5174AF"
 
 if [ "$DISTRIB_CODENAME" = precise ]; then
   BZR_PPA="deb http://ppa.launchpad.net/bzr/ppa/ubuntu ${DISTRIB_CODENAME} main"
@@ -105,12 +105,13 @@ if [ "$DISTRIB_CODENAME" = precise ]; then
     echo "Adding ~bzr PPA repository to package source list."
     echo "$BZR_PPA" | sudo tee -a $LPDEV_SOURCES
   fi
-  REQUIRED_PPA_KEYS="$REQUIRED_PPA_KEYS 8C6C1EFD"
+  REQUIRED_PPA_KEYS="$REQUIRED_PPA_KEYS ECE2800BACF028B31EE3657CD702BF6B8C6C1EFD"
 fi
 
 # Get the key used to sign the launchpad-developer-dependencies in the PPA.
 for key in $REQUIRED_PPA_KEYS; do
-   sudo apt-key list | grep -q $key
+   sudo APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1 \
+       apt-key adv --list-keys --with-colons --fingerprint | grep -qE "^fpr:+$key"
    if [ $? -ne 0 ]; then
      echo "Retrieving key $key."
      gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys $key
