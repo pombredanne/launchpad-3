@@ -1,7 +1,7 @@
 # Copyright 2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Base snaps."""
+"""Bases for snaps."""
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -77,7 +77,7 @@ class SnapBase(Storm):
         """See `ISnapBase`."""
         # Guard against unfortunate accidents.
         if self.is_default:
-            raise CannotDeleteSnapBase("Cannot delete the default base snap.")
+            raise CannotDeleteSnapBase("Cannot delete the default base.")
         Store.of(self).remove(self)
 
 
@@ -120,8 +120,8 @@ class SnapBaseSet:
         previous = self.getDefault()
         if previous != snap_base:
             # We can safely remove the security proxy here, because the
-            # default base snap is logically a property of the set even
-            # though it is stored on the base snap.
+            # default base is logically a property of the set even though it
+            # is stored on the base.
             if previous is not None:
                 removeSecurityProxy(previous).is_default = False
             if snap_base is not None:
