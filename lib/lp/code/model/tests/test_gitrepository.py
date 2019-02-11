@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repositories."""
@@ -2847,6 +2847,20 @@ class TestGitRepositoryRules(TestCaseWithFactory):
                 date_created=Equals(date_created),
                 date_last_modified=Equals(date_created)),
             ]))
+
+    def test_setRules_canonicalises_expected_ordering(self):
+        repository = self.factory.makeGitRepository()
+        with person_logged_in(repository.owner):
+            repository.setRules([
+                IGitNascentRule({
+                    "ref_pattern": "refs/heads/master-next",
+                    "grants": [],
+                    }),
+                IGitNascentRule({
+                    "ref_pattern": "refs/heads/master",
+                    "grants": [],
+                    }),
+                ], repository.owner)
 
     def test_setRules_modify_grants(self):
         owner = self.factory.makeTeam()

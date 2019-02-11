@@ -1174,16 +1174,22 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         return Store.of(self).find(
             GitRule, GitRule.repository == self).order_by(GitRule.position)
 
+    def _canonicaliseRuleOrdering(self, rules):
+        """Canonicalise rule ordering.
+
+        Exact-match rules come first in lexicographical order, followed by
+        wildcard rules in the requested order.  (Note that `sorted` is
+        guaranteed to be stable.)
+        """
+        return sorted(rules, key=lambda rule: (
+            (0, rule.ref_pattern) if is_rule_exact(rule) else (1,)))
+
     def _syncRulePositions(self, rules):
         """Synchronise rule positions with their order in a provided list.
 
         :param rules: A sequence of `IGitRule`s in the desired order.
         """
-        # Canonicalise rule ordering: exact-match rules come first in
-        # lexicographical order, followed by wildcard rules in the requested
-        # order.  (Note that `sorted` is guaranteed to be stable.)
-        rules = sorted(rules, key=lambda rule: (
-            (0, rule.ref_pattern) if is_rule_exact(rule) else (1,)))
+        rules = self._canonicaliseRuleOrdering(rules)
         # Ensure the correct position of all rules, which may involve more
         # work than necessary, but is simple and tends to be
         # self-correcting.  This works because the unique constraint on
@@ -1285,7 +1291,9 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         """See `IGitRepository`."""
         self._validateRules(rules)
         existing_rules = {rule.ref_pattern: rule for rule in self.rules}
-        new_rules = OrderedDict((rule.ref_pattern, rule) for rule in rules)
+        new_rules = OrderedDict(
+            (rule.ref_pattern, rule)
+            for rule in self._canonicaliseRuleOrdering(rules))
         GitRule.preloadGrantsForRules(existing_rules.values())
 
         # Remove old rules first so that we don't generate unnecessary move
