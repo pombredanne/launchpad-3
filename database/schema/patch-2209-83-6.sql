@@ -28,7 +28,7 @@ COMMENT ON COLUMN SnapBase.distro_series IS 'The distro series used for snap bui
 COMMENT ON COLUMN SnapBase.build_channels IS 'A dictionary mapping snap names to channels to use when building snaps that specify this base.';
 COMMENT ON COLUMN SnapBase.is_default IS 'Whether this base is the default for snaps that do not specify a base.';
 
--- Allow defining snap recipes that detect the distro series from
+-- Allow defining snap recipes that infer the distro series from
 -- snapcraft.yaml.
 ALTER TABLE Snap ALTER COLUMN distro_series DROP NOT NULL;
 
