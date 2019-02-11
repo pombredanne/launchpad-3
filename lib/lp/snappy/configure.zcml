@@ -130,7 +130,7 @@
             interface="lp.snappy.interfaces.snappyseries.ISnappyDistroSeriesSet" />
     </securedutility>
 
-    <!-- Base snaps -->
+    <!-- Bases for snaps -->
     <class class="lp.snappy.model.snapbase.SnapBase">
         <allow
             interface="lp.snappy.interfaces.snapbase.ISnapBaseView

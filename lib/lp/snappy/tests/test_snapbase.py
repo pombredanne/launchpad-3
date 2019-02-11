@@ -1,7 +1,7 @@
 # Copyright 2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test base snaps."""
+"""Test bases for snaps."""
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -178,8 +178,7 @@ class TestSnapBaseWebservice(TestCaseWithFactory):
             build_channels={"snapcraft": "stable"})
         self.assertEqual(400, response.status)
         self.assertEqual(
-            "name: dummy is already in use by another base snap.",
-            response.body)
+            "name: dummy is already in use by another base.", response.body)
 
     def test_getByName(self):
         # lp.snap_bases.getByName returns a matching SnapBase.
@@ -204,7 +203,7 @@ class TestSnapBaseWebservice(TestCaseWithFactory):
         response = webservice.named_get(
             "/+snap-bases", "getByName", name="nonexistent")
         self.assertEqual(404, response.status)
-        self.assertEqual("No such base snap: 'nonexistent'.", response.body)
+        self.assertEqual("No such base: 'nonexistent'.", response.body)
 
     def test_getDefault(self):
         # lp.snap_bases.getDefault returns the default SnapBase, if any.

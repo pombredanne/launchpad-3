@@ -1,7 +1,7 @@
 # Copyright 2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Base snap interfaces."""
+"""Interfaces for bases for snaps."""
 
 from __future__ import absolute_import, print_function, unicode_literals
 
@@ -55,18 +55,18 @@ from lp.services.fields import (
 class NoSuchSnapBase(NameLookupFailed):
     """The requested `SnapBase` does not exist."""
 
-    _message_prefix = "No such base snap"
+    _message_prefix = "No such base"
 
 
 @error_status(httplib.BAD_REQUEST)
 class CannotDeleteSnapBase(Exception):
-    """The base snap cannot be deleted at this time."""
+    """The base cannot be deleted at this time."""
 
 
 class SnapBaseNameField(ContentNameField):
     """Ensure that `ISnapBase` has unique names."""
 
-    errormessage = _("%s is already in use by another base snap.")
+    errormessage = _("%s is already in use by another base.")
 
     @property
     def _content_iface(self):
@@ -92,13 +92,13 @@ class ISnapBaseView(Interface):
     registrant = exported(PublicPersonChoice(
         title=_("Registrant"), required=True, readonly=True,
         vocabulary="ValidPersonOrTeam",
-        description=_("The person who registered this base snap.")))
+        description=_("The person who registered this base.")))
 
     is_default = exported(Bool(
         title=_("Is default?"), required=True, readonly=True,
         description=_(
-            "Whether this base snap indicates the defaults used for snap "
-            "builds that do not specify a base snap.")))
+            "Whether this base is the default for snaps that do not specify a "
+            "base.")))
 
 
 class ISnapBaseEditableAttributes(Interface):
@@ -123,7 +123,7 @@ class ISnapBaseEditableAttributes(Interface):
         key_type=TextLine(), required=True, readonly=False,
         description=_(
             "A dictionary mapping snap names to channels to use when building "
-            "snaps that specify this base snap.")))
+            "snaps that specify this base.")))
 
 
 class ISnapBaseEdit(Interface):
@@ -132,14 +132,14 @@ class ISnapBaseEdit(Interface):
     @export_destructor_operation()
     @operation_for_version("devel")
     def destroySelf():
-        """Delete the specified base snap.
+        """Delete the specified base.
 
-        :raises CannotDeleteSnapBase: if the base snap cannot be deleted.
+        :raises CannotDeleteSnapBase: if the base cannot be deleted.
         """
 
 
 class ISnapBase(ISnapBaseView, ISnapBaseEditableAttributes):
-    """A base snap."""
+    """A base for snaps."""
 
     # XXX cjwatson 2019-01-28 bug=760849: "beta" is a lie to get WADL
     # generation working.  Individual attributes must set their version to
@@ -159,23 +159,21 @@ class ISnapBaseSetEdit(Interface):
         """Create an `ISnapBase`."""
 
     @operation_parameters(
-        snap_base=Reference(
-            title=_("Base snap"), required=True, schema=ISnapBase))
+        snap_base=Reference(title=_("Base"), required=True, schema=ISnapBase))
     @export_write_operation()
     @operation_for_version("devel")
     def setDefault(snap_base):
-        """Set the default base snap.
+        """Set the default base.
 
-        This will be used to pick the default distro series for snap builds
-        that do not specify a base.
+        This will be used to pick the default distro series for snaps that
+        do not specify a base.
 
-        :param snap_base: An `ISnapBase`, or None to unset the default base
-            snap.
+        :param snap_base: An `ISnapBase`, or None to unset the default base.
         """
 
 
 class ISnapBaseSet(ISnapBaseSetEdit):
-    """Interface representing the set of base snaps."""
+    """Interface representing the set of bases for snaps."""
 
     export_as_webservice_collection(ISnapBase)
 
@@ -186,24 +184,24 @@ class ISnapBaseSet(ISnapBaseSetEdit):
         """Return the `ISnapBase` with this name."""
 
     @operation_parameters(
-        name=TextLine(title=_("Base snap name"), required=True))
+        name=TextLine(title=_("Base name"), required=True))
     @operation_returns_entry(ISnapBase)
     @export_read_operation()
     @operation_for_version("devel")
     def getByName(name):
         """Return the `ISnapBase` with this name.
 
-        :raises NoSuchSnapBase: if no base snap exists with this name.
+        :raises NoSuchSnapBase: if no base exists with this name.
         """
 
     @operation_returns_entry(ISnapBase)
     @export_read_operation()
     @operation_for_version("devel")
     def getDefault():
-        """Get the default base snap.
+        """Get the default base.
 
-        This will be used to pick the default distro series for snap builds
-        that do not specify a base.
+        This will be used to pick the default distro series for snaps that
+        do not specify a base.
         """
 
     @collection_default_content()
