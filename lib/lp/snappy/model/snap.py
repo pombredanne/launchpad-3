@@ -622,8 +622,7 @@ class Snap(Storm, WebhookTargetMixin):
         if snap_base is not None:
             return self.distro_series or snap_base.distro_series
         elif self.distro_series is None:
-            # A base snap is mandatory if there's no configured distro
-            # series.
+            # A base is mandatory if there's no configured distro series.
             raise NoSuchSnapBase(snapcraft_data.get("base", "<default>"))
         else:
             return self.distro_series

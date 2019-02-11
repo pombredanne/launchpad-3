@@ -591,7 +591,7 @@ class TestSnap(TestCaseWithFactory):
     def test_requestBuildsFromJob_no_distroseries_no_explicit_base(self):
         # If the snap doesn't specify a distroseries and has no explicit
         # base, requestBuildsFromJob requests builds for the appropriate
-        # distroseries for the default base snap.
+        # distroseries for the default base.
         self.useFixture(GitHostingFixture(blob="name: foo\n"))
         with admin_logged_in():
             snap_base = self.factory.makeSnapBase(
@@ -621,8 +621,7 @@ class TestSnap(TestCaseWithFactory):
 
     def test_requestBuildsFromJob_no_distroseries_no_default_base(self):
         # If the snap doesn't specify a distroseries and has an explicit
-        # base, and there is no default base snap, requestBuildsFromJob
-        # gives up.
+        # base, and there is no default base, requestBuildsFromJob gives up.
         self.useFixture(GitHostingFixture(blob="name: foo\n"))
         with admin_logged_in():
             snap_base = self.factory.makeSnapBase(

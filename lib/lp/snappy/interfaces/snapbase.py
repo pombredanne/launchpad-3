@@ -205,12 +205,12 @@ class ISnapBaseSet(ISnapBaseSetEdit):
         """
 
     def findForSnapcraftData(snapcraft_data):
-        """Find a suitable base snap given a parsed snapcraft.yaml file.
+        """Find a suitable base given a parsed snapcraft.yaml file.
 
         :raises NoSuchSnapBase: if the snapcraft.yaml file names an unknown
-            base snap.
+            base.
         :return: an `ISnapBase`, or None if the snapcraft.yaml file does not
-            name any base snap and no default base snap is configured.
+            name any base and no default base is configured.
         """
 
     @collection_default_content()
