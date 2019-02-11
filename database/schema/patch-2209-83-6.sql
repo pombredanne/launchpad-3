@@ -19,14 +19,14 @@ CREATE UNIQUE INDEX snapbase__name__key ON SnapBase (name);
 CREATE INDEX snapbase__registrant__idx ON SnapBase (registrant);
 CREATE UNIQUE INDEX snapbase__is_default__idx ON SnapBase (is_default) WHERE is_default;
 
-COMMENT ON TABLE SnapBase IS 'A base snap.';
-COMMENT ON COLUMN SnapBase.date_created IS 'The date on which this base snap was created in Launchpad.';
-COMMENT ON COLUMN SnapBase.registrant IS 'The user who registered this base snap.';
-COMMENT ON COLUMN SnapBase.name IS 'The unique name of this base snap.';
-COMMENT ON COLUMN SnapBase.display_name IS 'The display name of this base snap.';
-COMMENT ON COLUMN SnapBase.distro_series IS 'The distro series used for snap builds that specify this base snap.';
-COMMENT ON COLUMN SnapBase.build_channels IS 'A dictionary mapping snap names to channels to use when building snaps that specify this base snap.';
-COMMENT ON COLUMN SnapBase.is_default IS 'Whether this base snap indicates the defaults used for snap builds that do not specify a base snap.';
+COMMENT ON TABLE SnapBase IS 'A base for snaps.';
+COMMENT ON COLUMN SnapBase.date_created IS 'The date on which this base was created in Launchpad.';
+COMMENT ON COLUMN SnapBase.registrant IS 'The user who registered this base.';
+COMMENT ON COLUMN SnapBase.name IS 'The unique name of this base.';
+COMMENT ON COLUMN SnapBase.display_name IS 'The display name of this base.';
+COMMENT ON COLUMN SnapBase.distro_series IS 'The distro series used for snap builds that specify this base.';
+COMMENT ON COLUMN SnapBase.build_channels IS 'A dictionary mapping snap names to channels to use when building snaps that specify this base.';
+COMMENT ON COLUMN SnapBase.is_default IS 'Whether this base is the default for snaps that do not specify a base.';
 
 -- Allow defining snap recipes that detect the distro series from
 -- snapcraft.yaml.
