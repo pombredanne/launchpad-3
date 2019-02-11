@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -123,7 +123,10 @@ from lp.code.interfaces.gitrepository import (
     IGitRepositorySet,
     user_has_special_git_repository_access,
     )
-from lp.code.interfaces.gitrule import describe_git_permissions
+from lp.code.interfaces.gitrule import (
+    describe_git_permissions,
+    is_rule_exact,
+    )
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.mail.branch import send_git_repository_modified_notifications
 from lp.code.model.branchmergeproposal import BranchMergeProposal
@@ -1179,9 +1182,8 @@ class GitRepository(StormBase, WebhookTargetMixin, GitIdentityMixin):
         # Canonicalise rule ordering: exact-match rules come first in
         # lexicographical order, followed by wildcard rules in the requested
         # order.  (Note that `sorted` is guaranteed to be stable.)
-        rules = sorted(
-            rules,
-            key=lambda rule: (0, rule.ref_pattern) if rule.is_exact else (1,))
+        rules = sorted(rules, key=lambda rule: (
+            (0, rule.ref_pattern) if is_rule_exact(rule) else (1,)))
         # Ensure the correct position of all rules, which may involve more
         # work than necessary, but is simple and tends to be
         # self-correcting.  This works because the unique constraint on

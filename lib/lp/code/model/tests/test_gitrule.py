@@ -1,4 +1,4 @@
-# Copyright 2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2018-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repository access rules."""
@@ -28,6 +28,7 @@ from lp.code.interfaces.gitrule import (
     IGitNascentRuleGrant,
     IGitRule,
     IGitRuleGrant,
+    is_rule_exact,
     )
 from lp.services.database.sqlbase import get_transaction_timestamp
 from lp.services.webapp.snapshot import notify_modified
@@ -69,7 +70,7 @@ class TestGitRule(TestCaseWithFactory):
             "<GitRule 'refs/heads/*' for %s>" % repository.unique_name,
             repr(rule))
 
-    def test_is_exact(self):
+    def test_is_rule_exact(self):
         repository = self.factory.makeGitRepository()
         for ref_pattern, is_exact in (
                 ("refs/heads/master", True),
@@ -83,9 +84,9 @@ class TestGitRule(TestCaseWithFactory):
                 ):
             self.assertEqual(
                 is_exact,
-                self.factory.makeGitRule(
+                is_rule_exact(self.factory.makeGitRule(
                     repository=repository,
-                    ref_pattern=ref_pattern).is_exact)
+                    ref_pattern=ref_pattern)))
 
     def test_grants(self):
         rule = self.factory.makeGitRule()

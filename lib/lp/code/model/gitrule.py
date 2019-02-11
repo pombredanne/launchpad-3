@@ -127,13 +127,6 @@ class GitRule(StormBase):
         return "<GitRule '%s' for %s>" % (
             self.ref_pattern, self.repository.unique_name)
 
-    @property
-    def is_exact(self):
-        """See `IGitRule`."""
-        # turnip's glob_to_re only treats * as special, so any rule whose
-        # pattern does not contain * must be an exact-match rule.
-        return "*" not in self.ref_pattern
-
     def toDataForJSON(self, media_type):
         """See `IJSONPublishable`."""
         if media_type != "application/json":
