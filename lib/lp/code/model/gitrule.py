@@ -1,4 +1,4 @@
-# Copyright 2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2018-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository access rules."""
@@ -127,13 +127,6 @@ class GitRule(StormBase):
         return "<GitRule '%s' for %s>" % (
             self.ref_pattern, self.repository.unique_name)
 
-    @property
-    def is_exact(self):
-        """See `IGitRule`."""
-        # turnip's glob_to_re only treats * as special, so any rule whose
-        # pattern does not contain * must be an exact-match rule.
-        return "*" not in self.ref_pattern
-
     def toDataForJSON(self, media_type):
         """See `IJSONPublishable`."""
         if media_type != "application/json":
@@ -253,8 +246,29 @@ def git_rule_grant_modified(grant, event):
         removeSecurityProxy(grant).date_last_modified = UTC_NOW
 
 
+class GitRuleGrantMixin:
+    """Properties common to GitRuleGrant and GitNascentRuleGrant."""
+
+    @property
+    def permissions(self):
+        permissions = set()
+        if self.can_create:
+            permissions.add(GitPermissionType.CAN_CREATE)
+        if self.can_push:
+            permissions.add(GitPermissionType.CAN_PUSH)
+        if self.can_force_push:
+            permissions.add(GitPermissionType.CAN_FORCE_PUSH)
+        return frozenset(permissions)
+
+    @permissions.setter
+    def permissions(self, value):
+        self.can_create = GitPermissionType.CAN_CREATE in value
+        self.can_push = GitPermissionType.CAN_PUSH in value
+        self.can_force_push = GitPermissionType.CAN_FORCE_PUSH in value
+
+
 @implementer(IGitRuleGrant, IJSONPublishable)
-class GitRuleGrant(StormBase):
+class GitRuleGrant(StormBase, GitRuleGrantMixin):
     """See `IGitRuleGrant`."""
 
     __storm_table__ = 'GitRuleGrant'
@@ -326,23 +340,6 @@ class GitRuleGrant(StormBase):
             ", ".join(describe_git_permissions(self.permissions)),
             grantee_name, self.repository.unique_name, self.rule.ref_pattern)
 
-    @property
-    def permissions(self):
-        permissions = set()
-        if self.can_create:
-            permissions.add(GitPermissionType.CAN_CREATE)
-        if self.can_push:
-            permissions.add(GitPermissionType.CAN_PUSH)
-        if self.can_force_push:
-            permissions.add(GitPermissionType.CAN_FORCE_PUSH)
-        return frozenset(permissions)
-
-    @permissions.setter
-    def permissions(self, value):
-        self.can_create = GitPermissionType.CAN_CREATE in value
-        self.can_push = GitPermissionType.CAN_PUSH in value
-        self.can_force_push = GitPermissionType.CAN_FORCE_PUSH in value
-
     def toDataForJSON(self, media_type):
         """See `IJSONPublishable`."""
         if media_type != "application/json":
@@ -367,6 +364,9 @@ class GitNascentRule:
         self.ref_pattern = ref_pattern
         self.grants = grants
 
+    def __repr__(self):
+        return "<GitNascentRule '%s'>" % self.ref_pattern
+
 
 @adapter(dict)
 @implementer(IGitNascentRule)
@@ -375,7 +375,7 @@ def nascent_rule_from_dict(template):
 
 
 @implementer(IGitNascentRuleGrant)
-class GitNascentRuleGrant:
+class GitNascentRuleGrant(GitRuleGrantMixin):
 
     def __init__(self, grantee_type, grantee=None, can_create=False,
                  can_push=False, can_force_push=False):
@@ -384,6 +384,15 @@ class GitNascentRuleGrant:
         self.can_create = can_create
         self.can_push = can_push
         self.can_force_push = can_force_push
+
+    def __repr__(self):
+        if self.grantee_type == GitGranteeType.PERSON:
+            grantee_name = "~%s" % self.grantee.name
+        else:
+            grantee_name = self.grantee_type.title.lower()
+        return "<GitNascentRuleGrant [%s] to %s>" % (
+            ", ".join(describe_git_permissions(self.permissions)),
+            grantee_name)
 
 
 @adapter(dict)
