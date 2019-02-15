@@ -234,6 +234,7 @@ def close_account(username, log):
         ('GpgKey', 'owner'),
 
         # Subscriptions and notifications
+        ('ArchiveSubscriber', 'subscriber'),
         ('BranchSubscription', 'person'),
         ('BugMute', 'person'),
         ('BugNotificationRecipient', 'person'),
@@ -305,6 +306,15 @@ def close_account(username, log):
     # Any remaining past sprint attendance records can harmlessly refer to
     # the placeholder person row.
     skip.add(('sprintattendance', 'attendee'))
+
+    # XXX cjwatson 2019-02-15: We can't just delete archive auth tokens at
+    # the moment, because generate_ppa_htaccess currently relies on seeing
+    # active rows there so that it knows which ones to remove from .htpasswd
+    # files on disk in response to the removal of the corresponding
+    # ArchiveSubscriber rows.  Once PPA authorisation is handled dynamically
+    # (e.g. via a WSGI authenticator), we can simplify this and just delete
+    # the ArchiveAuthToken rows instead.
+    skip.add(('archiveauthtoken', 'person'))
 
     # Closing the account will only work if all references have been handled
     # by this point.  If not, it's safer to bail out.  It's OK if this
