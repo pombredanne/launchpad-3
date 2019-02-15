@@ -53,7 +53,10 @@ from zope.security.proxy import removeSecurityProxy
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildBaseImageType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
@@ -73,7 +76,10 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
-from lp.services.log.logger import BufferLogger
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.services.webapp import canonical_url
 from lp.snappy.interfaces.snap import (
     SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG,
@@ -629,6 +635,37 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
                                   "~snap-owner/test-snap has been deleted.")
         with ExpectedException(CannotBuild, expected_exception_msg):
             yield job.composeBuildRequest(None)
+
+    @defer.inlineCallbacks
+    def test_dispatchBuildToSlave_prefers_lxd(self):
+        job = self.makeJob(allow_internet=False)
+        builder = MockBuilder()
+        builder.processor = job.build.processor
+        slave = OkSlave()
+        job.setBuilder(builder, slave)
+        chroot_lfa = self.factory.makeLibraryFileAlias(db_only=True)
+        job.build.distro_arch_series.addOrUpdateChroot(
+            chroot_lfa, image_type=BuildBaseImageType.CHROOT)
+        lxd_lfa = self.factory.makeLibraryFileAlias(db_only=True)
+        job.build.distro_arch_series.addOrUpdateChroot(
+            lxd_lfa, image_type=BuildBaseImageType.LXD)
+        yield job.dispatchBuildToSlave(DevNullLogger())
+        self.assertEqual(
+            ('ensurepresent', lxd_lfa.http_url, '', ''), slave.call_log[0])
+
+    @defer.inlineCallbacks
+    def test_dispatchBuildToSlave_falls_back_to_chroot(self):
+        job = self.makeJob(allow_internet=False)
+        builder = MockBuilder()
+        builder.processor = job.build.processor
+        slave = OkSlave()
+        job.setBuilder(builder, slave)
+        chroot_lfa = self.factory.makeLibraryFileAlias(db_only=True)
+        job.build.distro_arch_series.addOrUpdateChroot(
+            chroot_lfa, image_type=BuildBaseImageType.CHROOT)
+        yield job.dispatchBuildToSlave(DevNullLogger())
+        self.assertEqual(
+            ('ensurepresent', chroot_lfa.http_url, '', ''), slave.call_log[0])
 
 
 class MakeSnapBuildMixin:
