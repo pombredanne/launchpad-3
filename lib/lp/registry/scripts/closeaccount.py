@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Remove personal details of a user from the database, leaving a stub."""
@@ -283,6 +283,9 @@ def close_account(username, log):
 
         # "Affects me too" information
         ('BugAffectsPerson', 'person'),
+
+        # Hardware submissions
+        ('HWSubmission', 'owner'),
         ]
     for table, person_id_column in removals:
         table_notification(table)

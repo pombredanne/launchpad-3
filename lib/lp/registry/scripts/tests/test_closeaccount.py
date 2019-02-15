@@ -1,4 +1,4 @@
-# Copyright 2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2018-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the close-account script."""
@@ -18,6 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QuestionStatus
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.scripts.closeaccount import CloseAccountScript
 from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
@@ -342,3 +343,20 @@ class TestCloseAccount(TestCaseWithFactory):
             [],
             list(archive_subscriber_set.getBySubscriber(person, archive=ppa)))
         self.assertIsNotNone(ppa.getAuthToken(person))
+
+    def test_handles_hardware_submissions(self):
+        person = self.factory.makePerson()
+        submission = self.factory.makeHWSubmission(
+            emailaddress=person.preferredemail.email)
+        key = submission.submission_key
+        hw_submission_set = getUtility(IHWSubmissionSet)
+        self.assertNotEqual([], list(hw_submission_set.getByOwner(person)))
+        self.assertIsNotNone(hw_submission_set.getBySubmissionKey(key))
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertEqual([], list(hw_submission_set.getByOwner(person)))
+        self.assertIsNone(hw_submission_set.getBySubmissionKey(key))
