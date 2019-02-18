@@ -112,7 +112,10 @@ from lp.snappy.interfaces.snapbuild import (
 from lp.snappy.interfaces.snapbuildjob import ISnapStoreUploadJobSource
 from lp.snappy.interfaces.snapjob import ISnapRequestBuildsJobSource
 from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
-from lp.snappy.model.snap import SnapSet
+from lp.snappy.model.snap import (
+    Snap,
+    SnapSet,
+    )
 from lp.snappy.model.snapbuild import SnapFile
 from lp.snappy.model.snapbuildjob import SnapBuildJob
 from lp.snappy.model.snapjob import SnapJob
@@ -486,6 +489,29 @@ class TestSnap(TestCaseWithFactory):
             archive=Equals(archive),
             pocket=Equals(PackagePublishingPocket.UPDATES),
             channels=Equals({"snapcraft": "edge"})))
+
+    def test__findBase(self):
+        snap_base_set = getUtility(ISnapBaseSet)
+        with admin_logged_in():
+            snap_bases = [self.factory.makeSnapBase() for _ in range(2)]
+        for snap_base in snap_bases:
+            self.assertEqual(
+                snap_base,
+                Snap._findBase({"base": snap_base.name}))
+        self.assertRaises(
+            NoSuchSnapBase, Snap._findBase,
+            {"base": "nonexistent"})
+        self.assertIsNone(Snap._findBase({}))
+        with admin_logged_in():
+            snap_base_set.setDefault(snap_bases[0])
+        for snap_base in snap_bases:
+            self.assertEqual(
+                snap_base,
+                Snap._findBase({"base": snap_base.name}))
+        self.assertRaises(
+            NoSuchSnapBase, Snap._findBase,
+            {"base": "nonexistent"})
+        self.assertEqual(snap_bases[0], Snap._findBase({}))
 
     def makeRequestBuildsJob(self, arch_tags, git_ref=None):
         distro = self.factory.makeDistribution()

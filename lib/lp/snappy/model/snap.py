@@ -617,6 +617,18 @@ class Snap(Storm, WebhookTargetMixin):
             self, requester, archive, pocket, channels)
         return self.getBuildRequest(job.job_id)
 
+    @staticmethod
+    def _findBase(snapcraft_data):
+        """Find a suitable base for a build."""
+        snap_base_set = getUtility(ISnapBaseSet)
+        if "base" in snapcraft_data:
+            snap_base_name = snapcraft_data["base"]
+            if isinstance(snap_base_name, bytes):
+                snap_base_name = snap_base_name.decode("UTF-8")
+            return snap_base_set.getByName(snap_base_name)
+        else:
+            return snap_base_set.getDefault()
+
     def _pickDistroSeries(self, snap_base, snapcraft_data):
         """Pick a suitable `IDistroSeries` for a build."""
         if snap_base is not None:
@@ -664,8 +676,7 @@ class Snap(Storm, WebhookTargetMixin):
             # Find a suitable SnapBase, and combine it with other
             # configuration to find a suitable distro series and suitable
             # channels.
-            snap_base = getUtility(ISnapBaseSet).findForSnapcraftData(
-                snapcraft_data)
+            snap_base = self._findBase(snapcraft_data)
             distro_series = self._pickDistroSeries(snap_base, snapcraft_data)
             channels = self._pickChannels(snap_base, channels=channels)
 
