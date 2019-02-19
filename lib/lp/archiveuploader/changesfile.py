@@ -58,7 +58,7 @@ class ChangesFile(SignableTagFile):
     """Changesfile model."""
 
     mandatory_fields = set([
-        "Source", "Binary", "Architecture", "Version", "Distribution",
+        "Source", "Architecture", "Version", "Distribution",
         "Maintainer", "Files", "Changes", "Date",
         # Changed-By is not technically mandatory according to
         # Debian policy but Soyuz relies on it being set in
@@ -311,7 +311,7 @@ class ChangesFile(SignableTagFile):
     @property
     def binaries(self):
         """Return set of binary package names listed."""
-        return set(self._dict['Binary'].strip().split())
+        return set(self._dict.get('Binary', '').strip().split())
 
     @property
     def converted_urgency(self):
