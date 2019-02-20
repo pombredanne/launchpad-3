@@ -4711,7 +4711,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target, self.makePerson(), delivery_url, event_types or [],
             active, secret)
 
-    def makeSnap(self, registrant=None, owner=None, distroseries=None,
+    def makeSnap(self, registrant=None, owner=None, distroseries=_DEFAULT,
                  name=None, branch=None, git_ref=None, auto_build=False,
                  auto_build_archive=None, auto_build_pocket=None,
                  auto_build_channels=None, is_stale=None,
@@ -4725,7 +4725,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             registrant = self.makePerson()
         if owner is None:
             owner = self.makeTeam(registrant)
-        if distroseries is None:
+        if distroseries is _DEFAULT:
             distroseries = self.makeDistroSeries()
         if name is None:
             name = self.getUniqueString(u"snap-name")
@@ -4785,7 +4785,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distroseries = self.makeDistroSeries(
                     distribution=archive.distribution)
             else:
-                distroseries = None
+                distroseries = _DEFAULT
             if registrant is None:
                 registrant = requester
             snap = self.makeSnap(

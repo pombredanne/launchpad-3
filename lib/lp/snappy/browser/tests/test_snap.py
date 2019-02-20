@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snap package views."""
@@ -1173,11 +1173,13 @@ class TestSnapView(BaseTestSnapView):
         self.factory.makeBuilder(virtualized=True)
 
     def makeSnap(self, **kwargs):
+        if "distroseries" not in kwargs:
+            kwargs["distroseries"] = self.distroseries
         if kwargs.get("branch") is None and kwargs.get("git_ref") is None:
             kwargs["branch"] = self.factory.makeAnyBranch()
         return self.factory.makeSnap(
-            registrant=self.person, owner=self.person,
-            distroseries=self.distroseries, name="snap-name", **kwargs)
+            registrant=self.person, owner=self.person, name="snap-name",
+            **kwargs)
 
     def makeBuild(self, snap=None, archive=None, date_created=None, **kwargs):
         if snap is None:
@@ -1299,6 +1301,15 @@ class TestSnapView(BaseTestSnapView):
             Primary Archive for Ubuntu Linux
             """, self.getMainText(build.snap))
 
+    def test_index_no_distro_series(self):
+        # If the snap is configured to infer an appropriate distro series
+        # from snapcraft.yaml, then the index page does not show a distro
+        # series.
+        snap = self.makeSnap(distroseries=None)
+        text = self.getMainText(snap)
+        self.assertIn("Snap package information", text)
+        self.assertNotIn("Distribution series:", text)
+
     def test_index_success_with_buildlog(self):
         # The build log is shown if it is there.
         build = self.makeBuild(
@@ -1383,6 +1394,8 @@ class TestSnapView(BaseTestSnapView):
         store_upload_tag = soupmatchers.Tag(
             "store upload", "div", attrs={"id": "store_upload"})
         self.assertThat(view(), soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "distribution series", "dl", attrs={"id": "distro_series"}),
             soupmatchers.Within(
                 store_upload_tag,
                 soupmatchers.Tag(
@@ -1629,3 +1642,25 @@ class TestSnapRequestBuildsView(BaseTestSnapView):
         login_person(self.person)
         [request] = self.snap.pending_build_requests
         self.assertEqual(ppa, request.archive)
+
+    def test_request_builds_no_distro_series(self):
+        # Requesting builds of a snap configured to infer an appropriate
+        # distro series from snapcraft.yaml creates a pending build request.
+        login_person(self.person)
+        self.snap.distro_series = None
+        browser = self.getViewBrowser(
+            self.snap, "+request-builds", user=self.person)
+        browser.getControl("Request builds").click()
+
+        login_person(self.person)
+        [request] = self.snap.pending_build_requests
+        self.assertThat(removeSecurityProxy(request), MatchesStructure(
+            snap=Equals(self.snap),
+            status=Equals(SnapBuildRequestStatus.PENDING),
+            error_message=Is(None),
+            builds=AfterPreprocessing(list, Equals([])),
+            archive=Equals(self.ubuntu.main_archive),
+            _job=MatchesStructure(
+                requester=Equals(self.person),
+                pocket=Equals(PackagePublishingPocket.UPDATES),
+                channels=Is(None))))
