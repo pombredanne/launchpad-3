@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snappy series."""
@@ -138,18 +138,44 @@ class SnappySeries(Storm):
                 link = SnappyDistroSeries(self, distro_series)
                 Store.of(self).add(link)
 
+    @cachedproperty
+    def _can_infer_distro_series(self):
+        return not Store.of(self).find(
+            SnappyDistroSeries,
+            SnappyDistroSeries.snappy_series == self,
+            SnappyDistroSeries.distro_series == None).is_empty()
+
+    @property
+    def can_infer_distro_series(self):
+        return self._can_infer_distro_series
+
+    @can_infer_distro_series.setter
+    def can_infer_distro_series(self, value):
+        store = Store.of(self)
+        current = store.find(
+            SnappyDistroSeries,
+            SnappyDistroSeries.snappy_series == self,
+            SnappyDistroSeries.distro_series == None).one()
+        if current is None and value is True:
+            store.add(SnappyDistroSeries(self, None))
+            get_property_cache(self)._can_infer_distro_series = True
+        elif current is not None and value is False:
+            store.remove(current)
+            get_property_cache(self)._can_infer_distro_series = False
+
 
 @implementer(ISnappyDistroSeries)
 class SnappyDistroSeries(Storm):
     """Link table between `SnappySeries` and `DistroSeries`."""
 
     __storm_table__ = 'SnappyDistroSeries'
-    __storm_primary__ = ('snappy_series_id', 'distro_series_id')
+
+    id = Int(primary=True)
 
     snappy_series_id = Int(name='snappy_series', allow_none=False)
     snappy_series = Reference(snappy_series_id, 'SnappySeries.id')
 
-    distro_series_id = Int(name='distro_series', allow_none=False)
+    distro_series_id = Int(name='distro_series', allow_none=True)
     distro_series = Reference(distro_series_id, 'DistroSeries.id')
 
     preferred = Bool(name='preferred', allow_none=False)
@@ -162,8 +188,11 @@ class SnappyDistroSeries(Storm):
 
     @property
     def title(self):
-        return "%s, for %s" % (
-            self.distro_series.fullseriesname, self.snappy_series.title)
+        if self.distro_series is not None:
+            return "%s, for %s" % (
+                self.distro_series.fullseriesname, self.snappy_series.title)
+        else:
+            return self.snappy_series.title
 
 
 @implementer(ISnappySeriesSet)
