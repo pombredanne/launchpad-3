@@ -1,4 +1,4 @@
-<!-- Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -128,6 +128,26 @@
         provides="lp.snappy.interfaces.snappyseries.ISnappyDistroSeriesSet">
         <allow
             interface="lp.snappy.interfaces.snappyseries.ISnappyDistroSeriesSet" />
+    </securedutility>
+
+    <!-- Bases for snaps -->
+    <class class="lp.snappy.model.snapbase.SnapBase">
+        <allow
+            interface="lp.snappy.interfaces.snapbase.ISnapBaseView
+                       lp.snappy.interfaces.snapbase.ISnapBaseEditableAttributes" />
+        <require
+            permission="launchpad.Edit"
+            interface="lp.snappy.interfaces.snapbase.ISnapBaseEdit"
+            set_schema="lp.snappy.interfaces.snapbase.ISnapBaseEditableAttributes" />
+    </class>
+    <securedutility
+        class="lp.snappy.model.snapbase.SnapBaseSet"
+        provides="lp.snappy.interfaces.snapbase.ISnapBaseSet">
+        <allow
+            interface="lp.snappy.interfaces.snapbase.ISnapBaseSet" />
+        <require
+            permission="launchpad.Edit"
+            interface="lp.snappy.interfaces.snapbase.ISnapBaseSetEdit" />
     </securedutility>
 
     <!-- Store interaction -->

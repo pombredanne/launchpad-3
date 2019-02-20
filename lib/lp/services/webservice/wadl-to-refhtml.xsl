@@ -515,6 +515,10 @@
                 <xsl:text>/+snap/</xsl:text>
                 <var>&lt;snap.name&gt;</var>
             </xsl:when>
+            <xsl:when test="@id = 'snap_base'">
+                <xsl:text>/+snap-bases/</xsl:text>
+                <var>&lt;name&gt;</var>
+            </xsl:when>
             <xsl:when test="@id = 'snap_build'">
                 <xsl:text>/~</xsl:text>
                 <var>&lt;person.name&gt;</var>
@@ -530,6 +534,10 @@
                 <var>&lt;snap.name&gt;</var>
                 <xsl:text>/+build-request/</xsl:text>
                 <var>&lt;id&gt;</var>
+            </xsl:when>
+            <xsl:when test="@id = 'snappy_series'">
+                <xsl:text>/+snappy-series/</xsl:text>
+                <var>&lt;name&gt;</var>
             </xsl:when>
             <xsl:when test="@id = 'source_package'">
                 <xsl:text>/</xsl:text>
