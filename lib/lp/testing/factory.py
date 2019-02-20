@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for the Launchpad application.
@@ -287,6 +287,7 @@ from lp.services.webhooks.interfaces import IWebhookSet
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.snappy.interfaces.snap import ISnapSet
+from lp.snappy.interfaces.snapbase import ISnapBaseSet
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.interfaces.snappyseries import ISnappySeriesSet
 from lp.snappy.model.snapbuild import SnapFile
@@ -4842,6 +4843,25 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             snappy_series.usable_distro_series = [preferred_distro_series]
         IStore(snappy_series).flush()
         return snappy_series
+
+    def makeSnapBase(self, registrant=None, name=None, display_name=None,
+                     distro_series=None, build_channels=None,
+                     date_created=DEFAULT):
+        """Make a new SnapBase."""
+        if registrant is None:
+            registrant = self.makePerson()
+        if name is None:
+            name = self.getUniqueString(u"snap-base-name")
+        if display_name is None:
+            display_name = SPACE.join(
+                word.capitalize() for word in name.split('-'))
+        if distro_series is None:
+            distro_series = self.makeDistroSeries()
+        if build_channels is None:
+            build_channels = {u"snapcraft": u"stable"}
+        return getUtility(ISnapBaseSet).new(
+            registrant, name, display_name, distro_series, build_channels,
+            date_created=date_created)
 
 
 # Some factory methods return simple Python types. We don't add
