@@ -490,7 +490,9 @@ class SnapAddView(
                 store_name = snapcraft_data.get('name')
 
         store_series = getUtility(ISnappySeriesSet).getAll().first()
-        if store_series.preferred_distro_series is not None:
+        if store_series.can_infer_distro_series:
+            distro_series = None
+        elif store_series.preferred_distro_series is not None:
             distro_series = store_series.preferred_distro_series
         else:
             distro_series = store_series.usable_distro_series.first()

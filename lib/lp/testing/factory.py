@@ -4824,7 +4824,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeSnappySeries(self, registrant=None, name=None, display_name=None,
                          status=SeriesStatus.DEVELOPMENT,
                          preferred_distro_series=None, date_created=DEFAULT,
-                         usable_distro_series=None):
+                         usable_distro_series=None,
+                         can_infer_distro_series=False):
         """Make a new SnappySeries."""
         if registrant is None:
             registrant = self.makePerson()
@@ -4841,6 +4842,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             snappy_series.usable_distro_series = usable_distro_series
         elif preferred_distro_series is not None:
             snappy_series.usable_distro_series = [preferred_distro_series]
+        if can_infer_distro_series:
+            snappy_series.can_infer_distro_series = True
         IStore(snappy_series).flush()
         return snappy_series
 
