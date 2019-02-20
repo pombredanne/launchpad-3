@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -19,6 +19,7 @@ from datetime import (
     timedelta,
     )
 import errno
+from functools import partial
 import gzip
 import hashlib
 from itertools import (
@@ -34,6 +35,10 @@ from debian.deb822 import (
     _multivalued,
     Release,
     )
+try:
+    import lzma
+except ImportError:
+    from backports import lzma
 import scandir
 from storm.expr import Desc
 from zope.component import getUtility
@@ -1417,6 +1422,9 @@ class Publisher(object):
             elif os.path.exists(full_name + '.bz2'):
                 open_func = bz2.BZ2File
                 full_name = full_name + '.bz2'
+            elif os.path.exists(full_name + '.xz'):
+                open_func = partial(lzma.LZMAFile, format=lzma.FORMAT_XZ)
+                full_name = full_name + '.xz'
             else:
                 # The file we were asked to write out doesn't exist.
                 # Most likely we have an incomplete archive (e.g. no sources
