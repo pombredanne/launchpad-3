@@ -1486,6 +1486,35 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected one 'bar' item in the queue, actually got %d."
                 % queue_items.count())
 
+    def testSourceUploadWithoutBinaryField(self):
+        """Source uploads may omit the Binary field.
+
+        dpkg >= 1.19.3 omits the Binary field (as well as Description) from
+        sourceful .changes files, so don't require it.
+        """
+        self.setupBreezy()
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
+
+        upload_dir = self.queueUpload("bar_1.0-1_no_binary_field")
+        self.processUpload(uploadprocessor, upload_dir)
+        [msg] = pop_notifications()
+        self.assertNotIn(
+            "rejected", str(msg), "Failed to upload bar source:\n%s" % msg)
+        spph = self.publishPackage("bar", "1.0-1")
+
+        self.assertEqual(
+            sorted((sprf.libraryfile.filename, sprf.filetype)
+                   for sprf in spph.sourcepackagerelease.files),
+            [('bar_1.0-1.diff.gz',
+              SourcePackageFileType.DIFF),
+             ('bar_1.0-1.dsc',
+              SourcePackageFileType.DSC),
+             ('bar_1.0.orig.tar.gz',
+              SourcePackageFileType.ORIG_TARBALL),
+             ])
+
     def testUploadResultingInNoBuilds(self):
         """Source uploads resulting in no builds.
 

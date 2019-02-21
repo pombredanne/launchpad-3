@@ -1,10 +1,11 @@
-# Copyright 2015-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
+from functools import partial
 import re
 
 from lazr.restful.fields import Reference
@@ -36,8 +37,10 @@ from lp.testing import (
 from lp.testing.layers import DatabaseFunctionalLayer
 
 
-def make_snap(test_case):
-    return test_case.factory.makeSnap(distroseries=test_case.distroseries)
+def make_snap(test_case, **kwargs):
+    if "distroseries" not in kwargs:
+        kwargs["distroseries"] = test_case.distroseries
+    return test_case.factory.makeSnap(**kwargs)
 
 
 def make_branch(test_case):
@@ -54,6 +57,8 @@ class TestSnapArchiveWidget(WithScenarios, TestCaseWithFactory):
 
     scenarios = [
         ("Snap", {"context_factory": make_snap}),
+        ("Snap with no distroseries",
+         {"context_factory": partial(make_snap, distroseries=None)}),
         ("Branch", {"context_factory": make_branch}),
         ("GitRepository", {"context_factory": make_git_repository}),
         ]
@@ -219,12 +224,13 @@ class TestSnapArchiveWidget(WithScenarios, TestCaseWithFactory):
 
     def test_getInputValue_primary(self):
         # When the primary radio button is selected, the field value is the
-        # context's primary archive if the context is a Snap, or the Ubuntu
-        # primary archive otherwise.
+        # context's primary archive if the context is a Snap and has a
+        # distroseries, or the Ubuntu primary archive otherwise.
         self.widget.request = LaunchpadTestRequest(
             form={"field.archive": "primary"})
-        if ISnap.providedBy(self.context):
-            expected_main_archive = self.distroseries.main_archive
+        if (ISnap.providedBy(self.context) and
+                self.context.distro_series is not None):
+            expected_main_archive = self.context.distro_series.main_archive
         else:
             expected_main_archive = (
                 getUtility(ILaunchpadCelebrities).ubuntu.main_archive)

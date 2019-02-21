@@ -20,6 +20,7 @@ from zope.component import adapter
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
+from lp.buildmaster.enums import BuildBaseImageType
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
@@ -48,6 +49,7 @@ class SnapBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `SnapBuild` jobs to slaves."""
 
     builder_type = "snap"
+    image_types = [BuildBaseImageType.LXD, BuildBaseImageType.CHROOT]
 
     def getLogFileName(self):
         das = self.build.distro_arch_series

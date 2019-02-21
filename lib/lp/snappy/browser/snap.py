@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Snap views."""
@@ -44,6 +44,7 @@ from lp.app.browser.lazrjs import InlinePersonEditPickerWidget
 from lp.app.browser.tales import format_link
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
 from lp.app.interfaces.informationtype import IInformationType
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadDropdownWidget,
@@ -310,7 +311,13 @@ class SnapRequestBuildsView(LaunchpadFormView):
     def initial_values(self):
         """See `LaunchpadFormView`."""
         return {
-            'archive': self.context.distro_series.main_archive,
+            'archive': (
+                # XXX cjwatson 2019-02-04: In order to support non-Ubuntu
+                # bases, we'd need to store this as None and infer it based
+                # on the inferred distro series; but this will do for now.
+                getUtility(ILaunchpadCelebrities).ubuntu.main_archive
+                if self.context.distro_series is None
+                else self.context.distro_series.main_archive),
             'distro_arch_series': [],
             'pocket': PackagePublishingPocket.UPDATES,
             }
@@ -341,7 +348,7 @@ class SnapRequestBuildsView(LaunchpadFormView):
 
     @action('Request builds', name='request')
     def request_action(self, action, data):
-        if data['distro_arch_series']:
+        if data.get('distro_arch_series', []):
             builds, informational = self.requestBuild(data)
             already_pending = informational.get('already_pending')
             notification_text = new_builds_notification_text(
@@ -483,7 +490,9 @@ class SnapAddView(
                 store_name = snapcraft_data.get('name')
 
         store_series = getUtility(ISnappySeriesSet).getAll().first()
-        if store_series.preferred_distro_series is not None:
+        if store_series.can_infer_distro_series:
+            distro_series = None
+        elif store_series.preferred_distro_series is not None:
             distro_series = store_series.preferred_distro_series
         else:
             distro_series = store_series.usable_distro_series.first()
@@ -498,7 +507,13 @@ class SnapAddView(
             'processors': [
                 p for p in getUtility(IProcessorSet).getAll()
                 if p.build_by_default],
-            'auto_build_archive': distro_series.main_archive,
+            'auto_build_archive': (
+                # XXX cjwatson 2019-02-04: In order to support non-Ubuntu
+                # bases, we'd need to store this as None and infer it based
+                # on the inferred distro series; but this will do for now.
+                getUtility(ILaunchpadCelebrities).ubuntu.main_archive
+                if distro_series is None
+                else distro_series.main_archive),
             'auto_build_pocket': PackagePublishingPocket.UPDATES,
             }
 
