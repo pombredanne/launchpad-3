@@ -8,6 +8,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 
 import six
+from storm.store import Store
 from testtools.matchers import (
     Not,
     StartsWith,
@@ -22,7 +23,10 @@ from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.scripts.closeaccount import CloseAccountScript
 from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
-from lp.services.database.sqlbase import flush_database_caches
+from lp.services.database.sqlbase import (
+    flush_database_caches,
+    get_transaction_timestamp,
+    )
 from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccountSet,
@@ -33,8 +37,10 @@ from lp.services.log.logger import (
     DevNullLogger,
     )
 from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.enums import (
+    ArchiveSubscriberStatus,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser
@@ -326,22 +332,24 @@ class TestCloseAccount(TestCaseWithFactory):
     def test_handles_archive_subscriptions_and_tokens(self):
         person = self.factory.makePerson()
         ppa = self.factory.makeArchive(private=True)
-        ppa.newSubscription(person, ppa.owner)
+        subscription = ppa.newSubscription(person, ppa.owner)
+        other_subscription = ppa.newSubscription(
+            self.factory.makePerson(), ppa.owner)
         ppa.newAuthToken(person)
-        archive_subscriber_set = getUtility(IArchiveSubscriberSet)
-        self.assertNotEqual(
-            [],
-            list(archive_subscriber_set.getBySubscriber(person, archive=ppa)))
+        self.assertEqual(ArchiveSubscriberStatus.CURRENT, subscription.status)
         self.assertIsNotNone(ppa.getAuthToken(person))
         person_id = person.id
         account_id = person.account.id
         script = self.makeScript([six.ensure_str(person.name)])
         with dbuser('launchpad'):
+            now = get_transaction_timestamp(Store.of(person))
             self.runScript(script)
         self.assertRemoved(account_id, person_id)
         self.assertEqual(
-            [],
-            list(archive_subscriber_set.getBySubscriber(person, archive=ppa)))
+            ArchiveSubscriberStatus.CANCELLED, subscription.status)
+        self.assertEqual(now, subscription.date_cancelled)
+        self.assertEqual(
+            ArchiveSubscriberStatus.CURRENT, other_subscription.status)
         self.assertIsNotNone(ppa.getAuthToken(person))
 
     def test_handles_hardware_submissions(self):

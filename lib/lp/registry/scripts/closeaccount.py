@@ -24,7 +24,10 @@ from lp.registry.model.person import (
     PersonSettings,
     )
 from lp.services.database import postgresql
-from lp.services.database.constants import DEFAULT
+from lp.services.database.constants import (
+    DEFAULT,
+    UTC_NOW,
+    )
 from lp.services.database.interfaces import IMasterStore
 from lp.services.database.sqlbase import cursor
 from lp.services.identity.interfaces.account import (
@@ -37,6 +40,8 @@ from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
     )
+from lp.soyuz.enums import ArchiveSubscriberStatus
+from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 
 
 def close_account(username, log):
@@ -45,6 +50,7 @@ def close_account(username, log):
     Return True on success, or log an error message and return False
     """
     store = IMasterStore(Person)
+    janitor = getUtility(ILaunchpadCelebrities).janitor
 
     cur = cursor()
     references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -191,7 +197,6 @@ def close_account(username, log):
         account = removeSecurityProxy(person.account)
         account.displayname = 'Removed by request'
         account.creation_rationale = AccountCreationRationale.UNKNOWN
-        janitor = getUtility(ILaunchpadCelebrities).janitor
         person.setAccountStatus(
             AccountStatus.CLOSED, janitor, "Closed using close-account.")
 
@@ -234,7 +239,6 @@ def close_account(username, log):
         ('GpgKey', 'owner'),
 
         # Subscriptions and notifications
-        ('ArchiveSubscriber', 'subscriber'),
         ('BranchSubscription', 'person'),
         ('BugMute', 'person'),
         ('BugNotificationRecipient', 'person'),
@@ -310,13 +314,20 @@ def close_account(username, log):
     # the placeholder person row.
     skip.add(('sprintattendance', 'attendee'))
 
-    # XXX cjwatson 2019-02-15: We can't just delete archive auth tokens at
-    # the moment, because generate_ppa_htaccess currently relies on seeing
-    # active rows there so that it knows which ones to remove from .htpasswd
-    # files on disk in response to the removal of the corresponding
-    # ArchiveSubscriber rows.  Once PPA authorisation is handled dynamically
-    # (e.g. via a WSGI authenticator), we can simplify this and just delete
-    # the ArchiveAuthToken rows instead.
+    # generate_ppa_htaccess currently relies on seeing active
+    # ArchiveAuthToken rows so that it knows which ones to remove from
+    # .htpasswd files on disk in response to the cancellation of the
+    # corresponding ArchiveSubscriber rows; but even once PPA authorisation
+    # is handled dynamically, we probably still want to have the per-person
+    # audit trail here.
+    store.find(
+        ArchiveSubscriber,
+        ArchiveSubscriber.subscriber_id == person.id,
+        ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT).set(
+            date_cancelled=UTC_NOW,
+            cancelled_by_id=janitor.id,
+            status=ArchiveSubscriberStatus.CANCELLED)
+    skip.add(('archivesubscriber', 'subscriber'))
     skip.add(('archiveauthtoken', 'person'))
 
     # Closing the account will only work if all references have been handled
