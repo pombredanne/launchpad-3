@@ -41,6 +41,7 @@ requires manual set up of a bug archive mirror.
     PHP Project Bugtracker
     Google Code
     GitHub Issues
+    GitLab Issues
 
 The bug tracker name is used in URLs and certain characters (like '!')
 aren't allowed.
