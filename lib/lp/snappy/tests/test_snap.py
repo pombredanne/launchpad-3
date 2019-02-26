@@ -2009,6 +2009,29 @@ class TestSnapSet(TestCaseWithFactory):
             expected_log_entries, logger.getLogBuffer().splitlines())
         self.assertFalse(snap.is_stale)
 
+    def test_makeAutoBuilds_infers_distroseries(self):
+        # ISnapSet.makeAutoBuilds can infer the series of a snap from the base
+        # specified in its snapcraft.yaml.
+        with admin_logged_in():
+            snap_base = self.factory.makeSnapBase(name="core20")
+        das = self.makeBuildableDistroArchSeries(
+            distroseries=snap_base.distro_series, architecturetag='riscv64',
+            processor=self.factory.makeProcessor(
+                name='riscv64', supports_virtualized=True))
+        [git_ref] = self.factory.makeGitRefs()
+        owner = self.factory.makePerson()
+        snap = self.factory.makeSnap(
+            registrant=owner, distroseries=None, git_ref=git_ref,
+            auto_build=True,
+            auto_build_archive=self.factory.makeArchive(
+                snap_base.distro_series.distribution, owner=owner))
+        with GitHostingFixture(blob="base: core20\n"):
+            builds = getUtility(ISnapSet).makeAutoBuilds()
+        self.assertThat(set(builds), MatchesSetwise(
+            MatchesStructure.byEquality(
+                requester=snap.owner, snap=snap, distro_arch_series=das,
+                status=BuildStatus.NEEDSBUILD)))
+
     def test_detachFromBranch(self):
         # ISnapSet.detachFromBranch clears the given Bazaar branch from all
         # Snaps.
