@@ -15,7 +15,6 @@ from storm.exceptions import (
     DisconnectionError,
     IntegrityError,
     )
-from storm.store import Store
 import transaction
 from twisted.python.util import mergeFunctionMetadata
 
@@ -27,16 +26,7 @@ RETRY_ATTEMPTS = 3
 
 def activity_cols(cur):
     """Adapt pg_stat_activity column names for the current DB server."""
-    if isinstance(cur, Store):
-        ver_str = cur.execute("SHOW server_version").get_one()
-    else:
-        cur.execute("SHOW server_version")
-        ver_str = cur.fetchone()
-    ver = tuple(map(int, ver_str[0].split('.')[:2]))
-    if ver < (9, 2):
-        return {'query': 'current_query', 'pid': 'procpid'}
-    else:
-        return {'query': 'query', 'pid': 'pid'}
+    return {'query': 'query', 'pid': 'pid'}
 
 
 def retry_transaction(func):
