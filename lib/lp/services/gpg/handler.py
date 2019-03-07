@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -99,13 +99,8 @@ class GPGHandler:
         """
         self.home = tempfile.mkdtemp(prefix='gpg-')
         confpath = os.path.join(self.home, 'gpg.conf')
-        # set needed GPG options, 'auto-key-retrieve' is necessary for
-        # automatically retrieve from the keyserver unknown key when
-        # verifying signatures and 'no-auto-check-trustdb' avoid wasting
-        # time verifying the local keyring consistence.
         with open(confpath, 'w') as conf:
-            conf.write('keyserver hkp://%s\n' % config.gpghandler.host)
-            conf.write('keyserver-options auto-key-retrieve\n')
+            # Avoid wasting time verifying the local keyring's consistency.
             conf.write('no-auto-check-trustdb\n')
             # Prefer a SHA-2 hash where possible, otherwise GPG will fall
             # back to a hash it can use.
@@ -157,7 +152,7 @@ class GPGHandler:
         for i in range(3):
             try:
                 signature = self.getVerifiedSignature(content, signature)
-            except GPGVerificationError as info:
+            except GPGKeyNotFoundError as info:
                 errors.append(info)
             else:
                 return signature
@@ -167,14 +162,13 @@ class GPGHandler:
         raise GPGVerificationError(
             "Verification failed 3 times: %s " % stored_errors)
 
-    def getVerifiedSignature(self, content, signature=None):
-        """See IGPGHandler."""
+    def _rawVerifySignature(self, ctx, content, signature=None):
+        """Internals of `getVerifiedSignature`.
 
-        assert not isinstance(content, unicode)
-        assert not isinstance(signature, unicode)
-
-        ctx = self._getContext()
-
+        This is called twice during a typical verification: once to work out
+        the correct fingerprint, and once after retrieving the corresponding
+        key from the keyserver.
+        """
         # from `info gpgme` about gpgme_op_verify(SIG, SIGNED_TEXT, PLAIN):
         #
         # If SIG is a detached signature, then the signed text should be
@@ -228,22 +222,34 @@ class GPGHandler:
             raise GPGVerificationError('Single signature expected, '
                                        'found multiple signatures')
 
-        signature = signatures[0]
+        return plain, signatures[0]
+
+    def getVerifiedSignature(self, content, signature=None):
+        """See IGPGHandler."""
+
+        assert not isinstance(content, unicode)
+        assert not isinstance(signature, unicode)
+
+        ctx = self._getContext()
+
+        # We may not yet have the public key, so find out the fingerprint we
+        # need to fetch.
+        _, sig = self._rawVerifySignature(ctx, content, signature=signature)
+
+        # Fetch the full key from the keyserver now that we know its
+        # fingerprint, and then verify the signature again.  (This also lets
+        # us support subkeys by using the master key fingerprint.)
+        key = self.retrieveKey(sig.fpr)
+        plain, sig = self._rawVerifySignature(
+            ctx, content, signature=signature)
+
         expired = False
-        # signature.status == 0 means "Ok"
-        if signature.status is not None:
-            if signature.status.code == gpgme.ERR_KEY_EXPIRED:
+        # sig.status == 0 means "Ok"
+        if sig.status is not None:
+            if sig.status.code == gpgme.ERR_KEY_EXPIRED:
                 expired = True
             else:
-                raise GPGVerificationError(signature.status.args)
-
-        # Support subkeys by retrieving the full key from the keyserver and
-        # using the master key fingerprint.
-        try:
-            key = self.retrieveKey(signature.fpr)
-        except GPGKeyNotFoundError:
-            raise GPGVerificationError(
-                "Unable to map subkey: %s" % signature.fpr)
+                raise GPGVerificationError(sig.status.args)
 
         if expired:
             # This should already be set, but let's make sure.
@@ -254,7 +260,7 @@ class GPGHandler:
         return PymeSignature(
             fingerprint=key.fingerprint,
             plain_data=plain.getvalue(),
-            timestamp=signature.timestamp)
+            timestamp=sig.timestamp)
 
     def importPublicKey(self, content):
         """See IGPGHandler."""
