@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugWatchSet."""
@@ -175,6 +175,12 @@ class ExtractBugTrackerAndBugTest(WithScenarios, TestCase):
             'bugtracker_type': BugTrackerType.GITHUB,
             'bug_url': 'https://github.com/user/repository/issues/12345',
             'base_url': 'https://github.com/user/repository/issues',
+            'bug_id': '12345',
+            }),
+        ('GitLab', {
+            'bugtracker_type': BugTrackerType.GITLAB,
+            'bug_url': 'https://gitlab.com/user/repository/issues/12345',
+            'base_url': 'https://gitlab.com/user/repository/issues',
             'bug_id': '12345',
             }),
         ]

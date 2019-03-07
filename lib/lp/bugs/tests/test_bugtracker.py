@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -412,6 +412,29 @@ class TestMakeBugtrackerName(TestCase):
         self.assertEqual(
             'auto-github-user-foo-bar',
             make_bugtracker_name('https://github.com/user/foo/bar/issues'))
+
+    def test_gitlab(self):
+        self.assertEqual(
+            'auto-gitlab.com-user-repository',
+            make_bugtracker_name('https://gitlab.com/user/repository/issues'))
+        self.assertEqual(
+            'auto-gitlab.com-user-repository',
+            make_bugtracker_name('https://gitlab.com/user/Repository/issues'))
+        self.assertEqual(
+            'auto-salsa.debian.org-user-repository',
+            make_bugtracker_name(
+                'https://salsa.debian.org/user/repository/issues'))
+        self.assertEqual(
+            'auto-salsa.debian.org-user-repository',
+            make_bugtracker_name(
+                'https://salsa.debian.org/user/Repository/issues'))
+        # Invalid on the GitLab side, but let's make sure these don't blow up.
+        self.assertEqual(
+            'auto-gitlab.com-user',
+            make_bugtracker_name('https://gitlab.com/user/issues'))
+        self.assertEqual(
+            'auto-gitlab.com-user-foo-bar',
+            make_bugtracker_name('https://gitlab.com/user/foo/bar/issues'))
 
 
 class TestMakeBugtrackerTitle(TestCase):
