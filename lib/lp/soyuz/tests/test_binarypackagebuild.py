@@ -920,7 +920,7 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
         build = self.factory.makeBinaryPackageBuild()
         issuer = getUtility(IMacaroonIssuer, "binary-package-build")
         self.assertRaises(
-            AssertionError, removeSecurityProxy(issuer).issueMacaroon, build)
+            ValueError, removeSecurityProxy(issuer).issueMacaroon, build)
 
     def test_issueMacaroon_good(self):
         build = self.factory.makeBinaryPackageBuild(

@@ -1389,8 +1389,7 @@ class BinaryPackageBuildMacaroonIssuer:
         For issuing, the context is an `IBinaryPackageBuild`.
         """
         if not removeSecurityProxy(context).archive.private:
-            raise AssertionError(
-                "Refusing to issue macaroon for public build.")
+            raise ValueError("Refusing to issue macaroon for public build.")
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname,
             identifier="binary-package-build", key=self._root_secret)
