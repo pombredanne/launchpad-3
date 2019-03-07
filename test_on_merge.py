@@ -60,20 +60,10 @@ def setup_test_database():
     # Sanity check PostgreSQL version. No point in trying to create a test
     # database when PostgreSQL is too old.
     con = psycopg2.connect('dbname=template1')
-    cur = con.cursor()
-    cur.execute('show server_version')
-    server_version = cur.fetchone()[0]
-    try:
-        numeric_server_version = tuple(map(int, server_version.split('.')))
-    except ValueError:
-        # Skip this check if the version number is more complicated than
-        # we expected.
-        pass
-    else:
-        if numeric_server_version < (8, 0):
-            print 'Your PostgreSQL version is too old.  You need 8.x.x'
-            print 'You have %s' % server_version
-            return 1
+    if con.server_version < 90300:
+        print 'Your PostgreSQL version is too old.  You need at least 9.3.x'
+        print 'You have %s' % con.get_parameter_status('server_version')
+        return 1
 
     # Drop the template database if it exists - the Makefile does this
     # too, but we can explicity check for errors here

@@ -165,10 +165,9 @@ def add_gpg_key(person, fingerprint):
         # We already have this key.
         return
 
-    algorithm = GPGKeyAlgorithm.items[key.algorithm]
     can_encrypt = True
     lpkey = gpgkeyset.new(
-        person.id, key.keyid, fingerprint, key.keysize, algorithm,
+        person.id, key.keyid, fingerprint, key.keysize, key.algorithm,
         active=True, can_encrypt=can_encrypt)
     Store.of(person).add(lpkey)
 
