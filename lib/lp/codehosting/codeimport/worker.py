@@ -321,12 +321,11 @@ class CodeImportSourceDetails:
         arguments = list(arguments)
         target_id = arguments.pop(0)
         rcstype = arguments.pop(0)
-        # XXX cjwatson 2016-10-12: Remove compatibility code once the
-        # scheduler always passes both source and target types.
-        if ':' in rcstype:
-            rcstype, target_rcstype = rcstype.split(':', 1)
-        else:
-            target_rcstype = 'bzr'
+        if ':' not in rcstype:
+            raise AssertionError(
+                "'%s' does not contain both source and target types." %
+                rcstype)
+        rcstype, target_rcstype = rcstype.split(':', 1)
         if rcstype in ['bzr-svn', 'git', 'bzr']:
             url = arguments.pop(0)
             if target_rcstype == 'bzr':
