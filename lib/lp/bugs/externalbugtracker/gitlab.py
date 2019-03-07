@@ -29,6 +29,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
+from lp.services.config import config
 from lp.services.webapp.url import urlsplit
 
 
@@ -50,6 +51,16 @@ class GitLab(ExternalBugTracker):
         baseurl = urlunsplit(("https", host, path, query, fragment))
         super(GitLab, self).__init__(baseurl)
         self.cached_bugs = {}
+
+    @property
+    def credentials(self):
+        credentials_config = config["checkwatches.credentials"]
+        # lazr.config.Section doesn't support get().
+        try:
+            token = credentials_config["%s.token" % self.basehost]
+        except KeyError:
+            token = None
+        return {"token": token}
 
     def getModifiedRemoteBugs(self, bug_ids, last_accessed):
         """See `IExternalBugTracker`."""
@@ -132,6 +143,9 @@ class GitLab(ExternalBugTracker):
             headers["If-Modified-Since"] = (
                 last_accessed.astimezone(pytz.UTC).strftime(
                     "%a, %d %b %Y %H:%M:%S GMT"))
+        token = self.credentials["token"]
+        if token is not None:
+            headers["Private-Token"] = token
         return super(GitLab, self).makeRequest(method, url, headers=headers)
 
     def _getCollection(self, base_page, last_accessed=None):
