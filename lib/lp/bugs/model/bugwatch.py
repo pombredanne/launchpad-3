@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -82,6 +82,7 @@ BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.BUGZILLA: 'show_bug.cgi?id=%s',
     BugTrackerType.DEBBUGS: 'cgi-bin/bugreport.cgi?bug=%s',
     BugTrackerType.GITHUB: '%s',
+    BugTrackerType.GITLAB: '%s',
     BugTrackerType.GOOGLE_CODE: 'detail?id=%s',
     BugTrackerType.MANTIS: 'view.php?id=%s',
     BugTrackerType.ROUNDUP: 'issue%s',
@@ -390,6 +391,7 @@ class BugWatchSet:
             BugTrackerType.DEBBUGS: self.parseDebbugsURL,
             BugTrackerType.EMAILADDRESS: self.parseEmailAddressURL,
             BugTrackerType.GITHUB: self.parseGitHubURL,
+            BugTrackerType.GITLAB: self.parseGitLabURL,
             BugTrackerType.GOOGLE_CODE: self.parseGoogleCodeURL,
             BugTrackerType.MANTIS: self.parseMantisURL,
             BugTrackerType.PHPPROJECT: self.parsePHPProjectURL,
@@ -695,6 +697,16 @@ class BugWatchSet:
         """Extract a GitHub Issues base URL and bug ID."""
         if host != 'github.com':
             return None
+        match = re.match(r'(.*/issues)/(\d+)$', path)
+        if not match:
+            return None
+        base_path = match.group(1)
+        remote_bug = match.group(2)
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseGitLabURL(self, scheme, host, path, query):
+        """Extract a GitLab Issues base URL and bug ID."""
         match = re.match(r'(.*/issues)/(\d+)$', path)
         if not match:
             return None

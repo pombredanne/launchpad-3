@@ -45,6 +45,7 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser
 from lp.testing.layers import LaunchpadZopelessLayer
+from lp.translations.interfaces.pofiletranslator import IPOFileTranslatorSet
 from lp.translations.interfaces.translationsperson import ITranslationsPerson
 
 
@@ -328,6 +329,25 @@ class TestCloseAccount(TestCaseWithFactory):
             self.runScript(script)
         self.assertRemoved(account_id, person_id)
         self.assertTrue(translations_person.translations_relicensing_agreement)
+
+    def test_skips_po_file_translators(self):
+        person = self.factory.makePerson()
+        pofile = self.factory.makePOFile()
+        potmsgset = self.factory.makePOTMsgSet(pofile.potemplate)
+        self.factory.makeCurrentTranslationMessage(
+            potmsgset=potmsgset, translator=person, language=pofile.language)
+        self.assertIsNotNone(
+            getUtility(IPOFileTranslatorSet).getForPersonPOFile(
+                person, pofile))
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertIsNotNone(
+            getUtility(IPOFileTranslatorSet).getForPersonPOFile(
+                person, pofile))
 
     def test_handles_archive_subscriptions_and_tokens(self):
         person = self.factory.makePerson()

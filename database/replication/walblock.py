@@ -22,8 +22,8 @@ def main():
         help="Block if there are more than N unshipped WAL files.", default=25)
     parser.add_option(
         "-d", dest="wal_dir", metavar="DIR", type="string",
-        help="Path to pg_xlog directory",
-        default="/var/lib/postgresql/9.1/main/pg_xlog")
+        help="Path to pg_wal directory",
+        default="/var/lib/postgresql/10/main/pg_wal")
     parser.add_option(
         "-v", "--verbose", action="store_true", default=False, help="Verbose")
     options, args = parser.parse_args()

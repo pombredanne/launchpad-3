@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """__init__ module for the externalbugtracker package."""
@@ -15,6 +15,7 @@ __all__ = [
     'DebBugsDatabaseNotFound',
     'ExternalBugTracker',
     'GitHub',
+    'GitLab',
     'InvalidBugId',
     'LookupTree',
     'Mantis',
@@ -53,6 +54,7 @@ from lp.bugs.externalbugtracker.debbugs import (
     DebBugsDatabaseNotFound,
     )
 from lp.bugs.externalbugtracker.github import GitHub
+from lp.bugs.externalbugtracker.gitlab import GitLab
 from lp.bugs.externalbugtracker.mantis import Mantis
 from lp.bugs.externalbugtracker.roundup import Roundup
 from lp.bugs.externalbugtracker.rt import RequestTracker
@@ -65,6 +67,7 @@ BUG_TRACKER_CLASSES = {
     BugTrackerType.BUGZILLA: Bugzilla,
     BugTrackerType.DEBBUGS: DebBugs,
     BugTrackerType.GITHUB: GitHub,
+    BugTrackerType.GITLAB: GitLab,
     BugTrackerType.MANTIS: Mantis,
     BugTrackerType.TRAC: Trac,
     BugTrackerType.ROUNDUP: Roundup,

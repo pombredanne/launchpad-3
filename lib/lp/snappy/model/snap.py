@@ -726,11 +726,11 @@ class Snap(Storm, WebhookTargetMixin):
             raise CannotRequestAutoBuilds("auto_build_archive")
         if self.auto_build_pocket is None:
             raise CannotRequestAutoBuilds("auto_build_pocket")
-        if self.distro_series is None:
+        if not fetch_snapcraft_yaml and self.distro_series is None:
             raise IncompatibleArguments(
                 "Cannot use requestAutoBuilds for a snap package without "
-                "distro_series being set.  Consider using requestBuilds "
-                "instead.")
+                "inferring from snapcraft.yaml or distro_series being set.  "
+                "Consider using requestBuilds instead.")
         self.is_stale = False
         if logger is not None:
             logger.debug(

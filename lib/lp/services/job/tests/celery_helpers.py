@@ -1,4 +1,4 @@
-# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -20,7 +20,7 @@ from celery.task import task
 @task
 def pop_notifications():
     from lp.testing.mail_helpers import pop_notifications
-    return pop_notifications()
+    return [message.as_string() for message in pop_notifications()]
 
 
 @task
