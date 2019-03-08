@@ -1,4 +1,4 @@
-# Copyright 2009-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchiveSubscriber."""
@@ -45,7 +45,10 @@ from lp.services.identity.model.emailaddress import EmailAddress
 from lp.services.webapp.authorization import precache_permission_for_objects
 from lp.soyuz.enums import ArchiveSubscriberStatus
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
-from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriber
+from lp.soyuz.interfaces.archivesubscriber import (
+    IArchiveSubscriber,
+    IArchiveSubscriberSet,
+    )
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 
@@ -94,9 +97,7 @@ class ArchiveSubscriber(Storm):
 
     def cancel(self, cancelled_by):
         """See `IArchiveSubscriber`."""
-        self.date_cancelled = UTC_NOW
-        self.cancelled_by = cancelled_by
-        self.status = ArchiveSubscriberStatus.CANCELLED
+        ArchiveSubscriberSet().cancel([self.id], cancelled_by)
 
     def getNonActiveSubscribers(self):
         """See `IArchiveSubscriber`."""
@@ -149,6 +150,7 @@ class ArchiveSubscriber(Storm):
                 EmailAddress.status == EmailAddressStatus.PREFERRED)
 
 
+@implementer(IArchiveSubscriberSet)
 class ArchiveSubscriberSet:
     """See `IArchiveSubscriberSet`."""
 
@@ -253,3 +255,12 @@ class ArchiveSubscriberSet:
                 ArchiveSubscriber.status == ArchiveSubscriberStatus.CURRENT)
 
         return extra_exprs
+
+    def cancel(self, archive_subscriber_ids, cancelled_by):
+        """See `IArchiveSubscriberSet`."""
+        Store.of(cancelled_by).find(
+            ArchiveSubscriber,
+            ArchiveSubscriber.id.is_in(archive_subscriber_ids)).set(
+                date_cancelled=UTC_NOW,
+                cancelled_by_id=cancelled_by.id,
+                status=ArchiveSubscriberStatus.CANCELLED)

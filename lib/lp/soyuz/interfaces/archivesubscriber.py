@@ -1,4 +1,4 @@
-# Copyright 2009-2013 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ArchiveSubscriber interface."""
@@ -127,8 +127,8 @@ class IArchiveSubscriber(IArchiveSubscriberView, IArchiveSubscriberEdit):
     export_as_webservice_entry()
 
 
-class IArchiveSubscriberSet(Interface):
-    """An interface for the set of all archive subscribers."""
+class IArchiveSubscriberSetView(Interface):
+    """An interface for launchpad.View ops on all archive subscribers."""
 
     def getBySubscriber(subscriber, archive=None, current_only=True):
         """Return all the subscriptions for a person.
@@ -154,13 +154,33 @@ class IArchiveSubscriberSet(Interface):
         """
 
     def getByArchive(archive, current_only=True):
-        """Return all the subscripions for an archive.
+        """Return all the subscriptions for an archive.
 
         :param archive: An `IArchive` for which to return all
             `ArchiveSubscriber` records.
         :param current_only: Whether the result should only include current
             subscriptions (which is the default).
         """
+
+
+class IArchiveSubscriberSetAdmin(Interface):
+    """An interface for launchpad.Admin ops on all archive subscribers."""
+
+    def cancel(archive_subscriber_ids, cancelled_by):
+        """Cancel a set of subscriptions.
+
+        :param archive_subscriber_ids: A sequence of `ArchiveSubscriber.id`
+            values.
+        :param cancelled_by: An `IPerson` who is cancelling the subscription.
+
+        Sets cancelled_by to the supplied person and date_cancelled to
+        the current date/time.
+        """
+
+
+class IArchiveSubscriberSet(
+        IArchiveSubscriberSetView, IArchiveSubscriberSetAdmin):
+    """An interface for the set of all archive subscribers."""
 
 
 class IPersonalArchiveSubscription(Interface):
