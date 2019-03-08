@@ -8,6 +8,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 
 import six
+from storm.store import Store
 from testtools.matchers import (
     Not,
     StartsWith,
@@ -18,10 +19,14 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QuestionStatus
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.scripts.closeaccount import CloseAccountScript
 from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
-from lp.services.database.sqlbase import flush_database_caches
+from lp.services.database.sqlbase import (
+    flush_database_caches,
+    get_transaction_timestamp,
+    )
 from lp.services.identity.interfaces.account import (
     AccountStatus,
     IAccountSet,
@@ -32,7 +37,10 @@ from lp.services.log.logger import (
     DevNullLogger,
     )
 from lp.services.scripts.base import LaunchpadScriptFailure
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    ArchiveSubscriberStatus,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 from lp.testing.dbuser import dbuser
@@ -340,3 +348,43 @@ class TestCloseAccount(TestCaseWithFactory):
         self.assertIsNotNone(
             getUtility(IPOFileTranslatorSet).getForPersonPOFile(
                 person, pofile))
+
+    def test_handles_archive_subscriptions_and_tokens(self):
+        person = self.factory.makePerson()
+        ppa = self.factory.makeArchive(private=True)
+        subscription = ppa.newSubscription(person, ppa.owner)
+        other_subscription = ppa.newSubscription(
+            self.factory.makePerson(), ppa.owner)
+        ppa.newAuthToken(person)
+        self.assertEqual(ArchiveSubscriberStatus.CURRENT, subscription.status)
+        self.assertIsNotNone(ppa.getAuthToken(person))
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            now = get_transaction_timestamp(Store.of(person))
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertEqual(
+            ArchiveSubscriberStatus.CANCELLED, subscription.status)
+        self.assertEqual(now, subscription.date_cancelled)
+        self.assertEqual(
+            ArchiveSubscriberStatus.CURRENT, other_subscription.status)
+        self.assertIsNotNone(ppa.getAuthToken(person))
+
+    def test_handles_hardware_submissions(self):
+        person = self.factory.makePerson()
+        submission = self.factory.makeHWSubmission(
+            emailaddress=person.preferredemail.email)
+        key = submission.submission_key
+        hw_submission_set = getUtility(IHWSubmissionSet)
+        self.assertNotEqual([], list(hw_submission_set.getByOwner(person)))
+        self.assertIsNotNone(hw_submission_set.getBySubmissionKey(key))
+        person_id = person.id
+        account_id = person.account.id
+        script = self.makeScript([six.ensure_str(person.name)])
+        with dbuser('launchpad'):
+            self.runScript(script)
+        self.assertRemoved(account_id, person_id)
+        self.assertEqual([], list(hw_submission_set.getByOwner(person)))
+        self.assertIsNone(hw_submission_set.getBySubmissionKey(key))
