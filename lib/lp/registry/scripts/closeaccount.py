@@ -18,6 +18,7 @@ from lp.answers.enums import QuestionStatus
 from lp.answers.model.question import Question
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
+from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.interfaces.person import PersonCreationRationale
 from lp.registry.model.person import (
     Person,
@@ -289,9 +290,6 @@ def close_account(username, log):
 
         # "Affects me too" information
         ('BugAffectsPerson', 'person'),
-
-        # Hardware submissions
-        ('HWSubmission', 'owner'),
         ]
     for table, person_id_column in removals:
         table_notification(table)
@@ -331,6 +329,17 @@ def close_account(username, log):
             status=ArchiveSubscriberStatus.CANCELLED)
     skip.add(('archivesubscriber', 'subscriber'))
     skip.add(('archiveauthtoken', 'person'))
+
+    # Remove hardware submissions.
+    table_notification('HWSubmissionDevice')
+    store.execute("""
+        DELETE FROM HWSubmissionDevice
+        USING HWSubmission
+        WHERE HWSubmission.id = HWSubmissionDevice.submission
+            AND owner = ?
+        """, (person.id,))
+    table_notification('HWSubmission')
+    store.find(HWSubmission, HWSubmission.ownerID == person.id).remove()
 
     # Closing the account will only work if all references have been handled
     # by this point.  If not, it's safer to bail out.  It's OK if this
