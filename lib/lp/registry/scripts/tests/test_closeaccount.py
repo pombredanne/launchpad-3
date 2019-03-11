@@ -19,7 +19,11 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.answers.enums import QuestionStatus
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
+from lp.hardwaredb.interfaces.hwdb import (
+    HWBus,
+    IHWDeviceSet,
+    IHWSubmissionSet,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.scripts.closeaccount import CloseAccountScript
 from lp.scripts.garbo import PopulateLatestPersonSourcePackageReleaseCache
@@ -376,10 +380,21 @@ class TestCloseAccount(TestCaseWithFactory):
         person = self.factory.makePerson()
         submission = self.factory.makeHWSubmission(
             emailaddress=person.preferredemail.email)
+        other_submission = self.factory.makeHWSubmission()
+        device = getUtility(IHWDeviceSet).getByDeviceID(
+            HWBus.PCI, '0x10de', '0x0455')
+        with dbuser('hwdb-submission-processor'):
+            parent_submission_device = self.factory.makeHWSubmissionDevice(
+                submission, device, None, None, 1)
+            self.factory.makeHWSubmissionDevice(
+                submission, device, None, parent_submission_device, 2)
+            other_submission_device = self.factory.makeHWSubmissionDevice(
+                other_submission, device, None, None, 1)
         key = submission.submission_key
+        other_key = other_submission.submission_key
         hw_submission_set = getUtility(IHWSubmissionSet)
         self.assertNotEqual([], list(hw_submission_set.getByOwner(person)))
-        self.assertIsNotNone(hw_submission_set.getBySubmissionKey(key))
+        self.assertEqual(submission, hw_submission_set.getBySubmissionKey(key))
         person_id = person.id
         account_id = person.account.id
         script = self.makeScript([six.ensure_str(person.name)])
@@ -388,3 +403,7 @@ class TestCloseAccount(TestCaseWithFactory):
         self.assertRemoved(account_id, person_id)
         self.assertEqual([], list(hw_submission_set.getByOwner(person)))
         self.assertIsNone(hw_submission_set.getBySubmissionKey(key))
+        self.assertEqual(
+            other_submission, hw_submission_set.getBySubmissionKey(other_key))
+        self.assertEqual(
+            [other_submission_device], list(other_submission.devices))
