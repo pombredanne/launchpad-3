@@ -82,6 +82,7 @@ from lp.services.log.logger import (
     )
 from lp.services.webapp import canonical_url
 from lp.snappy.interfaces.snap import (
+    SNAP_PRIVATE_FEATURE_FLAG,
     SNAP_SNAPCRAFT_CHANNEL_FEATURE_FLAG,
     SnapBuildArchiveOwnerMismatch,
     )
@@ -396,6 +397,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "build_url": Equals(canonical_url(job.build)),
             "fast_cleanup": Is(True),
             "name": Equals("test-snap"),
+            "private": Is(False),
             "proxy_url": self.getProxyURLMatcher(job),
             "revocation_endpoint": self.getRevocationEndpointMatcher(job),
             "series": Equals("unstable"),
@@ -422,6 +424,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "git_repository": Equals(ref.repository.git_https_url),
             "git_path": Equals(ref.name),
             "name": Equals("test-snap"),
+            "private": Is(False),
             "proxy_url": self.getProxyURLMatcher(job),
             "revocation_endpoint": self.getRevocationEndpointMatcher(job),
             "series": Equals("unstable"),
@@ -448,6 +451,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "fast_cleanup": Is(True),
             "git_repository": Equals(ref.repository.git_https_url),
             "name": Equals("test-snap"),
+            "private": Is(False),
             "proxy_url": self.getProxyURLMatcher(job),
             "revocation_endpoint": self.getRevocationEndpointMatcher(job),
             "series": Equals("unstable"),
@@ -476,6 +480,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "git_repository": Equals(url),
             "git_path": Equals("master"),
             "name": Equals("test-snap"),
+            "private": Is(False),
             "proxy_url": self.getProxyURLMatcher(job),
             "revocation_endpoint": self.getRevocationEndpointMatcher(job),
             "series": Equals("unstable"),
@@ -502,6 +507,7 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
             "fast_cleanup": Is(True),
             "git_repository": Equals(url),
             "name": Equals("test-snap"),
+            "private": Is(False),
             "proxy_url": self.getProxyURLMatcher(job),
             "revocation_endpoint": self.getRevocationEndpointMatcher(job),
             "series": Equals("unstable"),
@@ -598,6 +604,15 @@ class TestAsyncSnapBuildBehaviour(TestSnapBuildBehaviourBase):
         job = self.makeJob(build_source_tarball=True)
         args = yield job.extraBuildArgs()
         self.assertTrue(args["build_source_tarball"])
+
+    @defer.inlineCallbacks
+    def test_extraBuildArgs_private(self):
+        # If the snap is private, extraBuildArgs sends the appropriate
+        # arguments.
+        self.useFixture(FeatureFixture({SNAP_PRIVATE_FEATURE_FLAG: "on"}))
+        job = self.makeJob(private=True)
+        args = yield job.extraBuildArgs()
+        self.assertTrue(args["private"])
 
     @defer.inlineCallbacks
     def test_composeBuildRequest_proxy_url_set(self):
