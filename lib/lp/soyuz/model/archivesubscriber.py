@@ -29,6 +29,7 @@ from storm.locals import (
 from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implementer
+from zope.security.proxy import removeSecurityProxy
 
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -97,7 +98,11 @@ class ArchiveSubscriber(Storm):
 
     def cancel(self, cancelled_by):
         """See `IArchiveSubscriber`."""
-        ArchiveSubscriberSet().cancel([self.id], cancelled_by)
+        # The bulk cancel normally has stricter permissions, but if we've
+        # got this far then we know the caller has enough permissions to
+        # cancel just this subscription.
+        removeSecurityProxy(getUtility(IArchiveSubscriberSet)).cancel(
+            [self.id], cancelled_by)
 
     def getNonActiveSubscribers(self):
         """See `IArchiveSubscriber`."""
