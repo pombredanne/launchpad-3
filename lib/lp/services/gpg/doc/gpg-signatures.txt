@@ -7,6 +7,10 @@ OpenPGP Signature Verification
 
     >>> transaction.commit()
 
+    >>> from lp.testing.keyserver import KeyServerTac
+    >>> keyserver = KeyServerTac()
+    >>> keyserver.setUp()
+
     >>> from lp.testing import login
     >>> from lp.services.webapp.interfaces import ILaunchBag
 
@@ -164,7 +168,8 @@ the GPGME error codes (they may be helpful).
     >>> gpghandler.getVerifiedSignature(content)
     Traceback (most recent call last):
     ...
-    GPGVerificationError: (7, 9, u'No public key')
+    GPGKeyDoesNotExistOnServer: GPG key E192C0543B1BB2EB does not exist on the
+    keyserver.
 
 Due to unpredictable behaviour between the production system and
 the external keyserver, we have a resilient signature verifier,
@@ -178,9 +183,9 @@ information for the 3 failures.
     Traceback (most recent call last):
     ...
     GPGVerificationError: Verification failed 3 times:
-    ["(7, 9, u'No public key')",
-     "(7, 9, u'No public key')",
-     "(7, 9, u'No public key')"]
+    ['GPG key E192C0543B1BB2EB does not exist on the keyserver.',
+     'GPG key E192C0543B1BB2EB does not exist on the keyserver.',
+     'GPG key E192C0543B1BB2EB does not exist on the keyserver.']
 
 
 Debugging exceptions
@@ -227,3 +232,4 @@ itself.
     [<gpgme.Signature object at ...>]
     7
 
+    >>> keyserver.tearDown()
