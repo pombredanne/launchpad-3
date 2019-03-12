@@ -2923,6 +2923,11 @@ class EditArchiveSubscriber(DelegatedAuthorization):
                 super(EditArchiveSubscriber, self).checkAuthenticated(user))
 
 
+class AdminArchiveSubscriberSet(AdminByCommercialTeamOrAdmins):
+    """Only (commercial) admins can manipulate archive subscribers in bulk."""
+    usedfor = IArchiveSubscriberSet
+
+
 class ViewSourcePackageRecipe(DelegatedAuthorization):
 
     permission = "launchpad.View"
