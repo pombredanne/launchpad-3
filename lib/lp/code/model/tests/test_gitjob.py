@@ -13,7 +13,6 @@ from datetime import (
     )
 import hashlib
 
-from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from testtools.matchers import (
@@ -24,7 +23,6 @@ from testtools.matchers import (
     MatchesStructure,
     )
 import transaction
-from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
@@ -56,6 +54,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.services.job.runner import JobRunner
 from lp.services.utils import seconds_since_epoch
 from lp.services.webapp import canonical_url
+from lp.services.webapp.snapshot import notify_modified
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -395,10 +394,9 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
             repository=repository, ref_pattern="refs/heads/foo")
         transaction.commit()
         snapshot = Snapshot(repository, providing=providedBy(repository))
-        rule_snapshot = Snapshot(rule, providing=providedBy(rule))
         with person_logged_in(repository.owner):
-            rule.ref_pattern = "refs/heads/bar"
-            notify(ObjectModifiedEvent(rule, rule_snapshot, ["ref_pattern"]))
+            with notify_modified(rule, ["ref_pattern"]):
+                rule.ref_pattern = "refs/heads/bar"
         self.assertDeltaDescriptionEqual(
             [], ["Changed protected ref: refs/heads/foo => refs/heads/bar"],
             snapshot, repository)
@@ -451,10 +449,9 @@ class TestDescribeRepositoryDelta(TestCaseWithFactory):
             can_create=True)
         transaction.commit()
         snapshot = Snapshot(repository, providing=providedBy(repository))
-        grant_snapshot = Snapshot(grant, providing=providedBy(grant))
         with person_logged_in(repository.owner):
-            grant.can_push = True
-            notify(ObjectModifiedEvent(grant, grant_snapshot, ["can_push"]))
+            with notify_modified(grant, ["can_push"]):
+                grant.can_push = True
         self.assertDeltaDescriptionEqual(
             [],
             ["Changed access for ~{grantee} to refs/heads/*: "

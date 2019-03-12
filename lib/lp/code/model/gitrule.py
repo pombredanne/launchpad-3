@@ -1,4 +1,4 @@
-# Copyright 2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2018-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Git repository access rules."""
@@ -17,8 +17,6 @@ from collections import (
     )
 
 from lazr.enum import DBItem
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interfaces import (
     IFieldMarshaller,
     IJSONPublishable,
@@ -38,11 +36,7 @@ from zope.component import (
     getMultiAdapter,
     getUtility,
     )
-from zope.event import notify
-from zope.interface import (
-    implementer,
-    providedBy,
-    )
+from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import (
@@ -78,6 +72,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.webapp.snapshot import notify_modified
 
 
 def git_rule_modified(rule, event):
@@ -131,13 +126,6 @@ class GitRule(StormBase):
     def __repr__(self):
         return "<GitRule '%s' for %s>" % (
             self.ref_pattern, self.repository.unique_name)
-
-    @property
-    def is_exact(self):
-        """See `IGitRule`."""
-        # turnip's glob_to_re only treats * as special, so any rule whose
-        # pattern does not contain * must be an exact-match rule.
-        return "*" not in self.ref_pattern
 
     def toDataForJSON(self, media_type):
         """See `IJSONPublishable`."""
@@ -216,15 +204,12 @@ class GitRule(StormBase):
                     can_push=new_grant.can_push,
                     can_force_push=new_grant.can_force_push)
             else:
-                grant_before_modification = Snapshot(
-                    grant, providing=providedBy(grant))
                 edited_fields = []
-                for field in ("can_create", "can_push", "can_force_push"):
-                    if getattr(grant, field) != getattr(new_grant, field):
-                        setattr(grant, field, getattr(new_grant, field))
-                        edited_fields.append(field)
-                notify(ObjectModifiedEvent(
-                    grant, grant_before_modification, edited_fields))
+                with notify_modified(grant, edited_fields):
+                    for field in ("can_create", "can_push", "can_force_push"):
+                        if getattr(grant, field) != getattr(new_grant, field):
+                            setattr(grant, field, getattr(new_grant, field))
+                            edited_fields.append(field)
 
     @staticmethod
     def preloadGrantsForRules(rules):
@@ -261,8 +246,29 @@ def git_rule_grant_modified(grant, event):
         removeSecurityProxy(grant).date_last_modified = UTC_NOW
 
 
+class GitRuleGrantMixin:
+    """Properties common to GitRuleGrant and GitNascentRuleGrant."""
+
+    @property
+    def permissions(self):
+        permissions = set()
+        if self.can_create:
+            permissions.add(GitPermissionType.CAN_CREATE)
+        if self.can_push:
+            permissions.add(GitPermissionType.CAN_PUSH)
+        if self.can_force_push:
+            permissions.add(GitPermissionType.CAN_FORCE_PUSH)
+        return frozenset(permissions)
+
+    @permissions.setter
+    def permissions(self, value):
+        self.can_create = GitPermissionType.CAN_CREATE in value
+        self.can_push = GitPermissionType.CAN_PUSH in value
+        self.can_force_push = GitPermissionType.CAN_FORCE_PUSH in value
+
+
 @implementer(IGitRuleGrant, IJSONPublishable)
-class GitRuleGrant(StormBase):
+class GitRuleGrant(StormBase, GitRuleGrantMixin):
     """See `IGitRuleGrant`."""
 
     __storm_table__ = 'GitRuleGrant'
@@ -318,6 +324,13 @@ class GitRuleGrant(StormBase):
         self.date_created = date_created
         self.date_last_modified = date_created
 
+    @property
+    def combined_grantee(self):
+        if self.grantee_type == GitGranteeType.PERSON:
+            return self.grantee
+        else:
+            return self.grantee_type
+
     def __repr__(self):
         if self.grantee_type == GitGranteeType.PERSON:
             grantee_name = "~%s" % self.grantee.name
@@ -326,23 +339,6 @@ class GitRuleGrant(StormBase):
         return "<GitRuleGrant [%s] to %s for %s:%s>" % (
             ", ".join(describe_git_permissions(self.permissions)),
             grantee_name, self.repository.unique_name, self.rule.ref_pattern)
-
-    @property
-    def permissions(self):
-        permissions = set()
-        if self.can_create:
-            permissions.add(GitPermissionType.CAN_CREATE)
-        if self.can_push:
-            permissions.add(GitPermissionType.CAN_PUSH)
-        if self.can_force_push:
-            permissions.add(GitPermissionType.CAN_FORCE_PUSH)
-        return frozenset(permissions)
-
-    @permissions.setter
-    def permissions(self, value):
-        self.can_create = GitPermissionType.CAN_CREATE in value
-        self.can_push = GitPermissionType.CAN_PUSH in value
-        self.can_force_push = GitPermissionType.CAN_FORCE_PUSH in value
 
     def toDataForJSON(self, media_type):
         """See `IJSONPublishable`."""
@@ -368,6 +364,9 @@ class GitNascentRule:
         self.ref_pattern = ref_pattern
         self.grants = grants
 
+    def __repr__(self):
+        return "<GitNascentRule '%s'>" % self.ref_pattern
+
 
 @adapter(dict)
 @implementer(IGitNascentRule)
@@ -376,7 +375,7 @@ def nascent_rule_from_dict(template):
 
 
 @implementer(IGitNascentRuleGrant)
-class GitNascentRuleGrant:
+class GitNascentRuleGrant(GitRuleGrantMixin):
 
     def __init__(self, grantee_type, grantee=None, can_create=False,
                  can_push=False, can_force_push=False):
@@ -385,6 +384,15 @@ class GitNascentRuleGrant:
         self.can_create = can_create
         self.can_push = can_push
         self.can_force_push = can_force_push
+
+    def __repr__(self):
+        if self.grantee_type == GitGranteeType.PERSON:
+            grantee_name = "~%s" % self.grantee.name
+        else:
+            grantee_name = self.grantee_type.title.lower()
+        return "<GitNascentRuleGrant [%s] to %s>" % (
+            ", ".join(describe_git_permissions(self.permissions)),
+            grantee_name)
 
 
 @adapter(dict)

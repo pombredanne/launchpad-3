@@ -1,4 +1,4 @@
-# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test live filesystem build behaviour."""
@@ -23,7 +23,10 @@ from zope.security.proxy import Proxy
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
-from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.enums import (
+    BuildBaseImageType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
@@ -41,7 +44,10 @@ from lp.buildmaster.tests.test_buildfarmjobbehaviour import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
-from lp.services.log.logger import BufferLogger
+from lp.services.log.logger import (
+    BufferLogger,
+    DevNullLogger,
+    )
 from lp.services.webapp import canonical_url
 from lp.soyuz.adapters.archivedependencies import (
     get_sources_list_for_building,
@@ -272,7 +278,40 @@ class TestAsyncLiveFSBuildBehaviour(TestLiveFSBuildBehaviourBase):
         build_request = yield job.composeBuildRequest(None)
         args = yield job.extraBuildArgs()
         self.assertEqual(
-            ('livefs', job.build.distro_arch_series, {}, args), build_request)
+            ('livefs', job.build.distro_arch_series, job.build.pocket, {},
+             args),
+            build_request)
+
+    @defer.inlineCallbacks
+    def test_dispatchBuildToSlave_prefers_lxd(self):
+        job = self.makeJob()
+        builder = MockBuilder()
+        builder.processor = job.build.processor
+        slave = OkSlave()
+        job.setBuilder(builder, slave)
+        chroot_lfa = self.factory.makeLibraryFileAlias(db_only=True)
+        job.build.distro_arch_series.addOrUpdateChroot(
+            chroot_lfa, image_type=BuildBaseImageType.CHROOT)
+        lxd_lfa = self.factory.makeLibraryFileAlias(db_only=True)
+        job.build.distro_arch_series.addOrUpdateChroot(
+            lxd_lfa, image_type=BuildBaseImageType.LXD)
+        yield job.dispatchBuildToSlave(DevNullLogger())
+        self.assertEqual(
+            ('ensurepresent', lxd_lfa.http_url, '', ''), slave.call_log[0])
+
+    @defer.inlineCallbacks
+    def test_dispatchBuildToSlave_falls_back_to_chroot(self):
+        job = self.makeJob()
+        builder = MockBuilder()
+        builder.processor = job.build.processor
+        slave = OkSlave()
+        job.setBuilder(builder, slave)
+        chroot_lfa = self.factory.makeLibraryFileAlias(db_only=True)
+        job.build.distro_arch_series.addOrUpdateChroot(
+            chroot_lfa, image_type=BuildBaseImageType.CHROOT)
+        yield job.dispatchBuildToSlave(DevNullLogger())
+        self.assertEqual(
+            ('ensurepresent', chroot_lfa.http_url, '', ''), slave.call_log[0])
 
 
 class MakeLiveFSBuildMixin:

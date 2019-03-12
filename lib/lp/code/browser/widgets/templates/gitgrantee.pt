@@ -1,0 +1,27 @@
+<table>
+  <tr tal:condition="view/show_options/repository_owner">
+    <td colspan="2">
+      <label>
+        <input
+            type="radio" value="repository_owner"
+            tal:condition="not: context/readonly"
+            tal:replace="structure view/options/repository_owner" />
+        Repository owner
+      </label>
+    </td>
+  </tr>
+
+  <tr tal:condition="view/show_options/person">
+    <td>
+      <label>
+        <input
+            type="radio" value="person"
+            tal:condition="not: context/readonly"
+            tal:replace="structure view/options/person" />
+      </label>
+    </td>
+    <td>
+      <tal:person replace="structure view/person_widget" />
+    </td>
+  </tr>
+</table>

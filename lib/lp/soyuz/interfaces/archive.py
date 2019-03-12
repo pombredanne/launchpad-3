@@ -2046,22 +2046,6 @@ class IArchiveEdit(Interface):
     def disable():
         """Disable the archive."""
 
-    @export_destructor_operation()
-    @call_with(deleted_by=REQUEST_USER)
-    @operation_for_version('devel')
-    def delete(deleted_by):
-        """Delete this archive.
-
-        :param deleted_by: The `IPerson` requesting the deletion.
-
-        The ArchiveStatus will be set to DELETING and any published
-        packages will be marked as DELETED by deleted_by.
-
-        The publisher is responsible for deleting the repository area
-        when it sees the status change and sets it to DELETED once
-        processed.
-        """
-
     def addArchiveDependency(dependency, pocket, component=None):
         """Record an archive dependency record for the context archive.
 
@@ -2242,6 +2226,26 @@ class IArchiveEdit(Interface):
         """
 
 
+class IArchiveDelete(Interface):
+    """Archive interface for operations restricted by delete privilege."""
+
+    @export_destructor_operation()
+    @call_with(deleted_by=REQUEST_USER)
+    @operation_for_version('devel')
+    def delete(deleted_by):
+        """Delete this archive.
+
+        :param deleted_by: The `IPerson` requesting the deletion.
+
+        The ArchiveStatus will be set to DELETING and any published
+        packages will be marked as DELETED by deleted_by.
+
+        The publisher is responsible for deleting the repository area
+        when it sees the status change and sets it to DELETED once
+        processed.
+        """
+
+
 class IArchiveAdmin(Interface):
     """Archive interface for operations restricted by commercial."""
 
@@ -2269,7 +2273,7 @@ class IArchiveRestricted(Interface):
             "with a higher score will build sooner.")))
 
 
-class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit,
+class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveDelete,
                IArchiveSubscriberView, IArchiveView, IArchiveAdmin,
                IArchiveRestricted):
     """Main Archive interface."""

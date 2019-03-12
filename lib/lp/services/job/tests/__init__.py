@@ -1,4 +1,4 @@
-# Copyright 2012-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,6 +12,7 @@ __all__ = [
 
 
 from contextlib import contextmanager
+import email
 import subprocess
 
 from testtools.content import text_content
@@ -41,11 +42,12 @@ def celery_worker(queue, cwd=None):
         '--include', 'lp.services.job.tests.celery_helpers',
     )
     # Mostly duplicated from lazr.jobrunner.tests.test_celerytask.running,
-    # but we throw away stdout.
+    # but we throw away stdout and stderr since we never read from them
+    # anyway and we don't want them to block.
     with open('/dev/null', 'w') as devnull:
         proc = subprocess.Popen(
             ('bin/celery',) + cmd_args, stdout=devnull,
-            stderr=subprocess.PIPE, cwd=cwd)
+            stderr=devnull, cwd=cwd)
         try:
             yield proc
         finally:
@@ -94,4 +96,6 @@ def drain_celery_queues():
 def pop_remote_notifications():
     """Pop the notifications from a celery worker."""
     from lp.services.job.tests.celery_helpers import pop_notifications
-    return pop_notifications.delay().get(30)
+    return [
+        email.message_from_string(message)
+        for message in pop_notifications.delay().get(30)]

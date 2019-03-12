@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Security policies for using content objects."""
@@ -200,6 +200,10 @@ from lp.services.worlddata.interfaces.language import (
 from lp.snappy.interfaces.snap import (
     ISnap,
     ISnapBuildRequest,
+    )
+from lp.snappy.interfaces.snapbase import (
+    ISnapBase,
+    ISnapBaseSet,
     )
 from lp.snappy.interfaces.snapbuild import ISnapBuild
 from lp.snappy.interfaces.snappyseries import (
@@ -2686,6 +2690,12 @@ class ViewArchive(AuthorizationBase):
         if user.in_admin or user.in_commercial_admin:
             return True
 
+        # Registry experts are allowed to view public but disabled archives
+        # (since they are allowed to disable archives).
+        if (not self.obj.private and not self.obj.enabled and
+                user.in_registry_experts):
+            return True
+
         # Owners can view the PPA.
         if user.inTeam(self.obj.owner):
             return True
@@ -2746,6 +2756,21 @@ class EditArchive(AuthorizationBase):
             return user.isOwner(self.obj.distribution) or user.in_admin
 
         return user.isOwner(self.obj) or user.in_admin
+
+
+class DeleteArchive(EditArchive):
+    """Restrict archive deletion operations.
+
+    People who can edit an archive can delete it.  In addition, registry
+    experts can delete non-main archives, as a spam control mechanism.
+    """
+    permission = 'launchpad.Delete'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        return (
+            super(DeleteArchive, self).checkAuthenticated(user) or
+            (not self.obj.is_main and user.in_registry_experts))
 
 
 class AppendArchive(AuthorizationBase):
@@ -2896,6 +2921,11 @@ class EditArchiveSubscriber(DelegatedAuthorization):
         return (user.in_admin or
                 user.in_commercial_admin or
                 super(EditArchiveSubscriber, self).checkAuthenticated(user))
+
+
+class AdminArchiveSubscriberSet(AdminByCommercialTeamOrAdmins):
+    """Only (commercial) admins can manipulate archive subscribers in bulk."""
+    usedfor = IArchiveSubscriberSet
 
 
 class ViewSourcePackageRecipe(DelegatedAuthorization):
@@ -3341,3 +3371,16 @@ class EditSnappySeries(EditByRegistryExpertsOrAdmins):
 
 class EditSnappySeriesSet(EditByRegistryExpertsOrAdmins):
     usedfor = ISnappySeriesSet
+
+
+class ViewSnapBase(AnonymousAuthorization):
+    """Anyone can view an `ISnapBase`."""
+    usedfor = ISnapBase
+
+
+class EditSnapBase(EditByRegistryExpertsOrAdmins):
+    usedfor = ISnapBase
+
+
+class EditSnapBaseSet(EditByRegistryExpertsOrAdmins):
+    usedfor = ISnapBaseSet

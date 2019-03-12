@@ -15,10 +15,7 @@ from difflib import unified_diff
 import hashlib
 from unittest import TestCase
 
-from lazr.lifecycle.event import (
-    ObjectCreatedEvent,
-    ObjectModifiedEvent,
-    )
+from lazr.lifecycle.event import ObjectCreatedEvent
 from lazr.restfulclient.errors import BadRequest
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
@@ -62,7 +59,6 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
     IBranchMergeProposalJobSource,
-    notify_modified,
     )
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal,
@@ -1681,25 +1677,6 @@ class TestBranchMergeProposalBugsGit(
         self.assertEqual("TooManyRelatedBugs", self.oopses[0]["type"])
 
 
-class TestNotifyModified(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_notify_modified_generates_notification(self):
-        """notify_modified generates an event.
-
-        notify_modified runs the callable with the specified args and kwargs,
-        and generates a ObjectModifiedEvent.
-        """
-        bmp = self.factory.makeBranchMergeProposal()
-        login_person(bmp.target_branch.owner)
-        self.assertNotifies(
-            ObjectModifiedEvent, False, notify_modified, bmp, bmp.markAsMerged,
-            merge_reporter=bmp.target_branch.owner)
-        self.assertEqual(BranchMergeProposalStatus.MERGED, bmp.queue_status)
-        self.assertEqual(bmp.target_branch.owner, bmp.merge_reporter)
-
-
 class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
     """Test that the appropriate vote references get created."""
 
@@ -2244,6 +2221,41 @@ class TestScheduleDiffUpdates(TestCaseWithFactory):
             bmp.scheduleDiffUpdates()
         [job] = self.job_source.iterReady()
         self.assertIsInstance(job, UpdatePreviewDiffJob)
+
+    def test_getLatestDiffUpdateJob(self):
+        complete_date = datetime.now(UTC)
+
+        bmp = self.factory.makeBranchMergeProposal()
+        failed_job = removeSecurityProxy(bmp.getLatestDiffUpdateJob())
+        failed_job.job._status = JobStatus.FAILED
+        failed_job.job.date_finished = complete_date
+        completed_job = UpdatePreviewDiffJob.create(bmp)
+        completed_job.job._status = JobStatus.COMPLETED
+        completed_job.job.date_finished = complete_date - timedelta(seconds=10)
+        result = removeSecurityProxy(bmp.getLatestDiffUpdateJob())
+        self.assertEqual(failed_job.job_id, result.job_id)
+
+    def test_ggetLatestDiffUpdateJob_correct_branch(self):
+        complete_date = datetime.now(UTC)
+
+        main_bmp = self.factory.makeBranchMergeProposal()
+        second_bmp = self.factory.makeBranchMergeProposal()
+        failed_job = removeSecurityProxy(second_bmp.getLatestDiffUpdateJob())
+        failed_job.job._status = JobStatus.FAILED
+        failed_job.job.date_finished = complete_date
+        completed_job = removeSecurityProxy(main_bmp.getLatestDiffUpdateJob())
+        completed_job.job._status = JobStatus.COMPLETED
+        completed_job.job.date_finished = complete_date - timedelta(seconds=10)
+        result = removeSecurityProxy(main_bmp.getLatestDiffUpdateJob())
+        self.assertEqual(completed_job.job_id, result.job_id)
+
+    def test_getLatestDiffUpdateJob_without_completion_date(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        failed_job = removeSecurityProxy(bmp.getLatestDiffUpdateJob())
+        failed_job.job._status = JobStatus.FAILED
+        result = bmp.getLatestDiffUpdateJob()
+        self.assertTrue(result)
+        self.assertIsNone(result.job.date_finished)
 
 
 class TestNextPreviewDiffJob(TestCaseWithFactory):

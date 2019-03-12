@@ -1,4 +1,4 @@
-# Copyright 2015-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for communication with the Git hosting service."""
@@ -37,10 +37,11 @@ class IGitHostingClient(Interface):
         :param props: Properties to set.
         """
 
-    def getRefs(path):
+    def getRefs(path, exclude_prefixes=None):
         """Get all refs in this repository.
 
         :param path: Physical path of the repository on the hosting service.
+        :param exclude_prefixes: An optional list of ref prefixes to exclude.
         :return: A dict mapping ref paths to dicts representing the objects
             they point to.
         """

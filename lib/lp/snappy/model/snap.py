@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -50,14 +50,10 @@ from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     )
 from lp.app.enums import PRIVATE_INFORMATION_TYPES
-from lp.app.errors import (
-    IncompatibleArguments,
-    NotFoundError,
-    )
+from lp.app.errors import IncompatibleArguments
 from lp.app.interfaces.security import IAuthorization
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
-from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.buildmaster.model.processor import Processor
@@ -97,6 +93,8 @@ from lp.registry.interfaces.role import (
     IHasOwner,
     IPersonRoles,
     )
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.series import ACTIVE_STATUSES
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.config import config
 from lp.services.database.bulk import load_related
@@ -117,6 +115,7 @@ from lp.services.database.stormexpr import (
     )
 from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.services.librarian.model import (
     LibraryFileAlias,
     LibraryFileContent,
@@ -157,11 +156,16 @@ from lp.snappy.interfaces.snap import (
     SnapPrivacyMismatch,
     SnapPrivateFeatureDisabled,
     )
+from lp.snappy.interfaces.snapbase import (
+    ISnapBaseSet,
+    NoSuchSnapBase,
+    )
 from lp.snappy.interfaces.snapbuild import ISnapBuildSet
 from lp.snappy.interfaces.snapjob import ISnapRequestBuildsJobSource
 from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
 from lp.snappy.interfaces.snapstoreclient import ISnapStoreClient
 from lp.snappy.model.snapbuild import SnapBuild
+from lp.snappy.model.snapjob import SnapJob
 from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.model.archive import (
     Archive,
@@ -260,7 +264,7 @@ class Snap(Storm, WebhookTargetMixin):
     owner_id = Int(name='owner', allow_none=False)
     owner = Reference(owner_id, 'Person.id')
 
-    distro_series_id = Int(name='distro_series', allow_none=False)
+    distro_series_id = Int(name='distro_series', allow_none=True)
     distro_series = Reference(distro_series_id, 'DistroSeries.id')
 
     name = Unicode(name='name', allow_none=False)
@@ -395,13 +399,21 @@ class Snap(Storm, WebhookTargetMixin):
     @property
     def available_processors(self):
         """See `ISnap`."""
-        processors = Store.of(self).find(
-            Processor,
-            Processor.id == DistroArchSeries.processor_id,
-            DistroArchSeries.id.is_in(
+        clauses = [Processor.id == DistroArchSeries.processor_id]
+        if self.distro_series is not None:
+            clauses.append(DistroArchSeries.id.is_in(
                 self.distro_series.enabled_architectures.get_select_expr(
                     DistroArchSeries.id)))
-        return processors.config(distinct=True)
+        else:
+            # We don't know the series until we've looked at snapcraft.yaml
+            # to dispatch a build, so enabled architectures for any active
+            # series will do.
+            clauses.extend([
+                DistroArchSeries.enabled,
+                DistroArchSeries.distroseriesID == DistroSeries.id,
+                DistroSeries.status.is_in(ACTIVE_STATUSES),
+                ])
+        return Store.of(self).find(Processor, *clauses).config(distinct=True)
 
     def _getProcessors(self):
         return list(Store.of(self).find(
@@ -447,16 +459,32 @@ class Snap(Storm, WebhookTargetMixin):
 
     processors = property(_getProcessors, setProcessors)
 
-    def getAllowedArchitectures(self):
+    def _isBuildableArchitectureAllowed(self, das):
+        """Check whether we may build for a buildable `DistroArchSeries`.
+
+        The caller is assumed to have already checked that a suitable chroot
+        is available (either directly or via
+        `DistroSeries.buildable_architectures`).
+        """
+        return (
+            das.enabled
+            and das.processor in self.processors
+            and (
+                das.processor.supports_virtualized
+                or not self.require_virtualized))
+
+    def _isArchitectureAllowed(self, das, pocket):
+        return (
+            das.getChroot(pocket=pocket) is not None
+            and self._isBuildableArchitectureAllowed(das))
+
+    def getAllowedArchitectures(self, distro_series=None):
         """See `ISnap`."""
+        if distro_series is None:
+            distro_series = self.distro_series
         return [
-            das for das in self.distro_series.buildable_architectures
-            if (
-                das.enabled
-                and das.processor in self.processors
-                and (
-                    das.processor.supports_virtualized
-                    or not self.require_virtualized))]
+            das for das in distro_series.buildable_architectures
+            if self._isBuildableArchitectureAllowed(das)]
 
     @property
     def store_distro_series(self):
@@ -561,8 +589,8 @@ class Snap(Storm, WebhookTargetMixin):
                      channels=None, build_request=None):
         """See `ISnap`."""
         self._checkRequestBuild(requester, archive)
-        if distro_arch_series not in self.getAllowedArchitectures():
-            raise SnapBuildDisallowedArchitecture(distro_arch_series)
+        if not self._isArchitectureAllowed(distro_arch_series, pocket):
+            raise SnapBuildDisallowedArchitecture(distro_arch_series, pocket)
 
         pending = IStore(self).find(
             SnapBuild,
@@ -589,10 +617,46 @@ class Snap(Storm, WebhookTargetMixin):
             self, requester, archive, pocket, channels)
         return self.getBuildRequest(job.job_id)
 
+    @staticmethod
+    def _findBase(snapcraft_data):
+        """Find a suitable base for a build."""
+        snap_base_set = getUtility(ISnapBaseSet)
+        if "base" in snapcraft_data:
+            snap_base_name = snapcraft_data["base"]
+            if isinstance(snap_base_name, bytes):
+                snap_base_name = snap_base_name.decode("UTF-8")
+            return snap_base_set.getByName(snap_base_name)
+        else:
+            return snap_base_set.getDefault()
+
+    def _pickDistroSeries(self, snap_base, snapcraft_data):
+        """Pick a suitable `IDistroSeries` for a build."""
+        if snap_base is not None:
+            return self.distro_series or snap_base.distro_series
+        elif self.distro_series is None:
+            # A base is mandatory if there's no configured distro series.
+            raise NoSuchSnapBase(snapcraft_data.get("base", "<default>"))
+        else:
+            return self.distro_series
+
+    def _pickChannels(self, snap_base, channels=None):
+        """Pick suitable snap channels for a build."""
+        if snap_base is not None:
+            new_channels = dict(snap_base.build_channels)
+            if channels is not None:
+                new_channels.update(channels)
+            return new_channels
+        else:
+            return channels
+
     def requestBuildsFromJob(self, requester, archive, pocket, channels=None,
                              allow_failures=False, fetch_snapcraft_yaml=True,
                              build_request=None, logger=None):
         """See `ISnap`."""
+        if not fetch_snapcraft_yaml and self.distro_series is None:
+            # Slightly misleading, but requestAutoBuilds is the only place
+            # this can happen right now and it raises a more specific error.
+            raise CannotRequestAutoBuilds("distro_series")
         try:
             if fetch_snapcraft_yaml:
                 try:
@@ -608,12 +672,20 @@ class Snap(Storm, WebhookTargetMixin):
                     snapcraft_data = {}
             else:
                 snapcraft_data = {}
+
+            # Find a suitable SnapBase, and combine it with other
+            # configuration to find a suitable distro series and suitable
+            # channels.
+            snap_base = self._findBase(snapcraft_data)
+            distro_series = self._pickDistroSeries(snap_base, snapcraft_data)
+            channels = self._pickChannels(snap_base, channels=channels)
+
             # Sort by Processor.id for determinism.  This is chosen to be
             # the same order as in BinaryPackageBuildSet.createForSource, to
             # minimise confusion.
             supported_arches = OrderedDict(
                 (das.architecturetag, das) for das in sorted(
-                    self.getAllowedArchitectures(),
+                    self.getAllowedArchitectures(distro_series),
                     key=attrgetter("processor.id")))
             architectures_to_build = determine_architectures_to_build(
                 snapcraft_data, supported_arches.keys())
@@ -654,6 +726,11 @@ class Snap(Storm, WebhookTargetMixin):
             raise CannotRequestAutoBuilds("auto_build_archive")
         if self.auto_build_pocket is None:
             raise CannotRequestAutoBuilds("auto_build_pocket")
+        if not fetch_snapcraft_yaml and self.distro_series is None:
+            raise IncompatibleArguments(
+                "Cannot use requestAutoBuilds for a snap package without "
+                "inferring from snapcraft.yaml or distro_series being set.  "
+                "Consider using requestBuilds instead.")
         self.is_stale = False
         if logger is not None:
             logger.debug(
@@ -692,7 +769,7 @@ class Snap(Storm, WebhookTargetMixin):
         query_args = [
             SnapBuild.snap == self,
             SnapBuild.archive_id == Archive.id,
-            Archive._enabled == True,
+            Archive._enabled,
             get_enabled_archive_filter(
                 getUtility(ILaunchBag).user, include_public=True,
                 include_subscribed=True)
@@ -879,6 +956,9 @@ class Snap(Storm, WebhookTargetMixin):
                 SnapBuild.snap = ?
             """, (self.id,))
         store.find(SnapBuild, SnapBuild.snap == self).remove()
+        affected_jobs = Select(
+            [SnapJob.job_id], And(SnapJob.job == Job.id, SnapJob.snap == self))
+        store.find(Job, Job.id.is_in(affected_jobs)).remove()
         getUtility(IWebhookSet).delete(self.webhooks)
         store.remove(self)
         store.find(
@@ -962,8 +1042,7 @@ class SnapSet:
 
         if processors is None:
             processors = [
-                p for p in getUtility(IProcessorSet).getAll()
-                if p.build_by_default]
+                p for p in snap.available_processors if p.build_by_default]
         snap.setProcessors(processors)
 
         return snap
@@ -1223,8 +1302,8 @@ class SnapSet:
             ]
         return IStore(Snap).using(*origin).find(
             Snap,
-            Snap.is_stale == True,
-            Snap.auto_build == True,
+            Snap.is_stale,
+            Snap.auto_build,
             SnapBuild.date_created == None).config(distinct=True)
 
     @classmethod

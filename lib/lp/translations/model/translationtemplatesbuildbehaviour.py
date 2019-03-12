@@ -1,4 +1,4 @@
-# Copyright 2010-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `TranslationTemplatesBuild`.
@@ -28,6 +28,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
 from lp.buildmaster.model.buildfarmjobbehaviour import (
     BuildFarmJobBehaviourBase,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
@@ -38,6 +39,8 @@ from lp.translations.model.approver import TranslationBuildApprover
 @implementer(IBuildFarmJobBehaviour)
 class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `TranslationTemplateBuildJob`s to slaves."""
+
+    builder_type = "translation-templates"
 
     # Filename for the tarball of templates that the slave builds.
     templates_tarball_path = 'translation-templates.tar.gz'
@@ -52,18 +55,24 @@ class TranslationTemplatesBuildBehaviour(BuildFarmJobBehaviourBase):
             self.unsafe_chars, '_', self.build.branch.unique_name)
         return "translationtemplates_%s_%d.txt" % (safe_name, self.build.id)
 
-    def composeBuildRequest(self, logger):
-        das = self._getDistroArchSeries()
-        args = {
-            'arch_tag': das.architecturetag,
-            'branch_url': self.build.branch.composePublicURL(),
-            'series': das.distroseries.name,
-            }
-        return ("translation-templates", self._getDistroArchSeries(), {}, args)
+    @property
+    def archive(self):
+        return self.distro_arch_series.main_archive
 
-    def _getDistroArchSeries(self):
+    @property
+    def distro_arch_series(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return ubuntu.currentseries.nominatedarchindep
+
+    @property
+    def pocket(self):
+        return PackagePublishingPocket.RELEASE
+
+    def extraBuildArgs(self, logger=None):
+        args = super(TranslationTemplatesBuildBehaviour, self).extraBuildArgs(
+            logger=logger)
+        args["branch_url"] = self.build.branch.composePublicURL()
+        return args
 
     def _readTarball(self, buildqueue, filemap, logger):
         """Read tarball with generated translation templates from slave."""

@@ -1,0 +1,79 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only" i18n:domain="launchpad">
+
+<body>
+
+  <metal:macros fill-slot="bogus">
+    <metal:macro define-macro="activity-value">
+      <ul tal:condition="value">
+        <li><strong>Pattern:</strong> <span tal:content="value/ref_pattern" /></li>
+        <tal:comment condition="nothing">
+          Rule changes
+        </tal:comment>
+        <li tal:condition="python: 'position' in value"><strong>Rule position:</strong> <span tal:content="value/position" /></li>
+        <tal:comment condition="nothing">
+          Grant changes
+        </tal:comment>
+        <li tal:condition="python: 'position' not in value">
+          <strong>Permissions:</strong>
+          <span metal:define-slot="permissions"></span>
+        </li>
+      </ul>
+    </metal:macro>
+  </metal:macros>
+
+  <div metal:fill-slot="main">
+    <div class="yui-g">
+      <div class="top-portlet">
+        <table id="activity-listing" class="listing">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Author</th>
+              <th>Target</th>
+              <th>What changed</th>
+              <th>Old value</th>
+              <th>New value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="log context/getPrecachedActivity">
+              <tal:comment condition="nothing">
+                XXX: Gavin Panella 2009-08-12 bug=412963: Using strftime()
+                here because fmt:datetime changes timezone, even though we
+                always want to show only UTC.
+              </tal:comment>
+              <td tal:content="python:log.date_changed.strftime('%Y-%m-%d %T')">
+                2004-09-24 12:04:43
+              </td>
+              <td tal:content="structure log/changer/fmt:link">Changer</td>
+              <td tal:content="structure log/changee/fmt:link">Changee</td>
+              <td tal:content="log/what_changed/title">description</td>
+              <td>
+                <tal:activity define="value log/old_value">
+                  <metal:logs use-macro="template/macros/activity-value">
+                    <span metal:fill-slot="permissions" tal:content="python:view.displayPermissions(log.old_value)"></span>
+                  </metal:logs>
+                </tal:activity>
+              </td>
+              <td>
+                <tal:activity define="value log/new_value">
+                  <metal:logs use-macro="template/macros/activity-value">
+                    <span metal:fill-slot="permissions" tal:content="python:view.displayPermissions(log.new_value)"></span>
+                  </metal:logs>
+                </tal:activity>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+</html>

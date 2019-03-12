@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -28,6 +28,7 @@ from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implementer
 
+from lp.buildmaster.enums import BuildBaseImageType
 from lp.buildmaster.model.processor import Processor
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -47,6 +48,7 @@ from lp.services.librarian.interfaces import ILibraryFileAliasSet
 from lp.services.webapp.publisher import (
     get_raw_form_value_from_current_request,
     )
+from lp.soyuz.adapters.archivedependencies import pocket_dependencies
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
@@ -127,40 +129,71 @@ class DistroArchSeries(SQLBase):
         return (self.distroseries.nominatedarchindep is not None and
                 self.id == self.distroseries.nominatedarchindep.id)
 
-    def getPocketChroot(self):
+    def getPocketChroot(self, pocket, exact_pocket=False, image_type=None):
         """See `IDistroArchSeries`."""
-        pchroot = PocketChroot.selectOneBy(distroarchseries=self)
-        return pchroot
+        if image_type is None:
+            image_type = BuildBaseImageType.CHROOT
+        pockets = [pocket] if exact_pocket else pocket_dependencies[pocket]
+        pocket_chroots = {
+            pocket_chroot.pocket: pocket_chroot
+            for pocket_chroot in IStore(PocketChroot).find(
+                PocketChroot,
+                PocketChroot.distroarchseries == self,
+                PocketChroot.pocket.is_in(pockets),
+                PocketChroot.image_type == image_type)}
+        for pocket_dep in reversed(pockets):
+            if pocket_dep in pocket_chroots:
+                pocket_chroot = pocket_chroots[pocket_dep]
+                # We normally only return a PocketChroot row that is
+                # actually populated with a chroot, but if exact_pocket is
+                # set then we return even an unpopulated row in order to
+                # avoid constraint violations in addOrUpdateChroot.
+                if pocket_chroot.chroot is not None or exact_pocket:
+                    return pocket_chroot
+        return None
 
-    def getChroot(self, default=None):
+    def getChroot(self, default=None, pocket=None, image_type=None):
         """See `IDistroArchSeries`."""
-        pocket_chroot = self.getPocketChroot()
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        pocket_chroot = self.getPocketChroot(pocket, image_type=image_type)
 
         if pocket_chroot is None:
             return default
 
         return pocket_chroot.chroot
 
-    @property
-    def chroot_url(self):
+    def getChrootURL(self, pocket=None, image_type=None):
         """See `IDistroArchSeries`."""
-        chroot = self.getChroot()
+        chroot = self.getChroot(pocket=pocket, image_type=image_type)
         if chroot is None:
             return None
         return chroot.http_url
 
-    def addOrUpdateChroot(self, chroot):
+    @property
+    def chroot_url(self):
         """See `IDistroArchSeries`."""
-        pocket_chroot = self.getPocketChroot()
+        return self.getChrootURL()
+
+    def addOrUpdateChroot(self, chroot, pocket=None, image_type=None):
+        """See `IDistroArchSeries`."""
+        if pocket is None:
+            pocket = PackagePublishingPocket.RELEASE
+        if image_type is None:
+            image_type = BuildBaseImageType.CHROOT
+        pocket_chroot = self.getPocketChroot(
+            pocket, exact_pocket=True, image_type=image_type)
 
         if pocket_chroot is None:
-            return PocketChroot(distroarchseries=self, chroot=chroot)
+            return PocketChroot(
+                distroarchseries=self, pocket=pocket, chroot=chroot,
+                image_type=image_type)
         else:
             pocket_chroot.chroot = chroot
 
         return pocket_chroot
 
-    def setChroot(self, data, sha1sum):
+    def setChroot(self, data, sha1sum, pocket=None, image_type=None):
         """See `IDistroArchSeries`."""
         # XXX: StevenK 2013-06-06 bug=1116954: We should not need to refetch
         # the file content from the request, since the passed in one has been
@@ -184,7 +217,13 @@ class DistroArchSeries(SQLBase):
         if content_sha1sum != sha1sum:
             raise InvalidChrootUploaded("Chroot upload checksums do not match")
 
-        filename = 'chroot-%s-%s-%s.tar.bz2' % (
+        # This duplicates addOrUpdateChroot, but we need it to build a
+        # reasonable filename.
+        if image_type is None:
+            image_type = BuildBaseImageType.CHROOT
+
+        filename = '%s-%s-%s-%s.tar.gz' % (
+            image_type.name.lower().split()[0],
             self.distroseries.distribution.name, self.distroseries.name,
             self.architecturetag)
         lfa = getUtility(ILibraryFileAliasSet).create(
@@ -192,15 +231,18 @@ class DistroArchSeries(SQLBase):
             contentType='application/octet-stream')
         if lfa.content.sha1 != sha1sum:
             raise InvalidChrootUploaded("Chroot upload checksums do not match")
-        self.addOrUpdateChroot(lfa)
+        self.addOrUpdateChroot(lfa, pocket=pocket, image_type=image_type)
 
-    def setChrootFromBuild(self, livefsbuild, filename):
+    def setChrootFromBuild(self, livefsbuild, filename, pocket=None,
+                           image_type=None):
         """See `IDistroArchSeries`."""
-        self.addOrUpdateChroot(livefsbuild.getFileByName(filename))
+        self.addOrUpdateChroot(
+            livefsbuild.getFileByName(filename), pocket=pocket,
+            image_type=image_type)
 
-    def removeChroot(self):
+    def removeChroot(self, pocket=None, image_type=None):
         """See `IDistroArchSeries`."""
-        self.addOrUpdateChroot(None)
+        self.addOrUpdateChroot(None, pocket=pocket, image_type=image_type)
 
     def searchBinaryPackages(self, text):
         """See `IDistroArchSeries`."""
@@ -301,3 +343,7 @@ class PocketChroot(SQLBase):
         default=PackagePublishingPocket.RELEASE, notNull=True)
 
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')
+
+    image_type = EnumCol(
+        schema=BuildBaseImageType, default=BuildBaseImageType.CHROOT,
+        notNull=True)

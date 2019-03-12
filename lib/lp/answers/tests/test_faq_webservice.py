@@ -1,11 +1,10 @@
-# Copyright 2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from lazr.lifecycle.event import ObjectModifiedEvent
 from testtools.matchers import (
     Contains,
     ContainsDict,
@@ -13,10 +12,10 @@ from testtools.matchers import (
     MatchesRegex,
     )
 from zope.component import getUtility
-from zope.event import notify
 
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.snapshot import notify_modified
 from lp.testing import (
     admin_logged_in,
     api_url,
@@ -33,10 +32,9 @@ class TestFAQWebService(TestCaseWithFactory):
     def test_representation(self):
         with admin_logged_in():
             faq = self.factory.makeFAQ(title="Nothing works")
-            faq.keywords = "foo bar"
-            faq.content = "It is all broken."
-            notify(ObjectModifiedEvent(
-                faq, faq, ['keywords', 'content'], user=faq.owner))
+            with notify_modified(faq, ['keywords', 'content'], user=faq.owner):
+                faq.keywords = "foo bar"
+                faq.content = "It is all broken."
             faq_url = api_url(faq)
         webservice = webservice_for_person(self.factory.makePerson())
         repr = webservice.get(faq_url, api_version='devel').jsonBody()

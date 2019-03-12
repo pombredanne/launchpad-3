@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface for build farm job behaviours."""
@@ -21,7 +21,15 @@ class IBuildFarmJobBehaviour(Interface):
         "The name of the builder type to use for this build, corresponding "
         "to a launchpad-buildd build manager tag.")
 
+    image_types = Attribute(
+        "A list of `BuildBaseImageType`s indicating which types of base "
+        "images can be used for this build.")
+
+    archive = Attribute("The `Archive` to build against.")
+
     distro_arch_series = Attribute("The `DistroArchSeries` to build against.")
+
+    pocket = Attribute("The `PackagePublishingPocket` to build against.")
 
     def setBuilder(builder, slave):
         """Sets the associated builder and slave for this instance."""
@@ -50,6 +58,7 @@ class IBuildFarmJobBehaviour(Interface):
         :param logger: A logger to be used to log diagnostic information.
         :return: A tuple of (
             "builder type", `DistroArchSeries` to build against,
+            `PackagePublishingPocket` to build against,
             {filename: `sendFileToSlave` arguments}, {extra build arguments}),
             or a Deferred resulting in the same.
         """

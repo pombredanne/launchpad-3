@@ -17,6 +17,7 @@ import os.path
 from pytz import UTC
 import responses
 import six
+from storm.store import Store
 from testtools.matchers import (
     AllMatch,
     DocTestMatches,
@@ -1619,29 +1620,78 @@ class TestGetBinaryPackageReleaseByFileName(TestCaseWithFactory):
 
 
 class TestArchiveDelete(TestCaseWithFactory):
-    """Edge-case tests for PPA deletion.
+    """Test PPA deletion."""
 
-    PPA deletion is also documented in lp/soyuz/doc/archive-deletion.txt.
-    """
+    layer = LaunchpadFunctionalLayer
 
-    layer = DatabaseFunctionalLayer
+    def makePopulatedArchive(self):
+        archive = self.factory.makeArchive()
+        self.assertActive(archive)
+        publisher = SoyuzTestPublisher()
+        with admin_logged_in():
+            publisher.prepareBreezyAutotest()
+            publisher.getPubBinaries(
+                archive=archive, binaryname="foo-bin1",
+                status=PackagePublishingStatus.PENDING)
+            publisher.getPubBinaries(
+                archive=archive, binaryname="foo-bin2",
+                status=PackagePublishingStatus.PUBLISHED)
+        Store.of(archive).flush()
+        return archive
 
-    def setUp(self):
-        """Create a test archive and login as the owner."""
-        super(TestArchiveDelete, self).setUp()
-        self.archive = self.factory.makeArchive()
-        login_person(self.archive.owner)
+    def assertActive(self, archive):
+        self.assertTrue(archive.enabled)
+        self.assertEqual(ArchiveStatus.ACTIVE, archive.status)
 
-    def test_delete(self):
-        # Sanity check for the unit-test.
-        self.archive.delete(deleted_by=self.archive.owner)
-        self.assertEqual(ArchiveStatus.DELETING, self.archive.status)
+    def assertDeleting(self, archive):
+        # Deleting an archive sets the status to DELETING.  This tells the
+        # publisher to set the publications to DELETED and delete the
+        # published archive from disk, after which the status of the archive
+        # itself is set to DELETED.
+        self.assertFalse(archive.enabled)
+        self.assertEqual(ArchiveStatus.DELETING, archive.status)
+
+    def test_delete_unprivileged(self):
+        # An unprivileged user cannot delete an archive.
+        archive = self.factory.makeArchive()
+        self.assertActive(archive)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertRaises(Unauthorized, getattr, archive, 'delete')
+            self.assertActive(archive)
+
+    def test_delete_archive_owner(self):
+        # The owner of an archive can delete it.
+        archive = self.makePopulatedArchive()
+        with person_logged_in(archive.owner):
+            archive.delete(deleted_by=archive.owner)
+            self.assertDeleting(archive)
+
+    def test_delete_registry_expert(self):
+        # A registry expert can delete an archive.
+        archive = self.makePopulatedArchive()
+        with celebrity_logged_in("registry_experts"):
+            archive.delete(deleted_by=archive.owner)
+            self.assertDeleting(archive)
 
     def test_delete_when_disabled(self):
         # A disabled archive can also be deleted (bug 574246).
-        self.archive.disable()
-        self.archive.delete(deleted_by=self.archive.owner)
-        self.assertEqual(ArchiveStatus.DELETING, self.archive.status)
+        archive = self.makePopulatedArchive()
+        with person_logged_in(archive.owner):
+            archive.disable()
+            archive.delete(deleted_by=archive.owner)
+            self.assertDeleting(archive)
+
+    def test_cannot_reenable(self):
+        # A deleted archive cannot be re-enabled.
+        archive = self.factory.makeArchive()
+        with person_logged_in(archive.owner):
+            archive.delete(deleted_by=archive.owner)
+            self.assertDeleting(archive)
+            self.assertRaisesWithContent(
+                AssertionError, "Deleted archives can't be enabled.",
+                archive.enable)
+            self.assertDeleting(archive)
 
 
 class TestSuppressSubscription(TestCaseWithFactory):

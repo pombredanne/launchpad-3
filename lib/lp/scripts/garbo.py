@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database garbage collection."""
@@ -12,7 +12,6 @@ __all__ = [
     'save_garbo_job_state',
     ]
 
-from collections import defaultdict
 from datetime import (
     datetime,
     timedelta,
@@ -121,8 +120,6 @@ from lp.services.session.model import SessionData
 from lp.services.verification.model.logintoken import LoginToken
 from lp.services.webhooks.interfaces import IWebhookJobSource
 from lp.services.webhooks.model import WebhookJob
-from lp.snappy.interfaces.snappyseries import ISnappyDistroSeriesSet
-from lp.snappy.model.snap import Snap
 from lp.snappy.model.snapbuild import SnapFile
 from lp.snappy.model.snapbuildjob import SnapBuildJobType
 from lp.soyuz.enums import PackagePublishingStatus
@@ -648,6 +645,7 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
     def __call__(self, chunk_size):
         cache_filter_data = []
         new_records = dict()
+        person_ids = set()
         # Create a map of new published spr data for creators and maintainers.
         # The map is keyed on (creator/maintainer, archive, spn, distroseries).
         for new_published_spr_data in self.getPendingUpdates()[:chunk_size]:
@@ -661,8 +659,10 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
                 maintainer_id, None, archive_id, distroseries_id, spn_id)
             creator_key = (
                 None, creator_id, archive_id, distroseries_id, spn_id)
-            new_records[maintainer_key] = maintainer_key + value
-            new_records[creator_key] = creator_key + value
+            new_records[maintainer_key] = list(maintainer_key + value)
+            new_records[creator_key] = list(creator_key + value)
+            person_ids.add(maintainer_id)
+            person_ids.add(creator_id)
             self.last_spph_id = spph_id
 
         # Gather all the current cached reporting records corresponding to the
@@ -689,14 +689,32 @@ class PopulateLatestPersonSourcePackageReleaseCache(TunableLoop):
             existing_records[key] = pytz.UTC.localize(
                 lpsprc_record.dateuploaded)
 
+        # Gather account statuses for creators and maintainers.
+        # Deactivating or closing an account removes its LPSPRC rows, and we
+        # don't want to resurrect them.
+        account_statuses = dict(self.store.find(
+            (Person.id, Account.status),
+            Person.id.is_in(person_ids), Person.account == Account.id))
+        ignore_statuses = (AccountStatus.DEACTIVATED, AccountStatus.CLOSED)
+        for new_record in new_records.values():
+            if (new_record[0] is not None and
+                    account_statuses.get(new_record[0]) in ignore_statuses):
+                new_record[0] = None
+            if (new_record[1] is not None and
+                    account_statuses.get(new_record[1]) in ignore_statuses):
+                new_record[1] = None
+
         # Figure out what records from the new published spr data need to be
         # inserted and updated into the cache table.
         inserts = dict()
         updates = dict()
         for key, new_published_spr_data in new_records.items():
             existing_dateuploaded = existing_records.get(key, None)
-            new_dateuploaded = new_published_spr_data[7]
-            if existing_dateuploaded is None:
+            new_maintainer, new_creator, _, _, _, _, _, new_dateuploaded, _ = (
+                new_published_spr_data)
+            if new_maintainer is None and new_creator is None:
+                continue
+            elif existing_dateuploaded is None:
                 target = inserts
             else:
                 target = updates
@@ -1593,45 +1611,6 @@ class SnapFilePruner(BulkPruner):
         """ % (SnapBuildJobType.STORE_UPLOAD.value, JobStatus.COMPLETED.value)
 
 
-class SnapStoreSeriesPopulator(TunableLoop):
-    """Populates Snap.store_series based on Snap.distro_series.
-
-    This only touches rows where there is exactly one SnappySeries that
-    could be built from the relevant DistroSeries.
-    """
-
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(SnapStoreSeriesPopulator, self).__init__(log, abort_time)
-        self.start_at = 1
-        self.store = IMasterStore(Snap)
-        all_series_map = defaultdict(list)
-        for sds in getUtility(ISnappyDistroSeriesSet).getAll():
-            all_series_map[sds.distro_series.id].append(sds.snappy_series)
-        self.series_map = {
-            distro_series_id: snappy_serieses[0]
-            for distro_series_id, snappy_serieses in all_series_map.items()
-            if len(snappy_serieses) == 1}
-
-    def findSnaps(self):
-        return self.store.find(
-            Snap,
-            Snap.id >= self.start_at,
-            Snap.distro_series_id.is_in(self.series_map),
-            Snap.store_series == None).order_by(Snap.id)
-
-    def isDone(self):
-        return self.findSnaps().is_empty()
-
-    def __call__(self, chunk_size):
-        snaps = list(self.findSnaps()[:chunk_size])
-        for snap in snaps:
-            snap.store_series = self.series_map[snap.distro_series_id]
-        self.start_at = snaps[-1].id + 1
-        transaction.commit()
-
-
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None  # Script name for locking and database user. Override.
@@ -1924,7 +1903,6 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         ScrubPOFileTranslator,
         SnapBuildJobPruner,
         SnapFilePruner,
-        SnapStoreSeriesPopulator,
         SuggestiveTemplatesCacheUpdater,
         TeamMembershipPruner,
         UnlinkedAccountPruner,

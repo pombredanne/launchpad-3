@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test snappy series."""
@@ -7,10 +7,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from testtools.matchers import (
-    MatchesSetwise,
-    MatchesStructure,
-    )
+from testtools.matchers import MatchesStructure
 from zope.component import (
     getAdapter,
     getUtility,
@@ -89,6 +86,20 @@ class TestSnappySeries(TestCaseWithFactory):
         self.assertContentEqual([], snappy_series.usable_distro_series)
         self.assertIsNone(snappy_series.preferred_distro_series)
 
+    def test_can_infer_distro_series(self):
+        # Setting can_infer_distro_series indicates that this snappy series
+        # supports inferring the distro series from snapcraft.yaml.
+        snappy_series = self.factory.makeSnappySeries()
+        sds_set = getUtility(ISnappyDistroSeriesSet)
+        self.assertFalse(snappy_series.can_infer_distro_series)
+        self.assertIsNone(sds_set.getByBothSeries(snappy_series, None))
+        snappy_series.can_infer_distro_series = True
+        self.assertTrue(snappy_series.can_infer_distro_series)
+        self.assertIsNotNone(sds_set.getByBothSeries(snappy_series, None))
+        snappy_series.can_infer_distro_series = False
+        self.assertFalse(snappy_series.can_infer_distro_series)
+        self.assertIsNone(sds_set.getByBothSeries(snappy_series, None))
+
     def test_anonymous(self):
         # Anyone can view an `ISnappySeries`.
         series = self.factory.makeSnappySeries(name="dummy")
@@ -111,22 +122,6 @@ class TestSnappySeriesSet(TestCaseWithFactory):
         self.assertEqual(snappy_series, snappy_series_set.getByName("foo"))
         self.assertRaises(
             NoSuchSnappySeries, snappy_series_set.getByName, "bar")
-
-    def test_getByDistroSeries(self):
-        dses = [self.factory.makeDistroSeries() for _ in range(3)]
-        snappy_serieses = [self.factory.makeSnappySeries() for _ in range(3)]
-        snappy_serieses[0].usable_distro_series = dses
-        snappy_serieses[1].usable_distro_series = [dses[0], dses[1]]
-        snappy_serieses[2].usable_distro_series = [dses[1], dses[2]]
-        snappy_series_set = getUtility(ISnappySeriesSet)
-        self.assertContentEqual(
-            [snappy_serieses[0], snappy_serieses[1]],
-            snappy_series_set.getByDistroSeries(dses[0]))
-        self.assertContentEqual(
-            snappy_serieses, snappy_series_set.getByDistroSeries(dses[1]))
-        self.assertContentEqual(
-            [snappy_serieses[0], snappy_serieses[2]],
-            snappy_series_set.getByDistroSeries(dses[2]))
 
     def test_getAll(self):
         sample_snappy_serieses = list(IStore(SnappySeries).find(SnappySeries))
@@ -222,33 +217,6 @@ class TestSnappySeriesWebservice(TestCaseWithFactory):
         self.assertEqual(
             "No such snappy series: 'nonexistent'.", response.body)
 
-    def test_getByDistroSeries(self):
-        # lp.snappy_serieses.getByDistroSeries returns a collection of
-        # matching SnappySeries.
-        person = self.factory.makePerson()
-        webservice = webservice_for_person(
-            person, permission=OAuthPermission.READ_PUBLIC)
-        webservice.default_api_version = "devel"
-        with admin_logged_in():
-            dses = [self.factory.makeDistroSeries() for _ in range(3)]
-            ds_urls = [api_url(ds) for ds in dses]
-            snappy_serieses = [
-                self.factory.makeSnappySeries(name="ss-%d" % i)
-                for i in range(3)]
-            snappy_serieses[0].usable_distro_series = dses
-            snappy_serieses[1].usable_distro_series = [dses[0], dses[1]]
-            snappy_serieses[2].usable_distro_series = [dses[1], dses[2]]
-        for ds_url, expected_snappy_series_names in (
-                (ds_urls[0], ["ss-0", "ss-1"]),
-                (ds_urls[1], ["ss-0", "ss-1", "ss-2"]),
-                (ds_urls[2], ["ss-0", "ss-2"])):
-            response = webservice.named_get(
-                "/+snappy-series", "getByDistroSeries", distro_series=ds_url)
-            self.assertEqual(200, response.status)
-            self.assertContentEqual(
-                expected_snappy_series_names,
-                [entry["name"] for entry in response.jsonBody()["entries"]])
-
     def test_collection(self):
         # lp.snappy_serieses is a collection of all SnappySeries.
         person = self.factory.makePerson()
@@ -273,32 +241,6 @@ class TestSnappyDistroSeriesSet(TestCaseWithFactory):
         super(TestSnappyDistroSeriesSet, self).setUp()
         self.useFixture(FeatureFixture(SNAP_TESTING_FLAGS))
 
-    def test_getByDistroSeries(self):
-        dses = [self.factory.makeDistroSeries() for _ in range(3)]
-        snappy_serieses = [self.factory.makeSnappySeries() for _ in range(3)]
-        snappy_serieses[0].usable_distro_series = dses
-        snappy_serieses[1].usable_distro_series = [dses[0], dses[1]]
-        snappy_serieses[2].usable_distro_series = [dses[1], dses[2]]
-        sds_set = getUtility(ISnappyDistroSeriesSet)
-        self.assertThat(
-            sds_set.getByDistroSeries(dses[0]),
-            MatchesSetwise(*(
-                MatchesStructure.byEquality(
-                    snappy_series=ss, distro_series=dses[0])
-                for ss in (snappy_serieses[0], snappy_serieses[1]))))
-        self.assertThat(
-            sds_set.getByDistroSeries(dses[1]),
-            MatchesSetwise(*(
-                MatchesStructure.byEquality(
-                    snappy_series=ss, distro_series=dses[1])
-                for ss in snappy_serieses)))
-        self.assertThat(
-            sds_set.getByDistroSeries(dses[2]),
-            MatchesSetwise(*(
-                MatchesStructure.byEquality(
-                    snappy_series=ss, distro_series=dses[2])
-                for ss in (snappy_serieses[0], snappy_serieses[2]))))
-
     def test_getByBothSeries(self):
         dses = [self.factory.makeDistroSeries() for _ in range(2)]
         snappy_serieses = [self.factory.makeSnappySeries() for _ in range(2)]
@@ -307,10 +249,21 @@ class TestSnappyDistroSeriesSet(TestCaseWithFactory):
         self.assertThat(
             sds_set.getByBothSeries(snappy_serieses[0], dses[0]),
             MatchesStructure.byEquality(
-                snappy_series=snappy_serieses[0], distro_series=dses[0]))
+                snappy_series=snappy_serieses[0], distro_series=dses[0],
+                title="%s, for %s" % (
+                    dses[0].fullseriesname, snappy_serieses[0].title)))
         self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[0], dses[1]))
         self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[1], dses[0]))
         self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[1], dses[1]))
+        self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[0], None))
+        self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[1], None))
+        snappy_serieses[0].can_infer_distro_series = True
+        self.assertThat(
+            sds_set.getByBothSeries(snappy_serieses[0], None),
+            MatchesStructure.byEquality(
+                snappy_series=snappy_serieses[0], distro_series=None,
+                title=snappy_serieses[0].title))
+        self.assertIsNone(sds_set.getByBothSeries(snappy_serieses[1], None))
 
     def test_getAll(self):
         sdses = list(IStore(SnappyDistroSeries).find(SnappyDistroSeries))

@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
@@ -131,6 +131,7 @@ from lp.services.webapp.interfaces import (
     ILaunchBag,
     )
 from lp.services.webapp.publisher import RedirectionView
+from lp.services.webapp.snapshot import notify_modified
 
 
 class BugNavigation(Navigation):
@@ -795,11 +796,9 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         # We handle duplicate changes by hand instead of leaving it to
         # the usual machinery because we must use bug.markAsDuplicate().
         bug = self.context.bug
-        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
-        duplicateof = data.pop('duplicateof')
-        bug.markAsDuplicate(duplicateof)
-        notify(
-            ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
+        with notify_modified(bug, ['duplicateof']):
+            duplicateof = data.pop('duplicateof')
+            bug.markAsDuplicate(duplicateof)
         # Apply other changes.
         self.updateBugFromData(data)
         return self._duplicate_action_result()
@@ -812,10 +811,8 @@ class BugMarkAsDuplicateView(BugEditViewBase):
     def remove_action(self, action, data):
         """Update the bug."""
         bug = self.context.bug
-        bug_before_modification = Snapshot(bug, providing=providedBy(bug))
-        bug.markAsDuplicate(None)
-        notify(
-            ObjectModifiedEvent(bug, bug_before_modification, 'duplicateof'))
+        with notify_modified(bug, ['duplicateof']):
+            bug.markAsDuplicate(None)
         return self._duplicate_action_result()
 
     def _duplicate_action_result(self):

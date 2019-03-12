@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -29,9 +29,15 @@ from storm.locals import (
     Storm,
     )
 from storm.store import Store
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
 from testtools.matchers import (
+    AfterPreprocessing,
     Equals,
     GreaterThan,
+    Is,
+    MatchesListwise,
+    MatchesStructure,
     )
 import transaction
 from zope.component import getUtility
@@ -417,6 +423,9 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         self.log_buffer = StringIO()
         handler = logging.StreamHandler(self.log_buffer)
         self.log.addHandler(handler)
+        self.addDetail(
+            'garbo-log',
+            Content(UTF8_TEXT, lambda: [self.log_buffer.getvalue()]))
 
     def runFrequently(self, maximum_chunk_size=2, test_args=()):
         switch_dbuser('garbo_daily')
@@ -1380,12 +1389,12 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
     def test_PopulateLatestPersonSourcePackageReleaseCache(self):
         switch_dbuser('testadmin')
         # Make some same test data - we create published source package
-        # releases for 2 different creators and maintainers.
+        # releases for three different creators and maintainers.
         creators = []
-        for _ in range(2):
+        for _ in range(3):
             creators.append(self.factory.makePerson())
         maintainers = []
-        for _ in range(2):
+        for _ in range(3):
             maintainers.append(self.factory.makePerson())
 
         spn = self.factory.makeSourcePackageName()
@@ -1415,9 +1424,22 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
             creator=creators[1], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
             date_uploaded=datetime(2010, 12, 4, tzinfo=UTC))
-        spph_1 = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
             sourcepackagerelease=spr4)
+        spr5 = self.factory.makeSourcePackageRelease(
+            creator=creators[2], maintainer=maintainers[2],
+            distroseries=distroseries, sourcepackagename=spn,
+            date_uploaded=datetime(2010, 12, 5, tzinfo=UTC))
+        spph_1 = self.factory.makeSourcePackagePublishingHistory(
+            status=PackagePublishingStatus.PUBLISHED,
+            sourcepackagerelease=spr5)
+
+        # Some of the creators and maintainers have inactive accounts.
+        removeSecurityProxy(creators[2].account).status = (
+            AccountStatus.DEACTIVATED)
+        removeSecurityProxy(maintainers[2].account).status = (
+            AccountStatus.CLOSED)
 
         transaction.commit()
         self.runFrequently()
@@ -1430,31 +1452,37 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
                 params=[u'PopulateLatestPersonSourcePackageReleaseCache']
             ).get_one())
 
-        def _assert_release_by_creator(creator, spr):
+        def _assert_releases_by_creator(creator, sprs):
             release_records = store.find(
                 LatestPersonSourcePackageReleaseCache,
                 LatestPersonSourcePackageReleaseCache.creator_id == creator.id)
-            [record] = list(release_records)
-            self.assertEqual(spr.creator, record.creator)
-            self.assertIsNone(record.maintainer_id)
-            self.assertEqual(
-                spr.dateuploaded, UTC.localize(record.dateuploaded))
+            self.assertThat(list(release_records), MatchesListwise([
+                MatchesStructure(
+                    creator=Equals(spr.creator),
+                    maintainer_id=Is(None),
+                    dateuploaded=AfterPreprocessing(
+                        UTC.localize, Equals(spr.dateuploaded)))
+                for spr in sprs]))
 
-        def _assert_release_by_maintainer(maintainer, spr):
+        def _assert_releases_by_maintainer(maintainer, sprs):
             release_records = store.find(
                 LatestPersonSourcePackageReleaseCache,
                 LatestPersonSourcePackageReleaseCache.maintainer_id ==
                 maintainer.id)
-            [record] = list(release_records)
-            self.assertEqual(spr.maintainer, record.maintainer)
-            self.assertIsNone(record.creator_id)
-            self.assertEqual(
-                spr.dateuploaded, UTC.localize(record.dateuploaded))
+            self.assertThat(list(release_records), MatchesListwise([
+                MatchesStructure(
+                    maintainer=Equals(spr.maintainer),
+                    creator_id=Is(None),
+                    dateuploaded=AfterPreprocessing(
+                        UTC.localize, Equals(spr.dateuploaded)))
+                for spr in sprs]))
 
-        _assert_release_by_creator(creators[0], spr2)
-        _assert_release_by_creator(creators[1], spr4)
-        _assert_release_by_maintainer(maintainers[0], spr3)
-        _assert_release_by_maintainer(maintainers[1], spr4)
+        _assert_releases_by_creator(creators[0], [spr2])
+        _assert_releases_by_creator(creators[1], [spr4])
+        _assert_releases_by_creator(creators[2], [])
+        _assert_releases_by_maintainer(maintainers[0], [spr3])
+        _assert_releases_by_maintainer(maintainers[1], [spr4])
+        _assert_releases_by_maintainer(maintainers[2], [])
 
         job_data = load_garbo_job_state(
             'PopulateLatestPersonSourcePackageReleaseCache')
@@ -1463,21 +1491,23 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # Create a newer published source package release and ensure the
         # release cache table is correctly updated.
         switch_dbuser('testadmin')
-        spr5 = self.factory.makeSourcePackageRelease(
+        spr6 = self.factory.makeSourcePackageRelease(
             creator=creators[1], maintainer=maintainers[1],
             distroseries=distroseries, sourcepackagename=spn,
             date_uploaded=datetime(2010, 12, 5, tzinfo=UTC))
         spph_2 = self.factory.makeSourcePackagePublishingHistory(
             status=PackagePublishingStatus.PUBLISHED,
-            sourcepackagerelease=spr5)
+            sourcepackagerelease=spr6)
 
         transaction.commit()
         self.runFrequently()
 
-        _assert_release_by_creator(creators[0], spr2)
-        _assert_release_by_creator(creators[1], spr5)
-        _assert_release_by_maintainer(maintainers[0], spr3)
-        _assert_release_by_maintainer(maintainers[1], spr5)
+        _assert_releases_by_creator(creators[0], [spr2])
+        _assert_releases_by_creator(creators[1], [spr6])
+        _assert_releases_by_creator(creators[2], [])
+        _assert_releases_by_maintainer(maintainers[0], [spr3])
+        _assert_releases_by_maintainer(maintainers[1], [spr6])
+        _assert_releases_by_maintainer(maintainers[2], [])
 
         job_data = load_garbo_job_state(
             'PopulateLatestPersonSourcePackageReleaseCache')
@@ -1575,41 +1605,6 @@ class TestGarbo(FakeAdapterMixin, TestCaseWithFactory):
         # Snap binary files attached to builds with no store upload job are
         # retained.
         self._test_SnapFilePruner('foo.snap', None, 30, expected_count=1)
-
-    def test_SnapStoreSeriesPopulator(self):
-        switch_dbuser('testadmin')
-        # Make some series.
-        dses = [self.factory.makeDistroSeries() for _ in range(4)]
-        sses = [
-            self.factory.makeSnappySeries(usable_distro_series=[dses[1]]),
-            self.factory.makeSnappySeries(usable_distro_series=[dses[2]]),
-            self.factory.makeSnappySeries(usable_distro_series=[dses[3]]),
-            self.factory.makeSnappySeries(usable_distro_series=[dses[3]]),
-            ]
-        # Make some snap packages.
-        snaps = [
-            self.factory.makeSnap(distroseries=dses[0]),
-            self.factory.makeSnap(distroseries=dses[1], store_series=sses[1]),
-            self.factory.makeSnap(distroseries=dses[1]),
-            self.factory.makeSnap(distroseries=dses[2], store_series=sses[0]),
-            self.factory.makeSnap(distroseries=dses[2]),
-            self.factory.makeSnap(distroseries=dses[3]),
-            ]
-        transaction.commit()
-
-        self.runDaily()
-
-        # Snaps with no possible store series are untouched.
-        self.assertIsNone(snaps[0].store_series)
-        # Snaps that already have a store series are untouched.
-        self.assertEqual(sses[1], snaps[1].store_series)
-        self.assertEqual(sses[0], snaps[3].store_series)
-        # Snaps with no current store series and exactly one possible store
-        # series have it filled in.
-        self.assertEqual(sses[0], snaps[2].store_series)
-        self.assertEqual(sses[1], snaps[4].store_series)
-        # Snaps with more than one possible store series are untouched.
-        self.assertIsNone(snaps[5].store_series)
 
 
 class TestGarboTasks(TestCaseWithFactory):

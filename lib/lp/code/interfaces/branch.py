@@ -1034,6 +1034,9 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             detail page.
         """
 
+    def getLatestScanJob():
+        """Get the latest IBranchScanJob for this branch"""
+
     def checkUpgrade():
         """Check whether an upgrade should be performed, and raise if not.
 

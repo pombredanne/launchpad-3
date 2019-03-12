@@ -1220,6 +1220,23 @@ class BranchMergeProposal(SQLBase, BugLinkTargetMixin):
         if return_jobs:
             return jobs
 
+    def getLatestDiffUpdateJob(self):
+        """See `IBranchMergeProposal`."""
+        from lp.code.model.branchmergeproposaljob import (
+            BranchMergeProposalJob,
+            UpdatePreviewDiffJob,
+            )
+        diff_type = UpdatePreviewDiffJob.class_job_type
+        latest_preview = IStore(BranchMergeProposalJob).find(
+            BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == self,
+            BranchMergeProposalJob.job_type == diff_type,
+            BranchMergeProposalJob.job == Job.id,
+            ).order_by(Desc(Job.date_finished)).first()
+        if latest_preview is not None:
+            latest_preview = latest_preview.makeDerived()
+        return latest_preview
+
     @property
     def revision_end_date(self):
         """The cutoff date for showing revisions.

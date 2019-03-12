@@ -8,11 +8,11 @@ __all__ = [
     'GitAPI',
     ]
 
-from collections import defaultdict
-from fnmatch import fnmatch
 import sys
 
 from pymacaroons import Macaroon
+import six
+from six.moves import xmlrpc_client
 from storm.store import Store
 import transaction
 from zope.component import (
@@ -314,11 +314,9 @@ class GitAPI(LaunchpadXMLRPCView):
         requester_id = auth_params.get("uid")
         if requester_id is None:
             requester_id = LAUNCHPAD_ANONYMOUS
-        if isinstance(path, str):
-            path = path.decode('utf-8')
         return run_with_login(
             requester_id, self._translatePath,
-            path.strip("/"), permission, auth_params)
+            six.ensure_text(path).strip("/"), permission, auth_params)
 
     def notify(self, translated_path):
         """See `IGitAPI`."""
@@ -350,31 +348,13 @@ class GitAPI(LaunchpadXMLRPCView):
             permissions.append('force_push')
         return permissions
 
-    def _buildPermissions(self, grant):
-        """Build a set of the available permissions from a GitRuleGrant"""
-        permissions = set(grant.permissions)
-        if GitPermissionType.CAN_FORCE_PUSH in permissions:
-            # Permission to force-push implies permission to push.
-            permissions.add(GitPermissionType.CAN_PUSH)
-        return permissions
-
-    def _findMatchingRules(self, repository, ref_path):
-        """Find all matching rules for a given ref path"""
-        matching_rules = []
-        for rule in repository.rules:
-            if fnmatch(ref_path, rule.ref_pattern):
-                matching_rules.append(rule)
-        return matching_rules
-
     def _checkRefPermissions(self, requester, translated_path, ref_paths,
                              auth_params):
         if requester == LAUNCHPAD_ANONYMOUS:
             requester = None
         repository = removeSecurityProxy(
             getUtility(IGitLookup).getByHostingPath(translated_path))
-        result = {}
 
-        grants_for_user = defaultdict(list)
         macaroon_raw = auth_params.get("macaroon")
         if (macaroon_raw is not None and
                 self._verifyMacaroon(macaroon_raw, repository)):
@@ -382,44 +362,31 @@ class GitAPI(LaunchpadXMLRPCView):
             # repository owner.
             # For the time being, this only works for code imports.
             assert repository.repository_type == GitRepositoryType.IMPORTED
-            is_owner = True
-            grants = repository.findRuleGrantsByGrantee(
-                GitGranteeType.REPOSITORY_OWNER)
-        elif requester is None:
-            is_owner = False
-            grants = []
+            requester = GitGranteeType.REPOSITORY_OWNER
+
+        if all(isinstance(ref_path, xmlrpc_client.Binary)
+               for ref_path in ref_paths):
+            # New protocol: caller sends paths as bytes; Launchpad returns a
+            # list of (path, permissions) tuples.  (XML-RPC doesn't support
+            # dict keys being bytes.)
+            ref_paths = [ref_path.data for ref_path in ref_paths]
+            return [
+                (xmlrpc_client.Binary(ref_path),
+                 self._renderPermissions(permissions))
+                for ref_path, permissions in repository.checkRefPermissions(
+                    requester, ref_paths).items()
+                ]
         else:
-            is_owner = requester.inTeam(repository.owner)
-            grants = repository.findRuleGrantsByGrantee(requester)
-            if is_owner:
-                owner_grants = repository.findRuleGrantsByGrantee(
-                    GitGranteeType.REPOSITORY_OWNER)
-                grants = grants.union(owner_grants)
-        for grant in grants:
-            grants_for_user[grant.rule].append(grant)
-
-        for ref in ref_paths:
-            matching_rules = self._findMatchingRules(repository, ref)
-            if is_owner and not matching_rules:
-                result[ref] = ['create', 'push', 'force_push']
-                continue
-            seen_grantees = set()
-            union_permissions = set()
-            for rule in matching_rules:
-                for grant in grants_for_user[rule]:
-                    if (grant.grantee, grant.grantee_type) in seen_grantees:
-                        continue
-                    permissions = self._buildPermissions(grant)
-                    union_permissions.update(permissions)
-                    seen_grantees.add((grant.grantee, grant.grantee_type))
-
-            owner_type = (None, GitGranteeType.REPOSITORY_OWNER)
-            if is_owner and owner_type not in seen_grantees:
-                union_permissions.update(
-                    [GitPermissionType.CAN_CREATE, GitPermissionType.CAN_PUSH])
-
-            result[ref] = self._renderPermissions(union_permissions)
-        return result
+            # Old protocol: caller sends paths as text; Launchpad returns a
+            # dict of {path: permissions}.
+            # XXX cjwatson 2018-11-21: Remove this once turnip has migrated
+            # to the new protocol.  git ref paths are not required to be
+            # valid UTF-8.
+            return {
+                ref_path: self._renderPermissions(permissions)
+                for ref_path, permissions in repository.checkRefPermissions(
+                    requester, ref_paths).items()
+                }
 
     def checkRefPermissions(self, translated_path, ref_paths, auth_params):
         """ See `IGitAPI`"""

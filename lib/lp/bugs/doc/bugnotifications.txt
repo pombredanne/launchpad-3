@@ -24,8 +24,7 @@ those notifications look like.
 === Reporting a new bug ===
 
     >>> from zope.event import notify
-    >>> from lazr.lifecycle.event import (
-    ...     ObjectModifiedEvent, ObjectCreatedEvent)
+    >>> from lazr.lifecycle.event import ObjectCreatedEvent
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.distroseries import IDistroSeriesSet
@@ -64,14 +63,10 @@ bugactivity.txt, but for now here is a small demo.
 
 === Editing a bug report ===
 
-    >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from lp.bugs.interfaces.bug import IBug
-    >>> bug_before_modification = Snapshot(firefox_crashes, providing=IBug)
-    >>> firefox_crashes.description = "a new description"
-    >>> firefox_crashes_modified = ObjectModifiedEvent(
-    ...     firefox_crashes, bug_before_modification,
-    ...     ["description"])
-    >>> notify(firefox_crashes_modified)
+    >>> from lp.services.webapp.snapshot import notify_modified
+
+    >>> with notify_modified(firefox_crashes, ["description"]):
+    ...     firefox_crashes.description = "a new description"
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print(latest_notification.message.owner.displayname)
@@ -225,21 +220,13 @@ bug. Let's take a look at each type.
 Let's demonstrate a notification email where Sample Person marks a
 task Fixed, and assigns themselves to it.
 
-    >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from lp.bugs.interfaces.bugtask import (
-    ...     BugTaskStatus,
-    ...     IBugTask,
-    ...     )
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
 
-    >>> bugtask_before_modification = Snapshot(
-    ...     firefox_crashes_in_debian, providing=IBugTask)
-    >>> firefox_crashes_in_debian.transitionToStatus(
-    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    >>> firefox_crashes_in_debian.transitionToAssignee(bug_submitter)
-    >>> debian_task_modified = ObjectModifiedEvent(
-    ...     firefox_crashes_in_debian, bugtask_before_modification,
-    ...     ["status", "assignee"])
-    >>> notify(debian_task_modified)
+    >>> with notify_modified(
+    ...         firefox_crashes_in_debian, ["status", "assignee"]):
+    ...     firefox_crashes_in_debian.transitionToStatus(
+    ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+    ...     firefox_crashes_in_debian.transitionToAssignee(bug_submitter)
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print(latest_notification.message.owner.displayname)
@@ -251,15 +238,11 @@ task Fixed, and assigns themselves to it.
     ** Changed in: mozilla-firefox (Debian)
     ...
 
-    >>> bugtask_before_modification = Snapshot(
-    ...     firefox_crashes_in_trunk, providing=IBugTask)
-    >>> firefox_crashes_in_trunk.transitionToStatus(
-    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    >>> firefox_crashes_in_trunk.transitionToAssignee(bug_submitter)
-    >>> firefox_task_modified = ObjectModifiedEvent(
-    ...     firefox_crashes_in_trunk, bugtask_before_modification,
-    ...     ["status", "assignee"])
-    >>> notify(firefox_task_modified)
+    >>> with notify_modified(
+    ...         firefox_crashes_in_trunk, ["status", "assignee"]):
+    ...     firefox_crashes_in_trunk.transitionToStatus(
+    ...         BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
+    ...     firefox_crashes_in_trunk.transitionToAssignee(bug_submitter)
 
     >>> latest_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print(latest_notification.message.owner.displayname)

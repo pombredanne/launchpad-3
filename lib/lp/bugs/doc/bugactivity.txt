@@ -21,14 +21,9 @@ authenticated user--let's login:
 Bug activity tracking is done using event subscribers. The handlers
 are simple little functions.
 
-    >>> from zope.event import notify
-    >>> from lazr.lifecycle.event import ObjectModifiedEvent
-    >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from lp.bugs.interfaces.bugtask import (
-    ...     IBugTask,
-    ...     IBugTaskSet,
-    ...     )
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> from lp.registry.interfaces.product import IProductSet
+    >>> from lp.services.webapp.snapshot import notify_modified
     >>> user = getUtility(ILaunchBag).user
 
 
@@ -54,12 +49,8 @@ User files a bug
 Bug title edited
 ================
 
-    >>> from lp.bugs.interfaces.bug import IBug
-    >>> old_state = Snapshot(bug, providing=IBug)
-    >>> bug.title = "new bug title"
-    >>> bug_edited = ObjectModifiedEvent(
-    ...     bug, old_state, ["title", "description"])
-    >>> notify(bug_edited)
+    >>> with notify_modified(bug, ["title", "description"]):
+    ...     bug.title = "new bug title"
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
     u'summary'
@@ -72,7 +63,6 @@ Bug title edited
 Source package assignment edited
 ================================
 
-    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.sourcepackagename import (
@@ -84,14 +74,9 @@ Source package assignment edited
     >>> edit_fields = [
     ...     "distribution", "sourcepackagename", "milestone", "status",
     ...     "importance", "assignee", "bugwatch"]
-    >>> old_source_package_assignment = Snapshot(
-    ...   source_package_assignment, providing=IBugTask)
-    >>> source_package_assignment.transitionToStatus(
-    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
-    >>> source_package_assignment_edited = ObjectModifiedEvent(
-    ...     source_package_assignment, old_source_package_assignment,
-    ...     edit_fields)
-    >>> notify(source_package_assignment_edited)
+    >>> with notify_modified(source_package_assignment, edit_fields):
+    ...     source_package_assignment.transitionToStatus(
+    ...         BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
     u'mozilla-firefox (Ubuntu): status'
@@ -132,13 +117,9 @@ Upstream product assignment edited
     >>> edit_fields = [
     ...     "product", "milestone", "status", "assignee", "bugwatch",
     ...     "importance"]
-    >>> old_product_assignment = Snapshot(
-    ...     product_assignment, providing=IBugTask)
-    >>> product_assignment.transitionToStatus(
-    ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
-    >>> product_assignment_edited = ObjectModifiedEvent(
-    ...     product_assignment, old_product_assignment, edit_fields)
-    >>> notify(product_assignment_edited)
+    >>> with notify_modified(product_assignment, edit_fields):
+    ...     product_assignment.transitionToStatus(
+    ...         BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
     u'thunderbird: status'
@@ -158,11 +139,9 @@ Bug report is marked as a duplicate of another bug report
     >>> edit_fields = [
     ...     "id", "title", "description", "name",
     ...     "private", "duplicateof", "security_related"]
-    >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> latest_bug = factory.makeBug()
-    >>> bug.markAsDuplicate(latest_bug)
-    >>> bug_edited = ObjectModifiedEvent(bug, old_bug, edit_fields)
-    >>> notify(bug_edited)
+    >>> with notify_modified(bug, edit_fields):
+    ...     latest_bug = factory.makeBug()
+    ...     bug.markAsDuplicate(latest_bug)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
     u'marked as duplicate'
@@ -178,11 +157,9 @@ Bug report has its duplicate marker changed to another bug report
     >>> edit_fields = [
     ...     "id", "title", "description", "name", "private", "duplicateof",
     ...     "security_related"]
-    >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> another_bug = factory.makeBug()
-    >>> bug.markAsDuplicate(another_bug)
-    >>> bug_edited = ObjectModifiedEvent(bug, old_bug, edit_fields)
-    >>> notify(bug_edited)
+    >>> with notify_modified(bug, edit_fields):
+    ...     another_bug = factory.makeBug()
+    ...     bug.markAsDuplicate(another_bug)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
     u'changed duplicate marker'
@@ -198,10 +175,8 @@ The bug report is un-duplicated
     >>> edit_fields = [
     ...     "id", "title", "description", "name", "private", "duplicateof",
     ...     "security_related"]
-    >>> old_bug = Snapshot(bug, providing=IBug)
-    >>> bug.markAsDuplicate(None)
-    >>> bug_edited = ObjectModifiedEvent(bug, old_bug, edit_fields)
-    >>> notify(bug_edited)
+    >>> with notify_modified(bug, edit_fields):
+    ...     bug.markAsDuplicate(None)
     >>> latest_activity = bug.activity[-1]
     >>> latest_activity.whatchanged
     u'removed duplicate marker'

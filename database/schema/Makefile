@@ -61,9 +61,9 @@ build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q && \
 # on production. It is generated using newbaseline.py in
 # bzr+ssh://devpad.canonical.com/code/stub/dbascripts
 #
-REV=2209
+REV=2210
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=cc7a493c924196409a22392a16443d52  launchpad-2209-00-0.sql
+MD5SUM=36ae7078cd41916bbbd9c116b2e6aea7  launchpad-2210-00-0.sql
 
 default: all
 

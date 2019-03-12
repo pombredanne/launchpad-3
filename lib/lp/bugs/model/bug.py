@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad bug-related database table classes."""
@@ -26,10 +26,7 @@ from itertools import chain
 import operator
 import re
 
-from lazr.lifecycle.event import (
-    ObjectCreatedEvent,
-    ObjectModifiedEvent,
-    )
+from lazr.lifecycle.event import ObjectCreatedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from sqlobject import (
@@ -70,10 +67,7 @@ from storm.store import (
 from zope.component import getUtility
 from zope.contenttype import guess_content_type
 from zope.event import notify
-from zope.interface import (
-    implementer,
-    providedBy,
-    )
+from zope.interface import implementer
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import (
     ProxyFactory,
@@ -234,6 +228,7 @@ from lp.services.webapp.interfaces import ILaunchBag
 from lp.services.webapp.publisher import (
     get_raw_form_value_from_current_request,
     )
+from lp.services.webapp.snapshot import notify_modified
 from lp.services.xref.interfaces import IXRefSet
 
 
@@ -1501,20 +1496,12 @@ class Bug(SQLBase, InformationTypeMixin):
             'A question cannot be created from this bug without a '
             'valid bugtask.')
 
-        bugtask_before_modification = Snapshot(
-            bugtask, providing=providedBy(bugtask))
-        bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
-        edited_fields = ['status']
-        if comment is not None:
-            self.newMessage(
-                owner=person, subject=self.followup_subject(),
-                content=comment)
-        notify(
-            ObjectModifiedEvent(
-                object=bugtask,
-                object_before_modification=bugtask_before_modification,
-                edited_fields=edited_fields,
-                user=person))
+        with notify_modified(bugtask, ['status'], user=person):
+            bugtask.transitionToStatus(BugTaskStatus.INVALID, person)
+            if comment is not None:
+                self.newMessage(
+                    owner=person, subject=self.followup_subject(),
+                    content=comment)
 
         question_target = IQuestionTarget(bugtask.target)
         question = question_target.createQuestionFromBug(self)
@@ -1759,11 +1746,8 @@ class Bug(SQLBase, InformationTypeMixin):
         if bugtask.status == status:
             return None
 
-        bugtask_before_modification = Snapshot(
-            bugtask, providing=providedBy(bugtask))
-        bugtask.transitionToStatus(status, user)
-        notify(ObjectModifiedEvent(
-            bugtask, bugtask_before_modification, ['status'], user=user))
+        with notify_modified(bugtask, ['status'], user=user):
+            bugtask.transitionToStatus(status, user)
 
         return bugtask
 

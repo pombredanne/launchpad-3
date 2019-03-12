@@ -80,7 +80,7 @@ class Bugzilla(ExternalBugTracker):
         """Return True if the remote host offers the Bugzilla API.
 
         :return: True if the remote host offers an XML-RPC API and its
-            version is > 3.4. Return False otherwise.
+            version is >= 3.4. Return False otherwise.
         """
         api = BugzillaAPI(self.baseurl)
         if self._test_xmlrpc_proxy is not None:
@@ -116,7 +116,7 @@ class Bugzilla(ExternalBugTracker):
             # Older versions of the Bugzilla API return tuples. We
             # consider anything other than a mapping to be unsupported.
             if isinstance(remote_version, dict):
-                if remote_version['version'] >= '3.4':
+                if self._parseVersion(remote_version['version']) >= (3, 4):
                     return True
             return False
 

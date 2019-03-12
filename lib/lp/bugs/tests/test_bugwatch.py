@@ -1,4 +1,4 @@
-# Copyright 2009-2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugWatchSet."""
@@ -143,6 +143,15 @@ class ExtractBugTrackerAndBugTest(WithScenarios, TestCase):
             'bug_id': '22003',
             'already_registered': True,
             }),
+        ('SavannahWithParameters', {
+            'bugtracker_type': BugTrackerType.SAVANE,
+            'bug_url': (
+                'http://savannah.gnu.org/bugs/index.php'
+                '?func=detailitem&item_id=22003'),
+            'base_url': 'http://savannah.gnu.org/',
+            'bug_id': '22003',
+            'already_registered': True,
+            }),
         ('Savane', {
             'bugtracker_type': BugTrackerType.SAVANE,
             'bug_url': 'http://savane.example.com/bugs/?12345',
@@ -166,6 +175,12 @@ class ExtractBugTrackerAndBugTest(WithScenarios, TestCase):
             'bugtracker_type': BugTrackerType.GITHUB,
             'bug_url': 'https://github.com/user/repository/issues/12345',
             'base_url': 'https://github.com/user/repository/issues',
+            'bug_id': '12345',
+            }),
+        ('GitLab', {
+            'bugtracker_type': BugTrackerType.GITLAB,
+            'bug_url': 'https://gitlab.com/user/repository/issues/12345',
+            'base_url': 'https://gitlab.com/user/repository/issues',
             'bug_id': '12345',
             }),
         ]

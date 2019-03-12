@@ -1,4 +1,4 @@
-# Copyright 2009-2017 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,8 +10,6 @@ from datetime import (
 import re
 import urllib
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.interfaces import IJSONRequestCache
 from pytz import UTC
 import simplejson
@@ -29,9 +27,7 @@ from zope.component import (
     getMultiAdapter,
     getUtility,
     )
-from zope.event import notify
 from zope.formlib.interfaces import ConversionError
-from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -76,6 +72,7 @@ from lp.services.webapp.interfaces import (
     ILaunchpadRoot,
     )
 from lp.services.webapp.servers import LaunchpadTestRequest
+from lp.services.webapp.snapshot import notify_modified
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
     ANONYMOUS,
@@ -175,7 +172,7 @@ class TestBugTaskView(TestCaseWithFactory):
         recorder1, recorder2 = record_two_runs(
             lambda: self.getUserBrowser(url, owner),
             make_merge_proposals, 0, 1)
-        self.assertThat(recorder1, HasQueryCount(LessThan(90)))
+        self.assertThat(recorder1, HasQueryCount(LessThan(92)))
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
         self.assertThat(
@@ -1739,11 +1736,8 @@ class TestBugActivityItem(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setAttribute(self, obj, attribute, value):
-        obj_before_modification = Snapshot(obj, providing=providedBy(obj))
-        setattr(removeSecurityProxy(obj), attribute, value)
-        notify(ObjectModifiedEvent(
-            obj, obj_before_modification, [attribute],
-            self.factory.makePerson()))
+        with notify_modified(obj, [attribute], user=self.factory.makePerson()):
+            setattr(removeSecurityProxy(obj), attribute, value)
 
     def test_escapes_assignee(self):
         with celebrity_logged_in('admin'):

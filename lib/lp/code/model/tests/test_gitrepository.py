@@ -1,4 +1,4 @@
-# Copyright 2015-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2015-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repositories."""
@@ -7,7 +7,10 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import email
 from functools import partial
 import hashlib
@@ -15,7 +18,6 @@ import json
 
 from bzrlib import urlutils
 from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.exceptions import LostObjectError
@@ -32,8 +34,6 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
-from zope.event import notify
-from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -99,6 +99,7 @@ from lp.code.model.gitactivity import GitActivity
 from lp.code.model.gitjob import (
     GitJob,
     GitJobType,
+    GitRefScanJob,
     ReclaimGitRepositorySpaceJob,
     )
 from lp.code.model.gitrepository import (
@@ -138,6 +139,7 @@ from lp.services.propertycache import clear_property_cache
 from lp.services.utils import seconds_since_epoch
 from lp.services.webapp.authorization import check_permission
 from lp.services.webapp.interfaces import OAuthPermission
+from lp.services.webapp.snapshot import notify_modified
 from lp.testing import (
     admin_logged_in,
     ANONYMOUS,
@@ -267,7 +269,7 @@ class TestGitRepository(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(
             rule=rule, grantee=requester, can_push=True, can_create=True)
 
-        results = repository.findRuleGrantsByGrantee(requester)
+        results = repository.findRuleGrantsByGrantee(member)
         self.assertEqual([grant], list(results))
 
     def test_findRuleGrantsByGrantee_team_in_team(self):
@@ -358,6 +360,117 @@ class TestGitRepository(TestCaseWithFactory):
 
         results = repository.findRuleGrantsByGrantee(requester)
         self.assertEqual([owner_grant], list(results))
+
+    def test_findRuleGrantsByGrantee_ref_pattern(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+        [ref] = self.factory.makeGitRefs(repository=repository)
+
+        exact_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=ref.path, grantee=requester)
+        self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=requester)
+
+        results = repository.findRuleGrantsByGrantee(
+            requester, ref_pattern=ref.path)
+        self.assertEqual([exact_grant], list(results))
+
+    def test_findRuleGrantsByGrantee_exclude_transitive_person(self):
+        requester = self.factory.makePerson()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=requester))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(rule=rule, grantee=requester)
+
+        results = repository.findRuleGrantsByGrantee(
+            requester, include_transitive=False)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_exclude_transitive_team(self):
+        team = self.factory.makeTeam()
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=team))
+
+        rule = self.factory.makeGitRule(repository)
+        grant = self.factory.makeGitRuleGrant(rule=rule, grantee=team)
+
+        results = repository.findRuleGrantsByGrantee(
+            team, include_transitive=False)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_exclude_transitive_member_of_team(self):
+        member = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[member])
+        repository = removeSecurityProxy(
+            self.factory.makeGitRepository(owner=team))
+
+        rule = self.factory.makeGitRule(repository)
+        self.factory.makeGitRuleGrant(rule=rule, grantee=team)
+
+        results = repository.findRuleGrantsByGrantee(
+            member, include_transitive=False)
+        self.assertEqual([], list(results))
+
+    def test_findRuleGrantsByGrantee_no_owner_grant(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+
+        rule = self.factory.makeGitRule(repository=repository)
+        self.factory.makeGitRuleGrant(rule=rule)
+
+        results = repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER)
+        self.assertEqual([], list(results))
+
+    def test_findRuleGrantsByGrantee_owner_grant(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+
+        rule = self.factory.makeGitRule(repository=repository)
+        grant = self.factory.makeGitRuleGrant(
+            rule=rule, grantee=GitGranteeType.REPOSITORY_OWNER)
+        self.factory.makeGitRuleGrant(rule=rule)
+
+        results = repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER)
+        self.assertEqual([grant], list(results))
+
+    def test_findRuleGrantsByGrantee_owner_ref_pattern(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+        [ref] = self.factory.makeGitRefs(repository=repository)
+
+        exact_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=ref.path,
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+        self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+
+        results = ref.repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER, ref_pattern=ref.path)
+        self.assertEqual([exact_grant], list(results))
+
+    def test_findRuleGrantsByGrantee_owner_exclude_transitive(self):
+        repository = removeSecurityProxy(self.factory.makeGitRepository())
+        [ref] = self.factory.makeGitRefs(repository=repository)
+
+        exact_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern=ref.path,
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+        self.factory.makeGitRuleGrant(
+            rule=exact_grant.rule, grantee=repository.owner)
+        wildcard_grant = self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=GitGranteeType.REPOSITORY_OWNER)
+
+        results = ref.repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER, include_transitive=False)
+        self.assertItemsEqual([exact_grant, wildcard_grant], list(results))
+        results = ref.repository.findRuleGrantsByGrantee(
+            GitGranteeType.REPOSITORY_OWNER, ref_pattern=ref.path,
+            include_transitive=False)
+        self.assertEqual([exact_grant], list(results))
 
 
 class TestGitIdentityMixin(TestCaseWithFactory):
@@ -939,9 +1052,10 @@ class TestGitRepositoryModifications(TestCaseWithFactory):
         # modified date is set to UTC_NOW.
         repository = self.factory.makeGitRepository(
             date_created=datetime(2015, 2, 4, 17, 42, 0, tzinfo=pytz.UTC))
-        notify(ObjectModifiedEvent(
-            removeSecurityProxy(repository), repository,
-            [IGitRepository["name"]], user=repository.owner))
+        with notify_modified(
+                removeSecurityProxy(repository), ["name"],
+                user=repository.owner):
+            pass
         self.assertSqlAttributeEqualsDate(
             repository, "date_last_modified", UTC_NOW)
 
@@ -997,26 +1111,22 @@ class TestGitRepositoryModificationNotifications(TestCaseWithFactory):
         subscriber_address = (
             removeSecurityProxy(subscriber.preferredemail).email)
         transaction.commit()
-        repository_before_modification = Snapshot(
-            repository, providing=providedBy(repository))
         with person_logged_in(repository.owner):
-            repository.subscribe(
-                repository.owner,
-                BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
-                BranchSubscriptionDiffSize.NODIFF,
-                CodeReviewNotificationLevel.NOEMAIL,
-                repository.owner)
-            repository.subscribe(
-                subscriber,
-                BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
-                BranchSubscriptionDiffSize.NODIFF,
-                CodeReviewNotificationLevel.NOEMAIL,
-                repository.owner)
-            repository.setName("bar", repository.owner)
-            repository.addRule("refs/heads/stable/*", repository.owner)
-            notify(ObjectModifiedEvent(
-                repository, repository_before_modification, ["name"],
-                user=repository.owner))
+            with notify_modified(repository, ["name"], user=repository.owner):
+                repository.subscribe(
+                    repository.owner,
+                    BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+                    BranchSubscriptionDiffSize.NODIFF,
+                    CodeReviewNotificationLevel.NOEMAIL,
+                    repository.owner)
+                repository.subscribe(
+                    subscriber,
+                    BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+                    BranchSubscriptionDiffSize.NODIFF,
+                    CodeReviewNotificationLevel.NOEMAIL,
+                    repository.owner)
+                repository.setName("bar", repository.owner)
+                repository.addRule("refs/heads/stable/*", repository.owner)
         with dbuser(config.IGitRepositoryModifiedMailJobSource.dbuser):
             JobRunner.fromReady(
                 getUtility(IGitRepositoryModifiedMailJobSource)).runAll()
@@ -1457,6 +1567,58 @@ class TestGitRepositoryRefs(TestCaseWithFactory):
                 },
             }))
         self.assertEqual(({}, set()), repository.planRefChanges("dummy"))
+
+    def test_planRefChanges_includes_unfetched_commits(self):
+        # planRefChanges plans updates to refs pointing to commits for which
+        # we haven't yet fetched detailed metadata.
+        repository = self.factory.makeGitRepository()
+        paths = ("refs/heads/master", "refs/heads/foo")
+        self.factory.makeGitRefs(repository=repository, paths=paths)
+        author_addr = (
+            removeSecurityProxy(repository.owner).preferredemail.email)
+        [author] = getUtility(IRevisionSet).acquireRevisionAuthors(
+            [author_addr]).values()
+        naked_master = removeSecurityProxy(
+            repository.getRefByPath("refs/heads/master"))
+        naked_master.author_id = naked_master.committer_id = author.id
+        naked_master.author_date = naked_master.committer_date = (
+            datetime.now(pytz.UTC))
+        naked_master.commit_message = "message"
+        self.useFixture(GitHostingFixture(refs={
+            path: {
+                "object": {
+                    "sha1": repository.getRefByPath(path).commit_sha1,
+                    "type": "commit",
+                    },
+                }
+            for path in paths}))
+        refs_to_upsert, refs_to_remove = repository.planRefChanges("dummy")
+
+        expected_upsert = {
+            "refs/heads/foo": {
+                "sha1": repository.getRefByPath("refs/heads/foo").commit_sha1,
+                "type": GitObjectType.COMMIT,
+                },
+            }
+        self.assertEqual(expected_upsert, refs_to_upsert)
+        self.assertEqual(set(), refs_to_remove)
+
+    def test_planRefChanges_excludes_configured_prefixes(self):
+        # planRefChanges excludes some ref prefixes by default, and can be
+        # configured otherwise.
+        repository = self.factory.makeGitRepository()
+        hosting_fixture = self.useFixture(GitHostingFixture())
+        repository.planRefChanges("dummy")
+        self.assertEqual(
+            [{"exclude_prefixes": ["refs/changes/"]}],
+            hosting_fixture.getRefs.extract_kwargs())
+        hosting_fixture.getRefs.calls = []
+        self.pushConfig(
+            "codehosting", git_exclude_ref_prefixes="refs/changes/ refs/pull/")
+        repository.planRefChanges("dummy")
+        self.assertEqual(
+            [{"exclude_prefixes": ["refs/changes/", "refs/pull/"]}],
+            hosting_fixture.getRefs.extract_kwargs())
 
     def test_fetchRefCommits(self):
         # fetchRefCommits fetches detailed tip commit metadata for the
@@ -2034,6 +2196,46 @@ class TestGitRepositoryRescan(TestCaseWithFactory):
             repository.rescan()
         [job] = list(job_source.iterReady())
         self.assertEqual(repository, job.repository)
+
+    def test_getLatestScanJob(self):
+        complete_date = datetime.now(pytz.UTC)
+
+        repository = self.factory.makeGitRepository()
+        failed_job = GitRefScanJob.create(repository)
+        failed_job.job._status = JobStatus.FAILED
+        failed_job.job.date_finished = complete_date
+        completed_job = GitRefScanJob.create(repository)
+        completed_job.job._status = JobStatus.COMPLETED
+        completed_job.job.date_finished = complete_date - timedelta(seconds=10)
+        result = removeSecurityProxy(repository.getLatestScanJob())
+        self.assertEqual(failed_job.job_id, result.job_id)
+
+    def test_getLatestScanJob_no_scans(self):
+        repository = self.factory.makeGitRepository()
+        result = repository.getLatestScanJob()
+        self.assertIsNone(result)
+
+    def test_getLatestScanJob_correct_branch(self):
+        complete_date = datetime.now(pytz.UTC)
+
+        main_repository = self.factory.makeGitRepository()
+        second_repository = self.factory.makeGitRepository()
+        failed_job = GitRefScanJob.create(second_repository)
+        failed_job.job._status = JobStatus.FAILED
+        failed_job.job.date_finished = complete_date
+        completed_job = GitRefScanJob.create(main_repository)
+        completed_job.job._status = JobStatus.COMPLETED
+        completed_job.job.date_finished = complete_date - timedelta(seconds=10)
+        result = removeSecurityProxy(main_repository.getLatestScanJob())
+        self.assertEqual(completed_job.job_id, result.job_id)
+
+    def test_getLatestScanJob_without_completion_date(self):
+        repository = self.factory.makeGitRepository()
+        failed_job = GitRefScanJob.create(repository)
+        failed_job.job._status = JobStatus.FAILED
+        result = repository.getLatestScanJob()
+        self.assertTrue(result)
+        self.assertIsNone(result.job.date_finished)
 
 
 class TestGitRepositoryUpdateMergeCommitIDs(TestCaseWithFactory):
@@ -2645,6 +2847,20 @@ class TestGitRepositoryRules(TestCaseWithFactory):
                 date_created=Equals(date_created),
                 date_last_modified=Equals(date_created)),
             ]))
+
+    def test_setRules_canonicalises_expected_ordering(self):
+        repository = self.factory.makeGitRepository()
+        with person_logged_in(repository.owner):
+            repository.setRules([
+                IGitNascentRule({
+                    "ref_pattern": "refs/heads/master-next",
+                    "grants": [],
+                    }),
+                IGitNascentRule({
+                    "ref_pattern": "refs/heads/master",
+                    "grants": [],
+                    }),
+                ], repository.owner)
 
     def test_setRules_modify_grants(self):
         owner = self.factory.makeTeam()
@@ -3633,3 +3849,48 @@ class TestGitRepositoryWebservice(TestCaseWithFactory):
                             can_push=Is(True),
                             can_force_push=Is(False)))),
                 ]))
+
+    def test_checkRefPermissions(self):
+        repository = self.factory.makeGitRepository()
+        owner = repository.owner
+        grantees = [self.factory.makePerson() for _ in range(2)]
+        master_rule = self.factory.makeGitRule(
+            repository=repository, ref_pattern="refs/heads/master")
+        self.factory.makeGitRuleGrant(
+            rule=master_rule, grantee=grantees[0], can_create=True)
+        self.factory.makeGitRuleGrant(
+            rule=master_rule, grantee=grantees[1], can_push=True)
+        self.factory.makeGitRuleGrant(
+            repository=repository, ref_pattern="refs/heads/*",
+            grantee=grantees[1], can_force_push=True)
+        with person_logged_in(owner):
+            repository_url = api_url(repository)
+            owner_url = api_url(owner)
+            grantee_urls = [api_url(grantee) for grantee in grantees]
+        webservice = webservice_for_person(
+            owner, permission=OAuthPermission.WRITE_PUBLIC)
+        webservice.default_api_version = "devel"
+        response = webservice.named_get(
+            repository_url, "checkRefPermissions", person=owner_url,
+            paths=["refs/heads/master", "refs/heads/next", "refs/other"])
+        self.assertThat(json.loads(response.body), MatchesDict({
+            "refs/heads/master": Equals(["create", "push"]),
+            "refs/heads/next": Equals(["create", "push"]),
+            "refs/other": Equals(["create", "push", "force-push"]),
+            }))
+        response = webservice.named_get(
+            repository_url, "checkRefPermissions", person=grantee_urls[0],
+            paths=["refs/heads/master", "refs/heads/next", "refs/other"])
+        self.assertThat(json.loads(response.body), MatchesDict({
+            "refs/heads/master": Equals(["create"]),
+            "refs/heads/next": Equals([]),
+            "refs/other": Equals([]),
+            }))
+        response = webservice.named_get(
+            repository_url, "checkRefPermissions", person=grantee_urls[1],
+            paths=["refs/heads/master", "refs/heads/next", "refs/other"])
+        self.assertThat(json.loads(response.body), MatchesDict({
+            "refs/heads/master": Equals(["push"]),
+            "refs/heads/next": Equals(["push", "force-push"]),
+            "refs/other": Equals([]),
+            }))

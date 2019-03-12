@@ -1,4 +1,4 @@
-# Copyright 2014-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2014-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An `IBuildFarmJobBehaviour` for `LiveFSBuild`.
@@ -16,6 +16,7 @@ from zope.component import adapter
 from zope.interface import implementer
 from zope.security.proxy import removeSecurityProxy
 
+from lp.buildmaster.enums import BuildBaseImageType
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehaviour import (
     IBuildFarmJobBehaviour,
@@ -38,6 +39,7 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
     """Dispatches `LiveFSBuild` jobs to slaves."""
 
     builder_type = "livefs"
+    image_types = [BuildBaseImageType.LXD, BuildBaseImageType.CHROOT]
 
     def getLogFileName(self):
         das = self.build.distro_arch_series
@@ -71,7 +73,7 @@ class LiveFSBuildBehaviour(BuildFarmJobBehaviourBase):
         if build.archive.private and build.livefs.owner != build.archive.owner:
             raise LiveFSBuildArchiveOwnerMismatch()
 
-        chroot = build.distro_arch_series.getChroot()
+        chroot = build.distro_arch_series.getChroot(pocket=build.pocket)
         if chroot is None:
             raise CannotBuild(
                 "Missing chroot for %s" % build.distro_arch_series.displayname)

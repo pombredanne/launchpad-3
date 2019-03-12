@@ -18,6 +18,7 @@ from bzrlib import urlutils
 from bzrlib.revision import NULL_REVISION
 from lazr.lifecycle.event import ObjectCreatedEvent
 import pytz
+import six
 from six.moves.urllib_parse import urlsplit
 from sqlobject import (
     ForeignKey,
@@ -166,7 +167,10 @@ from lp.services.database.constants import (
 from lp.services.database.datetimecol import UtcDateTimeCol
 from lp.services.database.decoratedresultset import DecoratedResultSet
 from lp.services.database.enumcol import EnumCol
-from lp.services.database.interfaces import IMasterStore
+from lp.services.database.interfaces import (
+    IMasterStore,
+    IStore,
+    )
 from lp.services.database.sqlbase import (
     SQLBase,
     sqlvalues,
@@ -813,10 +817,9 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             memcache_client = getUtility(IMemcacheClient)
             instance_name = urlsplit(
                 config.codehosting.internal_bzr_api_endpoint).hostname
-            memcache_key = '%s:bzr-file-list:%s:%s:%s' % (
-                instance_name, self.id, revision_id, dirname)
-            if not isinstance(memcache_key, bytes):
-                memcache_key = memcache_key.encode('UTF-8')
+            memcache_key = six.ensure_binary(
+                '%s:bzr-file-list:%s:%s:%s' % (
+                    instance_name, self.id, revision_id, dirname))
             cached_file_list = memcache_client.get(memcache_key)
             if cached_file_list is not None:
                 try:
@@ -1294,6 +1297,16 @@ class Branch(SQLBase, WebhookTargetMixin, BzrIdentityMixin):
             job = BranchScanJob.create(self)
             job.celeryRunOnCommit()
         return (self.last_mirrored_id, old_scanned_id)
+
+    def getLatestScanJob(self):
+        from lp.code.model.branchjob import BranchJob, BranchScanJob
+        latest_job = IStore(BranchJob).find(
+            BranchJob,
+            BranchJob.branch == self,
+            BranchJob.job_type == BranchScanJob.class_job_type,
+            BranchJob.job == Job.id).order_by(
+                Desc(Job.date_finished)).first()
+        return latest_job
 
     def requestMirror(self):
         """See `IBranch`."""

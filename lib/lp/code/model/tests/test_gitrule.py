@@ -1,4 +1,4 @@
-# Copyright 2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2018-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Git repository access rules."""
@@ -7,8 +7,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from storm.store import Store
 from testtools.matchers import (
     Equals,
@@ -19,8 +17,6 @@ from testtools.matchers import (
     MatchesStructure,
     )
 import transaction
-from zope.event import notify
-from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from lp.code.enums import (
@@ -32,8 +28,10 @@ from lp.code.interfaces.gitrule import (
     IGitNascentRuleGrant,
     IGitRule,
     IGitRuleGrant,
+    is_rule_exact,
     )
 from lp.services.database.sqlbase import get_transaction_timestamp
+from lp.services.webapp.snapshot import notify_modified
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -72,7 +70,7 @@ class TestGitRule(TestCaseWithFactory):
             "<GitRule 'refs/heads/*' for %s>" % repository.unique_name,
             repr(rule))
 
-    def test_is_exact(self):
+    def test_is_rule_exact(self):
         repository = self.factory.makeGitRepository()
         for ref_pattern, is_exact in (
                 ("refs/heads/master", True),
@@ -86,9 +84,9 @@ class TestGitRule(TestCaseWithFactory):
                 ):
             self.assertEqual(
                 is_exact,
-                self.factory.makeGitRule(
+                is_rule_exact(self.factory.makeGitRule(
                     repository=repository,
-                    ref_pattern=ref_pattern).is_exact)
+                    ref_pattern=ref_pattern)))
 
     def test_grants(self):
         rule = self.factory.makeGitRule()
@@ -490,11 +488,9 @@ class TestGitRule(TestCaseWithFactory):
         repository = self.factory.makeGitRepository(owner=owner)
         rule = self.factory.makeGitRule(
             repository=repository, ref_pattern="refs/heads/*")
-        rule_before_modification = Snapshot(rule, providing=providedBy(rule))
         with person_logged_in(member):
-            rule.ref_pattern = "refs/heads/other/*"
-            notify(ObjectModifiedEvent(
-                rule, rule_before_modification, ["ref_pattern"]))
+            with notify_modified(rule, ["ref_pattern"]):
+                rule.ref_pattern = "refs/heads/other/*"
         self.assertThat(repository.getActivity().first(), MatchesStructure(
             repository=Equals(repository),
             changer=Equals(member),
@@ -599,6 +595,7 @@ class TestGitRuleGrant(TestCaseWithFactory):
             rule=Equals(rule),
             grantee_type=Equals(GitGranteeType.REPOSITORY_OWNER),
             grantee=Is(None),
+            combined_grantee=Equals(GitGranteeType.REPOSITORY_OWNER),
             can_create=Is(True),
             can_push=Is(False),
             can_force_push=Is(True),
@@ -619,6 +616,7 @@ class TestGitRuleGrant(TestCaseWithFactory):
             rule=Equals(rule),
             grantee_type=Equals(GitGranteeType.PERSON),
             grantee=Equals(grantee),
+            combined_grantee=Equals(grantee),
             can_create=Is(False),
             can_push=Is(True),
             can_force_push=Is(False),
@@ -686,14 +684,10 @@ class TestGitRuleGrant(TestCaseWithFactory):
         grant = self.factory.makeGitRuleGrant(
             repository=repository, grantee=GitGranteeType.REPOSITORY_OWNER,
             can_create=True)
-        grant_before_modification = Snapshot(
-            grant, providing=providedBy(grant))
         with person_logged_in(member):
-            grant.can_create = False
-            grant.can_force_push = True
-            notify(ObjectModifiedEvent(
-                grant, grant_before_modification,
-                ["can_create", "can_force_push"]))
+            with notify_modified(grant, ["can_create", "can_force_push"]):
+                grant.can_create = False
+                grant.can_force_push = True
         self.assertThat(repository.getActivity().first(), MatchesStructure(
             repository=Equals(repository),
             changer=Equals(member),

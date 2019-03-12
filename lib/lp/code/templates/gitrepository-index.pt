@@ -71,13 +71,30 @@
     </div>
   </div>
 
-  <div class="yui-g" tal:condition="context/pending_updates">
+  <div class="yui-g" tal:condition="python: not view.show_rescan_link and context.pending_updates">
     <div class="portlet">
       <div id="repository-pending-updates" class="pending-update">
         <h3>Updating repository...</h3>
         <p>
           Launchpad is processing new changes to this repository which will
           be available shortly. Reload to see the changes.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="yui-g" tal:condition="view/show_rescan_link">
+    <div class="portlet">
+      <div id="branch-scan-failed" class="pending-update">
+        <h3>Repository scan failed</h3>
+        <p>
+          Scanning this repository for changes failed.  You can manually rescan if required.
+        </p>
+        <p>
+          <form action="+rescan" name="launchpadform" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
+            <input id="field.actions.rescan" class="button" type="submit"
+             name="field.actions.rescan" value="Rescan" />
+          </form>
         </p>
       </div>
     </div>

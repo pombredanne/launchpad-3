@@ -240,6 +240,20 @@ def listSequences(cur):
     return rv
 
 
+def check_indirect_references(references):
+    # Sanity check. If we have an indirect reference, it must
+    # be ON DELETE CASCADE. We only have one case of this at the moment,
+    # but this code ensures we catch any new ones added incorrectly.
+    for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
+        # If the ref_tab and ref_col is not Person.id, then we have
+        # an indirect reference. Ensure the update action is 'CASCADE'
+        if ref_tab != 'person' and ref_col != 'id':
+            if updact != 'c':
+                raise RuntimeError(
+                    '%s.%s reference to %s.%s must be ON UPDATE CASCADE'
+                    % (src_tab, src_col, ref_tab, ref_col))
+
+
 def generateResetSequencesSQL(cur):
     """Return SQL that will reset table sequences to match the data in them.
     """

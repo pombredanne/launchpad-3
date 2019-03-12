@@ -1,4 +1,4 @@
-# Copyright 2012-2015 Canonical Ltd.  This software is licensed under the
+# Copyright 2012-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from datetime import timedelta
@@ -84,6 +84,8 @@ def configure(argv):
     # XXX wgrant 2015-08-03: Celery 3.2 won't read pickles by default,
     # and Celery 3.1 can send only pickles for some things. Let's accept
     # both until they sort things out.
+    # XXX cjwatson 2019-03-06: Remove this once production is using json as
+    # its task/result serialiser.
     result['CELERY_ACCEPT_CONTENT'] = ['pickle', 'json']
     result['CELERY_CREATE_MISSING_QUEUES'] = False
     result['CELERY_DEFAULT_EXCHANGE'] = 'job'
@@ -92,6 +94,8 @@ def configure(argv):
     result['CELERY_IMPORTS'] = ("lp.services.job.celeryjob", )
     result['CELERY_QUEUES'] = celery_queues
     result['CELERY_RESULT_BACKEND'] = 'amqp'
+    result['CELERY_RESULT_SERIALIZER'] = 'json'
+    result['CELERY_TASK_SERIALIZER'] = 'json'
     result['CELERYBEAT_SCHEDULE'] = {
         'schedule-missing': {
             'task': 'lp.services.job.celeryjob.run_missing_ready',

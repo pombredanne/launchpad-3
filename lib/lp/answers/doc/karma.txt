@@ -61,7 +61,6 @@ Creating a question
 ...................
 
     >>> login('test@canonical.com')
-    >>> from zope.event import notify
     >>> firefox = getUtility(IProductSet)['firefox']
     >>> firefox_question = firefox.newQuestion(
     ...     title='New question', description='Question description.',
@@ -163,28 +162,23 @@ We do not grant karma for status change made outside of workflow:
 Changing the title of a question
 ................................
 
-    >>> from zope.interface import providedBy
-    >>> from lazr.lifecycle.event import ObjectModifiedEvent
-    >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> old_question = Snapshot(
-    ...     firefox_question, providing=providedBy(firefox_question))
+    >>> from lp.services.webapp.snapshot import notify_modified
     >>> login('test@canonical.com')
-    >>> firefox_question.title = ('Firefox 1.5.0.5 does not have any '
-    ...                         '"Quick Searches" installed by default')
-    >>> notify(ObjectModifiedEvent(firefox_question, old_question, ['title']))
+    >>> with notify_modified(firefox_question, ['title']):
+    ...     firefox_question.title = (
+    ...         'Firefox 1.5.0.5 does not have any "Quick Searches" '
+    ...         'installed by default')
     Karma added: action=questiontitlechanged, product=firefox, person=name12
 
 
 Changing the description of a question
 ......................................
 
-    >>> old_question = Snapshot(
-    ...     firefox_question, providing=providedBy(firefox_question))
-    >>> firefox_question.description = (
-    ...     'Firefox 1.5.0.5 does not have any "Quick Searches" installed '
-    ...     'in the bookmarks by default, like the official ones do.')
-    >>> notify(ObjectModifiedEvent(
-    ...     firefox_question, old_question, ['description']))
+    >>> with notify_modified(firefox_question, ['description']):
+    ...     firefox_question.description = (
+    ...         'Firefox 1.5.0.5 does not have any "Quick Searches" '
+    ...         'installed in the bookmarks by default, like the official '
+    ...         'ones do.')
     Karma added: action=questiondescriptionchanged, product=firefox,
         person=name12
 
@@ -225,11 +219,9 @@ Creating a FAQ
 Modifying a FAQ
 ...............
 
-    >>> old_faq = Snapshot(firefox_faq, providing=providedBy(firefox_faq))
-    >>> firefox_faq.title = 'How can I make the Fnord appears?'
-    >>> firefox_faq.content = 'Install the Fnords highlighter extensions.'
-    >>> notify(ObjectModifiedEvent(
-    ...     firefox_faq, old_faq, ['title', 'content']))
+    >>> with notify_modified(firefox_faq, ['title', 'content']):
+    ...     firefox_faq.title = 'How can I make the Fnord appears?'
+    ...     firefox_faq.content = 'Install the Fnords highlighter extensions.'
     Karma added: action=faqedited, product=firefox, person=name12
 
 

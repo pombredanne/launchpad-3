@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to bug notifications."""
@@ -7,20 +7,13 @@ __metaclass__ = type
 
 from datetime import datetime
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from storm.store import Store
 import transaction
 from zope.component import getUtility
-from zope.event import notify
-from zope.interface import providedBy
 
 from lp.answers.tests.test_question_notifications import pop_questionemailjobs
-from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus,
-    IBugTask,
-    )
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugnotification import (
     BugNotification,
@@ -32,6 +25,7 @@ from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
 from lp.services.config import config
 from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.messages.model.message import MessageSet
+from lp.services.webapp.snapshot import notify_modified
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -67,11 +61,9 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
         # Ensure that notifications are sent to subscribers of a
         # question linked to the expired bug.
         bugtask = self.bug.default_bugtask
-        bugtask_before_modification = Snapshot(bugtask, providing=IBugTask)
-        bugtask.transitionToStatus(BugTaskStatus.EXPIRED, self.product.owner)
-        bug_modified = ObjectModifiedEvent(
-            bugtask, bugtask_before_modification, ["status"])
-        notify(bug_modified)
+        with notify_modified(bugtask, ["status"]):
+            bugtask.transitionToStatus(
+                BugTaskStatus.EXPIRED, self.product.owner)
         recipients = [
             job.metadata['recipient_set'] for job in pop_questionemailjobs()]
         self.assertContentEqual(
@@ -388,12 +380,9 @@ class TestNotificationsForDuplicates(TestCaseWithFactory):
 
     def test_duplicate_edit_notifications(self):
         # Bug edits for a duplicate are sent to duplicate subscribers only.
-        bug_before_modification = Snapshot(
-            self.dupe_bug, providing=providedBy(self.dupe_bug))
-        self.dupe_bug.description = 'A changed description'
-        notify(ObjectModifiedEvent(
-            self.dupe_bug, bug_before_modification, ['description'],
-            user=self.dupe_bug.owner))
+        with notify_modified(
+                self.dupe_bug, ['description'], user=self.dupe_bug.owner):
+            self.dupe_bug.description = 'A changed description'
         latest_notification = BugNotification.selectFirst(orderBy='-id')
         recipients = set(
             recipient.person

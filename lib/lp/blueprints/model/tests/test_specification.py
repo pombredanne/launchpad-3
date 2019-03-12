@@ -1,4 +1,4 @@
-# Copyright 2011-2012 Canonical Ltd.  This software is licensed under the
+# Copyright 2011-2018 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for blueprints here."""
@@ -7,8 +7,6 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 __metaclass__ = type
 
-from lazr.lifecycle.event import ObjectModifiedEvent
-from lazr.lifecycle.snapshot import Snapshot
 from testtools.matchers import (
     Equals,
     MatchesStructure,
@@ -16,8 +14,6 @@ from testtools.matchers import (
 from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
-from zope.event import notify
-from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
@@ -36,9 +32,10 @@ from lp.registry.enums import (
     )
 from lp.registry.errors import CannotChangeInformationType
 from lp.registry.model.milestone import Milestone
-from lp.services.propertycache import get_property_cache
 from lp.services.mail import stub
+from lp.services.propertycache import get_property_cache
 from lp.services.webapp import canonical_url
+from lp.services.webapp.snapshot import notify_modified
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -225,21 +222,18 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         specification."""
         stub.test_emails = []
         spec = self.factory.makeSpecification()
-        old_spec = Snapshot(spec, providing=providedBy(spec))
-        new_work_item = {
-            'title': 'A work item',
-            'status': SpecificationWorkItemStatus.TODO,
-            'assignee': None,
-            'milestone': None,
-            'sequence': 0
-        }
-
-        login_person(spec.owner)
-        spec.updateWorkItems([new_work_item])
-        # For API requests, lazr.restful does the notify() call, for this test
-        # we need to call ourselves.
-        notify(ObjectModifiedEvent(
-            spec, old_spec, edited_fields=['workitems_text']))
+        # For API requests, lazr.restful does the notification; for this
+        # test we need to call ourselves.
+        with notify_modified(spec, ['workitems_text']):
+            new_work_item = {
+                'title': 'A work item',
+                'status': SpecificationWorkItemStatus.TODO,
+                'assignee': None,
+                'milestone': None,
+                'sequence': 0
+            }
+            login_person(spec.owner)
+            spec.updateWorkItems([new_work_item])
         transaction.commit()
 
         self.assertEqual(1, len(stub.test_emails))
@@ -256,13 +250,11 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         stub.test_emails = []
         wi = self.factory.makeSpecificationWorkItem()
         spec = wi.specification
-        old_spec = Snapshot(spec, providing=providedBy(spec))
-        login_person(spec.owner)
-        spec.updateWorkItems([])
         # In production this notification is fired by lazr.restful, but we
         # need to do it ourselves in this test.
-        notify(ObjectModifiedEvent(
-            spec, old_spec, edited_fields=['workitems_text']))
+        with notify_modified(spec, ['workitems_text']):
+            login_person(spec.owner)
+            spec.updateWorkItems([])
         transaction.commit()
 
         self.assertEqual(1, len(stub.test_emails))
@@ -294,14 +286,11 @@ class TestSpecificationWorkItemsNotifications(TestCaseWithFactory):
         }
         login_person(spec.owner)
         spec.updateWorkItems([original_work_item])
-        old_spec = Snapshot(spec, providing=providedBy(spec))
-
-        stub.test_emails = []
-        spec.updateWorkItems([new_work_item])
         # In production this notification is fired by lazr.restful, but we
         # need to do it ourselves in this test.
-        notify(ObjectModifiedEvent(
-            spec, old_spec, edited_fields=['workitems_text']))
+        with notify_modified(spec, ['workitems_text']):
+            stub.test_emails = []
+            spec.updateWorkItems([new_work_item])
         transaction.commit()
 
         self.assertEqual(1, len(stub.test_emails))

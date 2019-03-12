@@ -130,7 +130,7 @@
 
   </div>
 
-  <div class="yui-g" tal:condition="view/pending_updates">
+  <div class="yui-g" tal:condition="python: not view.show_rescan_link and view.pending_updates">
     <div class="portlet">
       <div id="branch-pending-updates" class="pending-update">
         <h3>Updating branch...</h3>
@@ -141,6 +141,24 @@
       </div>
     </div>
   </div>
+
+  <div class="yui-g" tal:condition="view/show_rescan_link">
+    <div class="portlet">
+      <div id="branch-scan-failed" class="pending-update">
+        <h3>Branch scan failed</h3>
+        <p>
+          Scanning this branch for changes failed.  You can manually rescan if required.
+        </p>
+        <p>
+          <form action="+rescan" name="launchpadform" method="post" enctype="multipart/form-data" accept-charset="UTF-8">
+            <input id="field.actions.rescan" class="button" type="submit"
+             name="field.actions.rescan" value="Rescan" />
+          </form>
+        </p>
+      </div>
+    </div>
+  </div>
+
 
   <div class="yui-g">
     <div class="portlet" id="recent-revisions">
