@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Build features."""
@@ -18,6 +18,7 @@ from testtools.matchers import (
     MatchesStructure,
     )
 from zope.component import getUtility
+from zope.publisher.xmlrpc import TestRequest
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -27,6 +28,7 @@ from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
+from lp.services.authserver.xmlrpc import AuthServerAPIView
 from lp.services.config import config
 from lp.services.log.logger import DevNullLogger
 from lp.services.macaroons.interfaces import IMacaroonIssuer
@@ -64,6 +66,8 @@ from lp.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.testing.pages import webservice_for_person
+from lp.xmlrpc import faults
+from lp.xmlrpc.interfaces import IPrivateApplication
 
 
 class TestBinaryPackageBuild(TestCaseWithFactory):
@@ -933,6 +937,15 @@ class TestBinaryPackageBuildMacaroonIssuer(TestCaseWithFactory):
             MatchesStructure.byEquality(
                 caveat_id="lp.binary-package-build %s" % build.id),
             ]))
+
+    def test_issueMacaroon_not_via_authserver(self):
+        build = self.factory.makeBinaryPackageBuild(
+            archive=self.factory.makeArchive(private=True))
+        private_root = getUtility(IPrivateApplication)
+        authserver = AuthServerAPIView(private_root.authserver, TestRequest())
+        self.assertEqual(
+            faults.PermissionDenied(),
+            authserver.issueMacaroon("binary-package-build", build))
 
     def test_checkMacaroonIssuer_good(self):
         build = self.factory.makeBinaryPackageBuild(

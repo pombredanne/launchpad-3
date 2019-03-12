@@ -594,6 +594,7 @@ class SnapBuildSet(SpecificBuildFarmJobSourceMixin):
 class SnapBuildMacaroonIssuer(MacaroonIssuerBase):
 
     identifier = "snap-build"
+    issuable_via_authserver = True
 
     def issueMacaroon(self, context):
         """See `IMacaroonIssuer`.

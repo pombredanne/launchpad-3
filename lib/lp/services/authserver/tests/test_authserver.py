@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
@@ -6,7 +6,12 @@
 __metaclass__ = type
 
 from pymacaroons import Macaroon
-from testtools.matchers import Is
+from testtools.matchers import (
+    Equals,
+    Is,
+    MatchesListwise,
+    MatchesStructure,
+    )
 from zope.component import getUtility
 from zope.interface import implementer
 from zope.publisher.xmlrpc import TestRequest
@@ -74,6 +79,7 @@ class GetUserAndSSHKeysTests(TestCaseWithFactory):
 class DummyMacaroonIssuer(MacaroonIssuerBase):
 
     identifier = 'test'
+    issuable_via_authserver = True
     _root_secret = 'test'
 
     def issueMacaroon(self, context):
@@ -87,12 +93,12 @@ class DummyMacaroonIssuer(MacaroonIssuerBase):
         return caveat_text == str(context)
 
 
-class VerifyMacaroonTests(TestCase):
+class MacaroonTests(TestCase):
 
     layer = ZopelessLayer
 
     def setUp(self):
-        super(VerifyMacaroonTests, self).setUp()
+        super(MacaroonTests, self).setUp()
         self.issuer = DummyMacaroonIssuer()
         self.useFixture(ZopeUtilityFixture(
             self.issuer, IMacaroonIssuer, name='test'))
@@ -100,12 +106,38 @@ class VerifyMacaroonTests(TestCase):
         self.authserver = AuthServerAPIView(
             private_root.authserver, TestRequest())
 
-    def test_nonsense_macaroon(self):
+    def test_issue_unknown_issuer(self):
+        self.assertEqual(
+            faults.PermissionDenied(),
+            self.authserver.issueMacaroon('unknown-issuer', 0))
+
+    def test_issue_bad_context_type(self):
+        self.assertEqual(
+            faults.PermissionDenied(),
+            self.authserver.issueMacaroon('unknown-issuer', ''))
+
+    def test_issue_not_issuable_via_authserver(self):
+        self.issuer.issuable_via_authserver = False
+        self.assertEqual(
+            faults.PermissionDenied(),
+            self.authserver.issueMacaroon('test', 0))
+
+    def test_issue_success(self):
+        macaroon = Macaroon.deserialize(
+            self.authserver.issueMacaroon('test', 0))
+        self.assertThat(macaroon, MatchesStructure(
+            location=Equals(config.vhost.mainsite.hostname),
+            identifier=Equals('test'),
+            caveats=MatchesListwise([
+                MatchesStructure.byEquality(caveat_id='lp.test 0'),
+                ])))
+
+    def test_verify_nonsense_macaroon(self):
         self.assertEqual(
             faults.Unauthorized(),
             self.authserver.verifyMacaroon('nonsense', 0))
 
-    def test_unknown_issuer(self):
+    def test_verify_unknown_issuer(self):
         macaroon = Macaroon(
             location=config.vhost.mainsite.hostname,
             identifier='unknown-issuer', key='test')
@@ -113,13 +145,13 @@ class VerifyMacaroonTests(TestCase):
             faults.Unauthorized(),
             self.authserver.verifyMacaroon(macaroon.serialize(), 0))
 
-    def test_wrong_context(self):
+    def test_verify_wrong_context(self):
         macaroon = self.issuer.issueMacaroon(0)
         self.assertEqual(
             faults.Unauthorized(),
             self.authserver.verifyMacaroon(macaroon.serialize(), 1))
 
-    def test_success(self):
+    def test_verify_success(self):
         macaroon = self.issuer.issueMacaroon(0)
         self.assertThat(
             self.authserver.verifyMacaroon(macaroon.serialize(), 0), Is(True))

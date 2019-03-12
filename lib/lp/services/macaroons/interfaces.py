@@ -1,4 +1,4 @@
-# Copyright 2016 Canonical Ltd.  This software is licensed under the
+# Copyright 2016-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Interface to a policy for issuing and verifying macaroons."""
@@ -11,10 +11,14 @@ __all__ = [
     ]
 
 from zope.interface import Interface
+from zope.schema import Bool
 
 
 class IMacaroonIssuerPublic(Interface):
     """Public interface to a policy for verifying macaroons."""
+
+    issuable_via_authserver = Bool(
+        "Does this issuer allow issuing macaroons via the authserver?")
 
     def checkMacaroonIssuer(macaroon):
         """Check that `macaroon` was issued by this issuer.

@@ -26,6 +26,7 @@ from testtools.matchers import (
     MatchesStructure,
     )
 from zope.component import getUtility
+from zope.publisher.xmlrpc import TestRequest
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -36,6 +37,7 @@ from lp.buildmaster.interfaces.buildqueue import IBuildQueue
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.buildmaster.interfaces.processor import IProcessorSet
 from lp.registry.enums import PersonVisibility
+from lp.services.authserver.xmlrpc import AuthServerAPIView
 from lp.services.config import config
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
@@ -70,6 +72,7 @@ from lp.testing.layers import (
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
 from lp.testing.pages import webservice_for_person
+from lp.xmlrpc.interfaces import IPrivateApplication
 
 
 expected_body = """\
@@ -801,6 +804,21 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
             snap=self.factory.makeSnap(private=True))
         issuer = getUtility(IMacaroonIssuer, "snap-build")
         macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
+        self.assertThat(macaroon, MatchesStructure(
+            location=Equals("launchpad.dev"),
+            identifier=Equals("snap-build"),
+            caveats=MatchesListwise([
+                MatchesStructure.byEquality(
+                    caveat_id="lp.snap-build %s" % build.id),
+                ])))
+
+    def test_issueMacaroon_via_authserver(self):
+        build = self.factory.makeSnapBuild(
+            snap=self.factory.makeSnap(private=True))
+        private_root = getUtility(IPrivateApplication)
+        authserver = AuthServerAPIView(private_root.authserver, TestRequest())
+        macaroon = Macaroon.deserialize(
+            authserver.issueMacaroon("snap-build", build.id))
         self.assertThat(macaroon, MatchesStructure(
             location=Equals("launchpad.dev"),
             identifier=Equals("snap-build"),

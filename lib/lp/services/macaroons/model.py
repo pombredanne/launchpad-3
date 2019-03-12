@@ -21,6 +21,8 @@ from lp.services.config import config
 class MacaroonIssuerBase:
     """See `IMacaroonIssuer`."""
 
+    issuable_via_authserver = False
+
     @property
     def identifier(self):
         """An identifying name for this issuer."""

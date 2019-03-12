@@ -1,4 +1,4 @@
-# Copyright 2009-2018 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2019 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeImportJob and CodeImportJobWorkflow."""
@@ -25,6 +25,7 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
+from zope.publisher.xmlrpc import TestRequest
 from zope.security.proxy import removeSecurityProxy
 
 from lp.app.enums import InformationType
@@ -53,6 +54,7 @@ from lp.code.tests.codeimporthelpers import (
     make_running_import,
     )
 from lp.code.tests.helpers import GitHostingFixture
+from lp.services.authserver.xmlrpc import AuthServerAPIView
 from lp.services.config import config
 from lp.services.database.constants import UTC_NOW
 from lp.services.database.interfaces import IStore
@@ -75,6 +77,8 @@ from lp.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.testing.pages import get_feedback_messages
+from lp.xmlrpc import faults
+from lp.xmlrpc.interfaces import IPrivateApplication
 
 
 def login_for_code_imports():
@@ -1302,6 +1306,14 @@ class TestCodeImportJobMacaroonIssuer(TestCaseWithFactory):
         self.pushConfig("launchpad", internal_macaroon_secret_key="")
         self.pushConfig("codeimport", macaroon_secret_key="some-secret")
         self.test_issueMacaroon_good()
+
+    def test_issueMacaroon_not_via_authserver(self):
+        job = self.makeJob()
+        private_root = getUtility(IPrivateApplication)
+        authserver = AuthServerAPIView(private_root.authserver, TestRequest())
+        self.assertEqual(
+            faults.PermissionDenied(),
+            authserver.issueMacaroon("code-import-job", job))
 
     def test_checkMacaroonIssuer_good(self):
         job = self.makeJob()
