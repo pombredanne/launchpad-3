@@ -801,12 +801,13 @@ class TestSnapBuildMacaroonIssuer(TestCaseWithFactory):
             snap=self.factory.makeSnap(private=True))
         issuer = getUtility(IMacaroonIssuer, "snap-build")
         macaroon = removeSecurityProxy(issuer).issueMacaroon(build)
-        self.assertEqual("launchpad.dev", macaroon.location)
-        self.assertEqual("snap-build", macaroon.identifier)
-        self.assertThat(macaroon.caveats, MatchesListwise([
-            MatchesStructure.byEquality(
-                caveat_id="lp.snap-build %s" % build.id),
-            ]))
+        self.assertThat(macaroon, MatchesStructure(
+            location=Equals("launchpad.dev"),
+            identifier=Equals("snap-build"),
+            caveats=MatchesListwise([
+                MatchesStructure.byEquality(
+                    caveat_id="lp.snap-build %s" % build.id),
+                ])))
 
     def test_checkMacaroonIssuer_good(self):
         build = self.factory.makeSnapBuild(
