@@ -18,8 +18,12 @@ from six.moves.urllib_parse import (
     urlunsplit,
     )
 from testtools.matchers import (
+    Contains,
+    ContainsDict,
+    Equals,
     MatchesListwise,
     MatchesStructure,
+    Not,
     )
 import transaction
 from zope.component import getUtility
@@ -75,12 +79,15 @@ class TestGitLab(TestCase):
         responses.add(
             "GET", "https://gitlab.com/api/v4/projects/user%2Frepository/test",
             json="success")
+        self.pushConfig(
+            "checkwatches.credentials", **{"gitlab.com.token": "sosekrit"})
         tracker = GitLab("https://gitlab.com/user/repository/issues")
         self.assertEqual("success", tracker._getPage("test").json())
         requests = [call.request for call in responses.calls]
         self.assertThat(requests, MatchesListwise([
-            MatchesStructure.byEquality(
-                path_url="/api/v4/projects/user%2Frepository/test"),
+            MatchesStructure(
+                path_url=Equals("/api/v4/projects/user%2Frepository/test"),
+                headers=ContainsDict({"Private-Token": Equals("sosekrit")})),
             ]))
 
     @responses.activate
@@ -92,8 +99,9 @@ class TestGitLab(TestCase):
         self.assertEqual("success", tracker._getPage("test").json())
         requests = [call.request for call in responses.calls]
         self.assertThat(requests, MatchesListwise([
-            MatchesStructure.byEquality(
-                path_url="/api/v4/projects/user%2Frepository/test"),
+            MatchesStructure(
+                path_url=Equals("/api/v4/projects/user%2Frepository/test"),
+                headers=Not(Contains("Private-Token"))),
             ]))
 
     @responses.activate
