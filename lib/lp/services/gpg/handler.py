@@ -239,6 +239,14 @@ class GPGHandler:
         # Fetch the full key from the keyserver now that we know its
         # fingerprint, and then verify the signature again.  (This also lets
         # us support subkeys by using the master key fingerprint.)
+        # XXX cjwatson 2019-03-12: Before GnuPG 2.2.7 and GPGME 1.11.0,
+        # sig.fpr is a 64-bit key ID in the case where the key isn't in the
+        # local keyring yet.  I haven't yet heard of 64-bit key ID
+        # collisions in the wild, but even if they happen here,
+        # importPublicKey will raise MoreThanOneGPGKeyFound, so the worst
+        # consequence is a denial of service for the owner of an affected
+        # key.  If we do run into this, then the correct fix is to upgrade
+        # GnuPG and GPGME.
         key = self.retrieveKey(sig.fpr)
         plain, sig = self._rawVerifySignature(
             ctx, content, signature=signature)
