@@ -5,10 +5,7 @@
 
 __metaclass__ = type
 
-from pymacaroons import (
-    Macaroon,
-    Verifier,
-    )
+from pymacaroons import Macaroon
 from testtools.matchers import Is
 from zope.component import getUtility
 from zope.interface import implementer
