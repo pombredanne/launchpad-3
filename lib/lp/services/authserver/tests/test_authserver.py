@@ -17,6 +17,7 @@ from zope.publisher.xmlrpc import TestRequest
 from lp.services.authserver.xmlrpc import AuthServerAPIView
 from lp.services.config import config
 from lp.services.macaroons.interfaces import IMacaroonIssuer
+from lp.services.macaroons.model import MacaroonIssuerBase
 from lp.testing import (
     person_logged_in,
     TestCase,
@@ -73,40 +74,20 @@ class GetUserAndSSHKeysTests(TestCaseWithFactory):
 
 
 @implementer(IMacaroonIssuer)
-class DummyMacaroonIssuer:
+class DummyMacaroonIssuer(MacaroonIssuerBase):
 
+    identifier = 'test'
     _root_secret = 'test'
 
     def issueMacaroon(self, context):
         """See `IMacaroonIssuer`."""
-        macaroon = Macaroon(
-            location=config.vhost.mainsite.hostname, identifier='test',
-            key=self._root_secret)
-        macaroon.add_first_party_caveat('test %s' % context)
-        return macaroon
+        if not isinstance(context, int):
+            raise ValueError
+        return super(DummyMacaroonIssuer, self).issueMacaroon(context)
 
-    def checkMacaroonIssuer(self, macaroon):
-        """See `IMacaroonIssuer`."""
-        if macaroon.location != config.vhost.mainsite.hostname:
-            return False
-        try:
-            verifier = Verifier()
-            verifier.satisfy_general(
-                lambda caveat: caveat.startswith('test '))
-            return verifier.verify(macaroon, self._root_secret)
-        except Exception:
-            return False
-
-    def verifyMacaroon(self, macaroon, context):
-        """See `IMacaroonIssuer`."""
-        if not self.checkMacaroonIssuer(macaroon):
-            return False
-        try:
-            verifier = Verifier()
-            verifier.satisfy_exact('test %s' % context)
-            return verifier.verify(macaroon, self._root_secret)
-        except Exception:
-            return False
+    def verifyCaveat(self, caveat_text, context):
+        """See `MacaroonIssuerBase`."""
+        return caveat_text == str(context)
 
 
 class VerifyMacaroonTests(TestCase):
